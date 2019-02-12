@@ -1239,21 +1239,26 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         "0/2", "2/0", "2/1", "1/2", "2/2",
                         GenotypeClass.UNKNOWN_GENOTYPE);
             }
-
-            String genotypes = loadedGenotypes.stream().filter(gt -> {
-                Genotype genotype;
-                try {
-                    genotype = new Genotype(gt);
-                } catch (IllegalArgumentException e) {
-                    return false;
-                }
-                for (int i : genotype.getAllelesIdx()) {
-                    if (i == 1) {
-                        return true;
+            String genotypes;
+            if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE)
+                    || defaultStudy.getAttributes().getBoolean(EXCLUDE_GENOTYPES.key(), EXCLUDE_GENOTYPES.defaultValue())) {
+                genotypes = GenotypeClass.NA_GT_VALUE;
+            } else {
+                genotypes = loadedGenotypes.stream().filter(gt -> {
+                    Genotype genotype;
+                    try {
+                        genotype = new Genotype(gt);
+                    } catch (IllegalArgumentException e) {
+                        return false;
                     }
-                }
-                return false;
-            }).collect(Collectors.joining(","));
+                    for (int i : genotype.getAllelesIdx()) {
+                        if (i == 1) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }).collect(Collectors.joining(","));
+            }
 
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(SAMPLE.key()));
             genotypeOperator = pair.getLeft();

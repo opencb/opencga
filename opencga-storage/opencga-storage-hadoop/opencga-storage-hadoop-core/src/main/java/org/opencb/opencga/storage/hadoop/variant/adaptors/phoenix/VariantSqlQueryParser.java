@@ -37,12 +37,12 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -810,8 +810,22 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, GENOTYPE)) {
             // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
             genotypeQueryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypesMap);
-        }
-        if (isValidParam(query, SAMPLE)) {
+            // Remove (if any) the GenotypeClass#NA_GT_VALUE from the genotypes map.
+            Iterator<Map.Entry<Object, List<String>>> iterator = genotypesMap.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<Object, List<String>> entry = iterator.next();
+                List<String> gts = entry.getValue();
+                if (gts.contains(GenotypeClass.NA_GT_VALUE)) {
+                    if (gts.size() == 1) {
+                        iterator.remove();
+                    } else {
+                        gts = new LinkedList<>(gts);
+                        gts.remove(GenotypeClass.NA_GT_VALUE);
+                        entry.setValue(gts);
+                    }
+                }
+            }
+        } else if (isValidParam(query, SAMPLE)) {
             List<String> sampleGts = loadedGenotypes
                     .stream()
                     .filter(gt -> Arrays

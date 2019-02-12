@@ -184,7 +184,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
         List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader;
-        if (sampleIds.isEmpty() || options.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key())) {
+        if (sampleIds.isEmpty()) {
             sampleIndexDBLoader = null;
         } else {
             sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),
@@ -272,7 +272,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         // Sample Index Writer
         List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader;
-        if (sampleIds.isEmpty() || options.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key())) {
+        if (sampleIds.isEmpty()) {
             sampleIndexDBLoader = null;
         } else {
             sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),

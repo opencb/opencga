@@ -2,9 +2,11 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
@@ -93,8 +95,10 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         for (Variant variant : variants) {
             IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), (variant.getStart() / BATCH_SIZE) * BATCH_SIZE);
             int sampleIdx = 0;
-            for (List<String> samplesData : variant.getStudies().get(0).getSamplesData()) {
-                String gt = samplesData.get(0);
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            boolean hasGT = studyEntry.getFormat().get(0).equals("GT");
+            for (List<String> samplesData : studyEntry.getSamplesData()) {
+                String gt = hasGT ? samplesData.get(0) : GenotypeClass.NA_GT_VALUE;
                 if (validVariant(variant) && validGenotype(gt)) {
                     genotypes.add(gt);
                     Set<Variant> variantsList = buffer

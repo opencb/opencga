@@ -648,9 +648,7 @@ public class VariantMongoDBQueryParser {
             if (isValidParam(query, GENOTYPE)) {
                 String sampleGenotypes = query.getString(GENOTYPE.key());
                 gtQueryOperation = parseGenotypeFilter(sampleGenotypes, genotypesFilter);
-            }
-
-            if (isValidParam(query, SAMPLE)) {
+            } else if (isValidParam(query, SAMPLE)) {
                 String samples = query.getString(SAMPLE.key());
 
                 List<String> genotypes;
@@ -774,6 +772,10 @@ public class VariantMongoDBQueryParser {
                     }
 
                     for (String genotype : genotypes) {
+                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
+                            continue;
+                        }
+
                         boolean negated = isNegated(genotype);
                         if (negated) {
                             genotype = removeNegation(genotype);
