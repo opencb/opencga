@@ -20,7 +20,6 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -33,8 +32,8 @@ import org.slf4j.LoggerFactory;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created on 03/10/18.
@@ -46,6 +45,7 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
     protected static final String BATCH_SIZE = "--batch-size";
     protected static final String OUTPUT_FILE = "--output";
     protected static final String NUM_BATCHES = "num_batches";
+    protected static final String SAMPLE_IDS_PAD = "sample_ids_pad";
     private String region;
     private int batchSize;
     private String outputPath;
@@ -76,7 +76,13 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        StudyMetadata sm = metadataManager.getStudyMetadata(getStudyId());
+        List<Integer> studyIds = new ArrayList<>();
+        if (getStudyId() < 0) {
+            studyIds.addAll(metadataManager.getStudyIds());
+        } else {
+            studyIds.add(getStudyId());
+        }
+        studyIds.sort(Integer::compare);
 
         Scan scan = new Scan();
         scan.setCaching(caching);
@@ -85,11 +91,17 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
         int numSamples = 0;
+        Map<Integer, Integer> sampleIdsPad = new HashMap<>(studyIds.size());
         int maxSampleId = 0;
-        for (Integer sampleId : metadataManager.getIndexedSamples(sm.getId())) {
-            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(sm.getId(), sampleId));
-            numSamples++;
-            maxSampleId = Math.max(maxSampleId, sampleId);
+        for (Integer id : studyIds) {
+            int maxSampleIdInStudy = 0;
+            for (Integer sampleId : metadataManager.getIndexedSamples(id)) {
+                scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(id, sampleId));
+                numSamples++;
+                maxSampleIdInStudy = Math.max(maxSampleIdInStudy, sampleId);
+            }
+            sampleIdsPad.put(id, maxSampleId);
+            maxSampleId += maxSampleIdInStudy;
         }
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 
@@ -120,6 +132,10 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
 
         job.getConfiguration().setInt(BATCH_SIZE, batchSize);
         job.getConfiguration().setInt(NUM_BATCHES, numBatches);
+        job.getConfiguration().set(SAMPLE_IDS_PAD, sampleIdsPad.entrySet()
+                .stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining(",")));
 
 
         // set other scan attrs
@@ -226,11 +242,16 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
     public static class SaturationStatsMapper extends TableMapper<NullWritable, SaturationStatsWritable> {
         private int numBatches;
         private int batchSize;
+        private Map<Integer, Integer> sampleIdsPad = new HashMap<>();
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             numBatches = context.getConfiguration().getInt(NUM_BATCHES, 0);
             batchSize = context.getConfiguration().getInt(BATCH_SIZE, 0);
+            for (String entry : context.getConfiguration().get(SAMPLE_IDS_PAD).split(",")) {
+                String[] split = entry.split("=");
+                sampleIdsPad.put(Integer.valueOf(split[0]), Integer.valueOf(split[1]));
+            }
             super.setup(context);
         }
 
@@ -241,10 +262,15 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
             int samples = 0;
             for (Cell cell : value.rawCells()) {
                 String column = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                Integer studyId = VariantPhoenixHelper.extractStudyId(column, false);
                 Integer sampleId = VariantPhoenixHelper.extractSampleId(column, false);
+                int sampleIdPad = 0;
+                if (studyId != null) {
+                    sampleIdPad = sampleIdsPad.get(studyId);
+                }
                 if (sampleId != null) {
                     samples++;
-                    int batch = sampleId / batchSize;
+                    int batch = (sampleIdPad + sampleId) / batchSize;
                     stats.variantsInBatch[batch] = 1;
 //                    stats.samplesPerBatch[batch]++;
                 }
@@ -298,11 +324,17 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
 
         private int numBatches;
         private int batchSize;
+        private Map<Integer, Integer> sampleIdsPad = new LinkedHashMap<>();
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             numBatches = context.getConfiguration().getInt(NUM_BATCHES, 0);
             batchSize = context.getConfiguration().getInt(BATCH_SIZE, 0);
+            for (String entry : context.getConfiguration().get(SAMPLE_IDS_PAD).split(",")) {
+                String[] split = entry.split("=");
+                sampleIdsPad.put(Integer.valueOf(split[0]), Integer.valueOf(split[1]));
+            }
+            super.setup(context);
         }
 
         @Override
@@ -315,8 +347,16 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
             }
 
             StringBuilder sb = new StringBuilder()
-                    .append("##Variants in no sample = ").append(stats.variantsInNoSample).append('\n')
-                    .append("#LOADED_SAMPLES\tVARIANTS_IN_BATCH\tLOADED_VARIANTS\tNEW_VARIANTS\n");
+                    .append("##Variants in no sample = ").append(stats.variantsInNoSample).append('\n');
+
+            int prevPad = 0;
+            for (Map.Entry<Integer, Integer> entry : sampleIdsPad.entrySet()) {
+                Integer samples = entry.getValue() - prevPad;
+                prevPad = entry.getValue();
+                sb.append("##Study ").append(entry.getKey()).append(" with ").append(samples).append(" samples");
+            }
+
+            sb.append("#LOADED_SAMPLES\tVARIANTS_IN_BATCH\tLOADED_VARIANTS\tNEW_VARIANTS\n");
 
             int prevNumVariants = 0;
             for (int i = 0; i < numBatches; i++) {
