@@ -31,6 +31,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +45,9 @@ import java.util.Map;
 @Produces("application/json")
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class MetaWSServer extends OpenCGAWSServer {
+
+    private static LocalTime lastAccess = LocalTime.now();
+    private static HashMap<String, String> healthCheckResults = new HashMap<>();
 
     public MetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
@@ -86,51 +91,77 @@ public class MetaWSServer extends OpenCGAWSServer {
         QueryResult queryResult = new QueryResult();
         queryResult.setId("Status");
         queryResult.setDbTime(0);
-        HashMap<String, String> results = new HashMap<>();
+
         String storageEngineId;
-        boolean error = false;
+        StringBuilder errorMsg = new StringBuilder();
 
-        try {
-            if (catalogManager.getDatabaseStatus()) {
-                results.put("CatalogMongoDB", "OK");
-            } else {
-                results.put("CatalogMongoDB", "KO");
-                error = true;
+        if (healthCheckResults.size() == 0 || !isHealthy() ||
+                Duration.between(lastAccess, LocalTime.now()).getSeconds() > configuration.getHealthCheck().getInterval()) {
+
+            logger.info("HealthCheck results without cache!");
+            lastAccess = LocalTime.now();
+            healthCheckResults.clear();
+
+            try {
+                if (catalogManager.getDatabaseStatus()) {
+                    healthCheckResults.put("CatalogMongoDB", "OK");
+                } else {
+                    healthCheckResults.put("CatalogMongoDB", "KO");
+                }
+            } catch (Exception e) {
+                healthCheckResults.put("CatalogMongoDB", "KO");
+                errorMsg.append(e.getMessage());
             }
-        } catch (Exception e) {
-            results.put("CatalogMongoDB", "KO");
-            error = true;
-        }
 
-        try {
-            storageEngineId = storageEngineFactory.getVariantStorageEngine().getStorageEngineId();
-        } catch (Exception e) {
-            return createErrorResponse("No storageEngineId is set in configuration", queryResult);
-        }
+            try {
+                storageEngineId = storageEngineFactory.getVariantStorageEngine().getStorageEngineId();
+                healthCheckResults.put("VariantStorageId", storageEngineId);
+            } catch (Exception e) {
+                errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()).append(", ");
+                healthCheckResults.put("VariantStorage", "KO");
+            }
 
-        try {
-            storageEngineFactory.getVariantStorageEngine().testConnection();
-            results.put("VariantStorage " + storageEngineId, "OK");
-        } catch (Exception e) {
-            results.put("VariantStorage " + storageEngineId, "KO");
-            error = true;
-        }
+            try {
+                storageEngineFactory.getVariantStorageEngine().testConnection();
+                healthCheckResults.put("VariantStorage", "OK");
+            } catch (Exception e) {
+                healthCheckResults.put("VariantStorage", "KO");
+                errorMsg.append(e.getMessage());
+            }
 
-        if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
-            if (variantManager.isSolrAvailable()) {
-                results.put("Solr", "OK");
+            if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
+                if (variantManager.isSolrAvailable()) {
+                    healthCheckResults.put("Solr", "OK");
+                } else {
+                    errorMsg.append(", unable to connect with solr, ");
+                    healthCheckResults.put("Solr", "KO");
+                }
             } else {
-                results.put("Solr", "unable to connect with solr!");
-                error = true;
+                errorMsg.append(" solr is not active in storage configuration!");
+                healthCheckResults.put("Solr", "");
             }
         } else {
-            results.put("Solr", "solr is not active in storage configuration!");
+            logger.info("HealthCheck results from cache!");
+            queryResult.setWarningMsg("HealthCheck results from cache!");
         }
 
-        queryResult.setResult(Arrays.asList(results));
-        if (error) {
-            return createErrorResponse("Error", queryResult);
+        queryResult.setResult(Arrays.asList(healthCheckResults));
+        if (isHealthy()) {
+            logger.info("HealthCheck : " + healthCheckResults.toString());
+            return createOkResponse(queryResult);
+        } else {
+            logger.error("HealthCheck : " + healthCheckResults.toString());
+            return createErrorResponse(errorMsg.toString(), queryResult);
         }
-        return createOkResponse(queryResult);
+    }
+
+    private boolean isHealthy() {
+        if (healthCheckResults.size() > 0) {
+            return !(healthCheckResults.get("CatalogMongoDB").equalsIgnoreCase("KO") ||
+                    healthCheckResults.get("VariantStorage").equalsIgnoreCase("KO") ||
+                    healthCheckResults.get("Solr").equalsIgnoreCase("KO"));
+        } else {
+            return false;
+        }
     }
 }
