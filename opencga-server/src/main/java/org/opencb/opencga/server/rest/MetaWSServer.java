@@ -95,8 +95,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         String storageEngineId;
         StringBuilder errorMsg = new StringBuilder();
 
-        if (healthCheckResults.size() == 0 || !isHealthy() ||
-                Duration.between(lastAccess, LocalTime.now()).getSeconds() > configuration.getHealthCheck().getInterval()) {
+        if (!isHealthy() || Duration.between(lastAccess, LocalTime.now()).getSeconds() > configuration.getHealthCheck().getInterval()) {
 
             logger.info("HealthCheck results without cache!");
             lastAccess = LocalTime.now();
