@@ -171,6 +171,12 @@
             "metadata": {
                 "description": "Secret key used when initializing the catalog."
             }
+        },
+        "healthCheckInterval": {
+            "type": "int",
+            "metadata": {
+                "description": "HealthCheck cache interval value in seconds."
+            }
         }
     },
     "variables": {
@@ -565,6 +571,9 @@
                     },
                     "batchMaxConcurrentJobs": {
                         "value": "[reference('azureBatch').outputs.maxNodeCount.value]"
+                    },
+                    "healthCheckInterval": {
+                        "value": "[parameters('healthCheckInterval')]"
                     },
                     "LogAnalyticsWorkspaceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
