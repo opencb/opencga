@@ -507,8 +507,9 @@ public class VariantStorageManager extends StorageManager {
                     storageConfiguration.getSearch().getMode(),
                     storageConfiguration.getSearch().getTimeout());
             String collectionName = "test_connection";
-            solrManager.create(collectionName, VariantSearchManager.CONF_SET);
-            solrManager.remove(collectionName);
+            if (!solrManager.exists(collectionName)) {
+                solrManager.create(collectionName, VariantSearchManager.CONF_SET);
+            }
         } catch (Exception e) {
             logger.warn("Ignore exception checking if Solr is available", e);
             return false;
