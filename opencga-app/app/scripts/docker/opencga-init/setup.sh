@@ -31,6 +31,7 @@ python3 /tmp/override-yaml.py \
 --batch-docker-args "$BATCH_DOCKER_ARGS" \
 --batch-docker-image "$BATCH_DOCKER_IMAGE" \
 --batch-max-concurrent-jobs "$BATCH_MAX_CONCURRENT_JOBS" \
+--health-check-interval "$HEALTH_CHECK_INTERVAL" \
 --save
 # Override Js configs
 python3 /tmp/override-js.py \

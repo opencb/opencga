@@ -99,6 +99,9 @@ config["execution"]["options"]["batchPoolId"] = args.batch_pool_id
 config["execution"]["options"]["dockerImageName"] = args.batch_docker_image
 config["execution"]["options"]["dockerArgs"] = args.batch_docker_args
 
+# Inject healthCheck interval
+config["healthCheck"]["interval"] = args.health_check_interval
+
 # Load client configuration yaml
 with open(args.client_config_path) as f:
     client_config = yaml.safe_load(f)
