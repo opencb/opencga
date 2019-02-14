@@ -94,8 +94,9 @@ public class MetaWSServer extends OpenCGAWSServer {
 
         String storageEngineId;
         StringBuilder errorMsg = new StringBuilder();
+        long elapsedTime = Duration.between(lastAccess, LocalTime.now()).getSeconds();
 
-        if (!isHealthy() || Duration.between(lastAccess, LocalTime.now()).getSeconds() > configuration.getHealthCheck().getInterval()) {
+        if (!isHealthy() || elapsedTime > configuration.getHealthCheck().getInterval()) {
 
             logger.info("HealthCheck results without cache!");
             lastAccess = LocalTime.now();
@@ -136,8 +137,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                     healthCheckResults.put("Solr", "KO");
                 }
             } else {
-                errorMsg.append(" solr is not active in storage configuration!");
-                healthCheckResults.put("Solr", "");
+                healthCheckResults.put("Solr", "solr not active in storage-configuration!");
             }
         } else {
             logger.info("HealthCheck results from cache!");
@@ -155,7 +155,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     }
 
     private boolean isHealthy() {
-        if (healthCheckResults.size() > 0) {
+        if (!healthCheckResults.isEmpty()) {
             return !(healthCheckResults.get("CatalogMongoDB").equalsIgnoreCase("KO") ||
                     healthCheckResults.get("VariantStorage").equalsIgnoreCase("KO") ||
                     healthCheckResults.get("Solr").equalsIgnoreCase("KO"));
