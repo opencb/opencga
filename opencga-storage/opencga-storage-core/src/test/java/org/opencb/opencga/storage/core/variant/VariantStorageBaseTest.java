@@ -294,10 +294,12 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
         ObjectMap newParams = new ObjectMap(params);
 
-//        newParams.put(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyMetadata);
-        newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyMetadata.getAggregation());
-//        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_ID.key(), studyMetadata.getStudyId());
-        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
+        if (studyMetadata == null) {
+            newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME);
+        } else {
+            newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyMetadata.getAggregation());
+            newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
+        }
 //        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");

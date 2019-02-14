@@ -74,15 +74,15 @@ public abstract class VariantAnnotationManager {
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
         }
-        if (newSourceVersion == null) {
-            newSourceVersion = Collections.emptyList();
-        }
-        if (newAnnotator == null) {
-            throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
-        }
-        if (newSourceVersion.isEmpty()) {
-            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
-        }
+//        if (newSourceVersion == null) {
+//            newSourceVersion = Collections.emptyList();
+//        }
+//        if (newAnnotator == null) {
+//            throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
+//        }
+//        if (newSourceVersion.isEmpty()) {
+//            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
+//        }
         return checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
     }
 

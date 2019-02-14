@@ -52,13 +52,17 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
         mutator.mutate(convert);
     }
 
-    @Override
-    public boolean post() {
+    public void flush() {
         try {
             mutator.flush();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public boolean post() {
+        flush();
         return true;
     }
 

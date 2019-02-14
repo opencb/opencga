@@ -65,6 +65,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     private VariantStorageMetadataManager metadataManager;
     private List<Integer> fileIds;
     protected HBaseVariantTableNameGenerator generator;
+    private HBaseManager hBaseManager;
 
     public AbstractVariantsTableDriver() {
         super(HBaseConfiguration.create());
@@ -210,27 +211,6 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return sb.toString();
     }
 
-    protected List<Integer> getFilesToUse() throws IOException {
-        StudyConfiguration studyConfiguration = readStudyConfiguration();
-        LinkedHashSet<Integer> indexedFiles = studyConfiguration.getIndexedFiles();
-        List<Integer> files = getFiles();
-        if (files.isEmpty()) { // no files specified - use all indexed files for study
-            files = new ArrayList<>(indexedFiles);
-        } else { // Validate that they exist
-            List<Integer> notIndexed = files
-                    .stream()
-                    .filter(fid -> !indexedFiles.contains(fid))
-                    .collect(Collectors.toList());
-            if (!notIndexed.isEmpty()) {
-                throw new IllegalStateException("Provided File ID(s) not indexed!!!" + notIndexed);
-            }
-        }
-        if (files.isEmpty()) { // if still empty (no files provided and / or found in study
-            throw new IllegalArgumentException("No files specified / available for study " + getStudyId());
-        }
-        return files;
-    }
-
     protected List<Integer> getFiles() {
         if (fileIds == null) {
             fileIds = getFiles(getConf());
@@ -283,10 +263,17 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return studyMetadata;
     }
 
+    protected HBaseManager getHBaseManager() {
+        if (hBaseManager == null) {
+            hBaseManager = new HBaseManager(getConf());
+        }
+        return hBaseManager;
+    }
+
     protected VariantStorageMetadataManager getMetadataManager() throws IOException {
         if (metadataManager == null) {
             metadataManager = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
-                    null, generator.getMetaTableName(), getConf()));
+                    getHBaseManager(), generator.getMetaTableName(), getConf()));
         }
         return metadataManager;
     }

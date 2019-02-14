@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.annotation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTableType;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -40,6 +41,8 @@ import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.DiscoverPendingVariantsToAnnotateDriver;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.PendingVariantsToAnnotateReader;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
@@ -58,6 +61,9 @@ import java.util.Map;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotationManager {
+
+    public static final String SKIP_DISCOVER_VARIANTS_TO_ANNOTATE = "skipDiscoverVariantsToAnnotate";
+    public static final String SKIP_PENDING_ANNOTATIONS_TABLE = "skipPendingAnnotationsTable";
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
@@ -80,6 +86,38 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         this.query.remove(VariantQueryParam.FILE.key());
 
         super.annotate(this.query, params);
+    }
+
+    @Override
+    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params) throws StorageEngineException {
+        super.preAnnotate(query, doCreate, doLoad, params);
+
+        if (doCreate) {
+            if (params.getBoolean(SKIP_DISCOVER_VARIANTS_TO_ANNOTATE, false)) {
+                logger.info("Skip run MapReduce to discover variants to annotate.");
+            } else {
+                mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
+                        DiscoverPendingVariantsToAnnotateDriver.buildArgs(dbAdaptor.getVariantTable(), params),
+                        params, "Prepare variants to annotate");
+            }
+        }
+    }
+
+    @Override
+    protected DataReader<Variant> getVariantDataReader(Query query, QueryOptions iteratorQueryOptions, ObjectMap params) {
+        if (params.getBoolean(SKIP_PENDING_ANNOTATIONS_TABLE, false)) {
+            return super.getVariantDataReader(query, iteratorQueryOptions, params);
+        } else {
+            return new PendingVariantsToAnnotateReader(dbAdaptor, query);
+        }
+    }
+
+    protected long countVariantsToAnnotate(Query query, ObjectMap params) {
+        if (params.getBoolean(SKIP_PENDING_ANNOTATIONS_TABLE, false)) {
+            return super.countVariantsToAnnotate(query, params);
+        } else {
+            return 0;
+        }
     }
 
     @Override

@@ -56,6 +56,7 @@ import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.mapred.MapTask;
 import org.apache.hadoop.mapred.Task;
+import org.apache.hadoop.util.Tool;
 import org.apache.log4j.Level;
 import org.apache.phoenix.coprocessor.MetaDataEndpointImpl;
 import org.apache.phoenix.hbase.index.Indexer;
@@ -77,6 +78,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
@@ -471,6 +473,25 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             TestMRExecutor.staticConfiguration = staticConfiguration;
         }
 
+
+        @Override
+        public <T extends Tool> int run(Class<T> clazz, String[] args, ObjectMap options) throws StorageEngineException {
+            try {
+                // Copy configuration
+                Configuration conf = new Configuration(false);
+                HBaseConfiguration.merge(conf, configuration);
+
+                System.out.println("Executing " + clazz.getSimpleName() + ": " + args);
+                Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
+                Object o = method.invoke(clazz.newInstance(), args, conf);
+                System.out.println("Finish execution " + clazz.getSimpleName());
+                return ((Number) o).intValue();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return -1;
+            }
+        }
+
         @Override
         public int run(String executable, String args) {
             try {
@@ -486,28 +507,6 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 System.out.println("Finish execution " + clazz.getSimpleName());
                 return ((Number) o).intValue();
 
-//                if (executable.endsWith(ArchiveDriver.class.getName())) {
-//                    System.out.println("Executing ArchiveDriver : " + executable + " " + args);
-//                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), conf);
-//                    System.out.println("Finish execution ArchiveDriver");
-//
-//                    return r;
-//                } else if (executable.endsWith(FillGapsDriver.class.getName())) {
-//                    System.out.println("Executing FillGapsDriver : " + executable + " " + args);
-//                    int r = new FillGapsDriver().privateMain(Commandline.translateCommandline(args), conf);
-//                    System.out.println("Finish execution FillGapsDriver");
-//                    return r;
-//                } else if (executable.endsWith(VariantStatsDriver.class.getName())) {
-//                    System.out.println("Executing VariantStatsDriver : " + executable + " " + args);
-//                    int r = new VariantStatsDriver().privateMain(Commandline.translateCommandline(args), conf);
-//                    System.out.println("Finish execution VariantStatsDriver");
-//                    return r;
-//                } else if (executable.endsWith(DeleteHBaseColumnDriver.class.getName())) {
-//                    System.out.println("Executing DeleteHBaseColumnDriver : " + executable + " " + args);
-//                    int r = new DeleteHBaseColumnDriver().privateMain(Commandline.translateCommandline(args), conf);
-//                    System.out.println("Finish execution DeleteHBaseColumnDriver");
-//                    return r;
-//                }
             } catch (Exception e) {
                 e.printStackTrace();
                 return -1;
