@@ -174,7 +174,7 @@
         },
         "healthCheckInterval": {
             "type": "int",
-            "defaultValue": "30",
+            "defaultValue": 30,
             "metadata": {
                 "description": "HealthCheck cache interval value in seconds."
             }
