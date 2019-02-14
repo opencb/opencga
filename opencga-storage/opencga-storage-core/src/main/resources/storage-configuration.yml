@@ -162,11 +162,6 @@ storageEngines:
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       #Plugin specific options
-      hadoop.bin: "hadoop"
-#      hadoop.env: # See opencga-env.sh
-#      - "HADOOP_USER_CLASSPATH_FIRST=true"
-#      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${protobuf}.jar"
-#      - ....
       opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
       hadoop.load.archive.batch.size: 3
@@ -181,6 +176,17 @@ storageEngines:
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
       intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
+
+      # Hadoop executable file. Used to lunch MapReduce applications
+      opencga.hadoop.bin: "hadoop"
+
+      # Define the way of executing MapReduce jobs.
+      opencga.mr.executor: "system"  # Use system hadoop installation
+      # opencga.mr.executor: "ssh"  # Use external hadoop installation. ssh to a host edge node
+      # opencga.mr.executor.ssh.host: ""             # Hadoop edge node host name
+      # opencga.mr.executor.ssh.user: ""             # Hadoop edge node user name
+      # opencga.mr.executor.ssh.key: "~/.ssh/id_rsa" # Hadoop edge node ssh-key file
+      # opencga.mr.executor.ssh.password: ""         # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
 
 ### hadoop properties
       mapreduce.map.cpu.vcores: 1
