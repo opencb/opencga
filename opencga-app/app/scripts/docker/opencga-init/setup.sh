@@ -40,6 +40,7 @@ python3 /tmp/override-yaml.py \
 --hadoop-ssh-user "$HBASE_SSH_USER" \
 --hadoop-ssh-password "$HBASE_SSH_PASS" \
 --hadoop-ssh-remote-opencga-home "$REMOTE_OPENCGA_HOME"
+--health-check-interval "$HEALTH_CHECK_INTERVAL" \
 --save
 # Override Js configs
 python3 /tmp/override-js.py \

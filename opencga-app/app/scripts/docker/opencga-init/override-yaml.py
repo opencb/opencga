@@ -29,6 +29,7 @@ parser.add_argument("--hadoop-ssh-host", required=False)
 parser.add_argument("--hadoop-ssh-user", required=False)
 parser.add_argument("--hadoop-ssh-password", required=False)
 parser.add_argument("--hadoop-ssh-remote-opencga-home", required=False)
+parser.add_argument("--health-check-interval", required=True)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
@@ -111,6 +112,9 @@ config["execution"]["options"]["batchUri"] = args.batch_endpoint
 config["execution"]["options"]["batchPoolId"] = args.batch_pool_id
 config["execution"]["options"]["dockerImageName"] = args.batch_docker_image
 config["execution"]["options"]["dockerArgs"] = args.batch_docker_args
+
+# Inject healthCheck interval
+config["healthCheck"]["interval"] = args.health_check_interval
 
 # Load client configuration yaml
 with open(args.client_config_path) as f:
