@@ -50,10 +50,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotat
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created on 23/11/16.
@@ -91,6 +88,10 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         // Do not allow FILE filter when annotating.
         this.query.remove(VariantQueryParam.FILE.key());
 
+        if (!skipPendingVariantsToAnnotateTable(params)) {
+            params.put(QueryOptions.SKIP_COUNT, true);
+        }
+
         return super.annotate(this.query, params);
     }
 
@@ -99,12 +100,36 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         super.preAnnotate(query, doCreate, doLoad, params);
 
         if (doCreate) {
+            Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
+            queryParams.remove(VariantQueryParam.ANNOTATION_EXISTS);
+            boolean annotateAll = queryParams.isEmpty();
+
             if (skipDiscoverPendingVariantsToAnnotate(params)) {
-                logger.info("Skip run MapReduce to discover variants to annotate.");
+                logger.info("Skip MapReduce to discover variants to annotate.");
             } else {
-                mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
-                        DiscoverPendingVariantsToAnnotateDriver.buildArgs(dbAdaptor.getVariantTable(), params),
-                        params, "Prepare variants to annotate");
+                ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
+                long lastLoadedFileTs = projectMetadata.getAttributes()
+                        .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
+                long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
+                        .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+
+                // Skip MR if no file has been loaded since the last execution
+                if (lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
+                    logger.info("Skip MapReduce to discover variants to annotate. List of pending annotations to annotate is updated");
+                } else {
+                    long ts = System.currentTimeMillis();
+
+                    mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
+                            DiscoverPendingVariantsToAnnotateDriver.buildArgs(dbAdaptor.getVariantTable(), params),
+                            params, "Prepare variants to annotate");
+
+                    if (annotateAll) {
+                        dbAdaptor.getMetadataManager().lockAndUpdateProject(pm -> {
+                            pm.getAttributes().put(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
+                            return pm;
+                        });
+                    }
+                }
             }
         }
     }
@@ -112,8 +137,10 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     @Override
     protected DataReader<Variant> getVariantDataReader(Query query, QueryOptions iteratorQueryOptions, ObjectMap params) {
         if (skipPendingVariantsToAnnotateTable(params)) {
+            logger.info("Reading variants to annotate from variants table");
             return super.getVariantDataReader(query, iteratorQueryOptions, params);
         } else {
+            logger.info("Reading variants to annotate from pending variants to annotate");
             return new PendingVariantsToAnnotateReader(dbAdaptor, query);
         }
     }
@@ -122,7 +149,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         if (skipPendingVariantsToAnnotateTable(params)) {
             return super.countVariantsToAnnotate(query, params);
         } else {
-            return 0;
+            throw new UnsupportedOperationException("");
         }
     }
 

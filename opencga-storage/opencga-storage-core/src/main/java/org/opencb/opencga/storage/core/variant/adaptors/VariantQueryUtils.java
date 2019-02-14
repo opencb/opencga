@@ -150,12 +150,19 @@ public final class VariantQueryUtils {
     }
 
     public static Set<VariantQueryParam> validParams(Query query) {
+        return validParams(query, false);
+    }
+
+    public static Set<VariantQueryParam> validParams(Query query, boolean discardModifiers) {
         Set<VariantQueryParam> params = new HashSet<>(query == null ? 0 : query.size());
 
         for (VariantQueryParam queryParam : values()) {
             if (isValidParam(query, queryParam)) {
                 params.add(queryParam);
             }
+        }
+        if (discardModifiers) {
+            params.removeAll(MODIFIER_QUERY_PARAMS);
         }
         return params;
     }

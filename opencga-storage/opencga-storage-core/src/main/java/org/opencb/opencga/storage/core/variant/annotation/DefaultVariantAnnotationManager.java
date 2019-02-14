@@ -350,10 +350,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         boolean annotateAll;
-        Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
+        Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
         Set<String> filesFilter = Collections.emptySet();
-
-        queryParams.removeAll(VariantQueryUtils.MODIFIER_QUERY_PARAMS);
         queryParams.removeAll(Arrays.asList(VariantQueryParam.ANNOTATION_EXISTS, VariantQueryParam.STUDY));
 
         if (queryParams.isEmpty()) {

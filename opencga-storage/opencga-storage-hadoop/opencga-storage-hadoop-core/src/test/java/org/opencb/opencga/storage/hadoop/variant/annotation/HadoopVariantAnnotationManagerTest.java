@@ -55,7 +55,7 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
             System.out.println("pendingVariants = " + pendingVariantsCount);
             long expectedPendingVariantsCount = engine.count(new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();
             Assert.assertEquals(expectedPendingVariantsCount, pendingVariantsCount);
-            Assert.assertNotEquals(expectedPendingVariantsCount, engine.annotate(new Query(), new ObjectMap()));
+            Assert.assertEquals(expectedPendingVariantsCount, engine.annotate(new Query(), new ObjectMap()));
 
 
             List<Variant> pendingVariants = new PendingVariantsToAnnotateReader(engine.getDBAdaptor(), new Query())

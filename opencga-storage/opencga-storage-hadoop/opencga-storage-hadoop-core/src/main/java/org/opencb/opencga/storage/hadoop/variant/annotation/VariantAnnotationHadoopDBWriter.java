@@ -70,7 +70,6 @@ public class VariantAnnotationHadoopDBWriter extends HBaseDataWriter<Put> {
     }
 
     private void cleanPendingVariants() {
-        System.out.println("loadedVariants.size() = " + loadedVariants.size());
         flush(); // Ensure own BufferedMutator is flushed
         pendingVariantsCleaner.write(loadedVariants);
         loadedVariants.clear();
