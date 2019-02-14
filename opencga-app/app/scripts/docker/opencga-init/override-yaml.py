@@ -64,7 +64,6 @@ for i, cellbase_host in enumerate(cellbase_hosts):
 
 # Inject Hadoop ssh configuration
 if args.hadoop_ssh_host and args.hadoop_ssh_user and args.hadoop_ssh_password:
-    storage_config["storageEngines"][1]["variant"]["options"] = {}
     storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.host"] = args.hadoop_ssh_host
     storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.user"] = args.hadoop_ssh_user
     storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.password"] = args.hadoop_ssh_password
