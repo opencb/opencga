@@ -11,7 +11,7 @@ sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o UserKnownHostsF
 
 # Copy the OpenCGA installation directory to the hdinsights cluster
 # TODO - Optimize this down to only required jars
-REMOTE_OPENCGA_HOME="/home/sshuser/opencga/"
+REMOTE_OPENCGA_HOME="/home/$HBASE_SSH_USER/opencga/"
 sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$HBASE_SSH_USER@$HBASE_SSH_DNS":"$REMOTE_OPENCGA_HOME"
 
 echo "Initialising configs"
