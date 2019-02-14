@@ -114,8 +114,8 @@ if [ ! -d "${buildPath}" ]; then
     -v "$PWD":/src \
     -v "$HOME/.m2":/root/.m2 \
     -w /src maven:3.6-jdk-8 \
-    mvn -T 1C install \
-    -DskipTests -Dstorage-hadoop -Popencga-storage-hadoop-deps -P"${HADOOP_FLAVOR}" -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga
+    mvn clean install \
+    -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Popencga-storage-hadoop-deps -P"${HADOOP_FLAVOR}" -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip
     echo "> Finished OpenCGA build"
 else
     echo "> Using existing OpenCGA build from $PWD/build"
