@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -76,8 +75,8 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         super.setup(context);
 
         // Load VCF meta data for columns
-        int studyId = getStudyConfiguration().getId();
-        resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
+        int studyId = getStudyMetadata().getId();
+        resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getMetadataManager());
 
         rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getConf());
     }
@@ -112,17 +111,12 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         if (logger.isDebugEnabled()) {
             logger.debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
         }
-        Set<Integer> sampleIds = new HashSet<>();
-        for (Integer fid : fileIds) {
-            LinkedHashSet<Integer> sids = getStudyConfiguration().getSamplesInFiles().get(fid);
-            sampleIds.addAll(sids);
-        }
 
         logger.debug("Processing slice {}", sliceKey);
 
 
         VariantMapReduceContext ctx = new VariantMapReduceContext(currRowKey, context, value, fileIds,
-                sampleIds, chr, startPos, nextStartPos);
+                chr, startPos, nextStartPos);
 
         endStep("1 Prepare slice");
 
@@ -141,12 +135,11 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
     protected static class VariantMapReduceContext {
         public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIdsInResult,
-                                       Set<Integer> sampleIds, String chr, long startPos, long nextStartPos) {
+                                       String chr, long startPos, long nextStartPos) {
             this.currRowKey = currRowKey;
             this.context = context;
             this.value = value;
             this.fileIdsInResult = fileIdsInResult;
-            this.sampleIds = sampleIds;
             this.chr = chr;
             this.startPos = startPos;
             this.nextStartPos = nextStartPos;
@@ -156,7 +149,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
         protected final Context context;
         protected final Result value;
         private final Set<Integer> fileIdsInResult;
-        protected final Set<Integer> sampleIds;
         private final String chr;
         protected final long startPos;
         protected final long nextStartPos;
@@ -172,10 +164,6 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
         public Result getValue() {
             return value;
-        }
-
-        public Set<Integer> getSampleIds() {
-            return sampleIds;
         }
 
         public String getChromosome() {

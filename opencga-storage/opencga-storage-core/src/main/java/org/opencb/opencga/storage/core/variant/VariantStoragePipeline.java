@@ -755,10 +755,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return studyMetadata;
     }
 
-    public Thread newShutdownHook(String jobOperationName, List<Integer> files) throws StorageEngineException {
-        return getMetadataManager().buildShutdownHook(jobOperationName, getStudyId(), files);
-    }
-
     public VariantDBAdaptor getDBAdaptor() {
         return dbAdaptor;
     }

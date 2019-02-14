@@ -130,7 +130,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             return;
         }
 
-        Thread hook = newShutdownHook(OPERATION_NAME, Collections.singletonList(fileId));
+        Thread hook = getMetadataManager().buildShutdownHook(OPERATION_NAME, getStudyId(), taskId);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             Path input = Paths.get(inputUri.getPath());

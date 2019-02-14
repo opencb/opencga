@@ -20,9 +20,12 @@ import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,13 +44,14 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
 
     private final Mapper.Context context;
     private final VariantTableHelper helper;
-    private final StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata; // Lazy initialisation
     private final HBaseToVariantConverter<Result> hbaseToVariantConverter;
     private final long timestamp;
-    private final BiMap<String, Integer> indexedSamples;
+    private BiMap<String, Integer> indexedSamples; // Lazy initialisation
     private final Map<String, Long> timeSum = new ConcurrentHashMap<>();
     private final AtomicLong lastTime = new AtomicLong(0);
     private final HBaseManager hBaseManager;
+    private final VariantStorageMetadataManager metadataManager;
 
 
     public VariantsTableMapReduceHelper(Mapper.Context context) throws IOException {
@@ -58,13 +62,14 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
 
         // Setup configurationHBaseToVariantConverter// Setup configuration
         helper = new VariantTableHelper(context.getConfiguration());
-        this.studyConfiguration = getHelper().readStudyConfiguration(); // Variant meta
 
         hBaseManager = new HBaseManager(context.getConfiguration());
+        metadataManager = new VariantStorageMetadataManager(
+                new HBaseVariantStorageMetadataDBAdaptorFactory(hBaseManager, helper.getMetaTableAsString(), context.getConfiguration()));
+
         hbaseToVariantConverter = HBaseToVariantConverter.fromResult(getHelper())
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false);
-        this.indexedSamples = StudyConfiguration.getIndexedSamples(this.studyConfiguration);
 //        timestamp = HConstants.LATEST_TIMESTAMP;
         timestamp = context.getConfiguration().getLong(AbstractVariantsTableDriver.TIMESTAMP, -1);
         if (timestamp == -1) {
@@ -85,11 +90,28 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
     }
 
     public BiMap<String, Integer> getIndexedSamples() {
+        if (indexedSamples == null) {
+            this.indexedSamples = metadataManager.getIndexedSamplesMap(studyMetadata.getId());
+        }
+
         return indexedSamples;
     }
 
+    @Deprecated
     public StudyConfiguration getStudyConfiguration() {
-        return studyConfiguration;
+        return null;
+    }
+
+    public StudyMetadata getStudyMetadata() {
+        if (studyMetadata == null) {
+            studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId()); // Variant meta
+        }
+
+        return studyMetadata;
+    }
+
+    public VariantStorageMetadataManager getMetadataManager() {
+        return metadataManager;
     }
 
     public HBaseToVariantConverter<Result> getHbaseToVariantConverter() {

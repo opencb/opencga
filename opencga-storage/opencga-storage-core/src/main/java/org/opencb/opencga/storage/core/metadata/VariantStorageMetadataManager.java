@@ -270,15 +270,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     }
 
-    public Thread buildShutdownHook(String jobOperationName, int studyId, Integer... files) {
-        return buildShutdownHook(jobOperationName, studyId, Arrays.asList(files));
-    }
-
-    public Thread buildShutdownHook(String jobOperationName, int studyId, List<Integer> files) {
+    public Thread buildShutdownHook(String jobOperationName, int studyId, int taskId) {
         return new Thread(() -> {
             try {
                 logger.error("Shutdown hook while '" + jobOperationName + "' !");
-                atomicSetStatus(studyId, TaskMetadata.Status.ERROR, jobOperationName, files);
+                setStatus(studyId, taskId, TaskMetadata.Status.ERROR);
             } catch (Exception e) {
                 logger.error("Error terminating!", e);
                 throw Throwables.propagate(e);

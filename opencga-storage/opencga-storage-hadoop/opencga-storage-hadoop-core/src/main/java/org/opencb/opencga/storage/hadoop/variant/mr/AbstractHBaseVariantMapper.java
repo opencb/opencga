@@ -22,6 +22,8 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 
@@ -67,8 +69,17 @@ public abstract class AbstractHBaseVariantMapper<KEYOUT, VALUEOUT> extends Table
         return getMrHelper().getIndexedSamples();
     }
 
+    @Deprecated
     public StudyConfiguration getStudyConfiguration() {
         return getMrHelper().getStudyConfiguration();
+    }
+
+    public StudyMetadata getStudyMetadata() {
+        return getMrHelper().getStudyMetadata();
+    }
+
+    public VariantStorageMetadataManager getMetadataManager() {
+        return getMrHelper().getMetadataManager();
     }
 
     public HBaseToVariantConverter<Result> getHbaseToVariantConverter() {

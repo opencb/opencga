@@ -15,7 +15,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -38,27 +38,30 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingS
 public class FillGapsTask {
 
     private final StudyEntryToHBaseConverter studyConverter;
-    private final StudyConfiguration studyConfiguration;
+    private final StudyMetadata studyMetadata;
     private final Map<Integer, LinkedHashMap<String, Integer>> fileToSamplePositions = new HashMap<>();
+    private Map<String, Integer> sampleIdMap = new HashMap<>();
     private final VariantMerger variantMerger;
     // fill-gaps-when-missing-gt
     private final boolean skipReferenceVariants;
     private final GenomeHelper helper;
+    private final VariantStorageMetadataManager metadataManager;
 
     private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
     private boolean quiet = false;
 
-    public FillGapsTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean skipReferenceVariants) {
-        this.studyConfiguration = studyConfiguration;
-
+    public FillGapsTask(StudyMetadata studyMetadata, GenomeHelper helper, boolean skipReferenceVariants,
+                        VariantStorageMetadataManager metadataManager) {
+        this.studyMetadata = studyMetadata;
         this.skipReferenceVariants = skipReferenceVariants;
 
         this.helper = helper;
-        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), new StudyMetadata(studyConfiguration),
+        this.metadataManager = metadataManager;
+        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), studyMetadata.getId(), metadataManager,
                 true,
                 null, // Do not update release
                 true); // Do not skip any genotype
-        variantMerger = new VariantMerger(false).configure(studyConfiguration.getVariantHeader());
+        variantMerger = new VariantMerger(false).configure(studyMetadata.getVariantHeader());
     }
 
     public FillGapsTask setQuiet(boolean quiet) {
@@ -235,7 +238,7 @@ public class FillGapsTask {
             int samplePosition = 0;
             Integer gtIdx = studyEntry.getFormatPositions().get("GT");
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
-                Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
+                Integer sampleId = getSampleId(sampleName);
                 if (missingSamples.contains(sampleId)) {
                     String gt = studyEntry.getSamplesData().get(samplePosition).get(gtIdx);
                     // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
@@ -272,7 +275,7 @@ public class FillGapsTask {
                 variant.getEnd(),
                 variant.getReference(),
                 variant.getAlternate())
-                .setStudyId(String.valueOf(studyConfiguration.getId()))
+                .setStudyId(String.valueOf(studyMetadata.getId()))
                 .setFormat("GT")
                 .setFileId(fileId.toString())
                 .setSamplesPosition(samplePosition)
@@ -305,7 +308,7 @@ public class FillGapsTask {
                     variant.getReference(),
                     variant.getAlternate())
                 .addAlternate("<*>")
-                .setStudyId(String.valueOf(studyConfiguration.getId()))
+                .setStudyId(String.valueOf(studyMetadata.getId()))
                 .setFileId(fileId.toString())
                 // add overlapping variants at attributes
                 .setFormat("GT")
@@ -446,17 +449,21 @@ public class FillGapsTask {
         return true;
     }
 
-    public Variant convertToVariant(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord, Integer fileId) {
+    protected Variant convertToVariant(VcfSliceProtos.VcfSlice vcfSlice, VcfSliceProtos.VcfRecord vcfRecord, Integer fileId) {
         VcfRecordProtoToVariantConverter converter = new VcfRecordProtoToVariantConverter(vcfSlice.getFields(),
-                getSamplePosition(fileId), fileId.toString(), studyConfiguration.getName());
+                getSamplePosition(fileId), fileId.toString(), studyMetadata.getName());
         return converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
     }
 
-    public LinkedHashMap<String, Integer> getSamplePosition(Integer fileId) {
+    protected Integer getSampleId(String sampleName) {
+        return sampleIdMap.computeIfAbsent(sampleName, s -> metadataManager.getSampleId(studyMetadata.getId(), sampleName));
+    }
+
+    protected LinkedHashMap<String, Integer> getSamplePosition(Integer fileId) {
         return fileToSamplePositions.computeIfAbsent(fileId, missingFileId -> {
             LinkedHashMap<String, Integer> map = new LinkedHashMap<>();
-            for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(missingFileId)) {
-                map.put(studyConfiguration.getSampleIds().inverse().get(sampleId), map.size());
+            for (Integer sampleId : metadataManager.getFileMetadata(studyMetadata.getId(), missingFileId).getSamples()) {
+                map.put(metadataManager.getSampleName(studyMetadata.getId(), sampleId), map.size());
             }
             return map;
         });

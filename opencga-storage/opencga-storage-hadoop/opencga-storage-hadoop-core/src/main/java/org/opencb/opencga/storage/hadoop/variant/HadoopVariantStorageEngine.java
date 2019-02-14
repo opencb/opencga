@@ -42,7 +42,6 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -66,6 +65,7 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
@@ -74,7 +74,6 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -389,11 +388,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public void fillMissing(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
         logger.info("FillMissing: Study " + study);
 
-        VariantStorageMetadataManager scm = getMetadataManager();
-        StudyConfiguration studyConfiguration = scm.getStudyConfiguration(study, null).first();
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
 
-        fillGapsOrMissing(study, studyConfiguration, studyConfiguration.getIndexedFiles(), Collections.emptyList(), false, overwrite,
-                options);
+        fillGapsOrMissing(study, studyMetadata, metadataManager.getIndexedFiles(studyMetadata.getId()), Collections.emptyList(),
+                false, overwrite, options);
     }
 
     @Override
@@ -433,40 +432,40 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        StudyConfiguration studyConfiguration = metadataManager.getStudyConfiguration(study, null).first();
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         List<Integer> sampleIds = new ArrayList<>(samples.size());
         for (String sample : samples) {
-            Integer sampleId = metadataManager.getSampleId(studyConfiguration.getId(), sample);
+            Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sample);
             if (sampleId != null) {
                 sampleIds.add(sampleId);
             } else {
-                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getName());
+                throw VariantQueryException.sampleNotFound(sample, studyMetadata.getName());
             }
         }
 
         // Get files
-        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyConfiguration.getId(), sampleIds);
+        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds);
 
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGapsOrMissing(study, studyConfiguration, fileIds, sampleIds, true, false, options);
+        fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, options);
     }
 
-    private void fillGapsOrMissing(String study, StudyConfiguration studyConfiguration, Set<Integer> fileIds, List<Integer> sampleIds,
+    private void fillGapsOrMissing(String study, StudyMetadata studyMetadata, Set<Integer> fileIds, List<Integer> sampleIds,
                                    boolean fillGaps, boolean overwrite, ObjectMap inputOptions) throws StorageEngineException {
         ObjectMap options = new ObjectMap(getOptions());
         if (inputOptions != null) {
             options.putAll(inputOptions);
         }
 
-        VariantStorageMetadataManager scm = getMetadataManager();
-        int studyId = studyConfiguration.getId();
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = studyMetadata.getId();
 
         String jobOperationName = fillGaps ? FILL_GAPS_OPERATION_NAME : FILL_MISSING_OPERATION_NAME;
         List<Integer> fileIdsList = new ArrayList<>(fileIds);
         fileIdsList.sort(Integer::compareTo);
 
         boolean resume = options.getBoolean(RESUME.key(), RESUME.defaultValue());
-        TaskMetadata operation = scm.addRunningTask(
+        TaskMetadata task = metadataManager.addRunningTask(
                 studyId,
                 jobOperationName,
                 fileIdsList,
@@ -474,7 +473,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 TaskMetadata.Type.OTHER,
                 // Allow concurrent operations if fillGaps.
                 (v) -> fillGaps || v.getName().equals(FILL_GAPS_OPERATION_NAME));
-        options.put(AbstractVariantsTableDriver.TIMESTAMP, operation.getTimestamp());
+        options.put(AbstractVariantsTableDriver.TIMESTAMP, task.getTimestamp());
 
         if (!fillGaps) {
             URI directory = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
@@ -488,7 +487,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             options.put(FILL_MISSING_INTERMEDIATE_FILE, outputPath);
         }
 
-        Thread hook = scm.buildShutdownHook(jobOperationName, studyId, fileIdsList);
+        Thread hook = metadataManager.buildShutdownHook(jobOperationName, studyId, task.getId());
         Exception exception = null;
         try {
             Runtime.getRuntime().addShutdownHook(hook);
@@ -502,7 +501,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     getVariantTableName(),
                     studyId, fileIds, options);
 
-            // TODO: Save progress in StudyConfiguration
+            // TODO: Save progress in Metadata
 
             // Prepare fill missing
             if (!fillGaps) {
@@ -539,8 +538,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             throw e;
         } finally {
             boolean fail = exception != null;
-            scm.setStatus(studyId, operation.getId(), fail ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY);
-            scm.lockAndUpdate(study, sm -> {
+            metadataManager.setStatus(studyId, task.getId(), fail ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY);
+            metadataManager.lockAndUpdate(study, sm -> {
                 if (!fillGaps && StringUtils.isEmpty(options.getString(REGION.key()))) {
                     sm.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
                 }
@@ -638,7 +637,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         options.put(AbstractVariantsTableDriver.TIMESTAMP, task.getTimestamp());
 
         // Delete
-        Thread hook = getMetadataManager().buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
+        Thread hook = getMetadataManager().buildShutdownHook(REMOVE_OPERATION_NAME, studyId, task.getId());
         try {
             Runtime.getRuntime().addShutdownHook(hook);
 

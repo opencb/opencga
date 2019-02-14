@@ -252,7 +252,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         VariantStorageMetadataManager scm = getMetadataManager();
         int studyId = scm.getStudyId(study);
 
-        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, fileIds);
+        Thread hook = scm.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, task.getId());
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             getDBAdaptor().removeFiles(study, files, task.getTimestamp(), new QueryOptions(options));
@@ -281,24 +281,23 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         });
         int studyId = studyMetadata.getId();
 
-        Thread hook = metadataManager.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, Collections.emptyList());
+        int taskId = taskMetadata.get().getId();
+        Thread hook = metadataManager.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, taskId);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
             getDBAdaptor().removeStudy(studyName, batchFileOperation.get().getTimestamp(), new QueryOptions(options));
 
-            metadataManager.lockAndUpdate(studyName, sm -> {
-                LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(sm.getId());
-                for (Integer fileId : indexedFiles) {
-                    getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyId, fileId);
-                }
-                metadataManager.setStatus(sm.getId(), taskMetadata.get().getId(), TaskMetadata.Status.READY);
+            LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(studyId);
+            for (Integer fileId : indexedFiles) {
+                getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyId, fileId);
+            }
 
-                metadataManager.removeIndexedFiles(sm.getId(), indexedFiles);
-                return sm;
-            });
+            metadataManager.removeIndexedFiles(studyId, indexedFiles);
+
+            metadataManager.setStatus(studyId, taskId, TaskMetadata.Status.READY);
         } catch (Exception e) {
-            metadataManager.atomicSetStatus(studyId, TaskMetadata.Status.ERROR, REMOVE_OPERATION_NAME, Collections.emptyList());
+            metadataManager.setStatus(studyId, taskId, TaskMetadata.Status.ERROR);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);

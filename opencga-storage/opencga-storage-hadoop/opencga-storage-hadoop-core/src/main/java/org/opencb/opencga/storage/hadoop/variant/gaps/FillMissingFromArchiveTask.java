@@ -12,13 +12,14 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 
 import java.io.IOException;
 import java.util.*;
@@ -38,13 +39,14 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     private Map<Integer, Set<Integer>> filesToProcessMap = new HashMap<>();
     private boolean overwrite;
 
-    public FillMissingFromArchiveTask(StudyConfiguration studyConfiguration, GenomeHelper helper, boolean overwrite) {
-        super(studyConfiguration, helper, Collections.emptyList(), true);
-        fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyConfiguration.getId());
+    public FillMissingFromArchiveTask(StudyMetadata studyMetadata, VariantStorageMetadataManager metadataManager,
+                                      GenomeHelper helper, boolean overwrite) {
+        super(studyMetadata, metadataManager, helper, Collections.emptyList(), true);
+        fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyMetadata.getId());
         this.overwrite = overwrite;
-        Integer lastFile = new ArrayList<>(studyConfiguration.getIndexedFiles()).get(studyConfiguration.getIndexedFiles().size() - 1);
+        this.indexedFiles = new ArrayList<>(metadataManager.getIndexedFiles(studyMetadata.getId()));
+        Integer lastFile = new ArrayList<>(indexedFiles).get(indexedFiles.size() - 1);
         lastFileBytes = PInteger.INSTANCE.toBytes(lastFile);
-        indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
     }
 
     @Override

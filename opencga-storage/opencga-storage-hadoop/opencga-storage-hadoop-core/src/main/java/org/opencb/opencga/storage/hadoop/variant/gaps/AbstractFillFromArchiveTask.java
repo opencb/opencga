@@ -16,7 +16,10 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -47,11 +50,12 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
             .thenComparing(Variant::compareTo);
 //    private static final int ARCHIVE_FILES_READ_BATCH_SIZE = 1000;
 
-    protected final StudyConfiguration studyConfiguration;
+    protected final StudyMetadata studyMetadata;
     protected final GenomeHelper helper;
     protected final FillGapsTask fillGapsTask;
     protected final SortedSet<Integer> fileIds;
     protected final Map<Integer, byte[]> fileToNonRefColumnMap;
+    protected final Map<Integer, LinkedHashSet<Integer>> fileToSampleIds;
     protected final Logger logger = LoggerFactory.getLogger(AbstractFillFromArchiveTask.class);
     protected final ArchiveRowKeyFactory rowKeyFactory;
     protected long timestamp = HConstants.LATEST_TIMESTAMP;
@@ -90,31 +94,40 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
         }
     }
 
-    protected AbstractFillFromArchiveTask(StudyConfiguration studyConfiguration,
-                                          GenomeHelper helper,
+    protected AbstractFillFromArchiveTask(StudyMetadata studyMetadata,
+                                          VariantStorageMetadataManager metadataManager, GenomeHelper helper,
                                           Collection<Integer> samples,
                                           boolean skipReferenceVariants) {
-        this.studyConfiguration = studyConfiguration;
+        this.studyMetadata = studyMetadata;
         this.helper = helper;
 
         fileIds = new TreeSet<>();
         fileToNonRefColumnMap = new HashMap<>();
+        fileToSampleIds = new HashMap<>();
         if (samples == null || samples.isEmpty()) {
-            fileIds.addAll(studyConfiguration.getIndexedFiles());
-            for (Integer fileId : fileIds) {
-                fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
-            }
-        } else {
-            for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-                Integer fileId = entry.getKey();
-                if (studyConfiguration.getIndexedFiles().contains(fileId) && !Collections.disjoint(entry.getValue(), samples)) {
-                    fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+            metadataManager.fileMetadataIterator(studyMetadata.getId()).forEachRemaining(fileMetadata -> {
+                if (fileMetadata.isIndexed()) {
+                    int fileId = fileMetadata.getId();
                     fileIds.add(fileId);
+                    fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+                    fileToSampleIds.put(fileMetadata.getId(), fileMetadata.getSamples());
+                }
+            });
+        } else {
+            for (Integer sampleId : samples) {
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyMetadata.getId(), sampleId);
+                for (Integer fileId : sampleMetadata.getFiles()) {
+                    FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), fileId);
+                    if (fileMetadata.isIndexed()) {
+                        fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+                        fileIds.add(fileId);
+                        fileToSampleIds.put(fileMetadata.getId(), fileMetadata.getSamples());
+                    }
                 }
             }
         }
 
-        fillGapsTask = new FillGapsTask(studyConfiguration, helper, skipReferenceVariants);
+        fillGapsTask = new FillGapsTask(studyMetadata, helper, skipReferenceVariants, metadataManager);
         rowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
     }
 
@@ -187,7 +200,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
                     : refVcfSlice.getRecordsList().listIterator();
 
 
-            Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
+            Set<Integer> sampleIds = fileToSampleIds.get(fileId);
             for (Variant variant : variants) {
                 Put put = putsMap.computeIfAbsent(variant, this::createPut);
 

@@ -61,20 +61,6 @@ public class StudyEntryToHBaseConverter extends AbstractPhoenixConverter impleme
     private boolean addSecondaryAlternates;
     private final PhoenixHelper.Column releaseColumn;
 
-//    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyMetadata studyMetadata, boolean addSecondaryAlternates,
-//                                      Integer release) {
-//        this(columnFamily, studyMetadata, addSecondaryAlternates, release, false);
-//    }
-
-    @Deprecated
-    public StudyEntryToHBaseConverter(byte[] columnFamily, StudyMetadata studyMetadata, boolean addSecondaryAlternates,
-                                      Integer release, boolean includeReferenceVariantsData) {
-        this(columnFamily, studyMetadata.getId(), null, addSecondaryAlternates,
-                release, includeReferenceVariantsData
-                        ? Collections.emptySet()
-                        : new HashSet<>(Arrays.asList("0/0", "0|0")));
-    }
-
     public StudyEntryToHBaseConverter(byte[] columnFamily, int studyId, VariantStorageMetadataManager metadataManager,
                                       boolean addSecondaryAlternates, Integer release, boolean includeReferenceVariantsData) {
         this(columnFamily, studyId, metadataManager, addSecondaryAlternates,
