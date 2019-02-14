@@ -68,8 +68,8 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
@@ -117,8 +117,6 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
-    public static final String HADOOP_BIN = "hadoop.bin";
-    public static final String HADOOP_ENV = "hadoop.env";
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
     @Deprecated
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
@@ -190,7 +188,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = "opencga.sample-index.table.presplit.size";
     public static final int DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = 15;
 
-    public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";
 
     public static final String DBADAPTOR_PHOENIX_FETCH_SIZE = "dbadaptor.phoenix.fetch_size";
@@ -1125,29 +1122,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return conf;
     }
 
-    private MRExecutor getMRExecutor() {
-        ObjectMap options = getOptions();
-        if (options.containsKey(EXTERNAL_MR_EXECUTOR)) {
-            Class<? extends MRExecutor> aClass;
-            if (options.get(EXTERNAL_MR_EXECUTOR) instanceof Class) {
-                aClass = options.get(EXTERNAL_MR_EXECUTOR, Class.class).asSubclass(MRExecutor.class);
-            } else {
-                try {
-                    aClass = Class.forName(options.getString(EXTERNAL_MR_EXECUTOR)).asSubclass(MRExecutor.class);
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            try {
-                return aClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        } else if (mrExecutor == null) {
-            return new ExternalMRExecutor(options);
-        } else {
-            return mrExecutor;
+    private MRExecutor getMRExecutor() throws StorageEngineException {
+        if (mrExecutor == null) {
+            mrExecutor = MRExecutorFactory.getMRExecutor(getOptions());
         }
+        return mrExecutor;
     }
 
     /**
@@ -1169,17 +1148,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, getOptions());
         }
         return tableNameGenerator;
-    }
-
-    public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageEngineException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
-        if (!Paths.get(jar).isAbsolute()) {
-            jar = System.getProperty("app.home", "") + "/" + jar;
-        }
-        return jar;
     }
 
     public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {

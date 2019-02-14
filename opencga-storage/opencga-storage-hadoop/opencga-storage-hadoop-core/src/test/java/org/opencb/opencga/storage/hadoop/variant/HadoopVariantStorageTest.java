@@ -82,6 +82,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
@@ -363,7 +364,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        options.put(HadoopVariantStorageEngine.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
+        options.put(MRExecutorFactory.MR_EXECUTOR, TestMRExecutor.class);
         TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, false);
@@ -447,7 +448,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         return numRecords;
     }
 
-    class TestMRExecutor implements MRExecutor {
+    class TestMRExecutor extends MRExecutor {
 
         private static Configuration staticConfiguration;
         private final Configuration configuration;

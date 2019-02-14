@@ -346,10 +346,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     protected abstract void load(URI input, int studyId, int fileId) throws StorageEngineException;
 
-    public String getJarWithDependencies() throws StorageEngineException {
-        return HadoopVariantStorageEngine.getJarWithDependencies(options);
-    }
-
     @Override
     protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
