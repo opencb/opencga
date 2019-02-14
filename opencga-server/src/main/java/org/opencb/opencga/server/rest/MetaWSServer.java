@@ -47,6 +47,11 @@ import java.util.Map;
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class MetaWSServer extends OpenCGAWSServer {
 
+    private final String OKAY = "OK";
+    private final String NOT_OKAY = "KO";
+    private final String SOLR = "Solr";
+    private final String VARIANT_STORAGE = "VariantStorage";
+    private final String CATALOG_MONGO_DB = "CatalogMongoDB";
     private static LocalTime lastAccess = LocalTime.now();
     private static HashMap<String, String> healthCheckResults = new HashMap<>();
 
@@ -98,19 +103,18 @@ public class MetaWSServer extends OpenCGAWSServer {
         long elapsedTime = Duration.between(lastAccess, LocalTime.now()).getSeconds();
 
         if (!isHealthy() || elapsedTime > configuration.getHealthCheck().getInterval()) {
-
             logger.info("HealthCheck results without cache!");
             lastAccess = LocalTime.now();
             healthCheckResults.clear();
 
             try {
                 if (catalogManager.getDatabaseStatus()) {
-                    healthCheckResults.put("CatalogMongoDB", "OK");
+                    healthCheckResults.put(CATALOG_MONGO_DB, OKAY);
                 } else {
-                    healthCheckResults.put("CatalogMongoDB", "KO");
+                    healthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
                 }
             } catch (Exception e) {
-                healthCheckResults.put("CatalogMongoDB", "KO");
+                healthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
                 errorMsg.append(e.getMessage());
             }
 
@@ -119,26 +123,26 @@ public class MetaWSServer extends OpenCGAWSServer {
                 healthCheckResults.put("VariantStorageId", storageEngineId);
             } catch (Exception e) {
                 errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()).append(", ");
-                healthCheckResults.put("VariantStorage", "KO");
+                healthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
             }
 
             try {
                 storageEngineFactory.getVariantStorageEngine().testConnection();
-                healthCheckResults.put("VariantStorage", "OK");
+                healthCheckResults.put(VARIANT_STORAGE, OKAY);
             } catch (Exception e) {
-                healthCheckResults.put("VariantStorage", "KO");
+                healthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
                 errorMsg.append(e.getMessage());
             }
 
             if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
                 if (variantManager.isSolrAvailable()) {
-                    healthCheckResults.put("Solr", "OK");
+                    healthCheckResults.put(SOLR, OKAY);
                 } else {
                     errorMsg.append(", unable to connect with solr, ");
-                    healthCheckResults.put("Solr", "KO");
+                    healthCheckResults.put(SOLR, NOT_OKAY);
                 }
             } else {
-                healthCheckResults.put("Solr", "solr not active in storage-configuration!");
+                healthCheckResults.put(SOLR, "solr not active in storage-configuration!");
             }
         } else {
             logger.info("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
@@ -146,6 +150,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         }
 
         queryResult.setResult(Arrays.asList(healthCheckResults));
+
         if (isHealthy()) {
             logger.info("HealthCheck : " + healthCheckResults.toString());
             return createOkResponse(queryResult);
@@ -156,12 +161,6 @@ public class MetaWSServer extends OpenCGAWSServer {
     }
 
     private boolean isHealthy() {
-        if (!healthCheckResults.isEmpty()) {
-            return !(healthCheckResults.get("CatalogMongoDB").equalsIgnoreCase("KO") ||
-                    healthCheckResults.get("VariantStorage").equalsIgnoreCase("KO") ||
-                    healthCheckResults.get("Solr").equalsIgnoreCase("KO"));
-        } else {
-            return false;
-        }
+        return healthCheckResults.isEmpty() ? false : !healthCheckResults.values().stream().anyMatch(x -> x.equals(NOT_OKAY));
     }
 }
