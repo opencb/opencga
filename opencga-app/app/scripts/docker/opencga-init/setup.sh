@@ -13,10 +13,6 @@ sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyCh
 # TODO - Optimize this down to only required jars
 sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$HBASE_SSH_USER@$HBASE_SSH_DNS":/opt/opencga/
 
-# 2. Extract them
-cd /opt/opencga/conf/ && tar zxfv hadoop-client.tar.gz
-cd ..
-
 echo "Initialising configs"
 # Override Yaml configs
 python3 /tmp/override-yaml.py \
