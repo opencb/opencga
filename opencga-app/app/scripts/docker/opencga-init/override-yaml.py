@@ -25,6 +25,9 @@ parser.add_argument("--batch-pool-id", required=True)
 parser.add_argument("--batch-docker-args", required=True)
 parser.add_argument("--batch-docker-image", required=True)
 parser.add_argument("--batch-max-concurrent-jobs", required=True)
+parser.add_argument("--hadoop-ssh-host", required=False)
+parser.add_argument("--hadoop-ssh-user", required=False)
+parser.add_argument("--hadoop-ssh-password", required=False)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
@@ -58,6 +61,13 @@ for i, cellbase_host in enumerate(cellbase_hosts):
         # clear them only on the first iteration
         storage_config["cellbase"]["database"]["hosts"].clear()
     storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_host)
+
+# Inject Hadoop ssh configuration
+if args.hadoop_ssh_host and args.hadoop_ssh_user and args.hadoop_ssh_password:
+    storage_config["storageEngines"][1]["variant"]["options"] = {}
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.host"] = args.hadoop_ssh_host
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.user"] = args.hadoop_ssh_user
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.password"] = args.hadoop_ssh_password
 
 # Load configuration yaml
 with open(args.config_path) as f:

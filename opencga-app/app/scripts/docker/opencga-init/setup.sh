@@ -9,6 +9,14 @@ sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o StrictHostKeyChe
 # same with /etc/hbase/conf, e.g.
 sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
 
+# Copy the OpenCGA installation directory to the hdinsights cluster
+# TODO - Optimize this down to only required jars
+sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$HBASE_SSH_USER@$HBASE_SSH_DNS":/opt/opencga/
+
+# 2. Extract them
+cd /opt/opencga/conf/ && tar zxfv hadoop-client.tar.gz
+cd ..
+
 echo "Initialising configs"
 # Override Yaml configs
 python3 /tmp/override-yaml.py \
@@ -31,6 +39,9 @@ python3 /tmp/override-yaml.py \
 --batch-docker-args "$BATCH_DOCKER_ARGS" \
 --batch-docker-image "$BATCH_DOCKER_IMAGE" \
 --batch-max-concurrent-jobs "$BATCH_MAX_CONCURRENT_JOBS" \
+--hadoop-ssh-host "$HBASE_SSH_DNS" \
+--hadoop-ssh-user "$HBASE_SSH_USER" \
+--hadoop-ssh-password "$HBASE_SSH_PASS" \
 --save
 # Override Js configs
 python3 /tmp/override-js.py \
