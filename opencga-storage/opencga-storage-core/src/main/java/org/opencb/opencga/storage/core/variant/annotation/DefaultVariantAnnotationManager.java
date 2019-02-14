@@ -100,7 +100,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     }
 
     @Override
-    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
+    public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
 
         String annotationFileStr = params.getString(LOAD_FILE);
         boolean doCreate = params.getBoolean(CREATE);
@@ -152,6 +152,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 });
             }
         }
+
+        return numAnnotationsToLoad.get();
     }
 
     /**

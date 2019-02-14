@@ -357,13 +357,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param params    Other params
      * @throws VariantAnnotatorException    If the annotation goes wrong
      * @throws StorageEngineException       If there is any problem related with the StorageEngine
+     * @return number of annotated variants
      * @throws IOException                  If there is any IO problem
      */
-    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
+    public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
         // Merge with configuration
         ObjectMap options = getMergedOptions(params);
         VariantAnnotationManager annotationManager = newVariantAnnotationManager(options);
-        annotationManager.annotate(query, options);
+        return annotationManager.annotate(query, options);
     }
 
     /**

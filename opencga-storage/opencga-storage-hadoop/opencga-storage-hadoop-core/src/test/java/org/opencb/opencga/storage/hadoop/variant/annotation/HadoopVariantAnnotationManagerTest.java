@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManagerTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -54,7 +55,7 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
             System.out.println("pendingVariants = " + pendingVariantsCount);
             long expectedPendingVariantsCount = engine.count(new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false)).first();
             Assert.assertEquals(expectedPendingVariantsCount, pendingVariantsCount);
-            engine.annotate(new Query(), new ObjectMap());
+            Assert.assertNotEquals(expectedPendingVariantsCount, engine.annotate(new Query(), new ObjectMap()));
 
 
             List<Variant> pendingVariants = new PendingVariantsToAnnotateReader(engine.getDBAdaptor(), new Query())
@@ -66,5 +67,8 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
             Assert.assertNotEquals(0, engine.count(new Query()).first().longValue());
         }
 
+        long variants = engine.count(new Query()).first();
+        Assert.assertEquals(0L, engine.annotate(new Query(), new ObjectMap()));
+        Assert.assertEquals(variants, engine.annotate(new Query(), new ObjectMap(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, true)));
     }
 }

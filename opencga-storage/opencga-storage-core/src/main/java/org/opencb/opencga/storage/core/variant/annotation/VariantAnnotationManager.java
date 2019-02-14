@@ -57,7 +57,7 @@ public abstract class VariantAnnotationManager {
 
     private static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
 
-    public abstract void annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
+    public abstract long annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
 
     public abstract void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 

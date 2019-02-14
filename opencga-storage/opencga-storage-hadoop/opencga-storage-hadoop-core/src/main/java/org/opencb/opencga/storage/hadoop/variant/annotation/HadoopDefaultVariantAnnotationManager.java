@@ -62,8 +62,14 @@ import java.util.Map;
  */
 public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotationManager {
 
-    public static final String SKIP_DISCOVER_VARIANTS_TO_ANNOTATE = "skipDiscoverVariantsToAnnotate";
-    public static final String SKIP_PENDING_ANNOTATIONS_TABLE = "skipPendingAnnotationsTable";
+    /**
+     * Skip MapReduce operation to discover pending variants to annotate.
+     */
+    public static final String SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE = "skipDiscoverPendingVariantsToAnnotate";
+    /**
+     * Do not use the pending variants to annotate table.
+     */
+    public static final String SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE = "skipPendingVariantsToAnnotateTable";
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
@@ -79,13 +85,13 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
+    public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
         this.query = query == null ? new Query() : query;
 
         // Do not allow FILE filter when annotating.
         this.query.remove(VariantQueryParam.FILE.key());
 
-        super.annotate(this.query, params);
+        return super.annotate(this.query, params);
     }
 
     @Override
@@ -93,7 +99,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
         super.preAnnotate(query, doCreate, doLoad, params);
 
         if (doCreate) {
-            if (params.getBoolean(SKIP_DISCOVER_VARIANTS_TO_ANNOTATE, false)) {
+            if (skipDiscoverPendingVariantsToAnnotate(params)) {
                 logger.info("Skip run MapReduce to discover variants to annotate.");
             } else {
                 mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
@@ -105,7 +111,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     @Override
     protected DataReader<Variant> getVariantDataReader(Query query, QueryOptions iteratorQueryOptions, ObjectMap params) {
-        if (params.getBoolean(SKIP_PENDING_ANNOTATIONS_TABLE, false)) {
+        if (skipPendingVariantsToAnnotateTable(params)) {
             return super.getVariantDataReader(query, iteratorQueryOptions, params);
         } else {
             return new PendingVariantsToAnnotateReader(dbAdaptor, query);
@@ -113,11 +119,21 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     protected long countVariantsToAnnotate(Query query, ObjectMap params) {
-        if (params.getBoolean(SKIP_PENDING_ANNOTATIONS_TABLE, false)) {
+        if (skipPendingVariantsToAnnotateTable(params)) {
             return super.countVariantsToAnnotate(query, params);
         } else {
             return 0;
         }
+    }
+
+    private boolean skipDiscoverPendingVariantsToAnnotate(ObjectMap params) {
+        // Skip if overwriting annotations, or if specific param
+        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
+    }
+
+    private boolean skipPendingVariantsToAnnotateTable(ObjectMap params) {
+        // Skip if overwriting annotations, or if specific param
+        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
     }
 
     @Override
