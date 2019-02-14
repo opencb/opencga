@@ -33,6 +33,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,8 +141,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                 healthCheckResults.put("Solr", "solr not active in storage-configuration!");
             }
         } else {
-            logger.info("HealthCheck results from cache!");
-            queryResult.setWarningMsg("HealthCheck results from cache!");
+            logger.info("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            queryResult.setWarningMsg("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
         }
 
         queryResult.setResult(Arrays.asList(healthCheckResults));
