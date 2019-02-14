@@ -481,9 +481,7 @@ public class OpenCGAWSServer {
         QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setQueryOptions(queryOptions);
-        queryResponse.setError(errorMessage);
-
-        result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
+        queryResponse.setError("true");
         result.setErrorMsg("DEPRECATED: " + errorMessage);
         queryResponse.setResponse(Arrays.asList(result));
 
