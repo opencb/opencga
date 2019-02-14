@@ -11,7 +11,8 @@ sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o UserKnownHostsF
 
 # Copy the OpenCGA installation directory to the hdinsights cluster
 # TODO - Optimize this down to only required jars
-sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$HBASE_SSH_USER@$HBASE_SSH_DNS":/tmp/opencga/
+REMOTE_OPENCGA_HOME="/home/sshuser/opencga/"
+sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$HBASE_SSH_USER@$HBASE_SSH_DNS":"$REMOTE_OPENCGA_HOME"
 
 echo "Initialising configs"
 # Override Yaml configs
@@ -38,6 +39,7 @@ python3 /tmp/override-yaml.py \
 --hadoop-ssh-host "$HBASE_SSH_DNS" \
 --hadoop-ssh-user "$HBASE_SSH_USER" \
 --hadoop-ssh-password "$HBASE_SSH_PASS" \
+--hadoop-ssh-remote-opencga-home "$REMOTE_OPENCGA_HOME"
 --save
 # Override Js configs
 python3 /tmp/override-js.py \

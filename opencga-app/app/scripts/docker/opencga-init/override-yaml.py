@@ -28,6 +28,7 @@ parser.add_argument("--batch-max-concurrent-jobs", required=True)
 parser.add_argument("--hadoop-ssh-host", required=False)
 parser.add_argument("--hadoop-ssh-user", required=False)
 parser.add_argument("--hadoop-ssh-password", required=False)
+parser.add_argument("--hadoop-ssh-remote-opencga-home", required=False)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
@@ -63,10 +64,13 @@ for i, cellbase_host in enumerate(cellbase_hosts):
     storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_host)
 
 # Inject Hadoop ssh configuration
-if args.hadoop_ssh_host and args.hadoop_ssh_user and args.hadoop_ssh_password:
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.host"] = args.hadoop_ssh_host
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.user"] = args.hadoop_ssh_user
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.hadoop.ssh.password"] = args.hadoop_ssh_password
+if args.hadoop_ssh_host and args.hadoop_ssh_user and args.hadoop_ssh_password and args.hadoop_ssh_remote_opencga_home:
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor"] = "ssh"
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.host"] = args.hadoop_ssh_host
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.user"] = args.hadoop_ssh_user
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.password"] = args.hadoop_ssh_password
+    #storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
+    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] = args.hadoop_ssh_remote_opencga_home
 
 # Load configuration yaml
 with open(args.config_path) as f:
