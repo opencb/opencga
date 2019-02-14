@@ -55,9 +55,13 @@ public abstract class MRExecutor {
             throw new StorageEngineException("Missing option " + HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
         }
         if (!Paths.get(jar).isAbsolute()) {
-            jar = System.getProperty("app.home", "") + "/" + jar;
+            jar = getOpencgaHome() + "/" + jar;
         }
         return jar;
+    }
+
+    protected static String getOpencgaHome() {
+        return System.getProperty("app.home", "");
     }
 
     public <T extends Tool> void run(Class<T> execClass, String args, ObjectMap options, String taskDescription)

@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.util.RunJar;
 import org.opencb.commons.exec.Command;
 
 import java.nio.file.Path;
@@ -19,6 +20,7 @@ public class SshMRExecutor extends MRExecutor {
     public static final String SSH_USER =       "opencga.mr.executor.ssh.user";
     public static final String SSH_KEY =        "opencga.mr.executor.ssh.key";
     public static final String SSH_PASSWORD =   "opencga.mr.executor.ssh.password";
+    public static final String REMOTE_OPENCGA_HOME = "opencga.mr.executor.ssh.remote_opencga_home";
     public static final String HADOOP_SSH_BIN =  "hadoop-ssh.sh";
 
     private static final String HADOOP_SSH_USER_ENV = "HADOOP_SSH_USER";
@@ -38,12 +40,17 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     protected String buildCommand(String executable, String args) {
+        String remoteOpencgaHome = getOptions().getString(REMOTE_OPENCGA_HOME);
         String commandLine;
-        String appHome = System.getProperty("app.home", "");
-        if (appHome.isEmpty()) {
+        String opencgaHome = getOpencgaHome();
+        if (opencgaHome.isEmpty()) {
             commandLine = HADOOP_SSH_BIN;
         } else {
-            commandLine = appHome + "/conf/hadoop/" + HADOOP_SSH_BIN;
+            commandLine = opencgaHome + "/conf/hadoop/" + HADOOP_SSH_BIN;
+        }
+
+        if (StringUtils.isNotEmpty(remoteOpencgaHome)) {
+            args = args.replaceAll(getOpencgaHome(), remoteOpencgaHome);
         }
 
         commandLine += ' ' + executable + ' ' + args;
@@ -55,6 +62,7 @@ public class SshMRExecutor extends MRExecutor {
         String sshUser = getOptions().getString(SSH_USER);
         String sshPassword = getOptions().getString(SSH_PASSWORD);
         String sshKey = getOptions().getString(SSH_KEY);
+        String remoteOpencgaHome = getOptions().getString(REMOTE_OPENCGA_HOME);
 
         if (StringUtils.isEmpty(sshHost)) {
             throw new IllegalArgumentException("Missing ssh credentials to run MapReduce job. Missing " + SSH_HOST);
@@ -71,6 +79,11 @@ public class SshMRExecutor extends MRExecutor {
         if (StringUtils.isNotEmpty(sshPassword)) {
             env.add(SSHPASS_ENV + '=' + sshPassword);
         }
+        if (StringUtils.isNotEmpty(remoteOpencgaHome)) {
+            String hadoopClasspath = System.getenv(RunJar.HADOOP_CLASSPATH);
+            String remoteHadoopClasspath = replaceOpencgaHome(getOpencgaHome(), remoteOpencgaHome, hadoopClasspath);
+            env.add(RunJar.HADOOP_CLASSPATH + '=' + remoteHadoopClasspath);
+        }
 
         if (StringUtils.isNotEmpty(sshKey)) {
             Path sshKeyPath = Paths.get(sshKey);
@@ -81,5 +94,28 @@ public class SshMRExecutor extends MRExecutor {
             }
         }
         return env;
+    }
+
+    protected String replaceOpencgaHome(String opencgaHome, String remoteOpencgaHome, String hadoopClasspath) {
+        StringBuilder remoteHadoopClasspath = new StringBuilder();
+        if (!opencgaHome.endsWith("/")) {
+            opencgaHome += "/";
+        }
+        if (!remoteOpencgaHome.endsWith("/")) {
+            remoteOpencgaHome += "/";
+        }
+        for (String classPath : hadoopClasspath.split(":")) {
+            if (!classPath.isEmpty()) {
+                if (remoteHadoopClasspath.length() > 0) {
+                    remoteHadoopClasspath.append(':');
+                }
+                if (classPath.startsWith(opencgaHome)) {
+                    remoteHadoopClasspath.append(classPath.replaceFirst(opencgaHome, remoteOpencgaHome));
+                } else {
+                    remoteHadoopClasspath.append(classPath);
+                }
+            }
+        }
+        return remoteHadoopClasspath.toString();
     }
 }
