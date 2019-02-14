@@ -20,7 +20,7 @@ else
   SSHPASS_CMD="sshpass -e"
 fi
 
-SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60"
 if [ ! -z ${HADOOP_SSH_KEY} ] && [ -f ${HADOOP_SSH_KEY} ] ; then
   SSH_OPTS="${SSH_OPTS} -i ${HADOOP_SSH_KEY}"
 fi
