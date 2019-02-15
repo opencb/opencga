@@ -44,6 +44,9 @@ VOLUME /opt/opencga/sessions
 
 USER 1001:1001
 
+HEALTHCHECK --interval=20m --timeout=3s \
+    CMD  wget -q http://localhost:8080/opencga/webservices/rest/v1/meta/status || killall java
+
 EXPOSE 8080
 EXPOSE 8443
 
