@@ -71,6 +71,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     private final Logger logger = LoggerFactory.getLogger(HadoopLocalLoadVariantStoragePipeline.class);
     private static final String OPERATION_NAME = "Load";
     private int taskId;
+    private HashSet<String> loadedGenotypes;
 
     /**
      * @param configuration      {@link StorageConfiguration}
@@ -242,7 +243,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
-            updateLoadedGenotypes(sampleIndexDBLoader.getLoadedGenotypes());
+            this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
         }
     }
 
@@ -301,7 +302,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
-            updateLoadedGenotypes(sampleIndexDBLoader.getLoadedGenotypes());
+            this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
         }
     }
 
@@ -338,18 +339,24 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         logger.info("============================================================");
     }
 
-    private void updateLoadedGenotypes(HashSet<String> loadedGenotypes) throws StorageEngineException {
-        getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
-            loadedGenotypes.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
-            sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
-            return sm;
-        });
+    @Override
+    public URI postLoad(URI input, URI output) throws StorageEngineException {
+        URI uri = super.postLoad(input, output);
+
+        // Mark the load task as READY
+        getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.READY);
+
+        return uri;
     }
 
     @Override
     protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
         super.securePostLoad(fileIds, studyMetadata);
-        getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.READY);
+
+        if (loadedGenotypes != null) {
+            loadedGenotypes.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
+            studyMetadata.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
+        }
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {

@@ -372,7 +372,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
         registerLoadedFiles(Collections.singletonList(getFileId()));
 
-        // This method checks the loaded variants (if possible) and adds the loaded files to the studyConfiguration
+        // This method checks the loaded variants (if possible) and adds the loaded files to the metadata
         super.postLoad(input, output);
 
         return input;

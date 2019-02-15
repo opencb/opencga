@@ -88,7 +88,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public long lockStudy(int studyId) throws StorageEngineException {
-        return lockStudy(studyId, DEFAULT_TIMEOUT, 20000);
+        return lockStudy(studyId, 10000, 60000);
     }
 
     public long lockStudy(int studyId, long lockDuration, long timeout) throws StorageEngineException {
@@ -140,16 +140,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-
-    public <E extends Exception> StudyMetadata lockAndUpdate(String studyName, UpdateFunction<StudyMetadata, E> updater)
+    public <E extends Exception> StudyMetadata lockAndUpdate(Object study, UpdateFunction<StudyMetadata, E> updater)
             throws StorageEngineException, E {
-        int studyId = getStudyId(studyName);
-        return lockAndUpdate(studyId, updater);
-    }
-
-    public <E extends Exception> StudyMetadata lockAndUpdate(int studyId, UpdateFunction<StudyMetadata, E> updater)
-            throws StorageEngineException, E {
-        checkStudyId(studyId);
+        int studyId = getStudyId(study);
         long lock = lockStudy(studyId);
         try {
             StudyMetadata sm = getStudyMetadata(studyId);
@@ -669,16 +662,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void addIndexedFiles(int studyId, List<Integer> fileIds) throws StorageEngineException {
+        // First update the samples
         Set<Integer> samples = new HashSet<>();
         for (Integer fileId : fileIds) {
-            updateFileMetadata(studyId, fileId, fileMetadata -> {
-                logger.info("Mark file " + fileMetadata.getName() + " as INDEXED");
-                samples.addAll(fileMetadata.getSamples());
-                return fileMetadata.setIndexStatus(TaskMetadata.Status.READY);
-            });
+            FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
+            samples.addAll(fileMetadata.getSamples());
         }
         for (Integer sample : samples) {
             updateSampleMetadata(studyId, sample, sampleMetadata -> sampleMetadata.setIndexStatus(TaskMetadata.Status.READY));
+        }
+
+        // Finally, update the files and update the list of indexed files
+        for (Integer fileId : fileIds) {
+            String name = updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setIndexStatus(TaskMetadata.Status.READY))
+                    .getName();
+            logger.info("Register file " + name + " as INDEXED");
         }
         fileDBAdaptor.addIndexedFiles(studyId, fileIds);
     }
