@@ -14,8 +14,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -51,23 +54,29 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
     private static List<String> files2;
     private String COLLECTION_1;
     private String COLLECTION_2;
+    private StudyMetadata sm;
+    private VariantStorageMetadataManager metadataManager;
 
     @Before
     public void before() throws Exception {
         solr.configure(variantStorageEngine);
+        metadataManager = variantStorageEngine.getMetadataManager();
+        sm = metadataManager.createStudy(STUDY_NAME);
         if (!loaded) {
             load();
             loaded = true;
         }
-        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
-            for (Integer id : sc.getSearchIndexedSampleSetsStatus().keySet()) {
-                sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.READY);
-            }
-            COLLECTION_1 = "opencga_variants_test_1_" + sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            COLLECTION_2 = "opencga_variants_test_1_" + sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples2.get(0)));
-            return sc;
-        });
+        COLLECTION_1 = "opencga_variants_test_" + sm.getId() + "_" + metadataManager.getSampleMetadata(sm.getId(),
+                metadataManager.getSampleId(sm.getId(), samples1.get(0))).getSecondaryIndexCohorts().iterator().next();
+        COLLECTION_2 = "opencga_variants_test_" + sm.getId() + "_" + metadataManager.getSampleMetadata(sm.getId(),
+                metadataManager.getSampleId(sm.getId(), samples2.get(0))).getSecondaryIndexCohorts().iterator().next();
 
+        Iterator<CohortMetadata> it = metadataManager.secondaryIndexCohortIterator(sm.getId());
+        while (it.hasNext()) {
+            CohortMetadata c = it.next();
+            metadataManager.updateCohortMetadata(sm.getId(), c.getId(),
+                    cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.READY));
+        }
     }
 
     protected void load() throws Exception {
@@ -75,86 +84,78 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
 
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-        runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration);
+        runDefaultETL(smallInputUri, variantStorageEngine, sm);
 
-        Iterator<String> it = studyConfiguration.getSampleIds().keySet().iterator();
+        Iterator<SampleMetadata> it = getVariantStorageEngine().getMetadataManager().sampleMetadataIterator(sm.getId());
 
-        samples1 = Arrays.asList(it.next(), it.next());
+        samples1 = Arrays.asList(it.next().getName(), it.next().getName());
         files1 = Collections.singletonList(UriUtils.fileName(smallInputUri));
-        variantStorageEngine.searchIndexSamples(studyConfiguration.getName(), samples1);
+        variantStorageEngine.secondaryIndexSamples(sm.getName(), samples1);
 
-        runDefaultETL(getPlatinumFile(12877), variantStorageEngine, studyConfiguration);
-        runDefaultETL(getPlatinumFile(12878), variantStorageEngine, studyConfiguration);
+        runDefaultETL(getPlatinumFile(12877), variantStorageEngine, sm);
+        runDefaultETL(getPlatinumFile(12878), variantStorageEngine, sm);
 
         samples2 = Arrays.asList("NA12877", "NA12878");
         files2 = Arrays.asList(UriUtils.fileName(getPlatinumFile(12877)), UriUtils.fileName(getPlatinumFile(12878)));
-        variantStorageEngine.searchIndexSamples(studyConfiguration.getName(), samples2);
+        variantStorageEngine.secondaryIndexSamples(sm.getName(), samples2);
     }
 
     @Test
     public void testRemove() throws Exception {
+        variantStorageEngine.removeSecondaryIndexSamples(STUDY_NAME, samples1);
 
-        variantStorageEngine.removeSearchIndexSamples(STUDY_NAME, samples1);
-
-        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
-
+        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
     }
 
     @Test
     public void testRemovePartialFail() throws Exception {
         thrown.expectMessage("Must provide all the samples from the secondary index:");
-        variantStorageEngine.removeSearchIndexSamples(STUDY_NAME, Collections.singletonList(samples1.get(0)));
+        variantStorageEngine.removeSecondaryIndexSamples(STUDY_NAME, Collections.singletonList(samples1.get(0)));
     }
 
     @Test
     public void testRemoveMixFail() throws Exception {
         thrown.expectMessage("Samples in multiple secondary indexes");
-        variantStorageEngine.removeSearchIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
+        variantStorageEngine.removeSecondaryIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
     }
 
     @Test
     public void testFailReindex() throws Exception {
         thrown.expectMessage("already in search index");
-        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
+        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
     }
 
     @Test
     public void testFailReindexMix() throws Exception {
         thrown.expectMessage("already in search index");
-        variantStorageEngine.searchIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
+        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, Arrays.asList(samples1.get(0), samples2.get(0)));
     }
 
     @Test
     public void testResumeOnError() throws Exception {
-        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
-            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.ERROR);
-            return sc;
-        });
-        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
+        Integer id = getSecondaryIndexCohortId(samples1.get(0));
+        metadataManager.updateCohortMetadata(sm.getId(), id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.ERROR));
+        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
     }
 
     @Test
     public void testResumeWhileRunning() throws Exception {
-        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
-            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.RUNNING);
-            return sc;
-        });
+        Integer id = getSecondaryIndexCohortId(samples1.get(0));
+        metadataManager.updateCohortMetadata(sm.getId(), id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
         variantStorageEngine.getOptions().put(VariantStorageEngine.Options.RESUME.key(), true);
-        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
+        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
     }
 
     @Test
     public void testResumeFail() throws Exception {
-        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
-            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.RUNNING);
-            return sc;
-        });
+        Integer id = getSecondaryIndexCohortId(samples1.get(0));
+        metadataManager.updateCohortMetadata(sm.getId(), id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
         thrown.expectMessage("Samples already being indexed. Resume operation to continue.");
-        variantStorageEngine.searchIndexSamples(STUDY_NAME, samples1);
+        variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
+    }
+
+    protected Integer getSecondaryIndexCohortId(String sampleName) {
+        return metadataManager.getSampleMetadata(sm.getId(), metadataManager.getSampleId(sm.getId(), sampleName)).getSecondaryIndexCohorts().iterator().next();
     }
 
     @Test
@@ -205,17 +206,14 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
 
         check(COLLECTION_1, query, QueryOptions.empty());
 
-        variantStorageEngine.getMetadataManager().lockAndUpdateOld(STUDY_NAME, sc -> {
-            Integer id = sc.getSearchIndexedSampleSets().get(sc.getSampleIds().get(samples1.get(0)));
-            sc.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.RUNNING);
-            return sc;
-        });
+        Integer id = getSecondaryIndexCohortId(samples1.get(0));
+        metadataManager.updateCohortMetadata(sm.getId(), id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
 
         check(null, query, QueryOptions.empty());
     }
 
     protected void check(String collection, Query query, QueryOptions options) throws StorageEngineException {
-        assertEquals(query.toJson() + " " + options.toJson(), collection, VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, variantStorageEngine.getMetadataManager(), DB_NAME));
+        assertEquals(query.toJson() + " " + options.toJson(), collection, VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, metadataManager, DB_NAME));
     }
 
     @Test

@@ -13,17 +13,22 @@ import java.util.Set;
 public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
     private Set<Integer> files;
-//    private Set<Integer> cohorts;
+    private Set<Integer> cohorts;
+    // Prepared to have more than one secondary index per sample.
+    // Currently only one is allowed.
+    private Set<Integer> secondaryIndexCohorts;
 
     public SampleMetadata() {
         files = new HashSet<>();
-//        cohorts = new HashSet<>();
+        cohorts = new HashSet<>();
+        secondaryIndexCohorts = new HashSet<>();
     }
 
     public SampleMetadata(int studyId, int id, String name) {
         super(studyId, id, name);
         files = new HashSet<>();
-//        cohorts = new HashSet<>();
+        cohorts = new HashSet<>();
+        secondaryIndexCohorts = new HashSet<>();
     }
 
     public Set<Integer> getFiles() {
@@ -35,15 +40,37 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return this;
     }
 
-//    public Set<Integer> getCohorts() {
-//        return cohorts;
-//    }
-//
-//    public SampleMetadata setCohorts(Set<Integer> cohorts) {
-//        this.cohorts = cohorts;
-//        return this;
-//    }
+    public Set<Integer> getCohorts() {
+        return cohorts;
+    }
 
+    public SampleMetadata setCohorts(Set<Integer> cohorts) {
+        this.cohorts = cohorts;
+        return this;
+    }
+
+    public SampleMetadata addCohort(int cohortId) {
+        this.cohorts.add(cohortId);
+        return this;
+    }
+
+    public Set<Integer> getSecondaryIndexCohorts() {
+        return secondaryIndexCohorts;
+    }
+
+    public Integer getSecondaryIndexCohort() {
+        return secondaryIndexCohorts.isEmpty() ? null : secondaryIndexCohorts.iterator().next();
+    }
+
+    public SampleMetadata setSecondaryIndexCohorts(Set<Integer> secondaryIndexCohorts) {
+        this.secondaryIndexCohorts = secondaryIndexCohorts;
+        return this;
+    }
+
+    public SampleMetadata addSecondaryIndexCohort(int cohortId) {
+        this.secondaryIndexCohorts.add(cohortId);
+        return this;
+    }
 
     public TaskMetadata.Status getIndexStatus() {
         return getStatus("index");

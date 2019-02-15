@@ -189,7 +189,7 @@ public class VariantStorageManager extends StorageManager {
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         variantStorageEngine.getOptions().putAll(queryOptions);
 
-        variantStorageEngine.searchIndexSamples(study, samples);
+        variantStorageEngine.secondaryIndexSamples(study, samples);
     }
 
     public void removeSearchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String sessionId)
@@ -200,7 +200,7 @@ public class VariantStorageManager extends StorageManager {
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         variantStorageEngine.getOptions().putAll(queryOptions);
 
-        variantStorageEngine.removeSearchIndexSamples(study, samples);
+        variantStorageEngine.removeSecondaryIndexSamples(study, samples);
 
     }
 

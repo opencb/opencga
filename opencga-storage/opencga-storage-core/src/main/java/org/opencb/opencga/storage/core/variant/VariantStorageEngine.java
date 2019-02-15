@@ -643,20 +643,23 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return VariantSearchLoadListener.empty();
     }
 
-    public void searchIndexSamples(String study, List<String> samples) throws StorageEngineException, IOException, VariantSearchException {
+    public void secondaryIndexSamples(String study, List<String> samples)
+            throws StorageEngineException, IOException, VariantSearchException {
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
         VariantSearchManager variantSearchManager = getVariantSearchManager();
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
         // first, create the collection it it does not exist
 
-        AtomicInteger id = new AtomicInteger();
-        StudyConfiguration sc = getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
+        AtomicInteger atomicId = new AtomicInteger();
+        StudyMetadata studyMetadata = metadataManager.lockAndUpdate(study, sm -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
-            id.set(getMetadataManager().registerSearchIndexSamples(studyConfiguration, samples, resume));
-            return studyConfiguration;
+            atomicId.set(metadataManager.registerSecondaryIndexSamples(sm.getId(), samples, resume));
+            return sm;
         });
+        int id = atomicId.intValue();
 
-        String collectionName = buildSamplesIndexCollectionName(this.dbName, sc, id.intValue());
+        String collectionName = buildSamplesIndexCollectionName(this.dbName, studyMetadata, id);
 
         try {
             variantSearchManager.create(collectionName);
@@ -675,34 +678,35 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             dbAdaptor.close();
         } catch (Exception e) {
-            getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
-                studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), TaskMetadata.Status.ERROR);
-                return studyConfiguration;
-            });
+            metadataManager.updateCohortMetadata(studyMetadata.getId(), id,
+                    cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.ERROR));
             throw e;
         }
-        getMetadataManager().lockAndUpdateOld(study, studyConfiguration -> {
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id.get(), TaskMetadata.Status.READY);
-            return studyConfiguration;
-        });
+
+        metadataManager.updateCohortMetadata(studyMetadata.getId(), id,
+                cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.READY));
     }
 
-    public void removeSearchIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
+    public void removeSecondaryIndexSamples(String study, List<String> samples) throws StorageEngineException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        StudyConfiguration sc = metadataManager.getStudyConfiguration(study, null).first();
+        StudyMetadata sm = metadataManager.getStudyMetadata(study);
 
         // Check that all samples are from the same secondary index
         Set<Integer> sampleIds = new HashSet<>();
         Set<Integer> secIndexIdSet = new HashSet<>();
         for (String sample : samples) {
-            Integer sampleId = metadataManager.getSampleId(sc.getId(), sample);
+            Integer sampleId = metadataManager.getSampleId(sm.getId(), sample);
             if (sampleId == null) {
                 throw VariantQueryException.sampleNotFound(sample, study);
             }
+            Set<Integer> secondaryIndexCohorts = metadataManager.getSampleMetadata(sm.getId(), sampleId).getSecondaryIndexCohorts();
+            if (secondaryIndexCohorts.isEmpty()) {
+                throw new StorageEngineException("Samples not in a secondary index");
+            }
             sampleIds.add(sampleId);
-            secIndexIdSet.add(sc.getSearchIndexedSampleSets().get(sampleId));
+            secIndexIdSet.addAll(secondaryIndexCohorts);
         }
         if (secIndexIdSet.isEmpty() || secIndexIdSet.contains(null)) {
             throw new StorageEngineException("Samples not in a secondary index");
@@ -710,38 +714,30 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new StorageEngineException("Samples in multiple secondary indexes");
         }
         Integer secIndexId = secIndexIdSet.iterator().next();
-
+        CohortMetadata secIndex = metadataManager.getCohortMetadata(sm.getId(), secIndexId);
         // Check that all samples from the secondary index are provided
-        List<Integer> samplesInSecIndex = new ArrayList<>();
-        for (Map.Entry<Integer, Integer> entry : sc.getSearchIndexedSampleSets().entrySet()) {
-            if (entry.getValue().equals(secIndexId)) {
-                samplesInSecIndex.add(entry.getKey());
-            }
-        }
+        List<Integer> samplesInSecIndex = secIndex.getSamples();
         if (samplesInSecIndex.size() != sampleIds.size()) {
-            throw new StorageEngineException("Must provide all the samples from the secondary index: "
-                    + samplesInSecIndex.stream().map(sc.getSampleIds().inverse()::get).collect(Collectors.toList()));
+            throw new StorageEngineException("Must provide all the samples from the secondary index: " + samplesInSecIndex
+                    .stream()
+                    .map(id -> metadataManager.getSampleName(sm.getId(), id))
+                    .collect(Collectors.joining("\", \"", "\"", "\"")));
         }
 
 
         // Invalidate secondary index
-        metadataManager.lockAndUpdateOld(study, studyConfiguration -> {
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(secIndexId, TaskMetadata.Status.RUNNING);
-            return studyConfiguration;
-        });
+        metadataManager.updateCohortMetadata(sm.getId(), secIndexId,
+                cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
 
         // Remove secondary index
-        String collection = buildSamplesIndexCollectionName(dbName, sc, secIndexId);
+        String collection = buildSamplesIndexCollectionName(dbName, sm, secIndexId);
         variantSearchManager.getSolrManager().remove(collection);
 
         // Remove secondary index metadata
-        metadataManager.lockAndUpdateOld(study, studyConfiguration -> {
-            studyConfiguration.getSearchIndexedSampleSetsStatus().remove(secIndexId);
-            for (Integer sampleId : sampleIds) {
-                studyConfiguration.getSearchIndexedSampleSets().remove(sampleId);
-            }
-            return studyConfiguration;
-        });
+        metadataManager.updateCohortMetadata(sm.getId(), secIndexId,
+                cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.NONE));
+        metadataManager.setSamplesToCohort(sm.getId(), secIndex.getName(), Collections.emptyList());
+//        metadataManager.removeCohort(sm.getId(), secIndex.getName());
     }
 
     /**
@@ -857,7 +853,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
                 for (Integer fileId : fileIds) {
-                    getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyMetadata.getId(), fileId);
+                    getDBAdaptor().getMetadataManager().removeVariantFileMetadata(studyMetadata.getId(), fileId);
                 }
             }
             return studyMetadata;

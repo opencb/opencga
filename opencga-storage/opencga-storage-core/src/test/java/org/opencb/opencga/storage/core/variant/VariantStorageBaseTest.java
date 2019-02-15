@@ -348,6 +348,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         }
     }
 
+    @Deprecated
     protected static StudyConfiguration newStudyConfiguration() {
         return new StudyConfiguration(STUDY_ID, STUDY_NAME);
     }

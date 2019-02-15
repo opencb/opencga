@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 
 import java.util.Collections;
@@ -46,11 +45,6 @@ public final class VariantQueryFields {
 
     public List<Integer> getStudies() {
         return studies;
-    }
-
-    @Deprecated
-    public Map<Integer, StudyConfiguration> getStudyConfigurations() {
-        throw new UnsupportedOperationException();
     }
 
     public Map<Integer, StudyMetadata> getStudyMetadatas() {

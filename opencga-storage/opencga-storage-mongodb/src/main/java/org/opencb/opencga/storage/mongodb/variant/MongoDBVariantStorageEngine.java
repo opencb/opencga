@@ -290,7 +290,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
             LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(studyId);
             for (Integer fileId : indexedFiles) {
-                getDBAdaptor().getMetadataManager().deleteVariantFileMetadata(studyId, fileId);
+                getDBAdaptor().getMetadataManager().removeVariantFileMetadata(studyId, fileId);
             }
 
             metadataManager.removeIndexedFiles(studyId, indexedFiles);

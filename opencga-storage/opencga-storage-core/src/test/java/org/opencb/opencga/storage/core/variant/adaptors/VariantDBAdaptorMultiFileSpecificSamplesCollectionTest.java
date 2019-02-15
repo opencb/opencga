@@ -47,8 +47,8 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
             StudyMetadata sc = scm.getStudyMetadata(studyName);
             ArrayList<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(sc.getId()).keySet());
             samples.sort(String::compareTo);
-            variantStorageEngine.searchIndexSamples(sc.getName(), samples.subList(0, samples.size() / 2));
-            variantStorageEngine.searchIndexSamples(sc.getName(), samples.subList(samples.size() / 2, samples.size()));
+            variantStorageEngine.secondaryIndexSamples(sc.getName(), samples.subList(0, samples.size() / 2));
+            variantStorageEngine.secondaryIndexSamples(sc.getName(), samples.subList(samples.size() / 2, samples.size()));
         }
     }
 

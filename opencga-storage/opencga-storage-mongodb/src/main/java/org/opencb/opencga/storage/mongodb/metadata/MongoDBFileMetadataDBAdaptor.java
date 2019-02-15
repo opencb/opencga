@@ -186,7 +186,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //    }
 
     @Override
-    public void delete(int study, int file) {
+    public void removeVariantFileMetadata(int study, int file) {
         String id = DocumentToVariantFileMetadataConverter.buildId(study, file);
 
         DeleteResult deleteResult = collection.remove(Filters.eq("_id", id), null).first();

@@ -50,6 +50,7 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isNegated;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.removeNegation;
@@ -65,6 +66,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             .append(CACHED, true);
     private static final int DEFAULT_LOCK_DURATION = 1000;
     private static final int DEFAULT_TIMEOUT = 10000;
+    public static final String SECONDARY_INDEX_PREFIX = "__SECONDARY_INDEX_COHORT_";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageMetadataManager.class);
 
@@ -120,24 +122,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public interface UpdateFunction<T, E extends Exception> {
         T update(T t) throws E;
-    }
-
-    @Deprecated
-    public <E extends Exception> StudyConfiguration lockAndUpdateOld(String studyName, UpdateFunction<StudyConfiguration, E> updater)
-            throws StorageEngineException, E {
-        int studyId = getStudyId(studyName);
-        checkStudyId(studyId);
-        long lock = lockStudy(studyId);
-        try {
-            StudyConfiguration sc = getStudyConfiguration(studyId, new QueryOptions(CACHED, false)).first();
-
-            sc = updater.update(sc);
-
-            updateStudyConfiguration(sc, QueryOptions.empty());
-            return sc;
-        } finally {
-            unLockStudy(studyId, lock);
-        }
     }
 
     public <E extends Exception> StudyMetadata lockAndUpdate(Object study, UpdateFunction<StudyMetadata, E> updater)
@@ -540,9 +524,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         fileDBAdaptor.updateVariantFileMetadata(studyId, metadata);
     }
 
-    public void deleteVariantFileMetadata(int studyId, int fileId) throws StorageEngineException {
+    public void removeVariantFileMetadata(int studyId, int fileId) throws StorageEngineException {
         try {
-            fileDBAdaptor.delete(studyId, fileId);
+            fileDBAdaptor.removeVariantFileMetadata(studyId, fileId);
         } catch (IOException e) {
             throw new StorageEngineException("Error deleting VariantFileMetadata for file " + fileId, e);
         }
@@ -576,6 +560,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     private Integer getFileId(int studyId, String fileName) {
+        checkName("File name", fileName);
         return fileDBAdaptor.getFileId(studyId, fileName);
     }
 
@@ -740,6 +725,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     private Integer getSampleId(int studyId, String sampleName) {
+        checkName("Sample name", sampleName);
         return sampleDBAdaptor.getSampleId(studyId, sampleName);
     }
 
@@ -844,7 +830,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return cohortMetadata;
     }
 
+    public void removeCohort(int studyId, Object cohort) {
+
+    }
+
     public Integer getCohortId(int studyId, String cohortName) {
+        checkName("Cohort name", cohortName);
         return cohortDBAdaptor.getCohortId(studyId, cohortName);
     }
 
@@ -881,6 +872,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return cohortDBAdaptor.cohortIterator(studyId);
     }
 
+    public Iterator<CohortMetadata> secondaryIndexCohortIterator(int studyId) {
+        return Iterators.filter(cohortDBAdaptor.cohortIterator(studyId), cohort -> cohort.getName().startsWith(SECONDARY_INDEX_PREFIX));
+    }
+
     public Iterable<CohortMetadata> getCalculatedCohorts(int studyId) {
         return () -> Iterators.filter(cohortIterator(studyId), CohortMetadata::isStatsReady);
     }
@@ -897,21 +892,59 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return updateCohortSamples(studyId, cohortName, samples, true);
     }
 
-    protected CohortMetadata updateCohortSamples(int studyId, String cohortName, Collection<Integer> sampleIds, boolean addSamples)
+    private CohortMetadata updateCohortSamples(int studyId, String cohortName, Collection<Integer> sampleIds,
+                                               boolean addSamples)
             throws StorageEngineException {
+        boolean secondaryIndexCohort = cohortName.startsWith(SECONDARY_INDEX_PREFIX);
 
+        boolean newCohort;
         Integer cohortId = getCohortId(studyId, cohortName);
         if (cohortId == null) {
+            newCohort = true;
             cohortId = newCohortId(studyId);
             unsecureUpdateCohortMetadata(studyId, new CohortMetadata(studyId, cohortId, cohortName, Collections.emptyList()));
+        } else {
+            newCohort = false;
         }
-        return updateCohortMetadata(studyId, cohortId, cohort -> {
+
+        // First register cohort in samples
+        for (Integer sampleId : sampleIds) {
+            Integer finalCohortId = cohortId;
+            if (secondaryIndexCohort) {
+                updateSampleMetadata(studyId, sampleId, sampleMetadata -> sampleMetadata.addSecondaryIndexCohort(finalCohortId));
+            } else {
+                updateSampleMetadata(studyId, sampleId, sampleMetadata -> sampleMetadata.addCohort(finalCohortId));
+            }
+        }
+
+        // Check removed samples from the cohort
+        // If replacing samples, and the cohort is not new, this operation may remove some samples from the cohort.
+        if (!addSamples && !newCohort) {
+            CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
+
+            for (Integer sampleFromCohort : cohortMetadata.getSamples()) {
+                Integer finalCohortId = cohortId;
+                if (!sampleIds.contains(sampleFromCohort)) {
+                    if (secondaryIndexCohort) {
+                        updateSampleMetadata(studyId, sampleFromCohort, sampleMetadata -> {
+                            sampleMetadata.getSecondaryIndexCohorts().remove(finalCohortId);
+                            return sampleMetadata;
+                        });
+                    } else {
+                        updateSampleMetadata(studyId, sampleFromCohort, sampleMetadata -> {
+                            sampleMetadata.getCohorts().remove(finalCohortId);
+                            return sampleMetadata;
+                        });
+                    }
+                }
+            }
+        }
+
+        // Then, add samples to the cohort
+        return updateCohortMetadata(studyId, cohortId,
+                cohort -> {
                     List<Integer> sampleIdsList = new ArrayList<>(sampleIds);
                     sampleIdsList.sort(Integer::compareTo);
-
-                    if (cohort == null) {
-                        return new CohortMetadata(studyId, newCohortId(studyId), cohortName, sampleIdsList);
-                    }
 
                     List<Integer> oldSamples = cohort.getSamples();
                     oldSamples.sort(Integer::compareTo);
@@ -1309,7 +1342,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return sampleId;
     }
 
-    public int registerSearchIndexSamples(StudyConfiguration studyConfiguration, List<String> samples, boolean resume)
+    public int registerSecondaryIndexSamples(int studyId, List<String> samples, boolean resume)
             throws StorageEngineException {
         if (samples == null || samples.isEmpty()) {
             throw new StorageEngineException("Missing samples to index");
@@ -1319,16 +1352,18 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
         List<String> alreadyIndexedSamples = new ArrayList<>();
         Set<Integer> searchIndexSampleSets = new HashSet<>();
+        StudyMetadata studyMetadata = getStudyMetadata(studyId);
 
         for (String sample : samples) {
-            Integer sampleId = getSampleId(studyConfiguration.getId(), sample);
+            Integer sampleId = getSampleId(studyId, sample);
             if (sampleId == null) {
-                throw VariantQueryException.sampleNotFound(sample, studyConfiguration.getName());
+                throw VariantQueryException.sampleNotFound(sample, studyMetadata.getName());
             }
             sampleIds.add(sampleId);
-            Integer searchIndex = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
-            if (searchIndex != null) {
-                searchIndexSampleSets.add(searchIndex);
+            SampleMetadata sampleMetadata = getSampleMetadata(studyId, sampleId);
+            Set<Integer> sampleCohorts = sampleMetadata.getSecondaryIndexCohorts();
+            if (!sampleCohorts.isEmpty()) {
+                searchIndexSampleSets.addAll(sampleCohorts);
                 alreadyIndexedSamples.add(sample);
             }
         }
@@ -1338,7 +1373,19 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             // All samples are already indexed, and in the same collection
             if (alreadyIndexedSamples.size() == samples.size() && searchIndexSampleSets.size() == 1) {
                 id = searchIndexSampleSets.iterator().next();
-                TaskMetadata.Status status = studyConfiguration.getSearchIndexedSampleSetsStatus().get(id);
+                CohortMetadata secondaryIndexCohort = getCohortMetadata(studyId, id);
+                if (secondaryIndexCohort.getSamples().size() != sampleIds.size()
+                        || !secondaryIndexCohort.getSamples().containsAll(sampleIds)) {
+                    System.out.println("secondaryIndexCohort = " + secondaryIndexCohort.getSamples());
+                    System.out.println("sampleIds = " + sampleIds);
+                    throw new StorageEngineException("Must provide all the samples from the secondary index: "
+                            + secondaryIndexCohort.getSamples()
+                            .stream()
+                            .map(sampleId -> getSampleName(studyId, sampleId))
+                            .collect(Collectors.joining("\", \"", "\"", "\"")));
+                }
+
+                TaskMetadata.Status status = secondaryIndexCohort.getSecondaryIndexStatus();
                 switch (status) {
                     case DONE:
                     case READY:
@@ -1360,11 +1407,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw new StorageEngineException("Samples " + alreadyIndexedSamples + " already in search index");
             }
         } else {
-            id = newSearchIndexSamplesId(studyConfiguration);
-            for (Integer sampleId : sampleIds) {
-                studyConfiguration.getSearchIndexedSampleSets().put(sampleId, id);
-            }
-            studyConfiguration.getSearchIndexedSampleSetsStatus().put(id, TaskMetadata.Status.RUNNING);
+            id = setSamplesToCohort(studyId, SECONDARY_INDEX_PREFIX + newSecondaryIndexSampleSetId(studyId), sampleIds).getId();
+            updateCohortMetadata(studyId, id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
         }
 
         return id;
@@ -1489,8 +1533,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return projectDBAdaptor.generateId((Integer) null, "study");
     }
 
-    protected int newSearchIndexSamplesId(StudyConfiguration studyConfiguration) throws StorageEngineException {
-        return projectDBAdaptor.generateId(studyConfiguration, "searchIndexSamples");
+    protected int newSecondaryIndexSampleSetId(int studyId) throws StorageEngineException {
+        return projectDBAdaptor.generateId(studyId, "secondaryIndexSampleSet");
     }
 
 
@@ -1671,6 +1715,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         }
         return task;
+    }
+
+    protected void checkName(final String type, String name) {
+        if (StringUtils.isEmpty(name)) {
+            throw new IllegalArgumentException(type + " can not be empty!");
+        }
     }
 
     @Override

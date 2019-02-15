@@ -214,7 +214,7 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
     }
 
     @Override
-    public void delete(int study, int file) throws IOException {
+    public void removeVariantFileMetadata(int study, int file) throws IOException {
         Delete delete = new Delete(getVariantFileMetadataRowKey(study, file));
 
         hBaseManager.act(tableName, table -> {

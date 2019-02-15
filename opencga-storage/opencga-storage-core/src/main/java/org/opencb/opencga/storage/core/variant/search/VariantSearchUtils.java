@@ -19,8 +19,9 @@ package org.opencb.opencga.storage.core.variant.search;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -166,8 +167,12 @@ public class VariantSearchUtils {
         return engineQuery;
     }
 
-    public static String buildSamplesIndexCollectionName(String dbName, StudyConfiguration sc, int id) {
-        return dbName + '_' + sc.getId() + '_' + id;
+    public static String buildSamplesIndexCollectionName(String dbName, StudyMetadata sm, int id) {
+        return buildSamplesIndexCollectionName(dbName, sm.getId(), id);
+    }
+
+    public static String buildSamplesIndexCollectionName(String dbName, int studyId, int secondaryIndexId) {
+        return dbName + '_' + studyId + '_' + secondaryIndexId;
     }
 
     /**
@@ -195,9 +200,7 @@ public class VariantSearchUtils {
     public static String inferSpecificSearchIndexSamplesCollection(
             Query query, QueryOptions options, VariantStorageMetadataManager metadataManager, String dbName)
             throws StorageEngineException {
-        if (true) {
-            return null;
-        }
+
         if (!VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO)) { // YES or AUTO
             if (isValidParam(query, VariantQueryParam.STUDY)) {
                 if (VariantQueryUtils.splitValue(query.getString(VariantQueryParam.STUDY.key())).getValue().size() > 1) {
@@ -260,7 +263,6 @@ public class VariantSearchUtils {
                 }
 
                 Integer studyId = selectVariantElements.getStudies().get(0);
-                StudyConfiguration studyConfiguration = selectVariantElements.getStudyConfigurations().get(studyId);
                 Set<String> samples = new HashSet<>();
                 if (isValidParam(query, VariantQueryParam.SAMPLE)) {
                     String value = query.getString(VariantQueryParam.SAMPLE.key());
@@ -290,12 +292,12 @@ public class VariantSearchUtils {
                 } else {
                     sampleIds = samples.stream()
                             .map(sample -> isNegated(sample) ? removeNegation(sample) : sample)
-                            .map(sample -> metadataManager.getSampleId(sample, studyConfiguration)).collect(Collectors.toList());
+                            .map(sample -> metadataManager.getSampleId(studyId, sample)).collect(Collectors.toList());
                 }
 
                 Integer sampleSet = null;
                 for (Integer sampleId : sampleIds) {
-                    Integer thisSampleSet = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
+                    Integer thisSampleSet = metadataManager.getSampleMetadata(studyId, sampleId).getSecondaryIndexCohort();
                     if (sampleSet == null) {
                         sampleSet = thisSampleSet;
                     } else if (!sampleSet.equals(thisSampleSet)) {
@@ -303,7 +305,11 @@ public class VariantSearchUtils {
                         return null;
                     }
                 }
-                if (!TaskMetadata.Status.READY.equals(studyConfiguration.getSearchIndexedSampleSetsStatus().get(sampleSet))) {
+                if (sampleSet == null) {
+                    return null;
+                }
+                CohortMetadata secondaryIndexCohort = metadataManager.getCohortMetadata(studyId, sampleSet);
+                if (!TaskMetadata.Status.READY.equals(secondaryIndexCohort.getSecondaryIndexStatus())) {
                     // Secondary index not ready
                     return null;
                 }
@@ -322,32 +328,34 @@ public class VariantSearchUtils {
 
                 for (String file : files) {
                     file = isNegated(file) ? removeNegation(file) : file;
-                    Integer fileId = metadataManager.getFileId(studyConfiguration.getId(), file);
+                    Integer fileId = metadataManager.getFileId(studyId, file);
                     if (fileId == null) {
                         // File not found
                         return null;
                     } else {
                         // Check if any of the samples of this file is in this collection. If so, the file will be too.
-                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                            Integer thisSampleSet = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
-                            if (thisSampleSet != null) {
-                                if (sampleSet == null) {
-                                    // There may be another sampleSet that contains all required samples.
-                                    // Take any. Could be improved in the future, if needed.
-                                    sampleSet = thisSampleSet;
-                                } else if (!Objects.equals(sampleSet, thisSampleSet)) {
-                                    return null;
-                                }
-                            }
+                        LinkedHashSet<Integer> fileSamples = metadataManager.getFileMetadata(studyId, fileId).getSamples();
+
+                        if (fileSamples.stream().noneMatch(secondaryIndexCohort.getSamples()::contains)) {
+                            // This file is not in the secondaryIndex.
+                            return null;
                         }
+//                        for (Integer sampleId : fileSamples) {
+//                            Integer thisSampleSet = studyConfiguration.getSearchIndexedSampleSets().get(sampleId);
+//                            if (thisSampleSet != null) {
+//                                if (sampleSet == null) {
+//                                    // There may be another sampleSet that contains all required samples.
+//                                    // Take any. Could be improved in the future, if needed.
+//                                    sampleSet = thisSampleSet;
+//                                } else if (!Objects.equals(sampleSet, thisSampleSet)) {
+//                                    return null;
+//                                }
+//                            }
+//                        }
                     }
                 }
 
-                if (sampleSet == null) {
-                    return null;
-                } else {
-                    return buildSamplesIndexCollectionName(dbName, studyConfiguration, sampleSet);
-                }
+                return buildSamplesIndexCollectionName(dbName, studyId, sampleSet);
             }
         }
 

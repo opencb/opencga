@@ -120,7 +120,7 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     }
 
     @Override
-    public void delete(int study, int file) {
+    public void removeVariantFileMetadata(int study, int file) {
 
     }
 
