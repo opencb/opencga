@@ -34,7 +34,6 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.clinical.InterpretationResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -512,6 +511,16 @@ public class OpenCGAWSServer {
         Response response = createJsonResponse(queryResponse);
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
+    }
+
+    protected Response createRawOkResponse(Object obj) {
+        try {
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(obj), MediaType.APPLICATION_JSON_TYPE));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            logger.error("Error parsing response object");
+            return createErrorResponse("", "Error parsing response object:\n" + Arrays.toString(e.getStackTrace()));
+        }
     }
 
     protected Response createAnalysisOkResponse(Object obj) {
