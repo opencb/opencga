@@ -626,13 +626,16 @@ public class OpenCGAWSServer {
     }
 
     protected List<String> getIdList(String id) throws WebServiceException {
+        return getIdList(id, true);
+    }
+
+    protected List<String> getIdList(String id, boolean checkMaxNumberElements) throws WebServiceException {
         if (StringUtils.isNotEmpty(id)) {
             List<String> ids = checkUniqueList(id);
-            if (ids.size() <= MAX_ID_SIZE) {
-                return ids;
-            } else {
+            if (checkMaxNumberElements && ids.size() > MAX_ID_SIZE) {
                 throw new WebServiceException("More than " + MAX_ID_SIZE + " IDs are provided");
             }
+            return ids;
         } else {
             throw new WebServiceException("ID is null or Empty");
         }
