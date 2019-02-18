@@ -12,6 +12,13 @@ set -e
 # echo $VM_INDEX
 # echo $CLUSTER_SIZE
 
+configureTCPTimeout() {
+    # Lower TCP keeplive interval
+    # "For MongoDB, you will have better results with shorter keepalive periods, on the order of 120 seconds (two minutes)."
+    # See: https://docs.mongodb.com/manual/faq/diagnostics/#does-tcp-keepalive-time-affect-mongodb-deployments
+    sysctl -w net.ipv4.tcp_keepalive_time=120
+}
+
 installDeps () {
     apt-mark hold walinuxagent
     apt-get update
@@ -146,6 +153,7 @@ createReplicaSet() {
 }
 
 #install flow
+configureTCPTimeout
 installDeps
 scanForNewDisks
 generateCertificate
