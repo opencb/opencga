@@ -184,6 +184,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
         UPDATE_STATS("updateStats", false),                //Calculate missing stats
         STATS_DEFAULT_GENOTYPE("stats.default-genotype", "0/0"), // Default genotype to be used for calculating stats.
+        STATS_MULTI_ALLELIC("stats.multiallelic", true),  // Include secondary alternates in the variant stats calculation
 
         ANNOTATE("annotate", false),
         INDEX_SEARCH("indexSearch", false),

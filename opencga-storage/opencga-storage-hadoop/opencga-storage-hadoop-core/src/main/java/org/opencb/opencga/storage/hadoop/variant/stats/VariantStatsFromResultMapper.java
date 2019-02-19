@@ -9,19 +9,22 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
-import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 14/03/18.
@@ -31,7 +34,7 @@ import java.util.stream.Collectors;
 public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWritable, Put> {
 
     private String study;
-    private Map<String, Set<String>> samples;
+    private Map<String, List<Integer>> samples;
     private VariantTableHelper helper;
     private StudyMetadata studyMetadata;
     private VariantStatsToHBaseConverter converter;
@@ -58,21 +61,26 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             cohorts.forEach(cohortId -> {
                 CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortId);
                 cohortIds.put(cohort.getName(), cohortId);
-                Set<String> samplesInCohort = cohort.getSamples().stream()
-                        .map(s -> metadataManager.getSampleName(studyMetadata.getId(), s))
-                        .collect(Collectors.toSet());
+                List<Integer> samplesInCohort = cohort.getSamples();
                 samples.put(cohort.getName(), samplesInCohort);
             });
             converter = new VariantStatsToHBaseConverter(helper, studyMetadata, cohortIds);
 
         }
+
         calculators = new HashMap<>(cohorts.size());
+        String unknownGenotype = context.getConfiguration().get(
+                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
+        boolean statsMultiAllelic = context.getConfiguration().getBoolean(
+                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
+                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             samples.forEach((cohort, samples) -> {
                 calculators.put(cohort,
                         new HBaseVariantStatsCalculator(
-                                helper.getColumnFamily(), metadataManager, studyMetadata, new ArrayList<>(samples)));
+                                helper.getColumnFamily(), metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype));
             });
         }
     }

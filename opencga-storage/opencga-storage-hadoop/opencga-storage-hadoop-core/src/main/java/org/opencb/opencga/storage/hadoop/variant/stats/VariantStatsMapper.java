@@ -120,10 +120,16 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
         for (int cohortId : ints) {
             cohorts.add(cohortId);
         }
+        if (cohorts.isEmpty()) {
+            throw new IllegalArgumentException("Missing cohorts!");
+        }
         return cohorts;
     }
 
     public static void setCohorts(Job job, Collection<Integer> cohorts) {
+        if (cohorts.isEmpty()) {
+            throw new IllegalArgumentException("Missing cohorts!");
+        }
         job.getConfiguration().set(COHORTS, cohorts.stream().map(Object::toString).collect(Collectors.joining(",")));
     }
 
