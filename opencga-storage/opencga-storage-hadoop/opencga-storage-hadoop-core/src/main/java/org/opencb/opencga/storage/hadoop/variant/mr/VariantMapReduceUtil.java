@@ -7,9 +7,11 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.mapreduce.PhoenixOutputFormat;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
@@ -62,7 +64,22 @@ public class VariantMapReduceUtil {
         setNoneReduce(job);
     }
 
+    public static void initPartialResultTableMapperJob(Job job, String inTable, String outTable, Scan scan,
+                                                       Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        initTableMapperJob(job, inTable, scan, mapperClass, PartialResultTableInputFormat.class);
+        LOGGER.info("Allow partial results from HBase");
+        setOutputHBaseTable(job, outTable);
+        setNoneReduce(job);
+    }
+
     public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        initTableMapperJob(job, inTable, scan, mapperClass, TableInputFormat.class);
+    }
+
+    public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass,
+                                          Class<? extends InputFormat> inputFormatClass)
             throws IOException {
         boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
         LOGGER.info("Use table {} as input", inTable);
@@ -73,7 +90,8 @@ public class VariantMapReduceUtil {
                 null,             // mapper output key
                 null,             // mapper output value
                 job,
-                addDependencyJar);
+                addDependencyJar,
+                inputFormatClass);
     }
 
     public static void initTableMapperJob(Job job, String inTable, List<Scan> scans, Class<? extends TableMapper> mapperClass)
