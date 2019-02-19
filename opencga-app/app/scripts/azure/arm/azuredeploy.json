@@ -202,11 +202,11 @@
                     "diskType": "E10"
                 },
                 "hdInsight": {
-                    "worker": {
-                        "nodeCount": 1,
+                    "head": {
+                        "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
                     },
-                    "head": {
+                    "worker": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D3_v2"
                     }
@@ -244,11 +244,11 @@
                     "diskType": "P20"
                 },
                 "hdInsight": {
-                    "worker": {
+                    "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
                     },
-                    "head": {
+                    "worker": {
                         "nodeCount": 20,
                         "nodeSize": "Standard_D5_v2"
                     }
@@ -286,11 +286,11 @@
                     "diskType": "P20"
                 },
                 "hdInsight": {
-                    "worker": {
+                    "head": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D4_v2"
                     },
-                    "head": {
+                    "worker": {
                         "nodeCount": 50,
                         "nodeSize": "Standard_D14_v2"
                     }
