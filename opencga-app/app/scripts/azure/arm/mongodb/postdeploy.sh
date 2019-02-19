@@ -45,6 +45,7 @@ scanForNewDisks() {
 
     for DEV in "${DEVS[@]}";
     do
+        echo "Found unpartitioned disk $DEV"
         isPartitioned ${DEV}
     done
 }
@@ -59,7 +60,14 @@ isPartitioned() {
 
 formatAndMountDisk() {
     #partitions primary linux partition on new disk
+    echo "Partitioning disk"
     echo 'type=83' | sfdisk ${1}
+    until blkid ${1}1
+    do
+        echo "Waiting for drive to be partitioned"
+        sleep 2
+    done
+    echo "Formatting Partition"
     mkfs -t ext4 ${1}1
     mkdir /datadrive
     mount -o acl ${1}1 /datadrive
