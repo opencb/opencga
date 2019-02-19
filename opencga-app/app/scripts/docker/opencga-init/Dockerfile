@@ -25,7 +25,7 @@ ENV BATCH_DOCKER_IMAGE=""
 ENV BATCH_MAX_CONCURRENT_JOBS=""
 ENV HEALTH_CHECK_INTERVAL=""
 
-# Minimum compatible git commit, please only use later commits.
+# Minimum compatible IVA release is v1.0.0-rc1, please only use this or later releases.
 ARG IVA_TAG="v1.0.0-rc1"
 
 # Install local dependencies
