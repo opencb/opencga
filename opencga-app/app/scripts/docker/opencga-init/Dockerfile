@@ -26,7 +26,7 @@ ENV BATCH_MAX_CONCURRENT_JOBS=""
 ENV HEALTH_CHECK_INTERVAL=""
 
 # Minimum compatible git commit, please only use later commits.
-ARG IVA_COMMIT_SHA="dce421b6933d540d9c511c72e63c0e85dff00667"
+ARG IVA_TAG="v1.0.0-rc1"
 
 # Install local dependencies
 RUN apt-get update && apt-get install -y python3 python3-pip openssh-client git sshpass && \
@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y python3 python3-pip openssh-client git 
 # Download and extract the IVA configuration into our local configuration.
 RUN git clone "https://github.com/opencb/iva.git" && \
     cd iva && \
-    git reset "$IVA_COMMIT_SHA" --hard && \
+    git checkout tags/"$IVA_TAG"  && \
     mkdir -p /opt/opencga/ivaconf && \
     cp -r src/conf/* /opt/opencga/ivaconf
 
