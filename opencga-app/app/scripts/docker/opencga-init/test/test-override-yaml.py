@@ -30,10 +30,19 @@ res = subprocess.run(["python3", "../override-yaml.py",
                "--batch-pool-id", "test-batch-pool-id",
                "--batch-docker-args", "test-batch-docker-args",
                "--batch-docker-image", "test-batch-docker-image",
-               "--batch-max-concurrent-jobs", "25"
+               "--batch-max-concurrent-jobs", "25",
+               "--hadoop-ssh-host", "test-hadoop-ssh-host",
+               "--hadoop-ssh-user", "test-hadoop-ssh-user",
+               "--hadoop-ssh-password", "test-hadoop-ssh-password",
+               "--hadoop-ssh-remote-opencga-home", "test-hadoop-ssh-remote-opencga-home"
                ],
                stdout=subprocess.PIPE,
-               stderr=subprocess.STDOUT, check=True)
+               stderr=subprocess.STDOUT, check=False)
+if res.returncode != 0:
+    print("Error calling override-yaml.py:")
+    print(res.stdout)
+    sys.exit(1)
+
 configs = []
 configsRaw = res.stdout.decode("utf-8").split("---")
 
@@ -51,6 +60,11 @@ assert(storage_config["search"]["hosts"][0] == "test-search-host1")
 assert(storage_config["search"]["hosts"][1] == "test-search-host2")
 assert(storage_config["clinical"]["hosts"][0] == "test-clinical-host")
 assert(storage_config["cellbase"]["database"]["hosts"][0] == "test-cellbase-host")
+assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor"] == "ssh")
+assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.host"] == "test-hadoop-ssh-host")
+assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.user"] == "test-hadoop-ssh-user")
+assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.password"] == "test-hadoop-ssh-password")
+assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] == "test-hadoop-ssh-remote-opencga-home")
 assert(config["catalog"]["database"]["hosts"][0] == "test-catalog-database-host1")
 assert(config["catalog"]["database"]["hosts"][1] == "test-catalog-database-host2")
 assert(config["catalog"]["database"]["hosts"][2] == "test-catalog-database-host3")
@@ -71,5 +85,6 @@ assert(config["execution"]["options"]["dockerImageName"] == "test-batch-docker-i
 assert(config["execution"]["options"]["dockerArgs"] == "test-batch-docker-args")
 assert(client_config["rest"]["host"] == "test-rest-host")
 assert(client_config["grpc"]["host"] == "test-grpc-host")
+
 
 print("PASS: Yaml configuration overrides successful")

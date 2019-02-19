@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.HADOOP_BIN;
+import static org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor.HADOOP_BIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY;
 
 /**
@@ -98,7 +98,7 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-        String jar = getJarWithDependencies();
+        String jar = MRExecutor.getJarWithDependencies(getOptions());
 
         Class execClass = ArchiveDriver.class;
         String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();

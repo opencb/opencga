@@ -1,13 +1,18 @@
 #!/bin/sh
 
-sshpass -p "$HBASE_SSH_PASS" ssh -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HBASE_SSH_USER@$HBASE_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
+sshpass -p "$HBASE_SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$HBASE_SSH_USER@$HBASE_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
 
 # copy conf files from hdinsight cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
 # place these files in /opt/opencga/conf/hadoop, by e.g.: (todo: change connection strings)
 echo "Fetching HDInsight configuration"
-sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":/etc/hadoop/conf/* /opt/opencga/conf/hadoop
+sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":/etc/hadoop/conf/* /opt/opencga/conf/hadoop
 # same with /etc/hbase/conf, e.g.
-sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
+sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null -r "$HBASE_SSH_USER@$HBASE_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
+
+# Copy the OpenCGA installation directory to the hdinsights cluster
+# TODO - Optimize this down to only required jars
+REMOTE_OPENCGA_HOME="/home/$HBASE_SSH_USER/opencga/"
+sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$HBASE_SSH_USER@$HBASE_SSH_DNS":"$REMOTE_OPENCGA_HOME"
 
 echo "Initialising configs"
 # Override Yaml configs
@@ -31,6 +36,10 @@ python3 /tmp/override-yaml.py \
 --batch-docker-args "$BATCH_DOCKER_ARGS" \
 --batch-docker-image "$BATCH_DOCKER_IMAGE" \
 --batch-max-concurrent-jobs "$BATCH_MAX_CONCURRENT_JOBS" \
+--hadoop-ssh-host "$HBASE_SSH_DNS" \
+--hadoop-ssh-user "$HBASE_SSH_USER" \
+--hadoop-ssh-password "$HBASE_SSH_PASS" \
+--hadoop-ssh-remote-opencga-home "$REMOTE_OPENCGA_HOME" \
 --health-check-interval "$HEALTH_CHECK_INTERVAL" \
 --save
 # Override Js configs

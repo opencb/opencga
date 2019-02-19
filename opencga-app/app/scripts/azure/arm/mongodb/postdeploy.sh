@@ -12,6 +12,13 @@ set -e
 # echo $VM_INDEX
 # echo $CLUSTER_SIZE
 
+configureTCPTimeout() {
+    # Lower TCP keeplive interval
+    # "For MongoDB, you will have better results with shorter keepalive periods, on the order of 120 seconds (two minutes)."
+    # See: https://docs.mongodb.com/manual/faq/diagnostics/#does-tcp-keepalive-time-affect-mongodb-deployments
+    sysctl -w net.ipv4.tcp_keepalive_time=120
+}
+
 installDeps () {
     apt-mark hold walinuxagent
     apt-get update
@@ -38,6 +45,7 @@ scanForNewDisks() {
 
     for DEV in "${DEVS[@]}";
     do
+        echo "Found unpartitioned disk $DEV"
         isPartitioned ${DEV}
     done
 }
@@ -52,7 +60,14 @@ isPartitioned() {
 
 formatAndMountDisk() {
     #partitions primary linux partition on new disk
+    echo "Partitioning disk"
     echo 'type=83' | sfdisk ${1}
+    until blkid ${1}1
+    do
+        echo "Waiting for drive to be partitioned"
+        sleep 2
+    done
+    echo "Formatting Partition"
     mkfs -t ext4 ${1}1
     mkdir /datadrive
     mount -o acl ${1}1 /datadrive
@@ -146,6 +161,7 @@ createReplicaSet() {
 }
 
 #install flow
+configureTCPTimeout
 installDeps
 scanForNewDisks
 generateCertificate
