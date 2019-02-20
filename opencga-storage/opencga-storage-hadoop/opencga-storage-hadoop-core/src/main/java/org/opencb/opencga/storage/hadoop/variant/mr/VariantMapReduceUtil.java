@@ -67,8 +67,8 @@ public class VariantMapReduceUtil {
     public static void initPartialResultTableMapperJob(Job job, String inTable, String outTable, Scan scan,
                                                        Class<? extends TableMapper> mapperClass)
             throws IOException {
-        initTableMapperJob(job, inTable, scan, mapperClass, PartialResultTableInputFormat.class);
         LOGGER.info("Allow partial results from HBase");
+        initTableMapperJob(job, inTable, scan, mapperClass, PartialResultTableInputFormat.class);
         setOutputHBaseTable(job, outTable);
         setNoneReduce(job);
     }

@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.io.IOException;
@@ -197,7 +198,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         dbAdaptor.getMetadataManager().cohortIterator(studyMetadata.getId()).forEachRemaining(cohort -> {
             cohorts.put(cohort.getName(), cohort);
         });
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), null);
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), null);
              iterator.hasNext(); ) {
             Variant variant = iterator.next();
             for (StudyEntry sourceEntry : variant.getStudies()) {
