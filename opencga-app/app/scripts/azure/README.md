@@ -205,7 +205,17 @@ Link VCF genome file to your newly created study
 sudo /opt/opencga/bin/opencga.sh files link -i ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz -s 1kG_phase3
 ```
 
-> Note: You can complete the following two steps as one by removing `--transform` from the command. If you're running in the Azure ARM version this will make it easier as the process will be queued via Azure Batch. 
+### Integrated pipeline load
+
+> Note: This performs `transform`, `load`, `calculateStats` and `annotate` all in one pipeline which simplifies execution. 
+
+```
+sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --calculate-stats --annotate -o outDir
+```
+
+### Separate pipeline load (Advanced/Manual)
+
+> Note: This performs `transform`, `load`, `calculateStats` and `annotate` individually and isn't recommended for normal usage. 
 
 Transform file (view progress in separate daemon terminal)
 ```
