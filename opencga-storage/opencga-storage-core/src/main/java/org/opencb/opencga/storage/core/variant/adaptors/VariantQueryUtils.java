@@ -785,8 +785,13 @@ public final class VariantQueryUtils {
 
         List<String> includeFilesList = getIncludeFilesList(query);
         List<String> includeSamplesList = getIncludeSamplesList(query, options);
-        LinkedHashSet<String> includeSamplesSet = includeSamplesList != null ? new LinkedHashSet<>(includeSamplesList) : null;
         boolean includeAllSamples = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(ALL);
+        boolean includeNoneSamples = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(NONE);
+        if (!includeNoneSamples) {
+            if (includeSamplesList == null && CollectionUtils.isEmpty(includeFilesList)) {
+                includeAllSamples = true;
+            }
+        }
 
         Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -796,18 +801,12 @@ public final class VariantQueryUtils {
             }
 
             List<Integer> sampleIds;
-            if (includeSamplesSet != null || includeAllSamples || includeFilesList == null || includeFilesList.isEmpty()) {
-                LinkedHashMap<String, Integer> includeSamplesPosition
-                        = metadataManager.getSamplesPosition(sm, includeSamplesSet);
-
-                sampleIds = Arrays.asList(new Integer[includeSamplesPosition.size()]);
-                for (Map.Entry<String, Integer> entry : includeSamplesPosition.entrySet()) {
-                    String sample = entry.getKey();
-                    Integer position = entry.getValue();
-                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                    sampleIds.set(position, sampleId);
-                }
-            } else {
+            if (includeNoneSamples) {
+                sampleIds = Collections.emptyList();
+            } else if (includeAllSamples) {
+                sampleIds = metadataManager.getIndexedSamples(sm.getId());
+            } else if (includeSamplesList == null && CollectionUtils.isNotEmpty(includeFilesList)) {
+                // Include from files
                 Set<Integer> sampleSet = new LinkedHashSet<>();
                 for (String file : includeFilesList) {
                     Integer fileId = metadataManager.getFileId(sm.getId(), file, true);
@@ -820,6 +819,35 @@ public final class VariantQueryUtils {
                     }
                 }
                 sampleIds = new ArrayList<>(sampleSet);
+            } else {
+                Object includeSampleRaw = query.get(INCLUDE_SAMPLE.key());
+                if (includeSampleRaw instanceof Collection
+                        && !((Collection) includeSampleRaw).isEmpty()
+                        && ((Collection) includeSampleRaw).iterator().next() instanceof Integer) {
+                    sampleIds = new ArrayList<>((Collection<Integer>) includeSampleRaw);
+                } else {
+                    sampleIds = new ArrayList<>(includeSamplesList.size());
+                    for (String sample : includeSamplesList) {
+                        Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                        if (sampleId != null) {
+                            sampleIds.add(sampleId);
+                        }
+                    }
+                    /*
+                    LinkedHashMap<String, Integer> includeSamplesPosition
+                            = metadataManager.getSamplesPosition(sm, includeSamplesSet);
+
+                    sampleIds = Arrays.asList(new Integer[includeSamplesPosition.size()]);
+                    for (Map.Entry<String, Integer> entry : includeSamplesPosition.entrySet()) {
+                        String sample = entry.getKey();
+                        Integer position = entry.getValue();
+                        Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                        sampleIds.set(position, sampleId);
+                    }
+                     */
+                }
+                Set<Integer> indexedSampleIds = new HashSet<>(metadataManager.getIndexedSamples(sm.getId()));
+                sampleIds.removeIf(o -> !indexedSampleIds.contains(o));
             }
             samples.put(studyId, sampleIds);
         }

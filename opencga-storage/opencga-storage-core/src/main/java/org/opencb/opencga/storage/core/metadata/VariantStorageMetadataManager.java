@@ -784,7 +784,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         } else {
             samplesPosition = new LinkedHashMap<>(includeSamples.size());
             int index = 0;
-            List<Integer> indexedSamplesId = getIndexedSamples(sm.getId());
+            Set<Integer> indexedSamplesId = new HashSet<>(getIndexedSamples(sm.getId()));
             for (Object includeSampleObj : includeSamples) {
                 Integer sampleId = getSampleId(sm.getId(), includeSampleObj, false);
                 if (sampleId == null) {
