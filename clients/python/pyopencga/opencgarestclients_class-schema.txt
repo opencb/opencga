@@ -1,0 +1,124 @@
+class _ParentRestClient(object):
+    def __init__(self, configuration, category, session_id=None, login_handler=None, auto_refresh=True):
+    def _client_login_handler(self):
+    def _refresh_token_client(self):
+    def _get_query_id_str(query_ids):
+    def _rest_retry(self, method, resource, query_id=None, subcategory=None,
+        def exec_retry():
+        def notify_retry(exc_type, exc_val, exc_tb):
+    def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
+    def _post(self, resource, data, query_id=None, subcategory=None, second_query_id=None, **options):
+class _ParentBasicCRUDClient(_ParentRestClient):
+    def create(self, data, **options):
+    def info(self, query_id, **options):
+    def update(self, query_id, data, **options):
+    def delete(self, query_id, **options):
+class _ParentAclRestClient(_ParentRestClient):
+    def acl(self, query_id, **options):
+    def acl_update(self, memberId, data, **options):
+class _ParentAnnotationSetRestClient(_ParentRestClient):
+    def annotationsets_search(self, query_id, study, **options):
+    def annotationsets(self, query_id, study, **options):
+    def annotationsets_delete(self, query_id, study, annotationset_name, **options):
+    def annotationsets_info(self, query_id, study, annotationset_name, **options):
+    def annotationsets_create(self, query_id, study, variable_set_id, data, **options):
+    def annotationsets_update(self, query_id, study, annotationset_name, data, **options):
+class Users(_ParentBasicCRUDClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def login(self, user, pwd, **options):
+    def refresh_token(self, user, **options):
+    def logout(self, **options):
+class Projects(_ParentBasicCRUDClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def studies(self, projectId, **options):
+    def search(self, **options):
+class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def groups(self, studyId, **options):
+    def search(self, data=None, **options):
+    def files(self, studyId, **options):
+    def summary(self, studyId, **options):
+    def groups_create(self, study, data, **options):
+    def groups_delete(self, studyId, groupId, **options):
+    def groups_info(self, studyId, groupId, **options):
+    def groups_update(self, studyId, groupId, data, **options):
+    def jobs(self, studyId, **options):
+    def rsync_files(self, studyId, **options):
+    def samples(self, studyId, **options):
+    def scan_files(self, studyId, **options):
+class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def bioformats(self, **options):
+    def formats(self, **options):
+    def create_folder(self, studyId, folders, path, **options):
+    def group_by(self, fields, study, **options):
+    def search(self, study, **options):
+    def unlink(self, fileId, **options):
+    def link(self, study, path, uri, **options):
+    def scan_folder(self, folder, **options):
+    def list(self, folder, **options):
+    def content(self, file, **options):
+    def grep(self, file, **options):
+    def index(self, fileId, **options):
+    def refresh(self, fileId, **options):
+    def tree(self, fileId, **options):
+class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def group_by(self, fields, study, **options):
+    def search(self, study, **options):
+    def visit(self, job_id, **options):
+    def update(self, query_id, **options):
+class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def search(self, study, **options):
+class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def group_by(self, fields, study, **options):
+    def search(self, study, **options):
+class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def group_by(self, fields, study, **options):
+    def search(self, study, **options):
+class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def group_by(self, fields, study, **options):
+    def search(self, study, **options):
+    def samples(self, cohorts, **options):
+class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def search(self, study, **options):
+class VariableSets(_ParentBasicCRUDClient, _ParentRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def search(self, study, **options):
+    def summary(self, variableset, **options):
+    def field_rename(self, variableset, old_name, new_name, **options):
+    def field_delete(self, variableset, name, **options):
+    def field_add(self, variableset, data, **options):
+class AnalysisAlignment(_ParentRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def coverage(self, file, study, **options):
+    def index(self, file, study, **options):
+    def query(self, file, study, **options):
+    def stats(self, file, study, **options):
+class AnalysisVariant(_ParentRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def index(self, file, study, **options):
+    def query(self, pag_size, data, skip=0, **options):
+class GA4GH(_ParentRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def read_search(self, data, **options):
+    def variant_search(self, data, **options):
+class Meta(_ParentRestClient):
+    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def about(self, **options):
+    def ping(self, **options):
+    def status(self, **options):
+class OpenCGAClient(object):
+    def __init__(self, configuration, user=None, pwd=None, session_id=None,
+    def __enter__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
+    def _create_clients(self):
+    def _make_login_handler(self, user, pwd):
+        def login_handler(refresh=False):
+    def _login(self):
+    def logout(self):
