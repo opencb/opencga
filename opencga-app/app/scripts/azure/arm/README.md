@@ -14,13 +14,13 @@ The ARM templates defined here support three "t-shirt-sized" deployments. Each o
 
 The sizes are:
 
-- Small: Useful for small teams, or individuals.
-- Medium: A decent default for most installs that need so support a team of researchers
-- Large: A configurartion that should support a large organisation
+- Small (0): Useful for small teams, or individuals.
+- Medium (1): A decent default for most installs that need so support a team of researchers
+- Large (2): A configurartion that should support a large organisation
 
 Here are the properties that are defined for each t-shirt size:
 
-| Component   | Property            | Small        | Medium | Large  |
+| Component   | Property            | 0        | 1 | 2  |
 | ----------- | ------------------- | ------------ | ------ | ------ |
 | Avere       |
 |             | use-azure           | FALSE        | TRUE   | TRUE   |
@@ -59,6 +59,53 @@ Here are the properties that are defined for each t-shirt size:
 |             | node-quantity       | 1            | 2      | 4      |
 |             | node-size           | D2sv3        | D4sv3  | D4sv3  |
 |             | disk-type           | HDD          | HDD    | HDD    |
+
+Additionally you can deploy a custom size by specifying the `customTShirtSize` field and setting `deploymentSize=3`. The object has to contain all required fields. For an example see below. 
+
+```json
+        "deploymentSize": {
+            "value": 3
+        },
+        "customTShirtSize": {
+            "value": {
+                "type": "0 = Small",
+                "avereEnabled": true,
+                "azureFilesEnabled": false,
+                "solr": {
+                    "ha": false,
+                    "nodeSize": "Standard_E4_v3",
+                    "nodeCount": 1
+                },
+                "batch": {
+                    "maxNodeCount": 6,
+                    "nodeSize": "Standard_F8s_v2"
+                },
+                "mongo": {
+                    "nodeCount": 1,
+                    "nodeSize": "Standard_D4_v2",
+                    "diskType": "E10"
+                },
+                "hdInsight": {
+                    "head": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "worker": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D14_v2"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_DS2_v2"
+                },
+                "webServers": {
+                    "minNodeCount": 1,
+                    "maxNodeCount": 2,
+                    "nodeSize": "Standard_DS2_v2"
+                }
+            }
+        }
+```
 
 ## Additional Notes
 

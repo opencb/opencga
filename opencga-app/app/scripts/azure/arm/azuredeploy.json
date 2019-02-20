@@ -19,7 +19,8 @@
             "allowedValues": [
                 0,
                 1,
-                2
+                2,
+                3
             ],
             "defaultValue": 0,
             "metadata": {
@@ -178,6 +179,13 @@
             "metadata": {
                 "description": "HealthCheck cache interval value in seconds."
             }
+        },
+        "customTShirtSize": {
+            "type": "object",
+            "defaultValue": {},
+            "metadata": {
+                "description": "Define an object for a custom tshirt size of the deployment. WARNING: Intended for experimenting or debugging use with care."
+            }
         }
     },
     "variables": {
@@ -185,8 +193,8 @@
         "sizingOptions": [
             {
                 "type": "0 = Small",
-                "avereEnabled": false,
-                "azureFilesEnabled": true,
+                "avereEnabled": true,
+                "azureFilesEnabled": false,
                 "solr": {
                     "ha": false,
                     "nodeSize": "Standard_E4_v3",
@@ -303,7 +311,8 @@
                     "maxNodeCount": 4,
                     "nodeSize": "Standard_DS4_v2"
                 }
-            }
+            },
+            "[parameters('customTShirtSize')]"
         ],
         "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
     },
