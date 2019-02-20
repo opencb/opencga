@@ -4,6 +4,12 @@ This document contains information related to the deployment of OpenCGA to Azure
 
 ## Deploy to Azure
 
+### Notes
+
+1. Due to the complexity of the solution allow 18-25mins for a Small or 40-50mins for a Medium and Large. 
+2. When deploying with Avere: The Service Principal used must have the 'Owner' role assigned to it for the ResourceGroup deploying into or for the Subscription. You must also run you must first accept the legal terms of the license using the following command `az vm image accept-terms --urn microsoft-avere:vfxt:avere-vfxt-controller:latest`. See [the Avere docs for more details](https://docs.microsoft.com/en-us/azure/avere-vfxt/avere-vfxt-prereqs#accept-software-terms-in-advance)
+3. Medium and Large sizes will require requests to raise the core quota on the subscription used. [How-to request document here](https://docs.microsoft.com/en-us/azure/azure-supportability/resource-manager-core-quotas-request).
+
 ### With the Portal
 
 Click the following link the ensure you fill in the parameters according to their descriptions.
@@ -123,12 +129,4 @@ Additionally you can deploy a custom size by specifying the `customDeploymentSiz
             }
         }
 ```
-
-## Additional Notes
-
-### Avere - First Run
-
-To run Avere you must first accept the legal terms of the license using the following command `az vm image accept-terms --urn microsoft-avere:vfxt:avere-vfxt-controller:latest`
-
-See [the Avere docs for more details](https://docs.microsoft.com/en-us/azure/avere-vfxt/avere-vfxt-prereqs#accept-software-terms-in-advance)
 

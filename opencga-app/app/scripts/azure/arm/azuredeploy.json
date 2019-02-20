@@ -689,27 +689,12 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/avere/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "uri": "https://raw.githubusercontent.com/Azure/Avere/7677b4db16c0a31e1bf07383d7958eda47db1b7a/src/vfxt/azuredeploy-auto.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "avereInstanceType": {
-                        "value": "[variables('selectedSize').avere.nodeSize]"
-                    },
-                    "avereNodeCount": {
-                        "value": "[variables('selectedSize').avere.nodeCount]"
-                    },
-                    "avereCacheSizeGB": {
-                        "value": "[variables('selectedSize').avere.diskSize]"
-                    },
-                    "servicePrincipalTenant": {
-                        "value": "[subscription().tenantId]"
-                    },
-                    "servicePrincipalAppId": {
-                        "value": "[parameters('avereServicePrincipalAppId')]"
-                    },
-                    "servicePrincipalPassword": {
-                        "value": "[parameters('avereServicePrincipalPassword')]"
+                    "createVirtualNetwork": {
+                        "value": false
                     },
                     "virtualNetworkName": {
                         "value": "[reference('vnet').outputs.virtualNetworkName.value]"
@@ -720,8 +705,17 @@
                     "virtualNetworkSubnetName": {
                         "value": "[reference('vnet').outputs.avereSubnetName.value]"
                     },
-                    "virtualNetworkSubnetId": {
-                        "value": "[reference('vnet').outputs.avereClusterSubnetId.value]"
+                    "vnetAddressSpacePrefix": {
+                        "value": "10.0.0.0/16"
+                    },
+                    "subnetAddressRangePrefix": {
+                        "value": "10.0.1.0/24"
+                    },
+                    "avereBackedStorageAccountName": {
+                        "value": "[concat('av', uniqueString(subscription().subscriptionId,parameters('rgPrefix')))]"
+                    },
+                    "controllerName": {
+                        "value": "[concat('avereController', uniqueString(subscription().subscriptionId,parameters('rgPrefix')))]"
                     },
                     "controllerAdminUsername": {
                         "value": "[parameters('adminUsername')]"
@@ -731,6 +725,18 @@
                     },
                     "adminPassword": {
                         "value": "[parameters('avereAdminPassword')]"
+                    },
+                    "avereClusterName": {
+                        "value": "[concat('averecluster', uniqueString(subscription().subscriptionId,parameters('rgPrefix')))]"
+                    },
+                    "avereInstanceType": {
+                        "value": "[variables('selectedSize').avere.nodeSize]"
+                    },
+                    "avereNodeCount": {
+                        "value": "[variables('selectedSize').avere.nodeCount]"
+                    },
+                    "avereCacheSizeGB": {
+                        "value": "[variables('selectedSize').avere.diskSize]"
                     }
                 }
             }
