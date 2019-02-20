@@ -20,7 +20,7 @@ The sizes are:
 
 Here are the properties that are defined for each t-shirt size:
 
-| Component   | Property            | 0        | 1 | 2  |
+| Component   | Property            | 1 (Small)        | 2 (Medium) | 3 (Large)  |
 | ----------- | ------------------- | ------------ | ------ | ------ |
 | Avere       |
 |             | use-azure           | FALSE        | TRUE   | TRUE   |
@@ -60,16 +60,21 @@ Here are the properties that are defined for each t-shirt size:
 |             | node-size           | D2sv3        | D4sv3  | D4sv3  |
 |             | disk-type           | HDD          | HDD    | HDD    |
 
-Additionally you can deploy a custom size by specifying the `customTShirtSize` field and setting `deploymentSize=3`. The object has to contain all required fields. For an example see below. 
+Additionally you can deploy a custom size by specifying the `customDeploymentSize` field and setting `deploymentSize=0`. The object has to contain all required fields. For an example see below. 
 
 ```json
         "deploymentSize": {
-            "value": 3
+            "value": 0
         },
-        "customTShirtSize": {
+        "customDeploymentSize": {
             "value": {
-                "type": "0 = Small",
+                "type": "0 = CustomSize",
                 "avereEnabled": true,
+                "avere": {
+                    "nodeCount": 3,
+                    "diskSize": 1024,
+                    "nodeSize": "Standard_D16s_v3"
+                },
                 "azureFilesEnabled": false,
                 "solr": {
                     "ha": false,

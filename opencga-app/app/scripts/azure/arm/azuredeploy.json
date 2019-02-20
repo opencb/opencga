@@ -22,7 +22,7 @@
                 2,
                 3
             ],
-            "defaultValue": 0,
+            "defaultValue": 1,
             "metadata": {
                 "description": "What size of deployment do you want? 0 = For single researches testing things out. 1 = For x genomics with xgb per sec load rate. 2 = is for x/y"
             }
@@ -180,7 +180,7 @@
                 "description": "HealthCheck cache interval value in seconds."
             }
         },
-        "customTShirtSize": {
+        "customDeploymentSize": {
             "type": "object",
             "defaultValue": {},
             "metadata": {
@@ -191,10 +191,11 @@
     "variables": {
         "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]",
         "sizingOptions": [
+            "[parameters('customDeploymentSize')]",
             {
-                "type": "0 = Small",
-                "avereEnabled": true,
-                "azureFilesEnabled": false,
+                "type": "1 = Small",
+                "avereEnabled": false,
+                "azureFilesEnabled": true,
                 "solr": {
                     "ha": false,
                     "nodeSize": "Standard_E4_v3",
@@ -229,7 +230,7 @@
                 }
             },
             {
-                "type": "1 = Medium",
+                "type": "2 = Medium",
                 "avereEnabled": true,
                 "avere": {
                     "nodeCount": 3,
@@ -271,7 +272,7 @@
                 }
             },
             {
-                "type": "2 = Large",
+                "type": "3 = Large",
                 "avereEnabled": true,
                 "avere": {
                     "nodeCount": 12,
@@ -311,8 +312,7 @@
                     "maxNodeCount": 4,
                     "nodeSize": "Standard_DS4_v2"
                 }
-            },
-            "[parameters('customTShirtSize')]"
+            }
         ],
         "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
     },
