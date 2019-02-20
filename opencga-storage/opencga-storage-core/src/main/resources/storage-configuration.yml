@@ -125,6 +125,8 @@ storageEngines:
       load.threads: 6
       #load.bulk_size: 100
       #load.compress_genotypes: true
+      stats.default-genotype : "0/0"   # Default genotype to be used for calculating stats.
+      stats.multiallelic : false       # Include secondary alternates in the variant stats calculation
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
       intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
@@ -178,6 +180,8 @@ storageEngines:
       opencga.sample-index.table.presplit.size: 15
       opencga.sample-index.table.compression: "snappy"  # Allowed values: none, snappy, gz
       opencga.storage.hadoop.variant.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
+      stats.default-genotype: "0/0"    # Default genotype to be used for calculating stats.
+      stats.multiallelic: false        # Include secondary alternates in the variant stats calculation
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
       intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
