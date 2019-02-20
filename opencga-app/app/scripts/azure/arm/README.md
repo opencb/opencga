@@ -4,19 +4,31 @@ This document contains information related to the deployment of OpenCGA to Azure
 
 ## Deploy to Azure
 
+### With the Portal
+
+Click the following link the ensure you fill in the parameters according to their descriptions.
+
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fopencb%2Fopencga%2Fazure%2Fopencga-app%2Fapp%2Fscripts%2Fazure%2Farm%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
-## T-Shirt Sizing
+### With `az cli`
+
+1. Clone the repository and move into the `ARM` directory with `cd ./opencga-app/app/scripts/azure/arm`. 
+2. Using your editor fill in the `azuredeploy.parameters.json` with the required parameters
+   > Note: `_artifactsLocation` should be set to the correct `raw.github.com` address for the branch you want to deploy. For example, use `https://raw.githubusercontent.com/opencb/opencga/azure/opencga-app/app/scripts/azure/arm/` to deploy the `azure` branch or `https://raw.githubusercontent.com/opencb/opencga/dev/opencga-app/app/scripts/azure/arm/` to deploy the `dev` branch.
+3. Run `az deployment create --location northeurope --template-file azuredeploy.json --parameters @azuredeploy.parameters.json --name MyDeploymentNameHere --parameters`
+
+
+## Deployment Sizing
 
 The ARM templates defined here support three "t-shirt-sized" deployments. Each of these sizes defines properties such as the number of HDInsight master nodes, the size of VMs, the types of disks those VMs use etc. While it's possible to tweak each of these properties independently, these t-shirt sizes should give you some decent defaults.
 
 The sizes are:
 
-- Small (0): Useful for small teams, or individuals.
-- Medium (1): A decent default for most installs that need so support a team of researchers
-- Large (2): A configurartion that should support a large organisation
+- Small (1): Useful for small teams, or individuals.
+- Medium (2): A decent default for most installs that need so support a team of researchers
+- Large (3): A configurartion that should support a large organisation
 
 Here are the properties that are defined for each t-shirt size:
 
