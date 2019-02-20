@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.annotation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTableType;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -40,6 +41,8 @@ import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.DiscoverPendingVariantsToAnnotateDriver;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.PendingVariantsToAnnotateReader;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
@@ -47,10 +50,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotat
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created on 23/11/16.
@@ -58,6 +58,15 @@ import java.util.Map;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotationManager {
+
+    /**
+     * Skip MapReduce operation to discover pending variants to annotate.
+     */
+    public static final String SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE = "skipDiscoverPendingVariantsToAnnotate";
+    /**
+     * Do not use the pending variants to annotate table.
+     */
+    public static final String SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE = "skipPendingVariantsToAnnotateTable";
 
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
@@ -73,13 +82,85 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
+    public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
         this.query = query == null ? new Query() : query;
 
         // Do not allow FILE filter when annotating.
         this.query.remove(VariantQueryParam.FILE.key());
 
-        super.annotate(this.query, params);
+        if (!skipPendingVariantsToAnnotateTable(params)) {
+            params.put(QueryOptions.SKIP_COUNT, true);
+        }
+
+        return super.annotate(this.query, params);
+    }
+
+    @Override
+    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params) throws StorageEngineException {
+        super.preAnnotate(query, doCreate, doLoad, params);
+
+        if (doCreate) {
+            Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
+            queryParams.remove(VariantQueryParam.ANNOTATION_EXISTS);
+            boolean annotateAll = queryParams.isEmpty();
+
+            if (skipDiscoverPendingVariantsToAnnotate(params)) {
+                logger.info("Skip MapReduce to discover variants to annotate.");
+            } else {
+                ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
+                long lastLoadedFileTs = projectMetadata.getAttributes()
+                        .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
+                long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
+                        .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+
+                // Skip MR if no file has been loaded since the last execution
+                if (lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
+                    logger.info("Skip MapReduce to discover variants to annotate. List of pending annotations to annotate is updated");
+                } else {
+                    long ts = System.currentTimeMillis();
+
+                    mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
+                            DiscoverPendingVariantsToAnnotateDriver.buildArgs(dbAdaptor.getVariantTable(), params),
+                            params, "Prepare variants to annotate");
+
+                    if (annotateAll) {
+                        dbAdaptor.getMetadataManager().lockAndUpdateProject(pm -> {
+                            pm.getAttributes().put(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
+                            return pm;
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    protected DataReader<Variant> getVariantDataReader(Query query, QueryOptions iteratorQueryOptions, ObjectMap params) {
+        if (skipPendingVariantsToAnnotateTable(params)) {
+            logger.info("Reading variants to annotate from variants table");
+            return super.getVariantDataReader(query, iteratorQueryOptions, params);
+        } else {
+            logger.info("Reading variants to annotate from pending variants to annotate");
+            return new PendingVariantsToAnnotateReader(dbAdaptor, query);
+        }
+    }
+
+    protected long countVariantsToAnnotate(Query query, ObjectMap params) {
+        if (skipPendingVariantsToAnnotateTable(params)) {
+            return super.countVariantsToAnnotate(query, params);
+        } else {
+            throw new UnsupportedOperationException("");
+        }
+    }
+
+    private boolean skipDiscoverPendingVariantsToAnnotate(ObjectMap params) {
+        // Skip if overwriting annotations, or if specific param
+        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
+    }
+
+    private boolean skipPendingVariantsToAnnotateTable(ObjectMap params) {
+        // Skip if overwriting annotations, or if specific param
+        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
     }
 
     @Override

@@ -100,7 +100,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     }
 
     @Override
-    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
+    public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
 
         String annotationFileStr = params.getString(LOAD_FILE);
         boolean doCreate = params.getBoolean(CREATE);
@@ -114,7 +114,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
 
-        preAnnotate(query, doCreate, doLoad);
+        preAnnotate(query, doCreate, doLoad, params);
 
         URI annotationFile;
         if (doCreate) {
@@ -152,6 +152,8 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 });
             }
         }
+
+        return numAnnotationsToLoad.get();
     }
 
     /**
@@ -184,7 +186,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         try {
-            DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
+            DataReader<Variant> variantDataReader = getVariantDataReader(query, iteratorQueryOptions, params);
             ProgressLogger progressLogger;
             if (params != null && params.getBoolean(QueryOptions.SKIP_COUNT, false)) {
                 progressLogger = new ProgressLogger("Annotated variants:", iteratorQueryOptions.getLong(QueryOptions.LIMIT, 0), 200);
@@ -194,7 +196,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     if (limit > 0) {
                         return limit;
                     }
-                    return dbAdaptor.count(query).first();
+                    return countVariantsToAnnotate(query, params);
                 }, 200);
             }
             Task<Variant, VariantAnnotation> annotationTask = variantList -> {
@@ -231,6 +233,14 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         return fileUri;
+    }
+
+    protected DataReader<Variant> getVariantDataReader(Query query, QueryOptions iteratorQueryOptions, ObjectMap params) {
+        return new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
+    }
+
+    protected long countVariantsToAnnotate(Query query, ObjectMap params) {
+        return dbAdaptor.count(query).first();
     }
 
     protected QueryOptions getIteratorQueryOptions(Query query, ObjectMap params) {
@@ -329,8 +339,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      * @param query            Query for creating the annotation.
      * @param doCreate         if creating the annotation
      * @param doLoad           if loading the annotation
+     * @param params           Other annotation params
+     * @throws StorageEngineException if an error occurs
      */
-    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad) {
+    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params) throws StorageEngineException {
         if (!doCreate || !doLoad) {
             // Do not continue if loading an external annotation file, or not loading it.
             return;
@@ -338,16 +350,14 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         boolean annotateAll;
-        Set<VariantQueryParam> params = VariantQueryUtils.validParams(query);
+        Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
         Set<String> filesFilter = Collections.emptySet();
+        queryParams.removeAll(Arrays.asList(VariantQueryParam.ANNOTATION_EXISTS, VariantQueryParam.STUDY));
 
-        params.removeAll(VariantQueryUtils.MODIFIER_QUERY_PARAMS);
-        params.removeAll(Arrays.asList(VariantQueryParam.ANNOTATION_EXISTS, VariantQueryParam.STUDY));
-
-        if (params.isEmpty()) {
+        if (queryParams.isEmpty()) {
             // There are no invalid filters.
             annotateAll = true;
-        } else if (params.size() == 1 && params.contains(VariantQueryParam.FILE)) {
+        } else if (queryParams.size() == 1 && queryParams.contains(VariantQueryParam.FILE)) {
             // Annotating some files entirely
             filesFilter = new HashSet<>(query.getAsStringList(VariantQueryParam.FILE.key()));
 

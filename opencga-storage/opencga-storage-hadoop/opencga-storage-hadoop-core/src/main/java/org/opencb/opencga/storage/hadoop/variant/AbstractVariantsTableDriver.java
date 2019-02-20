@@ -62,6 +62,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     private VariantStorageMetadataManager metadataManager;
     private List<Integer> fileIds;
     protected HBaseVariantTableNameGenerator generator;
+    private HBaseManager hBaseManager;
 
     public AbstractVariantsTableDriver() {
         super(HBaseConfiguration.create());
@@ -248,10 +249,17 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return studyMetadata;
     }
 
+    protected HBaseManager getHBaseManager() {
+        if (hBaseManager == null) {
+            hBaseManager = new HBaseManager(getConf());
+        }
+        return hBaseManager;
+    }
+
     protected VariantStorageMetadataManager getMetadataManager() throws IOException {
         if (metadataManager == null) {
             metadataManager = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
-                    null, generator.getMetaTableName(), getConf()));
+                    getHBaseManager(), generator.getMetaTableName(), getConf()));
         }
         return metadataManager;
     }

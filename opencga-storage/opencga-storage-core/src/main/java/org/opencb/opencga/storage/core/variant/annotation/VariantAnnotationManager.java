@@ -57,7 +57,7 @@ public abstract class VariantAnnotationManager {
 
     private static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
 
-    public abstract void annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
+    public abstract long annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
 
     public abstract void saveAnnotation(String name, ObjectMap options) throws StorageEngineException, VariantAnnotatorException;
 
@@ -74,15 +74,15 @@ public abstract class VariantAnnotationManager {
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
         }
-        if (newSourceVersion == null) {
-            newSourceVersion = Collections.emptyList();
-        }
-        if (newAnnotator == null) {
-            throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
-        }
-        if (newSourceVersion.isEmpty()) {
-            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
-        }
+//        if (newSourceVersion == null) {
+//            newSourceVersion = Collections.emptyList();
+//        }
+//        if (newAnnotator == null) {
+//            throw new IllegalArgumentException("Missing annotator information for VariantAnnotator: " + annotator.getClass());
+//        }
+//        if (newSourceVersion.isEmpty()) {
+//            throw new IllegalArgumentException("Missing annotator source version for VariantAnnotator: " + annotator.getClass());
+//        }
         return checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
     }
 
