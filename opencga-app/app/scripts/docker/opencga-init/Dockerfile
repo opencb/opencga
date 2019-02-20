@@ -29,7 +29,7 @@ ENV HEALTH_CHECK_INTERVAL=""
 ARG IVA_TAG="v1.0.0-rc1"
 
 # Install local dependencies
-RUN apt-get update && apt-get install -y python3 python3-pip openssh-client git sshpass && \
+RUN apt-get update && apt-get install -y python3 python3-pip git && \
     pip3 install --upgrade pip setuptools && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
