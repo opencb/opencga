@@ -32,6 +32,7 @@ import org.opencb.biodata.models.variant.avro.EthnicCategory;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.Converter;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -40,9 +41,9 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn;
+import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
 import java.io.IOException;
@@ -53,6 +54,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 
@@ -145,9 +147,23 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         byte[] value = result.getValue(columnFamily, annotationColumn);
         if (ArrayUtils.isNotEmpty(value)) {
             try {
-                variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                if (value[0] == '{') {
+                    // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
+                    try {
+                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                    } catch (IOException e) {
+                        value = CompressionUtils.decompress(value);
+                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                    }
+                } else {
+                    // Value is compressed. Decompress and parse
+                    value = CompressionUtils.decompress(value);
+                    variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
+            } catch (DataFormatException e) {
+                throw new IllegalStateException(e);
             }
         }
         List<Integer> releases = new ArrayList<>();

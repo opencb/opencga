@@ -88,7 +88,12 @@ public abstract class AbstractPhoenixConverter {
                 throw new IllegalArgumentException("Not expected array phoenix data type");
             }
         }
-        byte[] bytes = dataType.toBytes(value);
+        byte[] bytes;
+        if (value instanceof byte[]) {
+            bytes = ((byte[]) value);
+        } else {
+            bytes = dataType.toBytes(value);
+        }
         put.addColumn(columnFamily, column, bytes);
     }
 
@@ -119,10 +124,14 @@ public abstract class AbstractPhoenixConverter {
     }
 
     public static boolean endsWith(byte[] bytes, byte[] endsWith) {
-        if (bytes.length < endsWith.length) {
+        return endsWith(bytes, 0, bytes.length, endsWith);
+    }
+
+    public static boolean endsWith(byte[] bytes, int offset, int length, byte[] endsWith) {
+        if (length < endsWith.length) {
             return false;
         }
-        for (int i = endsWith.length - 1, f = bytes.length - 1; i >= 0; i--, f--) {
+        for (int i = endsWith.length - 1, f = offset + length - 1; i >= 0; i--, f--) {
             if (endsWith[i] != bytes[f]) {
                 return false;
             }
