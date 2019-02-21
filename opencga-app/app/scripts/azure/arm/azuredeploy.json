@@ -19,9 +19,10 @@
             "allowedValues": [
                 0,
                 1,
-                2
+                2,
+                3
             ],
-            "defaultValue": 0,
+            "defaultValue": 1,
             "metadata": {
                 "description": "What size of deployment do you want? 0 = For single researches testing things out. 1 = For x genomics with xgb per sec load rate. 2 = is for x/y"
             }
@@ -178,13 +179,21 @@
             "metadata": {
                 "description": "HealthCheck cache interval value in seconds."
             }
+        },
+        "customDeploymentSize": {
+            "type": "object",
+            "defaultValue": {},
+            "metadata": {
+                "description": "Define an object for a custom tshirt size of the deployment. WARNING: Intended for experimenting or debugging use with care."
+            }
         }
     },
     "variables": {
         "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]",
         "sizingOptions": [
+            "[parameters('customDeploymentSize')]",
             {
-                "type": "0 = Small",
+                "type": "1 = Small",
                 "avereEnabled": false,
                 "azureFilesEnabled": true,
                 "solr": {
@@ -221,7 +230,7 @@
                 }
             },
             {
-                "type": "1 = Medium",
+                "type": "2 = Medium",
                 "avereEnabled": true,
                 "avere": {
                     "nodeCount": 3,
@@ -263,7 +272,7 @@
                 }
             },
             {
-                "type": "2 = Large",
+                "type": "3 = Large",
                 "avereEnabled": true,
                 "avere": {
                     "nodeCount": 12,

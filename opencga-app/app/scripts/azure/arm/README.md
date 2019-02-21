@@ -4,23 +4,35 @@ This document contains information related to the deployment of OpenCGA to Azure
 
 ## Deploy to Azure
 
+### With the Portal
+
+Click the following link the ensure you fill in the parameters according to their descriptions.
+
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fopencb%2Fopencga%2Fazure%2Fopencga-app%2Fapp%2Fscripts%2Fazure%2Farm%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
-## T-Shirt Sizing
+### With `az cli`
+
+1. Clone the repository and move into the `ARM` directory with `cd ./opencga-app/app/scripts/azure/arm`. 
+2. Using your editor fill in the `azuredeploy.parameters.json` with the required parameters
+   > Note: `_artifactsLocation` should be set to the correct `raw.github.com` address for the branch you want to deploy. For example, use `https://raw.githubusercontent.com/opencb/opencga/azure/opencga-app/app/scripts/azure/arm/` to deploy the `azure` branch or `https://raw.githubusercontent.com/opencb/opencga/dev/opencga-app/app/scripts/azure/arm/` to deploy the `dev` branch.
+3. Run `az deployment create --location northeurope --template-file azuredeploy.json --parameters @azuredeploy.parameters.json --name MyDeploymentNameHere --parameters`
+
+
+## Deployment Sizing
 
 The ARM templates defined here support three "t-shirt-sized" deployments. Each of these sizes defines properties such as the number of HDInsight master nodes, the size of VMs, the types of disks those VMs use etc. While it's possible to tweak each of these properties independently, these t-shirt sizes should give you some decent defaults.
 
 The sizes are:
 
-- Small: Useful for small teams, or individuals.
-- Medium: A decent default for most installs that need so support a team of researchers
-- Large: A configurartion that should support a large organisation
+- Small (1): Useful for small teams, or individuals.
+- Medium (2): A decent default for most installs that need so support a team of researchers
+- Large (3): A configurartion that should support a large organisation
 
 Here are the properties that are defined for each t-shirt size:
 
-| Component   | Property            | Small        | Medium | Large  |
+| Component   | Property            | 1 (Small)        | 2 (Medium) | 3 (Large)  |
 | ----------- | ------------------- | ------------ | ------ | ------ |
 | Avere       |
 |             | use-azure           | FALSE        | TRUE   | TRUE   |
@@ -59,6 +71,58 @@ Here are the properties that are defined for each t-shirt size:
 |             | node-quantity       | 1            | 2      | 4      |
 |             | node-size           | D2sv3        | D4sv3  | D4sv3  |
 |             | disk-type           | HDD          | HDD    | HDD    |
+
+Additionally you can deploy a custom size by specifying the `customDeploymentSize` field and setting `deploymentSize=0`. The object has to contain all required fields. For an example see below. 
+
+```json
+        "deploymentSize": {
+            "value": 0
+        },
+        "customDeploymentSize": {
+            "value": {
+                "type": "0 = CustomSize",
+                "avereEnabled": true,
+                "avere": {
+                    "nodeCount": 3,
+                    "diskSize": 1024,
+                    "nodeSize": "Standard_D16s_v3"
+                },
+                "azureFilesEnabled": false,
+                "solr": {
+                    "ha": false,
+                    "nodeSize": "Standard_E4_v3",
+                    "nodeCount": 1
+                },
+                "batch": {
+                    "maxNodeCount": 6,
+                    "nodeSize": "Standard_F8s_v2"
+                },
+                "mongo": {
+                    "nodeCount": 1,
+                    "nodeSize": "Standard_D4_v2",
+                    "diskType": "E10"
+                },
+                "hdInsight": {
+                    "head": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D4_v2"
+                    },
+                    "worker": {
+                        "nodeCount": 2,
+                        "nodeSize": "Standard_D14_v2"
+                    }
+                },
+                "daemon": {
+                    "nodeSize": "Standard_DS2_v2"
+                },
+                "webServers": {
+                    "minNodeCount": 1,
+                    "maxNodeCount": 2,
+                    "nodeSize": "Standard_DS2_v2"
+                }
+            }
+        }
+```
 
 ## Additional Notes
 
