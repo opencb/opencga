@@ -183,6 +183,7 @@ fi
 
 
 if [ "$VM_INDEX" -eq 0 ]
+then
     cd /tmp
 
     echo "Restoring cellbase data"
