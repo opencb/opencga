@@ -181,3 +181,17 @@ then
     fi
 fi
 
+
+if [ "$VM_INDEX" -eq 0 ]
+    cd /tmp
+
+    echo "Restoring cellbase data"
+    echo "Downloading file"
+    curl -o cellbase_dump.tar.gz $CELLBASE_DUMP_URL
+
+    echo "Unzipping"
+    tar -zxvf cellbase_dump.tar.gz
+
+    echo "Restoring"
+    mongorestore --verbose --gzip /tmp/cellbase_dump/ -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD}
+fi

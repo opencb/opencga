@@ -189,6 +189,7 @@
         }
     },
     "variables": {
+        "cellbaseUrl": "https://cellbase.blob.core.windows.net/dump/cellbase_dump.tar.gz",
         "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]",
         "sizingOptions": [
             "[parameters('customDeploymentSize')]",
@@ -239,7 +240,7 @@
                 },
                 "azureFilesEnabled": false,
                 "solr": {
-                    "ha": true,                    
+                    "ha": true,
                     "nodeSize": "Standard_E8_v3",
                     "nodeCount": 2
                 },
@@ -281,7 +282,7 @@
                 },
                 "azureFilesEnabled": false,
                 "solr": {
-                    "ha": true,                    
+                    "ha": true,
                     "nodeSize": "Standard_E16_v3",
                     "nodeCount": 2
                 },
@@ -370,11 +371,11 @@
                     "uri": "[concat(parameters('_artifactsLocation'), '/appgw/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
-                "parameters":{  
+                "parameters": {
                     "applicationGatewaySubnetId": {
                         "value": "[reference('vnet').outputs.appgwSubnetId.value]"
                     },
-                    "dnsNamePrefix":{
+                    "dnsNamePrefix": {
                         "value": "[variables('dnsNamePrefix')]"
                     },
                     "LogAnalyticsWorkspaceResourceID": {
@@ -445,12 +446,12 @@
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
                     },
-                    "appInsightsAppId":{
+                    "appInsightsAppId": {
                         "value": "[reference('appinsights').outputs.appId.value]"
-                   }, 
-                   "appInsightsInstrumentationKey":{
+                    },
+                    "appInsightsInstrumentationKey": {
                         "value": "[reference('appinsights').outputs.instrumentationKey.value]"
-                   } 
+                    }
                 }
             }
         },
@@ -590,10 +591,10 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                   },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } 
+                    }
                 }
             }
         },
@@ -664,7 +665,7 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                    } 
+                    }
                 }
             }
         },
@@ -797,10 +798,10 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                   },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   }               
+                    }
                 }
             }
         },
@@ -868,10 +869,9 @@
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
                     },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } 
-          
+                    }
                 }
             }
         },
@@ -925,15 +925,18 @@
                     "mongoDBPassword": {
                         "value": "[parameters('mongoDBPassword')]"
                     },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   },
-                   "LogAnalyticsWorkspaceID": {
-                    "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
-                },
-                "LogAnalyticsWorkspaceKey": {
-                    "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-               }
+                    },
+                    "LogAnalyticsWorkspaceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceKey": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+                    },
+                    "cellbaseUrl": {
+                        "value": "[variables('cellbaseUrl')]"
+                    }
                 }
             }
         },
@@ -952,9 +955,7 @@
                     "uri": "[concat(parameters('_artifactsLocation'), '/appinsights/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
-                "parameters": {
-                   
-                }
+                "parameters": {}
             }
         }
     ],

@@ -32,7 +32,14 @@
         "clusterSize": {
             "type": "int",
             "defaultValue": 3,
-            "allowedValues": [1, 3, 5, 7, 9, 11],
+            "allowedValues": [
+                1,
+                3,
+                5,
+                7,
+                9,
+                11
+            ],
             "metadata": {
                 "description": "Amount of VMs to deploy for the mongodb replica set"
             }
@@ -74,7 +81,7 @@
                 "description": "Log Analytics Workspace ID"
             }
         },
-        "logAnalyticsWorkSpaceKey":{
+        "logAnalyticsWorkSpaceKey": {
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Key"
@@ -84,6 +91,12 @@
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Resource ID"
+            }
+        },
+        "cellbaseUrl": {
+            "type": "string",
+            "metadata": {
+                "description": "The URL pointing to a tar.gz zip of the cellbase mongo dump (zip must container 'cellbase_dump' folder)"
             }
         }
     },
@@ -99,7 +112,7 @@
                 "name": "dnsNames",
                 "count": "[parameters('clusterSize')]",
                 "input": {
-                   "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames'),'.',parameters('location'),'.cloudapp.azure.com')]"
+                    "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames'),'.',parameters('location'),'.cloudapp.azure.com')]"
                 }
             }
         ],
@@ -116,7 +129,7 @@
             "  path: /opt/installmongodb.sh",
             "  permissions: \"0744\"",
             "  content: !!binary |",
-            "    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",
+            "    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",
             "",
             "- encoding: gzip",
             "  content: !!binary |",
@@ -129,7 +142,7 @@
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- ', variables('logAnalyticsAgent'))]",
-            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
+            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' CELLBASE_DUMP_URL=', parameters('cellbaseUrl'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
         ]
     },
     "resources": [
@@ -170,23 +183,21 @@
                     ],
                     "apiVersion": "2017-05-01-preview",
                     "properties": {
-                      "name": "[concat(variables('nicName'), copyIndex())]",
-                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
-                      "logs": [
-
-                      ],
-                      "metrics": [
-                        {
-                          "category": "AllMetrics",
-                          "enabled": true,
-                          "retentionPolicy": {
-                            "enabled": false,
-                            "days": 0
-                          }
-                        }
-                      ]
+                        "name": "[concat(variables('nicName'), copyIndex())]",
+                        "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                        "logs": [],
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": 0
+                                }
+                            }
+                        ]
                     }
-                  }
+                }
             ]
         },
         {
