@@ -27,7 +27,7 @@ fi
 
 echo "Connect to Hadoop edge node ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
 
-echo "${SSHPASS_CMD} ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}"
+echo "${SSHPASS_CMD} ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
 
 ${SSHPASS_CMD} ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST} /bin/bash << EOF
 
