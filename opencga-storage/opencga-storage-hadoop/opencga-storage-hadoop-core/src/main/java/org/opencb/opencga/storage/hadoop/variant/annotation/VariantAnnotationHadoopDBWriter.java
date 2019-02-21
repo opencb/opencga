@@ -5,6 +5,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.PendingVariantsToAnnotateDBCleaner;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +23,11 @@ public class VariantAnnotationHadoopDBWriter extends HBaseDataWriter<Put> {
     private List<byte[]> loadedVariants = new ArrayList<>(PENDING_VARIANTS_BUFFER_SIZE);
     private final PendingVariantsToAnnotateDBCleaner pendingVariantsCleaner;
 
-    public VariantAnnotationHadoopDBWriter(HBaseManager hBaseManager, String tableName, byte[] columnFamily) {
-        super(hBaseManager, tableName);
+    public VariantAnnotationHadoopDBWriter(HBaseManager hBaseManager, HBaseVariantTableNameGenerator nameGenerator, byte[] columnFamily) {
+        super(hBaseManager, nameGenerator.getVariantTableName());
         this.columnFamily = columnFamily;
 
-        pendingVariantsCleaner = new PendingVariantsToAnnotateDBCleaner(hBaseManager, tableName);
+        pendingVariantsCleaner = new PendingVariantsToAnnotateDBCleaner(hBaseManager, nameGenerator.getPendingAnnotationTableName());
     }
 
     @Override

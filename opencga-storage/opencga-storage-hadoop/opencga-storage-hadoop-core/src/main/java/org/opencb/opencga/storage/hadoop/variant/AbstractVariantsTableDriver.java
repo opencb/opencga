@@ -239,6 +239,11 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return getConf().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
     }
 
+    protected HBaseVariantTableNameGenerator getTableNameGenerator() {
+        String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(getVariantsTable());
+        return new HBaseVariantTableNameGenerator(dbName, getConf());
+    }
+
     protected StudyMetadata readStudyMetadata() throws IOException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = getStudyId();

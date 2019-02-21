@@ -188,6 +188,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     // Annotation index table  configuration
     public static final String ANNOTATION_INDEX_TABLE_COMPRESSION = "opencga.annotation-index.table.compression";
+    public static final String PENDING_ANNOTATION_TABLE_COMPRESSION = "opencga.pending-annotation.table.compression";
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String STATS_LOCAL = "stats.local";

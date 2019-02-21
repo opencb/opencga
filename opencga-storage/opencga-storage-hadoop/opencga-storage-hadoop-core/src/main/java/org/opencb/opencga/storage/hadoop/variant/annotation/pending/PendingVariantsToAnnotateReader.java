@@ -27,14 +27,14 @@ public class PendingVariantsToAnnotateReader extends AbstractHBaseDataReader<Var
     private final VariantHadoopDBAdaptor dbAdaptor;
 
     public PendingVariantsToAnnotateReader(VariantHadoopDBAdaptor dbAdaptor, Query query) {
-        super(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable(), parseScan(query));
+        super(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator().getPendingAnnotationTableName(), parseScan(query));
         this.dbAdaptor = dbAdaptor;
     }
 
     @Override
     public boolean pre() {
         try {
-            PendingVariantsToAnnotateUtils.createColumnFamilyIfNeeded(tableName, dbAdaptor.getHBaseManager());
+            PendingVariantsToAnnotateUtils.createTableIfNeeded(tableName, dbAdaptor.getHBaseManager());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -61,7 +61,6 @@ public class PendingVariantsToAnnotateReader extends AbstractHBaseDataReader<Var
             region = new Region(query.getString(VariantQueryParam.REGION.key()));
         }
         VariantHBaseQueryParser.addRegionFilter(scan, region);
-        scan.addColumn(PendingVariantsToAnnotateUtils.FAMILY, PendingVariantsToAnnotateUtils.COLUMN);
         return scan;
     }
 

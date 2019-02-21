@@ -180,7 +180,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
             VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(
                     dbAdaptor.getHBaseManager(),
-                    dbAdaptor.getVariantTable(),
+                    dbAdaptor.getTableNameGenerator(),
                     dbAdaptor.getGenomeHelper().getColumnFamily());
             return new ParallelTaskRunner<>(reader, task, writer, config);
         } else {

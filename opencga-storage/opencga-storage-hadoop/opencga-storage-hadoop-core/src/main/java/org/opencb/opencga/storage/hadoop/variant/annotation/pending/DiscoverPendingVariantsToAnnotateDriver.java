@@ -4,8 +4,11 @@ package org.opencb.opencga.storage.hadoop.variant.annotation.pending;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.MultithreadedTableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.biodata.models.core.Region;
@@ -19,6 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +51,7 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
         super.preExecution(variantTable);
 
         HBaseManager hBaseManager = getHBaseManager();
-        createColumnFamilyIfNeeded(variantTable, hBaseManager);
+        PendingVariantsToAnnotateUtils.createTableIfNeeded(getTableNameGenerator().getPendingAnnotationTableName(), hBaseManager);
     }
 
     @Override
@@ -73,13 +77,26 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
         scan.addColumn(getHelper().getColumnFamily(), SO.bytes());
 
         int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+        boolean multiThread = getConf().getBoolean("annotation.pending.discover.MultithreadedTableMapper", false);
 
 
         scan.setCaching(caching);
         scan.setCacheBlocks(false);
         logger.info("Set scan caching to " + caching);
 
-        VariantMapReduceUtil.initTableMapperJob(job, variantTable, variantTable, scan, getMapperClass());
+        final Class<? extends TableMapper> mapperClass;
+        if (multiThread) {
+            logger.info("Run with MultithreadedTableMapper");
+            mapperClass = MultithreadedTableMapper.class;
+            MultithreadedTableMapper.setMapperClass(job, getMapperClass());
+//            MultithreadedTableMapper.setNumberOfThreads(job, 10); // default is 10
+        } else {
+            mapperClass = getMapperClass();
+        }
+        VariantMapReduceUtil.initTableMapperJob(job, variantTable,
+                getTableNameGenerator().getPendingAnnotationTableName(), scan, mapperClass);
+
+
         VariantMapReduceUtil.setNoneReduce(job);
 
 
@@ -94,6 +111,22 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
 
     public static class DiscoverVariantsToAnnotateMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
+        public static final byte[] SO_BYTES = SO.bytes();
+        private int variants;
+        private int annotatedVariants;
+        private int pendingVariants;
+
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            HBaseVariantTableNameGenerator
+                    .checkValidPendingAnnotationTableName(context.getConfiguration().get(TableOutputFormat.OUTPUT_TABLE));
+            variants = 0;
+            annotatedVariants = 0;
+            pendingVariants = 0;
+        }
+
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
             boolean annotated = false;
@@ -101,23 +134,35 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
                 if (cell.getValueLength() > 0) {
                     if (Bytes.equals(
                             cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
-                            SO.bytes(), 0, SO.bytes().length)) {
+                            SO_BYTES, 0, SO_BYTES.length)) {
                         annotated = true;
                         break;
                     }
                 }
             }
 
+            variants++;
             if (annotated) {
-                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "annotated_variants").increment(1);
+                annotatedVariants++;
                 Delete delete = new Delete(value.getRow());
-                delete.addFamily(FAMILY);
                 context.write(key, delete);
             } else {
-                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "pending_variants").increment(1);
+                pendingVariants++;
                 Put put = new Put(value.getRow());
                 put.addColumn(FAMILY, COLUMN, VALUE);
                 context.write(key, put);
+            }
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+
+            Counter counter = context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants");
+            synchronized (counter) {
+                counter.increment(variants);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "annotated_variants").increment(annotatedVariants);
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "pending_variants").increment(pendingVariants);
             }
         }
     }

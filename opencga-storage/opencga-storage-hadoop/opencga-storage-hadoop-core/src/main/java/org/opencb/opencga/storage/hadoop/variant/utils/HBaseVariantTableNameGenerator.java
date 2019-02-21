@@ -18,6 +18,7 @@ public class HBaseVariantTableNameGenerator {
     private static final String ARCHIVE_SUFIX = "_archive_";
     private static final String SAMPLE_SUFIX = "_sample_index_";
     private static final String ANNOTATION_SUFIX = "_annotation";
+    private static final String PENDING_ANNOTATION_SUFIX = "_pending_annotation";
     private static final int MINIMUM_DB_NAME_SIZE = 1;
 
     private final String namespace;
@@ -25,28 +26,27 @@ public class HBaseVariantTableNameGenerator {
     private final String variantTableName;
     private final String metaTableName;
     private final String annotationIndexTableName;
+    private final String pendingAnnotationTableName;
 
 
     public HBaseVariantTableNameGenerator(String dbName, ObjectMap options) {
-        if (dbName.length() < MINIMUM_DB_NAME_SIZE) {
-            throw new IllegalArgumentException("dbName size must be more than 1!");
-        }
-        this.dbName = dbName;
-        namespace = options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, "");
-        variantTableName = getVariantTableName(this.dbName, options);
-        metaTableName = getMetaTableName(this.dbName, options);
-        annotationIndexTableName = getAnnotationIndexTableName(namespace, this.dbName);
+        this(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
     }
 
     public HBaseVariantTableNameGenerator(String dbName, Configuration conf) {
+        this(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
+    }
+
+    public HBaseVariantTableNameGenerator(String namespace, String dbName) {
         if (dbName.length() < MINIMUM_DB_NAME_SIZE) {
             throw new IllegalArgumentException("dbName size must be more than 1!");
         }
+        this.namespace = namespace;
         this.dbName = dbName;
-        namespace = conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, "");
-        variantTableName = getVariantTableName(this.dbName, conf);
-        metaTableName = getMetaTableName(this.dbName, conf);
+        variantTableName = getVariantTableName(namespace, this.dbName);
+        metaTableName = getMetaTableName(namespace, this.dbName);
         annotationIndexTableName = getAnnotationIndexTableName(namespace, this.dbName);
+        pendingAnnotationTableName = getPendingAnnotationTableName(namespace, this.dbName);
     }
 
     public String getVariantTableName() {
@@ -63,6 +63,10 @@ public class HBaseVariantTableNameGenerator {
 
     public String getAnnotationIndexTableName() {
         return annotationIndexTableName;
+    }
+
+    public String getPendingAnnotationTableName() {
+        return pendingAnnotationTableName;
     }
 
     public String getMetaTableName() {
@@ -92,8 +96,14 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public static void checkValidVariantsTableName(String variantsTableName) {
-        if (!variantsTableName.endsWith(VARIANTS_SUFIX) || variantsTableName.length() <= VARIANTS_SUFIX.length() + MINIMUM_DB_NAME_SIZE) {
+        if (!validSuffix(variantsTableName, VARIANTS_SUFIX)) {
             throw new IllegalArgumentException("Invalid variants table name : " + variantsTableName);
+        }
+    }
+
+    public static void checkValidPendingAnnotationTableName(String pendingAnnotationTableName) {
+        if (!validSuffix(pendingAnnotationTableName, PENDING_ANNOTATION_SUFIX)) {
+            throw new IllegalArgumentException("Invalid variants table name : " + pendingAnnotationTableName);
         }
     }
 
@@ -103,9 +113,13 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public static void checkValidMetaTableName(String metaTableName) {
-        if (!metaTableName.endsWith(META_SUFIX) || metaTableName.length() <= META_SUFIX.length() + MINIMUM_DB_NAME_SIZE) {
+        if (!validSuffix(metaTableName, META_SUFIX)) {
             throw new IllegalArgumentException("Invalid meta table name : " + metaTableName);
         }
+    }
+
+    private static boolean validSuffix(String tableName, String suffix) {
+        return tableName.endsWith(suffix) && tableName.length() > suffix.length() + MINIMUM_DB_NAME_SIZE;
     }
 
     /**
@@ -170,23 +184,27 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {
-        return buildTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, VARIANTS_SUFIX);
+        return getVariantTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
     }
 
     public static String getVariantTableName(String dbName, Configuration conf) {
-        return buildTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, VARIANTS_SUFIX);
+        return getVariantTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
+    }
+
+    public static String getVariantTableName(String namespace, String dbName) {
+        return buildTableName(namespace, dbName, VARIANTS_SUFIX);
     }
 
     public static String getAnnotationIndexTableName(String namespace, String dbName) {
         return buildTableName(namespace, dbName, ANNOTATION_SUFIX);
     }
 
-    public static String getMetaTableName(String dbName, ObjectMap options) {
-        return buildTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, META_SUFIX);
+    public static String getPendingAnnotationTableName(String namespace, String dbName) {
+        return buildTableName(namespace, dbName, PENDING_ANNOTATION_SUFIX);
     }
 
-    public static String getMetaTableName(String dbName, Configuration conf) {
-        return buildTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, META_SUFIX);
+    public static String getMetaTableName(String namespace, String dbName) {
+        return buildTableName(namespace, dbName, META_SUFIX);
     }
 
     protected static String buildTableName(String namespace, String dbName, String tableName) {
