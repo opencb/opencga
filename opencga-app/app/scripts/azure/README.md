@@ -156,6 +156,7 @@ sudo scp -r /etc/hbase/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 ## Testing
 Once everything is successfully setup, you are able to test the configuration. A basic test scenario is decribed below. For full details check out the [OpenCGA documentation](http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes).
 
+> Note: If you're running in the Azure ARM version you don't need to start the daemon or install catalog, they will have already been started. The Daemon will already be running in Docker on the Daemon node. Run `sudo docker ps` and note the ID of the container then use `sudo docker exec --it <IDHERE> /bin/bash` to start an interactive shell for use below and skip the next two steps. 
 
 Install catalog (remember password for later use)
 ```
@@ -192,6 +193,8 @@ Create sample study within your project
 sudo /opt/opencga/bin/opencga.sh studies create --id 1kG_phase3 -n "1000 Genomes Project - Phase 3" --project reference_grch37
 ```
 
+> Note: If you're running in the Azure ARM version you need to download and link the file from a shared location like `/opt/opencga/sessions`. Run `cd /opt/opencga/sessions` and then continue from the guide in that directory. 
+
 Get sample VCF genome file
 ```
 wget ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz
@@ -201,6 +204,18 @@ Link VCF genome file to your newly created study
 ```
 sudo /opt/opencga/bin/opencga.sh files link -i ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz -s 1kG_phase3
 ```
+
+### Integrated pipeline load
+
+> Note: This performs `transform`, `load`, `calculateStats` and `annotate` all in one pipeline which simplifies execution. 
+
+```
+sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --calculate-stats --annotate -o outDir
+```
+
+### Separate pipeline load (Advanced/Manual)
+
+> Note: This performs `transform`, `load`, `calculateStats` and `annotate` individually and isn't recommended for normal usage. 
 
 Transform file (view progress in separate daemon terminal)
 ```
