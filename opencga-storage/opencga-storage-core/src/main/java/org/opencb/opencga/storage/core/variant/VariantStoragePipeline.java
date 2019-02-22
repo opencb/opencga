@@ -142,7 +142,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             VariantStorageMetadataManager smm = dbAdaptor.getMetadataManager();
             ensureStudyMetadataExists(null);
 
-            StudyMetadata studyMetadata = smm.lockAndUpdate(study, existingStudyMetadata -> {
+            StudyMetadata studyMetadata = smm.updateStudyMetadata(study, existingStudyMetadata -> {
                 if (existingStudyMetadata.getAggregation() == null) {
                     existingStudyMetadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
                             Options.AGGREGATED_TYPE.defaultValue().toString()));
@@ -462,7 +462,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         //Get the studyConfiguration. If there is no StudyMetadata, create a empty one.
-        dbAdaptor.getMetadataManager().lockAndUpdate(studyId, study -> {
+        dbAdaptor.getMetadataManager().updateStudyMetadata(studyId, study -> {
             securePreLoad(study, fileMetadata);
             return study;
         });
@@ -604,7 +604,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
             // Update current release
             if (currentRelease != release) {
-                getMetadataManager().lockAndUpdateProject(pm -> {
+                getMetadataManager().updateProjectMetadata(pm -> {
                     if (release < pm.getRelease() || release <= 0) {
                         //ERROR, asking to use a release lower than currentRelease
                         throw StorageEngineException.invalidReleaseException(release, pm.getRelease());
@@ -638,7 +638,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         checkLoadedVariants(finalFileIds, getStudyMetadata());
 
         //Update StudyMetadata
-        getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
+        getMetadataManager().updateStudyMetadata(getStudyId(), sm -> {
             securePostLoad(finalFileIds, sm);
             finalSecurePostLoad(finalFileIds, sm);
             return sm;

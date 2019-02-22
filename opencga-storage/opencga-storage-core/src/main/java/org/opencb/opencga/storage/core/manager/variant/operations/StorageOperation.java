@@ -295,7 +295,7 @@ public abstract class StorageOperation {
             throws CatalogException, StorageEngineException {
         String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
 
-        scm.lockAndUpdateProject(projectMetadata -> {
+        scm.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
                 projectMetadata = new ProjectMetadata();
             }

@@ -92,7 +92,7 @@ public abstract class VariantStatisticsManager {
         checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, updateStats,
                 getAggregation(studyMetadata.getAggregation(), options));
 
-        metadataManager.lockAndUpdate(studyMetadata.getName(), sm -> {
+        metadataManager.updateStudyMetadata(studyMetadata.getName(), sm -> {
             for (Integer cohortId : cohortIds) {
                 metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
                         cohort -> cohort.setStatsStatus(TaskMetadata.Status.RUNNING));

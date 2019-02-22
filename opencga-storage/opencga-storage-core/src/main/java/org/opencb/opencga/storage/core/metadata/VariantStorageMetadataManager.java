@@ -60,10 +60,6 @@ import static org.opencb.opencga.storage.core.variant.annotation.annotators.Abst
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class VariantStorageMetadataManager implements AutoCloseable {
-    public static final String CACHED = "cached";
-    public static final String READ_ONLY = "ro";
-    public static final QueryOptions RO_CACHED_OPTIONS = new QueryOptions(READ_ONLY, true)
-            .append(CACHED, true);
     private static final int DEFAULT_LOCK_DURATION = 1000;
     private static final int DEFAULT_TIMEOUT = 10000;
     public static final String SECONDARY_INDEX_PREFIX = "__SECONDARY_INDEX_COHORT_";
@@ -77,12 +73,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final CohortMetadataDBAdaptor cohortDBAdaptor;
     private final TaskMetadataDBAdaptor taskDBAdaptor;
 
-    private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
-    private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
-
     public VariantStorageMetadataManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
         this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
-        this.studyDBAdaptor = dbAdaptorFactory.buildStudyConfigurationDBAdaptor();
+        this.studyDBAdaptor = dbAdaptorFactory.buildStudyMetadataDBAdaptor();
         this.fileDBAdaptor = dbAdaptorFactory.buildFileMetadataDBAdaptor();
         this.sampleDBAdaptor = dbAdaptorFactory.buildSampleMetadataDBAdaptor();
         this.cohortDBAdaptor = dbAdaptorFactory.buildCohortMetadataDBAdaptor();
@@ -110,7 +103,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public StudyMetadata createStudy(String studyName) throws StorageEngineException {
-        lockAndUpdateProject(projectMetadata -> {
+        updateProjectMetadata(projectMetadata -> {
             if (!getStudies().containsKey(studyName)) {
                 StudyMetadata studyMetadata = new StudyMetadata(newStudyId(), studyName);
                 unsecureUpdateStudyMetadata(studyMetadata);
@@ -124,7 +117,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         T update(T t) throws E;
     }
 
-    public <E extends Exception> StudyMetadata lockAndUpdate(Object study, UpdateFunction<StudyMetadata, E> updater)
+    public <E extends Exception> StudyMetadata updateStudyMetadata(Object study, UpdateFunction<StudyMetadata, E> updater)
             throws StorageEngineException, E {
         int studyId = getStudyId(study);
         long lock = lockStudy(studyId);
@@ -160,91 +153,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     @Deprecated
     public final QueryResult<StudyConfiguration> getStudyConfiguration(Object study, QueryOptions options) {
         if (study instanceof Number) {
-            return getStudyConfiguration2(((Number) study).intValue(), options);
+            return studyDBAdaptor.getStudyConfiguration(((Number) study).intValue(), null, options);
         } else {
-            return getStudyConfiguration2(study.toString(), options);
-        }
-    }
-
-    @Deprecated
-    private QueryResult<StudyConfiguration> getStudyConfiguration2(String studyName, QueryOptions options) {
-        if (StringUtils.isNumeric(studyName)) {
-            return getStudyConfiguration(Integer.valueOf(studyName), options);
-        }
-        QueryResult<StudyConfiguration> result;
-        final boolean cached = options != null && options.getBoolean(CACHED, false);
-        final boolean readOnly = options != null && options.getBoolean(READ_ONLY, false);
-        if (stringStudyConfigurationMap.containsKey(studyName)) {
-            if (cached) {
-                StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
-                if (!readOnly) {
-                    studyConfiguration = studyConfiguration.newInstance();
-                }
-                return new QueryResult<>(studyConfiguration.getName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
-            }
-            Long timeStamp = stringStudyConfigurationMap.get(studyName).getTimeStamp();
-            result = studyDBAdaptor.getStudyConfiguration(studyName, timeStamp, options);
-            if (result.getNumTotalResults() == 0) { //No changes. Return old value
-                StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
-                if (!readOnly) {
-                    studyConfiguration = studyConfiguration.newInstance();
-                }
-                return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
-            }
-        } else {
-            result = studyDBAdaptor.getStudyConfiguration(studyName, null, options);
-        }
-
-        StudyConfiguration studyConfiguration = result.first();
-        if (studyConfiguration != null) {
-            intStudyConfigurationMap.put(studyConfiguration.getId(), studyConfiguration);
-            stringStudyConfigurationMap.put(studyConfiguration.getName(), studyConfiguration);
-            if (studyName != null && !studyName.equals(studyConfiguration.getName())) {
-                stringStudyConfigurationMap.put(studyName, studyConfiguration);
-            }
-            if (!readOnly) {
-                result.setResult(Collections.singletonList(studyConfiguration.newInstance()));
+            String studyName = study.toString();
+            if (StringUtils.isNumeric(studyName)) {
+                return studyDBAdaptor.getStudyConfiguration(Integer.valueOf(studyName), null, options);
+            } else {
+                return studyDBAdaptor.getStudyConfiguration(studyName, null, options);
             }
         }
-        return result;
-
-    }
-
-    @Deprecated
-    private QueryResult<StudyConfiguration> getStudyConfiguration2(int studyId, QueryOptions options) {
-        QueryResult<StudyConfiguration> result;
-        final boolean cached = options != null && options.getBoolean(CACHED, false);
-        final boolean readOnly = options != null && options.getBoolean(READ_ONLY, false);
-        if (intStudyConfigurationMap.containsKey(studyId)) {
-            if (cached) {
-                StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
-                if (!readOnly) {
-                    studyConfiguration = studyConfiguration.newInstance();
-                }
-                return new QueryResult<>(studyConfiguration.getName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
-            }
-            result = studyDBAdaptor.getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
-            if (result.getNumTotalResults() == 0) { //No changes. Return old value
-                StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
-                if (!readOnly) {
-                    studyConfiguration = studyConfiguration.newInstance();
-                }
-                return new QueryResult<>(studyConfiguration.getName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
-            }
-        } else {
-            result = studyDBAdaptor.getStudyConfiguration(studyId, null, options);
-        }
-
-        StudyConfiguration studyConfiguration = result.first();
-        if (studyConfiguration != null) {
-            intStudyConfigurationMap.put(studyConfiguration.getId(), studyConfiguration);
-            stringStudyConfigurationMap.put(studyConfiguration.getName(), studyConfiguration);
-            if (!readOnly) {
-                result.setResult(Collections.singletonList(studyConfiguration.newInstance()));
-            }
-        }
-        return result;
-
     }
 
     public Thread buildShutdownHook(String jobOperationName, int studyId, int taskId) {
@@ -284,19 +201,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         long timeStamp = System.currentTimeMillis();
         logger.debug("Timestamp : {} -> {}", studyConfiguration.getTimeStamp(), timeStamp);
         studyConfiguration.setTimeStamp(timeStamp);
-        Map<Integer, String> headers = studyConfiguration.getHeaders();
 
-        if (logger.isDebugEnabled()) {
-            studyConfiguration.setHeaders(null);
-            logger.debug("Updating studyConfiguration : {}", studyConfiguration.toJson());
-            studyConfiguration.setHeaders(headers);
-        }
-
-        // Store a copy of the StudyConfiguration.
-        StudyConfiguration copy = studyConfiguration.newInstance();
-        stringStudyConfigurationMap.put(copy.getName(), copy);
-        intStudyConfigurationMap.put(copy.getId(), copy);
-        return studyDBAdaptor.updateStudyConfiguration(copy, options);
+        return studyDBAdaptor.updateStudyConfiguration(studyConfiguration, options);
     }
 
     public Integer getStudyIdOrNull(Object studyObj) {
@@ -395,48 +301,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return studyId;
     }
 
-    /**
-     * Given a study reference (name or id) and a default study, returns the associated StudyConfiguration.
-     *
-     * @param study     Study reference (name or id)
-     * @param defaultStudyConfiguration Default studyConfiguration
-     * @param options   Query options
-     * @return          Assiciated StudyConfiguration
-     * @throws    VariantQueryException is the study does not exists
-     */
-    @Deprecated
-    public StudyConfiguration getStudyConfiguration(String study, StudyConfiguration defaultStudyConfiguration, QueryOptions options)
-            throws VariantQueryException {
-        StudyConfiguration studyConfiguration;
-        if (StringUtils.isEmpty(study)) {
-            studyConfiguration = defaultStudyConfiguration;
-            if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(study, getStudyNames(options));
-            }
-        } else if (StringUtils.isNumeric(study)) {
-            int studyInt = Integer.parseInt(study);
-            if (defaultStudyConfiguration != null && studyInt == defaultStudyConfiguration.getId()) {
-                studyConfiguration = defaultStudyConfiguration;
-            } else {
-                studyConfiguration = getStudyConfiguration(studyInt, options).first();
-            }
-            if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(studyInt, getStudyNames(options));
-            }
-        } else {
-            if (defaultStudyConfiguration != null && defaultStudyConfiguration.getName().equals(study)) {
-                studyConfiguration = defaultStudyConfiguration;
-            } else {
-                studyConfiguration = getStudyConfiguration(study, options).first();
-            }
-            if (studyConfiguration == null) {
-                throw VariantQueryException.studyNotFound(study, getStudyNames(options));
-            }
-        }
-        return studyConfiguration;
-    }
-
-    public <E extends Exception> ProjectMetadata lockAndUpdateProject(UpdateFunction<ProjectMetadata, E> function)
+    public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
             throws StorageEngineException, E {
         Objects.requireNonNull(function);
         long lock;
@@ -475,7 +340,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantAnnotationManager.SPECIES)
                 || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantAnnotationManager.ASSEMBLY))) {
 
-            projectMetadata = lockAndUpdateProject(pm -> {
+            projectMetadata = updateProjectMetadata(pm -> {
                 if (pm == null) {
                     pm = new ProjectMetadata();
                 }
@@ -1175,80 +1040,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return id;
     }
 
-    // TODO: Return sampleId and studyId as a Pair
-    public int getSampleId(Object sampleObj, StudyConfiguration defaultStudyConfiguration) {
-        int sampleId;
-        if (sampleObj instanceof Number) {
-            sampleId = ((Number) sampleObj).intValue();
-        } else {
-            String sampleStr = sampleObj.toString();
-            if (isNegated(sampleStr)) {
-                sampleStr = removeNegation(sampleStr);
-            }
-            if (StringUtils.isNumeric(sampleStr)) {
-                sampleId = Integer.parseInt(sampleStr);
-            } else {
-                String[] split = VariantQueryUtils.splitStudyResource(sampleStr);
-                if (split.length == 2) {  //Expect to be as <study>:<sample>
-                    String study = split[0];
-                    sampleStr = split[1];
-                    StudyConfiguration sc;
-                    if (defaultStudyConfiguration != null && study.equals(defaultStudyConfiguration.getName())) {
-                        sc = defaultStudyConfiguration;
-                    } else {
-                        QueryResult<StudyConfiguration> queryResult = getStudyConfiguration(study, new QueryOptions());
-                        if (queryResult.getResult().isEmpty()) {
-                            throw VariantQueryException.studyNotFound(study);
-                        }
-                        sc = queryResult.first();
-                    }
-                    if (!sc.getSampleIds().containsKey(sampleStr)) {
-                        throw VariantQueryException.sampleNotFound(sampleStr, study);
-                    }
-                    sampleId = sc.getSampleIds().get(sampleStr);
-                } else if (defaultStudyConfiguration != null) {
-                    if (!defaultStudyConfiguration.getSampleIds().containsKey(sampleStr)) {
-                        throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getName());
-                    }
-                    sampleId = defaultStudyConfiguration.getSampleIds().get(sampleStr);
-                } else {
-                    //Unable to identify that sample!
-                    List<String> studyNames = getStudyNames(null);
-                    throw VariantQueryException.missingStudyForSample(sampleStr, studyNames);
-                }
-            }
-        }
-        return sampleId;
-    }
-
-    // TODO: Return cohortId and studyId as a Pair
-    /**
-     * Finds the cohortId from a cohort reference.
-     *
-     * @param cohort    Cohort reference (name or id)
-     * @param studyConfiguration  Default study configuration
-     * @return  Cohort id
-     * @throws VariantQueryException if the cohort does not exist
-     */
-    public int getCohortId(String cohort, StudyConfiguration studyConfiguration) throws VariantQueryException {
-        int cohortId;
-        if (StringUtils.isNumeric(cohort)) {
-            cohortId = Integer.parseInt(cohort);
-            if (!studyConfiguration.getCohortIds().containsValue(cohortId)) {
-                throw VariantQueryException.cohortNotFound(cohortId, studyConfiguration.getId(),
-                        studyConfiguration.getCohortIds().keySet());
-            }
-        } else {
-            Integer cohortIdNullable = studyConfiguration.getCohortIds().get(cohort);
-            if (cohortIdNullable == null) {
-                throw VariantQueryException.cohortNotFound(cohort, studyConfiguration.getId(),
-                        studyConfiguration.getCohortIds().keySet());
-            }
-            cohortId = cohortIdNullable;
-        }
-        return cohortId;
-    }
-
     public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds) {
         Set<Integer> fileIds = new LinkedHashSet<>();
         for (Integer sampleId : sampleIds) {
@@ -1284,27 +1075,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             return fileMetadata;
         });
 
-//        if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
-//            LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
-//            List<String> missingSamples = new LinkedList<>();
-//            for (String sample : variantFileMetadata.getSampleIds()) {
-//                if (!sampleIds.contains(studyConfiguration.getSampleIds().get(sample))) {
-//                    missingSamples.add(sample);
-//                }
-//            }
-//            if (!missingSamples.isEmpty()) {
-//                throw new StorageEngineException("Samples " + missingSamples.toString() + " were not in file " + fileId);
-//            }
-//            if (sampleIds.size() != variantFileMetadata.getSampleIds().size()) {
-//                throw new StorageEngineException("Incorrect number of samples in file " + fileId);
-//            }
-//        } else {
-//            LinkedHashSet<Integer> sampleIdsInFile = new LinkedHashSet<>(variantFileMetadata.getSampleIds().size());
-//            for (String sample : variantFileMetadata.getSampleIds()) {
-//                sampleIdsInFile.add(studyConfiguration.getSampleIds().get(sample));
-//            }
-//            studyConfiguration.getSamplesInFiles().put(fileId, sampleIdsInFile);
-//        }
     }
 
     public List<Integer> registerSamples(int studyId, Collection<String> samples) throws StorageEngineException {
@@ -1414,19 +1184,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return id;
     }
 
-    /**
-     * Check if the StudyConfiguration is correct.
-     *
-     * @param studyConfiguration StudyConfiguration to check
-     * @throws StorageEngineException If object is null
-     */
-    public static void checkStudyConfiguration(StudyConfiguration studyConfiguration) throws StorageEngineException {
-        if (studyConfiguration == null) {
-            throw new StorageEngineException("StudyConfiguration is null");
-        }
-        checkStudyId(studyConfiguration.getId());
-    }
-
     public int registerFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
         return registerFile(studyId, variantFileMetadata.getPath(), variantFileMetadata.getSampleIds());
     }
@@ -1439,12 +1196,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     /**
-     * Check if the file(name,id) can be added to the StudyConfiguration.
+     * Check if the file(name,id) can be added to the Study metadata.
      *
      * Will fail if:
-     * fileName was already in the studyConfiguration.fileIds with a different fileId
-     * fileId was already in the studyConfiguration.fileIds with a different fileName
-     * fileId was already in the studyConfiguration.indexedFiles
+     * fileName was already in the study fileIds with a different fileId
+     * fileId was already in the study fileIds with a different fileName
+     * fileId was already in the study indexedFiles
      *
      * @param studyId   studyId
      * @param filePath  File path
@@ -1511,17 +1268,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     protected int newFileId(int studyId) throws StorageEngineException {
-//        return studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
         return projectDBAdaptor.generateId(studyId, "file");
     }
 
     protected int newSampleId(int studyId) throws StorageEngineException {
-//        return studyConfiguration.getSampleIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
         return projectDBAdaptor.generateId(studyId, "sample");
     }
 
     protected int newCohortId(int studyId) throws StorageEngineException {
-//        return studyConfiguration.getCohortIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
         return projectDBAdaptor.generateId(studyId, "cohort");
     }
 
@@ -1570,55 +1324,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return setStatus(studyId, operationName, files, status);
     }
 
-    @Deprecated
-    public static TaskMetadata getOperation(StudyConfiguration studyConfiguration, String operationName, List<Integer> files) {
-        List<TaskMetadata> batches = studyConfiguration.getBatches();
-        TaskMetadata operation = null;
-        for (int i = batches.size() - 1; i >= 0; i--) {
-            operation = batches.get(i);
-            if (operation.getName().equals(operationName) && operation.getFileIds().equals(files)) {
-                break;
-            }
-            operation = null;
-        }
-        return operation;
-    }
-
-    @Deprecated
-    public static TaskMetadata.Status setStatus(StudyConfiguration studyConfiguration, TaskMetadata.Status status,
-                                                String operationName, List<Integer> files) {
-        TaskMetadata operation = getOperation(studyConfiguration, operationName, files);
-        if (operation == null) {
-            throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
-        }
-        TaskMetadata.Status previousStatus = operation.currentStatus();
-        operation.addStatus(Calendar.getInstance().getTime(), status);
-        return previousStatus;
-    }
-
-    /**
-     * Adds a new {@link TaskMetadata} to the StudyConfiguration.
-     *
-     * Only allow one running operation at the same time
-     *  If any operation is in ERROR and is not the same operation, throw {@link StorageEngineException#otherOperationInProgressException}
-     *  If any operation is DONE, RUNNING, is same operation and resume=true, continue
-     *  If all operations are ready, continue
-     *
-     * @param studyConfiguration StudyConfiguration
-     * @param jobOperationName   Job operation name used to create the jobName and as {@link TaskMetadata#getOperationName()}
-     * @param fileIds            Files to be processed in this batch.
-     * @param resume             Resume operation. Assume that previous operation went wrong.
-     * @param type               Operation type as {@link TaskMetadata#type}
-     * @return                   The current batchOperation
-     * @throws StorageEngineException if the operation can't be executed
-     */
-    @Deprecated
-    public static TaskMetadata addRunningTask(StudyConfiguration studyConfiguration, String jobOperationName,
-                                              List<Integer> fileIds, boolean resume, TaskMetadata.Type type)
-            throws StorageEngineException {
-        throw new UnsupportedOperationException("Deprecated");
-    }
-
     public TaskMetadata addRunningTask(int studyId, String jobOperationName, List<Integer> fileIds) throws StorageEngineException {
         return addRunningTask(studyId, jobOperationName, fileIds, false, TaskMetadata.Type.OTHER);
     }
@@ -1630,7 +1335,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return addRunningTask(studyId, jobOperationName, fileIds, resume, type, b -> false);
     }
     /**
-     * Adds a new {@link TaskMetadata} to the StudyConfiguration.
+     * Adds a new {@link TaskMetadata} to the Study Metadata.
      *
      * Allow execute concurrent operations depending on the "allowConcurrent" predicate.
      *  If any operation is in ERROR, is not the same operation, and concurrency is not allowed,

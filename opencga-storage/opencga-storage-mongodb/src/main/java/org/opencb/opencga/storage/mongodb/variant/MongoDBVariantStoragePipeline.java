@@ -468,7 +468,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata preStage(int fileId) throws StorageEngineException {
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
         AtomicReference<TaskMetadata> operation = new AtomicReference<>();
-        scm.lockAndUpdate(getStudyId(), studyMetadata -> {
+        scm.updateStudyMetadata(getStudyId(), studyMetadata -> {
             operation.set(securePreStage(fileId, studyMetadata));
             return studyMetadata;
         });
@@ -619,7 +619,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
     private StudyMetadata preMerge(List<Integer> fileIds) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        return metadataManager.lockAndUpdate(getStudyId(), studyMetadata -> {
+        return metadataManager.updateStudyMetadata(getStudyId(), studyMetadata -> {
             studyMetadata = ensureStudyMetadataExists(studyMetadata);
             LinkedHashSet<Integer> indexedFiles = getMetadataManager().getIndexedFiles(studyMetadata.getId());
             for (Integer fileId : fileIds) {

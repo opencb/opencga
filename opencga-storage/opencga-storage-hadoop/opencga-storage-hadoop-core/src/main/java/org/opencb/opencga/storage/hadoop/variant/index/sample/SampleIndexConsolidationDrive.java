@@ -111,7 +111,7 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
                 gts.add(counter.getName());
             }
             if (!gts.isEmpty()) {
-                getMetadataManager().lockAndUpdate(getStudyId(), sm -> {
+                getMetadataManager().updateStudyMetadata(getStudyId(), sm -> {
                     gts.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
                     sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), gts);
                     return sm;

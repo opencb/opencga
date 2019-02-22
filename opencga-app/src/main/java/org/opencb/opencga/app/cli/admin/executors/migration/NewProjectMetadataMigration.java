@@ -83,7 +83,7 @@ public class NewProjectMetadataMigration {
                                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
                         VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
 
-                        Map<String, Integer> currentCounters = scm.lockAndUpdateProject(projectMetadata -> {
+                        Map<String, Integer> currentCounters = scm.updateProjectMetadata(projectMetadata -> {
                             if (projectMetadata == null || StringUtils.isEmpty(projectMetadata.getSpecies())) {
                                 logger.info("Create ProjectMetadata for project " + project.getFqn());
 
@@ -117,7 +117,7 @@ public class NewProjectMetadataMigration {
                                 updateMaxCounter(counters, "study", Collections.singleton(studyId));
                             }
 
-                            scm.lockAndUpdateProject(projectMetadata -> {
+                            scm.updateProjectMetadata(projectMetadata -> {
                                 projectMetadata.setCounters(counters);
                                 return projectMetadata;
                             });

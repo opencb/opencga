@@ -270,7 +270,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
         AtomicReference<TaskMetadata> taskMetadata = new AtomicReference<>();
-        StudyMetadata studyMetadata = metadataManager.lockAndUpdate(studyName, sm -> {
+        StudyMetadata studyMetadata = metadataManager.updateStudyMetadata(studyName, sm -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             taskMetadata.set(metadataManager.addRunningTask(sm.getId(),
                     REMOVE_OPERATION_NAME,

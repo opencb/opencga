@@ -20,7 +20,7 @@ public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStora
     }
 
     @Override
-    public StudyMetadataDBAdaptor buildStudyConfigurationDBAdaptor() {
+    public StudyMetadataDBAdaptor buildStudyMetadataDBAdaptor() {
         return new DummyStudyMetadataDBAdaptor();
     }
 

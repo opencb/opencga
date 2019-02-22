@@ -546,7 +546,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         } finally {
             boolean fail = exception != null;
             metadataManager.setStatus(studyId, task.getId(), fail ? TaskMetadata.Status.ERROR : TaskMetadata.Status.READY);
-            metadataManager.lockAndUpdate(study, sm -> {
+            metadataManager.updateStudyMetadata(study, sm -> {
                 if (!fillGaps && StringUtils.isEmpty(options.getString(REGION.key()))) {
                     sm.getAttributes().put(MISSING_GENOTYPES_UPDATED, !fail);
                 }

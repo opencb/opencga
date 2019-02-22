@@ -610,7 +610,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger, newVariantSearchLoadListener());
 
             long value = System.currentTimeMillis();
-            getMetadataManager().lockAndUpdateProject(projectMetadata -> {
+            getMetadataManager().updateProjectMetadata(projectMetadata -> {
                 projectMetadata.getAttributes().put(SEARCH_INDEX_LAST_TIMESTAMP.key(), value);
                 return projectMetadata;
             });
@@ -654,7 +654,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         // first, create the collection it it does not exist
 
         AtomicInteger atomicId = new AtomicInteger();
-        StudyMetadata studyMetadata = metadataManager.lockAndUpdate(study, sm -> {
+        StudyMetadata studyMetadata = metadataManager.updateStudyMetadata(study, sm -> {
             boolean resume = getOptions().getBoolean(RESUME.key(), RESUME.defaultValue());
             atomicId.set(metadataManager.registerSecondaryIndexSamples(sm.getId(), samples, resume));
             return sm;
@@ -773,7 +773,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected TaskMetadata preRemoveFiles(String study, List<String> files) throws StorageEngineException {
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        metadataManager.lockAndUpdate(study, studyMetadata -> {
+        metadataManager.updateStudyMetadata(study, studyMetadata -> {
             List<Integer> fileIds = new ArrayList<>(files.size());
             for (String file : files) {
                 FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), file);
@@ -820,7 +820,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected void postRemoveFiles(String study, List<Integer> fileIds, int taskId, boolean error) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        metadataManager.lockAndUpdate(study, studyMetadata -> {
+        metadataManager.updateStudyMetadata(study, studyMetadata -> {
             if (error) {
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.ERROR);
             } else {

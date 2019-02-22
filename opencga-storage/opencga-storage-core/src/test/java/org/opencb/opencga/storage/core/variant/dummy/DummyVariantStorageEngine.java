@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant.dummy;
 
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -29,7 +28,6 @@ import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -90,7 +88,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        metadataManager.lockAndUpdate(studyName, studyMetadata -> {
+        metadataManager.updateStudyMetadata(studyName, studyMetadata -> {
             metadataManager.removeIndexedFiles(studyMetadata.getId(), metadataManager.getIndexedFiles(studyMetadata.getId()));
             return studyMetadata;
         });

@@ -83,7 +83,7 @@ public abstract class AbstractHBaseDBAdaptor {
     protected boolean tableExists() {
         if (tableExists == null || !tableExists) {
             try {
-                return hBaseManager.tableExists(tableName);
+                tableExists = hBaseManager.tableExists(tableName);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

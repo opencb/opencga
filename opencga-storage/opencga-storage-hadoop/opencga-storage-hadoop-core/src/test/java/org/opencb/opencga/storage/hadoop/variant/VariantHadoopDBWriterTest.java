@@ -137,7 +137,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     @Test
     public void testBasicMerge() throws Exception {
 
-        sm1=metadataManager.lockAndUpdate(sm1.getId(), sm -> {
+        sm1=metadataManager.updateStudyMetadata(sm1.getId(), sm -> {
             sm.getAttributes()
                     .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
                     .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
@@ -226,7 +226,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         metadataManager.unsecureUpdateStudyMetadata(sc);
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
-        metadataManager.lockAndUpdateProject(projectMetadata -> {
+        metadataManager.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
                 return new ProjectMetadata("hsapiens", "grch37", 1);
             } else {

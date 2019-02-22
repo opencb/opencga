@@ -254,7 +254,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void saveAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().lockAndUpdateProject(project -> {
+        ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
             registerNewAnnotationSnapshot(name, variantAnnotator, project);
             return project;
         });
@@ -290,7 +290,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
 
-        dbAdaptor.getMetadataManager().lockAndUpdateProject(project -> {
+        dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
             removeAnnotationSnapshot(name, project);
             return project;
         });
