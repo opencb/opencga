@@ -448,7 +448,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
-                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.INDIVIDUAL), sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();

@@ -575,7 +575,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, familyDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version

@@ -439,7 +439,7 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testAnnotations() throws CatalogException, JsonProcessingException {
+    public void testAnnotationWrongEntity() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
         variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
@@ -449,6 +449,66 @@ public class FileManagerTest extends AbstractManagerTest {
                 "", null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+
+        ObjectMap annotations = new ObjectMap()
+                .append("var_name", "Joe")
+                .append("AGE", 25)
+                .append("HEIGHT", 180);
+        AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
+
+        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+        ObjectMap updateAnnotation = new ObjectMap()
+                // Update the annotation values
+                .append(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
+                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))
+                ));
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("intended only for");
+        catalogManager.getFileManager().update(studyFqn, "data/", updateAnnotation, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void testAnnotationForAnyEntity() throws CatalogException, JsonProcessingException {
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+                null, Collections.emptyMap()));
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+                null, Collections.emptyMap()));
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+                "", null, Collections.emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                null, sessionIdUser).first();
+
+        ObjectMap annotations = new ObjectMap()
+                .append("var_name", "Joe")
+                .append("AGE", 25)
+                .append("HEIGHT", 180);
+        AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
+
+        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+        ObjectMap updateAnnotation = new ObjectMap()
+                // Update the annotation values
+                .append(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
+                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))
+                ));
+
+        QueryResult<File> update = catalogManager.getFileManager().update(studyFqn, "data/", updateAnnotation, QueryOptions.empty(),
+                sessionIdUser);
+        assertEquals(1, update.first().getAnnotationSets().size());
+    }
+
+    @Test
+    public void testAnnotations() throws CatalogException, JsonProcessingException {
+        List<Variable> variables = new ArrayList<>();
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+                null, Collections.emptyMap()));
+        variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
+                null, Collections.emptyMap()));
+        variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
+                "", null, Collections.emptyMap()));
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.FILE), sessionIdUser).first();
 
         ObjectMap annotations = new ObjectMap()
                 .append("var_name", "Joe")

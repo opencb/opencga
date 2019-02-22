@@ -1461,7 +1461,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         MyResource<File> resource = new MyResource<>(userId, study, file);
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, fileDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                VariableSet.AnnotableDataModels.FILE, fileDBAdaptor);
 
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         fileDBAdaptor.update(file.getUid(), parameters, variableSetList, options);

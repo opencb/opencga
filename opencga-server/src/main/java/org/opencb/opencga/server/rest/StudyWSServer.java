@@ -853,7 +853,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
 
         for (String entity : entityStringList) {
-            entities.add(VariableSet.AnnotableDataModels.valueOf(entity));
+            entities.add(VariableSet.AnnotableDataModels.valueOf(entity.toUpperCase()));
         }
         return entities;
     }
