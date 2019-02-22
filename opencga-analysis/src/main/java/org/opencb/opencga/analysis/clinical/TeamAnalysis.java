@@ -27,6 +27,7 @@ import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -41,8 +42,10 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,18 +95,54 @@ public class TeamAnalysis extends FamilyAnalysis {
 
         if (queryResult.getNumResults() == 0) {
 
-            // Step 2 - VUS variants
-            // Get genes from panels
+            // Step 2 - VUS variants from genes in panels
             List<String> geneIds = getGeneIdsFromDiseasePanels(diseasePanels);
+            // Remove variant IDs from the query, and set gene IDs
             query.remove(VariantQueryParam.ID.key());
             query.put(VariantQueryParam.GENE.key(), StringUtils.join(geneIds, ","));
-            query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding");
-            // ...
+
+            // VUS filter
+            //
+            //   Pop. frequncy:
+            //     1kG_phase3:EUR<0.01
+            //     1kG_phase3:IBS<0.01
+            //     EXAC/gnomAD < 0.01 (ALL ??, GNOMAD_GENOMES and/or GNOMAD_EXOMES ??)
+            //     MGP< 0.01, (ALL ?)
+            //   Conservation:
+            //     GERP > 2
+            //   SO (consequence type)
+            //     if (Loss of Function)
+            //       ScaledCADD > 15
+            //     else if (Protein Coding)
+            //       SIFT < 0.05
+            //       Polyphen2 > 0.91
+            //       ScaledCADD > 15
+
+            List<String> lof = new ArrayList<>();
+            lof.addAll(ReportedVariantCreator.LOF_SET);
+            query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), StringUtils.join(lof, VariantQueryUtils.OR));
+
+            query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:EUR<0.01"
+                    + VariantQueryUtils.OR + "1kG_phase3:IBS<0.01"
+                    + VariantQueryUtils.OR + "EXAC:ALL<0.01"
+                    + VariantQueryUtils.OR + "GNOMAD_GENOMES:ALL<0.01"
+                    + VariantQueryUtils.OR + "GNOMAD_EXOMES:ALL<0.01"
+                    + VariantQueryUtils.OR + "MGP:ALL<0.01");
+            query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "gerp>2");
+            query.put(VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key(), "scaled_cadd>15");
 
             queryResult = variantStorageManager.get(query, queryOptions, token);
 
             if (queryResult.getNumResults() == 0) {
+                // No loss of function variants, then try with protein_coding and protein substitution scores
+                query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "protein_coding");
+                query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.05" + VariantQueryUtils.AND + "polyphen>0.91");
+                queryResult = variantStorageManager.get(query, queryOptions, token);
+            }
+
+            if (queryResult.getNumResults() == 0) {
                 // Step 3: findings
+                // TODO: search findings from an external file??
             }
         }
 

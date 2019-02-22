@@ -89,7 +89,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public QueryResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)
             throws CatalogException {
         if (StringUtils.isEmpty(entry.getInterpretation().getClinicalAnalysisId())) {
-            throw new IllegalArgumentException("Please call to create passing a clinical analysis");
+            throw new IllegalArgumentException("Please call to create passing a clinical analysis id");
         }
         return create(studyStr, entry.getInterpretation().getClinicalAnalysisId(), entry, options, sessionId);
     }
@@ -106,6 +106,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ParamUtils.checkObj(interpretation, "clinicalAnalysis");
         ParamUtils.checkAlias(interpretation.getInterpretation().getId(), "id");
 
+        interpretation.getInterpretation().setClinicalAnalysisId(resource.getResource().getId());
+
         interpretation.getInterpretation().setCreationDate(TimeUtils.getTime());
         interpretation.getInterpretation().setDescription(
                 ParamUtils.defaultString(interpretation.getInterpretation().getDescription(), ""));
@@ -118,11 +120,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         // Now, we add the interpretation to the clinical analysis
         ObjectMap parameters = new ObjectMap();
-        parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), Arrays.asList(interpretation));
+        parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), Collections.singletonList(queryResult.first()));
+        QueryOptions queryOptions = new QueryOptions();
         Map<String, Object> actionMap = new HashMap<>();
         actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD.name());
-        parameters.put(Constants.ACTIONS, actionMap);
-        catalogManager.getClinicalAnalysisManager().update(resource.getStudy().getFqn(), clinicalAnalysisStr, parameters, null, sessionId);
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        clinicalDBAdaptor.update(resource.getResource().getUid(), parameters, queryOptions);
 
         return queryResult;
     }

@@ -2,6 +2,7 @@ package org.opencb.opencga.server.rest.analysis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
@@ -18,7 +19,6 @@ import org.opencb.opencga.analysis.clinical.TeamAnalysis;
 import org.opencb.opencga.analysis.clinical.TieringAnalysis;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -26,8 +26,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -54,13 +52,13 @@ public class InterpretationWSService extends AnalysisWSService {
 
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
-    private final ClinicalInterpretationManager clinicalInterpretationManager;
+//    private final ClinicalInterpretationManager clinicalInterpretationManager;
 
     public InterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                    @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
-        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
+//        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
@@ -69,7 +67,7 @@ public class InterpretationWSService extends AnalysisWSService {
                                    @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
 
-        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
+//        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
@@ -122,7 +120,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/{clinicalAnalysis}/interpretations/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
+    @ApiOperation(value = "Add or remove Interpretations to/from a Clinical Analysis", position = 1, response = ClinicalAnalysis.class)
     public Response interpretationUpdate(
             @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
@@ -136,14 +134,14 @@ public class InterpretationWSService extends AnalysisWSService {
                 interpretationAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), interpretationAction.name());
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            ObjectMap parameters = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(),
-                    Arrays.asList(getUpdateObjectMapper().writeValueAsString(params.toClinicalInterpretation())));
-
-            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
+            if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
+                Interpretation interpretation = params.toClinicalInterpretation();
+                interpretation.getInterpretation().setClinicalAnalysisId(clinicalAnalysisStr);
+                return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, sessionId));
+            } else {
+                // TODO: Implement delete interpretation
+                return createErrorResponse(new NotImplementedException("Delete still not supported"));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -190,8 +188,8 @@ public class InterpretationWSService extends AnalysisWSService {
     public Response search(
             @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
             @QueryParam("study") String studyStr,
-            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
-            @ApiParam(value = "Priority") @QueryParam("priority") ClinicalAnalysis.Priority priority,
+            @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
+            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
             @QueryParam("creationDate") String creationDate,
@@ -399,27 +397,27 @@ public class InterpretationWSService extends AnalysisWSService {
      */
 
 
-    @POST
-    @Path("/interpretation/create")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a new clinical interpretation", position = 1,
-            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
-    public Response create(
-            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Clinical analysis the interpretation belongs to") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
-            @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
-                    ClinicalInterpretationParameters params) {
-        try {
-            return createOkResponse(catalogInterpretationManager.create(studyStr, params.toClinicalInterpretation(), queryOptions, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/interpretation/create")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Create a new clinical interpretation", position = 1,
+//            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
+//    public Response create(
+//            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
+//            @ApiParam(value = "Clinical analysis the interpretation belongs to") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
+//            @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
+//                    ClinicalInterpretationParameters params) {
+//        try {
+//            return createOkResponse(catalogInterpretationManager.create(studyStr, params.toClinicalInterpretation(), queryOptions, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
-    @Path("/interpretation/{interpretation}/update")
+    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update clinical interpretation information", position = 1,
+    @ApiOperation(value = "Update Interpretation fields", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response update(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
@@ -437,9 +435,9 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/interpretation/{interpretation}/comments/update")
+    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update comments of an interpretation", position = 1,
+    @ApiOperation(value = "Update comments of an Interpretation", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response commentsUpdate(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
@@ -462,7 +460,7 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/interpretation/{interpretation}/reportedVariants/update")
+    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/reportedVariants/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update reported variants of an interpretation", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
@@ -492,12 +490,13 @@ public class InterpretationWSService extends AnalysisWSService {
                           @ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
                           @ApiParam(value = "Reset the clinical variant database and import the specified interpretations") @QueryParam("false") boolean reset,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String study) {
-        try {
-            clinicalInterpretationManager.index(study, sessionId);
-            return Response.ok().build();
-        } catch (IOException | ClinicalVariantException | CatalogException e) {
-            return createErrorResponse(e);
-        }
+//        try {
+//            clinicalInterpretationManager.index(study, sessionId);
+//            return Response.ok().build();
+//        } catch (IOException | ClinicalVariantException | CatalogException e) {
+//            return createErrorResponse(e);
+//        }
+        return createErrorResponse(new NotImplementedException("Operation not yet implemented"));
     }
 
     @GET

@@ -26,7 +26,7 @@ import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 
 import java.util.*;
 
-public class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
+public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
 
     protected String clinicalAnalysisId;
     protected List<String> diseasePanelIds;
@@ -51,7 +51,7 @@ public class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.diseasePanelIds = diseasePanelIds;
 
-        this.config = config;
+        this.config = config != null ? config : new ObjectMap();
         this.maxCoverage = 20;
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
@@ -60,9 +60,7 @@ public class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
     @Override
-    public AnalysisResult<Interpretation> execute() throws Exception {
-        return null;
-    }
+    public abstract AnalysisResult<Interpretation> execute() throws Exception;
 
 
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {

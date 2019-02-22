@@ -818,6 +818,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             geneToSOAccessions.add(conseqType.getGeneName() + "_" + soNumber);
                             geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soNumber);
                             geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soNumber);
+
+                            // Add a combination with the transcript flag
+                            if (conseqType.getTranscriptAnnotationFlags() != null) {
+                                for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
+                                    geneToSOAccessions.add(conseqType.getGeneName() + "_" + soNumber + "_" + transcriptFlag);
+                                    geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soNumber + "_" + transcriptFlag);
+                                    geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soNumber + "_" + transcriptFlag);
+
+                                    // This is useful when no gene or transcript is used, for example we want 'LoF' in 'basic' transcripts
+                                    geneToSOAccessions.add(soNumber + "_" + transcriptFlag);
+                                }
+                            }
                         }
                     }
 

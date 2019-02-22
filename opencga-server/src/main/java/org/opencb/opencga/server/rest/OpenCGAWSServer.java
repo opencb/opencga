@@ -34,7 +34,6 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.clinical.InterpretationResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -514,6 +513,16 @@ public class OpenCGAWSServer {
         return response;
     }
 
+    protected Response createRawOkResponse(Object obj) {
+        try {
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(obj), MediaType.APPLICATION_JSON_TYPE));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            logger.error("Error parsing response object");
+            return createErrorResponse("", "Error parsing response object:\n" + Arrays.toString(e.getStackTrace()));
+        }
+    }
+
     protected Response createAnalysisOkResponse(Object obj) {
         Map<String, Object> queryResponseMap = new LinkedHashMap<>();
         queryResponseMap.put("time", new Long(System.currentTimeMillis() - startTime).intValue());
@@ -617,13 +626,16 @@ public class OpenCGAWSServer {
     }
 
     protected List<String> getIdList(String id) throws WebServiceException {
+        return getIdList(id, true);
+    }
+
+    protected List<String> getIdList(String id, boolean checkMaxNumberElements) throws WebServiceException {
         if (StringUtils.isNotEmpty(id)) {
             List<String> ids = checkUniqueList(id);
-            if (ids.size() <= MAX_ID_SIZE) {
-                return ids;
-            } else {
+            if (checkMaxNumberElements && ids.size() > MAX_ID_SIZE) {
                 throw new WebServiceException("More than " + MAX_ID_SIZE + " IDs are provided");
             }
+            return ids;
         } else {
             throw new WebServiceException("ID is null or Empty");
         }

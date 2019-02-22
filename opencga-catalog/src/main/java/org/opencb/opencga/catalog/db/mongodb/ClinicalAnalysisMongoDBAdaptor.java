@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -338,7 +338,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public DBIterator<ClinicalAnalysis> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, clinicalConverter);
+        return new ClinicalAnalysisMongoDBIterator<>(mongoCursor, clinicalConverter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID),
+                null, options);
     }
 
     @Override
@@ -347,7 +348,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new MongoDBIterator(mongoCursor);
+        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), null,
+                options);
     }
 
     @Override
@@ -355,7 +357,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
-        return new MongoDBIterator(mongoCursor, clinicalConverter);
+        return new ClinicalAnalysisMongoDBIterator(mongoCursor, clinicalConverter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user,
+                options);
     }
 
     @Override
@@ -366,7 +369,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
-        return new MongoDBIterator(mongoCursor);
+        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -397,8 +400,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = removeInnerProjections(qOptions, QueryParams.PROBAND.key());
-        qOptions = removeInnerProjections(qOptions, QueryParams.FAMILY.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATIONS.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return clinicalCollection.nativeQuery().find(bson, qOptions).iterator();

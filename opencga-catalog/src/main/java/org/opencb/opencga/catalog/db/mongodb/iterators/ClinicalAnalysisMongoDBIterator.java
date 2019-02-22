@@ -5,14 +5,13 @@ import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,20 +19,13 @@ import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
-@Deprecated
 public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
 
     private long studyUid;
     private String user;
 
-    private FamilyDBAdaptor familyDBAdaptor;
-    private IndividualDBAdaptor individualDBAdaptor;
-    private FileDBAdaptor fileDBAdaptor;
-
-    private QueryOptions familyQueryOptions;
-    private QueryOptions individualQueryOptions;
-    private QueryOptions somaticQueryOptions;
-    private QueryOptions germlineQueryOptions;
+    private InterpretationDBAdaptor interpretationDBAdaptor;
+    private QueryOptions interpretationQueryOptions;
 
     private QueryOptions options;
 
@@ -55,13 +47,8 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
 
         this.options = options;
 
-        this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
-        this.familyQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), false);
-
-        this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
-        this.individualQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), false);
-
-        this.fileDBAdaptor = dbAdaptorFactory.getCatalogFileDBAdaptor();
+        this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
+        this.interpretationQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), false);
 
         this.clinicalAnalysisListBuffer= new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisMongoDBIterator.class);
@@ -94,10 +81,7 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
     }
 
     private void fetchNextBatch() {
-        Set<Long> memberSet = new HashSet<>();
-        Set<Long> familySet = new HashSet<>();
-        Set<Long> somaticSet = new HashSet<>();
-        Set<Long> germlineSet = new HashSet<>();
+        Set<String> interpretationSet = new HashSet<>();
 
         // Get next BUFFER_SIZE documents
         int counter = 0;
@@ -107,152 +91,55 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             clinicalAnalysisListBuffer.add(clinicalDocument);
             counter++;
 
-            // Extract the proband
-            Document member = (Document) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
-            if (member != null && !options.getBoolean(NATIVE_QUERY)
-                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key())) {
-                memberSet.add(member.getLong(UID));
-            }
-
-            // Extract the family uid
-            Object family = clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
-            if (family != null && !options.getBoolean(NATIVE_QUERY)
-                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
-                familySet.add(((Document) family).getLong(UID));
+            // Extract the interpretations
+            List<Document> interpretations =
+                    (List<Document>) clinicalDocument.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key());
+            if (ListUtils.isNotEmpty(interpretations) && !options.getBoolean(NATIVE_QUERY)
+                    && !options.getBoolean(NATIVE_QUERY + "_" + ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
+                for (Document interpretation : interpretations) {
+                    interpretationSet.add(String.valueOf(interpretation.get(UID)));
+                }
             }
         }
 
-        Map<Long, Document> memberMap = new HashMap<>();
-        if (!memberSet.isEmpty()) {
-            // Obtain all those members
+        Map<String, Document> interpretationMap = new HashMap<>();
+        if (!interpretationSet.isEmpty()) {
+            // Obtain all those interpretations
             Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.UID.key(), memberSet);
-            List<Document> memberList;
+                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                    .append(InterpretationDBAdaptor.QueryParams.UID.key(), interpretationSet);
+            List<Document> interpretationList;
             try {
                 if (user != null) {
-                    memberList = individualDBAdaptor.nativeGet(query, individualQueryOptions, user).getResult();
+                    interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions, user).getResult();
                 } else {
-                    memberList = individualDBAdaptor.nativeGet(query, individualQueryOptions).getResult();
+                    interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions).getResult();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
-                logger.warn("Could not obtain the subjects associated to the clinical analyses: {}", e.getMessage(), e);
+                logger.warn("Could not obtain the interpretations associated to the clinical analyses: {}", e.getMessage(), e);
                 return;
             }
 
-            // Map each member uid to the member entry
-            memberList.forEach(member -> memberMap.put(member.getLong(UID), member));
+            // Map each interpretation uid to the interpretation entry
+            interpretationList.forEach(intepretation -> interpretationMap.put(String.valueOf(intepretation.get(UID)), intepretation));
         }
 
-        Map<Long, Document> familyMap = new HashMap<>();
-        if (!familySet.isEmpty()) {
-            // Obtain all those families
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(FamilyDBAdaptor.QueryParams.UID.key(), familySet);
-            List<Document> familyList;
-            try {
-                if (user != null) {
-                    familyList = familyDBAdaptor.nativeGet(query, familyQueryOptions, user).getResult();
-                } else {
-                    familyList = familyDBAdaptor.nativeGet(query, familyQueryOptions).getResult();
-                }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
-                logger.warn("Could not obtain the families associated to the clinical analyses: {}", e.getMessage(), e);
-                return;
-            }
+        if (!interpretationMap.isEmpty()) {
 
-            // Map each member uid to the member entry
-            familyList.forEach(family -> familyMap.put(family.getLong(UID), family));
-        }
-
-        Map<Long, Document> fileMap = new HashMap<>();
-        if (!germlineSet.isEmpty()) {
-            // Obtain all those germline files
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(FileDBAdaptor.QueryParams.UID.key(), germlineSet);
-            List<Document> germlineList;
-            try {
-                if (user != null) {
-                    germlineList = fileDBAdaptor.nativeGet(query, germlineQueryOptions, user).getResult();
-                } else {
-                    germlineList = fileDBAdaptor.nativeGet(query, germlineQueryOptions).getResult();
-                }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
-                logger.warn("Could not obtain the germline files associated to the clinical analyses: {}", e.getMessage(), e);
-                return;
-            }
-
-            // Map each member uid to the member entry
-            germlineList.forEach(file -> fileMap.put(file.getLong(UID), file));
-        }
-
-        if (!germlineSet.isEmpty()) {
-            // Obtain all those somatic files
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(FileDBAdaptor.QueryParams.UID.key(), somaticSet);
-            List<Document> somaticList;
-            try {
-                if (user != null) {
-                    somaticList = fileDBAdaptor.nativeGet(query, somaticQueryOptions, user).getResult();
-                } else {
-                    somaticList = fileDBAdaptor.nativeGet(query, somaticQueryOptions).getResult();
-                }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
-                logger.warn("Could not obtain the somatic files associated to the clinical analyses: {}", e.getMessage(), e);
-                return;
-            }
-
-            // Map each member uid to the member entry
-            somaticList.forEach(file -> fileMap.put(file.getLong(UID), file));
-        }
-
-        if (!familyMap.isEmpty() || !memberMap.isEmpty() || !fileMap.isEmpty()) {
-
-            // Add the members and families obtained to the corresponding clinical analyses
+            // Add the interpretations obtained to the corresponding clinical analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
-                Document completeProband = null;
-                Document origMember = (Document) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
+                List<Document> interpretations = new ArrayList<>();
+                List<Document> origInterpretations =
+                        (List<Document>) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key());
 
-                // If the member has been returned... (it might have not been fetched due to permissions issues)
-                if (memberMap.containsKey(origMember.getLong(UID))) {
-                    Document subjectCopy = new Document(memberMap.get(origMember.getLong(UID)));
-
-                    // Get original samples array stored in the clinical analysis collection
-                    Object samples = origMember.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-                    if (samples != null) {
-                        // Filter out the samples that are not stored in the clinical analysis from the subject
-                        Set<Long> presentSampleIds = new HashSet<>();
-                        for (Document document : ((List<Document>) samples)) {
-                            presentSampleIds.add(document.getLong(UID));
-                        }
-
-                        List<Document> finalSamples = new ArrayList<>(presentSampleIds.size());
-                        Object samplesObtained = subjectCopy.get(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-                        if (samplesObtained != null) {
-                            for (Document document : ((List<Document>) samplesObtained)) {
-                                if (presentSampleIds.contains(document.getLong(UID))) {
-                                    finalSamples.add(document);
-                                }
-                            }
-                        }
-                        subjectCopy.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), finalSamples);
-
-                    } else {
-                        subjectCopy.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), Collections.emptyList());
+                // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
+                for (Document origInterpretation : origInterpretations) {
+                    if (interpretationMap.containsKey(String.valueOf(origInterpretation.get(UID)))) {
+                        interpretations.add(new Document(interpretationMap.get(String.valueOf(origInterpretation.get(UID)))));
                     }
-
-                    completeProband = subjectCopy;
                 }
 
-                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), completeProband);
-
-                Document sourceFamily = (Document) clinicalAnalysis.get(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key());
-                if (sourceFamily != null && familyMap.containsKey(sourceFamily.getLong(UID))) {
-                    clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), familyMap.get(sourceFamily.getLong(UID)));
-                }
+                clinicalAnalysis.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), interpretations);
             });
         }
     }
@@ -269,13 +156,11 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
                 }
             }
             if (!includeList.isEmpty()) {
-                // If we only have include uid or version, there is no need for an additional query so we will set current options to
-                // native query
+                // If we only have include uid, there is no need for an additional query so we will set current options to native query
                 boolean includeAdditionalFields = includeList.stream().anyMatch(
-                        field -> !field.equals(VERSION) && !field.equals(UID)
+                        field -> !field.equals(UID)
                 );
                 if (includeAdditionalFields) {
-                    includeList.add(VERSION);
                     includeList.add(UID);
                     queryOptions.put(QueryOptions.INCLUDE, includeList);
                 } else {
@@ -300,9 +185,6 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             } else {
                 queryOptions.remove(QueryOptions.EXCLUDE);
             }
-        }
-        if (options.containsKey(Constants.FLATTENED_ANNOTATIONS)) {
-            queryOptions.put(Constants.FLATTENED_ANNOTATIONS, options.getBoolean(Constants.FLATTENED_ANNOTATIONS));
         }
 
         return queryOptions;
