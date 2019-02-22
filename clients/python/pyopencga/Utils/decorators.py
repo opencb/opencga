@@ -2,7 +2,7 @@ import getpass
 import json
 import os
 
-from pyCGA.opencgarestclients import OpenCGAClient
+from pyopencga.opencga_client import OpenCGAClient
 
 
 def catalog_login(func):

@@ -1,7 +1,7 @@
-from opencga_config import ConfigClient
-from rest_clients._all_rest_clients import *
+from pyopencga.opencga_config import ConfigClient
+#from pyopencga.rest_clients._all_rest_clients import *
 
-# from rest_clients.user_client import Users
+from pyopencga.rest_clients.user_client import Users
 # from rest_clients.project_client import Projects
 # from rest_clients.study_client import Studies
 # from rest_clients.file_client import Files
@@ -52,21 +52,40 @@ class OpenCGAClient(object):
         self.logout()
 
     def _create_clients(self):
+
+        ## undef all
+        self.users = None
+        self.projects = None
+        self.studies = None
+        self.files = None
+        self.samples = None
+        self.cohorts = None
+        self.families = None
+        self.jobs = None
+        self.individuals = None
+        self.clinical = None
+        self.variable_sets = None
+        self.analysis_alignment = None
+        self.analysis_variant = None
+        self.ga4gh = None
+        self.meta = None
+
+        ## prepare for @properties 
         self.users = Users(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.projects = Projects(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.studies = Studies(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.files = Files(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.samples = Samples(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.cohorts = Cohorts(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.families = Families(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.jobs = Jobs(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.individuals = Individuals(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.clinical = Clinical(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.meta = Meta(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.projects = Projects(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.studies = Studies(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.files = Files(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.samples = Samples(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.cohorts = Cohorts(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.families = Families(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.jobs = Jobs(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.individuals = Individuals(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.clinical = Clinical(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        # self.meta = Meta(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
 
         self.clients = [self.users, self.projects, self.studies, self.files,
                         self.samples, self.cohorts, self.families, self.jobs,
@@ -75,7 +94,10 @@ class OpenCGAClient(object):
                         self.ga4gh, self.meta]
 
         for client in self.clients:
-            client.on_retry = self.on_retry
+            # only retry the ones with objects
+            if client is not None:
+                print("#[DEBUGGING]: Adding methods to class User")
+                client.on_retry = self.on_retry
 
     def _make_login_handler(self, user, pwd):
         """

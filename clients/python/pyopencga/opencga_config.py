@@ -3,26 +3,31 @@ import json
 import requests
 import yaml
 
-from pyCGA.retry import retry
+from pyopencga.retry import retry
 
 
 class ConfigClient(object):
     """
     Configuration class shared between OpenCGA python clients
     """
-
+    
     def __init__(self, config_input=None, on_retry=None):
         """
         :param on_retry: A callback to be invoked when an operation is retried
             It must accept parameters: client, exc_type, exc_val, exc_tb, call
         """
+        
+        ## [TODO] Mocking a default
+        _tmp_host = ['http://bioinfodev.hpc.cam.ac.uk/opencga-test']
+        _tmp_config = {
+                    'host': _tmp_host,
+                    'version': 'v1'
+                }
+        
         # Default config params
         self._configuration_input = config_input
-        self._hosts = ['localhost:8080/opencga']
-        self._config = {
-            'host': '',
-            'version': 'v1',
-        }
+        self._hosts = _tmp_host
+        self._config = _tmp_config
         self._retry_config = None
         self._on_retry = on_retry
 

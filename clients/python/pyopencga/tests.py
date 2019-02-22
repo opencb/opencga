@@ -6,7 +6,7 @@ from urlparse import parse_qs
 import httpretty
 from sure import expect
 
-from pyCGA.opencgarestclients import OpenCGAClient
+from pyopencga.opencga_client import OpenCGAClient
 
 
 class OpenCGAClinetTest(unittest.TestCase):

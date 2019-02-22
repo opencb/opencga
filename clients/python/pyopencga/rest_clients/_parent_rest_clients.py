@@ -1,11 +1,5 @@
-import os
-import sys
-
-## Hack for an import from a parent dir
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
-from retry import retry
-from commons import execute, 
+from pyopencga.retry import retry
+from pyopencga.commons import execute, OpenCGAResponseList 
 
 class _ParentRestClient(object):
     """Queries the REST service given the different query params"""

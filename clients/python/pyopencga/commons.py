@@ -4,7 +4,7 @@ from time import sleep
 
 import requests
 
-from pyCGA.exceptions import OpenCgaInvalidToken, OpenCgaAuthorisationError
+from pyopencga.exceptions import OpenCgaInvalidToken, OpenCgaAuthorisationError
 
 try:
     from Queue import Queue
