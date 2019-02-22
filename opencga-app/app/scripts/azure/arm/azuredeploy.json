@@ -218,7 +218,8 @@
                     "worker": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D3_v2"
-                    }
+                    },
+                    "yarnSiteMemoryInMb": 7000
                 },
                 "daemon": {
                     "nodeSize": "Standard_DS2_v2"
@@ -260,7 +261,8 @@
                     "worker": {
                         "nodeCount": 20,
                         "nodeSize": "Standard_D5_v2"
-                    }
+                    },
+                    "yarnSiteMemoryInMb": 14000
                 },
                 "daemon": {
                     "nodeSize": "Standard_F8s_v2"
@@ -302,7 +304,8 @@
                     "worker": {
                         "nodeCount": 50,
                         "nodeSize": "Standard_D14_v2"
-                    }
+                    },
+                    "yarnSiteMemoryInMb": 62720
                 },
                 "daemon": {
                     "nodeSize": "Standard_F8s_v2"
@@ -637,6 +640,9 @@
                     },
                     "clusterWorkerNodeSize": {
                         "value": "[variables('selectedSize').hdInsight.worker.nodeSize]"
+                    },
+                    "yarnSiteMemoryInMb": {
+                        "value": "[variables('selectedSize').hdInsight.yarnSiteMemoryInMb]"
                     },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"
