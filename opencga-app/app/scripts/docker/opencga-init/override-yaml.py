@@ -33,7 +33,10 @@ parser.add_argument("--health-check-interval", required=True)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
+##############################################################################################################
 # Load storage configuration yaml
+##############################################################################################################
+
 with open(args.storage_config_path) as f:
     storage_config = yaml.safe_load(f)
 
@@ -64,16 +67,30 @@ for i, cellbase_host in enumerate(cellbase_hosts):
         storage_config["cellbase"]["database"]["hosts"].clear()
     storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_host)
 
+storage_config["cellbase"]["database"]["options"]["authenticationDatabase"] = "admin"
+storage_config["cellbase"]["database"]["options"]["sslEnabled"] = True
+storage_config["cellbase"]["database"]["user"] = args.catalog_database_user
+storage_config["cellbase"]["database"]["password"] = args.catalog_database_password
+storage_config["cellbase"]["preferred"] = "local"
+
+
 # Inject Hadoop ssh configuration
 if args.hadoop_ssh_host and args.hadoop_ssh_user and args.hadoop_ssh_password and args.hadoop_ssh_remote_opencga_home:
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor"] = "ssh"
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.host"] = args.hadoop_ssh_host
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.user"] = args.hadoop_ssh_user
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.password"] = args.hadoop_ssh_password
-    #storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
-    storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] = args.hadoop_ssh_remote_opencga_home
+    for _, storage_engine in enumerate(storage_config["storageEngines"]):
+        storage_engine["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
 
+        if storage_engine["id"] == "hadoop": 
+            storage_engine["variant"]["options"]["opencga.mr.executor"] = "ssh"
+            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.host"] = args.hadoop_ssh_host
+            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.user"] = args.hadoop_ssh_user
+            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.password"] = args.hadoop_ssh_password
+            #storage_engine["variant"]["options"]["opencga.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
+            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] = args.hadoop_ssh_remote_opencga_home
+
+##############################################################################################################
 # Load configuration yaml
+##############################################################################################################
+
 with open(args.config_path) as f:
     config = yaml.safe_load(f)
 
@@ -116,7 +133,10 @@ config["execution"]["options"]["dockerArgs"] = args.batch_docker_args
 # Inject healthCheck interval
 config["healthCheck"]["interval"] = args.health_check_interval
 
+##############################################################################################################
 # Load client configuration yaml
+##############################################################################################################
+
 with open(args.client_config_path) as f:
     client_config = yaml.safe_load(f)
 

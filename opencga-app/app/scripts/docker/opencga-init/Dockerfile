@@ -46,8 +46,13 @@ RUN git clone "https://github.com/opencb/iva.git" && \
 VOLUME /opt/volume
 
 RUN pip3 install oyaml
-COPY ./opencga-app/app/scripts/docker/opencga-init /tmp/
+COPY opencga-app/app/scripts/docker/opencga-init/ /tmp/
 RUN chmod +x /tmp/setup.sh
+
+# Run tests on config script
+# If this line fails then a configuration change has a bug
+# review override-yaml.py or override-js.py
+RUN cd /tmp/test && python3 test-override-yaml.py && python3 test-override-js.py && rm -r /tmp/test
 
 # It is the responsibility of the setup.sh
 # script to initialise the volume correctly

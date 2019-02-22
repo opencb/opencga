@@ -10,6 +10,9 @@ dataDir: file:///opt/opencga/sessions/
 tempJobsDir: file:///opt/opencga/sessions//jobs/
 toolDir: /opt/opencga/tools
 
+healthCheck:
+  interval: 2
+
 admin:
   password: ""
   email: ""

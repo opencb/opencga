@@ -34,7 +34,8 @@ res = subprocess.run(["python3", "../override-yaml.py",
                "--hadoop-ssh-host", "test-hadoop-ssh-host",
                "--hadoop-ssh-user", "test-hadoop-ssh-user",
                "--hadoop-ssh-password", "test-hadoop-ssh-password",
-               "--hadoop-ssh-remote-opencga-home", "test-hadoop-ssh-remote-opencga-home"
+               "--hadoop-ssh-remote-opencga-home", "test-hadoop-ssh-remote-opencga-home",
+               "--health-check-interval", "30"
                ],
                stdout=subprocess.PIPE,
                stderr=subprocess.STDOUT, check=False)
@@ -60,11 +61,13 @@ assert(storage_config["search"]["hosts"][0] == "test-search-host1")
 assert(storage_config["search"]["hosts"][1] == "test-search-host2")
 assert(storage_config["clinical"]["hosts"][0] == "test-clinical-host")
 assert(storage_config["cellbase"]["database"]["hosts"][0] == "test-cellbase-host")
+assert(storage_config["storageEngines"][1]["variant"]["options"]["annotator"] == "cellbase_db_adaptor")
 assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor"] == "ssh")
 assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.host"] == "test-hadoop-ssh-host")
 assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.user"] == "test-hadoop-ssh-user")
 assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.password"] == "test-hadoop-ssh-password")
 assert(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] == "test-hadoop-ssh-remote-opencga-home")
+assert(config["healthCheck"]["interval"] == "30")
 assert(config["catalog"]["database"]["hosts"][0] == "test-catalog-database-host1")
 assert(config["catalog"]["database"]["hosts"][1] == "test-catalog-database-host2")
 assert(config["catalog"]["database"]["hosts"][2] == "test-catalog-database-host3")
