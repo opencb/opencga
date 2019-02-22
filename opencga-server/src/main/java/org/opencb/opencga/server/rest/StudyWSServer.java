@@ -22,6 +22,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -796,7 +797,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                 }
 
                 queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name, params.unique,
-                        params.confidential, params.description, null, params.variables, sessionId);
+                        params.confidential, params.description, null, params.variables, getAnnotableDataModelsList(params.entities),
+                        sessionId);
             } else {
                 queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.id, sessionId);
             }
@@ -844,6 +846,17 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    private List<VariableSet.AnnotableDataModels> getAnnotableDataModelsList(List<String> entityStringList) {
+        List<VariableSet.AnnotableDataModels> entities = new ArrayList<>();
+        if (ListUtils.isEmpty(entityStringList)) {
+            return entities;
+        }
+
+        for (String entity : entityStringList) {
+            entities.add(VariableSet.AnnotableDataModels.valueOf(entity));
+        }
+        return entities;
+    }
 
     private static class VariableSetParameters {
         public Boolean unique;
@@ -851,6 +864,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         public String id;
         public String name;
         public String description;
+        public List<String> entities;
         public List<Variable> variables;
     }
 

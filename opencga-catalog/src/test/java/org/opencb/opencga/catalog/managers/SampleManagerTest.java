@@ -188,7 +188,8 @@ public class SampleManagerTest extends AbstractManagerTest {
                 null, Collections.emptyMap()));
         variables.add(new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
                 "", null, Collections.emptyMap()));
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "Joe");
@@ -243,7 +244,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
                 "", null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         ObjectMap annotations = new ObjectMap()
                 .append("var_name", "Joe")
@@ -285,7 +286,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("OTHER", "", "", Variable.VariableType.OBJECT, null, false, false, null, 1, "", "", null,
                 Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         ObjectMap annotations = new ObjectMap()
                 .append("var_name", "Joe")
@@ -366,7 +367,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -409,7 +410,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -447,7 +448,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -484,7 +485,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("NUM", "NUM", "", Variable.VariableType.DOUBLE, "", true, false, null, 0, "", "", null,
                 Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -532,7 +533,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("RANGE_NUM", "RANGE_NUM", "", Variable.VariableType.DOUBLE, "", true, false, Arrays.asList("1:14",
                 "16:22", "50:"), 0, "", "", null, Collections.<String, Object>emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("RANGE_NUM", "1");  // 1:14
@@ -603,7 +604,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         variables.add(new Variable("COOL_NAME", "COOL_NAME", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("LUKE",
                 "LEIA", "VADER", "YODA"), 0, "", "", null, Collections.<String, Object>emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("COOL_NAME", "LUKE");
@@ -673,7 +674,8 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new QueryOptions(), sessionIdUser).first().getId();
 
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null,
-                Collections.singletonList(CatalogAnnotationsValidatorTest.nestedObject), sessionIdUser).first();
+                Collections.singletonList(CatalogAnnotationsValidatorTest.nestedObject),
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("nestedObject", new ObjectMap()

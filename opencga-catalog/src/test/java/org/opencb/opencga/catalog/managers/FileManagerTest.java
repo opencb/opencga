@@ -448,7 +448,7 @@ public class FileManagerTest extends AbstractManagerTest {
         variables.add(new Variable("HEIGHT", "", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
                 "", null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
-                sessionIdUser).first();
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         ObjectMap annotations = new ObjectMap()
                 .append("var_name", "Joe")

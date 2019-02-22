@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -60,7 +61,8 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
         catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
                 new Variable("name", "", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null),
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
-                new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)), sessionId);
+                new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)),
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId);
 
         catalogManager.getSampleManager().update(studyId, "NA19600", new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()

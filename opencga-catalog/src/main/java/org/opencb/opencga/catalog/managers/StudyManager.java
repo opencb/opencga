@@ -999,7 +999,7 @@ public class StudyManager extends AbstractManager {
      */
     QueryResult<VariableSet> createVariableSet(Study study, String id, String name, Boolean unique, Boolean confidential,
                                                String description, Map<String, Object> attributes, List<Variable> variables,
-                                               String sessionId) throws CatalogException {
+                                               List<VariableSet.AnnotableDataModels> entities, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(variables, "Variables from VariableSet");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -1009,6 +1009,7 @@ public class StudyManager extends AbstractManager {
         confidential = ParamUtils.defaultObject(confidential, false);
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, new HashMap<>());
+        entities = ParamUtils.defaultObject(entities, Collections.emptyList());
 
         for (Variable variable : variables) {
             ParamUtils.checkParameter(variable.getId(), "variable ID");
@@ -1027,7 +1028,7 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Error. Repeated variables");
         }
 
-        VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variablesSet,
+        VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variablesSet, entities,
                 getCurrentRelease(study, userId), attributes);
         AnnotationUtils.checkVariableSet(variableSet);
 
@@ -1040,10 +1041,11 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<VariableSet> createVariableSet(String studyId, String id, String name, Boolean unique, Boolean confidential,
                                                       String description, Map<String, Object> attributes, List<Variable> variables,
-                                                      String sessionId) throws CatalogException {
+                                                      List<VariableSet.AnnotableDataModels> entities, String sessionId)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = resolveId(studyId, userId);
-        return createVariableSet(study, id, name, unique, confidential, description, attributes, variables, sessionId);
+        return createVariableSet(study, id, name, unique, confidential, description, attributes, variables, entities, sessionId);
     }
 
     public QueryResult<VariableSet> getVariableSet(String studyStr, String variableSet, QueryOptions options, String sessionId)
