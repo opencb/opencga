@@ -85,7 +85,7 @@ public class VariantPhoenixKeyFactoryTest {
                 Bytes.toBytes(variant.getChromosome()),
                 Bytes.toBytes(variant.getStart()),
                 Bytes.toBytes(variant.getReference()),
-                Bytes.toBytes(VariantPhoenixKeyFactory.buildSVAlternate(variant.getAlternate(), variant.getEnd(), variant.getSv())),
+                Bytes.toBytes(VariantPhoenixKeyFactory.buildSVAlternate(variant.getReference(), variant.getAlternate(), variant.getEnd(), variant.getSv())),
         });
 
         if (key.getLength() == key.get().length) {

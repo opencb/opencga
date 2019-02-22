@@ -111,7 +111,7 @@ public class VariantPhoenixKeyFactory {
                 + QueryConstants.SEPARATOR_BYTE_ARRAY.length
                 + PUnsignedInt.INSTANCE.getByteSize()
                 + PVarchar.INSTANCE.estimateByteSizeFromLength(ref.length());
-        alt = buildSVAlternate(alt, end, sv);
+        alt = buildSVAlternate(ref, alt, end, sv);
         if (!alt.isEmpty()) {
             size += QueryConstants.SEPARATOR_BYTE_ARRAY.length
                     + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
@@ -141,7 +141,11 @@ public class VariantPhoenixKeyFactory {
     }
 
     // visible for test
-    static String buildSVAlternate(String alternate, Integer end, StructuralVariation sv) {
+    static String buildSVAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
+        // All variants with reference or alternate large than SV_THRESHOLD, must have the extended SV version, even if it's empty
+        if (sv == null && (reference.length() >= Variant.SV_THRESHOLD || alternate.length() >= Variant.SV_THRESHOLD)) {
+            sv = new StructuralVariation();
+        }
         if (sv != null) {
             if (StructuralVariantType.TANDEM_DUPLICATION.equals(sv.getType())) {
                 alternate = VariantBuilder.DUP_TANDEM_ALT;
@@ -226,6 +230,7 @@ public class VariantPhoenixKeyFactory {
         int ciEndR = 0;
         String insSeqL = null;
         String insSeqR = null;
+        boolean hasSV = false;
         if (alternate != null && alternate.contains(SV_ALTERNATE_SEPARATOR)) {
             String[] s = alternate.split(SV_ALTERNATE_SEPARATOR_SPLIT);
             alternate = s[0];
@@ -243,15 +248,14 @@ public class VariantPhoenixKeyFactory {
             if (end == 0) {
                 end = null;
             }
+            hasSV = true;
         }
 
         VariantBuilder builder = new VariantBuilder(chromosome, start, end, reference, alternate);
 
-        if (insSeqL != null) {
+        if (hasSV) {
             builder.setSvInsSeq(insSeqL, insSeqR);
-        }
 
-        if (end != null) {
             if (ciStartL > 0) {
                 builder.setCiStart(ciStartL, ciStartR);
             }

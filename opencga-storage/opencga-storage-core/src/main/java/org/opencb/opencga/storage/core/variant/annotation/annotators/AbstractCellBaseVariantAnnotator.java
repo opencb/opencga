@@ -162,7 +162,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                                 + variantAnnotation.getReference() + ':'
                                 + variantAnnotation.getAlternate());
                     }
-                    if (variant.isSV()) {
+                    if (variant.isSV() || variant.getSv() != null) {
                         // Variant annotation class does not have information about Structural Variations.
                         // Store the original Variant.toString as an additional attribute.
                         AdditionalAttribute additionalAttribute =
