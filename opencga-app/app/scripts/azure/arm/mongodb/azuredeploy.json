@@ -280,6 +280,29 @@
                 }
             },
             "tags": {}
+        },
+        {
+            "comments": "Fail deployment when cloud init fails",
+            "name": "[concat(variables('vmName'),'cloudinitcheck', copyIndex())]",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', concat(variables('vmName'),copyindex()))]"
+            ],
+            "copy": {
+                "name": "mongo-rs",
+                "count": "[parameters('clusterSize')]"
+            },
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "commandToExecute": "cloud-init status --wait"
+                }
+            }
         }
     ],
     "outputs": {
