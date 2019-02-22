@@ -42,6 +42,15 @@
             {
                 "message": ".*",
                 "resource": {
+                    "type": "Microsoft.Compute/virtualMachines",
+                    "apiVersion": "2018-06-01",
+                    "name": ".*"
+                },
+                "reason": "Global deployment schema invalid"
+            },
+            {
+                "message": ".*",
+                "resource": {
                     "apiVersion": "2017-04-26-preview",
                     "type": "Microsoft.OperationalInsights/workspaces",
                     "name": "[parameters('WorkspaceName')]"
