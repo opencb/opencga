@@ -70,8 +70,10 @@ fi
 ## Ensure always using cloud mode, even for the single server configurations.
 echo 'SOLR_MODE="solrcloud"' >> /opt/solr.in.sh
 
+TOTAL_RAM=$(sed 's/ kB//g'  <<< $(grep -oP '^MemTotal:\s+\K.*' /proc/meminfo))
+SOLR_HEAP=$(echo "$TOTAL_RAM/1024/1024/2" | bc )
 
-docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -d -v /opt/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh   solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground -h $(hostname) 
+docker run --name ${DOCKER_NAME} --restart always -p 8983:8983 -d -v /opt/solr-volume/solr:/opt/solr/server/solr -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh -e SOLR_HEAP=${SOLR_HEAP}g  solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground -h $(hostname) 
 
 
 until $(curl --output /dev/null --silent --head --fail  "http://$(hostname):8983/solr/#/offers"); do
