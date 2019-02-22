@@ -283,10 +283,10 @@
         },
         {
             "comments": "Fail deployment when cloud init fails",
-            "name": "[concat(variables('vmName'),'cloudinitcheck', copyIndex())]",
+            "name": "[concat(variables('vmName'), copyIndex(),'/cloudinitcheck')]",
             "type": "Microsoft.Compute/virtualMachines/extensions",
             "location": "[resourceGroup().location]",
-            "apiVersion": "2015-06-15",
+            "apiVersion": "2017-03-30",
             "dependsOn": [
                 "[concat('Microsoft.Compute/virtualMachines/', concat(variables('vmName'),copyindex()))]"
             ],
@@ -300,7 +300,7 @@
                 "typeHandlerVersion": "2.0",
                 "autoUpgradeMinorVersion": true,
                 "settings": {
-                    "commandToExecute": "cloud-init status --wait"
+                    "commandToExecute": "/bin/bash -c 'cloud-init status --wait'"
                 }
             }
         }
