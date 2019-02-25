@@ -85,10 +85,11 @@
         },
         "solrDiskType": {
             "type": "string",
-            "defaultValue": "Standard_LRS",
+            "defaultValue": "StandardSSD_LRS",
             "allowedValues": [
                 "Standard_LRS",
-                "Premium_LRS"
+                "Premium_LRS",
+                "StandardSSD_LRS"
             ],
             "metadata": {
                 "description": "Storage Account type"
