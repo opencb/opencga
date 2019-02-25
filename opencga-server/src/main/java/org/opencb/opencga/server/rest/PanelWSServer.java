@@ -50,7 +50,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(name = "params", value = "Panel parameters") PanelPOST params) {
         try {
             if (StringUtils.isNotEmpty(panelIds)) {
-                if ("ALL_INSTALLATION_PANELS".equals(panelIds.toUpperCase())) {
+                if ("ALL_GLOBAL_PANELS".equals(panelIds.toUpperCase())) {
                     return createOkResponse(panelManager.importAllGlobalPanels(studyStr, queryOptions, sessionId));
                 } else {
                     return createOkResponse(panelManager.importGlobalPanels(studyStr, getIdList(panelIds), queryOptions, sessionId));
