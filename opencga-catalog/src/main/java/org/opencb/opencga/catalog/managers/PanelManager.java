@@ -298,7 +298,16 @@ public class PanelManager extends ResourceManager<Panel> {
                     attributes.put("PanelAppInfo", panel);
 
                     Panel diseasePanel = new Panel();
-                    diseasePanel.getDiseasePanel().setId(String.valueOf(panelInfo.get("id")));
+                    diseasePanel.getDiseasePanel().setId(String.valueOf(panelInfo.get("name"))
+                            .replace(" - ", "-")
+                            .replace("/", "-")
+                            .replace(" (", "-")
+                            .replace("(", "-")
+                            .replace(") ", "-")
+                            .replace(")", "")
+                            .replace(" & ", "_and_")
+                            .replace(", ", "-")
+                            .replace(" ", "_") + "-PanelAppId-" + panelInfo.get("id"));
                     diseasePanel.getDiseasePanel().setName(String.valueOf(panelInfo.get("name")));
                     diseasePanel.getDiseasePanel().setCategories(categories);
                     diseasePanel.getDiseasePanel().setPhenotypes(phenotypes);
@@ -312,6 +321,10 @@ public class PanelManager extends ResourceManager<Panel> {
                     diseasePanel.getDiseasePanel().setDescription(panelInfo.get("disease_sub_group")
                             + " (" + panelInfo.get("disease_group") + ")");
                     diseasePanel.getDiseasePanel().setAttributes(attributes);
+
+                    if ("Cancer Programme".equals(String.valueOf(panelInfo.get("disease_group")))) {
+                        diseasePanel.getDiseasePanel().setTags(Collections.singletonList("cancer"));
+                    }
 
                     create(diseasePanel, overwrite, token);
                 }

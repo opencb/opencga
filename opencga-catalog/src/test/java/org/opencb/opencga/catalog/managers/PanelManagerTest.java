@@ -63,7 +63,7 @@ public class PanelManagerTest extends GenericTest {
     public void importFromPanelAppTest() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().login("admin", "admin");
         panelManager.importPanelApp(token, false);
-        assertEquals(190, panelManager.count(PanelManager.INSTALLATION_PANELS, new Query(), token).getNumTotalResults());
+        assertEquals(221, panelManager.count(PanelManager.INSTALLATION_PANELS, new Query(), token).getNumTotalResults());
     }
 
     @Test
