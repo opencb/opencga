@@ -124,7 +124,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                             params, "Prepare variants to annotate");
 
                     if (annotateAll) {
-                        dbAdaptor.getMetadataManager().lockAndUpdateProject(pm -> {
+                        dbAdaptor.getMetadataManager().updateProjectMetadata(pm -> {
                             pm.getAttributes().put(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
                             return pm;
                         });
