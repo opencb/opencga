@@ -515,7 +515,9 @@ public class OpenCGAWSServer {
 
     protected Response createRawOkResponse(Object obj) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(obj), MediaType.APPLICATION_JSON_TYPE));
+            String res = jsonObjectWriter.writeValueAsString(obj);
+//            System.out.println("\n\n\n" + res + "\n\n");
+            return buildResponse(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing response object");

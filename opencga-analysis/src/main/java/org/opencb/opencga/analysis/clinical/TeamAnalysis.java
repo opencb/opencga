@@ -139,12 +139,12 @@ public class TeamAnalysis extends FamilyAnalysis {
                 query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.05" + VariantQueryUtils.AND + "polyphen>0.91");
                 queryResult = variantStorageManager.get(query, queryOptions, token);
             }
-
-            if (queryResult.getNumResults() == 0) {
-                // Step 3: findings
-                // TODO: search findings from an external file??
-            }
         }
+
+        // Step 3: findings
+        query = new Query();
+        query.put(VariantQueryParam.STUDY.key(), studyStr);
+        query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
 
         List<ReportedVariant> reportedVariants = null;
         if (queryResult.getNumResults() > 0) {
