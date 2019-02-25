@@ -22,7 +22,6 @@
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
-       
         "clusterVersion": {
             "type": "string",
             "defaultValue": "3.6",
@@ -30,7 +29,6 @@
                 "description": "HDInsight cluster version."
             }
         },
-     
         "clusterHeadNodeCount": {
             "type": "int",
             "defaultValue": 1,
@@ -133,7 +131,7 @@
                 "description": "Log Analytics Workspace ID"
             }
         },
-        "logAnalyticsWorkSpaceKey":{
+        "logAnalyticsWorkSpaceKey": {
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Key"
@@ -149,28 +147,29 @@
             "type": "string",
             "defaultValue": "uksouth",
             "metadata": {
-              "description": "Container Instance Location"
+                "description": "Container Instance Location"
+            }
+        },
+        "yarnSiteMemoryInMb": {
+            "type": "int",
+            "metadata": {
+                "description": "Sets the 'yarn.nodemanager.resource.memory-mb' value on the cluster in 'yarn-site.xml'"
             }
         }
     },
     "variables": {
-          
         "dataLakeStorageProfile": {
-                           
             "name": "[concat(parameters('storageAccountName'),'.dfs.core.windows.net')]",
             "isDefault": true,
             "fileSystem": "opencga",
             "key": "[parameters('storageAccountKey')]"
-
         },
         "blobStorageProfile": {
-                           
             "name": "[concat(parameters('storageAccountName'),'.blob.core.windows.net')]",
             "isDefault": true,
             "container": "opencga",
             "key": "[parameters('storageAccountKey')]"
-
-        }, 
+        },
         "clusterName": "[concat(parameters('clusterNamePrefix'), uniqueString(resourceGroup().id))]",
         "image": "microsoft/azure-cli",
         "cpuCores": "1.0",
@@ -180,7 +179,6 @@
         "identityName": "[concat('aci-user')]",
         "bootstrapRoleAssignmentId": "[guid(concat(resourceGroup().id, 'contributor'))]",
         "contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
-  
     },
     "resources": [
         {
@@ -188,9 +186,7 @@
             "name": "[variables('clusterName')]",
             "type": "Microsoft.HDInsight/clusters",
             "location": "[resourceGroup().location]",
-                           
-            "dependsOn": [
-                ],
+            "dependsOn": [],
             "properties": {
                 "clusterVersion": "[parameters('clusterVersion')]",
                 "osType": "Linux",
@@ -205,6 +201,9 @@
                             "restAuthCredential.isEnabled": true,
                             "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
                             "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
+                        },
+                        "yarn-site": {
+                            "yarn.nodemanager.resource.memory-mb": "[parameters('yarnSiteMemoryInMb')]"
                         }
                     }
                 },
@@ -233,9 +232,7 @@
                                 "id": "[parameters('vnetId')]",
                                 "subnet": "[parameters('subnetId')]"
                             },
-                            "scriptActions": [
-                                
-                            ]
+                            "scriptActions": []
                         },
                         {
                             "autoscale": null,
@@ -254,9 +251,7 @@
                                 "id": "[parameters('vnetId')]",
                                 "subnet": "[parameters('subnetId')]"
                             },
-                            "scriptActions": [
-                              
-                            ]
+                            "scriptActions": []
                         },
                         {
                             "autoscale": null,
@@ -276,14 +271,12 @@
                                 "id": "[parameters('vnetId')]",
                                 "subnet": "[parameters('subnetId')]"
                             },
-                            "scriptActions": [
-                               
-                            ]
+                            "scriptActions": []
                         }
                     ]
                 }
             },
-              "resources": [
+            "resources": [
                 {
                     "type": "providers/diagnosticSettings",
                     "name": "[concat('Microsoft.Insights/', variables('clusterName'))]",
@@ -292,43 +285,42 @@
                     ],
                     "apiVersion": "2017-05-01-preview",
                     "properties": {
-                      "name": "[variables('clusterName')]",
-                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
-                      "metrics": [
-                        {
-                          "category": "Availability",
-                          "enabled": true,
-                          "retentionPolicy": {
-                            "enabled": false,
-                            "days": 0
-                          }
-                        }
-                      ]
+                        "name": "[variables('clusterName')]",
+                        "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                        "metrics": [
+                            {
+                                "category": "Availability",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": 0
+                                }
+                            }
+                        ]
                     }
-                  }
+                }
             ]
-        
         },
         {
             "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
             "name": "[variables('identityName')]",
             "apiVersion": "2015-08-31-preview",
             "location": "[resourceGroup().location]"
-          },
-          {
+        },
+        {
             "type": "Microsoft.Authorization/roleAssignments",
             "apiVersion": "2017-09-01",
             "name": "[variables('bootstrapRoleAssignmentId')]",
             "dependsOn": [
-              "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
-              "[resourceId('Microsoft.HDInsight/clusters', variables('clusterName'))]"
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]",
+                "[resourceId('Microsoft.HDInsight/clusters', variables('clusterName'))]"
             ],
             "properties": {
-              "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
-              "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
-              "scope": "[resourceGroup().id]"
+                "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2015-08-31-preview').principalId]",
+                "scope": "[resourceGroup().id]"
             }
-          },
+        },
         {
             "name": "[variables('containerGroupName')]",
             "type": "Microsoft.ContainerInstance/containerGroups",
@@ -342,52 +334,45 @@
             "identity": {
                 "type": "UserAssigned",
                 "userAssignedIdentities": {
-                  "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]": {}
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]": {}
                 }
             },
             "properties": {
-              "containers": [
-                {
-                  "name": "[variables('containerName')]",
-                  "properties": {
-                    "image": "[variables('image')]",
-                    "command": [
-        
-                        "/bin/sh",
-                        "-c",
-                        "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az hdinsight oms enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('logAnalyticsWorkSpaceKey'))]"
-                    ],
-                    "environmentVariables": [
-                    
-                    ],
-                    "resources": {
-                      "requests": {
-                        "cpu": "[variables('cpuCores')]",
-                        "memoryInGb": "[variables('memoryInGb')]"
-                      }
+                "containers": [
+                    {
+                        "name": "[variables('containerName')]",
+                        "properties": {
+                            "image": "[variables('image')]",
+                            "command": [
+                                "/bin/sh",
+                                "-c",
+                                "[concat('az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), ' && az hdinsight oms enable --name ', variables('clusterName'), ' --resource-group ',resourceGroup().name ,' --workspace-id ',parameters('LogAnalyticsWorkspaceID') ,' --primary-key ',parameters('logAnalyticsWorkSpaceKey'))]"
+                            ],
+                            "environmentVariables": [],
+                            "resources": {
+                                "requests": {
+                                    "cpu": "[variables('cpuCores')]",
+                                    "memoryInGb": "[variables('memoryInGb')]"
+                                }
+                            }
+                        }
                     }
-                  }
-                }
-              ],
-              "restartPolicy": "Never",
-              "osType": "Linux"
+                ],
+                "restartPolicy": "Never",
+                "osType": "Linux"
             }
-          }
+        }
     ],
     "outputs": {
-
-        "clusterSshDNSName":{
-
+        "clusterSshDNSName": {
             "type": "string",
             "value": "[concat(variables('clusterName'),'-ssh.azurehdinsight.net')]"
         },
-        "clusterSshUsername":{
-
+        "clusterSshUsername": {
             "type": "string",
             "value": "[concat(parameters('sshUserName'))]"
         },
-        "clusterSshPassword":{
-
+        "clusterSshPassword": {
             "type": "string",
             "value": "[concat(parameters('sshPassword'))]"
         }
