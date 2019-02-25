@@ -27,14 +27,24 @@ fi
 
 echo "Connect to Hadoop edge node ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
 
-echo "${SSHPASS_CMD} ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}"
+echo "${SSHPASS_CMD} ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}" 1>&2
+
+# Escape args with single quotes
+CMD=
+for arg in $@ ; do
+    # Escape single quote, if any :
+#    arg=`echo $arg | sed "s/'/'\"'\"'/g"`   # aaa'aaa --> 'aaa'"'"'aaa'
+    arg=`echo $arg | sed "s/'/'\\\\\\''/g"` # aaa'aaa --> 'aaa'\''aaa'
+    CMD="${CMD}'${arg}' "
+done
+echo ${CMD}
 
 ${SSHPASS_CMD} ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST} /bin/bash << EOF
 
 export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
 export HADOOP_USER_CLASSPATH_FIRST=${HADOOP_USER_CLASSPATH_FIRST}
 
-exec $@
+exec ${CMD}
 
 EOF
 
