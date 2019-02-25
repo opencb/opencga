@@ -154,17 +154,17 @@ public class PanelManager extends ResourceManager<Panel> {
 
         DBIterator<Panel> iterator = iterator(INSTALLATION_PANELS, new Query(), QueryOptions.empty(), token);
 
-        List<Panel> importedPanels = new ArrayList<>();
         int dbTime = 0;
+        int counter = 0;
         while (iterator.hasNext()) {
             Panel globalPanel = iterator.next();
             QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options, userId);
-            importedPanels.add(panelQueryResult.first());
             dbTime += panelQueryResult.getDbTime();
+            counter++;
         }
         iterator.close();
 
-        return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", importedPanels);
+        return new QueryResult<>("Import panel", dbTime, counter, counter, "", "", Collections.emptyList());
     }
 
     public QueryResult<Panel> importGlobalPanels(String studyStr, List<String> panelIds, QueryOptions options, String token)
@@ -183,6 +183,11 @@ public class PanelManager extends ResourceManager<Panel> {
             QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options, userId);
             importedPanels.add(panelQueryResult.first());
             dbTime += panelQueryResult.getDbTime();
+        }
+
+        if (importedPanels.size() > 5) {
+            // If we have imported more than 5 panels, we will only return the number of imported panels
+            return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", Collections.emptyList());
         }
 
         return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", importedPanels);
