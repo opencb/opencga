@@ -15,8 +15,8 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -145,7 +145,29 @@ public class PanelManager extends ResourceManager<Panel> {
         return panelDBAdaptor.insert(study.getUid(), panel, options);
     }
 
-    public QueryResult<Panel> importInstallationPanel(String studyStr, String panelId, QueryOptions options, String token)
+    public QueryResult<Panel> importAllGlobalPanels(String studyStr, QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        // 1. We check everything can be done
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
+
+        DBIterator<Panel> iterator = iterator(INSTALLATION_PANELS, new Query(), QueryOptions.empty(), token);
+
+        List<Panel> importedPanels = new ArrayList<>();
+        int dbTime = 0;
+        while (iterator.hasNext()) {
+            Panel globalPanel = iterator.next();
+            QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options, userId);
+            importedPanels.add(panelQueryResult.first());
+            dbTime += panelQueryResult.getDbTime();
+        }
+        iterator.close();
+
+        return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", importedPanels);
+    }
+
+    public QueryResult<Panel> importGlobalPanels(String studyStr, List<String> panelIds, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
@@ -153,9 +175,21 @@ public class PanelManager extends ResourceManager<Panel> {
         // 1. We check everything can be done
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
-        // Fetch the installation Panel (if it exists)
-        Panel diseasePanel = getInstallationPanel(panelId);
+        List<Panel> importedPanels = new ArrayList<>(panelIds.size());
+        int dbTime = 0;
+        for (String panelId : panelIds) {
+            // Fetch the installation Panel (if it exists)
+            Panel globalPanel = getInstallationPanel(panelId);
+            QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options, userId);
+            importedPanels.add(panelQueryResult.first());
+            dbTime += panelQueryResult.getDbTime();
+        }
 
+        return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", importedPanels);
+    }
+
+    private QueryResult<Panel> importGlobalPanel(Study study, Panel diseasePanel, QueryOptions options, String userId)
+            throws CatalogException {
         diseasePanel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
         diseasePanel.getDiseasePanel().setCreationDate(TimeUtils.getTime());
         diseasePanel.setRelease(studyManager.getCurrentRelease(study, userId));
@@ -361,10 +395,16 @@ public class PanelManager extends ResourceManager<Panel> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return panelDBAdaptor.iterator(query, options, userId);
+        if (StringUtils.isNotEmpty(studyStr) && INSTALLATION_PANELS.equals(studyStr)) {
+            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
+            // We don't need to check any further permissions. Any user can see installation panels
+            return panelDBAdaptor.iterator(query, options);
+        } else {
+            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            return panelDBAdaptor.iterator(query, options, userId);
+        }
     }
 
     @Override

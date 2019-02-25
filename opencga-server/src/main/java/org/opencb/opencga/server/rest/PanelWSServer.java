@@ -44,13 +44,17 @@ public class PanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a panel")
     public Response createPanel(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "When filled in with an installation panel ID, it will import the installation panel to"
-                    + " the selected study to be used")
-            @QueryParam("importPanelId") String panelId,
+            @ApiParam(value = "Comma separated list of installation panel ids to be imported. To import them all at once, write the "
+                    + "special word 'ALL_GLOBAL_PANELS'")
+            @QueryParam("import") String panelIds,
             @ApiParam(name = "params", value = "Panel parameters") PanelPOST params) {
         try {
-            if (StringUtils.isNotEmpty(panelId)) {
-                return createOkResponse(panelManager.importInstallationPanel(studyStr, panelId, queryOptions, sessionId));
+            if (StringUtils.isNotEmpty(panelIds)) {
+                if ("ALL_INSTALLATION_PANELS".equals(panelIds.toUpperCase())) {
+                    return createOkResponse(panelManager.importAllGlobalPanels(studyStr, queryOptions, sessionId));
+                } else {
+                    return createOkResponse(panelManager.importGlobalPanels(studyStr, getIdList(panelIds), queryOptions, sessionId));
+                }
             } else {
                 return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, sessionId));
             }
