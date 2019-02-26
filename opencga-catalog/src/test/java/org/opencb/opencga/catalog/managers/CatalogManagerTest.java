@@ -226,7 +226,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testAssignPermissions() throws CatalogException {
         catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, "guest", null, null);
 
-        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "test", sessionIdUser);
+        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "group_cancer_some_thing_else",
+                "test", sessionIdUser);
         List<QueryResult<StudyAclEntry>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
                 new Study.StudyAclParams("", AclParams.Action.SET, "view_only"), sessionIdUser);
@@ -492,8 +493,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUpdateGroupInfo() throws CatalogException {
         StudyManager studyManager = catalogManager.getStudyManager();
 
-        studyManager.createGroup(studyFqn, "group1", "", sessionIdUser);
-        studyManager.createGroup(studyFqn, "group2", "", sessionIdUser);
+        studyManager.createGroup(studyFqn, "group1", "group1", "", sessionIdUser);
+        studyManager.createGroup(studyFqn, "group2", "group2", "", sessionIdUser);
 
         Group.Sync syncFrom = new Group.Sync("auth", "aaa");
         studyManager.syncGroupWith(studyFqn, "group2", syncFrom, sessionIdUser);

@@ -269,8 +269,11 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")
     public class GroupsCreateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--name"}, description = "Group name.", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Group id.", required = true, arity = 1)
         public String groupId;
+
+        @Parameter(names = {"--name"}, description = "Group name.", arity = 1)
+        public String groupName;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", arity = 1)
         public String users;

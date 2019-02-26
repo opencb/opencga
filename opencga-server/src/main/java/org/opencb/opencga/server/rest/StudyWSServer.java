@@ -403,14 +403,19 @@ public class StudyWSServer extends OpenCGAWSServer {
                 @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
+            // TODO: Remove if condition in v2.0
+            if (StringUtils.isEmpty(params.id)) {
+                params.id = params.name;
+            }
+
             if (action == null) {
                 action = ParamUtils.BasicUpdateAction.ADD;
             }
             QueryResult group;
             if (action == ParamUtils.BasicUpdateAction.ADD) {
-                group = catalogManager.getStudyManager().createGroup(studyStr, params.name, params.users, sessionId);
+                group = catalogManager.getStudyManager().createGroup(studyStr, params.id, params.name, params.users, sessionId);
             } else {
-                group = catalogManager.getStudyManager().deleteGroup(studyStr, params.name, sessionId);
+                group = catalogManager.getStudyManager().deleteGroup(studyStr, params.id, sessionId);
             }
             return createOkResponse(group);
         } catch (Exception e) {

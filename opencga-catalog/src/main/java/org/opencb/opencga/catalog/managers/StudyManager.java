@@ -678,11 +678,13 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(groupId, "group name");
+    public QueryResult<Group> createGroup(String studyStr, String groupId, String groupName, String users, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkParameter(groupId, "group id");
+        String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
 
         List<String> userList = StringUtils.isNotEmpty(users) ? Arrays.asList(users.split(",")) : Collections.emptyList();
-        return createGroup(studyStr, new Group(groupId, userList), sessionId);
+        return createGroup(studyStr, new Group(groupId, name, userList, null), sessionId);
     }
 
     public QueryResult<Group> createGroup(String studyStr, Group group, String sessionId) throws CatalogException {
