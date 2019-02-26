@@ -137,8 +137,8 @@
             "[concat('- ', variables('logAnalyticsAgent'))]",
             "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', ' | python3 - ', parameters('mountArgs'))]",
             "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/scripts/wait_config.sh', ' | bash')]",
-            "[concat('- docker run -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('openCGAContainerImage'))]",
-            "[concat('- docker run -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/ivaconf,dst=/usr/local/apache2/htdocs/conf,readonly ', parameters('ivaContainerImage'))]",
+            "[concat('- docker run  --name=opencga-app -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('openCGAContainerImage'))]",
+            "[concat('- docker run --name=iva -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/ivaconf,dst=/usr/local/apache2/htdocs/conf,readonly ', parameters('ivaContainerImage'))]",
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
