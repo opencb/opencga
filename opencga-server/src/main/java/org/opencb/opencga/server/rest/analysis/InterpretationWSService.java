@@ -135,8 +135,8 @@ public class InterpretationWSService extends AnalysisWSService {
             }
 
             if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
-                Interpretation interpretation = params.toClinicalInterpretation();
-                interpretation.getInterpretation().setClinicalAnalysisId(clinicalAnalysisStr);
+                org.opencb.biodata.models.clinical.interpretation.Interpretation  interpretation = params.toClinicalInterpretation();
+                interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
                 return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, sessionId));
             } else {
                 // TODO: Implement delete interpretation
@@ -380,7 +380,9 @@ public class InterpretationWSService extends AnalysisWSService {
             List<Interpretation> interpretationList =
                     interpretations != null
                             ? interpretations.stream()
-                            .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
+                            .map(ClinicalInterpretationParameters::toClinicalInterpretation)
+                            .map(i -> new Interpretation(null, i))
+                            .collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             String assignee = analyst != null ? analyst.assignee : "";
@@ -720,10 +722,11 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
     })
-    public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                                    String studyStr,
-                            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+    public Response team(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
+            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -737,10 +740,16 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            // Execute TEAM analysis
-            TeamAnalysis teamAnalysis = new TeamAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, teamAnalysisOptions);
-            InterpretationResult interpretationResult = teamAnalysis.execute();
-            return createAnalysisOkResponse(interpretationResult);
+            Object result;
+            if (save) {
+                // Queue job
+                result = catalogInterpretationManager.queue(studyStr, "team", clinicalAnalysisId, panelList, teamAnalysisOptions, sessionId);
+            } else {
+                // Execute TEAM analysis
+                TeamAnalysis teamAnalysis = new TeamAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, teamAnalysisOptions);
+                result = teamAnalysis.execute();
+            }
+            return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -755,10 +764,11 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
     })
-    public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                                                    String studyStr,
-                            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+    public Response tiering(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
+            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -772,10 +782,17 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            // Execute tiering analysis
-            TieringAnalysis tieringAnalysis = new TieringAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, tieringAnalysisOptions);
-            InterpretationResult interpretationResult = tieringAnalysis.execute();
-            return createAnalysisOkResponse(interpretationResult);
+            Object result;
+            if (save) {
+                // Queue job
+                result = catalogInterpretationManager.queue(studyStr, "tiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
+            } else {
+                // Execute tiering analysis
+                TieringAnalysis tieringAnalysis = new TieringAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, tieringAnalysisOptions);
+                result = tieringAnalysis.execute();
+            }
+
+            return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -923,9 +940,10 @@ public class InterpretationWSService extends AnalysisWSService {
         public List<Comment> comments;
         public Map<String, Object> attributes;
 
-        public Interpretation toClinicalInterpretation() {
-            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
-                    reportedVariants, reportedLowCoverages, comments, attributes);
+        public org.opencb.biodata.models.clinical.interpretation.Interpretation  toClinicalInterpretation() {
+            return new org.opencb.biodata.models.clinical.interpretation.Interpretation (id, description, clinicalAnalysisId, panels, null,
+                    software, analyst, dependencies, filters, creationDate, reportedVariants, reportedLowCoverages, comments, attributes,
+                    -1);
         }
 
         public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {

@@ -1978,7 +1978,7 @@ public class FileManager extends AnnotationSetManager<File> {
         attributes.putIfNotNull(Job.OPENCGA_STUDY, resource.getStudy().getFqn());
 
         logger.info("job description: " + description);
-        jobQueryResult = catalogManager.getJobManager().queue(studyStr, jobName, description, "opencga-analysis.sh",
+        jobQueryResult = catalogManager.getJobManager().queue(studyStr, jobName, "variant_index", description, null,
                 Job.Type.INDEX, params, fileIdList, outputList, outDir, attributes, sessionId);
         jobQueryResult.first().setToolId(jobName);
 
