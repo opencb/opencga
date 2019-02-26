@@ -28,7 +28,7 @@ setMethod("projectClient", "OpencgaR", function(OpencgaR, project, action, param
            # delete=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project,
            #                     action=action, params=params, httpMethod = "GET", ...),
            create=fetchOpenCGA(object=OpencgaR, category=category, action=action, 
-                               params=params, httpMethod = "POST", ...),
+                               params=c(list(id=project), params), httpMethod = "POST", ...),
            increlease=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 
                              action=action, params=params, httpMethod = "POST", ...),
            update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=project, 

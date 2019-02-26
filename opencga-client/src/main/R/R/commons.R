@@ -140,7 +140,6 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
             }
         }else if(timeLeft <= 0){
             stop("ERROR: Your session has expired, please renew your connection.")
-            
         }
 
         response <- callREST(pathUrl=pathUrl, params=params, 
@@ -230,8 +229,10 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
     # Make POST call
         if (!is.null(as.queryParam)){
             if(class(as.queryParam) == "character"){
-                as.queryParam <- unique(c(as.queryParam, "study"))
+                as.queryParam <- unique(c(as.queryParam, "study", "skip", "limit", "include", "exclude"))
             }
+        } else {
+          as.queryParam = c("skip", "limit", "include", "exclude")
         }
         
         if (!is.null(params)){
