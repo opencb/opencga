@@ -152,7 +152,7 @@ public class AbstractManagerTest extends GenericTest {
                         Collections.<String, Object>emptyMap())
         ));
         VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", "vs", true, false, "", null, variables,
-                sessionIdUser).first();
+                null, sessionIdUser).first();
 
         Sample sample = new Sample().setId("s_1");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),

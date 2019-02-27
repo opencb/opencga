@@ -6,7 +6,11 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -142,4 +146,50 @@ public class InterpretationAnalysisUtils {
 
         return file;
     }
+
+    public static Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer(String opencgaHome) throws IOException {
+        // Load role in cancer, if presents
+        java.nio.file.Path path = Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt");
+        return InterpretationAnalysisUtils.loadRoleInCancer(path);
+
+    }
+
+    public static Map<String, Map<String, List<String>>> getActionableVariantsByAssembly(String opencgaHome) throws IOException {
+        // Load actionable variants for each assembly, if present
+        // First, read all actionableVariants filenames, actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
+        Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
+        java.io.File folder = Paths.get(opencgaHome + "/analysis/resources/").toFile();
+        java.io.File[] files = folder.listFiles();
+        for (java.io.File file : files) {
+            if (file.isFile() && file.getName().startsWith("actionableVariants_")) {
+                String[] split = file.getName().split("[_\\.]");
+                if (split.length > 1) {
+                    String assembly = split[1].toLowerCase();
+                    actionableVariantsByAssembly.put(assembly.toLowerCase(),
+                            InterpretationAnalysisUtils.loadActionableVariants(file.toPath()));
+                }
+            }
+        }
+        return actionableVariantsByAssembly;
+    }
+
+    public static String getAssembly(CatalogManager catalogManager, String studyStr, String sessionId) {
+        String assembly = "";
+        QueryResult<Project> projectQueryResult;
+        try {
+            projectQueryResult = catalogManager.getProjectManager().get(
+                    new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
+                    new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
+            if (CollectionUtils.isNotEmpty(projectQueryResult.getResult())) {
+                assembly = projectQueryResult.first().getOrganism().getAssembly();
+            }
+        } catch (CatalogException e) {
+            e.printStackTrace();
+        }
+        if (org.apache.commons.lang3.StringUtils.isNotEmpty(assembly)) {
+            assembly = assembly.toLowerCase();
+        }
+        return assembly;
+    }
+
 }

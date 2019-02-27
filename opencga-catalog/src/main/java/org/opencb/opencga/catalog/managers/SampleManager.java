@@ -859,7 +859,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, sampleDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                VariableSet.AnnotableDataModels.SAMPLE, sampleDBAdaptor);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version

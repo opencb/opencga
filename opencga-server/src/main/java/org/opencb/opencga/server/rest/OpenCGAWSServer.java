@@ -534,14 +534,7 @@ public class OpenCGAWSServer {
 
         Response response;
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-            objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-            objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-            ObjectWriter writer = objectMapper.writer();
-            response = buildResponse(Response.ok(writer.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
+            response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
 //            logResponse(response.getStatusInfo(), queryResponseMap);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
@@ -628,13 +621,16 @@ public class OpenCGAWSServer {
     }
 
     protected List<String> getIdList(String id) throws WebServiceException {
+        return getIdList(id, true);
+    }
+
+    protected List<String> getIdList(String id, boolean checkMaxNumberElements) throws WebServiceException {
         if (StringUtils.isNotEmpty(id)) {
             List<String> ids = checkUniqueList(id);
-            if (ids.size() <= MAX_ID_SIZE) {
-                return ids;
-            } else {
+            if (checkMaxNumberElements && ids.size() > MAX_ID_SIZE) {
                 throw new WebServiceException("More than " + MAX_ID_SIZE + " IDs are provided");
             }
+            return ids;
         } else {
             throw new WebServiceException("ID is null or Empty");
         }

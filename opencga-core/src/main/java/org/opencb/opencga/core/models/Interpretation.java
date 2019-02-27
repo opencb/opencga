@@ -24,9 +24,14 @@ public class Interpretation extends PrivateStudyUid {
                           Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
                           List<ReportedVariant> reportedVariants, List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments,
                           Map<String, Object> attributes) {
-        this.interpretation = new org.opencb.biodata.models.clinical.interpretation.Interpretation(id, description, clinicalAnalysisId,
+        this(null, new org.opencb.biodata.models.clinical.interpretation.Interpretation(id, description, clinicalAnalysisId,
                 panels, Status.READY, software, analyst, dependencies, filters, creationDate, reportedVariants, reportedLowCoverages,
-                comments, attributes, 1);
+                comments, attributes, 1));
+    }
+
+    public Interpretation(String uuid, org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
+        this.uuid = uuid;
+        this.interpretation = interpretation;
     }
 
     @Override

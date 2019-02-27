@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,19 +34,30 @@ public class VariableSet extends PrivateFields {
     private String description;
     private Set<Variable> variables;
 
+    private List<AnnotableDataModels> entities;
+
     private int release;
     private Map<String, Object> attributes;
+
+    public enum AnnotableDataModels {
+        SAMPLE,
+        COHORT,
+        INDIVIDUAL,
+        FAMILY,
+        FILE
+    }
 
     public VariableSet() {
     }
 
     public VariableSet(String id, String name, boolean unique, boolean confidential, String description, Set<Variable> variables,
-                       int release, Map<String, Object> attributes) {
+                       List<AnnotableDataModels> entities, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.unique = unique;
         this.confidential = confidential;
         this.description = description;
+        this.entities = entities;
         this.release = release;
         this.attributes = attributes;
         this.variables = variables;
@@ -61,6 +73,7 @@ public class VariableSet extends PrivateFields {
         sb.append(", confidential=").append(confidential);
         sb.append(", description='").append(description).append('\'');
         sb.append(", variables=").append(variables);
+        sb.append(", entities=").append(entities);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -132,6 +145,15 @@ public class VariableSet extends PrivateFields {
 
     public VariableSet setVariables(Set<Variable> variables) {
         this.variables = variables;
+        return this;
+    }
+
+    public List<AnnotableDataModels> getEntities() {
+        return entities;
+    }
+
+    public VariableSet setEntities(List<AnnotableDataModels> entities) {
+        this.entities = entities;
         return this;
     }
 

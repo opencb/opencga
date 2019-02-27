@@ -116,6 +116,15 @@ public class ExecutionOutputRecorder {
         // Create the catalog output directory
         String studyStr = (String) job.getAttributes().get(Job.OPENCGA_STUDY);
         String outputDir = (String) job.getAttributes().get(Job.OPENCGA_OUTPUT_DIR);
+
+        if (StringUtils.isEmpty(outputDir)) {
+            // If Job.OPENCGA_OUTPUT_DIR, we will suppose the job was not intended to register any file in catalog, so we will only remove
+            // the temporal directory
+            ioManager.deleteDirectory(tmpOutDirUri);
+
+            return;
+        }
+
 //        String userToken = (String) job.getAttributes().get(Job.OPENCGA_USER_TOKEN);
         File outDir;
 

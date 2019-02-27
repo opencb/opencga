@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -296,6 +297,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
     public List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(MyResource<? extends Annotable> resource,
                                                                           ObjectMap parameters, QueryOptions options,
+                                                                          VariableSet.AnnotableDataModels annotableEntity,
                                                                           AnnotationSetDBAdaptor dbAdaptor) throws CatalogException {
         List<VariableSet> variableSetList = null;
         boolean confidentialPermissionsChecked = false;
@@ -374,9 +376,19 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                 throw new CatalogException("Cannot add AnnotationSet " + annotationSet.getId() + ". An AnnotationSet with "
                                         + "the same id was already found.");
                             } else if (variableSetMap.containsKey(annotationSet.getVariableSetId())) {
+
+                                // Validate annotable data model
+                                VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
+                                if (ListUtils.isNotEmpty(variableSet.getEntities())
+                                        && !variableSet.getEntities().contains(annotableEntity)) {
+                                    throw new CatalogException("Cannot annotate " + annotableEntity + " using VariableSet '"
+                                            + variableSet.getId() + "'. VariableSet is intended only for '"
+                                            + StringUtils.join(variableSet.getEntities(), ",") + "' entities.");
+                                }
+
                                 // Create new annotationSet
 
-                                if (variableSetMap.get(annotationSet.getVariableSetId()).isConfidential()) {
+                                if (variableSet.isConfidential()) {
                                     if (!confidentialPermissionsChecked) {
                                         authorizationManager.checkStudyPermission(resource.getStudy().getUid(), resource.getUser(),
                                                 StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
@@ -385,8 +397,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                 }
 
                                 // Validate the new annotationSet
-                                AnnotationUtils.checkAnnotationSet(variableSetMap.get(annotationSet.getVariableSetId()),
-                                        annotationSet, annotationSetList, true);
+                                AnnotationUtils.checkAnnotationSet(variableSet, annotationSet, annotationSetList, true);
 
                                 // Add the new annotationSet to the annotationSetList for validation of other annotationSets (if any)
                                 annotationSetList.add(annotationSet);

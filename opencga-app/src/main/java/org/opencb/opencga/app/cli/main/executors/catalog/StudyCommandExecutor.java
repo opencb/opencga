@@ -299,7 +299,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
 
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
-                studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users);
+                studiesCommandOptions.groupsCreateCommandOptions.groupId,
+                studiesCommandOptions.groupsCreateCommandOptions.groupName, studiesCommandOptions.groupsCreateCommandOptions.users);
     }
 
     private QueryResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {
