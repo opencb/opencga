@@ -156,7 +156,7 @@ sudo scp -r /etc/hbase/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 ## Testing
 Once everything is successfully setup, you are able to test the configuration. A basic test scenario is decribed below. For full details check out the [OpenCGA documentation](http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes).
 
-> Note: If you're running in the Azure ARM version you don't need to start the daemon or install catalog, they will have already been started. The Daemon will already be running in Docker on the Daemon node. Run `sudo docker ps` and note the ID of the container then use `sudo docker exec --it <IDHERE> /bin/bash` to start an interactive shell for use below and skip the next two steps. 
+> Note: If you're running in the Azure ARM version you don't need to start the daemon or install catalog, they will have already been started. The Daemon will already be running in Docker on the Daemon node. Run `sudo docker ps` and note the ID of the container then use `sudo docker exec -it <IDHERE> /bin/bash` to start an interactive shell for use below and skip the next two steps. 
 
 Install catalog (remember password for later use)
 ```
