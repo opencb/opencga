@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
@@ -31,25 +32,35 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
     protected String clinicalAnalysisId;
     protected List<String> diseasePanelIds;
 
+    protected Map<String, RoleInCancer> roleInCancer;
+    protected Map<String, List<String>> actionableVariants;
+
     protected ObjectMap config;
     @Deprecated
     protected int maxCoverage;
 
     protected final static String SEPARATOR = "__";
 
+    public final static int LOW_COVERAGE_DEFAULT = 20;
+
+    public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
+    public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
+    public final static String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
+    public final static String SKIP_ACTIONABLE_VARIANTS_PARAM = "skipActionableVariants";
+    public final static String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
+
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
-    public FamilyAnalysis(String opencgaHome, String studyStr, String token) {
-        this(opencgaHome, studyStr, token, null, null, null);
-    }
-
-    public FamilyAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId,
-                           List<String> diseasePanelIds, ObjectMap config) {
+    public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
+                          Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome, String token) {
         super(opencgaHome, studyStr, token);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.diseasePanelIds = diseasePanelIds;
+
+        this.actionableVariants = actionableVariants;
+        this.roleInCancer = roleInCancer;
 
         this.config = config != null ? config : new ObjectMap();
         this.maxCoverage = 20;

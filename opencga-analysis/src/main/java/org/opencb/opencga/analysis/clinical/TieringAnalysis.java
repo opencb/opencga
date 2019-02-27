@@ -21,6 +21,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.OntologyTerm;
@@ -77,9 +78,9 @@ public class TieringAnalysis extends FamilyAnalysis {
                         + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626");
     }
 
-    public TieringAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId,
-                           List<String> diseasePanelIds, ObjectMap config) {
-        super(opencgaHome, studyStr, token, clinicalAnalysisId, diseasePanelIds, config);
+    public TieringAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
+                           Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
     }
 
     @Override
@@ -191,14 +192,12 @@ public class TieringAnalysis extends FamilyAnalysis {
             checkCompoundHeterozygous(variant, proband, compoundHeterozygousMap);
         }
 
-
         List<ReportedVariant> reportedVariants;
 
         // Create instance of reported variant creator to obtain reported variants
         List<DiseasePanel> biodataDiseasPanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
-        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasPanelList, phenotype,
-                ClinicalProperty.Penetrance.COMPLETE);
-        creator.setIncludeNoTier(config.getBoolean("includeNoTier", true));
+        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasPanelList, roleInCancer, actionableVariants,
+                clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
         try {
             reportedVariants = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException e) {

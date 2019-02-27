@@ -23,8 +23,6 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.commons.OntologyTerm;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
@@ -32,10 +30,6 @@ import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
@@ -44,39 +38,41 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 
 public class TeamAnalysis extends FamilyAnalysis {
 
-    public TeamAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId, List<String> diseasePanelIds, ObjectMap teamAnalysisOptions) {
-        super(opencgaHome, studyStr, token, clinicalAnalysisId, diseasePanelIds, teamAnalysisOptions);
+    public TeamAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
+                        Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
     }
 
     @Override
     public InterpretationResult execute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
+        List<Variant> variants = new ArrayList<>();
+
         // Get and check clinical analysis and proband
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
         Individual proband = getProband(clinicalAnalysis);
 
         // Disease panels management
-        List<DiseasePanel> biodataDiseasPanelList = null;
+        List<DiseasePanel> biodataDiseasePanels = null;
         List<Panel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
         if (CollectionUtils.isNotEmpty(diseasePanels)) {
-            biodataDiseasPanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
+            biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         }
 
         // Get sample names and update proband information (to be able to navigate to the parents and their samples easily)
         List<String> sampleList = getSampleNames(clinicalAnalysis, proband);
 
+        // Step 1 - diagnostic variants
         // Get diagnostic variants from panels
         List<VariantPanel> diagnosticVariants = new ArrayList<>();
         for (Panel diseasePanel : diseasePanels) {
@@ -85,16 +81,17 @@ public class TeamAnalysis extends FamilyAnalysis {
             }
         }
 
-        // Step 1 - diagnostic variants
+        // ...and then query
         Query query = new Query();
         QueryOptions queryOptions = QueryOptions.empty();
         query.put(VariantQueryParam.STUDY.key(), studyStr);
-        query.put(VariantQueryParam.ID.key(), StringUtils.join(diagnosticVariants, ","));
+        query.put(VariantQueryParam.ID.key(), StringUtils.join(diagnosticVariants.stream()
+                .map(VariantPanel::getId).collect(Collectors.toList()), ","));
         query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
         VariantQueryResult<Variant> queryResult = variantStorageManager.get(query, queryOptions, token);
-
-        if (queryResult.getNumResults() == 0) {
-
+        if (CollectionUtils.isNotEmpty(queryResult.getResult())) {
+            variants = queryResult.getResult();
+        } else  {
             // Step 2 - VUS variants from genes in panels
             List<String> geneIds = getGeneIdsFromDiseasePanels(diseasePanels);
             // Remove variant IDs from the query, and set gene IDs
@@ -111,9 +108,9 @@ public class TeamAnalysis extends FamilyAnalysis {
             //   Conservation:
             //     GERP > 2
             //   SO (consequence type)
-            //     if (Loss of Function)
+            //     if (SO: Loss of Function)
             //       ScaledCADD > 15
-            //     else if (Protein Coding)
+            //     else if (biotype: Protein Coding)
             //       SIFT < 0.05
             //       Polyphen2 > 0.91
             //       ScaledCADD > 15
@@ -133,29 +130,50 @@ public class TeamAnalysis extends FamilyAnalysis {
 
             queryResult = variantStorageManager.get(query, queryOptions, token);
 
-            if (queryResult.getNumResults() == 0) {
+            if (CollectionUtils.isNotEmpty(queryResult.getResult())) {
+                variants = queryResult.getResult();
+            } else {
                 // No loss of function variants, then try with protein_coding and protein substitution scores
-                query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "protein_coding");
+                query.remove(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
+                query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding");
                 query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.05" + VariantQueryUtils.AND + "polyphen>0.91");
+
                 queryResult = variantStorageManager.get(query, queryOptions, token);
+                if (CollectionUtils.isNotEmpty(queryResult.getResult())) {
+                    variants = queryResult.getResult();
+                }
             }
         }
 
-        // Step 3: findings
+        // Step 3: actionable variants
         query = new Query();
         query.put(VariantQueryParam.STUDY.key(), studyStr);
         query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
 
+        List<Variant> findings = InterpretationAnalysisUtils.queryActionableVariants(query, actionableVariants.keySet(), variantStorageManager, token);
+        if (CollectionUtils.isNotEmpty(variants) && CollectionUtils.isNotEmpty(findings)) {
+            // We have to remove overlapped variants (from findings)
+            Set<String> variantIds = new HashSet<>(new ArrayList(variants.stream().map(Variant::getId).collect(Collectors.toList())));
+            for (Variant finding : findings) {
+                if (!variantIds.contains(finding.getId())) {
+                    // Actionable variant to be added
+                    variants.add(finding);
+                }
+            }
+        } else if (CollectionUtils.isNotEmpty(findings)) {
+            variants = findings;
+        }
+
+        // Create reported variants
         List<ReportedVariant> reportedVariants = null;
-        if (queryResult.getNumResults() > 0) {
+        if (CollectionUtils.isNotEmpty(variants)) {
             // Phenotype
-            OntologyTerm disease = clinicalAnalysis.getDisorder();
-            Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
+//            OntologyTerm disease = clinicalAnalysis.getDisorder();
+//            Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
 
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasPanelList, null, phenotype, null, null);
-            creator.setIncludeNoTier(config.getBoolean("includeNoTier", true));
-
-            reportedVariants = creator.create(queryResult.getResult());
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+                    clinicalAnalysis.getDisorder(), null, null);
+            reportedVariants = creator.create(variants);
         }
 
         // Reported low coverages management
@@ -171,7 +189,7 @@ public class TeamAnalysis extends FamilyAnalysis {
                 .setAnalyst(getAnalyst(token))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
-                .setPanels(biodataDiseasPanelList)
+                .setPanels(biodataDiseasePanels)
                 .setFilters(null) //TODO
                 .setSoftware(new Software().setName("TEAM"))
                 .setReportedVariants(reportedVariants)
@@ -190,7 +208,7 @@ public class TeamAnalysis extends FamilyAnalysis {
                 ""); // error message
     }
 
-    private List<String> getGeneIdsFromDiseasePanels(List<Panel> diseasePanels) throws CatalogException {
+    private List<String> getGeneIdsFromDiseasePanels(List<Panel> diseasePanels) {
         List<String> geneIds = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(diseasePanels)) {
             for (Panel diseasePanel : diseasePanels) {

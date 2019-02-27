@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
@@ -37,23 +38,14 @@ import java.util.stream.Collectors;
 
 public class XQueryAnalysis extends FamilyAnalysis {
 
-    private String clinicalAnalysisId;
-    private List<String> diseasePanelIds;
-
     private BioNetDbManager bioNetDbManager;
 
     private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
 
-    public XQueryAnalysis(String opencgaHome, String studyStr, String token) {
-        super(opencgaHome, studyStr, token);
-    }
-
-    public XQueryAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId,
-                          List<String> diseasePanelIds, BioNetDBConfiguration configuration) throws BioNetDBException {
-        super(opencgaHome, studyStr, token);
-
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        this.diseasePanelIds = diseasePanelIds;
+    public XQueryAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
+                          Map<String, List<String>> actionableVariants, ObjectMap options, BioNetDBConfiguration configuration,
+                          String opencgaHome, String token) throws BioNetDBException {
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
 
         this.bioNetDbManager = new BioNetDbManager(configuration);
     }
@@ -130,11 +122,13 @@ public class XQueryAnalysis extends FamilyAnalysis {
         List<ReportedVariant> reportedVariants = null;
         int numResults = 0;
         if (CollectionUtils.isNotEmpty(variantContainer.getComplexVariantList())) {
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+                    clinicalAnalysis.getDisorder(), null, null);
             reportedVariants = creator.create(variantContainer.getComplexVariantList());
         }
         if (CollectionUtils.isNotEmpty(variantContainer.getReactionVariantList())) {
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+                    clinicalAnalysis.getDisorder(), null, null);
             reportedVariants.addAll(creator.create(variantContainer.getReactionVariantList()));
         }
 
