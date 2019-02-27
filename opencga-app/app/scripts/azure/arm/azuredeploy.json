@@ -933,9 +933,6 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                    },
-                    "cellbaseUrl": {
-                        "value": "[variables('cellbaseUrl')]"
                     }
                 }
             }

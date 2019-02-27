@@ -160,6 +160,22 @@ createReplicaSet() {
     rm /var/www/html/mongodb.key.gpg
 }
 
+restoreMongoDBDump() {
+    echo "restoring mongoDB dump"
+    
+    cd /tmp
+
+    echo "Restoring MongoDB data dump"
+    echo "Downloading dump file"
+    curl -o mongodb_dump.tar.gz $MONGODB_DUMP_URL
+
+    echo "Unzipping"
+    tar -zxvf mongodb_dump.tar.gz
+
+    echo "Restoring"
+    mongorestore --verbose --gzip /tmp/mongodb_dump/ -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD}
+}
+
 #install flow
 configureTCPTimeout
 installDeps
@@ -167,6 +183,7 @@ scanForNewDisks
 generateCertificate
 configureMongoDB
 
+# configure mongo replication if the cluster size is greater than 1, and this is the primary node in the cluster
 if [ "$CLUSTER_SIZE" -gt 1 ]
 then
     configureMongoReplication
@@ -181,18 +198,8 @@ then
     fi
 fi
 
-
-if [ "$VM_INDEX" -eq 0 ]
+# restore a mongodb dump is one has been specificed, and this is the primary node in the cluster
+if [ -n "$MONGODB_DUMP_URL" ] && [ "$VM_INDEX" -eq 0 ]
 then
-    cd /tmp
-
-    echo "Restoring cellbase data"
-    echo "Downloading file"
-    curl -o cellbase_dump.tar.gz $CELLBASE_DUMP_URL
-
-    echo "Unzipping"
-    tar -zxvf cellbase_dump.tar.gz
-
-    echo "Restoring"
-    mongorestore --verbose --gzip /tmp/cellbase_dump/ -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD}
+    restoreMongoDBDump
 fi
