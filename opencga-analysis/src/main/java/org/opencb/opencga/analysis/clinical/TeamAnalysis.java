@@ -150,7 +150,7 @@ public class TeamAnalysis extends FamilyAnalysis {
         query.put(VariantQueryParam.STUDY.key(), studyStr);
         query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
 
-        List<Variant> findings = InterpretationAnalysisUtils.queryActionableVariants(query, actionableVariants.keySet(), variantStorageManager, token);
+        List<Variant> findings = InterpretationAnalysisUtils.secondaryFindings(query, actionableVariants.keySet(), variantStorageManager, token);
         if (CollectionUtils.isNotEmpty(variants) && CollectionUtils.isNotEmpty(findings)) {
             // We have to remove overlapped variants (from findings)
             Set<String> variantIds = new HashSet<>(new ArrayList(variants.stream().map(Variant::getId).collect(Collectors.toList())));

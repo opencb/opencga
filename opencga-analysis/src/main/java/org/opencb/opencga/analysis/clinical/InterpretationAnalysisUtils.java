@@ -101,8 +101,8 @@ public class InterpretationAnalysisUtils {
         return roleInCancer;
     }
 
-    public static List<Variant> queryActionableVariants(Query query, Set<String> actionableVariants,
-                                                        VariantStorageManager variantStorageManager, String token)
+    public static List<Variant> secondaryFindings(Query query, Set<String> actionableVariants,
+                                                  VariantStorageManager variantStorageManager, String token)
             throws CatalogException, IOException, StorageEngineException {
         List<Variant> variants = new ArrayList<>();
 

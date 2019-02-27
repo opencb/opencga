@@ -831,6 +831,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
@@ -838,7 +839,6 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = FamilyAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
             @ApiImplicitParam(name = FamilyAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyAnalysis.LOW_COVERAGE_DEFAULT),
             @ApiImplicitParam(name = FamilyAnalysis.SKIP_DIAGNOSTIC_VARIANTS_PARAM, value = "Skip diagnostic variants", dataType = "boolean", paramType = "query", defaultValue = "false"),
-            @ApiImplicitParam(name = FamilyAnalysis.SKIP_ACTIONABLE_VARIANTS_PARAM, value = "Skip actionable variants", dataType = "boolean", paramType = "query", defaultValue = "false"),
             @ApiImplicitParam(name = FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, value = "Skip variants without tier assigned", dataType = "boolean", paramType = "query", defaultValue = "false"),
 
             // Variant filters
@@ -932,11 +932,11 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/interpretation/actionableVariants")
-    @ApiOperation(value = "Retrieve actionable variants for a given family", position = 14, response = QueryResponse.class)
-    public Response actionableVariants(
+    @Path("/interpretation/secondaryFindings")
+    @ApiOperation(value = "Search for secondary findings for a list of samples", position = 14, response = QueryResponse.class)
+    public Response secondaryFindings(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Family") @QueryParam("family") String family) {
+            @ApiParam(value = "Comma separated list of samples") @QueryParam("sample") String sample) {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -952,7 +952,7 @@ public class InterpretationWSService extends AnalysisWSService {
             } else {
                 VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager,
                         StorageEngineFactory.get(storageConfiguration));
-                List<Variant> variants = InterpretationAnalysisUtils.queryActionableVariants(query, actionableVariants.keySet(),
+                List<Variant> variants = InterpretationAnalysisUtils.secondaryFindings(query, actionableVariants.keySet(),
                         variantStorageManager, sessionId);
 
                 TeamReportedVariantCreator creator = new TeamReportedVariantCreator(null, roleInCancer, actionableVariants,
@@ -1051,9 +1051,6 @@ public class InterpretationWSService extends AnalysisWSService {
         analysisOptions.put(param, queryOptions.getInt(param, FamilyAnalysis.LOW_COVERAGE_DEFAULT));
 
         param = FamilyAnalysis.SKIP_DIAGNOSTIC_VARIANTS_PARAM;
-        analysisOptions.put(param, queryOptions.getBoolean(param, true));
-
-        param = FamilyAnalysis.SKIP_ACTIONABLE_VARIANTS_PARAM;
         analysisOptions.put(param, queryOptions.getBoolean(param, true));
 
         param = FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM;

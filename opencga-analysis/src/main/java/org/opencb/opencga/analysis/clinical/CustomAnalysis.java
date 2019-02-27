@@ -15,6 +15,8 @@ import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
@@ -149,7 +151,6 @@ public class CustomAnalysis extends FamilyAnalysis {
 
         List<Variant> variants = new ArrayList<>();
         boolean skipDiagnosticVariants = config.getBoolean(SKIP_DIAGNOSTIC_VARIANTS_PARAM, false);
-        boolean skipActionableVariants = config.getBoolean(SKIP_ACTIONABLE_VARIANTS_PARAM, false);
         boolean skipUntieredVariants = config.getBoolean(SKIP_UNTIERED_VARIANTS_PARAM, false);
 
 
@@ -172,34 +173,6 @@ public class CustomAnalysis extends FamilyAnalysis {
             variants.addAll(variantQueryResult.getResult());
         }
 
-        // Query actionable variants ?
-        if (!skipActionableVariants) {
-            Query actionableQuery = new Query();
-            actionableQuery.put(VariantQueryParam.STUDY.key(), query.get(VariantQueryParam.STUDY.key()));
-            if (query.containsKey(VariantQueryParam.SAMPLE.key())) {
-                actionableQuery.put(VariantQueryParam.SAMPLE.key(), query.get("sample"));
-            } else             if (query.containsKey("family")) {
-                actionableQuery.put("family", query.get("family"));
-            }
-
-            List<Variant> findings = InterpretationAnalysisUtils.queryActionableVariants(actionableQuery, actionableVariants.keySet(),
-                    variantStorageManager, token);
-
-            if (CollectionUtils.isNotEmpty(variants) && CollectionUtils.isNotEmpty(findings)) {
-                // We have to remove overlapped variants (from findings)
-                Set<String> variantIds = new HashSet<>(new ArrayList(variants.stream().map(Variant::getId).collect(Collectors.toList())));
-                for (Variant finding : findings) {
-                    if (!variantIds.contains(finding.getId())) {
-                        // Actionable variant to be added
-                        variants.add(finding);
-                    }
-                }
-            } else if (CollectionUtils.isNotEmpty(findings)) {
-                variants = findings;
-            }
-        }
-
-
         // Create reported variants and events
         List<ReportedVariant> reportedVariants = null;
         List<DiseasePanel> biodataDiseasePanels = null;
@@ -208,8 +181,33 @@ public class CustomAnalysis extends FamilyAnalysis {
                 // Team reported variant creator
                 biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
             }
+
+            // Get biotypes and SO names
+            List<String> biotypes = null;
+            List<String> soNames = null;
+            if (query.containsKey(VariantQueryParam.ANNOT_BIOTYPE.key())
+                    && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()))) {
+                biotypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()).split(","));
+            }
+            if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
+                    && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
+                soNames = new ArrayList<>();
+                for (String soName : query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split(",")) {
+                    if (soName.startsWith("SO:")) {
+                        try {
+                            int soAcc = Integer.valueOf(soName.replace("SO:", ""));
+                            soNames.add(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
+                        } catch (NumberFormatException e) {
+                            logger.warn("Unknown SO term: " + soName);
+                        }
+                    } else {
+                        soNames.add(soName);
+                    }
+                }
+            }
+
             DefaultReportedVariantCreator creator = new DefaultReportedVariantCreator(roleInCancer, actionableVariants, disorder, moi,
-                    null, biodataDiseasePanels, !skipUntieredVariants, !skipActionableVariants);
+                    null, biodataDiseasePanels, biotypes, soNames, !skipUntieredVariants);
             reportedVariants = creator.create(variants);
         }
 

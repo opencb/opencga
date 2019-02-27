@@ -46,7 +46,6 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
     public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
     public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
     public final static String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
-    public final static String SKIP_ACTIONABLE_VARIANTS_PARAM = "skipActionableVariants";
     public final static String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
 
     protected CellBaseClient cellBaseClient;
