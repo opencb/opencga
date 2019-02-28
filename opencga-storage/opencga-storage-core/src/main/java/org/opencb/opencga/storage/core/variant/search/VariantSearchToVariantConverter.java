@@ -106,13 +106,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // Format
                 stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "format");
                 if (StringUtils.isNotEmpty(stringToList)) {
-                    studyEntry.setFormat(Arrays.asList(stringToList.split(LIST_SEP)));
+                    studyEntry.setFormat(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
                 }
 
                 // Sample Data management
                 stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "sampleName");
                 if (StringUtils.isNotEmpty(stringToList)) {
-                    String[] sampleNames = stringToList.split(LIST_SEP);
+                    String[] sampleNames = StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP);
                     List<List<String>> sampleData = new ArrayList<>();
                     Map<String, Integer> samplePosition = new HashMap<>();
                     int pos = 0;
@@ -120,7 +120,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR + sampleName;
                         stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix);
                         if (StringUtils.isNotEmpty(stringToList)) {
-                            sampleData.add(Arrays.asList(stringToList.split(LIST_SEP)));
+                            sampleData.add(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
                             samplePosition.put(sampleName, pos++);
                         }
 //                        else {
@@ -142,7 +142,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             ObjectReader reader = new ObjectMapper().reader(HashMap.class);
             for (String key: variantSearchModel.getFileInfo().keySet()) {
                 // key consists of 'fileInfo' + "__" + studyId + "__" + fileId
-                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
+                String[] fields = StringUtils.splitByWholeSeparator(key, VariantSearchUtils.FIELD_SEPARATOR);
                 FileEntry fileEntry = new FileEntry(fields[2], null, new HashMap<>());
                 try {
                     // We obtain the original call
@@ -164,7 +164,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (MapUtils.isNotEmpty(variantSearchModel.getStats())) {
             for (String key: variantSearchModel.getStats().keySet()) {
                 // key consists of 'stats' + "__" + studyId + "__" + cohort
-                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
+                String[] fields = StringUtils.splitByWholeSeparator(key, VariantSearchUtils.FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
                     variantStats.setRefAlleleFreq(1 - variantSearchModel.getStats().get(key));
@@ -235,7 +235,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (StringUtils.isEmpty(other)) {
                 continue;
             }
-            String[] fields = other.split(FIELD_SEP);
+            String[] fields = StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP);
             switch (fields[0]) {
                 case "DCT":
                     variantAnnotation.setDisplayConsequenceType(fields[1]);
@@ -314,7 +314,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             protVarAnnotation.setAlternate(refAlt[1]);
                         }
                         // Sift score
-                        List<Score> scores = new ArrayList(2);
+                        List<Score> scores = new ArrayList<>(2);
                         if (fields.length > 12
                                 && (StringUtils.isNotEmpty(fields[12]) || StringUtils.isNotEmpty(fields[13]))) {
                             Score score = new Score();
@@ -452,7 +452,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {
             for (String key : variantSearchModel.getPopFreq().keySet()) {
                 PopulationFrequency populationFrequency = new PopulationFrequency();
-                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
+                String[] fields = StringUtils.splitByWholeSeparator(key, VariantSearchUtils.FIELD_SEPARATOR);
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
                 populationFrequency.setRefAlleleFreq(1 - variantSearchModel.getPopFreq().get(key));
