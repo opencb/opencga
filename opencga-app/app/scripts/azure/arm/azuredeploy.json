@@ -204,7 +204,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 5,
-                    "nodeSize": "Standard_F8s_v2"
+                    "nodeSize": "Standard_D4s_v3"
                 },
                 "mongo": {
                     "nodeCount": 1,
@@ -247,7 +247,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 16,
-                    "nodeSize": "Standard_F8s_v2"
+                    "nodeSize": "Standard_D4s_v3"
                 },
                 "mongo": {
                     "nodeCount": 3,
@@ -290,7 +290,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 1000,
-                    "nodeSize": "Standard_F8s_v2"
+                    "nodeSize": "Standard_D4s_v3"
                 },
                 "mongo": {
                     "nodeCount": 5,
