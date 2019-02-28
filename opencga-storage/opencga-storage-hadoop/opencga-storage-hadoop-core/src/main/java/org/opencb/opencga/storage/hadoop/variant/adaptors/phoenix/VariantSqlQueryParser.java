@@ -204,11 +204,11 @@ public class VariantSqlQueryParser {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
-            VariantQueryFields selectVariantElements = parseVariantQueryFields(query, options, metadataManager);
-            phoenixSQLQuery.select = selectVariantElements;
-            Set<VariantField> returnedFields = selectVariantElements.getFields();
-            Map<Integer, List<Integer>> returnedSamples = selectVariantElements.getSamples();
-            Collection<Integer> studyIds = selectVariantElements.getStudies();
+            VariantQueryFields queryFields = parseVariantQueryFields(query, options, metadataManager);
+            phoenixSQLQuery.select = queryFields;
+            Set<VariantField> returnedFields = queryFields.getFields();
+            Map<Integer, List<Integer>> returnedSamples = queryFields.getSamples();
+            Collection<Integer> studyIds = queryFields.getStudies();
 
             sb.append(VariantColumn.CHROMOSOME).append(',')
                     .append(VariantColumn.POSITION).append(',')
@@ -222,7 +222,7 @@ public class VariantSqlQueryParser {
                     sb.append(",\"").append(studyColumn.column()).append('"');
                     sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
-                        for (Integer cohortId : selectVariantElements.getCohorts().getOrDefault(studyId, Collections.emptyList())) {
+                        for (Integer cohortId : queryFields.getCohorts().getOrDefault(studyId, Collections.emptyList())) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
                             sb.append(",\"").append(statsColumn.column()).append('"');
                         }
@@ -230,7 +230,7 @@ public class VariantSqlQueryParser {
                 }
             }
             if (returnedFields.contains(VariantField.STUDIES_FILES)) {
-                selectVariantElements.getFiles().forEach((studyId, fileIds) -> {
+                queryFields.getFiles().forEach((studyId, fileIds) -> {
                     for (Integer fileId : fileIds) {
                         sb.append(",\"");
                         buildFileColumnKey(studyId, fileId, sb);
@@ -248,7 +248,7 @@ public class VariantSqlQueryParser {
                     // Check if any of the files from the included samples is not being returned.
                     // If don't, add it to the return list.
                     Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
-                    List<Integer> includeFiles = selectVariantElements.getFiles().get(studyId);
+                    List<Integer> includeFiles = queryFields.getFiles().get(studyId);
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {
                             sb.append(",\"");

@@ -853,8 +853,7 @@ public final class VariantQueryUtils {
                     }
                      */
                 }
-                Set<Integer> indexedSampleIds = new HashSet<>(metadataManager.getIndexedSamples(sm.getId()));
-                sampleIds.removeIf(o -> !indexedSampleIds.contains(o));
+                sampleIds.removeIf(id -> !metadataManager.isSampleIndexed(studyId, id));
             }
             samples.put(studyId, sampleIds);
         }

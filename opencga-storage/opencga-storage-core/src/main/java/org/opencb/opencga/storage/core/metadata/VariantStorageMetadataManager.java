@@ -73,6 +73,18 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final CohortMetadataDBAdaptor cohortDBAdaptor;
     private final TaskMetadataDBAdaptor taskDBAdaptor;
 
+    private final MetadataCache<String, Integer> sampleIdCache;
+    private final MetadataCache<Integer, String> sampleNameCache;
+    private final MetadataCache<Integer, Boolean> sampleIdIndexedCache;
+
+    private final MetadataCache<String, Integer> fileIdCache;
+    private final MetadataCache<Integer, String> fileNameCache;
+    private final MetadataCache<Integer, Boolean> fileIdIndexedCache;
+    private final MetadataCache<Integer, Set<Integer>> fileIdsFromSampleIdCache;
+
+    private final MetadataCache<String, Integer> cohortIdCache;
+    private final MetadataCache<Integer, String> cohortNameCache;
+
     public VariantStorageMetadataManager(VariantStorageMetadataDBAdaptorFactory dbAdaptorFactory) {
         this.projectDBAdaptor = dbAdaptorFactory.buildProjectMetadataDBAdaptor();
         this.studyDBAdaptor = dbAdaptorFactory.buildStudyMetadataDBAdaptor();
@@ -80,6 +92,53 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         this.sampleDBAdaptor = dbAdaptorFactory.buildSampleMetadataDBAdaptor();
         this.cohortDBAdaptor = dbAdaptorFactory.buildCohortMetadataDBAdaptor();
         this.taskDBAdaptor = dbAdaptorFactory.buildTaskDBAdaptor();
+        sampleIdCache = new MetadataCache<>(sampleDBAdaptor::getSampleId);
+        sampleNameCache = new MetadataCache<>((studyId, sampleId) -> {
+            SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
+            if (sampleMetadata == null) {
+                throw VariantQueryException.sampleNotFound(sampleId, studyId);
+            }
+            return sampleMetadata.getName();
+        });
+        sampleIdIndexedCache = new MetadataCache<>((studyId, sampleId) -> {
+            SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
+            if (sampleMetadata == null) {
+                throw VariantQueryException.sampleNotFound(sampleId, studyId);
+            }
+            return sampleMetadata.isIndexed();
+        });
+
+        fileIdCache = new MetadataCache<>(fileDBAdaptor::getFileId);
+        fileNameCache = new MetadataCache<>((studyId, fileId) -> {
+            FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
+            if (fileMetadata == null) {
+                throw VariantQueryException.fileNotFound(fileId, studyId);
+            }
+            return fileMetadata.getName();
+        });
+        fileIdIndexedCache = new MetadataCache<>((studyId, fileId) -> {
+            FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
+            if (fileMetadata == null) {
+                throw VariantQueryException.fileNotFound(fileId, studyId);
+            }
+            return fileMetadata.isIndexed();
+        });
+        fileIdsFromSampleIdCache = new MetadataCache<>((studyId, sampleId) -> {
+            SampleMetadata sampleMetadata = getSampleMetadata(studyId, sampleId);
+            if (sampleMetadata == null) {
+                throw VariantQueryException.sampleNotFound(sampleId, studyId);
+            }
+            return sampleMetadata.getFiles();
+        });
+
+        cohortIdCache = new MetadataCache<>(cohortDBAdaptor::getCohortId);
+        cohortNameCache = new MetadataCache<>((studyId, cohortId) -> {
+            CohortMetadata cohortMetadata = cohortDBAdaptor.getCohortMetadata(studyId, cohortId, null);
+            if (cohortMetadata == null) {
+                throw VariantQueryException.cohortNotFound(cohortId, studyId, getAvailableCohorts(studyId));
+            }
+            return cohortMetadata.getName();
+        });
     }
 
     public long lockStudy(int studyId) throws StorageEngineException {
@@ -426,15 +485,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     private Integer getFileId(int studyId, String fileName) {
         checkName("File name", fileName);
-        return fileDBAdaptor.getFileId(studyId, fileName);
+        return fileIdCache.get(studyId, fileName);
     }
 
     public String getFileName(int studyId, int fileId) {
-        FileMetadata file = getFileMetadata(studyId, fileId);
-        if (file == null) {
-            throw VariantQueryException.fileNotFound(fileId, studyId);
-        }
-        return file.getName();
+        return fileNameCache.get(studyId, fileId);
     }
 
     public Integer getFileId(int studyId, Object fileObj) {
@@ -456,8 +511,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 validate ? o -> fileIdExists(studyId, o, onlyIndexed) : o -> true);
 
         if (fileId != null && onlyIndexed) {
-            if (!getFileMetadata(studyId, fileId).isIndexed()) {
-                fileId = null;
+            if (isFileIndexed(studyId, fileId)) {
+                return fileId;
+            } else {
+                return null;
             }
         }
 
@@ -490,21 +547,20 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getResourcePair(fileObj, skipNegated, defaultStudy, this::fileIdExists, this::getFileId, "file");
     }
 
-    private boolean fileIdExists(int studyId, int fileId) {
-        return fileIdExists(studyId, fileId, false);
+    private boolean fileIdExists(int studyId, int fileId, boolean indexed) {
+        if (indexed) {
+            return isFileIndexed(studyId, fileId);
+        } else {
+            return fileIdExists(studyId, fileId);
+        }
     }
 
-    private boolean fileIdExists(int studyId, int fileId, boolean onlyIndexed) {
-        FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
-        if (fileMetadata == null) {
-            return false;
-        } else {
-            if (onlyIndexed) {
-                return fileMetadata.isIndexed();
-            } else {
-                return true;
-            }
-        }
+    private boolean fileIdExists(int studyId, int fileId) {
+        return getFileName(studyId, fileId) != null;
+    }
+
+    public boolean isFileIndexed(int studyId, Integer fileId) {
+        return fileIdIndexedCache.get(studyId, fileId, false);
     }
 
     public LinkedHashSet<Integer> getIndexedFiles(int studyId) {
@@ -591,8 +647,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     private Integer getSampleId(int studyId, String sampleName) {
         checkName("Sample name", sampleName);
-        return sampleDBAdaptor.getSampleId(studyId, sampleName);
+        return sampleIdCache.get(studyId, sampleName);
     }
+
+
 
     public Integer getSampleId(int studyId, Object sampleObj) {
         return getSampleId(studyId, sampleObj, false);
@@ -601,9 +659,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public Integer getSampleId(int studyId, Object sampleObj, boolean indexed) {
         Integer sampleId = parseResourceId(studyId, sampleObj,
                 o -> getSampleId(studyId, o),
-                o -> getSampleMetadata(studyId, o) != null);
+                o -> getSampleName(studyId, o) != null);
         if (indexed && sampleId != null) {
-            if (getIndexedSamplesMap(studyId).containsValue(sampleId)) {
+            if (isSampleIndexed(studyId, sampleId)) {
                 return sampleId;
             } else {
                 return null;
@@ -613,8 +671,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
+    public boolean isSampleIndexed(int studyId, Integer sampleId) {
+        return sampleIdIndexedCache.get(studyId, sampleId, false);
+    }
+
     public String getSampleName(int studyId, int sampleId) {
-        return getSampleMetadata(studyId, sampleId).getName();
+        return sampleNameCache.get(studyId, sampleId);
     }
 
     public BiMap<String, Integer> getIndexedSamplesMap(int studyId) {
@@ -701,7 +763,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Integer getCohortId(int studyId, String cohortName) {
         checkName("Cohort name", cohortName);
-        return cohortDBAdaptor.getCohortId(studyId, cohortName);
+        return cohortIdCache.get(studyId, cohortName);
     }
 
     public Integer getCohortId(int studyId, Object cohortObj) {
@@ -711,7 +773,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private Integer getCohortId(int studyId, Object cohortObj, boolean validate) {
         return parseResourceId(studyId, cohortObj,
                 o -> getCohortId(studyId, o),
-                validate ? o -> getCohortMetadata(studyId, o) != null : o -> true);
+                validate ? o -> getCohortName(studyId, o) != null : o -> true);
     }
 
     public List<Integer> getCohortIds(int studyId, Collection<?> cohorts) {
@@ -720,17 +782,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         for (Object cohortObj : cohorts) {
             Integer cohortId = getCohortId(studyId, cohortObj);
             if (cohortId == null) {
-                List<String> availableCohorts = new LinkedList<>();
-                cohortIterator(studyId).forEachRemaining(c -> availableCohorts.add(c.getName()));
-                throw VariantQueryException.cohortNotFound(cohortObj.toString(), studyId, availableCohorts);
+                throw VariantQueryException.cohortNotFound(cohortObj.toString(), studyId, getAvailableCohorts(studyId));
             }
             cohortIds.add(cohortId);
         }
         return cohortIds;
     }
 
+    protected List<String> getAvailableCohorts(int studyId) {
+        List<String> availableCohorts = new LinkedList<>();
+        cohortIterator(studyId).forEachRemaining(c -> availableCohorts.add(c.getName()));
+        return availableCohorts;
+    }
+
     public String getCohortName(int studyId, int cohortId) {
-        return getCohortMetadata(studyId, cohortId).getName();
+        return cohortNameCache.get(studyId, cohortId);
     }
 
     public Iterator<CohortMetadata> cohortIterator(int studyId) {
@@ -1043,7 +1109,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds) {
         Set<Integer> fileIds = new LinkedHashSet<>();
         for (Integer sampleId : sampleIds) {
-            fileIds.addAll(getSampleMetadata(studyId, sampleId).getFiles());
+            fileIds.addAll(fileIdsFromSampleIdCache.get(studyId, sampleId, Collections.emptySet()));
         }
         return fileIds;
     }
