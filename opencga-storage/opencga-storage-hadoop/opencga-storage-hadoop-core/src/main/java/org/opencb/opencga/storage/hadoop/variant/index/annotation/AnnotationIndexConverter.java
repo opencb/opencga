@@ -47,11 +47,12 @@ public class AnnotationIndexConverter {
     public static final byte LOF_MISSENSE_MASK        = (byte) (1 << 3);
     public static final byte LOF_MASK                 = (byte) (1 << 4);
     public static final byte CLINICAL_MASK            = (byte) (1 << 5);
-    public static final byte UNUSED_6_MASK            = (byte) (1 << 6);
+    public static final byte LOF_BASIC_MASK           = (byte) (1 << 6);
     public static final byte UNUSED_7_MASK            = (byte) (1 << 7);
 
-    protected static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
-    protected static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
+    public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
+    public static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
+    public static final int VALUE_LENGTH = 1;
 
     static {
         LOF_SET.add(VariantAnnotationUtils.FRAMESHIFT_VARIANT);
@@ -138,7 +139,10 @@ public class AnnotationIndexConverter {
                     if (LOF_SET.contains(soName)) {
                         b |= LOF_MASK;
                         b |= LOF_MISSENSE_MASK;
-                        break;
+                        if (ct.getTranscriptAnnotationFlags() != null && ct.getTranscriptAnnotationFlags().contains("basic")) {
+                            b |= LOF_BASIC_MASK;
+                            break;
+                        }
                     } else if (VariantAnnotationUtils.MISSENSE_VARIANT.equals(soName)) {
                         b |= LOF_MISSENSE_MASK;
                     }

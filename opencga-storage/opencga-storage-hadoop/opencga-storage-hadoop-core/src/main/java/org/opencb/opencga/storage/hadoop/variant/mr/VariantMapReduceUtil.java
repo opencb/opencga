@@ -272,4 +272,18 @@ public class VariantMapReduceUtil {
         }
     }
 
+    public static Scan configureMapReduceScan(Scan scan, Configuration conf) {
+        return configureMapReduceScan(scan, conf, 50);
+    }
+
+    public static Scan configureMapReduceScan(Scan scan, Configuration conf, int defaultValue) {
+        int caching = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, defaultValue);
+
+        LOGGER.info("Scan set Caching to " + caching);
+        scan.setCaching(caching);        // 1 is the default in Scan
+        scan.setCacheBlocks(false);  // don't set to true for MR jobs
+
+        return scan;
+    }
+
 }

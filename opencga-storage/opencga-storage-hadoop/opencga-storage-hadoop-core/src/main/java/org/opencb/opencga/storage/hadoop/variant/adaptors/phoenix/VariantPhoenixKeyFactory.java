@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.phoenix.query.QueryConstants;
 import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.apache.phoenix.schema.types.PVarchar;
@@ -167,6 +168,20 @@ public class VariantPhoenixKeyFactory {
         }
         return alternate;
     }
+
+    public static Pair<String, Integer> extractChrPosFromVariantRowKey(byte[] variantRowKey) {
+        return extractChrPosFromVariantRowKey(variantRowKey, 0, variantRowKey.length);
+    }
+
+    public static Pair<String, Integer> extractChrPosFromVariantRowKey(byte[] variantRowKey, int offset, int length) {
+        int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, offset);
+        String chromosome = (String) PVarchar.INSTANCE.toObject(variantRowKey, offset, chrPosSeparator, PVarchar.INSTANCE);
+
+        Integer intSize = PUnsignedInt.INSTANCE.getByteSize();
+        int position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, intSize, PUnsignedInt.INSTANCE);
+        return Pair.newPair(chromosome, position);
+    }
+
 
     public static Variant extractVariantFromResultSet(ResultSet resultSet) {
         String chromosome = null;
