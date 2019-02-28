@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryPa
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.junit.runners.Parameterized.Parameter;
@@ -262,6 +263,8 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), "protein_coding"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost").append(ANNOT_TRANSCRIPTION_FLAG.key(), "basic"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost").append(ANNOT_TRANSCRIPTION_FLAG.key(), "basic"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained"));
         testQueryAnnotationIndex(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated"));
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001"));
@@ -307,6 +310,24 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         System.out.println("Query NO_INDEX = " + onlyDBAdaptor);
         System.out.println("Query INDEX = " + indexAndDBAdaptor);
 
+        if (onlyDBAdaptor != indexAndDBAdaptor) {
+            queryResult = variantStorageEngine.get(query, new QueryOptions());
+            List<String> indexAndDB = queryResult.getResult().stream().map(Variant::toString).sorted().collect(Collectors.toList());
+            queryResult = query(query, new QueryOptions());
+            List<String> noIndex = queryResult.getResult().stream().map(Variant::toString).sorted().collect(Collectors.toList());
+
+            for (String s : indexAndDB) {
+                if (!noIndex.contains(s)) {
+                    System.out.println("From IndexAndDB, not in NoIndex = " + s);
+                }
+            }
+
+            for (String s : noIndex) {
+                if (!indexAndDB.contains(s)) {
+                    System.out.println("From NoIndex, not in IndexAndDB = " + s);
+                }
+            }
+        }
         assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
         assertThat(queryResult, numResults(lte(onlyIndex)));
         assertThat(queryResult, numResults(gt(0)));

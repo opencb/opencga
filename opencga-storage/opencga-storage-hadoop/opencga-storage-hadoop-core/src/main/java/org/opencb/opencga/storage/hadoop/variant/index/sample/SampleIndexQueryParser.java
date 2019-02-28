@@ -82,6 +82,7 @@ public class SampleIndexQueryParser {
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
             regions = Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()));
             query.remove(ANNOT_GENE_REGIONS.key());
+            query.remove(GENE.key());
         }
 
         regions = mergeRegions(regions);
@@ -166,12 +167,11 @@ public class SampleIndexQueryParser {
         // TODO: Allow skip using annotation mask
 
         byte b = 0;
-//        if (isValidParam(query, TYPE)) {
-//            List<String> types = query.getAsStringList(VariantQueryParam.TYPE.key());
-//            if (!types.isEmpty() && !types.contains(VariantType.SNV.toString()) && !types.contains(VariantType.SNP.toString())) {
-//                b |= UNUSED_6_MASK;
-//            }
-//        }
+
+        boolean transcriptFlagBasic = false;
+        if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAG)) {
+            transcriptFlagBasic = query.getString(ANNOT_TRANSCRIPTION_FLAG.key()).equals(TRANSCRIPT_FLAG_BASIC);
+        }
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
             List<String> cts = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
@@ -180,8 +180,15 @@ public class SampleIndexQueryParser {
                     .collect(Collectors.toList());
             if (LOF_SET.containsAll(cts)) {
                 b |= LOF_MASK;
-            } else if (LOF_SET_MISSENSE.containsAll(cts)) {
+                if (transcriptFlagBasic) {
+                    b |= LOF_MISSENSE_BASIC_MASK;
+                }
+            }
+            if (LOF_SET_MISSENSE.containsAll(cts)) {
                 b |= LOF_MISSENSE_MASK;
+                if (transcriptFlagBasic) {
+                    b |= LOF_MISSENSE_BASIC_MASK;
+                }
             }
         }
 

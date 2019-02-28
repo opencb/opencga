@@ -47,12 +47,13 @@ public class AnnotationIndexConverter {
     public static final byte LOF_MISSENSE_MASK        = (byte) (1 << 3);
     public static final byte LOF_MASK                 = (byte) (1 << 4);
     public static final byte CLINICAL_MASK            = (byte) (1 << 5);
-    public static final byte LOF_BASIC_MASK           = (byte) (1 << 6);
+    public static final byte LOF_MISSENSE_BASIC_MASK  = (byte) (1 << 6);
     public static final byte UNUSED_7_MASK            = (byte) (1 << 7);
 
     public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
     public static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
     public static final int VALUE_LENGTH = 1;
+    public static final String TRANSCRIPT_FLAG_BASIC = "basic";
 
     static {
         LOF_SET.add(VariantAnnotationUtils.FRAMESHIFT_VARIANT);
@@ -134,17 +135,21 @@ public class AnnotationIndexConverter {
                 if (PROTEIN_CODING_BIOTYPE_SET.contains(ct.getBiotype())) {
                     b |= PROTEIN_CODING_MASK;
                 }
+                boolean basic = ct.getTranscriptAnnotationFlags() != null && ct.getTranscriptAnnotationFlags()
+                        .contains(TRANSCRIPT_FLAG_BASIC);
                 for (SequenceOntologyTerm sequenceOntologyTerm : ct.getSequenceOntologyTerms()) {
                     String soName = sequenceOntologyTerm.getName();
                     if (LOF_SET.contains(soName)) {
                         b |= LOF_MASK;
                         b |= LOF_MISSENSE_MASK;
-                        if (ct.getTranscriptAnnotationFlags() != null && ct.getTranscriptAnnotationFlags().contains("basic")) {
-                            b |= LOF_BASIC_MASK;
-                            break;
+                        if (basic) {
+                            b |= LOF_MISSENSE_BASIC_MASK;
                         }
                     } else if (VariantAnnotationUtils.MISSENSE_VARIANT.equals(soName)) {
                         b |= LOF_MISSENSE_MASK;
+                        if (basic) {
+                            b |= LOF_MISSENSE_BASIC_MASK;
+                        }
                     }
                 }
             }
