@@ -27,7 +27,6 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -537,14 +536,7 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
 
-        addQueryFilter(query, TYPE, VariantColumn.TYPE, filters, s -> {
-            VariantType type = VariantType.valueOf(s);
-            Set<VariantType> subTypes = Variant.subTypes(type);
-            ArrayList<VariantType> types = new ArrayList<>(subTypes.size() + 1);
-            types.add(type);
-            types.addAll(subTypes);
-            return types;
-        });
+        addQueryFilter(query, TYPE, VariantColumn.TYPE, filters);
 
         final StudyMetadata defaultStudyMetadata;
         if (isValidParam(query, STUDY)) {

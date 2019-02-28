@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildFileColumnKey;
@@ -68,6 +69,7 @@ public class VariantHBaseQueryParser {
 //            FILES,   // Not supported at all
 //            SAMPLES, // May be supported
             REGION,
+            TYPE,
             INCLUDE_FILE,
             INCLUDE_STUDY,
             INCLUDE_SAMPLE,
@@ -286,6 +288,9 @@ public class VariantHBaseQueryParser {
         }
         if (!StringUtils.isEmpty(query.getString(ANNOT_BIOTYPE.key()))) {
             addValueFilter(filters, BIOTYPE.bytes(), query.getAsStringList(ANNOT_BIOTYPE.key()));
+        }
+        if (!StringUtils.isEmpty(query.getString(TYPE.key()))) {
+            addValueFilter(filters, VariantPhoenixHelper.VariantColumn.TYPE.bytes(), query.getAsStringList(TYPE.key()));
         }
 
         if (isValidParam(query, ANNOTATION_EXISTS)) {

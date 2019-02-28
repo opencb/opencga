@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
@@ -1087,6 +1088,37 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+
+        if (VariantQueryUtils.isValidParam(query, TYPE)) {
+            Set<String> types = new HashSet<>();
+            if (query.getString(TYPE.key()).contains(NOT)) {
+                // Invert negations
+                for (VariantType value : VariantType.values()) {
+                    types.add(value.name());
+                }
+                for (String type : query.getAsStringList(TYPE.key())) {
+                    if (isNegated(type)) {
+                        type = removeNegation(type);
+                    } else {
+                        throw VariantQueryException.malformedParam(TYPE, "Can not mix negated and no negated values");
+                    }
+                    // Expand types to subtypes
+                    type = type.toUpperCase();
+                    Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(type));
+                    types.remove(type);
+                    subTypes.forEach(subType -> types.remove(subType.toString()));
+                }
+            } else {
+                // Expand types to subtypes
+                for (String type : query.getAsStringList(TYPE.key())) {
+                    type = type.toUpperCase();
+                    Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(type));
+                    types.add(type);
+                    subTypes.forEach(subType -> types.add(subType.toString()));
+                }
+            }
+            query.put(TYPE.key(), new ArrayList<>(types));
+        }
 
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());

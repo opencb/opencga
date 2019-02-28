@@ -32,7 +32,6 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -159,14 +158,8 @@ public class VariantMongoDBQueryParser {
             }
 
             if (isValidParam(query, TYPE)) {
-                addQueryFilter(DocumentToVariantConverter.TYPE_FIELD, query.getString(TYPE.key()), builder,
-                        QueryOperation.AND, s -> {
-                            Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(s));
-                            List<String> types = new ArrayList<>(subTypes.size() + 1);
-                            types.add(s);
-                            subTypes.forEach(subType -> types.add(subType.toString()));
-                            return types;
-                        }); //addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD,
+                addQueryFilter(DocumentToVariantConverter.TYPE_FIELD, query.getAsStringList(TYPE.key()), builder,
+                        QueryOperation.AND); //addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD,
 //                query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
