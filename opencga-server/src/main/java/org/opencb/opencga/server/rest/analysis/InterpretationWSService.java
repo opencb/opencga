@@ -922,7 +922,7 @@ public class InterpretationWSService extends AnalysisWSService {
             String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
 
             // Execute custom analysis
-            CustomAnalysis customAnalysis = new CustomAnalysis(null, query, null, roleInCancer,
+            CustomAnalysis customAnalysis = new CustomAnalysis(null, query, studyStr, roleInCancer,
                     actionableVariantsByAssembly.get(assembly), customAnalysisOptions, opencgaHome, sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);
