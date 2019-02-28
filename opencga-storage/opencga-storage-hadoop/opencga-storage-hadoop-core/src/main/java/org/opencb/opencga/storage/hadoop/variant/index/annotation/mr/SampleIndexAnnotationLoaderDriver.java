@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation.mr;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
@@ -11,6 +12,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +31,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     public static final String SAMPLES = "samples";
 
     private List<Integer> sampleIds;
+    private boolean hasGenotype;
 
     @Override
     protected Class<SampleIndexAnnotationLoaderMapper> getMapperClass() {
@@ -38,7 +41,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<>();
-        params.put("--" + SAMPLES, "<sample-ids>");
+        params.put("--" + SAMPLES, "<samples>");
         return params;
     }
 
@@ -51,15 +54,18 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         if (StringUtils.isNotEmpty(samples)) {
             sampleIds = new LinkedList<>();
             for (String sample : samples.split(",")) {
-                sampleIds.add(metadataManager.getSampleId(getStudyId(), sample));
+                Integer sampleId = metadataManager.getSampleId(getStudyId(), sample);
+                if (sampleId == null) {
+                    throw new IllegalArgumentException("Sample '" + sample + "' not found.");
+                }
+                sampleIds.add(sampleId);
             }
         } else {
             sampleIds = metadataManager.getIndexedSamples(getStudyId());
         }
-    }
 
-    public String getParam(String key) {
-        return getConf().get(key, getConf().get("--" + key));
+        ObjectMap attributes = metadataManager.getStudyMetadata(getStudyId()).getAttributes();
+        hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
     }
 
     @Override
@@ -72,10 +78,12 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
 
-        for (int i = 0; i < 34000; i++) {
-            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(getStudyId(), i));
+        for (Integer sampleId : sampleIds) {
+            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(getStudyId(), sampleId));
         }
         scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+
+        SampleIndexAnnotationLoaderMapper.setHasGenotype(job, hasGenotype);
 
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
 

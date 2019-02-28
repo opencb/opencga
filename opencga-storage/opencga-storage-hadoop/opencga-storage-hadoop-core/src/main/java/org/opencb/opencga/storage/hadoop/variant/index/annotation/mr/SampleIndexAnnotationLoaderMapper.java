@@ -7,9 +7,11 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
+import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
@@ -36,9 +38,15 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
  */
 public class SampleIndexAnnotationLoaderMapper extends TableMapper<ImmutableBytesWritable, Put> {
 
+    private static final String HAS_GENOTYPE = "SampleIndexAnnotationLoaderMapper.hasGenotype";
     private byte[] family;
     private GenomeHelper helper;
     private Map<Integer, Map<String, ByteArrayOutputStream>> annotationIndices = new HashMap<>();
+    private boolean hasGenotype;
+
+    public static void setHasGenotype(Job job, boolean hasGenotype) {
+        job.getConfiguration().setBoolean(HAS_GENOTYPE, hasGenotype);
+    }
 
     @Override
     public void run(Context context) throws IOException, InterruptedException {
@@ -114,6 +122,7 @@ public class SampleIndexAnnotationLoaderMapper extends TableMapper<ImmutableByte
     protected void setup(Context context) throws IOException, InterruptedException {
         helper = new GenomeHelper(context.getConfiguration());
         family = helper.getColumnFamily();
+        hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
     }
 
     @Override
@@ -126,17 +135,26 @@ public class SampleIndexAnnotationLoaderMapper extends TableMapper<ImmutableByte
             if (VariantPhoenixHelper.isSampleCell(cell)) {
                 Integer sampleId = VariantPhoenixHelper.extractSampleId(
                         Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength()), true);
-                ImmutableBytesWritable ptr = new ImmutableBytesWritable(
-                        cell.getValueArray(),
-                        cell.getValueOffset(),
-                        cell.getValueLength());
-                PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
 
-                if (SampleIndexAnnotationLoader.isAnnotatedGenotype(gt)) {
+                String gt;
+                boolean validGt;
+                if (hasGenotype) {
+                    ImmutableBytesWritable ptr = new ImmutableBytesWritable(
+                            cell.getValueArray(),
+                            cell.getValueOffset(),
+                            cell.getValueLength());
+                    PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                    gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+                    validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                } else {
+                    gt = GenotypeClass.NA_GT_VALUE;
+                    validGt = true;
+                }
+
+                if (validGt) {
                     annotationIndices
                             .computeIfAbsent(sampleId, k -> new HashMap<>())
-                            .computeIfAbsent(gt, k-> new ByteArrayOutputStream(50)).write(index);
+                            .computeIfAbsent(gt, k -> new ByteArrayOutputStream(50)).write(index);
                 }
 
             }
