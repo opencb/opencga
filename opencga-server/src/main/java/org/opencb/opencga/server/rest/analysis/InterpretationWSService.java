@@ -957,7 +957,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
                 TeamReportedVariantCreator creator = new TeamReportedVariantCreator(null, roleInCancer, actionableVariants,
                         null, null, null);
-                List<ReportedVariant> reportedVariants = creator.create(variants);
+                List<ReportedVariant> reportedVariants = creator.createSecondaryFindings(variants);
 
                 return createAnalysisOkResponse(reportedVariants);
             }
