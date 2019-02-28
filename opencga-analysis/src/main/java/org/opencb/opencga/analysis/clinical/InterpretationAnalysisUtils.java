@@ -1,12 +1,14 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -160,13 +162,15 @@ public class InterpretationAnalysisUtils {
         Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
         java.io.File folder = Paths.get(opencgaHome + "/analysis/resources/").toFile();
         java.io.File[] files = folder.listFiles();
-        for (java.io.File file : files) {
-            if (file.isFile() && file.getName().startsWith("actionableVariants_")) {
-                String[] split = file.getName().split("[_\\.]");
-                if (split.length > 1) {
-                    String assembly = split[1].toLowerCase();
-                    actionableVariantsByAssembly.put(assembly.toLowerCase(),
-                            InterpretationAnalysisUtils.loadActionableVariants(file.toPath()));
+        if (ArrayUtils.isNotEmpty(files)) {
+            for (java.io.File file : files) {
+                if (file.isFile() && file.getName().startsWith("actionableVariants_")) {
+                    String[] split = file.getName().split("[_\\.]");
+                    if (split.length > 1) {
+                        String assembly = split[1].toLowerCase();
+                        actionableVariantsByAssembly.put(assembly.toLowerCase(),
+                                InterpretationAnalysisUtils.loadActionableVariants(file.toPath()));
+                    }
                 }
             }
         }
