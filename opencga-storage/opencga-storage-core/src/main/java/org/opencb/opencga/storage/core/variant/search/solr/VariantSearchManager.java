@@ -233,7 +233,6 @@ public class VariantSearchManager {
      * @param loadListener      Load listener
      * @return VariantSearchLoadResult
      * @throws VariantSearchException VariantSearchException
-     * @throws IOException IOException
      */
     public VariantSearchLoadResult load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
                                         VariantSearchLoadListener loadListener) throws VariantSearchException {

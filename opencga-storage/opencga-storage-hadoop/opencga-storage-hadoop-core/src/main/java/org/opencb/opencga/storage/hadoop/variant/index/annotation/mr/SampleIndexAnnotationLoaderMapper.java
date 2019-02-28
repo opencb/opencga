@@ -50,7 +50,7 @@ public class SampleIndexAnnotationLoaderMapper extends TableMapper<ImmutableByte
         List<Pair<ImmutableBytesWritable, Result>> buffer = new ArrayList<>();
 
         try {
-            while(context.nextKeyValue()) {
+            while (context.nextKeyValue()) {
                 ImmutableBytesWritable key = context.getCurrentKey();
                 Result value = context.getCurrentValue();
 

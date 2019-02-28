@@ -199,7 +199,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(),
-                metadataManager);
+                metadataManager, mrExecutor);
 
         List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
 
@@ -213,7 +213,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             for (Integer studyId : studies) {
                 List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
                 if (!indexedSamples.isEmpty()) {
-                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples);
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples, params);
                 }
             }
         } else if (samples.size() == 1 && samples.get(0).equals("force_all")) {
@@ -221,7 +221,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             for (Integer studyId : studies) {
                 List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
                 if (!indexedSamples.isEmpty()) {
-                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples);
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples, params);
                 }
             }
         } else {
@@ -234,7 +234,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     }
                 }
                 if (!sampleIds.isEmpty()) {
-                    indexAnnotationLoader.updateSampleAnnotation(studyId, sampleIds);
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, sampleIds, params);
                 }
             }
         }

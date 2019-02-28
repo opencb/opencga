@@ -8,7 +8,9 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * Created on 26/02/19.
@@ -18,13 +20,13 @@ import java.util.*;
 public class VariantsTableInputSplitter {
 
     /**
-     *
      * Align each InputSplit to an specified frame size.
-     * Moves each start-end
+     * Moves each start-end of each TableSplit.
      *
-     * @param inputSplits
-     * @param frameSize
-     * @return
+     * @param inputSplits List of TableSplits to adjust. This will not be modified
+     * @param frameSize   Frame size to adjust
+     * @return List of modified TableSplits
+     * @throws IOException When reading the scan instance from the TableSplit fails.
      */
     public static List<InputSplit> alignInputSplits(List<InputSplit> inputSplits, int frameSize) throws IOException {
         // Copy list
@@ -46,15 +48,15 @@ public class VariantsTableInputSplitter {
 
     /**
      * Align given TableSplit to an specific frame size.
-     *
+     * <p>
      * If the split is too small to fit in a frame, it is not valid, and it should be removed.
      *
-     * @param tableSplit
-     * @param frameSize
-     * @return  if the frame is valid or not
+     * @param tableSplit Input TableSplit. This will not be modified
+     * @param frameSize  Frame size to adjust
+     * @return The new adjusted TableSplit. Null if the Split should be discarded.
+     * @throws IOException When reading the scan instance from the TableSplit fails.
      */
     private static TableSplit alignTableSplit(TableSplit tableSplit, int frameSize) throws IOException {
-
         Pair<String, Integer> start;
         Pair<String, Integer> end;
         int newStartPos;
