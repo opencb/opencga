@@ -8,7 +8,6 @@ import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -16,7 +15,6 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
@@ -207,7 +205,7 @@ public class CustomAnalysis extends FamilyAnalysis {
             }
 
             DefaultReportedVariantCreator creator = new DefaultReportedVariantCreator(roleInCancer, actionableVariants, disorder, moi,
-                    null, biodataDiseasePanels, biotypes, soNames, !skipUntieredVariants);
+                    ClinicalProperty.Penetrance.COMPLETE, biodataDiseasePanels, biotypes, soNames, !skipUntieredVariants);
             reportedVariants = creator.create(variants);
         }
 

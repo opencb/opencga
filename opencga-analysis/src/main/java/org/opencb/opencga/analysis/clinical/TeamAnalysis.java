@@ -19,10 +19,7 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
@@ -167,12 +164,8 @@ public class TeamAnalysis extends FamilyAnalysis {
         // Create reported variants
         List<ReportedVariant> reportedVariants = null;
         if (CollectionUtils.isNotEmpty(variants)) {
-            // Phenotype
-//            OntologyTerm disease = clinicalAnalysis.getDisorder();
-//            Phenotype phenotype = new Phenotype(disease.getId(), disease.getName(), disease.getSource(), Phenotype.Status.UNKNOWN);
-
             TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
-                    clinicalAnalysis.getDisorder(), null, null);
+                    clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
             reportedVariants = creator.create(variants);
         }
 
