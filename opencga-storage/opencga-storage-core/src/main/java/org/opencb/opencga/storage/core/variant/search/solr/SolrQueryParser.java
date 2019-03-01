@@ -272,19 +272,19 @@ public class SolrQueryParser {
         // protein-substitution
         key = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(key, query.getString(key)));
+            filterList.add(parseScoreValue(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION, query.getString(key)));
         }
 
         // conservation
         key = VariantQueryParam.ANNOT_CONSERVATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(key, query.getString(key)));
+            filterList.add(parseScoreValue(VariantQueryParam.ANNOT_CONSERVATION, query.getString(key)));
         }
 
         // cadd, functional score
         key = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(key, query.getString(key)));
+            filterList.add(parseScoreValue(VariantQueryParam.ANNOT_FUNCTIONAL_SCORE, query.getString(key)));
         }
 
         // ALT population frequency
@@ -797,14 +797,15 @@ public class SolrQueryParser {
      *     "," to apply a "OR condition"
      *     ";" to apply a "AND condition"
      *
-     * @param name         Field name, e.g.: conservation, functionalScore, proteinSubstitution
+     * @param param        VariantQueryParam, e.g.: conservation, functionalScore, proteinSubstitution
      * @param value        Field value
      * @return             The string with the boolean conditions
      */
-    public String parseScoreValue(String name, String value) {
+    public String parseScoreValue(VariantQueryParam param, String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
+        String name = param.key();
         StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
             QueryOperation queryOperation = parseOrAndFilter(name, value);
@@ -823,11 +824,28 @@ public class SolrQueryParser {
                 }
             } else {
                 List<String> list = new ArrayList<>(values.length);
+                String prevName = null;
+                String prevOp = null;
                 for (String v : values) {
                     matcher = SCORE_PATTERN.matcher(v);
                     if (matcher.find()) {
                         // concat expression, e.g.: value:[0 TO 12]
-                        list.add(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
+                        String filterName = matcher.group(1);
+                        String filterOp = matcher.group(2);
+                        String filterValue = matcher.group(3);
+                        if (StringUtils.isEmpty(filterOp)) {
+                            filterName = prevName;
+                            filterOp = prevOp;
+                            filterValue = v;
+                        } else {
+                            prevName = filterName;
+                            prevOp = filterOp;
+                        }
+                        if (StringUtils.isEmpty(filterName)) {
+                            throw VariantQueryException.malformedParam(param, value);
+                        }
+
+                        list.add(getRange("", filterName, filterOp, filterValue));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
                     }
@@ -1060,8 +1078,7 @@ public class SolrQueryParser {
                 sb.append(")");
                 break;
             default:
-                logger.debug("Unknown operator {}", op);
-                break;
+                throw new VariantQueryException("Unknown operator " + op);
         }
         return sb.toString();
     }
