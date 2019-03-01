@@ -259,8 +259,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             .setChromosome(variant.getChromosome())
                             .setStart(Integer.parseInt(fields[5]))
                             .setEnd(Integer.parseInt(fields[6]))
-                            .setCopyNumber(Float.parseFloat(fields[3]))
-                            .setPercentageMatch(Float.parseFloat(fields[4]))
+                            .setCopyNumber(parseFloat(fields[3], null))
+                            .setPercentageMatch(parseFloat(fields[4], null))
                             .setPeriod(null)
                             .setConsensusSize(null)
                             .setScore(null)
@@ -320,11 +320,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             Score score = new Score();
                             score.setSource("sift");
                             if (StringUtils.isNotEmpty(fields[12])) {
-                                try {
-                                    score.setScore(Double.parseDouble(fields[12]));
-                                } catch (NumberFormatException e) {
-                                    logger.warn("Parsing Sift score: " + e.getMessage());
-                                }
+                                score.setScore(parseDouble(fields[12], null, "Exception parsing Sift score"));
                             }
                             score.setDescription(fields[13]);
                             scores.add(score);
@@ -335,11 +331,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             Score score = new Score();
                             score.setSource("polyphen");
                             if (StringUtils.isNotEmpty(fields[14])) {
-                                try {
-                                    score.setScore(Double.parseDouble(fields[14]));
-                                } catch (NumberFormatException e) {
-                                    logger.warn("Parsing Polyphen score: " + e.getMessage());
-                                }
+                                score.setScore(parseDouble(fields[14], null, "Exception parsing Polyphen score"));
                             }
                             score.setDescription(fields[15]);
                             scores.add(score);
@@ -1126,5 +1118,35 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
         return null;
+    }
+
+    private Double parseDouble(String value, Double defaultValue) {
+        return parseDouble(value, defaultValue, null);
+    }
+
+    private Double parseDouble(String value, Double defaultValue, String message) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            if (message != null) {
+                logger.warn(message + ". Value: '" + value + "'");
+            }
+            return defaultValue;
+        }
+    }
+
+    private Float parseFloat(String value, Float defaultValue) {
+        return parseFloat(value, defaultValue, null);
+    }
+
+    private Float parseFloat(String value, Float defaultValue, String message) {
+        try {
+            return Float.parseFloat(value);
+        } catch (NumberFormatException e) {
+            if (message != null) {
+                logger.warn(message + ". Value: '" + value + "'");
+            }
+            return defaultValue;
+        }
     }
 }
