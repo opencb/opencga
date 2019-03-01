@@ -83,26 +83,23 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
 
         ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
 
-        ObjectMap params;
-        if (StringUtils.isNotEmpty(commandOptions.json)) {
-            params = loadFile(commandOptions.json);
-            // Fill organism with the information from the client configuration if it is not defined in the JSON
-            params.computeIfAbsent(ProjectDBAdaptor.QueryParams.ORGANISM.key(), k -> clientConfiguration.getOrganism());
-        } else {
-            Project.Organism organism = clientConfiguration.getOrganism();
-            organism.setAssembly(StringUtils.isNotEmpty(commandOptions.assembly) ? commandOptions.assembly : organism.getAssembly());
-            organism.setCommonName(StringUtils.isNotEmpty(commandOptions.commonName) ? commandOptions.commonName : organism.getCommonName());
-            organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
-                    ? commandOptions.scientificName : organism.getScientificName());
-            organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
-                    ? Integer.parseInt(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
-            params = new ObjectMap(ProjectDBAdaptor.QueryParams.ORGANISM.key(), organism);
-            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.createCommandOptions.name);
-            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
-            params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
-            params.putIfNotEmpty("alias", projectsCommandOptions.createCommandOptions.alias);
-        }
-        params.put(ProjectDBAdaptor.QueryParams.ID.key(), commandOptions.id);
+        ObjectMap params = new ObjectMap();
+        // First we populate the organism information using the client configuration
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), commandOptions.id);
+        params.putIfNotEmpty("alias", commandOptions.alias);
+
+        Project.Organism organism = clientConfiguration.getOrganism();
+        organism.setAssembly(StringUtils.isNotEmpty(commandOptions.assembly) ? commandOptions.assembly : organism.getAssembly());
+        organism.setCommonName(StringUtils.isNotEmpty(commandOptions.commonName) ? commandOptions.commonName : organism.getCommonName());
+        organism.setScientificName(StringUtils.isNotEmpty(commandOptions.scientificName)
+                ? commandOptions.scientificName : organism.getScientificName());
+        organism.setTaxonomyCode(StringUtils.isNotEmpty(commandOptions.taxonomyCode)
+                ? Integer.parseInt(commandOptions.taxonomyCode) : organism.getTaxonomyCode());
+        params.put(ProjectDBAdaptor.QueryParams.ORGANISM.key(), organism);
+
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), commandOptions.organization);
 
         return openCGAClient.getProjectClient().create(params);
     }

@@ -106,7 +106,6 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
-
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -114,22 +113,19 @@ public class StudyCommandOptions {
                 arity = 1)
         public String project;
 
+        @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
+        public String name;
+
         @Parameter(names = {"--id"}, description = "Study id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"--json"}, description = "JSON file containing the rest of the study fields", arity = 1)
-        public String json;
-
-        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
-        public String name;
-
-        @Parameter(names = {"-a", "--alias"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-a", "--alias"}, description = DEPRECATED + "Replaced by 'id'", arity = 1)
         public String alias;
 
-        @Parameter(names = {"-t", "--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
         public String type = "CASE_CONTROL";
 
-        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
     }
 

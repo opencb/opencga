@@ -133,11 +133,12 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
 
             Map<String, Individual> individualMap = new HashMap<>();
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (ListUtils.isEmpty(member.getSamples())) {
+//                    throw new AnalysisException("No samples found for member " + member.getId());
+                    continue;
+                }
                 if (member.getSamples().size() > 1) {
                     throw new AnalysisException("More than one sample found for member " + member.getId());
-                }
-                if (member.getSamples().size() == 0) {
-                    throw new AnalysisException("No samples found for member " + member.getId());
                 }
                 sampleList.add(member.getSamples().get(0).getId());
                 individualMap.put(member.getId(), member);
