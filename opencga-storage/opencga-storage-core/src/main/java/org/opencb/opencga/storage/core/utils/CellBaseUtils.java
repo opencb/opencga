@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created on 30/03/17.
@@ -44,6 +45,7 @@ public class CellBaseUtils {
     public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
 
+    private ConcurrentHashMap<String, Region> cache = new ConcurrentHashMap<>();
 
     public CellBaseUtils(CellBaseClient cellBaseClient) {
         this.cellBaseClient = cellBaseClient;
@@ -59,7 +61,20 @@ public class CellBaseUtils {
     }
 
     public List<Region> getGeneRegion(List<String> geneStrs) {
+        geneStrs = new LinkedList<>(geneStrs);
         List<Region> regions = new ArrayList<>(geneStrs.size());
+        Iterator<String> iterator = geneStrs.iterator();
+        while (iterator.hasNext()) {
+            String gene = iterator.next();
+            Region region = cache.get(gene);
+            if (region != null) {
+                regions.add(region);
+                iterator.remove();
+            }
+        }
+        if (geneStrs.isEmpty()) {
+            return regions;
+        }
         try {
             long ts = System.currentTimeMillis();
             QueryResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, GENE_QUERY_OPTIONS);
@@ -67,10 +82,10 @@ public class CellBaseUtils {
             List<String> missingGenes = null;
             for (QueryResult<Gene> result : response.getResponse()) {
                 Gene gene = null;
+                String geneStr = result.getId();
                 // It may happen that CellBase returns more than 1 result for the same gene name.
                 // Pick the gene where the given geneStr matches with the name,id,transcript.id,transcript.name or transcript.proteinId
                 if (result.getResult().size() > 1) {
-                    String geneStr = result.getId();
                     for (Gene aGene : result.getResult()) {
                         if (geneStr.equals(aGene.getName())
                                 || geneStr.equals(aGene.getId())
@@ -100,6 +115,9 @@ public class CellBaseUtils {
                 int end = gene.getEnd() + GENE_EXTRA_REGION;
                 Region region = new Region(gene.getChromosome(), start, end);
                 regions.add(region);
+                cache.put(gene.getName(), region);
+                cache.put(gene.getId(), region);
+                cache.put(geneStr, region);
             }
             if (missingGenes != null) {
                 throw VariantQueryException.geneNotFound(String.join(",", missingGenes));
