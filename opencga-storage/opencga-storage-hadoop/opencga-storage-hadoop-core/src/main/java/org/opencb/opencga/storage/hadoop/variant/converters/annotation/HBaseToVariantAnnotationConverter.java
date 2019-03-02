@@ -23,6 +23,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
@@ -144,20 +145,21 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     public VariantAnnotation convert(Result result) {
         VariantAnnotation variantAnnotation = null;
 
-        byte[] value = result.getValue(columnFamily, annotationColumn);
-        if (ArrayUtils.isNotEmpty(value)) {
+        Cell cell = result.getColumnLatestCell(columnFamily, annotationColumn);
+        if (cell != null && cell.getValueLength() > 0) {
             try {
-                if (value[0] == '{') {
+                if (cell.getValueArray()[cell.getValueOffset()] == '{') {
                     // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
                     try {
-                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                        variantAnnotation = objectMapper.readValue(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength(),
+                                VariantAnnotation.class);
                     } catch (IOException e) {
-                        value = CompressionUtils.decompress(value);
+                        byte[] value = CompressionUtils.decompress(CellUtil.cloneValue(cell));
                         variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                     }
                 } else {
                     // Value is compressed. Decompress and parse
-                    value = CompressionUtils.decompress(value);
+                    byte[] value = CompressionUtils.decompress(CellUtil.cloneValue(cell));
                     variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                 }
             } catch (IOException e) {
