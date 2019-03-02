@@ -308,7 +308,11 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     }
 
     protected String getParam(String key) {
-        return getConf().get(key, getConf().get("--" + key));
+        return getParam(key, null);
+    }
+
+    protected String getParam(String key, String defaultValue) {
+        return getConf().get(key, getConf().get("--" + key, defaultValue));
     }
 
     public int privateMain(String[] args) throws Exception {

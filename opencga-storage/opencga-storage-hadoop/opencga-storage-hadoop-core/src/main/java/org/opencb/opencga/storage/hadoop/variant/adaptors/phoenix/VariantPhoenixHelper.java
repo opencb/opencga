@@ -261,7 +261,29 @@ public class VariantPhoenixHelper {
             getPopulationFrequencyColumn("GONL", "ALL"),
 
             getPopulationFrequencyColumn("UK10K_ALSPAC", "ALL"),
-            getPopulationFrequencyColumn("UK10K_TWINSUK", "ALL")
+            getPopulationFrequencyColumn("UK10K_TWINSUK", "ALL"),
+
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "ALL"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "AFR"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "AMR"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "ASJ"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "EAS"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "FIN"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "NFE"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "OTH"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "MALE"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "FEMALE"),
+
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "ALL"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "AFR"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "AMR"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "ASJ"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "EAS"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "FIN"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "NFE"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "OTH"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "MALE"),
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "FEMALE")
         ));
     }
 
