@@ -375,11 +375,20 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters":{  
+                    "_artifactsLocation": {
+                        "value": "[parameters('_artifactsLocation')]"
+                    },
+                    "_artifactsLocationSasToken": {
+                        "value": "[parameters('_artifactsLocationSasToken')]"
+                    },
                     "applicationGatewaySubnetId": {
                         "value": "[reference('vnet').outputs.appgwSubnetId.value]"
                     },
                     "dnsNamePrefix":{
                         "value": "[variables('dnsNamePrefix')]"
+                    },
+                    "appGwSslEmail": {
+                        "value": "[parameters('mongoCertificateEmail')]"
                     },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"

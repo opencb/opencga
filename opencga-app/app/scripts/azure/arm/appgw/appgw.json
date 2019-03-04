@@ -1,0 +1,458 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"applicationGatewaySubnetId": {
+			"type": "string"
+		},
+		"skuName": {
+			"defaultValue": "Standard_Small",
+			"type": "string"
+		},
+		"skuTier": {
+			"defaultValue": "Standard",
+			"type": "string"
+		},
+		"skuCapacity": {
+			"defaultValue": 1,
+			"type": "int"
+		},
+		"dnsNamePrefix": {
+			"type": "string",
+			"metadata": {
+				"description": "DNS prefix used by the app gateway IP"
+			}
+		},
+		"azureFunctionName": {
+			"type": "string"
+		},
+		"LogAnalyticsWorkspaceResourceID": {
+			"type": "string",
+			"metadata": {
+				"description": "Log Analytics Workspace Resource ID"
+			}
+		}
+	},
+	"variables": {
+		"applicationGatewayName": "appgw",
+		"applicationGatewayPublicIpName": "appgwpublicip",
+		"applicationGatewayPublicIpId": "[resourceId('Microsoft.Network/publicIPAddresses',variables('applicationGatewayPublicIpName'))]",
+		"applicationGatewayId": "[resourceId('Microsoft.Network/applicationGateways', variables('applicationGatewayName'))]",
+		"azureFunctionReqUrl": "[concat('https://', parameters('azureFunctionName'), '.azurewebsites.net/api/serveChallenge/')]"
+	},
+	"resources": [
+		{
+			"type": "Microsoft.Network/publicIPAddresses",
+			"name": "[variables('applicationGatewayPublicIpName')]",
+			"apiVersion": "2018-08-01",
+			"location": "[resourceGroup().location]",
+			"sku": {
+				"name": "Basic"
+			},
+			"properties": {
+				"publicIPAllocationMethod": "Dynamic",
+				"dnsSettings": {
+					"domainNameLabel": "[parameters('dnsNamePrefix')]"
+				}
+			},
+			"resources": [
+				{
+					"type": "providers/diagnosticSettings",
+					"name": "[concat('Microsoft.Insights/', variables('applicationGatewayPublicIpName'))]",
+					"dependsOn": [
+						"[resourceId('Microsoft.Network/publicIPAddresses',variables('applicationGatewayPublicIpName'))]"
+					],
+					"apiVersion": "2017-05-01-preview",
+					"properties": {
+						"name": "[variables('applicationGatewayPublicIpName')]",
+						"workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+						"logs": [
+							{
+								"category": "DDoSProtectionNotifications",
+								"enabled": true,
+								"retentionPolicy": {
+									"enabled": false,
+									"days": 0
+								}
+							},
+							{
+								"category": "DDoSMitigationFlowLogs",
+								"enabled": true,
+								"retentionPolicy": {
+									"enabled": false,
+									"days": 0
+								}
+							},
+							{
+								"category": "DDoSMitigationReports",
+								"enabled": true,
+								"retentionPolicy": {
+									"enabled": false,
+									"days": 0
+								}
+							}
+						],
+						"metrics": [
+							{
+								"category": "AllMetrics",
+								"enabled": true,
+								"retentionPolicy": {
+									"enabled": false,
+									"days": 0
+								}
+							}
+						]
+					}
+				}
+			]
+		},
+		{
+			"type": "Microsoft.Network/applicationGateways",
+			"name": "[variables('applicationGatewayName')]",
+			"apiVersion": "2018-08-01",
+			"location": "[resourceGroup().location]",
+			"properties": {
+				"sku": {
+					"name": "[parameters('skuName')]",
+					"tier": "[parameters('skuTier')]",
+					"capacity": "[parameters('skuCapacity')]"
+				},
+				"enableHttp2": true,
+				"sslCertificates": [
+					{
+						"name": "appgw-cert",
+						"properties": {
+							"data": "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",
+							"password": "MySecretP@ss"
+						}
+					}
+				],
+				"gatewayIPConfigurations": [
+					{
+						"name": "appGatewayIpConfig",
+						"properties": {
+							"subnet": {
+								"id": "[parameters('applicationGatewaySubnetId')]"
+							}
+						}
+					}
+				],
+				"frontendIPConfigurations": [
+					{
+						"name": "appGatewayFrontendIP",
+						"properties": {
+							"PublicIPAddress": {
+								"id": "[variables('applicationGatewayPublicIpId')]"
+							}
+						}
+					}
+				],
+				"frontendPorts": [
+					{
+						"name": "httpPort",
+						"properties": {
+							"Port": 80
+						}
+					},
+					{
+						"name": "httpsPort",
+						"properties": {
+							"Port": 443
+						}
+					}
+				],
+				"backendAddressPools": [
+					{
+						"name": "bepool",
+						"properties": {
+							"backendAddresses": []
+						}
+					}
+				],
+				"httpListeners": [
+					{
+						"name": "httpListener",
+						"properties": {
+							"protocol": "Http",
+							"frontendPort": {
+								"id": "[concat(variables('applicationGatewayId'), '/frontendPorts/httpPort')]"
+							},
+							"frontendIPConfiguration": {
+								"id": "[concat(variables('applicationGatewayId'), '/frontendIPConfigurations/appGatewayFrontendIP')]"
+							}
+						}
+					},
+					{
+						"name": "httpsListener",
+						"properties": {
+							"protocol": "Https",
+							"frontendPort": {
+								"id": "[concat(variables('applicationGatewayId'), '/frontendPorts/httpsPort')]"
+							},
+							"frontendIPConfiguration": {
+								"id": "[concat(variables('applicationGatewayId'), '/frontendIPConfigurations/appGatewayFrontendIP')]"
+							},
+							"sslCertificate": {
+								"id": "[concat(variables('applicationGatewayId'), '/sslCertificates/appgw-cert')]"
+							}
+						}
+					}
+				],
+				"probes": [
+					{
+						"name": "ivaHttpProbe",
+						"properties": {
+							"pickHostNameFromBackendHttpSettings": true,
+							"protocol": "Http",
+							"path": "/",
+							"interval": 5,
+							"timeout": 10
+						}
+					},
+					{
+						"name": "openCGAHttpProbe",
+						"properties": {
+							"pickHostNameFromBackendHttpSettings": true,
+							"protocol": "Http",
+							"path": "/opencga/webservices/rest/v1/meta/status",
+							"interval": 5,
+							"timeout": 10
+						}
+					}
+				],
+				"backendHttpSettingsCollection": [
+					{
+						"name": "iva",
+						"properties": {
+							"pickHostNameFromBackendAddress": true,
+							"port": 80,
+							"protocol": "Http",
+							"path": "",
+							"probe": {
+								"id": "[concat(variables('applicationGatewayId'), '/probes/ivaHttpProbe')]"
+							},
+							"probeEnabled": true,
+							"requestTimeout": 90
+						}
+					},
+					{
+						"name": "opencga",
+						"properties": {
+							"pickHostNameFromBackendAddress": true,
+							"port": 8080,
+							"protocol": "Http",
+							"path": "",
+							"probe": {
+								"id": "[concat(variables('applicationGatewayId'), '/probes/openCGAHttpProbe')]"
+							},
+							"probeEnabled": true,
+							"requestTimeout": 90
+						}
+					}
+				],
+				"requestRoutingRules": [
+					{
+						"name": "http",
+						"properties": {
+							"ruleType": "PathBasedRouting",
+							"httpListener": {
+								"id": "[concat(variables('applicationGatewayId'), '/httpListeners/httpListener')]"
+							},
+							"urlPathMap": {
+								"id": "[concat(variables('applicationGatewayID'), '/urlPathMaps/httpPath')]"
+							}
+						}
+					},
+					{
+						"name": "https",
+						"properties": {
+							"ruleType": "PathBasedRouting",
+							"httpListener": {
+								"id": "[concat(variables('applicationGatewayId'), '/httpListeners/httpsListener')]"
+							},
+							"urlPathMap": {
+								"id": "[concat(variables('applicationGatewayID'), '/urlPathMaps/httpsPath')]"
+							}
+						}
+					}
+				],
+				"urlPathMaps": [
+					{
+						"name": "httpPath",
+						"properties": {
+							"defaultBackendAddressPool": {
+								"id": "[concat(variables('applicationGatewayID'), '/backendAddressPools/bepool')]"
+							},
+							"defaultBackendHttpSettings": {
+								"id": "[concat(variables('applicationGatewayID'), '/backendHttpSettingsCollection/iva')]"
+							},
+							"pathRules": [
+								{
+									"name": "letsencrypt",
+									"properties": {
+										"paths": [
+											"/.well-known/acme-challenge/*"
+										],
+										"redirectConfiguration": {
+											"id": "[concat(variables('applicationGatewayId'), '/redirectConfigurations/letsencryptRedirect')]"
+										}
+									}
+								},
+								{
+									"name": "httpToHttps",
+									"properties": {
+										"paths": [
+											"/*"
+										],
+										"redirectConfiguration": {
+											"id": "[concat(variables('applicationGatewayId'), '/redirectConfigurations/httpToHttpsRedirect')]"
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "httpsPath",
+						"properties": {
+							"defaultBackendAddressPool": {
+								"id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+							},
+							"defaultBackendHttpSettings": {
+								"id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/iva')]"
+							},
+							"pathRules": [
+								{
+									"name": "opencga",
+									"properties": {
+										"backendHttpSettings": {
+											"id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/opencga')]"
+										},
+										"backendAddressPool": {
+											"id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+										},
+										"paths": [
+											"/opencga*"
+										]
+									}
+								},
+								{
+									"name": "iva",
+									"properties": {
+										"backendHttpSettings": {
+											"id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/iva')]"
+										},
+										"backendAddressPool": {
+											"id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+										},
+										"paths": [
+											"/*"
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"redirectConfigurations": [
+					{
+						"name": "letsencryptRedirect",
+						"properties": {
+							"redirectType": "Permanent",
+							"targetUrl": "[variables('azureFunctionReqUrl')]",
+							"includeQueryString": true,
+							"urlPathMaps": [
+								{
+									"id": "[concat(variables('applicationGatewayID'), '/urlPathMaps/httpPath')]"
+								}
+							],
+							"pathRules": [
+								{
+									"id": "[concat(variables('applicationGatewayID'), '/urlPathMaps/httpPath/pathRules/letsencrypt')]"
+								}
+							]
+						}
+					},
+					{
+						"name": "httpToHttpsRedirect",
+						"properties": {
+							"redirectType": "Permanent",
+							"targetListener": {
+								"id": "[concat(variables('applicationGatewayID'), '/httpListeners/httpsListener')]"
+							},
+							"includeQueryString": true,
+							"pathRules": [
+								{
+									"id": "[concat(variables('applicationGatewayID'), '/urlPathMaps/httpPath/pathRules/httpToHttps')]"
+								}
+							]
+						}
+					}
+				]
+			},
+			"resources": [
+				{
+					"type": "providers/diagnosticSettings",
+					"name": "[concat('Microsoft.Insights/', variables('applicationGatewayName'))]",
+					"dependsOn": [
+						"[resourceId('Microsoft.Network/applicationGateways', variables('applicationGatewayName'))]"
+					],
+					"apiVersion": "2017-05-01-preview",
+					"properties": {
+						"name": "[variables('applicationGatewayName')]",
+						"workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+						"logs": [
+							{
+								"category": "ApplicationGatewayAccessLog",
+								"enabled": true,
+								"retentionPolicy": {
+									"days": 0,
+									"enabled": false
+								}
+							},
+							{
+								"category": "ApplicationGatewayPerformanceLog",
+								"enabled": true,
+								"retentionPolicy": {
+									"days": 0,
+									"enabled": false
+								}
+							},
+							{
+								"category": "ApplicationGatewayFirewallLog",
+								"enabled": true,
+								"retentionPolicy": {
+									"days": 0,
+									"enabled": false
+								}
+							}
+						],
+						"metrics": [
+							{
+								"category": "AllMetrics",
+								"enabled": true,
+								"retentionPolicy": {
+									"enabled": false,
+									"days": 0
+								}
+							}
+						]
+					}
+				}
+			],
+			"dependsOn": [
+				"[concat('Microsoft.Network/publicIPAddresses/', variables('applicationGatewayPublicIpName'))]"
+			]
+		}
+	],
+	"outputs": {
+		"appgwBackendAddressPoolId":{
+				"type": "string",
+				"value": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+		},
+		"fqdn": {
+				"type":"string",
+				"value": "[reference(resourceId('Microsoft.Network/publicIPAddresses/', variables('applicationGatewayPublicIpName'))).dnsSettings.fqdn]"
+		}
+}
+}
