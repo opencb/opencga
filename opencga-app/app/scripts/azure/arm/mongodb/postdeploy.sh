@@ -162,18 +162,26 @@ createReplicaSet() {
 
 restoreMongoDBDump() {
     echo "restoring mongoDB dump"
+    systemctl stop mongod
     
-    cd /tmp
+    cd /datadrive
+
+    echo "Get azcopy to speed up download"
+    wget -O azcopy.tar https://azcopyvnext.azureedge.net/release20190301/azcopy_linux_amd64_10.0.8.tar.gz
+    tar -xf azcopyv10.tar --strip-components=1
 
     echo "Restoring MongoDB data dump"
     echo "Downloading dump file"
-    curl -o mongodb_dump.tar.gz $MONGODB_DUMP_URL
+    ./azcopy copy $MONGODB_DUMP_URL /datadrive/mongodata.tar
 
     echo "Unzipping"
-    tar -zxvf mongodb_dump.tar.gz
+    tar -xvf mongodata.tar /datadrive/
 
-    echo "Restoring"
-    mongorestore --verbose --gzip /tmp/mongodb_dump/ -u ${MONGODB_USERNAME} -p ${MONGODB_PASSWORD}
+    echo "Restarting"
+    systemctl stop mongod
+
+    echo "Mongo Logs:"
+    tail /var/log/mongodb/mongod.log
 }
 
 #install flow

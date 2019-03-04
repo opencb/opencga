@@ -186,10 +186,16 @@
             "metadata": {
                 "description": "Define an object for a custom tshirt size of the deployment. WARNING: Intended for experimenting or debugging use with care."
             }
+        },
+        "mongoDbDumpUrl": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "The URL pointing to a tar.gz zip of the a mongo dump"
+            }
         }
     },
     "variables": {
-        "cellbaseUrl": "https://cellbase.blob.core.windows.net/dump/cellbase_dump.tar.gz",
         "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]",
         "sizingOptions": [
             "[parameters('customDeploymentSize')]",
@@ -898,6 +904,9 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "mongoDbDumpUrl": {
+                        "value": "[parameters('mongoDbDumpUrl')]"
+                    },
                     "subnetId": {
                         "value": "[reference('vnet').outputs.mongoSubnetId.value]"
                     },
