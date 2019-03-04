@@ -1,11 +1,10 @@
-package org.opencb.opencga.storage.hadoop.variant.index.annotation.mr;
+package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableInputSplitter;
 
 import java.io.IOException;
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.List;
 /**
  * Created by jacobo on 02/03/19.
  */
-public class VarinatAlignedInputFormat extends InputFormat {
+public class VariantAlignedInputFormat extends InputFormat {
 
     private static final String DELEGATED_INPUT_FORMAT = "VariantAlignedInputFormat.inputFormat";
     private static final String BATCH_SIZE = "VariantAlignedInputFormat.batchSize";

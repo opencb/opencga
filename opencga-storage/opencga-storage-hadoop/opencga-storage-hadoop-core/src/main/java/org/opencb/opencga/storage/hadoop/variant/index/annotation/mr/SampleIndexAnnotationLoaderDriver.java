@@ -13,6 +13,8 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,8 +90,9 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
 
         VariantMapReduceUtil.initTableMapperJob(job, variantTable,
-                scan, getMapperClass(), SampleIndexAlignedInputFormat.class);
-        SampleIndexAlignedInputFormat.setDelegatedInputFormat(job, TableInputFormat.class);
+                scan, getMapperClass(), VariantAlignedInputFormat.class);
+        VariantAlignedInputFormat.setDelegatedInputFormat(job, TableInputFormat.class);
+        VariantAlignedInputFormat.setBatchSize(job, SampleIndexDBLoader.BATCH_SIZE);
 
         VariantMapReduceUtil.setOutputHBaseTable(job, getTableNameGenerator().getSampleIndexTableName(getStudyId()));
 

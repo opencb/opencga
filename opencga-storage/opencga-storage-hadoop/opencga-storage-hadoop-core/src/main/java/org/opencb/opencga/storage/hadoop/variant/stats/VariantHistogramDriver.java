@@ -19,8 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VarinatAlignedInputFormat;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
@@ -29,6 +28,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey;
 
 /**
  * Created by jacobo on 02/03/19.
@@ -85,10 +86,10 @@ public class VariantHistogramDriver extends AbstractVariantsTableDriver {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
-        VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass(), VarinatAlignedInputFormat.class);
+        VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass(), VariantAlignedInputFormat.class);
         VariantMapReduceUtil.setNoneReduce(job);
 
-        VarinatAlignedInputFormat.setBatchSize(job, batchSize);
+        VariantAlignedInputFormat.setBatchSize(job, batchSize);
         VariantHistogramMapper.setBatchSize(job, batchSize);
 
         job.setOutputFormatClass(TextOutputFormat.class);
@@ -133,7 +134,7 @@ public class VariantHistogramDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-            Pair<String, Integer> pair = VariantPhoenixKeyFactory.extractChrPosFromVariantRowKey(key.get(), key.getOffset(), key.getLength());
+            Pair<String, Integer> pair = extractChrPosFromVariantRowKey(key.get(), key.getOffset(), key.getLength());
             pair.setSecond(pair.getSecond() / batchSize);
             if (!pair.equals(currentBatch)) {
                 write(context);
