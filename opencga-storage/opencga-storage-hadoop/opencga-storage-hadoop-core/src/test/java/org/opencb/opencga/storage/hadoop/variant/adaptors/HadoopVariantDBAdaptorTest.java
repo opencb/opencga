@@ -271,18 +271,21 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
-        assertNotEquals(IndexUtils.EMPTY_MASK, testQueryIndex(annotationQuery).getAnnotationIndexMask());
+        assertFalse(testQueryIndex(annotationQuery).emptyAnnotationIndex());
     }
 
     public void testQueryFileIndex(Query annotationQuery) throws Exception {
-        assertNotEquals(IndexUtils.EMPTY_MASK, testQueryIndex(annotationQuery).getFileIndexMask());
+        assertFalse(testQueryIndex(annotationQuery).emptyFileIndex());
     }
 
     public SampleIndexQuery testQueryIndex(Query annotationQuery) throws Exception {
-        Query query = new Query()
+        return testQueryIndex(annotationQuery, new Query()
                 .append(STUDY.key(), STUDY_NAME)
-                .append(SAMPLE.key(), "NA19600");
-//        System.out.println("----------------------------------------------------------");
+                .append(SAMPLE.key(), "NA19600"));
+    }
+
+    public SampleIndexQuery testQueryIndex(Query annotationQuery, Query query) throws Exception {
+        //        System.out.println("----------------------------------------------------------");
 //        queryResult = query(query, new QueryOptions());
 //        int numResultsSample = queryResult.getNumResults();
 //        System.out.println("Sample query: " + numResultsSample);
@@ -303,9 +306,10 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
         System.out.println("----------------------------------------------------------");
         System.out.println("query = " + annotationQuery.toJson());
-        System.out.println("maskToString(annotationMask) = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexMask()));
-        System.out.println("maskToString(fileIndex) = " + IndexUtils.byteToString(indexQuery.getFileIndex()));
-        System.out.println("maskToString(fileIndexMask) = " + IndexUtils.byteToString(indexQuery.getFileIndexMask()));
+        System.out.println("annotationIndex = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexMask()));
+        for (String sample : indexQuery.getSamplesMap().keySet()) {
+            System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.getFileIndex(sample)));
+        }
         System.out.println("Query ONLY_INDEX = " + onlyIndex);
         System.out.println("Query NO_INDEX = " + onlyDBAdaptor);
         System.out.println("Query INDEX = " + indexAndDBAdaptor);

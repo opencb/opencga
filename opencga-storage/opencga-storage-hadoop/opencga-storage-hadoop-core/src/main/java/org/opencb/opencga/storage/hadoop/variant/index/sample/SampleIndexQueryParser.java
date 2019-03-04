@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
@@ -11,13 +12,16 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.*;
 
 /**
  * Created by jacobo on 06/01/19.
@@ -133,13 +137,25 @@ public class SampleIndexQueryParser {
         }
         String study = defaultStudy.getName();
 
-        byte[] fileMask = parseFileMask(query);
+        Map<String, byte[]> fileIndexMap = new HashMap<>(samplesMap.size());
+        for (String sample : samplesMap.keySet()) {
+            byte[] fileMask = parseFileMask(query, sample, s -> {
+                Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), s);
+                Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(defaultStudy.getId(), Collections.singleton(sampleId));
+                List<String> fileNames = new ArrayList<>(fileIds.size());
+                for (Integer fileId : fileIds) {
+                    fileNames.add(metadataManager.getFileName(defaultStudy.getId(), fileId));
+                }
+                return fileNames;
+            });
+            fileIndexMap.put(sample, fileMask);
+        }
         byte annotationMask = parseAnnotationMask(query);
 
-        return new SampleIndexQuery(regions, study, samplesMap, fileMask[0], fileMask[1], annotationMask, queryOperation);
+        return new SampleIndexQuery(regions, study, samplesMap, fileIndexMap, annotationMask, queryOperation);
     }
 
-    protected static byte[] parseFileMask(Query query) {
+    protected static byte[] parseFileMask(Query query, String sample, Function<String, Collection<String>> filesFromSample) {
         byte fileIndexMask = 0;
         byte fileIndex = 0;
 
@@ -157,6 +173,99 @@ public class SampleIndexQueryParser {
                 } else if (indel && !snv) {
                     fileIndexMask |= SampleIndexToHBaseConverter.SNV_MASK;
                 } // else ignore mixed SNV and INDEL filters
+            }
+        }
+
+        if (isValidParam(query, FILTER)) {
+            List<String> filterValues = splitValue(query.getString(FILTER.key())).getRight();
+
+            if (filterValues.size() == 1) {
+                if (filterValues.get(0).equals(VCFConstants.PASSES_FILTERS_v4)) {
+                    // PASS
+                    fileIndexMask |= SampleIndexToHBaseConverter.FILTER_PASS_MASK;
+                    fileIndex |= SampleIndexToHBaseConverter.FILTER_PASS_MASK;
+                } else if (filterValues.get(0).equals(VariantQueryUtils.NOT + VCFConstants.PASSES_FILTERS_v4)) {
+                    // !PASS
+                    fileIndexMask |= SampleIndexToHBaseConverter.FILTER_PASS_MASK;
+                } else if (!isNegated(filterValues.get(0))) {
+                    // Non negated filter, other than PASS
+                    fileIndexMask |= SampleIndexToHBaseConverter.FILTER_PASS_MASK;
+                }
+            } else {
+                if (!filterValues.contains(VCFConstants.PASSES_FILTERS_v4)) {
+                    if (filterValues.stream().noneMatch(VariantQueryUtils::isNegated)) {
+                        // None negated filter, without PASS
+                        fileIndexMask |= SampleIndexToHBaseConverter.FILTER_PASS_MASK;
+                    }
+                } // else --> Mix PASS and other filters. Can not use index
+            }
+        }
+
+        if (isValidParam(query, QUAL)) {
+            String qualValue = query.getString(QUAL.key());
+            List<String> qualValues = VariantQueryUtils.splitValue(qualValue).getValue();
+            if (qualValues.size() == 1) {
+                String[] split = VariantQueryUtils.splitOperator(qualValue);
+                String op = split[1];
+                double value = Double.valueOf(split[2]);
+                Boolean index20 = IndexUtils.intersectIndexGreaterThan(op, value, QUAL_THRESHOLD_20);
+                if (index20 != null) {
+                    fileIndexMask |= QUAL_GT_20_MASK;
+                    if (index20) {
+                        fileIndex |= QUAL_GT_20_MASK;
+                    }
+                }
+                Boolean index40 = IndexUtils.intersectIndexGreaterThan(op, value, QUAL_THRESHOLD_40);
+                if (index40 != null) {
+                    fileIndexMask |= QUAL_GT_40_MASK;
+                    if (index40) {
+                        fileIndex |= QUAL_GT_40_MASK;
+                    }
+                }
+            }
+        }
+
+        if (isValidParam(query, INFO)) {
+            Map<String, String> infoMap = VariantQueryUtils.parseInfo(query).getValue();
+            // Lazy get files from sample
+            Collection<String> files = filesFromSample.apply(sample);
+            for (String file : files) {
+                String values = infoMap.get(file);
+
+                if (StringUtils.isNotEmpty(values)) {
+                    for (String value : VariantQueryUtils.splitValue(values).getValue()) {
+                        String[] split = VariantQueryUtils.splitOperator(value);
+                        if (split[0].equals(VCFConstants.DEPTH_KEY)) {
+                            Boolean indexDp = IndexUtils.intersectIndexGreaterThan(split[1], Double.valueOf(split[2]), DP_THRESHOLD_20);
+                            if (indexDp != null) {
+                                fileIndexMask |= DP_GT_20_MASK;
+                                if (indexDp) {
+                                    fileIndex |= DP_GT_20_MASK;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isValidParam(query, FORMAT)) {
+            Map<String, String> format = VariantQueryUtils.parseFormat(query).getValue();
+            String values = format.get(sample);
+
+            if (StringUtils.isNotEmpty(values)) {
+                for (String value : VariantQueryUtils.splitValue(values).getValue()) {
+                    String[] split = VariantQueryUtils.splitOperator(value);
+                    if (split[0].equals(VCFConstants.DEPTH_KEY)) {
+                        Boolean indexDp = IndexUtils.intersectIndexGreaterThan(split[1], Double.valueOf(split[2]), DP_THRESHOLD_20);
+                        if (indexDp != null) {
+                            fileIndexMask |= DP_GT_20_MASK;
+                            if (indexDp) {
+                                fileIndex |= DP_GT_20_MASK;
+                            }
+                        }
+                    }
+                }
             }
         }
 

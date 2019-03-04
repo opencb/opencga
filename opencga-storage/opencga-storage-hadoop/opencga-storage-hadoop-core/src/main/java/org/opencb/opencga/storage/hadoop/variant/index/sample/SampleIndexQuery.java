@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
+import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 
 /**
  * Created on 12/07/18.
@@ -16,22 +17,22 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleIndexQuery {
+    private static final byte[] EMPTY_INDEX_MASK = {0, 0};
+
     private final List<Region> regions;
     private final String study;
     private final Map<String, List<String>> samplesMap;
-    private final byte fileIndexMask;
-    private final byte fileIndex;
+    private final Map<String, byte[]> fileIndexMap; // byte[] = {mask , index}
     private final byte annotationIndexMask;
     private final VariantQueryUtils.QueryOperation queryOperation;
 
     public SampleIndexQuery(List<Region> regions, String study,
-                            Map<String, List<String>> samplesMap, byte fileIndexMask, byte fileIndex,
+                            Map<String, List<String>> samplesMap, Map<String, byte[]> fileIndexMap,
                             byte annotationIndexMask, QueryOperation queryOperation) {
         this.regions = regions;
         this.study = study;
         this.samplesMap = samplesMap;
-        this.fileIndexMask = fileIndexMask;
-        this.fileIndex = fileIndex;
+        this.fileIndexMap = fileIndexMap;
         this.annotationIndexMask = annotationIndexMask;
         this.queryOperation = queryOperation;
     }
@@ -48,16 +49,24 @@ public class SampleIndexQuery {
         return samplesMap;
     }
 
-    public byte getFileIndexMask() {
-        return fileIndexMask;
+    public byte getFileIndexMask(String sample) {
+        return fileIndexMap.getOrDefault(sample, EMPTY_INDEX_MASK)[0];
     }
 
-    public byte getFileIndex() {
-        return fileIndex;
+    public byte getFileIndex(String sample) {
+        return fileIndexMap.getOrDefault(sample, EMPTY_INDEX_MASK)[1];
+    }
+
+    public boolean emptyFileIndex() {
+        return fileIndexMap.isEmpty() || fileIndexMap.values().stream().allMatch(fileIndex -> fileIndex[0] == EMPTY_MASK);
     }
 
     public byte getAnnotationIndexMask() {
         return annotationIndexMask;
+    }
+
+    public boolean emptyAnnotationIndex() {
+        return annotationIndexMask == EMPTY_MASK;
     }
 
     public VariantQueryUtils.QueryOperation getQueryOperation() {
@@ -79,6 +88,8 @@ public class SampleIndexQuery {
 
         private final String sample;
         private final List<String> gts;
+        private final byte fileIndexMask;
+        private final byte fileIndex;
 
         protected SingleSampleIndexQuery(SampleIndexQuery query, String sample) {
             this(query, sample, query.getSamplesMap().get(sample));
@@ -88,12 +99,18 @@ public class SampleIndexQuery {
             super(query.regions == null ? null : new ArrayList<>(query.regions),
                     query.study,
                     Collections.singletonMap(sample, gts),
-                    query.fileIndexMask,
-                    query.fileIndex,
+                    query.fileIndexMap,
                     query.annotationIndexMask,
                     query.queryOperation);
             this.sample = sample;
             this.gts = gts;
+            fileIndexMask = getFileIndexMask(sample);
+            fileIndex = getFileIndex(sample);
+        }
+
+        @Override
+        public boolean emptyFileIndex() {
+            return fileIndexMask == EMPTY_MASK;
         }
 
         public String getSample() {
@@ -102,6 +119,14 @@ public class SampleIndexQuery {
 
         public List<String> getGenotypes() {
             return gts;
+        }
+
+        public byte getFileIndexMask() {
+            return fileIndexMask;
+        }
+
+        public byte getFileIndex() {
+            return fileIndex;
         }
     }
 }

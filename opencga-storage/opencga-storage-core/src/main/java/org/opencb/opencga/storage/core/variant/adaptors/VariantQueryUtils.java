@@ -1112,15 +1112,8 @@ public final class VariantQueryUtils {
                     }
 
                     // Add prev key/value to map
-                    String finalValues = values;
                     QueryOperation finalOperation = operation;
-                    map.compute(key, (k, v) -> {
-                        if (v == null) {
-                            return finalValues;
-                        } else {
-                            return v + finalOperation.separator() + finalValues;
-                        }
-                    });
+                    map.merge(key, values, (v1, v2) -> v1 + finalOperation.separator() + v2);
                 }
 
 
@@ -1138,15 +1131,8 @@ public final class VariantQueryUtils {
         }
 
         if (!key.isEmpty()) {
-            String finalValues = values;
             QueryOperation finalOperation = operation;
-            map.compute(key, (k, v) -> {
-                if (v == null) {
-                    return finalValues;
-                } else {
-                    return v + finalOperation.separator() + finalValues;
-                }
-            });
+            map.merge(key, values, (v1, v2) -> v1 + finalOperation.separator() + v2);
         }
 
         return Pair.of(operation, map);

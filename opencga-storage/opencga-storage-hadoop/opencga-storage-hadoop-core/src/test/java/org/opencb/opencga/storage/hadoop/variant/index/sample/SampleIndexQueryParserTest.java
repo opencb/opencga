@@ -11,7 +11,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_M
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseAnnotationMask;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseFileMask;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.SNV_MASK;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.*;
 
 /**
  * Created on 08/01/19.
@@ -22,11 +22,56 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parseFileMaskTest() {
-        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query()));
-        assertArrayEquals(new byte[]{SNV_MASK, SNV_MASK}, parseFileMask(new Query(TYPE.key(), "SNV")));
-        assertArrayEquals(new byte[]{SNV_MASK, SNV_MASK}, parseFileMask(new Query(TYPE.key(), "SNP")));
-        assertArrayEquals(new byte[]{SNV_MASK, EMPTY_MASK}, parseFileMask(new Query(TYPE.key(), "INDEL")));
-        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(TYPE.key(), "SNV,INDEL")));
+        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(), "", null));
+        assertArrayEquals(new byte[]{SNV_MASK, SNV_MASK}, parseFileMask(new Query(TYPE.key(), "SNV"), "", null));
+        assertArrayEquals(new byte[]{SNV_MASK, SNV_MASK}, parseFileMask(new Query(TYPE.key(), "SNP"), "", null));
+        assertArrayEquals(new byte[]{SNV_MASK, EMPTY_MASK}, parseFileMask(new Query(TYPE.key(), "INDEL"), "", null));
+        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(TYPE.key(), "SNV,INDEL"), "", null));
+
+        assertArrayEquals(new byte[]{FILTER_PASS_MASK, FILTER_PASS_MASK}, parseFileMask(new Query(FILTER.key(), "PASS"), "", null));
+        assertArrayEquals(new byte[]{FILTER_PASS_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "!PASS"), "", null));
+        assertArrayEquals(new byte[]{FILTER_PASS_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "LowQual"), "", null));
+        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "!LowQual"), "", null));
+
+        assertArrayEquals(new byte[]{FILTER_PASS_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "LowGQX,LowQual"), "", null));
+        assertArrayEquals(new byte[]{FILTER_PASS_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "LowGQX;LowQual"), "", null));
+        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "PASS,LowQual"), "", null));
+        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "PASS;LowQual"), "", null));
+        assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FILTER.key(), "!LowGQX;!LowQual"), "", null));
+
+
+        byte qual20_40 = QUAL_GT_20_MASK | QUAL_GT_40_MASK;
+        assertArrayEquals("=10", new byte[]{qual20_40, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), "=10"), "", null));
+        assertArrayEquals("=20", new byte[]{qual20_40, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), "=20"), "", null));
+        assertArrayEquals("=30", new byte[]{qual20_40, QUAL_GT_20_MASK}, parseFileMask(new Query(QUAL.key(), "=30"), "", null));
+        assertArrayEquals("=40", new byte[]{qual20_40, QUAL_GT_20_MASK}, parseFileMask(new Query(QUAL.key(), "=40"), "", null));
+        assertArrayEquals("=50", new byte[]{qual20_40, qual20_40}, parseFileMask(new Query(QUAL.key(), "=50"), "", null));
+
+        assertArrayEquals("<=10", new byte[]{qual20_40, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), "<=10"), "", null));
+        assertArrayEquals("<=20", new byte[]{qual20_40, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), "<=20"), "", null));
+        assertArrayEquals("<=30", new byte[]{QUAL_GT_40_MASK, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), "<=30"), "", null));
+        assertArrayEquals("<=40", new byte[]{QUAL_GT_40_MASK, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), "<=40"), "", null));
+
+        assertArrayEquals(">=10", new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), ">=10"), "", null));
+        assertArrayEquals(">=20", new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(QUAL.key(), ">=20"), "", null));
+        assertArrayEquals(">=30", new byte[]{QUAL_GT_20_MASK, QUAL_GT_20_MASK}, parseFileMask(new Query(QUAL.key(), ">=30"), "", null));
+        assertArrayEquals(">=40", new byte[]{QUAL_GT_20_MASK, QUAL_GT_20_MASK}, parseFileMask(new Query(QUAL.key(), ">=40"), "", null));
+        assertArrayEquals(">=50", new byte[]{qual20_40, qual20_40}, parseFileMask(new Query(QUAL.key(), ">=50"), "", null));
+
+
+
+        assertArrayEquals("S1:DP>10", new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:DP>10"), "S1", null));
+        assertArrayEquals("S1:DP>=20", new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:DP>=20"), "S1", null));
+        assertArrayEquals("S1:DP>=20", new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:DP>=20"), "S1", null));
+        assertArrayEquals("S1:DP>20", new byte[]{DP_GT_20_MASK, DP_GT_20_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:DP>20"), "S1", null));
+        assertArrayEquals("S1:DP>20", new byte[]{DP_GT_20_MASK, DP_GT_20_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:GG>4,DP>20"), "S1", null));
+        assertArrayEquals("S1:DP>20", new byte[]{DP_GT_20_MASK, DP_GT_20_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:GG>4;DP>20"), "S1", null));
+
+        assertArrayEquals("S1:DP<10", new byte[]{DP_GT_20_MASK, EMPTY_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:DP<10"), "S1", null));
+
+        assertArrayEquals("S1:DP>20", new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:DP>20"), "S2", null));
+        assertArrayEquals("S1:DP<10", new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(FORMAT.key(), "S1:DP<10"), "S2", null));
+
     }
 
     @Test

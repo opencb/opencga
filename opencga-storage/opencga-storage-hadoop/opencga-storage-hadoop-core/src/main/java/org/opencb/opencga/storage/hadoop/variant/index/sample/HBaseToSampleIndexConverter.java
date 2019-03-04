@@ -12,6 +12,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 
 import java.util.*;
 
@@ -57,7 +58,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
         this.fileIndex = IndexUtils.EMPTY_MASK;
     }
 
-    public HBaseToSampleIndexConverter(SampleIndexQuery query, Region region) {
+    public HBaseToSampleIndexConverter(SingleSampleIndexQuery query, Region region) {
         this.regionFilter = region;
         this.annotationIndexMask = query.getAnnotationIndexMask();
         this.fileIndexMask = query.getFileIndexMask();

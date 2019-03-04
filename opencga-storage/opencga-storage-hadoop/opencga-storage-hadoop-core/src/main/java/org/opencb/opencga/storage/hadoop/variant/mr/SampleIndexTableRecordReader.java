@@ -220,7 +220,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         }
         // TODO: Use correct filter mask
         SampleIndexQuery query = new SampleIndexQuery(regions, studyMetadata.getStudyName(), samples,
-                EMPTY_MASK, EMPTY_MASK, EMPTY_MASK, operation);
+                Collections.emptyMap(), EMPTY_MASK, operation);
         iterator = sampleIndexDBAdaptor.iterator(query);
         loadMoreResults();
     }

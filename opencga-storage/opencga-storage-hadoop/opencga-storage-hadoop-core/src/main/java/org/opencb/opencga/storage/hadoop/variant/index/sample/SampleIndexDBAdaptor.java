@@ -11,7 +11,6 @@ import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -172,7 +171,7 @@ public class SampleIndexDBAdaptor {
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
         return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts),
-                EMPTY_MASK, EMPTY_MASK, EMPTY_MASK, null), sample);
+                Collections.emptyMap(), EMPTY_MASK, null), sample);
     }
 
     public long count(SampleIndexQuery query, String sample) {
@@ -202,10 +201,11 @@ public class SampleIndexDBAdaptor {
                     // Split region in countable regions
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
-                        if (query.getAnnotationIndexMask() == EMPTY_MASK && query.getFileIndexMask() == EMPTY_MASK
+                        SingleSampleIndexQuery sampleIndexQuery = query.forSample(sample, finalGts);
+                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(sampleIndexQuery, subRegion);
+                        if (query.emptyAnnotationIndex() && query.emptyFileIndex()
                                 && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
-                            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(query, subRegion);
-                            Scan scan = parse(query.forSample(sample, finalGts), subRegion, true);
+                            Scan scan = parse(sampleIndexQuery, subRegion, true);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
@@ -217,8 +217,7 @@ public class SampleIndexDBAdaptor {
                                 throw VariantQueryException.internalException(e);
                             }
                         } else {
-                            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(query, subRegion);
-                            Scan scan = parse(query.forSample(sample, finalGts), subRegion, false);
+                            Scan scan = parse(sampleIndexQuery, subRegion, false);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
@@ -356,11 +355,7 @@ public class SampleIndexDBAdaptor {
     }
 
     private int toSampleId(int studyId, String sample) {
-        StudyMetadata sc = metadataManager.getStudyMetadata(studyId);
-        if (sc == null) {
-            throw VariantQueryException.studyNotFound(studyId, metadataManager.getStudies(null).keySet());
-        }
-        return metadataManager.getSampleId(sc.getId(), sample);
+        return metadataManager.getSampleId(studyId, sample);
     }
 
 
