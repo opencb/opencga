@@ -30,8 +30,7 @@
             }
         },
         "appGwSslEmail": {
-            "type": "string",
-            "defaultValue": "user@exampledomain.com"
+            "type": "string"
         },
         "LogAnalyticsWorkspaceResourceID": {
             "type": "string",
