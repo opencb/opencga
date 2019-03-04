@@ -87,7 +87,8 @@ public class VariantPhoenixHelper {
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
     private final PhoenixHelper phoenixHelper;
-    private final GenomeHelper genomeHelper;
+    private final byte[] columnFamily;
+    private final Configuration conf;
 
 
     public enum VariantColumn implements Column {
@@ -293,12 +294,17 @@ public class VariantPhoenixHelper {
     }
 
     public VariantPhoenixHelper(GenomeHelper genomeHelper) {
-        this.genomeHelper = genomeHelper;
-        phoenixHelper = new PhoenixHelper(genomeHelper.getConf());
+        this(genomeHelper.getColumnFamily(), genomeHelper.getConf());
+    }
+
+    public VariantPhoenixHelper(byte[] columnFamily, Configuration conf) {
+        this.columnFamily = columnFamily;
+        this.conf = conf;
+        phoenixHelper = new PhoenixHelper(conf);
     }
 
     public Connection newJdbcConnection() throws SQLException, ClassNotFoundException {
-        return phoenixHelper.newJdbcConnection(genomeHelper.getConf());
+        return phoenixHelper.newJdbcConnection(conf);
     }
 
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
@@ -410,7 +416,7 @@ public class VariantPhoenixHelper {
     }
 
     private String buildCreate(String variantsTableName) {
-        return buildCreate(variantsTableName, Bytes.toString(genomeHelper.getColumnFamily()), DEFAULT_TABLE_TYPE);
+        return buildCreate(variantsTableName, Bytes.toString(columnFamily), DEFAULT_TABLE_TYPE);
     }
 
     private String buildCreate(String variantsTableName, String columnFamily, PTableType tableType) {
