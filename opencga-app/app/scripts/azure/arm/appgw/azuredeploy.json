@@ -41,11 +41,11 @@
         }
     },
     "variables": {
-        "functionAppName": "[concat('appgwfn-', uniquestring(resourceGroup().id))]"
+        "functionAppName": "[concat('appgwfn-', uniquestring(resourceGroup().name))]"
     },
     "resources": [
         {
-            "resourceGroup": "[parameters('rgName')]",
+            "resourceGroup": "[resourceGroup().name]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "appgw",
@@ -82,7 +82,7 @@
             }
         },
         {
-            "resourceGroup": "[parameters('rgName')]",
+            "resourceGroup": "[resourceGroup().name]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "keyvault",
@@ -96,7 +96,7 @@
             }
         },
         {
-            "resourceGroup": "[parameters('rgName')]",
+            "resourceGroup": "[resourceGroup().name]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "functions",
@@ -124,7 +124,7 @@
             }
         },
         {
-            "resourceGroup": "[parameters('rgName')]",
+            "resourceGroup": "[resourceGroup().name]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "msi",
