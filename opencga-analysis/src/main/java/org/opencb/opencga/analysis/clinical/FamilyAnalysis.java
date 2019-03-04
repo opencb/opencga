@@ -160,6 +160,42 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
         return sampleList;
     }
 
+    protected Map<String, String> getSampleMap(ClinicalAnalysis clinicalAnalysis, Individual proband) throws AnalysisException {
+        Map<String, String> individualSampleMap = new HashMap<>();
+        // Sanity check
+        if (clinicalAnalysis != null && clinicalAnalysis.getFamily() != null
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+
+            Map<String, Individual> individualMap = new HashMap<>();
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (ListUtils.isEmpty(member.getSamples())) {
+//                    throw new AnalysisException("No samples found for member " + member.getId());
+                    continue;
+                }
+                if (member.getSamples().size() > 1) {
+                    throw new AnalysisException("More than one sample found for member " + member.getId());
+                }
+                individualSampleMap.put(member.getId(), member.getSamples().get(0).getId());
+                individualMap.put(member.getId(), member);
+            }
+
+            if (proband != null) {
+                // Fill proband information to be able to navigate to the parents and their samples easily
+                // Sanity check
+                if (proband.getFather() != null && StringUtils.isNotEmpty(proband.getFather().getId())
+                        && individualMap.containsKey(proband.getFather().getId())) {
+                    proband.setFather(individualMap.get(proband.getFather().getId()));
+                }
+                if (proband.getMother() != null && StringUtils.isNotEmpty(proband.getMother().getId())
+                        && individualMap.containsKey(proband.getMother().getId())) {
+                    proband.setMother(individualMap.get(proband.getMother().getId()));
+                }
+            }
+        }
+        return individualSampleMap;
+    }
+
+
     protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<Panel> diseasePanels)
             throws AnalysisException {
         String clinicalAnalysisId = clinicalAnalysis.getId();

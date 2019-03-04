@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -278,15 +279,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     throw VariantQueryException.malformedParam(FAMILY, familyId,
                             "Some individuals from this family have multiple indexed samples");
                 }
-                Phenotype phenotype;
+                Disorder disorder;
                 if (isValidParam(query, FAMILY_PHENOTYPE)) {
                     String phenotypeId = query.getString(FAMILY_PHENOTYPE.key());
-                    phenotype = family.getPhenotypes()
+                    disorder = family.getDisorders()
                             .stream()
                             .filter(familyPhenotype -> familyPhenotype.getId().equals(phenotypeId))
                             .findFirst()
                             .orElse(null);
-                    if (phenotype == null) {
+                    if (disorder == null) {
                         throw VariantQueryException.malformedParam(FAMILY_PHENOTYPE, phenotypeId,
                                 "Available phenotypes: " + family.getPhenotypes()
                                         .stream()
@@ -303,7 +304,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                         .map(Phenotype::getId)
                                         .collect(Collectors.toList()));
                     }
-                    phenotype = family.getPhenotypes().get(0);
+                    disorder = family.getDisorders().get(0);
                 }
                 Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family);
 
@@ -314,32 +315,32 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     case "MONOALLELIC":
                     case "monoallelic":
                     case "dominant":
-                        genotypes = ModeOfInheritance.dominant(pedigree, phenotype, false);
+                        genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
                         break;
                     case "MONOALLELIC_INCOMPLETE_PENETRANCE":
                     case "monoallelicIncompletePenetrance":
-                        genotypes = ModeOfInheritance.dominant(pedigree, phenotype, true);
+                        genotypes = ModeOfInheritance.dominant(pedigree, disorder, true);
                         break;
                     case "BIALLELIC":
                     case "biallelic":
                     case "recesive":
-                        genotypes = ModeOfInheritance.recessive(pedigree, phenotype, false);
+                        genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
                         break;
                     case "BIALLELIC_INCOMPLETE_PENETRANCE":
                     case "biallelicIncompletePenetrance":
-                        genotypes = ModeOfInheritance.recessive(pedigree, phenotype, true);
+                        genotypes = ModeOfInheritance.recessive(pedigree, disorder, true);
                         break;
                     case "XLINKED_MONOALLELIC":
                     case "XlinkedMonoallelic":
-                        genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                        genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
                         break;
                     case "XLINKED_BIALLELIC":
                     case "XlinkedBiallelic":
-                        genotypes = ModeOfInheritance.xLinked(pedigree, phenotype, false);
+                        genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
                         break;
                     case "YLINKED":
                     case "Ylinked":
-                        genotypes = ModeOfInheritance.yLinked(pedigree, phenotype);
+                        genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
                         break;
                     default:
                         throw VariantQueryException.malformedParam(MODE_OF_INHERITANCE, moiString);
