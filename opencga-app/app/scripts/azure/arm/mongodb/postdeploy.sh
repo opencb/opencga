@@ -168,11 +168,11 @@ restoreMongoDBDump() {
 
     echo "Get azcopy to speed up download"
     wget -O azcopy.tar https://azcopyvnext.azureedge.net/release20190301/azcopy_linux_amd64_10.0.8.tar.gz
-    tar -xf azcopyv10.tar --strip-components=1
+    tar -xf azcopy.tar --strip-components=1
 
     echo "Restoring MongoDB data dump"
     echo "Downloading dump file"
-    ./azcopy copy $MONGODB_DUMP_URL /datadrive/mongodata.tar
+    ./azcopy copy $MONGODB_DUMP_URL /datadrive/
 
     echo "Unzipping"
     tar -xvf mongodata.tar /datadrive/
@@ -191,6 +191,12 @@ scanForNewDisks
 generateCertificate
 configureMongoDB
 
+# restore a mongodb dump is one has been specificed, and this is the primary node in the cluster
+if [ -n "$MONGODB_DUMP_URL" ] && [ "$VM_INDEX" -eq 0 ]
+then
+    restoreMongoDBDump
+fi
+
 # configure mongo replication if the cluster size is greater than 1, and this is the primary node in the cluster
 if [ "$CLUSTER_SIZE" -gt 1 ]
 then
@@ -206,8 +212,4 @@ then
     fi
 fi
 
-# restore a mongodb dump is one has been specificed, and this is the primary node in the cluster
-if [ -n "$MONGODB_DUMP_URL" ] && [ "$VM_INDEX" -eq 0 ]
-then
-    restoreMongoDBDump
-fi
+
