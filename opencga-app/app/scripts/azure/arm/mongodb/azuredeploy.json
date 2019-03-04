@@ -145,7 +145,7 @@
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- ', variables('logAnalyticsAgent'))]",
-            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' MONGODB_DUMP_URL=', parameters('mongoDbDumpUrl'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
+            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' MONGODB_DUMP_URL=\"', parameters('mongoDbDumpUrl'), '\" CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
         ]
     },
     "resources": [
