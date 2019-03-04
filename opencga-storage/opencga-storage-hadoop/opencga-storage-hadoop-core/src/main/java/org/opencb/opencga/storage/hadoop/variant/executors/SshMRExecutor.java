@@ -51,6 +51,7 @@ public class SshMRExecutor extends MRExecutor {
 
         if (StringUtils.isNotEmpty(remoteOpencgaHome)) {
             args = args.replaceAll(getOpencgaHome(), remoteOpencgaHome);
+            executable = executable.replaceAll(getOpencgaHome(), remoteOpencgaHome);
         }
 
         commandLine += ' ' + executable + ' ' + args;

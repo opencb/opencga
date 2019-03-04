@@ -85,10 +85,11 @@
         },
         "solrDiskType": {
             "type": "string",
-            "defaultValue": "Standard_LRS",
+            "defaultValue": "StandardSSD_LRS",
             "allowedValues": [
                 "Standard_LRS",
-                "Premium_LRS"
+                "Premium_LRS",
+                "StandardSSD_LRS"
             ],
             "metadata": {
                 "description": "Storage Account type"
@@ -210,7 +211,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 5,
-                    "nodeSize": "Standard_F8s_v2"
+                    "nodeSize": "Standard_D4s_v3"
                 },
                 "mongo": {
                     "nodeCount": 1,
@@ -225,7 +226,8 @@
                     "worker": {
                         "nodeCount": 2,
                         "nodeSize": "Standard_D3_v2"
-                    }
+                    },
+                    "yarnSiteMemoryInMb": 7000
                 },
                 "daemon": {
                     "nodeSize": "Standard_DS2_v2"
@@ -252,7 +254,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 16,
-                    "nodeSize": "Standard_F8s_v2"
+                    "nodeSize": "Standard_D4s_v3"
                 },
                 "mongo": {
                     "nodeCount": 3,
@@ -267,7 +269,8 @@
                     "worker": {
                         "nodeCount": 20,
                         "nodeSize": "Standard_D5_v2"
-                    }
+                    },
+                    "yarnSiteMemoryInMb": 14000
                 },
                 "daemon": {
                     "nodeSize": "Standard_F8s_v2"
@@ -294,7 +297,7 @@
                 },
                 "batch": {
                     "maxNodeCount": 1000,
-                    "nodeSize": "Standard_F8s_v2"
+                    "nodeSize": "Standard_D4s_v3"
                 },
                 "mongo": {
                     "nodeCount": 5,
@@ -309,7 +312,8 @@
                     "worker": {
                         "nodeCount": 50,
                         "nodeSize": "Standard_D14_v2"
-                    }
+                    },
+                    "yarnSiteMemoryInMb": 62720
                 },
                 "daemon": {
                     "nodeSize": "Standard_F8s_v2"
@@ -644,6 +648,9 @@
                     },
                     "clusterWorkerNodeSize": {
                         "value": "[variables('selectedSize').hdInsight.worker.nodeSize]"
+                    },
+                    "yarnSiteMemoryInMb": {
+                        "value": "[variables('selectedSize').hdInsight.yarnSiteMemoryInMb]"
                     },
                     "sshPassword": {
                         "value": "[parameters('HDInsightSshPassword')]"

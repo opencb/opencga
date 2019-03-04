@@ -156,7 +156,7 @@ sudo scp -r /etc/hbase/conf/* azure@139.349.12.49:/opt/opencga/conf/hadoop
 ## Testing
 Once everything is successfully setup, you are able to test the configuration. A basic test scenario is decribed below. For full details check out the [OpenCGA documentation](http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes).
 
-> Note: If you're running in the Azure ARM version you don't need to start the daemon or install catalog, they will have already been started. The Daemon will already be running in Docker on the Daemon node. Run `sudo docker ps` and note the ID of the container then use `sudo docker exec --it <IDHERE> /bin/bash` to start an interactive shell for use below and skip the next two steps. 
+> Note: If you're running in the Azure ARM version you don't need to start the daemon or install catalog, they will have already been started. The Daemon will already be running in Docker on the Daemon node. Run `sudo docker ps` and note the ID of the container then use `sudo docker exec -it <IDHERE> /bin/bash` to start an interactive shell for use below and skip the next two steps. 
 
 Install catalog (remember password for later use)
 ```
@@ -205,12 +205,18 @@ Link VCF genome file to your newly created study
 sudo /opt/opencga/bin/opencga.sh files link -i ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz -s 1kG_phase3
 ```
 
-### Integrated pipeline load
+### Integrated pipeline load (Without Solr search index)
 
 > Note: This performs `transform`, `load`, `calculateStats` and `annotate` all in one pipeline which simplifies execution. 
 
 ```
 sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --calculate-stats --annotate -o outDir
+```
+
+### Integrated pipeline load (Including load into Solr search index)
+
+```
+sudo /opt/opencga/bin/opencga.sh variant index --file ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --calculate-stats --annotate --index-search -o outDir
 ```
 
 ### Separate pipeline load (Advanced/Manual)

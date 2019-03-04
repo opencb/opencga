@@ -249,7 +249,10 @@
                         {
                             "diskSizeGB": 2048,
                             "lun": 0,
-                            "createOption": "Empty"
+                            "createOption": "Empty",
+                            "managedDisk": {
+                                "storageAccountType": "StandardSSD_LRS"
+                            }
                         }
                     ],
                     "imageReference": {

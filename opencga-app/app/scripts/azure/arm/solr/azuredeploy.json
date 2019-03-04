@@ -4,10 +4,11 @@
   "parameters": {
     "diskType": {
       "type": "string",
-      "defaultValue": "Standard_LRS",
+      "defaultValue": "StandardSSD_LRS",
       "allowedValues": [
         "Standard_LRS",
-        "Premium_LRS"
+        "Premium_LRS",
+        "StandardSSD_LRS"
       ],
       "metadata": {
         "description": "Storage Account type"
@@ -280,7 +281,7 @@
     ]
     },
     {
-      "apiVersion": "2017-03-30",
+      "apiVersion": "2018-06-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('vmNames')[copyIndex()].vmName]",
       "location": "[parameters('location')]",
@@ -330,7 +331,17 @@
             "managedDisk": {
               "storageAccountType": "[parameters('diskType')]"
             }
-          }
+          },
+          "dataDisks": [
+            {
+                "diskSizeGB": 1023,
+                "lun": 0,
+                "createOption": "Empty",
+                "managedDisk": {
+                    "storageAccountType": "StandardSSD_LRS"
+                }
+            }
+          ]
         },
         "networkProfile": {
           "networkInterfaces": [
