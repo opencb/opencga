@@ -175,7 +175,7 @@ restoreMongoDBDump() {
     ./azcopy copy $MONGODB_DUMP_URL /datadrive/
 
     echo "Unzipping"
-    tar -xvf mongodata.tar /datadrive/
+    tar -xvf mongodata.tar
 
     echo "Restarting"
     systemctl stop mongod
