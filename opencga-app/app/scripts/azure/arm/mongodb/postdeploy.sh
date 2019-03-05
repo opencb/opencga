@@ -173,8 +173,12 @@ restoreMongoDBDump() {
     echo "Restoring MongoDB data dump"
     echo "Downloading dump file"
     ./azcopy copy --recursive $MONGODB_DUMP_URL /datadrive/
-    
-    echo "Restarting"
+
+    echo "Set file ownership to mongo"
+    chown -R mongodb /datadrive/mongodb/**
+    chmod -R 777 /datadrive/mongodb/** #Todo: maybe not needed
+
+    echo "Restarting mongo"
     systemctl stop mongod
 
     echo "Mongo Logs:"
