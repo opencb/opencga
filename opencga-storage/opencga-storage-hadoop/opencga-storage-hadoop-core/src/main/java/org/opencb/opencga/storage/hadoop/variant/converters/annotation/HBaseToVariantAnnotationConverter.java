@@ -212,15 +212,23 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         Integer column = findColumn(resultSet, annotationColumnStr);
         if (column != null) {
             try {
-                    String value = resultSet.getString(column);
-                    if (StringUtils.isNotEmpty(value)) {
+                byte[] value = resultSet.getBytes(column);
+                if (value != null && value.length > 0) {
+                    if (value[0] == '{') {
+                        // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
                         try {
                             variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                         } catch (IOException e) {
-                            throw new UncheckedIOException(e);
+                            value = CompressionUtils.decompress(value);
+                            variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                         }
+                    } else {
+                        // Value is compressed. Decompress and parse
+                        value = CompressionUtils.decompress(value);
+                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                     }
-            } catch (SQLException e) {
+                }
+            } catch (IOException | DataFormatException | SQLException e) {
                 // This should never happen!
                 throw new IllegalStateException(e);
             }
