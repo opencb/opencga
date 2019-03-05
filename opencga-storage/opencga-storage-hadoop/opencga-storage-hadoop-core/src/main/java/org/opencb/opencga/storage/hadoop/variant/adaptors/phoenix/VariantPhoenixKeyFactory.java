@@ -143,11 +143,20 @@ public class VariantPhoenixKeyFactory {
 
     // visible for test
     static String buildSVAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
+        // FIXME: Only symbolic variants shold include the extended SV alternate!
         // All variants with reference or alternate large than SV_THRESHOLD, must have the extended SV version, even if it's empty
-        if (sv == null && (reference.length() >= Variant.SV_THRESHOLD || alternate.length() >= Variant.SV_THRESHOLD)) {
+        if (sv == null
+                && (reference.length() >= Variant.SV_THRESHOLD && alternate.isEmpty()
+                || alternate.length() >= Variant.SV_THRESHOLD && reference.isEmpty())) {
+
             sv = new StructuralVariation();
         }
         if (sv != null) {
+            // TODO: This code should be uncommented
+//            if (!Allele.wouldBeSymbolicAllele(alternate.getBytes()) && sv.equals(new StructuralVariation())) {
+//                return alternate;
+//            }
+
             if (StructuralVariantType.TANDEM_DUPLICATION.equals(sv.getType())) {
                 alternate = VariantBuilder.DUP_TANDEM_ALT;
             }
