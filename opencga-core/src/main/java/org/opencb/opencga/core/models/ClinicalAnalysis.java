@@ -43,6 +43,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private Individual proband;
     private Family family;
+    private Map<String, FamiliarRelationship> roleToProband;
     private List<Interpretation> interpretations;
 
     private ClinicalAnalyst analyst;
@@ -72,6 +73,31 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         ADD,
         SET,
         REMOVE
+    }
+
+    public enum FamiliarRelationship {
+        TWINS_MONOZYGOUS("TwinsMonozygous"), TWINS_DIZYGOUS("TwinsDizygous"), TWINS_UNKNOWN("TwinsUnknown"), FULL_SIBLING("FullSibling"),
+        FULL_SIBLING_F("FullSiblingF"), FULL_SIBLING_M("FullSiblingM"), MOTHER("Mother"), FATHER("Father"), SON("Son"),
+        DAUGHTER("Daughter"), CHILD_OF_UNKNOWN_SEX("ChildOfUnknownSex"), MATERNAL_AUNT("MaternalAunt"), MATERNAL_UNCLE("MaternalUncle"),
+        MATERNAL_UNCLE_OR_AUNT("MaternalUncleOrAunt"), PATERNAL_AUNT("PaternalAunt"), PATERNAL_UNCLE("PaternalUncle"),
+        PATERNAL_UNCLE_OR_AUNT("PaternalUncleOrAunt"), MATERNAL_GRANDMOTHER("MaternalGrandmother"),
+        PATERNAL_GRANDMOTHER("PaternalGrandmother"), MATERNAL_GRANDFATHER("MaternalGrandfather"),
+        PATERNAL_GRANDFATHER("PaternalGrandfather"), DOUBLE_FIRST_COUSIN("DoubleFirstCousin"),
+        MATERNAL_COUSIN_SISTER("MaternalCousinSister"), PATERNAL_COUSIN_SISTER("PaternalCousinSister"),
+        MATERNAL_COUSIN_BROTHER("MaternalCousinBrother"), PATERNAL_COUSIN_BROTHER("PaternalCousinBrother"), COUSIN("Cousin"),
+        SPOUSE("Spouse"), HUSBAND("Husband"), OTHER("Other"), RELATION_IS_NOT_CLEAR("RelationIsNotClear"), UNRELATED("Unrelated"),
+        PROBAND("Proband"), UNKNOWN("Unknown");
+
+        private final String value;
+
+        FamiliarRelationship(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
     }
 
     public static class ClinicalAnalyst {
@@ -179,9 +205,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
-                            Family family, List<Interpretation> interpretations, Priority priority, ClinicalAnalyst analyst, List<String> flags,
-                            String creationDate, String dueDate, List<Comment> comments, ClinicalStatus status, int release,
-                            Map<String, Object> attributes) {
+                            Family family, Map<String, FamiliarRelationship> roleToProband, List<Interpretation> interpretations,
+                            Priority priority, ClinicalAnalyst analyst, List<String> flags, String creationDate, String dueDate,
+                            List<Comment> comments, ClinicalStatus status, int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -189,6 +215,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.files = files;
         this.proband = proband;
         this.family = family;
+        this.roleToProband = roleToProband;
         this.interpretations = interpretations;
         this.priority = priority;
         this.flags = flags;
@@ -212,6 +239,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
+        sb.append(", roleToProband=").append(roleToProband);
         sb.append(", interpretations=").append(interpretations);
         sb.append(", analyst=").append(analyst);
         sb.append(", priority=").append(priority);
@@ -317,6 +345,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setFamily(Family family) {
         this.family = family;
+        return this;
+    }
+
+    public Map<String, FamiliarRelationship> getRoleToProband() {
+        return roleToProband;
+    }
+
+    public ClinicalAnalysis setRoleToProband(Map<String, FamiliarRelationship> roleToProband) {
+        this.roleToProband = roleToProband;
         return this;
     }
 

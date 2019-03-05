@@ -347,6 +347,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
         public ProbandParam proband;
         public FamilyParam family;
+        public Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
         public ClinicalAnalystParam analyst;
         public ClinicalAnalysis.ClinicalStatus status;
         public List<ClinicalInterpretationParameters> interpretations;
@@ -405,9 +406,9 @@ public class InterpretationWSService extends AnalysisWSService {
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             String assignee = analyst != null ? analyst.assignee : "";
-            return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f,
-                    interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null, dueDate, comments,
-                    status, 1, attributes).setName(name);
+            return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f, roleToProband,
+                    interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null, dueDate,
+                    comments, status, 1, attributes).setName(name);
         }
     }
     
