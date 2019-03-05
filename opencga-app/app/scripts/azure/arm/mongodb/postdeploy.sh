@@ -183,7 +183,8 @@ restoreMongoDBDump() {
     chmod -R 777 /datadrive/mongodb/** #Todo: maybe not needed
 
     echo "Restarting mongo"
-    systemctl stop mongod
+    systemctl start mongod
+    sleep 120 # To ensure time for mongo to start up again
 
     echo "Mongo Logs:"
     tail /var/log/mongodb/mongod.log
