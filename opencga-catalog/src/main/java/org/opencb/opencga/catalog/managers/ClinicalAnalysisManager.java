@@ -195,6 +195,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
         clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), ClinicalAnalysis.Priority.MEDIUM));
         clinicalAnalysis.setFlags(ParamUtils.defaultObject(clinicalAnalysis.getFlags(), ArrayList::new));
+        clinicalAnalysis.setConsent(ParamUtils.defaultObject(clinicalAnalysis.getConsent(), new ClinicalConsent()));
 
         validateRoleToProband(clinicalAnalysis);
 
@@ -527,6 +528,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                 + ". User not found or with no access to the study.");
                     }
                     assigned.put("assignedBy", resource.getUser());
+                    break;
+                case CONSENT:
+                    ClinicalConsent consent = parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key(), ClinicalConsent.class);
+                    if (consent == null) {
+                        throw new CatalogException("Unknown 'consent' format");
+                    }
                     break;
                 case FILES:
                 case STATUS:
