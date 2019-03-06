@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -103,12 +104,31 @@ public class InterpretationAnalysisUtils {
         return roleInCancer;
     }
 
-    public static List<Variant> secondaryFindings(Query query, Set<String> actionableVariants,
-                                                  VariantStorageManager variantStorageManager, String token)
-            throws CatalogException, IOException, StorageEngineException {
-        List<Variant> variants = new ArrayList<>();
+    public static List<Variant> secondaryFindings(String study, List<String> sampleNames, Set<String> actionableVariants,
+                                                  List<String> excludeIds, VariantStorageManager variantStorageManager, String token)
+            throws CatalogException, IOException, StorageEngineException, InterpretationAnalysisException {
+
+        // Sanity check
+        if (CollectionUtils.isEmpty(sampleNames)) {
+            throw new InterpretationAnalysisException("Missing study when retrieving secondary findings");
+        }
+        if (CollectionUtils.isEmpty(sampleNames)) {
+            throw new InterpretationAnalysisException("Missing sample names when retrieving secondary findings");
+        }
 
         final int batchSize = 1000;
+        List<Variant> variants = new ArrayList<>();
+
+        Set<String> excludeSet = new HashSet<>();
+        if (CollectionUtils.isNotEmpty(excludeIds)) {
+            excludeSet.addAll(excludeIds);
+        }
+
+        // Prepare query
+        Query query = new Query();
+        query.put(VariantQueryParam.STUDY.key(), study);
+        query.put(VariantQueryParam.SAMPLE.key(), org.apache.commons.lang3.StringUtils.join(sampleNames, ","));
+
         int count = 0;
         StringBuilder ids = new StringBuilder();
         Iterator<String> iterator = actionableVariants.iterator();
@@ -117,9 +137,7 @@ public class InterpretationAnalysisUtils {
             if (++count >= batchSize) {
                 query.put(VariantQueryParam.ID.key(), ids);
                 VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
-                if (CollectionUtils.isNotEmpty(result.getResult())) {
-                    variants.addAll(result.getResult());
-                }
+                addVariant(result, excludeSet, variants);
 
                 // Reset
                 count = 0;
@@ -130,12 +148,20 @@ public class InterpretationAnalysisUtils {
         if (count > 0) {
             query.put(VariantQueryParam.ID.key(), ids);
             VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
-            if (CollectionUtils.isNotEmpty(result.getResult())) {
-                variants.addAll(result.getResult());
-            }
+            addVariant(result, excludeSet, variants);
         }
 
         return variants;
+    }
+
+    private static void addVariant(VariantQueryResult<Variant> result, Set<String> excludeIds, List<Variant> variants) {
+        if (CollectionUtils.isNotEmpty(result.getResult())) {
+            for (Variant variant : result.getResult()) {
+                if (!excludeIds.contains(variant.getId())) {
+                    variants.add(variant);
+                }
+            }
+        }
     }
 
     private static File getFile(Path path) {

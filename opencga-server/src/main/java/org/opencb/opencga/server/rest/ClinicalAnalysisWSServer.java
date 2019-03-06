@@ -309,14 +309,14 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //        public List<Software> dependencies;
 //        public Map<String, Object> filters;
 //        public String creationDate;
-//        public List<ReportedVariant> reportedVariants;
+//        public List<ReportedVariant> primaryFindings;
 //        public List<ReportedLowCoverage> reportedLowCoverages;
 //        public List<Comment> comments;
 //        public Map<String, Object> attributes;
 //
 //        public Interpretation toClinicalInterpretation() {
 //            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
-//                    reportedVariants, reportedLowCoverages, comments, attributes);
+//                    primaryFindings, reportedLowCoverages, comments, attributes);
 //        }
 //    }
 //

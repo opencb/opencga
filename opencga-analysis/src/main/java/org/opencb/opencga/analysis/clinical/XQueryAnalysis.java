@@ -119,17 +119,18 @@ public class XQueryAnalysis extends FamilyAnalysis {
         long dbTime = dbWatcher.getTime();
 
         // Create reported variants and events
-        List<ReportedVariant> reportedVariants = null;
-        int numResults = 0;
+        List<ReportedVariant> primaryFindings = null;
+        List<ReportedVariant> secondaryFindings = null;
+
         if (CollectionUtils.isNotEmpty(variantContainer.getComplexVariantList())) {
             TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
                     clinicalAnalysis.getDisorder(), null, null);
-            reportedVariants = creator.create(variantContainer.getComplexVariantList());
+            primaryFindings = creator.create(variantContainer.getComplexVariantList());
         }
         if (CollectionUtils.isNotEmpty(variantContainer.getReactionVariantList())) {
             TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
                     clinicalAnalysis.getDisorder(), null, null);
-            reportedVariants.addAll(creator.create(variantContainer.getReactionVariantList()));
+            primaryFindings.addAll(creator.create(variantContainer.getReactionVariantList()));
         }
 
         // Create user information
@@ -145,12 +146,17 @@ public class XQueryAnalysis extends FamilyAnalysis {
                 .setCreationDate(TimeUtils.getTime())
                 .setPanels(biodataDiseasePanels)
                 .setFilters(getFilters(familyFilter, geneFilter))
-                .setSoftware(new Software().setName(XQUERY_ANALYSIS_NAME));
+                .setSoftware(new Software().setName(XQUERY_ANALYSIS_NAME))
+                .setPrimaryFindings(primaryFindings)
+                .setSecondaryFindings(secondaryFindings);
 
-        // Set reported variants
-        if (ListUtils.isNotEmpty(reportedVariants)) {
-            interpretation.setReportedVariants(reportedVariants);
-            numResults = reportedVariants.size();
+        // Compute number of results (primary and secondary findings)
+        int numResults = 0;
+        if (ListUtils.isNotEmpty(primaryFindings)) {
+            numResults += primaryFindings.size();
+        }
+        if (ListUtils.isNotEmpty(secondaryFindings)) {
+            numResults += secondaryFindings.size();
         }
 
         // Set low coverage

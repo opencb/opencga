@@ -22,10 +22,11 @@ public class Interpretation extends PrivateStudyUid {
 
     public Interpretation(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels, Software software,
                           Analyst analyst, List<Software> dependencies, Map<String, Object> filters, String creationDate,
-                          List<ReportedVariant> reportedVariants, List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments,
-                          Map<String, Object> attributes) {
+                          List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
+                          List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
         this(null, new org.opencb.biodata.models.clinical.interpretation.Interpretation(id, description, clinicalAnalysisId,
-                panels, Status.READY, software, analyst, dependencies, filters, creationDate, reportedVariants, reportedLowCoverages,
+                panels, Status.READY, software, analyst, dependencies, filters, creationDate, primaryFindinds, secondaryFindings,
+                reportedLowCoverages,
                 comments, attributes, 1));
     }
 
@@ -47,7 +48,8 @@ public class Interpretation extends PrivateStudyUid {
         sb.append(", dependencies=").append(interpretation.getDependencies());
         sb.append(", filters=").append(interpretation.getFilters());
         sb.append(", creationDate='").append(interpretation.getCreationDate()).append('\'');
-        sb.append(", reportedVariants=").append(interpretation.getReportedVariants());
+        sb.append(", primaryFindings=").append(interpretation.getPrimaryFindings());
+        sb.append(", secondaryFindings=").append(interpretation.getSecondaryFindings());
         sb.append(", reportedLowCoverages=").append(interpretation.getReportedLowCoverages());
         sb.append(", comments=").append(interpretation.getComments());
         sb.append(", attributes=").append(interpretation.getAttributes());

@@ -7,11 +7,15 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleIn
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -23,9 +27,12 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
 
@@ -313,6 +320,26 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
+    }
+
+    protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis, List<ReportedVariant> primaryFindings,
+                                                         List<String> sampleNames, ReportedVariantCreator creator)
+            throws StorageEngineException, InterpretationAnalysisException, CatalogException, IOException {
+        List<ReportedVariant> secondaryFindings = null;
+        if (clinicalAnalysis.getConsent() != null
+                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
+            List<String> excludeIds = null;
+            if (CollectionUtils.isNotEmpty(primaryFindings)) {
+                excludeIds = primaryFindings.stream().map(ReportedVariant::getId).collect(Collectors.toList());
+            }
+
+            List<Variant> findings = InterpretationAnalysisUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
+                    excludeIds, variantStorageManager, token);
+            if (CollectionUtils.isNotEmpty(findings)) {
+                secondaryFindings = creator.createSecondaryFindings(findings);
+            }
+        }
+        return secondaryFindings;
     }
 
 }

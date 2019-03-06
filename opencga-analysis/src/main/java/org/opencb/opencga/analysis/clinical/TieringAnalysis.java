@@ -47,10 +47,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -89,7 +86,7 @@ public class TieringAnalysis extends FamilyAnalysis {
     }
 
     @Override
-    public InterpretationResult execute() throws AnalysisException, InterruptedException {
+    public InterpretationResult execute() throws AnalysisException, InterruptedException, CatalogException, InterpretationAnalysisException, StorageEngineException, IOException {
         StopWatch watcher = StopWatch.createStarted();
 
         // Get and check clinical analysis and proband
@@ -130,7 +127,7 @@ public class TieringAnalysis extends FamilyAnalysis {
             }
         }
 
-        List<ReportedVariant> reportedVariants;
+
         List<Variant> variantList = new ArrayList<>();
         Map<String, List<ClinicalProperty.ModeOfInheritance>> variantMoIMap = new HashMap<>();
 
@@ -147,18 +144,23 @@ public class TieringAnalysis extends FamilyAnalysis {
             }
         }
 
-        // Create instance of reported variant creator to obtain reported variants
+        // Primary findings,
+        List<ReportedVariant> primaryFindings;
         List<DiseasePanel> biodataDiseasePanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasePanelList, roleInCancer, actionableVariants,
                 clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
         try {
-            reportedVariants = creator.create(variantList, variantMoIMap);
+            primaryFindings = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
 
+        // Secondary findings, if clinical consent is TRUE
+        List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings,
+                new ArrayList<>(sampleMap.keySet()), creator);
+
         logger.debug("Variant size: {}", variantList.size());
-        logger.debug("Reported variant size: {}", reportedVariants.size());
+        logger.debug("Reported variant size: {}", primaryFindings.size());
 
         // Reported low coverage
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
@@ -175,11 +177,12 @@ public class TieringAnalysis extends FamilyAnalysis {
                 .setPanels(biodataDiseasePanelList)
                 .setFilters(null) //TODO
                 .setSoftware(new Software().setName("Tiering"))
-                .setReportedVariants(reportedVariants)
+                .setPrimaryFindings(primaryFindings)
+                .setSecondaryFindings(secondaryFindings)
                 .setReportedLowCoverages(reportedLowCoverages);
 
         // Return interpretation result
-        int numResults = CollectionUtils.isEmpty(reportedVariants) ? 0 : reportedVariants.size();
+        int numResults = CollectionUtils.isEmpty(primaryFindings) ? 0 : primaryFindings.size();
         return new InterpretationResult(
                 interpretation,
                 Math.toIntExact(watcher.getTime()),

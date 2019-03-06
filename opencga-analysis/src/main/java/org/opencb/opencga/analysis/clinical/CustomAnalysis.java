@@ -58,6 +58,7 @@ public class CustomAnalysis extends FamilyAnalysis {
     public InterpretationResult execute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
+        ClinicalAnalysis clinicalAnalysis = null;
         String probandSampleId = null;
         Disorder disorder = null;
         ClinicalProperty.ModeOfInheritance moi = null;
@@ -81,7 +82,7 @@ public class CustomAnalysis extends FamilyAnalysis {
                 throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
             }
 
-            ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
+            clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
             // Proband ID
             if (clinicalAnalysis.getProband() != null) {
@@ -171,8 +172,10 @@ public class CustomAnalysis extends FamilyAnalysis {
             variants.addAll(variantQueryResult.getResult());
         }
 
-        // Create reported variants and events
-        List<ReportedVariant> reportedVariants = null;
+        // Primary findings
+        List<ReportedVariant> primaryFindings = null;
+        DefaultReportedVariantCreator creator = null;
+
         List<DiseasePanel> biodataDiseasePanels = null;
         if(CollectionUtils.isNotEmpty(variants)) {
             if (CollectionUtils.isNotEmpty(diseasePanels)) {
@@ -204,9 +207,15 @@ public class CustomAnalysis extends FamilyAnalysis {
                 }
             }
 
-            DefaultReportedVariantCreator creator = new DefaultReportedVariantCreator(roleInCancer, actionableVariants, disorder, moi,
+            creator = new DefaultReportedVariantCreator(roleInCancer, actionableVariants, disorder, moi,
                     ClinicalProperty.Penetrance.COMPLETE, biodataDiseasePanels, biotypes, soNames, !skipUntieredVariants);
-            reportedVariants = creator.create(variants);
+            primaryFindings = creator.create(variants);
+        }
+
+        // Secondary findings, if clinical consent is TRUE
+        List<ReportedVariant> secondaryFindings = null;
+        if (creator != null && clinicalAnalysis != null) {
+            secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings, query.getAsStringList("sample"), creator);
         }
 
         // Low coverage support
@@ -257,7 +266,8 @@ public class CustomAnalysis extends FamilyAnalysis {
         // Create Interpretation
         Interpretation interpretation = new Interpretation()
                 .setId(CUSTOM_ANALYSIS_NAME + SEPARATOR + TimeUtils.getTimeMillis())
-                .setReportedVariants(reportedVariants)
+                .setPrimaryFindings(primaryFindings)
+                .setSecondaryFindings(secondaryFindings)
                 .setReportedLowCoverages(reportedLowCoverages)
                 .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
                 .setClinicalAnalysisId(clinicalAnalysisId)

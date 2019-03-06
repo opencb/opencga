@@ -484,7 +484,7 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/reportedVariants/update")
+    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/primaryFindings/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update reported variants of an interpretation", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
@@ -941,10 +941,6 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of samples") @QueryParam("sample") String sample) {
         try {
-            // Get all query options
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            Query query = getVariantQuery(queryOptions);
-
             // Get assembly from study for actionable variants
             String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
             Map<String, List<String>> actionableVariants = actionableVariantsByAssembly.get(assembly);
@@ -955,8 +951,13 @@ public class InterpretationWSService extends AnalysisWSService {
             } else {
                 VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager,
                         StorageEngineFactory.get(storageConfiguration));
-                List<Variant> variants = InterpretationAnalysisUtils.secondaryFindings(query, actionableVariants.keySet(),
-                        variantStorageManager, sessionId);
+
+                List<String> sampleNames = new ArrayList<>();
+                if (StringUtils.isNotEmpty(sample)) {
+                    sampleNames.addAll(Arrays.asList(sample.split("/")));
+                }
+                List<Variant> variants = InterpretationAnalysisUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
+                        Collections.emptyList(), variantStorageManager, sessionId);
 
                 TeamReportedVariantCreator creator = new TeamReportedVariantCreator(null, roleInCancer, actionableVariants,
                         null, null, null);
@@ -1003,15 +1004,16 @@ public class InterpretationWSService extends AnalysisWSService {
         public List<Software> dependencies;
         public Map<String, Object> filters;
         public String creationDate;
-        public List<ReportedVariant> reportedVariants;
+        public List<ReportedVariant> primaryFindings;
+        public List<ReportedVariant> secondaryFindings;
         public List<ReportedLowCoverage> reportedLowCoverages;
         public List<Comment> comments;
         public Map<String, Object> attributes;
 
         public org.opencb.biodata.models.clinical.interpretation.Interpretation  toClinicalInterpretation() {
             return new org.opencb.biodata.models.clinical.interpretation.Interpretation (id, description, clinicalAnalysisId, panels, null,
-                    software, analyst, dependencies, filters, creationDate, reportedVariants, reportedLowCoverages, comments, attributes,
-                    -1);
+                    software, analyst, dependencies, filters, creationDate, primaryFindings, secondaryFindings, reportedLowCoverages,
+                    comments, attributes, -1);
         }
 
         public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {

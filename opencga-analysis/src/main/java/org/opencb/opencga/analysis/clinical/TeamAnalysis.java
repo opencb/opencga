@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.ClinicalConsent;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -142,32 +143,16 @@ public class TeamAnalysis extends FamilyAnalysis {
             }
         }
 
-        // Step 3: actionable variants
-        query = new Query();
-        query.put(VariantQueryParam.STUDY.key(), studyStr);
-        query.put(VariantQueryParam.SAMPLE.key(), StringUtils.join(sampleList, ","));
-
-        List<Variant> findings = InterpretationAnalysisUtils.secondaryFindings(query, actionableVariants.keySet(), variantStorageManager, token);
-        if (CollectionUtils.isNotEmpty(variants) && CollectionUtils.isNotEmpty(findings)) {
-            // We have to remove overlapped variants (from findings)
-            Set<String> variantIds = new HashSet<>(new ArrayList(variants.stream().map(Variant::getId).collect(Collectors.toList())));
-            for (Variant finding : findings) {
-                if (!variantIds.contains(finding.getId())) {
-                    // Actionable variant to be added
-                    variants.add(finding);
-                }
-            }
-        } else if (CollectionUtils.isNotEmpty(findings)) {
-            variants = findings;
-        }
-
-        // Create reported variants
-        List<ReportedVariant> reportedVariants = null;
+        // Create primary findings
+        List<ReportedVariant> primaryFindings = null;
+        TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+                clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
         if (CollectionUtils.isNotEmpty(variants)) {
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
-                    clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
-            reportedVariants = creator.create(variants);
+            primaryFindings = creator.create(variants);
         }
+
+        // Step 3: secondary findings, if clinical consent is TRUE
+        List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings, sampleList, creator);
 
         // Reported low coverages management
         List<ReportedLowCoverage> reportedLowCoverages = null;
@@ -185,11 +170,12 @@ public class TeamAnalysis extends FamilyAnalysis {
                 .setPanels(biodataDiseasePanels)
                 .setFilters(null) //TODO
                 .setSoftware(new Software().setName("TEAM"))
-                .setReportedVariants(reportedVariants)
+                .setPrimaryFindings(primaryFindings)
+                .setSecondaryFindings(secondaryFindings)
                 .setReportedLowCoverages(reportedLowCoverages);
 
         // Return interpretation result
-        int numResults = CollectionUtils.isEmpty(reportedVariants) ? 0 : reportedVariants.size();
+        int numResults = CollectionUtils.isEmpty(primaryFindings) ? 0 : primaryFindings.size();
         return new InterpretationResult(
                 interpretation,
                 Math.toIntExact(watcher.getTime()),
