@@ -105,9 +105,9 @@ public class TieringAnalysis extends FamilyAnalysis {
 
         Map<ClinicalProperty.ModeOfInheritance, VariantQueryResult<Variant>> resultMap = new HashMap<>();
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(5);
+        ExecutorService threadPool = Executors.newFixedThreadPool(6);
 
-        List<Future<Boolean>> futureList = new ArrayList<>(5);
+        List<Future<Boolean>> futureList = new ArrayList<>(6);
         futureList.add(threadPool.submit(getNamedThread(MONOALLELIC.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MONOALLELIC, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(XLINKED_MONOALLELIC.name(),
@@ -118,6 +118,8 @@ public class TieringAnalysis extends FamilyAnalysis {
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, BIALLELIC, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(XLINKED_BIALLELIC.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_BIALLELIC, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(MITOCHRONDRIAL.name(),
+                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHRONDRIAL, resultMap))));
         threadPool.shutdown();
 
         threadPool.awaitTermination(1, TimeUnit.MINUTES);
@@ -230,6 +232,11 @@ public class TieringAnalysis extends FamilyAnalysis {
                         .append(VariantQueryParam.REGION.key(), "X");
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
                 break;
+            case MITOCHRONDRIAL:
+                query = new Query(dominantQuery)
+                        .append(VariantQueryParam.REGION.key(), "MT");
+                genotypes = ModeOfInheritance.mtLinked(pedigree, disorder);
+                break;
             default:
                 logger.error("Mode of inheritance not yet supported: {}", moi);
                 return false;
@@ -266,6 +273,5 @@ public class TieringAnalysis extends FamilyAnalysis {
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
-
     }
 }
