@@ -180,7 +180,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
 
-        if (ListUtils.isNotEmpty(resource.getResource().getInterpretation().getReportedVariants()) && (parameters.size() > 1
+        if (ListUtils.isNotEmpty(resource.getResource().getInterpretation().getPrimaryFindings()) && (parameters.size() > 1
                 || !parameters.containsKey(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key()))) {
             throw new CatalogException("Interpretation already has reported variants. Only array of reported variants can be updated.");
         }
