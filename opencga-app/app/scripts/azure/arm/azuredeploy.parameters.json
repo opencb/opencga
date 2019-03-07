@@ -3,10 +3,10 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "_artifactsLocation": {
-            "value": "https://raw.githubusercontent.com/opencb/opencga/azure/opencga-app/app/scripts/azure/arm/"
+            "value": ""
         },
         "_artifactsLocationSasToken": {
-            "value": "?125"
+            "value": ""
         },
         "rgPrefix": {
             "value": "opencga"
