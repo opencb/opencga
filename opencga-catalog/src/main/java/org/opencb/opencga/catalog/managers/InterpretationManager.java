@@ -23,15 +23,13 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Interpretation;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.NotSupportedException;
 import java.util.*;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
@@ -85,16 +83,46 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
     }
 
+    public QueryResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,
+                                  ObjectMap analysisOptions, String token) throws CatalogException {
+        MyResource<ClinicalAnalysis> resource = catalogManager.getClinicalAnalysisManager().getUid(clinicalAnalysisId, studyStr, token);
+
+        authorizationManager.checkClinicalAnalysisPermission(resource.getStudy().getUid(), resource.getResource().getUid(),
+                resource.getUser(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+
+        // Queue job
+        Map<String, String> params = new HashMap<>();
+        params.put("includeLowCoverage", analysisOptions.getString("includeLowCoverage"));
+        params.put("maxLowCoverage", analysisOptions.getString("maxLowCoverage"));
+        params.put("includeNoTier", analysisOptions.getString("includeNoTier"));
+        params.put("clinicalAnalysisId", clinicalAnalysisId);
+        params.put("panelIds", StringUtils.join(panelIds, ","));
+
+        ObjectMap attributes = new ObjectMap();
+        attributes.putIfNotNull(Job.OPENCGA_STUDY, resource.getStudy().getFqn());
+
+        return catalogManager.getJobManager().queue(studyStr, "Interpretation analysis", "opencga-analysis", "",
+                "interpretation " + interpretationTool, Job.Type.ANALYSIS, params, Collections.emptyList(), Collections.emptyList(), null,
+                attributes, token);
+    }
+
     @Override
     public QueryResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)
             throws CatalogException {
-        if (StringUtils.isEmpty(entry.getInterpretation().getClinicalAnalysisId())) {
-            throw new IllegalArgumentException("Please call to create passing a clinical analysis id");
-        }
-        return create(studyStr, entry.getInterpretation().getClinicalAnalysisId(), entry, options, sessionId);
+        throw new NotSupportedException("Use other create method with the biodata interpretation object");
     }
 
-    public QueryResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
+    public QueryResult<Interpretation> create(String studyStr, org.opencb.biodata.models.clinical.interpretation.Interpretation entry,
+                                              QueryOptions options, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(entry.getClinicalAnalysisId())) {
+            throw new IllegalArgumentException("Please call to create passing a clinical analysis id");
+        }
+        return create(studyStr, entry.getClinicalAnalysisId(), entry, options, sessionId);
+    }
+
+    public QueryResult<Interpretation> create(String studyStr, String clinicalAnalysisStr,
+                                              org.opencb.biodata.models.clinical.interpretation.Interpretation biodataInterpretation,
                                               QueryOptions options, String sessionId) throws CatalogException {
         // We check if the user can create interpretations in the clinical analysis
         MyResource<ClinicalAnalysis> resource = catalogManager.getClinicalAnalysisManager()
@@ -103,18 +131,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 resource.getUser(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(interpretation, "clinicalAnalysis");
-        ParamUtils.checkAlias(interpretation.getInterpretation().getId(), "id");
+        ParamUtils.checkObj(biodataInterpretation, "clinicalAnalysis");
+        ParamUtils.checkAlias(biodataInterpretation.getId(), "id");
 
-        interpretation.getInterpretation().setClinicalAnalysisId(resource.getResource().getId());
+        biodataInterpretation.setClinicalAnalysisId(resource.getResource().getId());
 
-        interpretation.getInterpretation().setCreationDate(TimeUtils.getTime());
-        interpretation.getInterpretation().setDescription(
-                ParamUtils.defaultString(interpretation.getInterpretation().getDescription(), ""));
-        interpretation.getInterpretation().setStatus(Status.READY);
-        interpretation.getInterpretation().setAttributes(
-                ParamUtils.defaultObject(interpretation.getInterpretation().getAttributes(), Collections.emptyMap()));
-        interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
+        biodataInterpretation.setCreationDate(TimeUtils.getTime());
+        biodataInterpretation.setDescription(ParamUtils.defaultString(biodataInterpretation.getDescription(), ""));
+        biodataInterpretation.setStatus(Status.READY);
+        biodataInterpretation.setAttributes(ParamUtils.defaultObject(biodataInterpretation.getAttributes(), Collections.emptyMap()));
+
+        Interpretation interpretation = new Interpretation(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION),
+                biodataInterpretation);
 
         QueryResult<Interpretation> queryResult = interpretationDBAdaptor.insert(resource.getStudy().getUid(), interpretation, options);
 
@@ -152,7 +180,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
 
-        if (ListUtils.isNotEmpty(resource.getResource().getInterpretation().getReportedVariants()) && (parameters.size() > 1
+        if (ListUtils.isNotEmpty(resource.getResource().getInterpretation().getPrimaryFindings()) && (parameters.size() > 1
                 || !parameters.containsKey(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key()))) {
             throw new CatalogException("Interpretation already has reported variants. Only array of reported variants can be updated.");
         }

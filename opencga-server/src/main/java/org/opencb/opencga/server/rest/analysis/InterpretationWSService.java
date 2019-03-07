@@ -2,21 +2,19 @@ package org.opencb.opencga.server.rest.analysis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.clinical.CustomAnalysis;
-import org.opencb.opencga.analysis.clinical.InterpretationResult;
-import org.opencb.opencga.analysis.clinical.TeamAnalysis;
-import org.opencb.opencga.analysis.clinical.TieringAnalysis;
+import org.opencb.opencga.analysis.clinical.*;
+import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -25,19 +23,22 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
@@ -54,6 +55,14 @@ public class InterpretationWSService extends AnalysisWSService {
     private final InterpretationManager catalogInterpretationManager;
 //    private final ClinicalInterpretationManager clinicalInterpretationManager;
 
+    protected static AtomicBoolean externalFilesLoaded;
+    private static Map<String, Map<String, List<String>>> actionableVariantsByAssembly = null;
+    private static Map<String, ClinicalProperty.RoleInCancer> roleInCancer = null;
+
+    static {
+        externalFilesLoaded = new AtomicBoolean(false);
+    }
+
     public InterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                    @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
@@ -61,6 +70,11 @@ public class InterpretationWSService extends AnalysisWSService {
 //        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
+
+        // This is only executed the first time to load external files
+        if (externalFilesLoaded.compareAndSet(false, true)) {
+            loadExternalFiles();
+        }
     }
 
     public InterpretationWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
@@ -70,6 +84,11 @@ public class InterpretationWSService extends AnalysisWSService {
 //        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
+
+        // This is only executed the first time to load external files
+        if (externalFilesLoaded.compareAndSet(false, true)) {
+            loadExternalFiles();
+        }
     }
 
     @POST
@@ -135,8 +154,8 @@ public class InterpretationWSService extends AnalysisWSService {
             }
 
             if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
-                Interpretation interpretation = params.toClinicalInterpretation();
-                interpretation.getInterpretation().setClinicalAnalysisId(clinicalAnalysisStr);
+                org.opencb.biodata.models.clinical.interpretation.Interpretation  interpretation = params.toClinicalInterpretation();
+                interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
                 return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, sessionId));
             } else {
                 // TODO: Implement delete interpretation
@@ -328,9 +347,12 @@ public class InterpretationWSService extends AnalysisWSService {
 
         public ProbandParam proband;
         public FamilyParam family;
+        public Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
         public ClinicalAnalystParam analyst;
         public ClinicalAnalysis.ClinicalStatus status;
         public List<ClinicalInterpretationParameters> interpretations;
+
+        public ClinicalConsent consent;
 
         public String dueDate;
         public List<Comment> comments;
@@ -380,13 +402,15 @@ public class InterpretationWSService extends AnalysisWSService {
             List<Interpretation> interpretationList =
                     interpretations != null
                             ? interpretations.stream()
-                            .map(ClinicalInterpretationParameters::toClinicalInterpretation).collect(Collectors.toList())
+                            .map(ClinicalInterpretationParameters::toClinicalInterpretation)
+                            .map(i -> new Interpretation(null, i))
+                            .collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             String assignee = analyst != null ? analyst.assignee : "";
-            return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f,
-                    interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null, dueDate, comments,
-                    status, 1, attributes).setName(name);
+            return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f, roleToProband, consent,
+                    interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null,
+                    dueDate, comments, status, 1, attributes).setName(name);
         }
     }
     
@@ -460,7 +484,7 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/reportedVariants/update")
+    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/primaryFindings/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update reported variants of an interpretation", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
@@ -716,14 +740,14 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "TEAM interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
-            @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = FamilyAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = FamilyAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyAnalysis.LOW_COVERAGE_DEFAULT),
     })
-    public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                                    String studyStr,
-                            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+    public Response team(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
+            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -737,10 +761,20 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            // Execute TEAM analysis
-            TeamAnalysis teamAnalysis = new TeamAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, teamAnalysisOptions);
-            InterpretationResult interpretationResult = teamAnalysis.execute();
-            return createAnalysisOkResponse(interpretationResult);
+            // Get assembly from study for actionable variants
+            String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
+
+            Object result;
+            if (save) {
+                // Queue job
+                result = catalogInterpretationManager.queue(studyStr, "team", clinicalAnalysisId, panelList, teamAnalysisOptions, sessionId);
+            } else {
+                // Execute TEAM analysis
+                TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
+                        actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, sessionId);
+                result = teamAnalysis.execute();
+            }
+            return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -748,17 +782,17 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/tools/tiering")
-    @ApiOperation(value = "GEL Tiering interpretation analysis (PENDING)", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "GEL Tiering interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
-            @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = FamilyAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = FamilyAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyAnalysis.LOW_COVERAGE_DEFAULT),
     })
-    public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                                                    String studyStr,
-                            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-                            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds) {
+    public Response tiering(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
+            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -772,10 +806,21 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            // Execute tiering analysis
-            TieringAnalysis tieringAnalysis = new TieringAnalysis(opencgaHome, studyStr, sessionId, clinicalAnalysisId, panelList, tieringAnalysisOptions);
-            InterpretationResult interpretationResult = tieringAnalysis.execute();
-            return createAnalysisOkResponse(interpretationResult);
+            // Get assembly from study for actionable variants
+            String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
+
+            Object result;
+            if (save) {
+                // Queue job
+                result = catalogInterpretationManager.queue(studyStr, "tiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
+            } else {
+                // Execute tiering analysis
+                TieringAnalysis tieringAnalysis = new TieringAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
+                        actionableVariantsByAssembly.get(assembly), tieringAnalysisOptions, opencgaHome, sessionId);
+                result = tieringAnalysis.execute();
+            }
+
+            return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -789,13 +834,15 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
             // Interpretation filters
-            @ApiImplicitParam(name = "includeLowCoverage", value = "Include low coverage regions", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = "maxLowCoverage", value = "Max. low coverage", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "includeNoTier", value = "Reported variants without tier", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = FamilyAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = FamilyAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyAnalysis.LOW_COVERAGE_DEFAULT),
+            @ApiImplicitParam(name = FamilyAnalysis.SKIP_DIAGNOSTIC_VARIANTS_PARAM, value = "Skip diagnostic variants", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, value = "Skip variants without tier assigned", dataType = "boolean", paramType = "query", defaultValue = "false"),
 
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
@@ -806,7 +853,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
             // Study filters
             @ApiImplicitParam(name = "project", value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
@@ -874,11 +921,50 @@ public class InterpretationWSService extends AnalysisWSService {
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 
+            // Get assembly from study for actionable variants
+            String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
+
             // Execute custom analysis
-            // TODO, pass the findings to the custom analysis for tier3
-            CustomAnalysis customAnalysis = new CustomAnalysis(query, null, studyStr, opencgaHome, customAnalysisOptions, sessionId);
+            CustomAnalysis customAnalysis = new CustomAnalysis(null, query, studyStr, roleInCancer,
+                    actionableVariantsByAssembly.get(assembly), customAnalysisOptions, opencgaHome, sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/interpretation/secondaryFindings")
+    @ApiOperation(value = "Search for secondary findings for a list of samples", position = 14, response = QueryResponse.class)
+    public Response secondaryFindings(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of samples") @QueryParam("sample") String sample) {
+        try {
+            // Get assembly from study for actionable variants
+            String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
+            Map<String, List<String>> actionableVariants = actionableVariantsByAssembly.get(assembly);
+
+            if (MapUtils.isEmpty(actionableVariants)) {
+                return createErrorResponse(new AnalysisException("No actionableVariants_xxx.txt[.gz] file found for assembly '" + assembly
+                        + "'. Please, check your configuration."));
+            } else {
+                VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager,
+                        StorageEngineFactory.get(storageConfiguration));
+
+                List<String> sampleNames = new ArrayList<>();
+                if (StringUtils.isNotEmpty(sample)) {
+                    sampleNames.addAll(Arrays.asList(sample.split("/")));
+                }
+                List<Variant> variants = InterpretationAnalysisUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
+                        Collections.emptyList(), variantStorageManager, sessionId);
+
+                TeamReportedVariantCreator creator = new TeamReportedVariantCreator(null, roleInCancer, actionableVariants,
+                        null, null, null);
+                List<ReportedVariant> reportedVariants = creator.createSecondaryFindings(variants);
+
+                return createAnalysisOkResponse(reportedVariants);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -918,14 +1004,16 @@ public class InterpretationWSService extends AnalysisWSService {
         public List<Software> dependencies;
         public Map<String, Object> filters;
         public String creationDate;
-        public List<ReportedVariant> reportedVariants;
+        public List<ReportedVariant> primaryFindings;
+        public List<ReportedVariant> secondaryFindings;
         public List<ReportedLowCoverage> reportedLowCoverages;
         public List<Comment> comments;
         public Map<String, Object> attributes;
 
-        public Interpretation toClinicalInterpretation() {
-            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
-                    reportedVariants, reportedLowCoverages, comments, attributes);
+        public org.opencb.biodata.models.clinical.interpretation.Interpretation  toClinicalInterpretation() {
+            return new org.opencb.biodata.models.clinical.interpretation.Interpretation (id, description, clinicalAnalysisId, panels, null,
+                    software, analyst, dependencies, filters, creationDate, primaryFindings, secondaryFindings, reportedLowCoverages,
+                    comments, attributes, -1);
         }
 
         public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
@@ -958,14 +1046,29 @@ public class InterpretationWSService extends AnalysisWSService {
 
     private ObjectMap getAnalysisOptions(QueryOptions queryOptions) {
         // Get all query options
+        String param;
         ObjectMap analysisOptions = new ObjectMap(queryOptions);
-        if (queryOptions.containsKey("includeLowCoverage")) {
-            analysisOptions.put("includeLowCoverage", queryOptions.getBoolean("includeLowCoverage"));
-        }
-        if (queryOptions.containsKey("maxLowCoverage")) {
-            analysisOptions.put("maxLowCoverage", queryOptions.getInt("maxLowCoverage"));
-        }
-        analysisOptions.put("includeNoTier", queryOptions.getBoolean("includeNoTier", true));
+
+        param = FamilyAnalysis.INCLUDE_LOW_COVERAGE_PARAM;
+        analysisOptions.put(param, queryOptions.getBoolean(param, false));
+
+        param = FamilyAnalysis.MAX_LOW_COVERAGE_PARAM;
+        analysisOptions.put(param, queryOptions.getInt(param, FamilyAnalysis.LOW_COVERAGE_DEFAULT));
+
+        param = FamilyAnalysis.SKIP_DIAGNOSTIC_VARIANTS_PARAM;
+        analysisOptions.put(param, queryOptions.getBoolean(param, true));
+
+        param = FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM;
+        analysisOptions.put(param, queryOptions.getBoolean(param, true));
+
         return analysisOptions;
+    }
+
+    private void loadExternalFiles() throws IOException {
+        String dataDir = configuration.getDataDir();
+        String opencgaHome = Paths.get(dataDir).getParent().toString();
+
+        roleInCancer = InterpretationAnalysisUtils.getRoleInCancer(opencgaHome);
+        actionableVariantsByAssembly = InterpretationAnalysisUtils.getActionableVariantsByAssembly(opencgaHome);
     }
 }

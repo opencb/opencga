@@ -59,18 +59,19 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     private QueryResult<VariableSet> createExampleVariableSet(String name, boolean confidential) throws CatalogDBException {
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
-                        Collections.<String, Object>emptyMap()),
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+                        Collections.emptyMap()),
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
-                        null, Collections.<String, Object>emptyMap()),
+                        null, Collections.emptyMap()),
                 new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "1.5", false, false, Collections.singletonList("0:"), 2, "",
-                        "", null, Collections.<String, Object>emptyMap()),
-                new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.<String>emptyList(), 3, "", "",
-                        null, Collections.<String, Object>emptyMap()),
+                        "", null, Collections.emptyMap()),
+                new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.emptyList(), 3, "", "",
+                        null, Collections.emptyMap()),
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
-                        null, Collections.<String, Object>emptyMap())
+                        null, Collections.emptyMap())
         ));
-        VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables, 1, Collections.emptyMap());
+        VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, Collections.emptyMap());
         return catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
     }
 

@@ -157,11 +157,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         .setSoftware(new Software("name", "version", "repo", "commit", "web", Collections.emptyMap()))
                         .setAnalyst(new Analyst("user2", "mail@mail.com", "company"))
                         .setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")))
-                        .setReportedVariants(Collections.emptyList());
-        Interpretation interpretation = new Interpretation().setInterpretation(i);
+                        .setPrimaryFindings(Collections.emptyList());
 
         QueryResult<Interpretation> interpretationQueryResult = catalogManager.getInterpretationManager()
-                .create(STUDY, dummyEnvironment.first().getId(), interpretation, QueryOptions.empty(), sessionIdUser);
+                .create(STUDY, dummyEnvironment.first().getId(), i, QueryOptions.empty(), sessionIdUser);
         System.out.println(interpretationQueryResult.first());
 
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(STUDY,

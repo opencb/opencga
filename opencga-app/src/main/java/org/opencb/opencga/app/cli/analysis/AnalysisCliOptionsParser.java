@@ -24,6 +24,7 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.ToolsCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -54,6 +55,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
 //    private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
+    private InterpretationCommandOptions interpretationCommandOptions;
 
 
     public AnalysisCliOptionsParser() {
@@ -113,6 +115,13 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         toolsSubCommands.addCommand("list", toolsCommandOptions.listToolCommandOptions);
         toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
         toolsSubCommands.addCommand("execute", toolsCommandOptions.executeToolCommandOptions);
+
+        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("interpretation", interpretationCommandOptions);
+        JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
+        interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
+        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
+
     }
 
     @Override
@@ -343,4 +352,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         return alignmentCommandOptions;
     }
 
+    public InterpretationCommandOptions getInterpretationCommandOptions() {
+        return interpretationCommandOptions;
+    }
 }

@@ -3,14 +3,18 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -20,16 +24,25 @@ import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
-public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
+public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
     protected String clinicalAnalysisId;
     protected List<String> diseasePanelIds;
+
+    protected Map<String, RoleInCancer> roleInCancer;
+    protected Map<String, List<String>> actionableVariants;
 
     protected ObjectMap config;
     @Deprecated
@@ -37,19 +50,25 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
 
     protected final static String SEPARATOR = "__";
 
+    public final static int LOW_COVERAGE_DEFAULT = 20;
+
+    public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
+    public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
+    public final static String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
+    public final static String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
+
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
-    public FamilyAnalysis(String opencgaHome, String studyStr, String token) {
-        this(opencgaHome, studyStr, token, null, null, null);
-    }
-
-    public FamilyAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId,
-                           List<String> diseasePanelIds, ObjectMap config) {
+    public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
+                          Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome, String token) {
         super(opencgaHome, studyStr, token);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.diseasePanelIds = diseasePanelIds;
+
+        this.actionableVariants = actionableVariants;
+        this.roleInCancer = roleInCancer;
 
         this.config = config != null ? config : new ObjectMap();
         this.maxCoverage = 20;
@@ -60,7 +79,7 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
     @Override
-    public abstract AnalysisResult<Interpretation> execute() throws Exception;
+    public abstract AnalysisResult<T> execute() throws Exception;
 
 
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
@@ -107,6 +126,27 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
                     + clinicalAnalysisId);
         }
 
+        // Fill with parent information
+        String fatherId = null;
+        String motherId = null;
+        if (proband.getFather() != null && StringUtils.isNotEmpty(proband.getFather().getId())) {
+            fatherId = proband.getFather().getId();
+        }
+        if (proband.getMother() != null && StringUtils.isNotEmpty(proband.getMother().getId())) {
+            motherId = proband.getMother().getId();
+        }
+        if (fatherId != null && motherId != null && clinicalAnalysis.getFamily() != null
+                && ListUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (member.getId() == fatherId) {
+                    proband.setFather(member);
+                } else if (member.getId() == motherId) {
+                    proband.setMother(member);
+                }
+            }
+        }
+
+
         return proband;
     }
 
@@ -123,11 +163,12 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
 
             Map<String, Individual> individualMap = new HashMap<>();
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (ListUtils.isEmpty(member.getSamples())) {
+//                    throw new AnalysisException("No samples found for member " + member.getId());
+                    continue;
+                }
                 if (member.getSamples().size() > 1) {
                     throw new AnalysisException("More than one sample found for member " + member.getId());
-                }
-                if (member.getSamples().size() == 0) {
-                    throw new AnalysisException("No samples found for member " + member.getId());
                 }
                 sampleList.add(member.getSamples().get(0).getId());
                 individualMap.put(member.getId(), member);
@@ -148,6 +189,42 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
         }
         return sampleList;
     }
+
+    protected Map<String, String> getSampleMap(ClinicalAnalysis clinicalAnalysis, Individual proband) throws AnalysisException {
+        Map<String, String> individualSampleMap = new HashMap<>();
+        // Sanity check
+        if (clinicalAnalysis != null && clinicalAnalysis.getFamily() != null
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+
+            Map<String, Individual> individualMap = new HashMap<>();
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (ListUtils.isEmpty(member.getSamples())) {
+//                    throw new AnalysisException("No samples found for member " + member.getId());
+                    continue;
+                }
+                if (member.getSamples().size() > 1) {
+                    throw new AnalysisException("More than one sample found for member " + member.getId());
+                }
+                individualSampleMap.put(member.getId(), member.getSamples().get(0).getId());
+                individualMap.put(member.getId(), member);
+            }
+
+            if (proband != null) {
+                // Fill proband information to be able to navigate to the parents and their samples easily
+                // Sanity check
+                if (proband.getFather() != null && StringUtils.isNotEmpty(proband.getFather().getId())
+                        && individualMap.containsKey(proband.getFather().getId())) {
+                    proband.setFather(individualMap.get(proband.getFather().getId()));
+                }
+                if (proband.getMother() != null && StringUtils.isNotEmpty(proband.getMother().getId())
+                        && individualMap.containsKey(proband.getMother().getId())) {
+                    proband.setMother(individualMap.get(proband.getMother().getId()));
+                }
+            }
+        }
+        return individualSampleMap;
+    }
+
 
     protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<Panel> diseasePanels)
             throws AnalysisException {
@@ -265,6 +342,39 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
             return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
+        }
+    }
+
+    protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis, List<ReportedVariant> primaryFindings,
+                                                         List<String> sampleNames, ReportedVariantCreator creator)
+            throws StorageEngineException, InterpretationAnalysisException, CatalogException, IOException {
+        List<ReportedVariant> secondaryFindings = null;
+        if (clinicalAnalysis.getConsent() != null
+                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
+            List<String> excludeIds = null;
+            if (CollectionUtils.isNotEmpty(primaryFindings)) {
+                excludeIds = primaryFindings.stream().map(ReportedVariant::getId).collect(Collectors.toList());
+            }
+
+            List<Variant> findings = InterpretationAnalysisUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
+                    excludeIds, variantStorageManager, token);
+            if (CollectionUtils.isNotEmpty(findings)) {
+                secondaryFindings = creator.createSecondaryFindings(findings);
+            }
+        }
+        return secondaryFindings;
+    }
+
+    protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
+        query.put(VariantQueryParam.GENOTYPE.key(),
+                StringUtils.join(genotypes.entrySet().stream()
+                        .filter(entry -> sampleMap.containsKey(entry.getKey()))
+                        .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
+                        .collect(Collectors.toList()), ";"));
+        try {
+            logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
     }
 

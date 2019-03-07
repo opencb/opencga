@@ -21,6 +21,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
@@ -30,6 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,12 +48,15 @@ public class VariableSetWSServer extends OpenCGAWSServer {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
+
+
     private static class VariableSetParameters {
         public Boolean unique;
         public Boolean confidential;
         public String id;
         public String name;
         public String description;
+        public List<String> entities;
         public List<Variable> variables;
     }
 
@@ -80,7 +85,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             }
 
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name,
-                    params.unique, params.confidential, params.description, null, params.variables, sessionId);
+                    params.unique, params.confidential, params.description, null, params.variables,
+                    getAnnotableDataModelsList(params.entities), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -249,5 +255,17 @@ public class VariableSetWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    private List<VariableSet.AnnotableDataModels> getAnnotableDataModelsList(List<String> entityStringList) {
+        List<VariableSet.AnnotableDataModels> entities = new ArrayList<>();
+        if (ListUtils.isEmpty(entityStringList)) {
+            return entities;
+        }
+
+        for (String entity : entityStringList) {
+            entities.add(VariableSet.AnnotableDataModels.valueOf(entity.toUpperCase()));
+        }
+        return entities;
     }
 }

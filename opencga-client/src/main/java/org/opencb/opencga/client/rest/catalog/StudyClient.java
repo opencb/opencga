@@ -79,15 +79,25 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "resyncFiles", options, GET, Object.class);
     }
 
-    public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users) throws IOException {
+    public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String groupName, String users) throws IOException {
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.append("action", "ADD");
+
         ObjectMap bodyParams = new ObjectMap();
-        bodyParams.putIfNotEmpty("name", groupId);
+        bodyParams.putIfNotEmpty("id", groupId);
+        bodyParams.putIfNotEmpty("name", groupName);
         bodyParams.putIfNotEmpty("users", users);
-        return execute(STUDY_URL, studyId, "groups", null, "create", new ObjectMap("body", bodyParams), POST, ObjectMap.class);
+        return execute(STUDY_URL, studyId, "groups", null, "update", queryParams.append("body", bodyParams), POST, ObjectMap.class);
     }
 
     public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options) throws IOException {
-        return execute(STUDY_URL, studyId, "groups", groupId, "delete", options, GET, ObjectMap.class);
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.append("action", "REMOVE");
+
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotEmpty("id", groupId);
+
+        return execute(STUDY_URL, studyId, "groups", null, "update", queryParams.append("body", bodyParams), POST, ObjectMap.class);
     }
 
     public QueryResponse<ObjectMap> updateGroup(String studyId, String groupId, ObjectMap objectMap) throws IOException {

@@ -190,6 +190,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
 
             String url = uriInfo.getBaseUri().toString() + apiVersion + "/utils/ranges/" + fileIdStr + "?study=" + studyStr;
             List<ObjectMap> urls = new ArrayList<>(chunkOffsetList.size() + 2);
+
             // Add header
             urls.add(new ObjectMap("url", "data:application/octet-stream;base64,"
                     + Base64.getEncoder().encodeToString(bamManager.compressedHeader())));

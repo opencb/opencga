@@ -575,7 +575,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, familyDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
@@ -598,31 +599,31 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         boolean notFound = true;
-        for (Phenotype phenotype : familyQueryResult.first().getPhenotypes()) {
-            if (phenotype.getId().equals(disease)) {
+        for (Disorder disorder : familyQueryResult.first().getDisorders()) {
+            if (disorder.getId().equals(disease)) {
                 notFound = false;
                 break;
             }
         }
         if (notFound) {
-            throw new CatalogException("Phenotype " + disease + " not found in any member of the family");
+            throw new CatalogException("Disorder " + disease + " not found in any member of the family");
         }
 
-        Phenotype phenotype = new Phenotype(disease, disease, "");
+        Disorder disorder = new Disorder(disease, disease, "", "", Collections.emptyList(), Collections.emptyMap());
 
         Pedigree pedigree = getPedigreeFromFamily(familyQueryResult.first());
 
         switch (moi) {
             case MONOALLELIC:
-                return ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+                return ModeOfInheritance.dominant(pedigree, disorder, incompletePenetrance);
             case BIALLELIC:
-                return ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+                return ModeOfInheritance.recessive(pedigree, disorder, incompletePenetrance);
             case XLINKED_BIALLELIC:
-                return ModeOfInheritance.xLinked(pedigree, phenotype, false);
+                return ModeOfInheritance.xLinked(pedigree, disorder, false);
             case XLINKED_MONOALLELIC:
-                return ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                return ModeOfInheritance.xLinked(pedigree, disorder, true);
             case YLINKED:
-                return ModeOfInheritance.yLinked(pedigree, phenotype);
+                return ModeOfInheritance.yLinked(pedigree, disorder);
             default:
                 throw new CatalogException("Unsupported or unknown mode of inheritance " + moi);
         }
@@ -744,7 +745,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     member.getId(), member.getName(), null, null, member.getMultiples(),
                     Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
                     Member.AffectionStatus.getEnum(member.getAffectationStatus().toString()),
-                    member.getPhenotypes(), member.getAttributes());
+                    member.getPhenotypes(), member.getDisorders(), member.getAttributes());
             individualMap.put(individual.getId(), individual);
         }
 
@@ -759,7 +760,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         List<Member> individuals = new ArrayList<>(individualMap.values());
-        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
+        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getDisorders(), family.getAttributes());
     }
 
     void updatePhenotypesAndDisorders(Study study, Individual individual) throws CatalogDBException {
