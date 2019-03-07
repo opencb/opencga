@@ -191,7 +191,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._post('upload', data=data, **kwargs)
 
-    def downlaod(self, file, data, **kwargs):
+    def download(self, file, data, **kwargs):
         """
         Download file. The usage of /{file}/download webservice through Swagger is discouraged. 
         An special DOWNLOAD permission is needed to download files from OpenCGA.
@@ -202,32 +202,4 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._post('download', query_id=file, data=data, **kwargs)
-
-    def delete(self, **kwargs):
-        """
-        Delete existing files and folders
-        URL: /{apiVersion}/files/delete
-
-        :param study: study [[user@]project:]study where study and project can be either the id or alias
-        :param name: comma separated list of file names
-        :param path: cmma separated list of paths
-        :param type: available types (FILE, DIRECTORY)
-        :param bioformat: comma separated bioformat values. For existing bioformats see files/bioformats
-        :param format: comma separated format values. For existing formats see files/formats
-        :param status: status
-        :param directory: directory under which we want to look for files or folders
-        :param creationDate: creation date (Format: yyyyMMddHHmmss)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss)
-        :param description: description
-        :param size: size
-        :param samples: comma separated list of sample ids or names
-        :param annotation: annotation, e.g: key1=value(;key2=value)
-        :param job.id: job id that created the file(s) or folder(s)
-        :param attributes: text attributes (Format: sex=male,age>20 ...)
-        :param nattributes: numerical attributes (Format: sex=male,age>20 ...)
-        :param release: release value
-        :param skipTrash: skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)
-        """
-
-        return self._delete('delete', **kwargs)
 

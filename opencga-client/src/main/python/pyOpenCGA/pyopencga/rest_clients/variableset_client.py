@@ -56,3 +56,11 @@ class VariableSets(_ParentBasicCRUDClient):
 
         return self._post('field', subcategory='add', query_id=variableset, data=data, **options)
 
+    def delete_variableset(self, varaibleset, **options):
+        """
+        Delete an unused variable Set [DEPRECATED]
+        URL: /{apiVersion}/variableset/{variableset}/delete
+        """
+
+        return self._get('delete', query_id=variableset, **options)
+

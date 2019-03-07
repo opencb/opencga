@@ -88,32 +88,3 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
 
         return self._get('search', **options)
 
-    def delete(self, **options):
-        """
-        Delete existing families
-        URL: /{apiVersion}/families/delete
-
-        :param study: study [[user@]project:]study where study and project can be either the id or alias
-        :param id: id
-        :param name: name    
-        :param father: father  
-        :param mother: mother  
-        :param sex: sex 
-        :param ethnicity: ethnicity   
-        :param population.name: population name 
-        :param population.subpopulation: subpopulation name    
-        :param population.description: population description 
-        :param phenotypes: comma separated list of phenotype ids or names
-        :param karyotypicSex: karyotypic sex (deafult = None)
-            ['UNKNOWN', 'XX', 'XY', 'XO', 'XXY', 'XXX', 'XXYY', 'XXXY', 'XXXX', 'XYY', 'OTHER']
-        :param lifeStatus: life status (deafult = None)
-            ['ALIVE', 'ABORTED', 'DECEASED', 'UNBORN', 'STILLBORN', 'MISCARRIAGE', 'UNKNOWN']
-        :param affectationStatus: affectation status (default = None)
-            ['CONTROL', 'AFFECTED', 'UNAFFECTED', 'UNKNOWN']
-        :param creationDate: creation date (Format: yyyyMMddHHmmss)
-        :param annotation: annotation, e.g: key1=value(;key2=value)
-        :param release: release value (Current release from the moment the individuals were first created)
-        :param force: force the deletion of individuals that already belong to families (deafult = false)
-        """
-
-        return self._delete('delete', **options)

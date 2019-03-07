@@ -67,19 +67,3 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
 
         return self._get('stats', **options)
 
-    def delete(self, **options):
-        """
-        Delete existing families
-        URL: /{apiVersion}/families/delete
-        
-        :param study: study [[user@]project:]study where study and project can be either the id or alias
-        :param id: family id
-        :param name: family name
-        :param parentalConsanguinity: parental consanguinity (bool -> default=None)
-        :param members: comma separated list of individual ids or names
-        :param phenotypes: comma separated list of phenotype ids or names
-        :param annotation: annotation, e.g: key1=value(;key2=value)
-        :param release: release 
-        """
-
-        return self._delete('delete', **options)

@@ -34,10 +34,3 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
 
         return self._get('load', **options)
 
-    def delete(self, **options):
-        """
-        Delete existing samples
-        URL: /{apiVersion}/samples/delete
-        """
-
-        return self._delete('delete', **options)

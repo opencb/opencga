@@ -48,21 +48,3 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('visit', query_id=job, **options)
 
-    def delete(self, **options):
-        """
-        Delete existing jobs
-        URL: /{apiVersion}/jobs/delete
-
-        :param study: study [[user@]project:]study where study and project can be either the id or alias
-        :param id: id
-        :param name: name
-        :param toolName: tool name
-        :param status: status
-        :param ownerId: owner id
-        :param date: date
-        :param inputFiles: comma separated list of input file ids
-        :param outputFiles: comma separated list of output file ids
-        :param release: release value
-        """
-
-        return self._delete('delete', **options)
