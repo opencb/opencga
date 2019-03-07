@@ -130,10 +130,11 @@ public class DocumentToVariantStatsConverter {
         }
         stats.setGenotypeFreq(genotypesFreq);
 
-        if (object.containsKey(ALT_FREQ_FIELD)) {
+        Object alleleFreq = object.get(ALT_FREQ_FIELD);
+        if (alleleFreq != null && ((Number) alleleFreq).floatValue() > 0) {
             // This field is not present in files loaded before v1.3.3
             stats.setRefAlleleFreq(((Number) object.get(REF_FREQ_FIELD)).floatValue());
-            stats.setAltAlleleFreq(((Number) object.get(ALT_FREQ_FIELD)).floatValue());
+            stats.setAltAlleleFreq(((Number) alleleFreq).floatValue());
             if (alleleNumber == 0) {
                 stats.setRefAlleleCount(-1);
                 stats.setAltAlleleCount(-1);
