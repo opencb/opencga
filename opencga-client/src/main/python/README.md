@@ -1,6 +1,6 @@
-## Python opencga client libraries
+## Python OpenCGA client libraries
 
-There are two officially supported OpenCGA python clients. 
+There are two officially supported OpenCGA Python clients. 
 
 **pyCGA**, maintained by Genome England (not compatible with OpenCGA 1.4)
 

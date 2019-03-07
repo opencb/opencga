@@ -1,10 +1,11 @@
-## pyOpenCGA python client
+## pyOpenCGA Python client
 
 Summary
 ---------
 
-swagger: http://bioinfodev.hpc.cam.ac.uk:/opencga-test/webservices/rest/swagger.json
-last swagger capture: 2019-03-03
+Swagger: http://bioinfodev.hpc.cam.ac.uk:/opencga-test/webservices/rest/swagger.json
+
+Last swagger capture: 2019-03-03
 
 
 |Methods	|PENDING	|DOING	|DONE|
