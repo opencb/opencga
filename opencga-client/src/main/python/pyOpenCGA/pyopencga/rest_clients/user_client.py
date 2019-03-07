@@ -6,7 +6,6 @@ class Users(_ParentBasicCRUDClient):
     """
 
     def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
-        
         _category = 'users'
         super(Users, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
