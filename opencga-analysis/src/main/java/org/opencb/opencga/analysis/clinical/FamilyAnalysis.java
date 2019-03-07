@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
@@ -25,16 +24,19 @@ import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
+public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
     protected String clinicalAnalysisId;
     protected List<String> diseasePanelIds;
@@ -77,7 +79,7 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
     }
 
     @Override
-    public abstract AnalysisResult<Interpretation> execute() throws Exception;
+    public abstract AnalysisResult<T> execute() throws Exception;
 
 
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
@@ -123,6 +125,27 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
             throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
                     + clinicalAnalysisId);
         }
+
+        // Fill with parent information
+        String fatherId = null;
+        String motherId = null;
+        if (proband.getFather() != null && StringUtils.isNotEmpty(proband.getFather().getId())) {
+            fatherId = proband.getFather().getId();
+        }
+        if (proband.getMother() != null && StringUtils.isNotEmpty(proband.getMother().getId())) {
+            motherId = proband.getMother().getId();
+        }
+        if (fatherId != null && motherId != null && clinicalAnalysis.getFamily() != null
+                && ListUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
+            for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
+                if (member.getId() == fatherId) {
+                    proband.setFather(member);
+                } else if (member.getId() == motherId) {
+                    proband.setMother(member);
+                }
+            }
+        }
+
 
         return proband;
     }
@@ -340,6 +363,19 @@ public abstract class FamilyAnalysis extends OpenCgaAnalysis<Interpretation> {
             }
         }
         return secondaryFindings;
+    }
+
+    protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
+        query.put(VariantQueryParam.GENOTYPE.key(),
+                StringUtils.join(genotypes.entrySet().stream()
+                        .filter(entry -> sampleMap.containsKey(entry.getKey()))
+                        .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
+                        .collect(Collectors.toList()), ";"));
+        try {
+            logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
 }

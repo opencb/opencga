@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
 
-public class TieringAnalysis extends FamilyAnalysis {
+public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
 
     private final static Query dominantQuery;
     private final static Query recessiveQuery;
@@ -248,7 +248,7 @@ public class TieringAnalysis extends FamilyAnalysis {
                 break;
             case MITOCHRONDRIAL:
                 query = new Query(mitochondrialQuery);
-                genotypes = ModeOfInheritance.mtLinked(pedigree, disorder);
+                genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder);
                 try {
                     logger.debug("---- Genotypes: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(genotypes));
                 } catch (JsonProcessingException e) {
@@ -305,16 +305,4 @@ public class TieringAnalysis extends FamilyAnalysis {
         }
     }
 
-    private void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
-        query.put(VariantQueryParam.GENOTYPE.key(),
-                StringUtils.join(genotypes.entrySet().stream()
-                        .filter(entry -> sampleMap.containsKey(entry.getKey()))
-                        .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
-                        .collect(Collectors.toList()), ";"));
-        try {
-            logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
 }

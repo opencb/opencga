@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CustomAnalysis extends FamilyAnalysis {
+public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
     private Query query;
 

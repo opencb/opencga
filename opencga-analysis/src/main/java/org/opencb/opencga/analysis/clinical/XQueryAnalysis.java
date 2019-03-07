@@ -36,7 +36,7 @@ import org.opencb.opencga.core.models.User;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class XQueryAnalysis extends FamilyAnalysis {
+public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
 
     private BioNetDbManager bioNetDbManager;
 

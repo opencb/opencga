@@ -43,7 +43,7 @@ import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 
-public class TeamAnalysis extends FamilyAnalysis {
+public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
 
     public TeamAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
                         Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
