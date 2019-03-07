@@ -1,4 +1,4 @@
-## Python opencga clinet libraries
+## Python opencga client libraries
 
 There are two officially supported OpenCGA python clients. 
 
