@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -47,7 +48,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -57,6 +61,7 @@ public class TieringAnalysis extends FamilyAnalysis {
 
     private final static Query dominantQuery;
     private final static Query recessiveQuery;
+    private final static Query mitochondrialQuery;
 
     static {
         recessiveQuery = new Query()
@@ -80,6 +85,14 @@ public class TieringAnalysis extends FamilyAnalysis {
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,"
                         + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626");
+        mitochondrialQuery = new Query()
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,IG_C_gene,IG_D_gene,IG_J_gene,IG_V_gene,"
+                        + "nonsense_mediated_decay,non_stop_decay,TR_C_gene,TR_D_gene,TR_J_gene,TR_V_gene")
+                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
+                        + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;")
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,"
+                        + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626")
+                .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
     }
 
     public TieringAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
@@ -130,7 +143,6 @@ public class TieringAnalysis extends FamilyAnalysis {
                 future.cancel(true);
             }
         }
-
 
         List<Variant> variantList = new ArrayList<>();
         Map<String, List<ClinicalProperty.ModeOfInheritance>> variantMoIMap = new HashMap<>();
@@ -235,9 +247,19 @@ public class TieringAnalysis extends FamilyAnalysis {
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
                 break;
             case MITOCHRONDRIAL:
-                query = new Query(dominantQuery)
-                        .append(VariantQueryParam.REGION.key(), "MT");
+                query = new Query(mitochondrialQuery);
                 genotypes = ModeOfInheritance.mtLinked(pedigree, disorder);
+                try {
+                    logger.debug("---- Genotypes: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(genotypes));
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                filterOutHealthyGenotypes(genotypes);
+                try {
+                    logger.debug("---- Genotypes: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(genotypes));
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
                 break;
             default:
                 logger.error("Mode of inheritance not yet supported: {}", moi);
@@ -249,7 +271,7 @@ public class TieringAnalysis extends FamilyAnalysis {
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
         if (MapUtils.isEmpty(genotypes)) {
-            logger.warn("Map of genotypes is empty for {}" + moi);
+            logger.warn("Map of genotypes is empty for {}", moi);
             return false;
         }
         putGenotypes(genotypes, sampleMap, query);
@@ -262,6 +284,25 @@ public class TieringAnalysis extends FamilyAnalysis {
             return false;
         }
         return true;
+    }
+
+    private void filterOutHealthyGenotypes(Map<String, List<String>> genotypes) {
+        List<String> filterOutKeys = new ArrayList<>();
+        for (String key : genotypes.keySet()) {
+            List<String> gts = genotypes.get(key);
+            boolean filterOut = true;
+            for (String gt : gts) {
+                if (gt.contains("1")) {
+                    filterOut = false;
+                }
+            }
+            if (filterOut) {
+                filterOutKeys.add(key);
+            }
+        }
+        for (String filterOutKey : filterOutKeys) {
+            genotypes.remove(filterOutKey);
+        }
     }
 
     private void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
