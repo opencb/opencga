@@ -103,7 +103,7 @@ public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
         }
 
         // Check sample and proband exists
-        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily());
+        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
         OntologyTerm disorder = clinicalAnalysis.getDisorder();
         Phenotype phenotype = new Phenotype(disorder.getId(), disorder.getName(), disorder.getSource(),
                 Phenotype.Status.UNKNOWN);

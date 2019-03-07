@@ -306,7 +306,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                     disorder = family.getDisorders().get(0);
                 }
-                Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family);
+                Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, null);
 
                 String moiString = query.getString(MODE_OF_INHERITANCE.key());
 

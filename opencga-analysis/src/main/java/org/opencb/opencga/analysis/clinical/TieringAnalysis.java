@@ -16,11 +16,9 @@
 
 package org.opencb.opencga.analysis.clinical;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
@@ -34,10 +32,11 @@ import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
@@ -45,7 +44,6 @@ import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,6 +60,8 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
     private final static Query dominantQuery;
     private final static Query recessiveQuery;
     private final static Query mitochondrialQuery;
+
+    private String opencgaHome;
 
     static {
         recessiveQuery = new Query()
@@ -98,10 +98,12 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
     public TieringAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
                            Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
         super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
+        this.opencgaHome = opencgaHome;
     }
 
     @Override
-    public InterpretationResult execute() throws AnalysisException, InterruptedException, CatalogException, InterpretationAnalysisException, StorageEngineException, IOException {
+    public InterpretationResult execute() throws AnalysisException, InterruptedException, CatalogException, InterpretationAnalysisException,
+            StorageEngineException, IOException {
         StopWatch watcher = StopWatch.createStarted();
 
         // Get and check clinical analysis and proband
@@ -112,7 +114,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         List<Panel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
 
         // Get pedigree
-        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily());
+        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
 
         // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
         // samples easily)
@@ -120,9 +122,11 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
 
         Map<ClinicalProperty.ModeOfInheritance, VariantQueryResult<Variant>> resultMap = new HashMap<>();
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(6);
+        ExecutorService threadPool = Executors.newFixedThreadPool(7);
 
-        List<Future<Boolean>> futureList = new ArrayList<>(6);
+        List<ReportedVariant> chReportedVariants = new ArrayList<>();
+
+        List<Future<Boolean>> futureList = new ArrayList<>(7);
         futureList.add(threadPool.submit(getNamedThread(MONOALLELIC.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MONOALLELIC, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(XLINKED_MONOALLELIC.name(),
@@ -135,9 +139,11 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_BIALLELIC, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(MITOCHRONDRIAL.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHRONDRIAL, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(),
+                () -> compoundHeterozygous(chReportedVariants))));
         threadPool.shutdown();
 
-        threadPool.awaitTermination(1, TimeUnit.MINUTES);
+        threadPool.awaitTermination(2, TimeUnit.MINUTES);
         if (!threadPool.isTerminated()) {
             for (Future<Boolean> future : futureList) {
                 future.cancel(true);
@@ -167,6 +173,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
         try {
             primaryFindings = creator.create(variantList, variantMoIMap);
+            primaryFindings.addAll(chReportedVariants);
         } catch (InterpretationAnalysisException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
@@ -175,7 +182,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings,
                 new ArrayList<>(sampleMap.keySet()), creator);
 
-        logger.debug("Variant size: {}", variantList.size());
+        logger.debug("Variant size: {}, CH variant size: {}", variantList.size(), chReportedVariants.size());
         logger.debug("Reported variant size: {}", primaryFindings.size());
 
         // Reported low coverage
@@ -218,6 +225,24 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         };
     }
 
+    private Boolean compoundHeterozygous(List<ReportedVariant> reportedVariantList) {
+        //TODO:
+        Query query = new Query(recessiveQuery);
+        CompoundHeterozygousAnalysis analysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
+                actionableVariants, config, studyStr, opencgaHome, token);
+        try {
+            AnalysisResult<List<ReportedVariant>> execute = analysis.execute();
+            if (ListUtils.isNotEmpty(execute.getResult())) {
+                reportedVariantList.addAll(execute.getResult());
+            }
+        } catch (Exception e) {
+            logger.error("{}", e.getMessage(), e);
+            return false;
+        }
+
+        return true;
+    }
+
     private Boolean query(Pedigree pedigree, Disorder disorder, Map<String, String> sampleMap, ClinicalProperty.ModeOfInheritance moi,
                           Map<ClinicalProperty.ModeOfInheritance, VariantQueryResult<Variant>> resultMap) {
         Query query;
@@ -249,17 +274,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
             case MITOCHRONDRIAL:
                 query = new Query(mitochondrialQuery);
                 genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder);
-                try {
-                    logger.debug("---- Genotypes: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(genotypes));
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
                 filterOutHealthyGenotypes(genotypes);
-                try {
-                    logger.debug("---- Genotypes: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(genotypes));
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
                 break;
             default:
                 logger.error("Mode of inheritance not yet supported: {}", moi);
