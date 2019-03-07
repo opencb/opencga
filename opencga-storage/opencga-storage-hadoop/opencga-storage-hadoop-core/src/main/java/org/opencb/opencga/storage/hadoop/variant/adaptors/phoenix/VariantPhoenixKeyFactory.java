@@ -191,6 +191,11 @@ public class VariantPhoenixKeyFactory {
         return Pair.newPair(chromosome, position);
     }
 
+    public static String extractChrFromVariantRowKey(byte[] variantRowKey, int offset, int length) {
+        int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, offset);
+
+        return (String) PVarchar.INSTANCE.toObject(variantRowKey, offset, chrPosSeparator, PVarchar.INSTANCE);
+    }
 
     public static Variant extractVariantFromResultSet(ResultSet resultSet) {
         String chromosome = null;

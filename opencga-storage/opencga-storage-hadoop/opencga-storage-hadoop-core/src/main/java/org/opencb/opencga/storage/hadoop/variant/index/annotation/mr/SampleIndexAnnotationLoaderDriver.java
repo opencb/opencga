@@ -44,6 +44,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<>();
         params.put("--" + SAMPLES, "<samples>");
+        params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         return params;
     }
 
@@ -68,6 +69,15 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
         ObjectMap attributes = metadataManager.getStudyMetadata(getStudyId()).getAttributes();
         hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
+
+        if (hasGenotype) {
+            LOGGER.info("Study with genotypes, : " + HBaseToVariantConverter.getFixedFormat(attributes));
+        } else {
+            LOGGER.info("Study without genotypes, : " + HBaseToVariantConverter.getFixedFormat(attributes));
+        }
+        hasGenotype = false;
+
+
     }
 
     @Override
@@ -75,7 +85,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
         Scan scan = new Scan();
 
-        String region = getConf().get(VariantQueryParam.REGION.key(), "");
+        String region = getParam(VariantQueryParam.REGION.key(), "");
         if (StringUtils.isNotEmpty(region)) {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }

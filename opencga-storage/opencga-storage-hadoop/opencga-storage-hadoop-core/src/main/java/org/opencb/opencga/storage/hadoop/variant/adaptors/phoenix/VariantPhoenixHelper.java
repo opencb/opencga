@@ -591,6 +591,14 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public static Integer extractSampleId(byte[] columnValue, int offset, int length) {
+        if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, SAMPLE_DATA_SUFIX_BYTES)) {
+            return extractId(Bytes.toString(columnValue, offset, length), false, "sample");
+        } else {
+            return null;
+        }
+    }
+
     public static Integer extractSampleId(String columnKey, boolean failOnMissing) {
         if (columnKey.endsWith(SAMPLE_DATA_SUFIX)) {
             return extractId(columnKey, failOnMissing, "sample");

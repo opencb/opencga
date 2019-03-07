@@ -44,6 +44,10 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
     private static final String FILE_PREFIX = META_PREFIX + "F_";
     private static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
 
+    public static final String SEPARATOR_STR = ",";
+    public static final byte SEPARATOR = ',';
+    public static final byte[] MENDELIAN_ERROR_COLUMN = Bytes.toBytes("ME");
+
     // Region filter
     private final Region regionFilter;
     // Annotation mask filter
@@ -159,6 +163,10 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
                 cell.getQualifierLength() - prefix.length);
     }
 
+    public static byte[] toMendelianErrorColumn() {
+        return MENDELIAN_ERROR_COLUMN;
+    }
+
     @Override
     public Collection<Variant> convert(Result result) {
         Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
@@ -221,7 +229,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
         List<String> values = new ArrayList<>(length / 10);
         int valueOffset = offset;
         for (int i = offset; i < length + offset; i++) {
-            if (value[i] == ',') {
+            if (value[i] == SEPARATOR) {
                 if (i != valueOffset) { // Skip empty values
                     values.add(Bytes.toString(value, valueOffset, i - valueOffset));
                 }
@@ -257,7 +265,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
         if (column[0] != META_PREFIX) {
             String value = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
 
-            String[] split = value.split(",");
+            String[] split = value.split(SEPARATOR_STR);
             variants = new ArrayList<>(split.length);
 
             for (String v : split) {
