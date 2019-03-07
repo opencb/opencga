@@ -79,6 +79,9 @@ class _ParentRestClient(object):
         """Queries the REST service and returns the result"""
         return self._rest_retry('post', resource, query_id, subcategory, second_query_id, data=data, **options)
 
+    def _delete(self, resource, data, query_id=None, subcategory=None, second_query_id=None, **options):
+        """Queries the REST service and returns the result"""
+        return self._rest_retry('delete', resource, query_id, subcategory, second_query_id, **options)
 
 class _ParentBasicCRUDClient(_ParentRestClient):
     def create(self, data, **options):
@@ -102,7 +105,9 @@ class _ParentAclRestClient(_ParentRestClient):
         :param query_id:
         :param options:
         """
-
+        print(options)
+        print(options['member'])
+        
         return self._get('acl', query_id=query_id, **options)
 
     def acl_update(self, memberId, data, **options):

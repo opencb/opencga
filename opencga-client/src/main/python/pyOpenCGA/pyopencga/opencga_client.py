@@ -2,8 +2,8 @@ from pyopencga.opencga_config import ConfigClient
 #from pyopencga.rest_clients._all_rest_clients import *
 
 from pyopencga.rest_clients.user_client import Users
-# from rest_clients.project_client import Projects
-# from rest_clients.study_client import Studies
+from pyopencga.rest_clients.project_client import Projects
+from pyopencga.rest_clients.study_client import Studies
 # from rest_clients.file_client import Files
 # from rest_clients.sample_client import Samples
 # from rest_clients.cohort_client import Cohorts
@@ -72,8 +72,8 @@ class OpenCGAClient(object):
 
         ## prepare for @properties 
         self.users = Users(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        # self.projects = Projects(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        # self.studies = Studies(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        self.projects = Projects(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        self.studies = Studies(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         # self.files = Files(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         # self.samples = Samples(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         # self.cohorts = Cohorts(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
