@@ -31,11 +31,13 @@ import org.opencb.opencga.analysis.clinical.TieringAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Job;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,8 +45,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
     private final InterpretationCommandOptions interpretationCommandOptions;
 
-    private static Map<String, Map<String, List<String>>> actionableVariantsByAssembly = null;
-    private static Map<String, ClinicalProperty.RoleInCancer> roleInCancer = null;
+    private static Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
+    private static Map<String, ClinicalProperty.RoleInCancer> roleInCancer = new HashMap<>();
 
     public InterpretationCommandExecutor(InterpretationCommandOptions options) {
         super(options.analysisCommonOptions);
@@ -205,8 +207,14 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         InterpretationResult interpretationResult = tieringAnalysis.execute();
 
         // Store tiering analysis in DB
-        catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, interpretationResult.getResult(),
-                QueryOptions.empty(), token);
+        if (options.commonOptions.params.getOrDefault("skipSave", "false").equals("true")) {
+            logger.info("Skip save");
+            System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(interpretationResult));
+        } else {
+            catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, interpretationResult.getResult(),
+                    QueryOptions.empty(), token);
+        }
 
         // Stop monitor
         Runtime.getRuntime().removeShutdownHook(hook);

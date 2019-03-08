@@ -611,7 +611,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         Disorder disorder = new Disorder(disease, disease, "", "", Collections.emptyList(), Collections.emptyMap());
 
-        Pedigree pedigree = getPedigreeFromFamily(familyQueryResult.first());
+        Pedigree pedigree = getPedigreeFromFamily(familyQueryResult.first(), null);
 
         switch (moi) {
             case MONOALLELIC:
@@ -735,7 +735,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, queryOptions, userId);
     }
 
-    public static Pedigree getPedigreeFromFamily(Family family) {
+    public static Pedigree getPedigreeFromFamily(Family family, String probandId) {
         List<Individual> members = family.getMembers();
         Map<String, Member> individualMap = new HashMap<>();
 
@@ -759,8 +759,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
+        Member proband = null;
+        if (StringUtils.isNotEmpty(probandId)) {
+            proband = individualMap.get(probandId);
+        }
+
         List<Member> individuals = new ArrayList<>(individualMap.values());
-        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getDisorders(), family.getAttributes());
+        return new Pedigree(family.getId(), individuals, proband, family.getPhenotypes(), family.getDisorders(), family.getAttributes());
     }
 
     void updatePhenotypesAndDisorders(Study study, Individual individual) throws CatalogDBException {
