@@ -24,11 +24,9 @@ import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -211,7 +209,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<List<ReportedVa
             throw new AnalysisException(e.getMessage(), e);
         }
 
-        logger.debug("CH time: {}", TimeUtils.durationToString(watcher));
+        logger.debug("CH time: {}", watcher.getTime());
         return new AnalysisResult<>(reportedVariants, Math.toIntExact(watcher.getTime()), null);
     }
 
