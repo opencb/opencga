@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.File;
@@ -35,12 +36,16 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC;
+
 public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
     private Query query;
 
     private CellBaseClient cellBaseClient;
     private AlignmentStorageManager alignmentStorageManager;
+
+    private String opencgaHome;
 
     private final static String CUSTOM_ANALYSIS_NAME = "Custom";
 
@@ -49,6 +54,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
         super(clinicalAnalysisId, null, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
 
         this.query = query;
+        this.opencgaHome = opencgaHome;
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
@@ -166,50 +172,70 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
                     .map(DiseasePanel.VariantPanel::getId).collect(Collectors.toList()), ","));
         }
 
-        // Execute query
-        VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
-        if (CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
-            variants.addAll(variantQueryResult.getResult());
+        List<DiseasePanel> biodataDiseasePanels = null;
+        if (CollectionUtils.isNotEmpty(diseasePanels)) {
+            // Team reported variant creator
+            biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         }
 
         // Primary findings
         List<ReportedVariant> primaryFindings = null;
         DefaultReportedVariantCreator creator = null;
 
-        List<DiseasePanel> biodataDiseasePanels = null;
-        if(CollectionUtils.isNotEmpty(variants)) {
-            if (CollectionUtils.isNotEmpty(diseasePanels)) {
-                // Team reported variant creator
-                biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
+        int dbTime;
+
+        String seggregation = this.query.getString(MODE_OF_INHERITANCE_DESC);
+        if (StringUtils.isNotEmpty(seggregation) && seggregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.DE_NOVO.toString())
+                && seggregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS.toString())) {
+            StopWatch watcher2 = StopWatch.createStarted();
+            if (seggregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.DE_NOVO.toString())) {
+                DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
+                        actionableVariants, config, studyStr, opencgaHome, token);
+                primaryFindings = deNovoAnalysis.execute().getResult();
+            } else {
+                CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, diseasePanelIds, query,
+                        roleInCancer, actionableVariants, config, studyStr, opencgaHome, token);
+                primaryFindings = compoundAnalysis.execute().getResult();
+            }
+            dbTime = Math.toIntExact(watcher2.getTime());
+        } else {
+            // Execute query
+            VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
+            dbTime = variantQueryResult.getDbTime();
+
+            if (CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
+                variants.addAll(variantQueryResult.getResult());
             }
 
-            // Get biotypes and SO names
-            List<String> biotypes = null;
-            List<String> soNames = null;
-            if (query.containsKey(VariantQueryParam.ANNOT_BIOTYPE.key())
-                    && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()))) {
-                biotypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()).split(","));
-            }
-            if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
-                    && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
-                soNames = new ArrayList<>();
-                for (String soName : query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split(",")) {
-                    if (soName.startsWith("SO:")) {
-                        try {
-                            int soAcc = Integer.valueOf(soName.replace("SO:", ""));
-                            soNames.add(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
-                        } catch (NumberFormatException e) {
-                            logger.warn("Unknown SO term: " + soName);
+            if (CollectionUtils.isNotEmpty(variants)) {
+                // Get biotypes and SO names
+                List<String> biotypes = null;
+                List<String> soNames = null;
+                if (query.containsKey(VariantQueryParam.ANNOT_BIOTYPE.key())
+                        && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()))) {
+                    biotypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()).split(","));
+                }
+                if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
+                        && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
+                    soNames = new ArrayList<>();
+                    for (String soName : query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split(",")) {
+                        if (soName.startsWith("SO:")) {
+                            try {
+                                int soAcc = Integer.valueOf(soName.replace("SO:", ""));
+                                soNames.add(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
+                            } catch (NumberFormatException e) {
+                                logger.warn("Unknown SO term: " + soName);
+                            }
+                        } else {
+                            soNames.add(soName);
                         }
-                    } else {
-                        soNames.add(soName);
                     }
                 }
-            }
 
-            creator = new DefaultReportedVariantCreator(roleInCancer, actionableVariants, disorder, moi,
-                    ClinicalProperty.Penetrance.COMPLETE, biodataDiseasePanels, biotypes, soNames, !skipUntieredVariants);
-            primaryFindings = creator.create(variants);
+                creator = new DefaultReportedVariantCreator(roleInCancer, actionableVariants, disorder, moi,
+                        ClinicalProperty.Penetrance.COMPLETE, biodataDiseasePanels, biotypes, soNames, !skipUntieredVariants);
+                primaryFindings = creator.create(variants);
+            }
         }
 
         // Secondary findings, if clinical consent is TRUE
@@ -220,6 +246,48 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
         // Low coverage support
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
+        calculateLowCoverageRegions(probandSampleId, files, diseasePanels, reportedLowCoverages);
+
+        Interpretation interpretation = generateInterpretation(primaryFindings, secondaryFindings, biodataDiseasePanels,
+                reportedLowCoverages);
+
+        int numberOfResults = primaryFindings != null ? primaryFindings.size() : 0;
+
+        // Return interpretation result
+        return new InterpretationResult(
+                interpretation,
+                Math.toIntExact(watcher.getTime()),
+                new HashMap<>(),
+                dbTime,
+                numberOfResults,
+                numberOfResults,
+                "",
+                "");
+    }
+
+    Interpretation generateInterpretation(List<ReportedVariant> primaryFindings, List<ReportedVariant> secondaryFindings,
+                                          List<DiseasePanel> biodataDiseasePanels, List<ReportedLowCoverage> reportedLowCoverages)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
+
+        // Create Interpretation
+        return new Interpretation()
+                .setId(CUSTOM_ANALYSIS_NAME + SEPARATOR + TimeUtils.getTimeMillis())
+                .setPrimaryFindings(primaryFindings)
+                .setSecondaryFindings(secondaryFindings)
+                .setReportedLowCoverages(reportedLowCoverages)
+                .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
+                .setClinicalAnalysisId(clinicalAnalysisId)
+                .setCreationDate(TimeUtils.getTime())
+                .setPanels(biodataDiseasePanels)
+                .setFilters(query)
+                .setSoftware(new Software().setName(CUSTOM_ANALYSIS_NAME));
+    }
+
+    void calculateLowCoverageRegions(String probandSampleId, Map<String, List<File>> files, List<Panel> diseasePanels,
+                                     List<ReportedLowCoverage> reportedLowCoverages) {
         if (config.getBoolean(INCLUDE_LOW_COVERAGE_PARAM, false)) {
             String bamFileId = null;
             if (files != null) {
@@ -258,34 +326,6 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
                 }
             }
         }
-
-        String userId = catalogManager.getUserManager().getUserId(token);
-        QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
-
-        // Create Interpretation
-        Interpretation interpretation = new Interpretation()
-                .setId(CUSTOM_ANALYSIS_NAME + SEPARATOR + TimeUtils.getTimeMillis())
-                .setPrimaryFindings(primaryFindings)
-                .setSecondaryFindings(secondaryFindings)
-                .setReportedLowCoverages(reportedLowCoverages)
-                .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
-                .setClinicalAnalysisId(clinicalAnalysisId)
-                .setCreationDate(TimeUtils.getTime())
-                .setPanels(biodataDiseasePanels)
-                .setFilters(query)
-                .setSoftware(new Software().setName(CUSTOM_ANALYSIS_NAME));
-
-        // Return interpretation result
-        return new InterpretationResult(
-                interpretation,
-                Math.toIntExact(watcher.getTime()),
-                new HashMap<>(),
-                variantQueryResult.getDbTime(),
-                variantQueryResult.getNumResults(),
-                variantQueryResult.getNumTotalResults(),
-                variantQueryResult.getWarningMsg(),
-                variantQueryResult.getErrorMsg());
     }
 
     /**

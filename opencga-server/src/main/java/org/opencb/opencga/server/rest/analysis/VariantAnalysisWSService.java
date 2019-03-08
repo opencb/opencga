@@ -545,14 +545,15 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Calculate the possible genotypes for the members of a family", position = 15, response = Map.class)
     public Response calculateGenotypes(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Family id", required = true) @QueryParam("family") String family,
+            @ApiParam(value = "Family id") @QueryParam("family") String family,
+            @ApiParam(value = "Clinical analysis id") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
             @ApiParam(value = "Mode of inheritance", required = true, defaultValue = "MONOALLELIC")
                 @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
-            @ApiParam(value = "Complete penetrance", defaultValue = "false") @QueryParam("completePenetrance") boolean completePenetrance,
-            @ApiParam(value = "Disease id", required = true) @QueryParam("disease") String disease) {
+            @ApiParam(value = "Complete penetrance", defaultValue = "true") @QueryParam("completePenetrance") boolean completePenetrance,
+            @ApiParam(value = "Disorder id") @QueryParam("disorder") String disorder) {
         try {
-            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, family, moi, disease,
-                    !completePenetrance, sessionId));
+            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
+                    disorder, !completePenetrance, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
