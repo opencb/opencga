@@ -138,14 +138,13 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         if (fatherId != null && motherId != null && clinicalAnalysis.getFamily() != null
                 && ListUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                if (member.getId() == fatherId) {
+                if (member.getId().equals(fatherId)) {
                     proband.setFather(member);
-                } else if (member.getId() == motherId) {
+                } else if (member.getId().equals(motherId)) {
                     proband.setMother(member);
                 }
             }
         }
-
 
         return proband;
     }

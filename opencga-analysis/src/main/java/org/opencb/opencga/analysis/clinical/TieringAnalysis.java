@@ -85,6 +85,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,"
                         + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626");
+
         mitochondrialQuery = new Query()
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,IG_C_gene,IG_D_gene,IG_J_gene,IG_V_gene,"
                         + "nonsense_mediated_decay,non_stop_decay,TR_C_gene,TR_D_gene,TR_J_gene,TR_V_gene")
@@ -92,6 +93,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                         + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,"
                         + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626")
+                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
                 .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
     }
 
@@ -122,11 +124,12 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
 
         Map<ClinicalProperty.ModeOfInheritance, VariantQueryResult<Variant>> resultMap = new HashMap<>();
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(7);
+        ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
         List<ReportedVariant> chReportedVariants = new ArrayList<>();
+        List<ReportedVariant> deNovoReportedVariants = new ArrayList<>();
 
-        List<Future<Boolean>> futureList = new ArrayList<>(7);
+        List<Future<Boolean>> futureList = new ArrayList<>(8);
         futureList.add(threadPool.submit(getNamedThread(MONOALLELIC.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MONOALLELIC, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(XLINKED_MONOALLELIC.name(),
@@ -137,10 +140,10 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, BIALLELIC, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(XLINKED_BIALLELIC.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_BIALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(MITOCHRONDRIAL.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHRONDRIAL, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(),
-                () -> compoundHeterozygous(chReportedVariants))));
+        futureList.add(threadPool.submit(getNamedThread(MITOCHONDRIAL.name(),
+                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHONDRIAL, resultMap))));
+        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chReportedVariants))));
+        futureList.add(threadPool.submit(getNamedThread(DE_NOVO.name(), () -> deNovo(deNovoReportedVariants))));
         threadPool.shutdown();
 
         threadPool.awaitTermination(2, TimeUnit.MINUTES);
@@ -164,6 +167,14 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 }
                 variantMoIMap.get(variant.getId()).add(entry.getKey());
             }
+        }
+        // Add de novo variants
+        for (Variant variant : deNovoReportedVariants) {
+            if (!variantMoIMap.containsKey(variant.getId())) {
+                variantMoIMap.put(variant.getId(), new ArrayList<>());
+                variantList.add(variant);
+            }
+            variantMoIMap.get(variant.getId()).add(DE_NOVO);
         }
 
         // Primary findings,
@@ -226,9 +237,25 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
     }
 
     private Boolean compoundHeterozygous(List<ReportedVariant> reportedVariantList) {
-        //TODO:
         Query query = new Query(recessiveQuery);
         CompoundHeterozygousAnalysis analysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
+                actionableVariants, config, studyStr, opencgaHome, token);
+        try {
+            AnalysisResult<List<ReportedVariant>> execute = analysis.execute();
+            if (ListUtils.isNotEmpty(execute.getResult())) {
+                reportedVariantList.addAll(execute.getResult());
+            }
+        } catch (Exception e) {
+            logger.error("{}", e.getMessage(), e);
+            return false;
+        }
+
+        return true;
+    }
+
+    private Boolean deNovo(List<ReportedVariant> reportedVariantList) {
+        Query query = new Query(dominantQuery);
+        DeNovoAnalysis analysis = new DeNovoAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
                 actionableVariants, config, studyStr, opencgaHome, token);
         try {
             AnalysisResult<List<ReportedVariant>> execute = analysis.execute();
@@ -271,7 +298,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                         .append(VariantQueryParam.REGION.key(), "X");
                 genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
                 break;
-            case MITOCHRONDRIAL:
+            case MITOCHONDRIAL:
                 query = new Query(mitochondrialQuery);
                 genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder);
                 filterOutHealthyGenotypes(genotypes);

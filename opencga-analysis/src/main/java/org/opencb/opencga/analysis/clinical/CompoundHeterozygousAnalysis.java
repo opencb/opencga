@@ -24,6 +24,7 @@ import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
@@ -90,7 +91,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<List<ReportedVa
         Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);
 
         Map<String, List<String>> genotypeMap = ModeOfInheritance.compoundHeterozygous(pedigree);
-        logger.debug("CH Clinical Anal: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(clinicalAnalysis));
+        logger.debug("CH Clinical Analysis: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(clinicalAnalysis));
         logger.debug("CH Pedigree: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(pedigree));
         logger.debug("CH Pedigree proband: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(pedigree.getProband()));
         logger.debug("CH Genotype: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(genotypeMap));
