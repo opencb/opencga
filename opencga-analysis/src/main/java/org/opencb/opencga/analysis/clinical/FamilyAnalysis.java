@@ -357,6 +357,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
             List<Variant> findings = InterpretationAnalysisUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
                     excludeIds, variantStorageManager, token);
+
             if (CollectionUtils.isNotEmpty(findings)) {
                 secondaryFindings = creator.createSecondaryFindings(findings);
             }

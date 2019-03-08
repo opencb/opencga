@@ -6,10 +6,10 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -48,8 +48,17 @@ public class InterpretationAnalysisUtils {
                     if (split.length > 8 && StringUtils.isNotEmpty(split[8])) {
                         phenotypes.addAll(Arrays.asList(split[8].split(";")));
                     }
-
-                    actionableVariants.put(split[0] + ":" + split[1] + "-" + split[2] + ":" + split[3] + ":" + split[4], phenotypes);
+                    try {
+                        Variant variant = new VariantBuilder(split[0], Integer.parseInt(split[1]), Integer.parseInt(split[2]), split[3],
+                                split[4]).build();
+                        actionableVariants.put(variant.toString(), phenotypes);
+                    } catch (NumberFormatException e) {
+                        // Skip this variant
+                        System.err.println("Skip actionable variant: " + line + "\nCause: " + e.getMessage());
+                    }
+                } else {
+                    // Skip this variant
+                    System.err.println("Skip actionable variant, invalid format: " + line);
                 }
             }
         }
@@ -107,7 +116,6 @@ public class InterpretationAnalysisUtils {
     public static List<Variant> secondaryFindings(String study, List<String> sampleNames, Set<String> actionableVariants,
                                                   List<String> excludeIds, VariantStorageManager variantStorageManager, String token)
             throws CatalogException, IOException, StorageEngineException, InterpretationAnalysisException {
-
         // Sanity check
         if (CollectionUtils.isEmpty(sampleNames)) {
             throw new InterpretationAnalysisException("Missing study when retrieving secondary findings");
@@ -129,23 +137,22 @@ public class InterpretationAnalysisUtils {
         query.put(VariantQueryParam.STUDY.key(), study);
         query.put(VariantQueryParam.SAMPLE.key(), org.apache.commons.lang3.StringUtils.join(sampleNames, ","));
 
-        int count = 0;
-        StringBuilder ids = new StringBuilder();
+        List<String> ids = new ArrayList<>();
         Iterator<String> iterator = actionableVariants.iterator();
         while (iterator.hasNext()) {
-            ids.append(iterator.next()).append(",");
-            if (++count >= batchSize) {
+            String id = iterator.next();
+            ids.add(id);
+            if (ids.size() >= batchSize) {
                 query.put(VariantQueryParam.ID.key(), ids);
                 VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
                 addVariant(result, excludeSet, variants);
 
                 // Reset
-                count = 0;
-                ids.setLength(0);
+                ids.clear();
             }
         }
 
-        if (count > 0) {
+        if (ids.size() > 0) {
             query.put(VariantQueryParam.ID.key(), ids);
             VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
             addVariant(result, excludeSet, variants);
