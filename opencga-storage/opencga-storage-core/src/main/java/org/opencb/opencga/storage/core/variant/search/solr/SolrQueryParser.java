@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
@@ -1279,7 +1280,7 @@ public class SolrQueryParser {
             return solrFields;
         }
         if (incStudies != null) {
-            incStudies.replaceAll(VariantSearchToVariantConverter::studyIdToSearchModel);
+            incStudies = incStudies.stream().map(VariantSearchToVariantConverter::studyIdToSearchModel).collect(Collectors.toList());
         }
 
         // --include-file management

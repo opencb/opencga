@@ -180,12 +180,6 @@ public class VariantJsonWriter implements VariantWriter {
         }
 
         numVariantsWritten += batch.size();
-        // TODO: Use ProgressLogger here
-        if (numVariantsWritten % 1000 == 0) {
-            Variant lastVariantInBatch = batch.get(batch.size() - 1);
-            logger.info("{}\tvariants written upto position {}:{}",
-                    numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart());
-        }
 
         return true;
     }

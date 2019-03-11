@@ -39,7 +39,7 @@ public abstract class OpenCgaAnalysis<T> {
     protected StorageConfiguration storageConfiguration;
     protected VariantStorageManager variantStorageManager;
 
-    private String opencgaHome;
+    protected String opencgaHome;
     protected String studyStr;
     protected String token;
 

@@ -747,6 +747,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
+            @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation,
             @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
             // Get analysis options from query
@@ -769,8 +770,15 @@ public class InterpretationWSService extends AnalysisWSService {
                 // Queue job
                 result = catalogInterpretationManager.queue(studyStr, "team", clinicalAnalysisId, panelList, teamAnalysisOptions, sessionId);
             } else {
+                ClinicalProperty.ModeOfInheritance moi;
+                try {
+                    moi = ClinicalProperty.ModeOfInheritance.valueOf(segregation);
+                } catch (IllegalArgumentException e) {
+                    return createErrorResponse(new AnalysisException("Unknown 'familySegregation' value: " + segregation));
+                }
+
                 // Execute TEAM analysis
-                TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
+                TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
                         actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, sessionId);
                 result = teamAnalysis.execute();
             }
@@ -910,6 +918,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     })
     public Response customAnalysis(
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr) {
         try {
@@ -925,7 +934,7 @@ public class InterpretationWSService extends AnalysisWSService {
             String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
 
             // Execute custom analysis
-            CustomAnalysis customAnalysis = new CustomAnalysis(null, query, studyStr, roleInCancer,
+            CustomAnalysis customAnalysis = new CustomAnalysis(clinicalAnalysisId, query, studyStr, roleInCancer,
                     actionableVariantsByAssembly.get(assembly), customAnalysisOptions, opencgaHome, sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);

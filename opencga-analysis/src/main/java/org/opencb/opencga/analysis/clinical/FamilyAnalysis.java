@@ -29,12 +29,15 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 
 public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
@@ -59,6 +62,17 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
+
+//    protected static Set<String> extendedLof;
+//    protected static Set<String> proteinCoding;
+//
+//    static {
+//        proteinCoding = new HashSet<>(Arrays.asList("protein_coding", "IG_C_gene", "IG_D_gene", "IG_J_gene", "IG_V_gene",
+//                "nonsense_mediated_decay", "non_stop_decay", "TR_C_gene", "TR_D_gene", "TR_J_gene", "TR_V_gene"));
+//
+//        extendedLof = new HashSet<>(Arrays.asList("SO:0001893", "SO:0001574", "SO:0001575", "SO:0001587", "SO:0001589", "SO:0001578",
+//                "SO:0001582", "SO:0001889", "SO:0001821", "SO:0001822", "SO:0001583", "SO:0001630", "SO:0001626"));
+//    }
 
     public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
                           Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome, String token) {
@@ -138,14 +152,13 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         if (fatherId != null && motherId != null && clinicalAnalysis.getFamily() != null
                 && ListUtils.isNotEmpty(clinicalAnalysis.getFamily().getMembers())) {
             for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                if (member.getId() == fatherId) {
+                if (member.getId().equals(fatherId)) {
                     proband.setFather(member);
-                } else if (member.getId() == motherId) {
+                } else if (member.getId().equals(motherId)) {
                     proband.setMother(member);
                 }
             }
         }
-
 
         return proband;
     }
@@ -358,12 +371,26 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
             List<Variant> findings = InterpretationAnalysisUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
                     excludeIds, variantStorageManager, token);
+
             if (CollectionUtils.isNotEmpty(findings)) {
                 secondaryFindings = creator.createSecondaryFindings(findings);
             }
         }
         return secondaryFindings;
     }
+
+    protected List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
+                                                                            ReportedVariantCreator creator)
+            throws InterpretationAnalysisException {
+        // Compound heterozygous management
+        // Create transcript - reported variant map from transcript - variant
+        Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
+        for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
+            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
+        }
+        return creator.groupCHVariants(reportedVariantMap);
+    }
+
 
     protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
         query.put(VariantQueryParam.GENOTYPE.key(),
@@ -375,6 +402,15 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+        }
+    }
+
+    protected void cleanQuery(Query query) {
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
+            query.remove(VariantQueryParam.SAMPLE.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key());
+            query.remove(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key());
         }
     }
 

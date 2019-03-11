@@ -82,6 +82,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
+    @Deprecated
+    public static final QueryParam FAMILY_PHENOTYPE = FAMILY_DISORDER;
+    @Deprecated
+    public static final QueryParam MODE_OF_INHERITANCE = FAMILY_SEGREGATION;
+
     public static final String PANEL_DESC = "Filter by genes from the given disease panel";
     public static final QueryParam PANEL =
             QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
@@ -303,7 +308,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     throw VariantQueryException.malformedParam(FAMILY, familyId,
                             "Some individuals from this family have multiple indexed samples");
                 }
-                Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family);
+                Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, null);
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
                 String moiString = query.getString(FAMILY_SEGREGATION.key());
