@@ -1,0 +1,25 @@
+{
+    "$schema": "http://schemas.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "functionAppName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "repoURL": "https://github.com/bart-jansen/automated_appgw_encryption.git",
+        "repoBranch": "master"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('functionAppName'), '/web')]",
+            "type": "Microsoft.Web/sites/sourcecontrols",
+            "apiVersion": "2016-08-01",
+            "properties": {
+                "repoUrl": "[variables('repoURL')]",
+                "branch": "[variables('repoBranch')]",
+                "isManualIntegration": true
+            }
+        }
+    ]
+}

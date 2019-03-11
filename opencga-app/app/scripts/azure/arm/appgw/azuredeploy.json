@@ -99,7 +99,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "functions",
-            "dependsOn": ["appgw", "keyvault"],
+            "dependsOn": ["keyvault"],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -109,9 +109,6 @@
                 "parameters": {
                     "functionAppName": {
                         "value": "[variables('functionAppName')]"
-                    },
-                    "appGwDomain": {
-                        "value": "[reference('appgw').outputs.fqdn.value]"
                     },
                     "appGwSslEmail": {
                         "value": "[parameters('appGwSslEmail')]"
@@ -123,11 +120,30 @@
             }
         },
         {
+            "resourceGroup": "[parameters('rgName')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "configure-functions",
+            "dependsOn": ["keyvault", "functions", "appgw"],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/configure-functions.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "functionAppName": {
+                        "value": "[variables('functionAppName')]"
+                    }
+                }
+            }
+        },
+        {
             "resourceGroup": "[resourceGroup().name]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "msi",
-            "dependsOn": ["appgw", "keyvault", "functions"],
+            "dependsOn": ["keyfault", "functions", "appgw", "configure-functions"],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -135,24 +151,23 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "functionAppName": {
+                        "value": "[variables('functionAppName')]"
+                    },
+                    "identityName": {
+                        "value": "[reference('functions').outputs.identityName.value]"
+                    },
                     "vaultName": {
                         "value": "[reference('keyvault').outputs.keyVaultName.value]"
                     },
                     "objectId": {
                         "value": "[reference('functions').outputs.principalId.value]"
-                    },
-                    "tenantId": {
-                        "value": "[reference('functions').outputs.tenantId.value]"
                     }
                 }
             }
         }
     ],
     "outputs": {
-        "appgwBackendAddressPoolId":{
-            "type": "string",
-            "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
-        },
         "fqdn": {
             "type":"string",
             "value": "[reference('appgw').outputs.fqdn.value]"
