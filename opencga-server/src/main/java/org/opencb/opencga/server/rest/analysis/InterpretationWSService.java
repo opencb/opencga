@@ -927,6 +927,10 @@ public class InterpretationWSService extends AnalysisWSService {
             Query query = getVariantQuery(queryOptions);
             ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
 
+            // TODO: Remove these 2 lines once issue-992 is merged into release-1.4.0
+            query.put(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key(), queryOptions.get("familySegregation"));
+            query.put(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key(), queryOptions.get("familyDisorder"));
+
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 

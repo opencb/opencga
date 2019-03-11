@@ -95,6 +95,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
         }
         query.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
 
+        cleanQuery(query);
         logger.debug("CH Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
         Map<String, List<Variant>> variantMap =

@@ -29,6 +29,7 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -401,6 +402,15 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+        }
+    }
+
+    protected void cleanQuery(Query query) {
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
+            query.remove(VariantQueryParam.SAMPLE.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key());
+            query.remove(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key());
         }
     }
 

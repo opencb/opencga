@@ -95,6 +95,7 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
         samples.add(sampleMap.get(proband.getFather().getId()));
         query.put(VariantQueryParam.INCLUDE_SAMPLE.key(), samples);
 
+        cleanQuery(query);
         logger.debug("De novo query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
 
