@@ -29,12 +29,15 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 
 public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
@@ -376,6 +379,19 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         return secondaryFindings;
     }
 
+    protected List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
+                                                                            ReportedVariantCreator creator)
+            throws InterpretationAnalysisException {
+        // Compound heterozygous management
+        // Create transcript - reported variant map from transcript - variant
+        Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
+        for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
+            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
+        }
+        return creator.groupCHVariants(reportedVariantMap);
+    }
+
+
     protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
         query.put(VariantQueryParam.GENOTYPE.key(),
                 StringUtils.join(genotypes.entrySet().stream()
@@ -386,6 +402,15 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+        }
+    }
+
+    protected void cleanQuery(Query query) {
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
+            query.remove(VariantQueryParam.SAMPLE.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key());
+            query.remove(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key());
         }
     }
 

@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 
 @Parameters(commandNames = {"interpretation"}, commandDescription = "Implement several interpretation analysis")
 public class InterpretationCommandOptions {
@@ -63,6 +64,9 @@ public class InterpretationCommandOptions {
 
         @Parameter(names = {"--panel-ids"}, description = "Comma separated list of disease panel IDs", arity = 1)
         public String panelIds;
+
+        @Parameter(names = {"--family-segregation"}, description = VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC, arity = 1)
+        public String segregation;
 
 
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", required = true, arity = 1)
