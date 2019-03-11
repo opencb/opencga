@@ -130,9 +130,15 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         Runtime.getRuntime().addShutdownHook(hook);
         monitor.start(outDirPath);
 
-        // Run interpretation
+        ClinicalProperty.ModeOfInheritance moi;
+        try {
+            moi = ClinicalProperty.ModeOfInheritance.valueOf(options.segregation);
+        } catch (IllegalArgumentException e) {
+            throw new AnalysisException("Unknown '--family-segregation' value: " + options.segregation);
+        }
 
-        TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
+        // Run interpretation
+        TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
                 actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, token);
 
         InterpretationResult interpretationResult = teamAnalysis.execute();

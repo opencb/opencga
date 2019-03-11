@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
+
 public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
     protected String clinicalAnalysisId;
@@ -375,6 +377,19 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         }
         return secondaryFindings;
     }
+
+    protected List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
+                                                                            ReportedVariantCreator creator)
+            throws InterpretationAnalysisException {
+        // Compound heterozygous management
+        // Create transcript - reported variant map from transcript - variant
+        Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
+        for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
+            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
+        }
+        return creator.groupCHVariants(reportedVariantMap);
+    }
+
 
     protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
         query.put(VariantQueryParam.GENOTYPE.key(),

@@ -22,8 +22,8 @@ import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.Interpretation;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
@@ -32,8 +32,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -747,6 +747,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
+            @ApiParam(value= VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC) @QueryParam("familySegregation") String segregation,
             @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
             // Get analysis options from query
@@ -769,8 +770,15 @@ public class InterpretationWSService extends AnalysisWSService {
                 // Queue job
                 result = catalogInterpretationManager.queue(studyStr, "team", clinicalAnalysisId, panelList, teamAnalysisOptions, sessionId);
             } else {
+                ClinicalProperty.ModeOfInheritance moi;
+                try {
+                    moi = ClinicalProperty.ModeOfInheritance.valueOf(segregation);
+                } catch (IllegalArgumentException e) {
+                    return createErrorResponse(new AnalysisException("Unknown 'familySegregation' value: " + segregation));
+                }
+
                 // Execute TEAM analysis
-                TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
+                TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
                         actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, sessionId);
                 result = teamAnalysis.execute();
             }
@@ -910,6 +918,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     })
     public Response customAnalysis(
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr) {
         try {
@@ -925,7 +934,7 @@ public class InterpretationWSService extends AnalysisWSService {
             String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
 
             // Execute custom analysis
-            CustomAnalysis customAnalysis = new CustomAnalysis(null, query, studyStr, roleInCancer,
+            CustomAnalysis customAnalysis = new CustomAnalysis(clinicalAnalysisId, query, studyStr, roleInCancer,
                     actionableVariantsByAssembly.get(assembly), customAnalysisOptions, opencgaHome, sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);

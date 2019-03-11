@@ -5,32 +5,26 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
-import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisResult;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-public class DeNovoAnalysis extends FamilyAnalysis<List<ReportedVariant>> {
+public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
 
     private Query query;
 
@@ -43,8 +37,8 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<ReportedVariant>> {
                         + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
                         + "GNOMAD_EXOMES:OTH<0.002")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ReportedVariantCreator.proteinCoding)
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ReportedVariantCreator.extendedLof);
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
     }
 
     public DeNovoAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Query query,
@@ -65,15 +59,12 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<ReportedVariant>> {
     }
 
     @Override
-    public AnalysisResult<List<ReportedVariant>> execute() throws Exception {
+    public AnalysisResult<List<Variant>> execute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
         // Get and check clinical analysis and proband
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
         Individual proband = getProband(clinicalAnalysis);
-
-        // Get disease panels from IDs
-        List<Panel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
 
         // Get pedigree
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
@@ -118,25 +109,8 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<ReportedVariant>> {
 
         List<Variant> variants = ModeOfInheritance.deNovo(iterator, 0, 1, 2);
 
-        Map<String, List<ClinicalProperty.ModeOfInheritance>> moiMap = new HashMap<>();
-        List<ClinicalProperty.ModeOfInheritance> modeOfInheritance = Collections.singletonList(ClinicalProperty.ModeOfInheritance.DE_NOVO);
-        for (Variant variant : variants) {
-            moiMap.put(variant.getId(), modeOfInheritance);
-        }
-
-        // Creating reported variants
-        List<ReportedVariant> reportedVariants;
-        List<DiseasePanel> biodataDiseasePanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
-        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasePanelList, roleInCancer, actionableVariants,
-                clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
-        try {
-            reportedVariants = creator.create(variants, moiMap);
-        } catch (InterpretationAnalysisException e) {
-            throw new AnalysisException(e.getMessage(), e);
-        }
-
         logger.debug("De novo time: {}", watcher.getTime());
-        return new AnalysisResult<>(reportedVariants, Math.toIntExact(watcher.getTime()), null);
+        return new AnalysisResult<>(variants, Math.toIntExact(watcher.getTime()), null);
     }
 
 }
