@@ -35,10 +35,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
@@ -115,9 +112,7 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
             //       Polyphen2 > 0.91
             //       ScaledCADD > 15
 
-            List<String> lof = new ArrayList<>();
-            lof.addAll(ReportedVariantCreator.LOF_SET);
-            query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), StringUtils.join(lof, VariantQueryUtils.OR));
+            query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ReportedVariantCreator.lof);
 
             query.put(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:EUR<0.01"
                     + VariantQueryUtils.OR + "1kG_phase3:IBS<0.01"
@@ -135,7 +130,7 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
             } else {
                 // No loss of function variants, then try with protein_coding and protein substitution scores
                 query.remove(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
-                query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding");
+                query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), ReportedVariantCreator.proteinCoding);
                 query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.05" + VariantQueryUtils.AND + "polyphen>0.91");
 
                 queryResult = variantStorageManager.get(query, queryOptions, token);

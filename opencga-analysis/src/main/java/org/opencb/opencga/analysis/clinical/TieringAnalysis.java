@@ -27,6 +27,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -46,10 +47,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -65,34 +63,28 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
 
     static {
         recessiveQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,IG_C_gene,IG_D_gene,IG_J_gene,IG_V_gene,"
-                        + "nonsense_mediated_decay,non_stop_decay,TR_C_gene,TR_D_gene,TR_J_gene,TR_V_gene")
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ReportedVariantCreator.proteinCoding)
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.01;1kG_phase3:AMR<0.01;"
                         + "1kG_phase3:EAS<0.01;1kG_phase3:EUR<0.01;1kG_phase3:SAS<0.01;GNOMAD_EXOMES:AFR<0.01;GNOMAD_EXOMES:AMR<0.01;"
                         + "GNOMAD_EXOMES:EAS<0.01;GNOMAD_EXOMES:FIN<0.01;GNOMAD_EXOMES:NFE<0.01;GNOMAD_EXOMES:ASJ<0.01;"
                         + "GNOMAD_EXOMES:OTH<0.01")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,"
-                        + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626");
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ReportedVariantCreator.extendedLof);
 
         dominantQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,IG_C_gene,IG_D_gene,IG_J_gene,IG_V_gene,"
-                        + "nonsense_mediated_decay,non_stop_decay,TR_C_gene,TR_D_gene,TR_J_gene,TR_V_gene")
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ReportedVariantCreator.proteinCoding)
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
                         + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
                         + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
                         + "GNOMAD_EXOMES:OTH<0.002")
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,"
-                        + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626");
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ReportedVariantCreator.extendedLof);
 
         mitochondrialQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,IG_C_gene,IG_D_gene,IG_J_gene,IG_V_gene,"
-                        + "nonsense_mediated_decay,non_stop_decay,TR_C_gene,TR_D_gene,TR_J_gene,TR_V_gene")
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ReportedVariantCreator.proteinCoding)
                 .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
                         + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001893,SO:0001574,SO:0001575,SO:0001587,SO:0001589,SO:0001578,"
-                        + "SO:0001582,SO:0001889,SO:0001821,SO:0001822,SO:0001583,SO:0001630,SO:0001626")
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ReportedVariantCreator.extendedLof)
                 .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
                 .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
     }

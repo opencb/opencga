@@ -15,6 +15,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -39,19 +40,11 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<List<ReportedVa
     private Query query;
 
     private static Query defaultQuery;
-    private static Set<String> extendedLof;
-    private static Set<String> proteinCoding;
 
     static {
-        proteinCoding = new HashSet<>(Arrays.asList("protein_coding", "IG_C_gene", "IG_D_gene", "IG_J_gene", "IG_V_gene",
-                "nonsense_mediated_decay", "non_stop_decay", "TR_C_gene", "TR_D_gene", "TR_J_gene", "TR_V_gene"));
-
-        extendedLof = new HashSet<>(Arrays.asList("SO:0001893", "SO:0001574", "SO:0001575", "SO:0001587", "SO:0001589", "SO:0001578",
-                "SO:0001582", "SO:0001889", "SO:0001821", "SO:0001822", "SO:0001583", "SO:0001630", "SO:0001626"));
-
         defaultQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), proteinCoding)
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), extendedLof);
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ReportedVariantCreator.proteinCoding)
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ReportedVariantCreator.extendedLof);
     }
 
     public CompoundHeterozygousAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Query query,
@@ -152,11 +145,11 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<List<ReportedVa
             }
 
             for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                if (proteinCoding.contains(consequenceType.getBiotype())) {
+                if (ReportedVariantCreator.proteinCoding.contains(consequenceType.getBiotype())) {
                     String transcriptId = consequenceType.getEnsemblTranscriptId();
                     if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
                         for (SequenceOntologyTerm soTerm : consequenceType.getSequenceOntologyTerms()) {
-                            if (extendedLof.contains(soTerm.getAccession())) {
+                            if (ReportedVariantCreator.extendedLof.contains(soTerm.getAccession())) {
                                 transcriptToVariantsMap.computeIfAbsent(transcriptId, k -> Pair.of(new ArrayList<>(), new ArrayList<>()));
                                 if (pairIndex == 0) {
                                     // From mother

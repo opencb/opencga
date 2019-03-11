@@ -60,6 +60,17 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
+//    protected static Set<String> extendedLof;
+//    protected static Set<String> proteinCoding;
+//
+//    static {
+//        proteinCoding = new HashSet<>(Arrays.asList("protein_coding", "IG_C_gene", "IG_D_gene", "IG_J_gene", "IG_V_gene",
+//                "nonsense_mediated_decay", "non_stop_decay", "TR_C_gene", "TR_D_gene", "TR_J_gene", "TR_V_gene"));
+//
+//        extendedLof = new HashSet<>(Arrays.asList("SO:0001893", "SO:0001574", "SO:0001575", "SO:0001587", "SO:0001589", "SO:0001578",
+//                "SO:0001582", "SO:0001889", "SO:0001821", "SO:0001822", "SO:0001583", "SO:0001630", "SO:0001626"));
+//    }
+
     public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
                           Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome, String token) {
         super(opencgaHome, studyStr, token);
