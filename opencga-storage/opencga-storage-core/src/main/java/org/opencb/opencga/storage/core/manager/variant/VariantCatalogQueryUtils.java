@@ -17,9 +17,9 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -70,14 +70,18 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             + "(HET or HOM_ALT)";
     public static final QueryParam FAMILY =
             QueryParam.create("family", FAMILY_DESC, QueryParam.Type.TEXT);
-    public static final String FAMILY_PHENOTYPE_DESC = "Specify the phenotype to use for the mode  of inheritance";
-    public static final QueryParam FAMILY_PHENOTYPE =
-            QueryParam.create("familyPhenotype", FAMILY_PHENOTYPE_DESC, QueryParam.Type.TEXT);
-    public static final String MODE_OF_INHERITANCE_DESC = "Filter by mode of inheritance from a given family. Accepted values: "
+    public static final String FAMILY_MEMBERS_DESC = "Sub set of the members of a given family";
+    public static final QueryParam FAMILY_MEMBERS =
+            QueryParam.create("familyMembers", FAMILY_MEMBERS_DESC, QueryParam.Type.TEXT);
+    public static final String FAMILY_DISORDER_DESC = "Specify the disorder to use for the family segregation";
+    public static final QueryParam FAMILY_DISORDER =
+            QueryParam.create("familyDisorder", FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
+    public static final String FAMILY_SEGREGATION_DESCR = "Filter by mode of inheritance from a given family. Accepted values: "
             + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked ]";
-    public static final QueryParam MODE_OF_INHERITANCE =
-            QueryParam.create("modeOfInheritance", MODE_OF_INHERITANCE_DESC, QueryParam.Type.TEXT);
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError ]";
+    public static final QueryParam FAMILY_SEGREGATION =
+            QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
+
     public static final String PANEL_DESC = "Filter by genes from the given disease panel";
     public static final QueryParam PANEL =
             QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
@@ -225,6 +229,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             if (family.getMembers().isEmpty()) {
                 throw VariantQueryException.malformedParam(FAMILY, familyId, "Empty family");
             }
+            List<String> familyMembers = query.getAsStringList(FAMILY_MEMBERS.key());
+            if (familyMembers.size() == 1) {
+                throw VariantQueryException.malformedParam(FAMILY_MEMBERS, familyMembers.toString(), "Only one member provided");
+            }
 
             Set<Long> indexedSampleUids = catalogManager.getCohortManager()
                     .get(defaultStudyStr, StudyEntry.DEFAULT_COHORT,
@@ -236,14 +244,33 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             boolean multipleSamplesPerIndividual = false;
             List<Long> sampleUids = new ArrayList<>();
-            for (Individual member : family.getMembers()) {
+            if (!familyMembers.isEmpty()) {
+                family.getMembers().removeIf(member -> !familyMembers.contains(member.getId()));
+                if (family.getMembers().size() != familyMembers.size()) {
+                    List<String> actualFamilyMembers = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+                    List<String> membersNotInFamily = familyMembers.stream()
+                            .filter(member -> !actualFamilyMembers.contains(member))
+                            .collect(Collectors.toList());
+                    throw VariantQueryException.malformedParam(FAMILY_MEMBERS, familyMembers.toString(),
+                            "Members " + membersNotInFamily + " not present in family '" + family.getId() + "'. "
+                                    + "Family members: " + actualFamilyMembers);
+                }
+            }
+            for (Iterator<Individual> iterator = family.getMembers().iterator(); iterator.hasNext();) {
+                Individual member = iterator.next();
                 int numSamples = 0;
-                for (Sample sample : member.getSamples()) {
+                for (Iterator<Sample> sampleIt = member.getSamples().iterator(); sampleIt.hasNext();) {
+                    Sample sample = sampleIt.next();
                     long uid = sample.getUid();
                     if (indexedSampleUids.contains(uid)) {
                         numSamples++;
                         sampleUids.add(uid);
+                    } else {
+                        sampleIt.remove();
                     }
+                }
+                if (numSamples == 0) {
+                    iterator.remove();
                 }
                 multipleSamplesPerIndividual |= numSamples > 1;
             }
@@ -263,147 +290,162 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             // If filter FAMILY is among with MODE_OF_INHERITANCE, fill the list of genotypes.
             // Otherwise, add the samples from the family to the SAMPLES query param.
-            if (isValidParam(query, MODE_OF_INHERITANCE)) {
+            if (isValidParam(query, FAMILY_SEGREGATION)) {
                 if (isValidParam(query, GENOTYPE)) {
-                    throw VariantQueryException.malformedParam(MODE_OF_INHERITANCE, query.getString(MODE_OF_INHERITANCE.key()),
+                    throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()),
                             "Can not be used along with filter \"" + GENOTYPE.key() + '"');
                 }
                 if (isValidParam(query, SAMPLE)) {
-                    throw VariantQueryException.malformedParam(MODE_OF_INHERITANCE, query.getString(MODE_OF_INHERITANCE.key()),
+                    throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()),
                             "Can not be used along with filter \"" + SAMPLE.key() + '"');
-                }
-                if (family.getPhenotypes().isEmpty()) {
-                    throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have phenotypes");
                 }
                 if (multipleSamplesPerIndividual) {
                     throw VariantQueryException.malformedParam(FAMILY, familyId,
                             "Some individuals from this family have multiple indexed samples");
                 }
-                Disorder disorder;
-                if (isValidParam(query, FAMILY_PHENOTYPE)) {
-                    String phenotypeId = query.getString(FAMILY_PHENOTYPE.key());
-                    disorder = family.getDisorders()
-                            .stream()
-                            .filter(familyPhenotype -> familyPhenotype.getId().equals(phenotypeId))
-                            .findFirst()
-                            .orElse(null);
-                    if (disorder == null) {
-                        throw VariantQueryException.malformedParam(FAMILY_PHENOTYPE, phenotypeId,
-                                "Available phenotypes: " + family.getPhenotypes()
-                                        .stream()
-                                        .map(Phenotype::getId)
-                                        .collect(Collectors.toList()));
-                    }
-
-                } else {
-                    if (family.getPhenotypes().size() > 1) {
-                        throw VariantQueryException.missingParam(FAMILY_PHENOTYPE,
-                                "More than one phenotype found for the family \"" + familyId + "\". "
-                                        + "Available phenotypes: " + family.getPhenotypes()
-                                        .stream()
-                                        .map(Phenotype::getId)
-                                        .collect(Collectors.toList()));
-                    }
-                    disorder = family.getDisorders().get(0);
-                }
                 Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family);
+                PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
-                String moiString = query.getString(MODE_OF_INHERITANCE.key());
-
-                Map<String, List<String>> genotypes;
-                switch (moiString) {
-                    case "MONOALLELIC":
-                    case "monoallelic":
-                    case "dominant":
-                        genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
-                        break;
-                    case "MONOALLELIC_INCOMPLETE_PENETRANCE":
-                    case "monoallelicIncompletePenetrance":
-                        genotypes = ModeOfInheritance.dominant(pedigree, disorder, true);
-                        break;
-                    case "BIALLELIC":
-                    case "biallelic":
-                    case "recesive":
-                        genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
-                        break;
-                    case "BIALLELIC_INCOMPLETE_PENETRANCE":
-                    case "biallelicIncompletePenetrance":
-                        genotypes = ModeOfInheritance.recessive(pedigree, disorder, true);
-                        break;
-                    case "XLINKED_MONOALLELIC":
-                    case "XlinkedMonoallelic":
-                        genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
-                        break;
-                    case "XLINKED_BIALLELIC":
-                    case "XlinkedBiallelic":
-                        genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
-                        break;
-                    case "YLINKED":
-                    case "Ylinked":
-                        genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
-                        break;
-                    default:
-                        throw VariantQueryException.malformedParam(MODE_OF_INHERITANCE, moiString);
-                }
-
-                StringBuilder sb = new StringBuilder();
-
-                Map<String, Long> individualToSampleUid = new HashMap<>();
-                for (Individual member : family.getMembers()) {
-                    for (Sample sample : member.getSamples()) {
-                        long uid = sample.getUid();
-                        if (indexedSampleUids.contains(uid)) {
-                            individualToSampleUid.put(member.getId(), uid);
-                        }
+                String moiString = query.getString(FAMILY_SEGREGATION.key());
+                if (moiString.equalsIgnoreCase("mendelianError")) {
+//                    List<Member> children = pedigreeManager.getWithoutChildren();
+//                    List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
+//                    query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenIds);
+                    throw new VariantQueryException("Unsupported MendelianError");
+                } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
+                    throw new VariantQueryException("Unsupported CompoundHeterozygous");
+                } else {
+                    if (family.getDisorders().isEmpty()) {
+                        throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have disorders");
                     }
-                }
-                Map<Long, String> samplesUidToId = new HashMap<>();
-                for (Sample sample : samples) {
-                    samplesUidToId.put(sample.getUid(), sample.getId());
-                }
+                    Disorder disorder;
+                    if (isValidParam(query, FAMILY_DISORDER)) {
+                        String phenotypeId = query.getString(FAMILY_DISORDER.key());
+                        disorder = family.getDisorders()
+                                .stream()
+                                .filter(familyDisorder -> familyDisorder.getId().equals(phenotypeId))
+                                .findFirst()
+                                .orElse(null);
+                        if (disorder == null) {
+                            throw VariantQueryException.malformedParam(FAMILY_DISORDER, phenotypeId,
+                                    "Available disorders: " + family.getDisorders()
+                                            .stream()
+                                            .map(Disorder::getId)
+                                            .collect(Collectors.toList()));
+                        }
 
-                Map<String, String> individualToSample = new HashMap<>();
-                for (Map.Entry<String, Long> entry : individualToSampleUid.entrySet()) {
-                    individualToSample.put(entry.getKey(), samplesUidToId.get(entry.getValue()));
-                }
-
-                boolean firstSample = true;
-                for (Map.Entry<String, List<String>> entry : genotypes.entrySet()) {
-                    if (firstSample) {
-                        firstSample = false;
                     } else {
-                        sb.append(AND);
-                    }
-                    sb.append(individualToSample.get(entry.getKey())).append(IS);
-
-                    boolean firstGenotype = true;
-                    for (String gt : entry.getValue()) {
-                        if (firstGenotype) {
-                            firstGenotype = false;
-                        } else {
-                            sb.append(OR);
+                        if (family.getPhenotypes().size() > 1) {
+                            throw VariantQueryException.missingParam(FAMILY_DISORDER,
+                                    "More than one phenotype found for the family \"" + familyId + "\". "
+                                            + "Available phenotypes: " + family.getPhenotypes()
+                                            .stream()
+                                            .map(Phenotype::getId)
+                                            .collect(Collectors.toList()));
                         }
-                        sb.append(gt);
+                        disorder = family.getDisorders().get(0);
                     }
+
+                    Map<String, List<String>> genotypes;
+                    switch (moiString) {
+                        case "MONOALLELIC":
+                        case "monoallelic":
+                        case "dominant":
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
+                            break;
+                        case "MONOALLELIC_INCOMPLETE_PENETRANCE":
+                        case "monoallelicIncompletePenetrance":
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, true);
+                            break;
+                        case "BIALLELIC":
+                        case "biallelic":
+                        case "recesive":
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
+                            break;
+                        case "BIALLELIC_INCOMPLETE_PENETRANCE":
+                        case "biallelicIncompletePenetrance":
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, true);
+                            break;
+                        case "XLINKED_MONOALLELIC":
+                        case "XlinkedMonoallelic":
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+                            break;
+                        case "XLINKED_BIALLELIC":
+                        case "XlinkedBiallelic":
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+                            break;
+                        case "YLINKED":
+                        case "Ylinked":
+                            genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+                            break;
+                        default:
+                            throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString);
+                    }
+                    if (genotypes == null) {
+                        throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
+                                "Invalid segregation mode for the family '" + family.getId() + "'");
+                    }
+
+                    StringBuilder sb = new StringBuilder();
+
+                    Map<String, Long> individualToSampleUid = new HashMap<>();
+                    for (Individual member : family.getMembers()) {
+                        for (Sample sample : member.getSamples()) {
+                            long uid = sample.getUid();
+                            if (indexedSampleUids.contains(uid)) {
+                                individualToSampleUid.put(member.getId(), uid);
+                            }
+                        }
+                    }
+                    Map<Long, String> samplesUidToId = new HashMap<>();
+                    for (Sample sample : samples) {
+                        samplesUidToId.put(sample.getUid(), sample.getId());
+                    }
+
+                    Map<String, String> individualToSample = new HashMap<>();
+                    for (Map.Entry<String, Long> entry : individualToSampleUid.entrySet()) {
+                        individualToSample.put(entry.getKey(), samplesUidToId.get(entry.getValue()));
+                    }
+
+                    boolean firstSample = true;
+                    for (Map.Entry<String, List<String>> entry : genotypes.entrySet()) {
+                        if (firstSample) {
+                            firstSample = false;
+                        } else {
+                            sb.append(AND);
+                        }
+                        sb.append(individualToSample.get(entry.getKey())).append(IS);
+
+                        boolean firstGenotype = true;
+                        for (String gt : entry.getValue()) {
+                            if (firstGenotype) {
+                                firstGenotype = false;
+                            } else {
+                                sb.append(OR);
+                            }
+                            sb.append(gt);
+                        }
+                    }
+
+                    query.put(GENOTYPE.key(), sb.toString());
                 }
-
-                query.put(GENOTYPE.key(), sb.toString());
-
             } else {
-                if (isValidParam(query, FAMILY_PHENOTYPE)) {
-                    throw VariantQueryException.malformedParam(FAMILY_PHENOTYPE, query.getString(FAMILY_PHENOTYPE.key()),
-                            "Require parameter \"" + FAMILY.key() + "\" and \"" + MODE_OF_INHERITANCE.key() + "\" to use \""
-                                    + FAMILY_PHENOTYPE.key() + "\".");
+                if (isValidParam(query, FAMILY_DISORDER)) {
+                    throw VariantQueryException.malformedParam(FAMILY_DISORDER, query.getString(FAMILY_DISORDER.key()),
+                            "Require parameter \"" + FAMILY.key() + "\" and \"" + FAMILY_SEGREGATION.key() + "\" to use \""
+                                    + FAMILY_DISORDER.key() + "\".");
                 }
 
                 List<String> sampleIds = new ArrayList<>();
                 if (isValidParam(query, VariantQueryParam.SAMPLE)) {
-                    Pair<QueryOperation, List<String>> pair = splitValue(query.getString(VariantQueryParam.SAMPLE.key()));
-                    if (pair.getKey().equals(QueryOperation.AND)) {
-                        throw VariantQueryException.malformedParam(VariantQueryParam.SAMPLE, familyId,
-                                "Can not be used along with filter \"" + FAMILY.key() + "\" with operator AND (" + AND + ").");
-                    }
-                    sampleIds.addAll(pair.getValue());
+//                    Pair<QueryOperation, List<String>> pair = splitValue(query.getString(VariantQueryParam.SAMPLE.key()));
+//                    if (pair.getKey().equals(QueryOperation.AND)) {
+//                        throw VariantQueryException.malformedParam(VariantQueryParam.SAMPLE, familyId,
+//                                "Can not be used along with filter \"" + FAMILY.key() + "\" with operator AND (" + AND + ").");
+//                    }
+//                    sampleIds.addAll(pair.getValue());
+                    throw VariantQueryException.malformedParam(VariantQueryParam.SAMPLE, familyId,
+                            "Can not be used along with filter \"" + FAMILY.key() + "\"");
                 }
 
                 for (Sample sample : samples) {
@@ -412,13 +454,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                 query.put(VariantQueryParam.SAMPLE.key(), String.join(OR, sampleIds));
             }
-        } else if (isValidParam(query, MODE_OF_INHERITANCE)) {
-            throw VariantQueryException.malformedParam(MODE_OF_INHERITANCE, query.getString(MODE_OF_INHERITANCE.key()),
-                    "Require parameter \"" + FAMILY.key() + "\" to use \"" + MODE_OF_INHERITANCE.toString() + "\".");
-        } else if (isValidParam(query, FAMILY_PHENOTYPE)) {
-            throw VariantQueryException.malformedParam(FAMILY_PHENOTYPE, query.getString(FAMILY_PHENOTYPE.key()),
-                    "Require parameter \"" + FAMILY.key() + "\" and \"" + MODE_OF_INHERITANCE.key() + "\" to use \""
-                            + FAMILY_PHENOTYPE.toString() + "\".");
+        } else if (isValidParam(query, FAMILY_MEMBERS)) {
+            throw VariantQueryException.malformedParam(FAMILY_MEMBERS, query.getString(FAMILY_MEMBERS.key()),
+                    "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_MEMBERS.toString() + "\".");
+        } else if (isValidParam(query, FAMILY_SEGREGATION)) {
+            throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()),
+                    "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_SEGREGATION.toString() + "\".");
+        } else if (isValidParam(query, FAMILY_DISORDER)) {
+            throw VariantQueryException.malformedParam(FAMILY_DISORDER, query.getString(FAMILY_DISORDER.key()),
+                    "Require parameter \"" + FAMILY.key() + "\" and \"" + FAMILY_SEGREGATION.key() + "\" to use \""
+                            + FAMILY_DISORDER.toString() + "\".");
         }
 
         if (isValidParam(query, PANEL)) {

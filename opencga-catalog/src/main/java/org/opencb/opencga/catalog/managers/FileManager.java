@@ -179,7 +179,7 @@ public class FileManager extends AnnotationSetManager<File> {
             String variantPathName = getOriginalFile(transformedFile.getPath());
             if (variantPathName == null) {
                 // Skip the file.
-                logger.warn("The file {} is not a variant transformed file", transformedFile.getName());
+                logger.debug("The file {} is not a variant transformed file", transformedFile.getName());
                 continue;
             }
 
@@ -2329,8 +2329,8 @@ public class FileManager extends AnnotationSetManager<File> {
         String studyFilePath = studyUri.resolve(catalogFilePath).getPath();
         String originalFilePath = fileUri.getPath();
 
-        logger.info("Study file path: {}", studyFilePath);
-        logger.info("File path: {}", originalFilePath);
+        logger.debug("Study file path: {}", studyFilePath);
+        logger.debug("File path: {}", originalFilePath);
         return !studyFilePath.equals(originalFilePath);
     }
 
