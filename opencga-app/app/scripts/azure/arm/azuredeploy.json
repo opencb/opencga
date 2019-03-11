@@ -107,7 +107,7 @@
                 "description": "The daemon container image to run"
             }
         },
-        "certificateEmail": {
+        "sslCertificateEmail": {
             "type": "string",
             "metadata": {
                 "description": "Email address used for mongoDB letsencrypt certificates"
@@ -388,7 +388,7 @@
                         "value": "[variables('dnsNamePrefix')]"
                     },
                     "appGwSslEmail": {
-                        "value": "[parameters('certificateEmail')]"
+                        "value": "[parameters('sslCertificateEmail')]"
                     },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
@@ -927,7 +927,7 @@
                         "value": "[variables('selectedSize').mongo.nodeCount]"
                     },
                     "mongoCertificateEmail": {
-                        "value": "[parameters('certificateEmail')]"
+                        "value": "[parameters('sslCertificateEmail')]"
                     },
                     "adminUsername": {
                         "value": "[parameters('adminUsername')]"
