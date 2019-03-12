@@ -21,7 +21,6 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
@@ -340,12 +339,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         }
 
                     } else {
-                        if (family.getPhenotypes().size() > 1) {
+                        if (family.getDisorders().size() > 1) {
                             throw VariantQueryException.missingParam(FAMILY_DISORDER,
-                                    "More than one phenotype found for the family \"" + familyId + "\". "
-                                            + "Available phenotypes: " + family.getPhenotypes()
+                                    "More than one disorder found for the family \"" + familyId + "\". "
+                                            + "Available disorders: " + family.getDisorders()
                                             .stream()
-                                            .map(Phenotype::getId)
+                                            .map(Disorder::getId)
                                             .collect(Collectors.toList()));
                         }
                         disorder = family.getDisorders().get(0);
