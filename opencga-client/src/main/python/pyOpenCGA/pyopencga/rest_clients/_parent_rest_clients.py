@@ -105,9 +105,7 @@ class _ParentAclRestClient(_ParentRestClient):
         :param query_id:
         :param options:
         """
-        print(options)
-        print(options['member'])
-        
+
         return self._get('acl', query_id=query_id, **options)
 
     def acl_update(self, memberId, data, **options):

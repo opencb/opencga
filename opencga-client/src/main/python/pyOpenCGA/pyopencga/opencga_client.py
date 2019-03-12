@@ -5,7 +5,7 @@ from pyopencga.rest_clients.user_client import Users
 from pyopencga.rest_clients.project_client import Projects
 from pyopencga.rest_clients.study_client import Studies
 # from rest_clients.file_client import Files
-# from rest_clients.sample_client import Samples
+from pyopencga.rest_clients.sample_client import Samples
 # from rest_clients.cohort_client import Cohorts
 # from rest_clients.family_client import Families
 # from rest_clients.job_client import Jobs
@@ -75,7 +75,7 @@ class OpenCGAClient(object):
         self.projects = Projects(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.studies = Studies(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         # self.files = Files(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        # self.samples = Samples(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        self.samples = Samples(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         # self.cohorts = Cohorts(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         # self.families = Families(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         # self.jobs = Jobs(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
@@ -94,9 +94,8 @@ class OpenCGAClient(object):
                         self.ga4gh, self.meta]
 
         for client in self.clients:
-            # only retry the ones with objects
+            # only retry the ones with objects (instantiated clients)
             if client is not None:
-                print("#[DEBUGGING]: Adding methods to class User")
                 client.on_retry = self.on_retry
 
     def _make_login_handler(self, user, pwd):

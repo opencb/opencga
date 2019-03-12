@@ -27,6 +27,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         Search studies
         URL: /{apiVersion}/studies/search
 
+        :param project: project id
         :param name: study name
         :param id: study id
         :param alias: study alias
