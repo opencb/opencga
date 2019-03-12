@@ -65,31 +65,17 @@ class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('interpretation', subcategory='index', **options)
 
-    def add_interpretation(self, clinical_analysis, data, **options): ## Split method in add/remove
+    def update_interpretations(self, clinical_analysis, data, action, **options):
         """
-        Add Interpretations to/from a Clinical Analysis
-        URL: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretations/update?action=ADD 
+        Add or remove Interpretations to/from a Clinical Analysis
+        URL: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretations/update
         
         :param clinical_analysis: clinical analysis id
-        """
-
-        options['action'] = 'ADD'
-
-        return self._post('interpretations', query_id=clinical_analysis, subcategory='update',
-                           data=data, **options)
-
-    def remove_interpretation(self, clinical_analysis, data, **options):
-        """
-        Remove Interpretations to/from a Clinical Analysis
-        URL: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretations/update?action=REMOVE
-        
-        :param clinical_analysis: clinical analysis id
+        :param action: Action to be performed if the array of interpretations is being updated [ADD, REMOVE]
         """
         
-        options['action'] = 'REMOVE'
-
         return self._post('interpretations', query_id=clinical_analysis, subcategory='update',
-                           data=data, **options)
+                           data=data, action=action, **options)
 
     def update_interpretation(self, clinical_analysis, interpretation, data, **options):
         """
@@ -112,12 +98,14 @@ class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient):
         return self._post('interpretations', query_id=clinical_analysis, subquery_id=interpretation,
                            subcategory='reportedVariants/update', data=data, **options)
 
-    def update_interpretation_comments(self, clinical_analysis, interpretation, data, **options):
+    def update_interpretation_comments(self, clinical_analysis, interpretation, data, action, **options):
         """
         Update comments of an Interpretation
         URL: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/comments/update
+
+        :param action: Action to be performed [ADD, SET, REMOVE]
         """
 
         return self._post('interpretations', query_id=clinical_analysis, subquery_id=interpretation,
-                          subcategory='comments/update', data=data, **options)
+                          subcategory='comments/update', data=data, action=action, **options)
 

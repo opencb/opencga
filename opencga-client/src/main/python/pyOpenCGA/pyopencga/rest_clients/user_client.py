@@ -78,43 +78,25 @@ class Users(_ParentBasicCRUDClient):
         
         return self._get('configs', query_id=user, **options)
 
-    def add_config(self, user, data, **options):
+    def update_configs(self, user, data, action, **options):
         """
-        Add a custom user configuration. Some applications might want to store
+        Add or remove a custom user configuration. Some applications might want to store
         some configuration parameters containing the preferences of the user. The aim of 
         this is to provide a place to store this things for every user.
-        URL:/{apiVersion}/users/{user}/configs/update?action=ADD
+        URL:/{apiVersion}/users/{user}/configs/update
 
         :param user: user id
+        :param action: Action to be performed: ADD or REMOVE a group
         :param data: dict with the following Model:
-	
-	{
-	    "id": "string",
-	    "configuration": {}
-	}
-        """
 
-        return self._post('configs', query_id=user, subcategory='update', data=data,
-                          action='ADD', **options)
-
-    def remove_config(self, user, data, **options):
-        """
-        Remove a custom user configuration. Some applications might want to store
-        some configuration parameters containing the preferences of the user. The aim of 
-        this is to provide a place to store this things for every user.
-        URL:/{apiVersion}/users/{user}/configs/update?action=REMOVE
-
-        :param user: user id
-        :param data: dict with the following Model:
-	
 	{
 	    "id": "string",
 	    "configuration": {}
 	}
         """
         
-        return self._post('configs', query_id=user, subcategory='update', data=data,
-                          action='REMOVE', **options)
+        return self._post('configs', query_id=user, subcategory='update', data=data, 
+                          action=action, **options)
 
     def get_filters(self, user, **options): ## Method name may be changed
         """
@@ -127,59 +109,13 @@ class Users(_ParentBasicCRUDClient):
         
         return self._get('configs', query_id=user, subcategory='filters', **options)
 
-    def add_filter(self, user, data, **options):
+    def update_filters(self, user, data, action, **options):
         """
-        Add a custom user filter
-        URL: /{apiVersion}/users/{user}/configs/filters/update?action=ADD
+        Add or remove a custom filter
+        URL: /{apiVersion}/users/{user}/configs/filters/update
 
         :param user: user id
-        :param data: dict with the following Model:
-        
-	{
-            "name": "string",
-            "description": "string",
-            "bioformat": "string",
-            "query": {},
-            "options": {}
-        }
-
-        ## Available bioformat values:
-
-        'MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT',
-        'MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX',
-        'MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX',
-        'MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT',
-        'MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX',
-        'DATAMATRIX_EXPRESSION',
-        'IDLIST',
-        'IDLIST_RANKED',
-        'ANNOTATION_GENEVSANNOTATION',
-        'OTHER_NEWICK',
-        'OTHER_BLAST',
-        'OTHER_INTERACTION',
-        'OTHER_GENOTYPE',
-        'OTHER_PLINK',
-        'OTHER_VCF',
-        'OTHER_PED',
-        'VCF4',
-        'VARIANT',
-        'ALIGNMENT',
-        'COVERAGE',
-        'SEQUENCE',
-        'PEDIGREE',
-        'NONE',
-        'UNKNOWN'
-        """
-        
-        return self._post('configs', query_id=user, subcategory='filters/update',
-                          data=data, action='ADD', **options)
-
-    def remove_filter(self, user, data, **options):
-        """
-        Remove a custom filter
-        URL: /{apiVersion}/users/{user}/configs/filters/update?action=REMOVE
-
-        :param user: user id
+        :param acton: action to be performed: ADD or REMOVE
         :param data: dict with the following Model:
         
 	{
@@ -219,7 +155,9 @@ class Users(_ParentBasicCRUDClient):
        """
 
         return self._post('configs', query_id=user, subcategory='filters/update',
-                          data=data, action='REMOVE', **options)
+                          data=data, action=action, **options)
+
+
 
     ## [INFO] The implementation of update_filter needs a reimplementation of URL building methods
     def update_filter(self, user, filter_name, data, **options):

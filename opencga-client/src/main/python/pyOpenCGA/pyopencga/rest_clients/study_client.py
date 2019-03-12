@@ -97,7 +97,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
     def create_groups(self, study, data, **options):
         """
-        Create group
+        Create group [DEPRECATED]
         URL: /{apiVersion}/studies/{study}/groups/create
 
         :param study: study id
@@ -112,12 +112,13 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._post('groups', query_id=study, subcategory='create', data=data, **options)
 
-    def add_group(self, study, data, **options):
+    def update_groups(self, study, data, action, *options):
         """
-        Add a group
-        URL: /{apiVersion}/studies/{study}/groups/update?action=ADD
+        Add or remove a group
+        URL: /{apiVersion}/studies/{study}/groups/update
 
         :param study: study id
+        :param action: Action to be performed: ADD or REMOVE a group
         :param data: dict with the following Model:
 
         {
@@ -127,33 +128,18 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }       
         """
 
-        return self._post('groups', query_id=study, subcategory='update', data=data, action='ADD', **options)
+        return self._post('groups', query_id=study, subcategory='update', data=data, 
+                          action=action, **options)
 
-    def remove_group(self, study, data, **options):
-        """
-        Remove a group
-        URL: /{apiVersion}/studies/{study}/groups/update?action=REMOVE
 
-        :param study: study id
-        :param data: dict with the following Model:
-        
-	{
-	    "id": "string",
-	    "name": "string",
-	    "users": "string"
-	}       
-        """
-
-        return self._post('groups', query_id=study, subcategory='update', data=data, action='REMOVE', **options)
-
-    def update_users_from_group(self, study, group, data, **options):
+    def update_users_from_group(self, study, group, data, action, **options):
         """
         Add, set or remove users from an existing group
         URL: /{apiVersion}/studies/{study}/groups/{group}/users/update
 
         :param study: study id
         :param group: group id
-        :param action: action ['ADD'(default), 'SET', 'REMOVE']
+        :param action: action ['ADD', 'SET', 'REMOVE']
         :param data: dict with the following Model:
         {
             "users": "string"
@@ -161,7 +147,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._post('groups', query_id=study, subcategory='users/update', second_query_id=group, 
-                          data=data, **options)
+                          data=data, action=action, **options)
 
     def get_permission_rules(self, study, entity, **options):
         """
@@ -186,7 +172,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('permissionRules', query_id=study, entity=entity, **options)
 
-    def update_permission_rules(self, study, entity, data, **options):
+    def update_permission_rules(self, study, entity, data, action, **options):
         """
         Add or remove a permission rule
         URL: /{apiVersion}/studies/{study}/permissionRules/update
@@ -194,7 +180,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param study: study id
         :param entity: entity where the permission rules should be applied to
         :param action: Action to be performed: 
-            - ADD (default) to add a new permission rule; 
+            - ADD to add a new permission rule; 
             - REMOVE to remove all permissions assigned by an existing permission rule 
                 (even if it overlaps any manual permission); 
             - REVERT to remove all permissions assigned by an existing permission rule 
@@ -227,7 +213,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
        """
 
         return self._post('permissionRules', query_id=study, subcategory='update', entity=entity,
-              data=data, **options)
+              data=data, action=action, **options)
 
     def get_variable_sets(self, study, **options):
         """
@@ -241,7 +227,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('variableSets', query_id=study, **options)
 
-    def update_variable_sets(self, study, data, **options):
+    def update_variable_sets(self, study, data, action, **options):
         """
         Add or remove a variableSet
         URL: /{apiVersion}/studies/{study}/variableSets/update
@@ -279,9 +265,9 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('variableSets', query_id=study, data=data, **options)
+        return self._post('variableSets', query_id=study, data=data, action=action, **options)
 
-    def update_variable_from_variable_set(self, study, variable_set, **options):
+    def update_variable_from_variable_set(self, study, variable_set, action, **options):
         """
         Add or remove variables to a VariableSet
         URL: /{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update
@@ -312,5 +298,5 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._post('variableSets', query_id=study, subcategory='variables/update',
-                          second_query_id=variable_set, data=data, **options)
+                          second_query_id=variable_set, data=data, action=action, **options)
 
