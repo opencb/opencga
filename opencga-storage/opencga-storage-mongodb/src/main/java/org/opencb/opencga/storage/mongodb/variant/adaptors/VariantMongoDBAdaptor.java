@@ -47,8 +47,8 @@ import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -71,10 +71,8 @@ import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.NAME;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOADED_GENOTYPES;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -500,8 +498,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, selectVariantElements);
-        Map<String, List<String>> samples = getSamplesMetadataIfRequested(query, options, metadataManager);
-        return new VariantQueryResult<>(variantsCollection.find(mongoQuery, projection, converter, options), samples);
+        return addSamplesMetadataIfRequested(variantsCollection.find(mongoQuery, projection, converter, options),
+                query, options, getMetadataManager());
     }
 
     @Override
@@ -558,8 +556,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     watch.stop();
                     queryResult.setDbTime(((int) watch.getTime()));
                     queryResult.setId("getPhased");
-                    queryResult.setSamples(getSamplesMetadataIfRequested(query, options, metadataManager));
-                    return queryResult;
+                    return addSamplesMetadataIfRequested(queryResult, query, options, metadataManager);
                 }
             }
         }

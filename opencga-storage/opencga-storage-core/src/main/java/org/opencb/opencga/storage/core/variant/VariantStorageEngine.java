@@ -1365,10 +1365,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             for (String sample : query.getAsStringList(SAMPLE_MENDELIAN_ERROR.key())) {
                 Integer sampleId = getMetadataManager().getSampleId(defaultStudy.getId(), sample);
-                SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(defaultStudy.getId(), sampleId);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, defaultStudy.getName());
                 }
+                SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(defaultStudy.getId(), sampleId);
                 if (!TaskMetadata.Status.READY.equals(sampleMetadata.getMendelianErrorStatus())) {
                     throw VariantQueryException.malformedParam(SAMPLE_MENDELIAN_ERROR, "Sample \"" + sampleMetadata.getName()
                             + "\" does not have the Mendelian Errors precomputed yet");
@@ -1376,9 +1376,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
         }
 
-        if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {
+        if (!isValidParam(query, INCLUDE_STUDY)
+                || !isValidParam(query, INCLUDE_SAMPLE)
+                || !isValidParam(query, INCLUDE_FILE)
+                || !isValidParam(query, SAMPLE_SKIP)
+                || !isValidParam(query, SAMPLE_LIMIT)
+        ) {
             VariantQueryFields selectVariantElements =
                     parseVariantQueryFields(query, options, metadataManager);
+            // Apply the sample pagination.
+            // Remove the sampleLimit and sampleSkip to avoid applying the pagination twice
+            query.remove(SAMPLE_SKIP.key());
+            query.remove(SAMPLE_LIMIT.key());
+            query.put(NUM_TOTAL_SAMPLES.key(), selectVariantElements.getNumTotalSamples());
+            query.put(NUM_SAMPLES.key(), selectVariantElements.getNumSamples());
+
             if (!isValidParam(query, INCLUDE_STUDY)) {
                 List<String> includeStudy = new ArrayList<>();
                 for (Integer studyId : selectVariantElements.getStudies()) {
@@ -1390,7 +1402,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     query.put(INCLUDE_STUDY.key(), includeStudy);
                 }
             }
-            if (!isValidParam(query, INCLUDE_SAMPLE)) {
+            if (!isValidParam(query, INCLUDE_SAMPLE) || selectVariantElements.getSamplePagination()) {
                 List<String> includeSample = selectVariantElements.getSamples()
                         .entrySet()
                         .stream()
@@ -1404,7 +1416,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     query.put(INCLUDE_SAMPLE.key(), includeSample);
                 }
             }
-            if (!isValidParam(query, INCLUDE_FILE)) {
+            if (!isValidParam(query, INCLUDE_FILE) || selectVariantElements.getSamplePagination()) {
                 List<String> includeFile = selectVariantElements.getFiles()
                         .entrySet()
                         .stream()
@@ -1570,7 +1582,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
         return new VariantQueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count), null,
-                SEARCH_ENGINE_ID + '+' + getStorageEngineId(), approxCount, approxCount ? sampling : null);
+                SEARCH_ENGINE_ID + '+' + getStorageEngineId(), approxCount, approxCount ? sampling : null, null);
     }
 
     /**

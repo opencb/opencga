@@ -17,6 +17,9 @@ public final class VariantQueryFields {
     private final List<Integer> studies;
     private final Map<Integer, StudyMetadata> studyMetadatas;
     private final Map<Integer, List<Integer>> samples;
+    private final boolean samplePagination;
+    private final int numSamples;
+    private final int numTotalSamples;
     private final Map<Integer, List<Integer>> files;
     private final Map<Integer, List<Integer>> cohortIds;
 
@@ -27,14 +30,21 @@ public final class VariantQueryFields {
         this.samples = Collections.singletonMap(studyMetadata.getId(), samples);
         this.files = Collections.singletonMap(studyMetadata.getId(), files);
         this.cohortIds = Collections.emptyMap();
+        this.numSamples = samples.size();
+        this.numTotalSamples = numSamples;
+        this.samplePagination = false;
     }
 
     VariantQueryFields(Set<VariantField> fields, List<Integer> studies, Map<Integer, StudyMetadata> studyMetadatas,
-                       Map<Integer, List<Integer>> samples, Map<Integer, List<Integer>> files, Map<Integer, List<Integer>> cohortIds) {
+                       Map<Integer, List<Integer>> samples, boolean samplePagination, int numSamples, int numTotalSamples,
+                       Map<Integer, List<Integer>> files, Map<Integer, List<Integer>> cohortIds) {
         this.fields = fields;
         this.studies = studies;
         this.studyMetadatas = studyMetadatas;
         this.samples = samples;
+        this.samplePagination = samplePagination;
+        this.numSamples = numSamples;
+        this.numTotalSamples = numTotalSamples;
         this.files = files;
         this.cohortIds = cohortIds;
     }
@@ -53,6 +63,18 @@ public final class VariantQueryFields {
 
     public Map<Integer, List<Integer>> getSamples() {
         return samples;
+    }
+
+    public boolean getSamplePagination() {
+        return samplePagination;
+    }
+
+    public int getNumSamples() {
+        return numSamples;
+    }
+
+    public int getNumTotalSamples() {
+        return numTotalSamples;
     }
 
     public Map<Integer, List<Integer>> getFiles() {

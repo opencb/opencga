@@ -385,7 +385,7 @@ public class VariantStorageManager extends StorageManager {
                 result.getSamples(),
                 result.getSource(),
                 result.getApproximateCount(),
-                result.getApproximateCountSamplingSize());
+                result.getApproximateCountSamplingSize(), null);
 
     }
 

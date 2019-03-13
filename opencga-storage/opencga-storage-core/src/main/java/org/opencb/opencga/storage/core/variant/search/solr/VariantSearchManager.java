@@ -342,8 +342,7 @@ public class VariantSearchManager {
             throw new VariantSearchException("Error executing variant query", e);
         }
 
-        return new VariantQueryResult<>("", queryResult.getDbTime(), queryResult.getNumResults(),
-                queryResult.getNumTotalResults(), "", "", queryResult.getResult(), null, SEARCH_ENGINE_ID);
+        return new VariantQueryResult<>(queryResult, null, SEARCH_ENGINE_ID);
     }
 
     /**
@@ -368,8 +367,7 @@ public class VariantSearchManager {
             throw new VariantSearchException("Error executing variant query (nativeQuery)", e);
         }
 
-        return new VariantQueryResult<>("", queryResult.getDbTime(), queryResult.getNumResults(),
-                queryResult.getNumTotalResults(), "", "", queryResult.getResult(), null, SEARCH_ENGINE_ID);
+        return new VariantQueryResult<>(queryResult, null, SEARCH_ENGINE_ID);
     }
 
     /**

@@ -28,6 +28,8 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -77,6 +79,8 @@ public final class VariantQueryUtils {
             "Select variants that need to be updated in the SearchEngine", QueryParam.Type.BOOLEAN);
     public static final QueryParam SAMPLE_MENDELIAN_ERROR = QueryParam.create("sample_mendelian_error",
             "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
+    public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
@@ -86,7 +90,9 @@ public final class VariantQueryUtils {
             INCLUDE_FORMAT,
             INCLUDE_GENOTYPE,
             UNKNOWN_GENOTYPE,
-            SAMPLE_METADATA
+            SAMPLE_METADATA,
+            SAMPLE_LIMIT,
+            SAMPLE_SKIP
     )));
     public static final boolean DEFAULT_SKIP_COUNT = true;
 
@@ -451,15 +457,18 @@ public final class VariantQueryUtils {
         for (Integer studyId : includeStudies) {
             StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
             if (sm == null) {
-                throw VariantQueryException.studyNotFound(studyId, metadataManager.getStudyNames(options));
+                throw VariantQueryException.studyNotFound(studyId, metadataManager.getStudyNames());
             }
             studyMetadata.put(studyId, sm);
         }
 
         Map<Integer, List<Integer>> sampleIds = VariantQueryUtils.getIncludeSamples(query, options, includeStudies, metadataManager);
-        Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getIncludeFiles(query, includeStudies, includeFields,
-                metadataManager);
+        int numTotalSamples = sampleIds.values().stream().mapToInt(List::size).sum();
+        skipAndLimitSamples(query, sampleIds);
+        int numSamples = sampleIds.values().stream().mapToInt(List::size).sum();
 
+        Map<Integer, List<Integer>> fileIds = VariantQueryUtils.getIncludeFiles(query, includeStudies, includeFields,
+                metadataManager, sampleIds);
 
         if (fileIds.values().stream().allMatch(List::isEmpty)) {
             includeFields.remove(VariantField.STUDIES_FILES);
@@ -487,9 +496,45 @@ public final class VariantQueryUtils {
             }
         }
 
+        return new VariantQueryFields(includeFields, includeStudies, studyMetadata,
+                sampleIds, numTotalSamples != numSamples, numSamples, numTotalSamples, fileIds, cohortIds);
+    }
 
-
-        return new VariantQueryFields(includeFields, includeStudies, studyMetadata, sampleIds, fileIds, cohortIds);
+    protected static <T> void skipAndLimitSamples(Query query, Map<T, List<T>> sampleIds) {
+        if (isValidParam(query, VariantQueryParam.SAMPLE_SKIP)) {
+            int skip = query.getInt(VariantQueryParam.SAMPLE_SKIP.key());
+            if (skip > 0) {
+                for (List<T> value : sampleIds.values()) {
+                    if (value.size() < skip) {
+                        // Skip all samples from study
+                        skip -= value.size();
+                        value.clear();
+                    } else {
+//                        value = value.subList(skip, value.size());
+                        value.subList(0, skip).clear();
+                        break;
+                    }
+                }
+            }
+        }
+        if (isValidParam(query, VariantQueryParam.SAMPLE_LIMIT)) {
+            int limit = query.getInt(VariantQueryParam.SAMPLE_LIMIT.key());
+            if (limit > 0) {
+//                numSamples = limit;
+                for (List<T> value : sampleIds.values()) {
+                    if (limit >= value.size()) {
+                        // include all samples from study
+                        limit -= value.size();
+                    } else if (limit == 0) {
+                        value.clear();
+                    } else {
+//                        value = value.subList(0, limit);
+                        value.subList(limit, value.size()).clear();
+                        limit = 0;
+                    }
+                }
+            }
+        }
     }
 
     public static String[] splitStudyResource(String value) {
@@ -569,7 +614,7 @@ public final class VariantQueryUtils {
                     map = getIncludeSamples(query, options, studyIds, metadataManager);
                 } else if (isIncludeFilesDefined(query, fields)) {
                     map = getIncludeFiles(query, studyIds, fields,
-                            metadataManager);
+                            metadataManager, null);
                 }
                 if (map != null) {
                     List<Integer> studyIdsFromSubFields = new ArrayList<>();
@@ -636,15 +681,17 @@ public final class VariantQueryUtils {
      * Null for undefined returned files. If null, return ALL files.
      * Return NONE if empty list
      *
+     * @param includeSamples
      * @param query                     Query with the QueryParams
      * @param studyIds                  Returned studies
      * @param fields                    Returned fields
      * @return List of fileIds to return.
      */
     private static Map<Integer, List<Integer>> getIncludeFiles(Query query, Collection<Integer> studyIds, Set<VariantField> fields,
-            VariantStorageMetadataManager metadataManager) {
+                                                               VariantStorageMetadataManager metadataManager,
+                                                               Map<Integer, List<Integer>> includeSamples) {
 
-        List<String> includeSamplesList = getIncludeSamplesList(query);
+        List<String> includeSamplesList = includeSamples == null ? getIncludeSamplesList(query) : null;
         List<String> includeFilesList = getIncludeFilesList(query, fields);
         boolean returnAllFiles = ALL.equals(query.getString(INCLUDE_FILE.key()));
 
@@ -666,6 +713,10 @@ public final class VariantQueryUtils {
                 }
             } else if (returnAllFiles) {
                 fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
+            } else if (includeSamples != null) {
+                List<Integer> sampleIds = includeSamples.get(studyId);
+                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
+                fileIds = new ArrayList<>(fileSet);
             } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
                 List<Integer> sampleIds = new ArrayList<>();
                 for (String sample : includeSamplesList) {
@@ -776,12 +827,33 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static Map<String, List<String>> getSamplesMetadataIfRequested(Query query, QueryOptions options,
+    public static <T> VariantQueryResult<T> addSamplesMetadataIfRequested(QueryResult<T> result, Query query, QueryOptions options,
                                                                           VariantStorageMetadataManager variantStorageMetadataManager) {
+        return addSamplesMetadataIfRequested(new VariantQueryResult<>(result, null), query, options, variantStorageMetadataManager);
+    }
+
+    public static <T> VariantQueryResult<T> addSamplesMetadataIfRequested(VariantQueryResult<T> result, Query query, QueryOptions options,
+                                                                   VariantStorageMetadataManager variantStorageMetadataManager) {
         if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
-            return getSamplesMetadata(query, options, variantStorageMetadataManager);
+            int numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key(), -1);
+            int numSamples = query.getInt(NUM_SAMPLES.key(), -1);
+            Map<String, List<String>> samplesMetadata = getSamplesMetadata(query, options, variantStorageMetadataManager);
+            if (numTotalSamples < 0 && numSamples < 0) {
+                numTotalSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
+                skipAndLimitSamples(query, samplesMetadata);
+                numSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
+            }
+            return result.setNumSamples(numSamples)
+                    .setNumTotalSamples(numTotalSamples)
+                    .setSamples(samplesMetadata);
         } else {
-            return null;
+            int numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key(), -1);
+            int numSamples = query.getInt(NUM_SAMPLES.key(), -1);
+            if (numTotalSamples < 0 && numSamples < 0) {
+                return result.setNumSamples(numSamples)
+                        .setNumTotalSamples(numTotalSamples);
+            }
+            return result;
         }
     }
 
@@ -805,7 +877,7 @@ public final class VariantQueryUtils {
             }
         }
 
-        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
+        Map<Integer, List<Integer>> samples = new LinkedHashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
             StudyMetadata sm = metadataManager.getStudyMetadata(studyId);
             if (sm == null) {

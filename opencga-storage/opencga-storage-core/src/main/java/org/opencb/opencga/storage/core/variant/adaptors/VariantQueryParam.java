@@ -113,6 +113,14 @@ public final class VariantQueryParam implements QueryParam {
             = "Include genotypes, apart of other formats defined with includeFormat";
     public static final VariantQueryParam INCLUDE_GENOTYPE = new VariantQueryParam("includeGenotype", BOOLEAN, INCLUDE_GENOTYPE_DESCR);
 
+    public static final String SAMPLE_LIMIT_DESCR
+            = "";
+    public static final VariantQueryParam SAMPLE_LIMIT = new VariantQueryParam("sampleLimit", INTEGER, SAMPLE_LIMIT_DESCR);
+
+    public static final String SAMPLE_SKIP_DESCR
+            = "";
+    public static final VariantQueryParam SAMPLE_SKIP = new VariantQueryParam("sampleSkip", INTEGER, SAMPLE_SKIP_DESCR);
+
     public static final String FILE_DESCR
             = "Filter variants from the files specified. This will set includeFile parameter when not provided";
     public static final VariantQueryParam FILE = new VariantQueryParam("file", TEXT_ARRAY, FILE_DESCR);
