@@ -301,7 +301,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
                     regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyStr, bamFileId,
-                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, 1, token).getResult();
+                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
                                 .setGeneName(geneName)
