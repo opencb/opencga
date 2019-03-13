@@ -4,18 +4,21 @@ from pyopencga.opencga_config import ConfigClient
 from pyopencga.rest_clients.user_client import Users
 from pyopencga.rest_clients.project_client import Projects
 from pyopencga.rest_clients.study_client import Studies
-# from rest_clients.file_client import Files
+from pyopencga.rest_clients.file_client import Files
 from pyopencga.rest_clients.sample_client import Samples
-# from rest_clients.cohort_client import Cohorts
-# from rest_clients.family_client import Families
-# from rest_clients.job_client import Jobs
-# from rest_clients.individual_client import Individuals
-# from rest_clients.clinical_client import Clinical
-# from rest_clients.variableset_client import VariableSets
-# from rest_clients.alignment_client import AnalysisAlignment
-# from rest_clients.variant_client import AnalysisVariant
-# from rest_clients.ga4gh_client import GA4GH
-# from rest_clients.meta_client import Meta
+from pyopencga.rest_clients.cohort_client import Cohorts
+from pyopencga.rest_clients.family_client import Families
+from pyopencga.rest_clients.job_client import Jobs
+from pyopencga.rest_clients.individual_client import Individuals
+from pyopencga.rest_clients.clinical_client import Clinical
+from pyopencga.rest_clients.variableset_client import VariableSets
+from pyopencga.rest_clients.alignment_client import AnalysisAlignment
+from pyopencga.rest_clients.variant_client import AnalysisVariant
+from pyopencga.rest_clients.ga4gh_client import GA4GH
+from pyopencga.rest_clients.meta_client import Meta
+from pyopencga.rest_clients.admin_client import Admin
+from pyopencga.rest_clients.panel_client import Panels
+from pyopencga.rest_clients.tool_client import Tool
 
 
 class OpenCGAClient(object):
