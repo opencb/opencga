@@ -122,7 +122,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 .getResult();
 
         for (Individual catalogIndividual : catalogIndividuals) {
-            org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getName());
+            org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getId());
 
             individual.setSex(catalogIndividual.getSex().name());
 //            individual.setFamily(catalogIndividual.getFamily());
