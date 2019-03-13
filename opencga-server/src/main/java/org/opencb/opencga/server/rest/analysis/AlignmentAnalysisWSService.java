@@ -218,6 +218,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
             @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
             @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("300") @QueryParam("geneOffset") int geneOffset,
+            @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize,
             @ApiParam(value = "Number of reads under which a region will will be considered low covered") @DefaultValue("20") @QueryParam("minCoverage") int minCoverage) {
         try {
             isSingleId(fileIdStr);
@@ -257,7 +258,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 // Compute low coverage regions from the given input regions
                 List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
                 for (Region region : regionList) {
-                    queryResultList.add(alignmentStorageManager.getLowCoverageRegions(studyStr, fileIdStr, region, minCoverage, sessionId));
+                    queryResultList.add(alignmentStorageManager.getLowCoverageRegions(studyStr, fileIdStr, region, minCoverage, windowSize,
+                            sessionId));
                 }
                 return createOkResponse(queryResultList);
             } else {

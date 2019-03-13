@@ -207,9 +207,9 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     public QueryResult<RegionCoverage> getLowCoverageRegions(String studyIdStr, String fileIdStr, Region region, int minCoverage,
-                                                             String sessionId) throws Exception {
+                                                             int windowSize, String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
-        return alignmentStorageEngine.getDBAdaptor().getLowCoverageRegions(Paths.get(file.getUri()), region, minCoverage);
+        return alignmentStorageEngine.getDBAdaptor().getLowCoverageRegions(Paths.get(file.getUri()), region, windowSize, minCoverage);
     }
 
     File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {

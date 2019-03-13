@@ -166,17 +166,17 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public QueryResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception {
+    public QueryResult<RegionCoverage> getLowCoverageRegions(Path path, Region region,  int windowSize, int minCoverage) throws Exception {
         FileUtils.checkFile(path);
 
         StopWatch watch = StopWatch.createStarted();
         RegionCoverage regionCoverage;
         if (path.toFile().getName().endsWith(".bam")) {
             BamManager bamManager = new BamManager(path);
-            regionCoverage = bamManager.coverage(region, 1);
+            regionCoverage = bamManager.coverage(region, windowSize);
             bamManager.close();
         } else {
-            regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
+            regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, path);
         }
         List<RegionCoverage> regionCoverages = BamUtils.getUncoveredRegions(regionCoverage, minCoverage);
         watch.stop();
