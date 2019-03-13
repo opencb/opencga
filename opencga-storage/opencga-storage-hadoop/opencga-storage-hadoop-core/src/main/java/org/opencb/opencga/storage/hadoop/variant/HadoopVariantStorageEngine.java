@@ -80,6 +80,7 @@ import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMet
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
+import org.opencb.opencga.storage.hadoop.variant.stats.me.MendelianErrorDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -380,6 +381,18 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
         return new HadoopVariantExporter(this, metadataFactory, getMRExecutor());
     }
+
+    @Override
+    public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+        options = getMergedOptions(options);
+        options.put(MendelianErrorDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+
+        int studyId = getMetadataManager().getStudyId(study);
+        getMRExecutor().run(MendelianErrorDriver.class, MendelianErrorDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
+                studyId, null, options), options,
+                "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
+    }
+
 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {

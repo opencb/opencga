@@ -49,6 +49,8 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     public static final String TRIOS = "trios";
     public static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
     private List<Integer> sampleIds;
+    private boolean partial;
+    private String region;
 
     @Override
     protected Class<MendelianErrorMapper> getMapperClass() {
@@ -59,7 +61,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<>();
         params.put("--" + TRIOS, "(father,mother,child;)**");
-        params.put("--" + VariantQueryParam.REGION.key(), "[region]");
+        params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         return params;
     }
 
@@ -100,7 +102,9 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
             throw new IllegalArgumentException("Wrong number of samples in trios!");
         }
 
+        region = getParam(VariantQueryParam.REGION.key(), "");
 
+        partial = StringUtils.isNotEmpty(region);
     }
 
     @Override
@@ -108,7 +112,6 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
         Scan scan = new Scan();
 
-        String region = getParam(VariantQueryParam.REGION.key(), "");
         if (StringUtils.isNotEmpty(region)) {
             LOGGER.info("Calculate Mendelian Errors from region " + region);
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
@@ -140,12 +143,12 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     @Override
     protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
-        if (succeed) {
+        if (succeed && !partial) {
             VariantStorageMetadataManager metadataManager = getMetadataManager();
             for (int i = 0; i < sampleIds.size(); i += 3) {
                 Integer child = sampleIds.get(i + 2);
                 metadataManager.updateSampleMetadata(getStudyId(), child, sampleMetadata -> {
-                    sampleMetadata.setStatus("mendelian_error", TaskMetadata.Status.READY);
+                    sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.READY);
                     return sampleMetadata;
                 });
             }
@@ -227,9 +230,9 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                             stream.write(HBaseToSampleIndexConverter.SEPARATOR);
                         }
                         stream.write(Bytes.toBytes(variant.toString()));
-                        stream.write('_');
+                        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
                         stream.write(Bytes.toBytes(childGt));
-                        stream.write('_');
+                        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
                         stream.write(Bytes.toBytes(Integer.toString(idx)));
                     }
                 }

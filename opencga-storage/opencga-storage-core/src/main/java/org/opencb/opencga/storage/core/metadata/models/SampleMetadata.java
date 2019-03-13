@@ -96,6 +96,14 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return setStatus("annotation", annotationStatus);
     }
 
+    public SampleMetadata setMendelianErrorStatus(TaskMetadata.Status mendelianErrorStatus) {
+        return setStatus("mendelian_error", mendelianErrorStatus);
+    }
+
+    public TaskMetadata.Status getMendelianErrorStatus() {
+        return getStatus("mendelian_error");
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this)
