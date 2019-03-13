@@ -3,10 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
@@ -24,16 +21,22 @@ public class SampleIndexQuery {
     private final Map<String, List<String>> samplesMap;
     private final Map<String, byte[]> fileIndexMap; // byte[] = {mask , index}
     private final byte annotationIndexMask;
+    private final Set<String> mendelianErrorSet;
     private final VariantQueryUtils.QueryOperation queryOperation;
+
+    public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
+        this(regions, study, samplesMap, Collections.emptyMap(), EMPTY_MASK, Collections.emptySet(), queryOperation);
+    }
 
     public SampleIndexQuery(List<Region> regions, String study,
                             Map<String, List<String>> samplesMap, Map<String, byte[]> fileIndexMap,
-                            byte annotationIndexMask, QueryOperation queryOperation) {
+                            byte annotationIndexMask, Set<String> mendelianErrorSet, QueryOperation queryOperation) {
         this.regions = regions;
         this.study = study;
         this.samplesMap = samplesMap;
         this.fileIndexMap = fileIndexMap;
         this.annotationIndexMask = annotationIndexMask;
+        this.mendelianErrorSet = mendelianErrorSet;
         this.queryOperation = queryOperation;
     }
 
@@ -90,6 +93,7 @@ public class SampleIndexQuery {
         private final List<String> gts;
         private final byte fileIndexMask;
         private final byte fileIndex;
+        private final boolean mendelianError;
 
         protected SingleSampleIndexQuery(SampleIndexQuery query, String sample) {
             this(query, sample, query.getSamplesMap().get(sample));
@@ -101,11 +105,13 @@ public class SampleIndexQuery {
                     Collections.singletonMap(sample, gts),
                     query.fileIndexMap,
                     query.annotationIndexMask,
+                    query.mendelianErrorSet,
                     query.queryOperation);
             this.sample = sample;
             this.gts = gts;
             fileIndexMask = getFileIndexMask(sample);
             fileIndex = getFileIndex(sample);
+            mendelianError = query.mendelianErrorSet.contains(sample);
         }
 
         @Override
@@ -127,6 +133,10 @@ public class SampleIndexQuery {
 
         public byte getFileIndex() {
             return fileIndex;
+        }
+
+        public boolean getMendelianError() {
+            return mendelianError;
         }
     }
 }

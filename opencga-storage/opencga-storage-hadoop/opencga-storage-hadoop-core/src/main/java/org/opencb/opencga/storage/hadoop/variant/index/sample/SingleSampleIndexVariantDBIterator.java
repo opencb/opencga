@@ -28,7 +28,7 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
     private final Iterator<Variant> iterator;
     protected int count = 0;
 
-    public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexDBAdaptor dbAdaptor) {
+    public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, byte[] family, SampleIndexDBAdaptor dbAdaptor) {
         List<Region> regions;
         if (CollectionUtils.isEmpty(query.getRegions())) {
             // If no regions are defined, get a list of one null element to initialize the stream.
@@ -41,7 +41,7 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
                 .map(region -> {
                     // One scan per region
                     Scan scan = dbAdaptor.parse(query, region, false);
-                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(query, region);
+                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(query, region, family);
                     try {
                         ResultScanner scanner = table.getScanner(scan);
                         addCloseable(scanner);

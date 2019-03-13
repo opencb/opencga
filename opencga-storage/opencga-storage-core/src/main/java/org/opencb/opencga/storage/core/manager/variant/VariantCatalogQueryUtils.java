@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.manager.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
+import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.commons.Disorder;
@@ -312,10 +313,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                 String moiString = query.getString(FAMILY_SEGREGATION.key());
                 if (moiString.equalsIgnoreCase("mendelianError")) {
-//                    List<Member> children = pedigreeManager.getWithoutChildren();
-//                    List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
-//                    query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenIds);
-                    throw new VariantQueryException("Unsupported MendelianError");
+                    List<Member> children = pedigreeManager.getWithoutChildren();
+                    List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
+                    query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenIds);
                 } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
                     throw new VariantQueryException("Unsupported CompoundHeterozygous");
                 } else {

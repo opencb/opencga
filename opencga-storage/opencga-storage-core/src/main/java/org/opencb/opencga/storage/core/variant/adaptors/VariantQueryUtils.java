@@ -75,6 +75,8 @@ public final class VariantQueryUtils {
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
             "Select variants that need to be updated in the SearchEngine", QueryParam.Type.BOOLEAN);
+    public static final QueryParam SAMPLE_MENDELIAN_ERROR = QueryParam.create("sample_mendelian_error",
+            "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
@@ -618,7 +620,10 @@ public final class VariantQueryUtils {
         if (getIncludeFilesList(query, fields) != null) {
             return true;
         }
-        return isValidParam(query, SAMPLE, true) || isValidParam(query, INCLUDE_SAMPLE, false) || isValidParam(query, GENOTYPE, false);
+        return isValidParam(query, SAMPLE, true)
+                || isValidParam(query, SAMPLE_MENDELIAN_ERROR, false)
+                || isValidParam(query, INCLUDE_SAMPLE, false)
+                || isValidParam(query, GENOTYPE, false);
     }
 
     /**
@@ -919,6 +924,13 @@ public final class VariantQueryUtils {
                     samples = new ArrayList<>(formatMap.size());
                 }
                 samples.addAll(formatMap.keySet());
+            }
+            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+                String value = query.getString(SAMPLE_MENDELIAN_ERROR.key());
+                samples = splitValue(value, checkOperator(value))
+                        .stream()
+                        .filter((v) -> !isNegated(v)) // Discard negated
+                        .collect(Collectors.toList());
             }
             if (CollectionUtils.isEmpty(samples)) {
                 samples = null;

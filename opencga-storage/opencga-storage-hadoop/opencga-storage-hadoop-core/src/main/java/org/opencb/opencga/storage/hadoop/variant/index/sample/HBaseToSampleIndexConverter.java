@@ -47,6 +47,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
     public static final String SEPARATOR_STR = ",";
     public static final byte SEPARATOR = ',';
     public static final byte[] MENDELIAN_ERROR_COLUMN = Bytes.toBytes("ME");
+    public static final byte MENDELIAN_ERROR_SEPARATOR = '_';
 
     // Region filter
     private final Region regionFilter;
@@ -54,19 +55,28 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
     private final byte annotationIndexMask;
     private final byte fileIndexMask;
     private final byte fileIndex;
+    private final boolean mendelianErrors;
+    private final byte[] family;
+    private final Set<String> genotypes;
 
-    public HBaseToSampleIndexConverter() {
+    public HBaseToSampleIndexConverter(byte[] family) {
         this.regionFilter = null;
         this.annotationIndexMask = IndexUtils.EMPTY_MASK;
         this.fileIndexMask = IndexUtils.EMPTY_MASK;
         this.fileIndex = IndexUtils.EMPTY_MASK;
+        this.mendelianErrors = false;
+        this.genotypes = Collections.emptySet();
+        this.family = family;
     }
 
-    public HBaseToSampleIndexConverter(SingleSampleIndexQuery query, Region region) {
+    public HBaseToSampleIndexConverter(SingleSampleIndexQuery query, Region region, byte[] family) {
         this.regionFilter = region;
         this.annotationIndexMask = query.getAnnotationIndexMask();
         this.fileIndexMask = query.getFileIndexMask();
         this.fileIndex = query.getFileIndex();
+        this.mendelianErrors = query.getMendelianError();
+        genotypes = new HashSet<>(query.getGenotypes());
+        this.family = family;
     }
 
     public static int getExpectedSize(String chromosome) {
@@ -169,8 +179,6 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
 
     @Override
     public Collection<Variant> convert(Result result) {
-        Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
-
         final Map<String, byte[]> annotationIndexGtMap;
         final Map<String, byte[]> fileIndexGtMap;
         if (annotationIndexMask != IndexUtils.EMPTY_MASK || fileIndexMask != IndexUtils.EMPTY_MASK) {
@@ -190,35 +198,76 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
             fileIndexGtMap = Collections.emptyMap();
         }
 
-        for (Cell cell : result.rawCells()) {
-            if (cell.getQualifierArray()[cell.getQualifierOffset()] != META_PREFIX) {
-                String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                int i = 0;
-                for (String s : splitValue(cell)) {
-                    // Filter using RegionFilter and AnnotationMaskFilter
-                    if (!s.isEmpty()) { // Skip empty variants.
-                        // Test file index (if any)
-                        byte[] fileIndexGt = fileIndexGtMap.get(gt);
-                        if (fileIndexGt == null || testIndex(fileIndexGt[i], fileIndexMask, fileIndex)) {
+        if (mendelianErrors) {
+            return convertFromMendelianErrors(result, annotationIndexGtMap, fileIndexGtMap);
+        } else {
+            return convertFromGT(result, annotationIndexGtMap, fileIndexGtMap);
+        }
+    }
 
-                            // Test annotation index (if any)
-                            byte[] annotationIndexGt = annotationIndexGtMap.get(gt);
-                            if (annotationIndexGt == null || testIndex(annotationIndexGt[i], annotationIndexMask, annotationIndexMask)) {
-
-                                // Test region filter (if any)
-                                Variant v = new Variant(s);
-                                if (regionFilter == null || regionFilter.contains(v.getChromosome(), v.getStart())) {
-                                    variants.add(v);
-                                }
-                            }
-                        }
+    private Set<Variant> convertFromMendelianErrors(Result result,
+                                                    Map<String, byte[]> annotationIndexGtMap, Map<String, byte[]> fileIndexGtMap) {
+        Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+        Cell cell = result.getColumnLatestCell(family, MENDELIAN_ERROR_COLUMN);
+        if (cell != null && cell.getValueLength() != 0) {
+            for (String s : splitValue(cell)) {
+                int idx2 = s.lastIndexOf(MENDELIAN_ERROR_SEPARATOR);
+                int idx1 = s.lastIndexOf(MENDELIAN_ERROR_SEPARATOR, idx2 - 1);
+                String variantStr = s.substring(0, idx1);
+                String gt = s.substring(idx1 + 1, idx2);
+                int variantIdx = Integer.valueOf(s.substring(idx2 + 1));
+                if (genotypes.isEmpty() || genotypes.contains(gt)) {
+                    byte[] fileIndexGt = fileIndexGtMap.get(gt);
+                    byte[] annotationIndexGt = annotationIndexGtMap.get(gt);
+                    Variant variant = filterAndConvert(variantStr, variantIdx, fileIndexGt, annotationIndexGt);
+                    if (variant != null) {
+                        variants.add(variant);
                     }
-                    i++;
                 }
             }
         }
-
         return variants;
+    }
+
+    protected Set<Variant> convertFromGT(Result result, Map<String, byte[]> annotationIndexGtMap, Map<String, byte[]> fileIndexGtMap) {
+        Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+        for (Cell cell : result.rawCells()) {
+            if (cell.getQualifierArray()[cell.getQualifierOffset()] != META_PREFIX) {
+                String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                byte[] fileIndexGt = fileIndexGtMap.get(gt);
+                byte[] annotationIndexGt = annotationIndexGtMap.get(gt);
+
+                int idx = 0;
+                for (String variantStr : splitValue(cell)) {
+                    Variant variant = filterAndConvert(variantStr, idx, fileIndexGt, annotationIndexGt);
+                    if (variant != null) {
+                        variants.add(variant);
+                    }
+                    idx++;
+                }
+            }
+        }
+        return variants;
+    }
+
+    private Variant filterAndConvert(String variant, int idx, byte[] fileIndexGt, byte[] annotationIndexGt) {
+        // Filter using RegionFilter and AnnotationMaskFilter
+        if (!variant.isEmpty()) { // Skip empty variants.
+            // Test file index (if any)
+            if (fileIndexGt == null || testIndex(fileIndexGt[idx], fileIndexMask, fileIndex)) {
+
+                // Test annotation index (if any)
+                if (annotationIndexGt == null || testIndex(annotationIndexGt[idx], annotationIndexMask, annotationIndexMask)) {
+
+                    // Test region filter (if any)
+                    Variant v = new Variant(variant);
+                    if (regionFilter == null || regionFilter.contains(v.getChromosome(), v.getStart())) {
+                        return v;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     public static List<String> splitValue(Cell cell) {

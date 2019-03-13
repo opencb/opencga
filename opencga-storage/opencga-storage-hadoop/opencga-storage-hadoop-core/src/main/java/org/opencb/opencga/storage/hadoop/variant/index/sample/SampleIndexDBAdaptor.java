@@ -124,7 +124,7 @@ public class SampleIndexDBAdaptor {
 
         try {
             return hBaseManager.act(tableName, table -> {
-                return new SingleSampleIndexVariantDBIterator(table, query, this);
+                return new SingleSampleIndexVariantDBIterator(table, query, family, this);
             });
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
@@ -136,7 +136,7 @@ public class SampleIndexDBAdaptor {
 
         return hBaseManager.act(tableName, table -> {
             Get get = new Get(HBaseToSampleIndexConverter.toRowKey(sample, chromosome, position));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
             try {
                 Result result = table.get(get);
                 if (result != null) {
@@ -157,7 +157,7 @@ public class SampleIndexDBAdaptor {
 
             Scan scan = new Scan();
             scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sample));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
             try {
                 ResultScanner scanner = table.getScanner(scan);
                 Iterator<Result> resultIterator = scanner.iterator();
@@ -170,8 +170,7 @@ public class SampleIndexDBAdaptor {
     }
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
-        return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts),
-                Collections.emptyMap(), EMPTY_MASK, null), sample);
+        return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null), sample);
     }
 
     public long count(SampleIndexQuery query, String sample) {
@@ -202,7 +201,7 @@ public class SampleIndexDBAdaptor {
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
                         SingleSampleIndexQuery sampleIndexQuery = query.forSample(sample, finalGts);
-                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(sampleIndexQuery, subRegion);
+                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(sampleIndexQuery, subRegion, family);
                         if (query.emptyAnnotationIndex() && query.emptyFileIndex()
                                 && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
                             Scan scan = parse(sampleIndexQuery, subRegion, true);
@@ -316,11 +315,16 @@ public class SampleIndexDBAdaptor {
         } else {
             scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sampleId));
         }
+        // If genotypes are not defined, return ALL columns
         for (String gt : query.getGenotypes()) {
             if (count) {
                 scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt));
             } else {
-                scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeColumn(gt));
+                if (query.getMendelianError()) {
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn());
+                } else {
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeColumn(gt));
+                }
                 if (query.getAnnotationIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt));
                 }

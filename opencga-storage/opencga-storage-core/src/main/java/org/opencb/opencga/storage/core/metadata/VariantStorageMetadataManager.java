@@ -235,8 +235,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
+    @Deprecated
     public List<String> getStudyNames(QueryOptions options) {
         return studyDBAdaptor.getStudyNames(options);
+    }
+
+    public List<String> getStudyNames() {
+        return studyDBAdaptor.getStudyNames(null);
     }
 
     public String getStudyName(int studyId) {
@@ -650,7 +655,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return sampleIdCache.get(studyId, sampleName);
     }
 
-
+    public Pair<Integer, Integer> getSampleIdPair(Object sampleObj, boolean skipNegated, StudyMetadata defaultStudy) {
+        return getResourcePair(sampleObj, skipNegated, defaultStudy, this::sampleExists, this::getSampleId, "sample");
+    }
 
     public Integer getSampleId(int studyId, Object sampleObj) {
         return getSampleId(studyId, sampleObj, false);
@@ -677,6 +684,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public String getSampleName(int studyId, int sampleId) {
         return sampleNameCache.get(studyId, sampleId);
+    }
+
+    public boolean sampleExists(int studyId, int sampleId) {
+        return getSampleName(studyId, sampleId) != null;
     }
 
     public BiMap<String, Integer> getIndexedSamplesMap(int studyId) {

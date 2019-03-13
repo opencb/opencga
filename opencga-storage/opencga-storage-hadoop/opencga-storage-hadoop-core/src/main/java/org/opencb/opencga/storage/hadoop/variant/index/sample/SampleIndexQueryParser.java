@@ -60,6 +60,9 @@ public class SampleIndexQueryParser {
         if (isValidParam(query, SAMPLE, true)) {
             return true;
         }
+        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR, true)) {
+            return true;
+        }
         return false;
     }
 
@@ -96,6 +99,8 @@ public class SampleIndexQueryParser {
         // Extract study
         StudyMetadata defaultStudy = VariantQueryUtils.getDefaultStudy(query, null, metadataManager);
 
+        Set<String> mendelianErrorSet = Collections.emptySet();
+
         // Extract sample and genotypes to filter
         QueryOperation queryOperation;
         Map<String, List<String>> samplesMap = new HashMap<>();
@@ -127,13 +132,18 @@ public class SampleIndexQueryParser {
             samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, Collections.emptyList()));
             //} else if (isValidParam(query, FILE)) {
             // TODO: Add FILEs filter
+        } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+            Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_MENDELIAN_ERROR.key()));
+            mendelianErrorSet = new HashSet<>(mendelianError.getValue());
+            queryOperation = mendelianError.getKey();
+            mendelianErrorSet.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, Collections.emptyList()));
         } else {
             throw new IllegalStateException("Unable to query SamplesIndex");
         }
 
         if (defaultStudy == null) {
             String sample = samplesMap.keySet().iterator().next();
-            throw VariantQueryException.missingStudyForSample(sample, metadataManager.getStudyNames(null));
+            throw VariantQueryException.missingStudyForSample(sample, metadataManager.getStudyNames());
         }
         String study = defaultStudy.getName();
 
@@ -152,7 +162,7 @@ public class SampleIndexQueryParser {
         }
         byte annotationMask = parseAnnotationMask(query);
 
-        return new SampleIndexQuery(regions, study, samplesMap, fileIndexMap, annotationMask, queryOperation);
+        return new SampleIndexQuery(regions, study, samplesMap, fileIndexMap, annotationMask, mendelianErrorSet, queryOperation);
     }
 
     protected static byte[] parseFileMask(Query query, String sample, Function<String, Collection<String>> filesFromSample) {

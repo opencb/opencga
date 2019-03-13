@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName;
 
 /**
@@ -219,8 +218,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
             }
         }
         // TODO: Use correct filter mask
-        SampleIndexQuery query = new SampleIndexQuery(regions, studyMetadata.getStudyName(), samples,
-                Collections.emptyMap(), EMPTY_MASK, operation);
+        SampleIndexQuery query = new SampleIndexQuery(regions, studyMetadata.getName(), samples, operation);
         iterator = sampleIndexDBAdaptor.iterator(query);
         loadMoreResults();
     }

@@ -554,6 +554,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
+    public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported calculateMendelianErrors");
+    }
+
     /**
      * Provide a new VariantStatisticsManager for creating and loading statistics.
      *
@@ -1345,6 +1349,31 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         if (formatOperator != null && genotypeOperator != null && formatOperator != genotypeOperator) {
             throw VariantQueryException.mixedAndOrOperators(FORMAT, genotypeParam);
+        }
+
+        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+            if (defaultStudy == null) {
+                throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE_MENDELIAN_ERROR.key()),
+                        metadataManager.getStudyNames());
+            }
+            // Check no other samples filter is being used, and all samples are precomputed
+            if (genotypeParam != null) {
+                throw VariantQueryException.unsupportedParamsCombination(
+                        SAMPLE_MENDELIAN_ERROR, query.getString(SAMPLE_MENDELIAN_ERROR.key()),
+                        genotypeParam, query.getString(genotypeParam.key())
+                );
+            }
+            for (String sample : query.getAsStringList(SAMPLE_MENDELIAN_ERROR.key())) {
+                Integer sampleId = getMetadataManager().getSampleId(defaultStudy.getId(), sample);
+                SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(defaultStudy.getId(), sampleId);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sample, defaultStudy.getName());
+                }
+                if (!TaskMetadata.Status.READY.equals(sampleMetadata.getMendelianErrorStatus())) {
+                    throw VariantQueryException.malformedParam(SAMPLE_MENDELIAN_ERROR, "Sample \"" + sampleMetadata.getName()
+                            + "\" does not have the Mendelian Errors precomputed yet");
+                }
+            }
         }
 
         if (!isValidParam(query, INCLUDE_STUDY) || !isValidParam(query, INCLUDE_SAMPLE) || !isValidParam(query, INCLUDE_FILE)) {

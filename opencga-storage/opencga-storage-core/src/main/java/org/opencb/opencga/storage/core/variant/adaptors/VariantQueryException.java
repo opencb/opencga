@@ -66,6 +66,12 @@ public class VariantQueryException extends IllegalArgumentException {
                 +  message);
     }
 
+    public static VariantQueryException unsupportedParamsCombination(QueryParam queryParam, String value,
+                                                                     QueryParam queryParam2, String value2) {
+        return new VariantQueryException("Unsupported combination of params \"" + queryParam.key() + "\" (value : \"" + value + "\") "
+                + "and \"" + queryParam2.key() + "\" (value : \"" + value2 + "\"). ");
+    }
+
     public static VariantQueryException missingParam(QueryParam queryParam, String message) {
         return new VariantQueryException("Missing param \"" + queryParam.key() + "\" . "
                 +  message);
