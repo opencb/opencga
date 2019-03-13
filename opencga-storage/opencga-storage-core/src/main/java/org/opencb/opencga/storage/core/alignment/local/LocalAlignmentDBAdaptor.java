@@ -170,12 +170,15 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         FileUtils.checkFile(path);
 
         StopWatch watch = StopWatch.createStarted();
-        List<RegionCoverage> regionCoverages = null;
+        RegionCoverage regionCoverage;
         if (path.toFile().getName().endsWith(".bam")) {
             BamManager bamManager = new BamManager(path);
-            regionCoverages = bamManager.getUncoveredRegions(region, minCoverage);
+            regionCoverage = bamManager.coverage(region, 1);
             bamManager.close();
+        } else {
+            regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
         }
+        List<RegionCoverage> regionCoverages = BamUtils.getUncoveredRegions(regionCoverage, minCoverage);
         watch.stop();
         return new QueryResult<>(region.toString(), ((int) watch.getTime()), 1, 1, null, null, regionCoverages);
     }
