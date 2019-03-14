@@ -298,6 +298,24 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
+    public void testSampleLimitFail() throws Exception {
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_MAX.key(), 2);
+        VariantQueryException e = VariantQueryException.maxLimitReached("samples", 10, 2);
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        variantStorageEngine.get(new Query(SAMPLE_LIMIT.key(), 10), options);
+    }
+
+    @Test
+    public void testLimitFail() throws Exception {
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_MAX.key(), 2);
+        VariantQueryException e = VariantQueryException.maxLimitReached("variants", 10, 2);
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 10));
+    }
+
+    @Test
     public void testGetByFileName() throws Exception {
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), "S_1")

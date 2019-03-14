@@ -130,6 +130,10 @@ storageEngines:
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
       intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
+      limit.default: 1000              # Default limit in GET operations. To be used only if not defined.
+      limit.max: 5000                  # Maximum limit value in GET operations. If tried to be exceeded, the query will fail.
+      sample.limit.default: 100        # Default sampleLimit in GET operations. To be used only if not defined.
+      sample.limit.max: 1000           # Maximum sampleLimit value in GET operations. If tried to be exceeded, the query will fail.
     database:
       hosts:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
@@ -185,6 +189,10 @@ storageEngines:
       intersect.active : true          # Allow intersect queries with the SearchEngine (Solr)
       intersect.always : false         # Force intersect queries
       intersect.params.threshold : 3   # Minimum number of QueryParams in the query to intersect
+      limit.default: 1000              # Default limit in GET operations. To be used only if not defined.
+      limit.max: 5000                  # Maximum limit value in GET operations. If tried to be exceeded, the query will fail.
+      sample.limit.default: 100        # Default sampleLimit in GET operations. To be used only if not defined.
+      sample.limit.max: 1000           # Maximum sampleLimit value in GET operations. If tried to be exceeded, the query will fail.
 
 ### hadoop properties
       mapreduce.map.cpu.vcores: 1

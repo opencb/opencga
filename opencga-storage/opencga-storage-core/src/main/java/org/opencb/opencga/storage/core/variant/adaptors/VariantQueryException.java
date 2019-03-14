@@ -215,5 +215,10 @@ public class VariantQueryException extends IllegalArgumentException {
                 .collect(Collectors.toList()) + '.'
                 + (StringUtils.isEmpty(extra) ? "" : (' ' + extra)));
     }
+
+    public static VariantQueryException maxLimitReached(String elementName, int limit, int limitMax) {
+        return new VariantQueryException("Unable to return more than " + limitMax + ' ' + elementName + ". "
+                + "Attempting to return " + limit + ' ' + elementName);
+    }
 }
 

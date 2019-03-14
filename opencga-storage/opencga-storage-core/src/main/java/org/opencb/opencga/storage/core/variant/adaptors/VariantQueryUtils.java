@@ -25,10 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -43,7 +40,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 /**
  * Created on 29/01/16 .
@@ -67,9 +66,6 @@ public final class VariantQueryUtils {
     public static final String NONE = "none";
     public static final String ALL = "all";
     public static final String GT = "GT";
-
-    public static final int LIMIT_DEFAULT = 1000;
-    public static final int LIMIT_MAX = 5000;
 
     // Some private query params
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
@@ -164,7 +160,7 @@ public final class VariantQueryUtils {
     public static Set<VariantQueryParam> validParams(Query query, boolean discardModifiers) {
         Set<VariantQueryParam> params = new HashSet<>(query == null ? 0 : query.size());
 
-        for (VariantQueryParam queryParam : values()) {
+        for (VariantQueryParam queryParam : VariantQueryParam.values()) {
             if (isValidParam(query, queryParam)) {
                 params.add(queryParam);
             }
@@ -549,8 +545,8 @@ public final class VariantQueryUtils {
     public static StudyMetadata getDefaultStudy(Query query, QueryOptions options,
                                                 VariantStorageMetadataManager metadataManager) {
         final StudyMetadata defaultStudy;
-        if (isValidParam(query, VariantQueryParam.STUDY)) {
-            String value = query.getString(VariantQueryParam.STUDY.key());
+        if (isValidParam(query, STUDY)) {
+            String value = query.getString(STUDY.key());
 
             // Check that the study exists
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
@@ -589,7 +585,7 @@ public final class VariantQueryUtils {
                 return query.getAsList(VariantQueryParam.INCLUDE_STUDY.key()).size() > 1;
             }
         } else if (isValidParam(query, STUDY)) {
-            String value = query.getString(VariantQueryParam.STUDY.key());
+            String value = query.getString(STUDY.key());
             long numStudies = splitValue(value, checkOperator(value)).stream().filter(s -> !isNegated(s)).count();
             return numStudies > 1;
         } else {
@@ -648,7 +644,7 @@ public final class VariantQueryUtils {
                 studies = query.getAsStringList(VariantQueryParam.INCLUDE_STUDY.key());
             }
         } else if (isValidParam(query, STUDY)) {
-            String value = query.getString(VariantQueryParam.STUDY.key());
+            String value = query.getString(STUDY.key());
             studies = new ArrayList<>(splitValue(value, checkOperator(value)));
             studies.removeIf(VariantQueryUtils::isNegated);
             // if empty, all the studies
@@ -1594,26 +1590,30 @@ public final class VariantQueryUtils {
         }
     }
 
-
-    public static QueryOptions addDefaultLimit(QueryOptions queryOptions) {
-        return addDefaultLimit(queryOptions, LIMIT_MAX, LIMIT_DEFAULT);
+    public static QueryOptions addDefaultLimit(QueryOptions queryOptions, ObjectMap configuration) {
+        return addDefaultLimit(QueryOptions.LIMIT, queryOptions == null ? new QueryOptions() : queryOptions,
+                configuration.getInt(LIMIT_MAX.key(), LIMIT_MAX.defaultValue()),
+                configuration.getInt(LIMIT_DEFAULT.key(), LIMIT_DEFAULT.defaultValue()), "variants");
     }
 
-    public static QueryOptions addDefaultLimit(QueryOptions queryOptions, int limitMax, int limitDefault) {
-        queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
+    public static Query addDefaultSampleLimit(Query query, ObjectMap configuration) {
+        return addDefaultLimit(SAMPLE_LIMIT.key(), query == null ? new Query() : query,
+                configuration.getInt(SAMPLE_LIMIT_MAX.key(), SAMPLE_LIMIT_MAX.defaultValue()),
+                configuration.getInt(SAMPLE_LIMIT_DEFAULT.key(), SAMPLE_LIMIT_DEFAULT.defaultValue()),
+                "samples");
+    }
+
+    private static <T extends ObjectMap> T addDefaultLimit(String limitKey, T objectMap, int limitMax, int limitDefault,
+                                                String elementName) {
         // Add default limit
-        int limit = getDefaultLimit(queryOptions.getInt(QueryOptions.LIMIT, -1), limitMax, limitDefault);
-        queryOptions.put(QueryOptions.LIMIT,  limit);
-        return queryOptions;
-    }
-
-    public static int getDefaultLimit(int limit, int limitMax, int limitDefault) {
+        int limit = objectMap.getInt(limitKey, -1);
         if (limit > limitMax) {
-            logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
+//            logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
+            throw VariantQueryException.maxLimitReached(elementName, limit, limitMax);
         }
         limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
-        return limit;
+        objectMap.put(limitKey,  limit);
+        return objectMap;
     }
-
 
 }

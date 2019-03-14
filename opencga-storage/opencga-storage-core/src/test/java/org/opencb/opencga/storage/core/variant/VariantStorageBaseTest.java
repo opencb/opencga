@@ -245,6 +245,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         }
         printActiveThreadsNumber();
         variantStorageEngine = getVariantStorageEngine();
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_DEFAULT.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_MAX.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_DEFAULT.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_MAX.key(), 10000);
         metadataManager = variantStorageEngine.getMetadataManager();
     }
 

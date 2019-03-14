@@ -196,6 +196,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         DEFAULT_TIMEOUT("dbadaptor.default_timeout", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
         MAX_TIMEOUT("dbadaptor.max_timeout", 30000),         // Max allowed timeout for DBAdaptor operations
+        LIMIT_DEFAULT("limit.default", 1000),
+        LIMIT_MAX("limit.max", 5000),
+        SAMPLE_LIMIT_DEFAULT("sample.limit.default", 100),
+        SAMPLE_LIMIT_MAX("sample.limit.max", 1000),
 
         // Intersect options
         INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
@@ -421,7 +425,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) throws StorageEngineException {
-        options = addDefaultLimit(options);
+        options = addDefaultLimit(options, getOptions());
         return getDBAdaptor().getAnnotation(name, query, options);
     }
 
@@ -951,6 +955,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
         try {
+            addDefaultLimit(options, getOptions());
+            addDefaultSampleLimit(query, getOptions());
             return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e);

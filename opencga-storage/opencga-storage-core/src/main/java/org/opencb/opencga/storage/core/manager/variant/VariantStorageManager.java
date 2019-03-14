@@ -48,9 +48,9 @@ import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -69,7 +69,6 @@ import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getDefaultLimit;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -350,7 +349,6 @@ public class VariantStorageManager extends StorageManager {
     public VariantQueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
         return secure(query, queryOptions, sessionId, engine -> {
-            addDefaultLimit(queryOptions);
             logger.debug("getVariants {}, {}", query, queryOptions);
             VariantQueryResult<Variant> result = engine.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
@@ -407,8 +405,10 @@ public class VariantStorageManager extends StorageManager {
 
     public QueryResult rank(Query query, String field, int limit, boolean asc, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
-        getDefaultLimit(limit, 30, 10);
-        return (QueryResult) secure(query, null, sessionId, engine -> engine.rank(query, field, limit, asc));
+        int limitMax = 30;
+        int limitDefault = 10;
+        return (QueryResult) secure(query, null, sessionId,
+                engine -> engine.rank(query, field, (limit > 0) ? Math.min(limit, limitMax) : limitDefault, asc));
     }
 
     public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageEngineException, IOException {
@@ -636,10 +636,10 @@ public class VariantStorageManager extends StorageManager {
 
     public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, dbAdaptor -> {
-            addDefaultLimit(queryOptions);
+        return secure(query, queryOptions, sessionId, engine -> {
+            addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
-            FacetQueryResult result = dbAdaptor.facet(query, queryOptions);
+            FacetQueryResult result = engine.facet(query, queryOptions);
             logger.debug("getFacets in {}ms", result.getDbTime());
             return result;
         });
