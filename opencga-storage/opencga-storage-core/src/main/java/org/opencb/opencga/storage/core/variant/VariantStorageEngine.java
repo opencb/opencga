@@ -39,10 +39,7 @@ import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -1357,26 +1354,36 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw VariantQueryException.mixedAndOrOperators(FORMAT, genotypeParam);
         }
 
-        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+        if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) || isValidParam(query, SAMPLE_DE_NOVO)) {
+            QueryParam param;
+            if (isValidParam(query, SAMPLE_MENDELIAN_ERROR) && isValidParam(query, SAMPLE_DE_NOVO)) {
+                throw VariantQueryException.unsupportedParamsCombination(
+                        SAMPLE_MENDELIAN_ERROR, query.getString(SAMPLE_MENDELIAN_ERROR.key()),
+                        SAMPLE_DE_NOVO, query.getString(SAMPLE_DE_NOVO.key()));
+            } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+                param = SAMPLE_MENDELIAN_ERROR;
+            } else {
+                param = SAMPLE_DE_NOVO;
+            }
             if (defaultStudy == null) {
-                throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE_MENDELIAN_ERROR.key()),
+                throw VariantQueryException.missingStudyForSamples(query.getAsStringList(param.key()),
                         metadataManager.getStudyNames());
             }
             // Check no other samples filter is being used, and all samples are precomputed
             if (genotypeParam != null) {
                 throw VariantQueryException.unsupportedParamsCombination(
-                        SAMPLE_MENDELIAN_ERROR, query.getString(SAMPLE_MENDELIAN_ERROR.key()),
+                        param, query.getString(param.key()),
                         genotypeParam, query.getString(genotypeParam.key())
                 );
             }
-            for (String sample : query.getAsStringList(SAMPLE_MENDELIAN_ERROR.key())) {
+            for (String sample : query.getAsStringList(param.key())) {
                 Integer sampleId = getMetadataManager().getSampleId(defaultStudy.getId(), sample);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, defaultStudy.getName());
                 }
                 SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(defaultStudy.getId(), sampleId);
                 if (!TaskMetadata.Status.READY.equals(sampleMetadata.getMendelianErrorStatus())) {
-                    throw VariantQueryException.malformedParam(SAMPLE_MENDELIAN_ERROR, "Sample \"" + sampleMetadata.getName()
+                    throw VariantQueryException.malformedParam(param, "Sample \"" + sampleMetadata.getName()
                             + "\" does not have the Mendelian Errors precomputed yet");
                 }
             }

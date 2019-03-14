@@ -665,6 +665,7 @@ public final class VariantQueryUtils {
         }
         return isValidParam(query, SAMPLE, true)
                 || isValidParam(query, SAMPLE_MENDELIAN_ERROR, false)
+                || isValidParam(query, SAMPLE_DE_NOVO, false)
                 || isValidParam(query, INCLUDE_SAMPLE, false)
                 || isValidParam(query, GENOTYPE, false);
     }
@@ -997,10 +998,11 @@ public final class VariantQueryUtils {
             }
             if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
                 String value = query.getString(SAMPLE_MENDELIAN_ERROR.key());
-                samples = splitValue(value, checkOperator(value))
-                        .stream()
-                        .filter((v) -> !isNegated(v)) // Discard negated
-                        .collect(Collectors.toList());
+                samples = splitValue(value, checkOperator(value));
+            }
+            if (isValidParam(query, SAMPLE_DE_NOVO)) {
+                String value = query.getString(SAMPLE_DE_NOVO.key());
+                samples = splitValue(value, checkOperator(value));
             }
             if (CollectionUtils.isEmpty(samples)) {
                 samples = null;

@@ -78,7 +78,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             QueryParam.create("familyDisorder", FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by mode of inheritance from a given family. Accepted values: "
             + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError ]";
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, DeNovo ]";
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
