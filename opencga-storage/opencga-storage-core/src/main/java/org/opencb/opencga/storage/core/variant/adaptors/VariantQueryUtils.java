@@ -73,8 +73,10 @@ public final class VariantQueryUtils {
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam VARIANTS_TO_INDEX = QueryParam.create("variantsToIndex",
             "Select variants that need to be updated in the SearchEngine", QueryParam.Type.BOOLEAN);
-    public static final QueryParam SAMPLE_MENDELIAN_ERROR = QueryParam.create("sample_mendelian_error",
+    public static final QueryParam SAMPLE_MENDELIAN_ERROR = QueryParam.create("sampleMendelianError",
             "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam SAMPLE_DE_NOVO = QueryParam.create("sampleDeNovo",
+            "Get the precomputed mendelian errors non HOM_REF for the given samples", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
 

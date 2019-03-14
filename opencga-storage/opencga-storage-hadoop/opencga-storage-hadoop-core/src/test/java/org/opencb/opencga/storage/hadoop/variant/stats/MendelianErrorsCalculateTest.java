@@ -14,6 +14,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -66,12 +67,16 @@ public class MendelianErrorsCalculateTest extends VariantStorageBaseTest impleme
         variantStorageEngine.calculateMendelianErrors(study, Collections.singletonList(family), new ObjectMap());
 
         Set<String> mendelianErrorVariants = new HashSet<>();
+        Set<String> deNovoVariants = new HashSet<>();
         for (Variant variant : variantStorageEngine) {
             Genotype fatherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(father, "GT"));
             Genotype motherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(mother, "GT"));
             Genotype childGenotype = new Genotype(variant.getStudies().get(0).getSampleData(child, "GT"));
             if (MendelianError.compute(fatherGenotype, motherGenotype, childGenotype, variant.getChromosome()) != 0) {
                 mendelianErrorVariants.add(variant.toString());
+                if (!GenotypeClass.HOM_REF.test(childGenotype.toString())) {
+                    deNovoVariants.add(variant.toString());
+                }
             }
         }
 
@@ -87,10 +92,25 @@ public class MendelianErrorsCalculateTest extends VariantStorageBaseTest impleme
         }
         assertEquals(mendelianErrorVariants.size(), result.getNumResults());
 
+        query = new Query()
+                .append(VariantQueryUtils.SAMPLE_DE_NOVO.key(), child)
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
+                .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
+        result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+            assertThat(deNovoVariants, hasItem(variant.toString()));
+        }
+        assertEquals(deNovoVariants.size(), result.getNumResults());
 
-        query.append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz");
-        query.append(VariantQueryParam.QUAL.key(), ">30");
-        query.remove(VariantQueryParam.INCLUDE_FILE.key());
+
+        query = new Query()
+                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), child)
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
+                .append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .append(VariantQueryParam.QUAL.key(), ">30");
 
         result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResult()) {

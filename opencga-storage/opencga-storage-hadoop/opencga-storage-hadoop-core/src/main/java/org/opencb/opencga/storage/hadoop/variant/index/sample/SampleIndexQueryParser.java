@@ -9,6 +9,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.*;
 
@@ -63,6 +65,9 @@ public class SampleIndexQueryParser {
         if (isValidParam(query, SAMPLE_MENDELIAN_ERROR, true)) {
             return true;
         }
+        if (isValidParam(query, SAMPLE_DE_NOVO, true)) {
+            return true;
+        }
         return false;
     }
 
@@ -98,6 +103,13 @@ public class SampleIndexQueryParser {
 
         // Extract study
         StudyMetadata defaultStudy = VariantQueryUtils.getDefaultStudy(query, null, metadataManager);
+
+        if (defaultStudy == null) {
+            throw VariantQueryException.missingStudyForSample("", metadataManager.getStudyNames());
+        }
+
+        List<String> allGenotypes = getAllLoadedGenotypes(defaultStudy);
+        List<String> validGenotypes = allGenotypes.stream().filter(SampleIndexDBLoader::validGenotype).collect(Collectors.toList());
 
         Set<String> mendelianErrorSet = Collections.emptySet();
 
@@ -136,15 +148,22 @@ public class SampleIndexQueryParser {
             Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_MENDELIAN_ERROR.key()));
             mendelianErrorSet = new HashSet<>(mendelianError.getValue());
             queryOperation = mendelianError.getKey();
-            mendelianErrorSet.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, Collections.emptyList()));
+            for (String s : mendelianErrorSet) {
+                // Return any genotype
+                samplesMap.put(s, Collections.emptyList());
+            }
+        } else if (isValidParam(query, SAMPLE_DE_NOVO)) {
+            Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_DE_NOVO.key()));
+            mendelianErrorSet = new HashSet<>(mendelianError.getValue());
+            queryOperation = mendelianError.getKey();
+            for (String s : mendelianErrorSet) {
+                // Return any valid genotype
+                samplesMap.put(s, validGenotypes);
+            }
         } else {
             throw new IllegalStateException("Unable to query SamplesIndex");
         }
 
-        if (defaultStudy == null) {
-            String sample = samplesMap.keySet().iterator().next();
-            throw VariantQueryException.missingStudyForSample(sample, metadataManager.getStudyNames());
-        }
         String study = defaultStudy.getName();
 
         Map<String, byte[]> fileIndexMap = new HashMap<>(samplesMap.size());
@@ -375,4 +394,13 @@ public class SampleIndexQueryParser {
         return b;
     }
 
+    private static List<String> getAllLoadedGenotypes(StudyMetadata studyMetadata) {
+        List<String> allGts = studyMetadata
+                .getAttributes()
+                .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+        if (allGts == null || allGts.isEmpty()) {
+            allGts = DEFAULT_LOADED_GENOTYPES;
+        }
+        return allGts;
+    }
 }

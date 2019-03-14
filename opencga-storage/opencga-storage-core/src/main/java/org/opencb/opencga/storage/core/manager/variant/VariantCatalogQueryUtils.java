@@ -314,7 +314,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
                 String moiString = query.getString(FAMILY_SEGREGATION.key());
-                if (moiString.equalsIgnoreCase("mendelianError")) {
+                if (moiString.equalsIgnoreCase("mendelianError") || moiString.equalsIgnoreCase("deNovo")) {
                     List<Member> children = pedigreeManager.getWithoutChildren();
                     List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
                     List<String> childrenSampleIds = new ArrayList<>(childrenIds.size());
@@ -328,7 +328,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         childrenSampleIds.add(sample.getId());
                     }
 
-                    query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
+                    if (moiString.equalsIgnoreCase("deNovo")) {
+                        query.put(SAMPLE_DE_NOVO.key(), childrenSampleIds);
+                    } else {
+                        query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
+                    }
                 } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
                     throw new VariantQueryException("Unsupported CompoundHeterozygous");
                 } else {
