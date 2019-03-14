@@ -249,6 +249,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             boolean multipleSamplesPerIndividual = false;
             List<Long> sampleUids = new ArrayList<>();
+            Map<String, Long> individualToSampleUid = new HashMap<>();
             if (!familyMembers.isEmpty()) {
                 family.getMembers().removeIf(member -> !familyMembers.contains(member.getId()));
                 if (family.getMembers().size() != familyMembers.size()) {
@@ -270,6 +271,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     if (indexedSampleUids.contains(uid)) {
                         numSamples++;
                         sampleUids.add(uid);
+                        individualToSampleUid.put(member.getId(), uid);
                     } else {
                         sampleIt.remove();
                     }
@@ -315,7 +317,18 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 if (moiString.equalsIgnoreCase("mendelianError")) {
                     List<Member> children = pedigreeManager.getWithoutChildren();
                     List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
-                    query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenIds);
+                    List<String> childrenSampleIds = new ArrayList<>(childrenIds.size());
+
+                    for (String childrenId : childrenIds) {
+                        Long sampleUid = individualToSampleUid.get(childrenId);
+                        Sample sample = samples.stream().filter(s -> s.getUid() == sampleUid).findFirst().orElse(null);
+                        if (sample == null) {
+                            throw new VariantQueryException("Sample not found for individual \"" + childrenId + '"');
+                        }
+                        childrenSampleIds.add(sample.getId());
+                    }
+
+                    query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                 } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
                     throw new VariantQueryException("Unsupported CompoundHeterozygous");
                 } else {
@@ -392,15 +405,6 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                     StringBuilder sb = new StringBuilder();
 
-                    Map<String, Long> individualToSampleUid = new HashMap<>();
-                    for (Individual member : family.getMembers()) {
-                        for (Sample sample : member.getSamples()) {
-                            long uid = sample.getUid();
-                            if (indexedSampleUids.contains(uid)) {
-                                individualToSampleUid.put(member.getId(), uid);
-                            }
-                        }
-                    }
                     Map<Long, String> samplesUidToId = new HashMap<>();
                     for (Sample sample : samples) {
                         samplesUidToId.put(sample.getUid(), sample.getId());

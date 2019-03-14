@@ -618,6 +618,10 @@ public class VariantStorageManager extends StorageManager {
             query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(),
                     queryOptions.get(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key()));
         }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_MEMBERS.key())) {
+            query.put(VariantCatalogQueryUtils.FAMILY_MEMBERS.key(),
+                    queryOptions.get(VariantCatalogQueryUtils.FAMILY_MEMBERS.key()));
+        }
         if (queryOptions.containsKey(VariantCatalogQueryUtils.PANEL.key())) {
             query.put(VariantCatalogQueryUtils.PANEL.key(), queryOptions.get(VariantCatalogQueryUtils.PANEL.key()));
         }
