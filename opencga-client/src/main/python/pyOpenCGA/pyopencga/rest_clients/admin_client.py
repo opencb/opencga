@@ -1,4 +1,4 @@
-from pyopencga.rest_clients._parent_rest_clients.py import _ParentRestClient
+from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient
 
 class Admin(_ParentRestClient):
     """
