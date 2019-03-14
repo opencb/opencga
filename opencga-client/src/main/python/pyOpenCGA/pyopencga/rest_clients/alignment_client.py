@@ -9,7 +9,7 @@ class Alignment(_ParentRestClient):
         _category = 'analysis/alignment'
         super(Alignment, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def get_stats(self, file, **options):
+    def stats(self, file, **options):
         """
         Fetch the stats of an alignment file
         URL: /{apiVersion}/analysis/alignment/stats
@@ -21,7 +21,7 @@ class Alignment(_ParentRestClient):
 
         return self._get('stats', **options)
 
-    def get_coverage(self, file, region, **options):
+    def coverage(self, file, region, **options):
         """
         Fetch the coverage of an alignment file
         URL: /{apiVersion}/analysis/alignment/coverage
@@ -35,7 +35,7 @@ class Alignment(_ParentRestClient):
 
         return self._get('coverage', **options)
 
-    def get_low_coverage_regions(self, file, region, **options):
+    def low_coverage(self, file, region, **options):
         """
         Fetch regions with a low coverage
         URL: /{apiVersion}/analysis/alignment/lowCoverage
@@ -49,7 +49,7 @@ class Alignment(_ParentRestClient):
 
         return self._get('lowCoverage', **options)
 
-    def index_alignment(self, file, **options):
+    def index(self, file, **options):
         """
         Index alignment files
         URL: /{apiVersion}/analysis/alignment/index

@@ -9,7 +9,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         _category = 'files'
         super(Files, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def get_stats(self, **kwargs):
+    def stats(self, **kwargs):
         """
         Fetch catalog file stats
         URL: /{apiVersion}/files/stats
@@ -39,7 +39,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('stats', **kwargs)
 
-    def get_bioformats(self, **kwargs):
+    def bioformats(self, **kwargs):
         """
         List of accepted file bioformats
         URL: /{apiVersion}/files/bioformats
@@ -47,7 +47,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         
         return self._get('bioformats', **kwargs)
 
-    def get_formats(self, **kwargs):
+    def formats(self, **kwargs):
         """
         List of accepted file formats
         URL: /{apiVersion}/files/formats
@@ -104,7 +104,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         
         return self._get('scan', query_id=folder, **kwargs)
 
-    def list(self, folder, **kwargs):
+    def list_folder(self, folder, **kwargs):
         """
         List all the files inside the folder
         URL: /{apiVersion}/files/{folder}/list
@@ -158,7 +158,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('refresh', query_id=file, **kwargs)
 
-    def tree(self, folder, **kwargs):
+    def tree_folder(self, folder, **kwargs):
         """
         Obtain a tree view of the files and folders within a folder
         URL: /{apiVersion}/files/{folder}/tree

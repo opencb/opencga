@@ -23,7 +23,7 @@ class Meta(_ParentRestClient):
         """
         return self._get('ping', **options)
 
-    def get_status(self, **options):
+    def status(self, **options):
         """
         Database status.
         URL: /{apiVersion}/meta/status

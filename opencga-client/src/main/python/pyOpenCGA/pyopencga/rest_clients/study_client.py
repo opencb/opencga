@@ -9,7 +9,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         _category = 'studies'
         super(Studies, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def get_groups(self, study, **options):
+    def groups(self, study, **options):
         """
         Return the groups present in the studies
         URL: /{apiVersion}/studies/{studies}/groups
@@ -74,7 +74,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('resyncFiles', query_id=study, **options)
 
-    def get_stats(self, study, **options):
+    def stats(self, study, **options):
         """
         Fetch catalog study stats
         URL: /{apiVersion}/studies/{studies}/stats
@@ -149,7 +149,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         return self._post('groups', query_id=study, subcategory='users/update', second_query_id=group, 
                           data=data, action=action, **options)
 
-    def get_permission_rules(self, study, entity, **options):
+    def permission_rules(self, study, entity, **options):
         """
         Fetch permission rules
         URL: /{apiVersion}/studies/{study}/permissionRules
@@ -215,7 +215,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         return self._post('permissionRules', query_id=study, subcategory='update', entity=entity,
               data=data, action=action, **options)
 
-    def get_variable_sets(self, study, **options):
+    def variablesets(self, study, **options):
         """
         Fetch variableSets from a study
         URL: /{apiVersion}/studies/{study}/variableSets
@@ -227,7 +227,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('variableSets', query_id=study, **options)
 
-    def update_variable_sets(self, study, data, action, **options):
+    def update_variablesets(self, study, data, action, **options):
         """
         Add or remove a variableSet
         URL: /{apiVersion}/studies/{study}/variableSets/update
@@ -267,7 +267,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._post('variableSets', query_id=study, data=data, action=action, **options)
 
-    def update_variable_from_variable_set(self, study, variable_set, action, **options):
+    def update_variable_from_variableset(self, study, variable_set, action, **options):
         """
         Add or remove variables to a VariableSet
         URL: /{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update

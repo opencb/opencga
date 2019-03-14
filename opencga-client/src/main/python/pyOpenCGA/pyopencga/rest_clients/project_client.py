@@ -35,7 +35,7 @@ class Projects(_ParentBasicCRUDClient):
         """
         return self._get('search', **options)
 
-    def get_stats(self, project, **options):
+    def stats(self, project, **options):
         """
         Fetch catalog project stats
         URL: /{apiVersion}/projects/{projects}/stats
@@ -55,7 +55,7 @@ class Projects(_ParentBasicCRUDClient):
         """
         return self._get('stats', query_id=project, **options)
 
-    def get_studies(self, project, **options):
+    def studies(self, project, **options):
         """
         Fetch all the studies contained in the projects
         URL: /{apiVersion}/projects/{projects}/studies
@@ -71,7 +71,7 @@ class Projects(_ParentBasicCRUDClient):
         """
         return self._get("studies", query_id=project, **options)
 
-    def increment_release_number(self, project, **options):
+    def increment_release(self, project, **options):
         """
         Increment current release number in the project
         URL: /{apiVersion}/projects/{project}/incRelease

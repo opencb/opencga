@@ -18,7 +18,7 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
 
         return self._get('search', **options)
 
-    def get_stats(self, **options):
+    def stats(self, **options):
         """
         Fetch catalog sample stats
         URL: /{apiVersion}/samples/stats

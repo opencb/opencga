@@ -39,7 +39,7 @@ class Users(_ParentBasicCRUDClient):
         
         self.session_id = None
 
-    def get_projects(self, user, **options):
+    def projects(self, user, **options):
         """
         Method to retrieve the projects of the user
         URL: /{apiVersion}/users/{user}/projects
@@ -53,7 +53,7 @@ class Users(_ParentBasicCRUDClient):
         
         return self._get('projects', query_id=user, **options)
 
-    def change_password(self, user, pwd, newpwd, **options):
+    def update_password(self, user, pwd, newpwd, **options):
         """
         Change the password of a user
         URL: /{apiVersion}/users/{user}/password
@@ -67,7 +67,7 @@ class Users(_ParentBasicCRUDClient):
         
         return self._post('password', query_id=user, data=data, **options)
 
-    def get_configs(self, user, **options):
+    def configs(self, user, **options):
         """
         Fetch a user configuration
         URL: /{apiVersion}/users/{user}/configs
@@ -98,7 +98,7 @@ class Users(_ParentBasicCRUDClient):
         return self._post('configs', query_id=user, subcategory='update', data=data, 
                           action=action, **options)
 
-    def get_filters(self, user, **options): ## Method name may be changed
+    def filters(self, user, **options): ## Method name may be changed
         """
         Fetch user filters
         URL: /{apiVersion}/users/{user}/configs/filters

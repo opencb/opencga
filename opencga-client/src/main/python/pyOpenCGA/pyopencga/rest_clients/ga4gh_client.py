@@ -17,7 +17,7 @@ class GA4GH(_ParentRestClient):
 
         return self._get('responses', **options)
 
-    def reads_search(self, data, **options):
+    def search_reads(self, data, **options):
         """
         <PEDNING>
         URL: /{apiVersion}/ga4gh/reads/search
@@ -25,7 +25,7 @@ class GA4GH(_ParentRestClient):
 
         return self._post('read', subcategory='search', data=data, **options)
 
-    def variants_search(self, data, **options):
+    def search_variants(self, data, **options):
         """
         <PENDING>
         URL: /{apiVersion}/ga4gh/variants/search

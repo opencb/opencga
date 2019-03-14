@@ -77,7 +77,7 @@ class Admin(_ParentRestClient):
 
         return self._post('catalog', sucategory='panel', data=data, **options)
 
-    def change_jwt(self, data, **options):
+    def update_jwt(self, data, **options):
         """
         Change JSON Web Token (JWT) secret key
         URL: /{apiVersion}/admin/catalog/jwt

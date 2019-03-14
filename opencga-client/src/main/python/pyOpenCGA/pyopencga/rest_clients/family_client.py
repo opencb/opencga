@@ -43,7 +43,7 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
 
         return self._get('search', **options)
 
-    def get_stats(self, **options):
+    def stats(self, **options):
         """
         Fetch catalog family stats
         URL: /{apiVersion}/families/stats

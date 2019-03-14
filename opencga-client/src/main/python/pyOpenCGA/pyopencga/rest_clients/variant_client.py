@@ -20,9 +20,9 @@ class Variant(_ParentRestClient):
 
         return self._get('index', **options)
 
-    def validate_vcf(self, file, data, **options):
+    def validate(self, file, data, **options):
         """
-        Validate a VCF file
+        Validate a VCF file ??
         URL: /{apiVersion}/analysis/variant/validate
 
         :param file: VCF file id, name or path
@@ -32,7 +32,7 @@ class Variant(_ParentRestClient):
         
         return self._post('validate', data=data, **options)
 
-    def get_stats(self, **options):
+    def stats(self, **options):
         """
         Fetch variant stats
         URL: /{apiVersion}/analysis/variant/stats
@@ -40,7 +40,7 @@ class Variant(_ParentRestClient):
 
         return self._get('stats', **options)
 
-    def get_samples_from_variants(self, **options):
+    def samples(self, **options):
         """
         Get samples given a set of variants
         URL: /{apiVersion}/analysis/variant/samples
@@ -48,7 +48,7 @@ class Variant(_ParentRestClient):
 
         return self._get('samples', **options)
 
-    def get_metadata(self, **options):
+    def metadata(self, **options):
         """
         <PENDING>
         URL: /{apiVersion}/analysis/variant/metadata

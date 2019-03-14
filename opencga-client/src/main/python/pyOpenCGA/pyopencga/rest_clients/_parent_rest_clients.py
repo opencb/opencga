@@ -108,7 +108,7 @@ class _ParentAclRestClient(_ParentRestClient):
 
         return self._get('acl', query_id=query_id, **options)
 
-    def acl_update(self, memberId, data, **options):
+    def update_acl(self, memberId, data, **options):
         """
         update acl
 
@@ -120,7 +120,7 @@ class _ParentAclRestClient(_ParentRestClient):
 
 
 class _ParentAnnotationSetRestClient(_ParentRestClient):
-    def annotationsets_search(self, query_id, study, **options):
+    def search_annotationsets(self, query_id, study, **options):
         """
         annotationsets search
 
@@ -140,7 +140,7 @@ class _ParentAnnotationSetRestClient(_ParentRestClient):
 
         return self._get('annotationsets', query_id=query_id, study=study, subcategory='info', **options)
 
-    def annotationsets_delete(self, query_id, study, annotationset_name, **options):
+    def delete_annotationsets(self, query_id, study, annotationset_name, **options):
         """
         delete annotationsets
 
@@ -162,7 +162,7 @@ class _ParentAnnotationSetRestClient(_ParentRestClient):
         return self._get('annotationsets', query_id=query_id, study=study, subcategory='info',
                          second_query_id=annotationset_name, **options)
 
-    def annotationsets_create(self, query_id, study, variable_set_id, data, **options):
+    def create_annotationsets(self, query_id, study, variable_set_id, data, **options):
         """
         create annotationsets
 
@@ -173,7 +173,7 @@ class _ParentAnnotationSetRestClient(_ParentRestClient):
         return self._post('annotationsets', study=study, query_id=query_id, subcategory='create',
                           variableSetId=variable_set_id, data=data, **options)
 
-    def annotationsets_update(self, query_id, study, annotationset_name, data, **options):
+    def update_annotationsets(self, query_id, study, annotationset_name, data, **options):
         """
         update annotationsets
 

@@ -9,7 +9,7 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         _category = 'individuals'
         super(Individuals, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def get_stats(self, **options):
+    def stats(self, **options):
         """
         Fetch catalog individual stats
         URL: /{apiVersion}/individuals/stats
