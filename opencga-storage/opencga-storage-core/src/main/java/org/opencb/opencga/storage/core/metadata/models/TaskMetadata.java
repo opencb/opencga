@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.metadata.models;
 
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.*;
@@ -56,11 +55,6 @@ public class TaskMetadata {
     private Type type = Type.OTHER;
 
     public TaskMetadata() {
-    }
-
-    @Deprecated
-    public TaskMetadata(String name, List<Integer> fileIds, long timestamp, Type type) {
-        this(RandomUtils.nextInt(1, 1000), name, fileIds, timestamp, type);
     }
 
     public TaskMetadata(int id, String name, List<Integer> fileIds, long timestamp, Type type) {

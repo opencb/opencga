@@ -750,7 +750,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
-    protected void unsecureUpdateCohortMetadata(int studyId, CohortMetadata cohort) {
+    public void unsecureUpdateCohortMetadata(int studyId, CohortMetadata cohort) {
         cohort.setStudyId(studyId);
         cohortDBAdaptor.updateCohortMetadata(studyId, cohort, null);
     }
@@ -945,8 +945,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return taskDBAdaptor.getRunningTasks(studyId);
     }
 
-    private void unsecureUpdateTask(int studyId, TaskMetadata task) {
+    public void unsecureUpdateTask(int studyId, TaskMetadata task) throws StorageEngineException {
         task.setStudyId(studyId);
+        if (task.getId() == 0) {
+            task.setId(newTaskId(studyId));
+        }
         taskDBAdaptor.updateTask(studyId, task, null);
     }
 
@@ -1386,7 +1389,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public TaskMetadata.Status setStatus(int studyId, String taskName, List<Integer> fileIds, TaskMetadata.Status status) {
+    public TaskMetadata.Status setStatus(int studyId, String taskName, List<Integer> fileIds, TaskMetadata.Status status)
+            throws StorageEngineException {
         TaskMetadata task = getTask(studyId, taskName, fileIds);
         TaskMetadata.Status previousStatus = task.currentStatus();
         task.addStatus(Calendar.getInstance().getTime(), status);

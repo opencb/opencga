@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.admin.executors.migration;
+package org.opencb.opencga.app.cli.admin.executors.migration.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;

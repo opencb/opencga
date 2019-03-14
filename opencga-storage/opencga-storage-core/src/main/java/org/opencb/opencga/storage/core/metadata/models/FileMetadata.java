@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.opencb.biodata.models.variant.VariantFileMetadata;
 
 import java.util.LinkedHashSet;
 
@@ -15,7 +14,7 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
     private String path;
     private LinkedHashSet<Integer> samples;
 
-    private VariantFileMetadata variantFileMetadata;
+//    private VariantFileMetadata variantFileMetadata;
 
 //    private TaskMetadata.Status indexStatus;
 //    private TaskMetadata.Status annotationStatus;
@@ -46,14 +45,14 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
         return this;
     }
 
-    public VariantFileMetadata getVariantFileMetadata() {
-        return variantFileMetadata;
-    }
-
-    public FileMetadata setVariantFileMetadata(VariantFileMetadata variantFileMetadata) {
-        this.variantFileMetadata = variantFileMetadata;
-        return this;
-    }
+//    public VariantFileMetadata getVariantFileMetadata() {
+//        return variantFileMetadata;
+//    }
+//
+//    public FileMetadata setVariantFileMetadata(VariantFileMetadata variantFileMetadata) {
+//        this.variantFileMetadata = variantFileMetadata;
+//        return this;
+//    }
 
     public boolean isIndexed() {
         return TaskMetadata.Status.READY.equals(getIndexStatus());
@@ -88,7 +87,7 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
                 .append("status", getStatus())
                 .append("path", path)
                 .append("samples", samples)
-                .append("variantFileMetadata", variantFileMetadata)
+//                .append("variantFileMetadata", variantFileMetadata)
                 .toString();
     }
 }
