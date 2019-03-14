@@ -4,7 +4,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
@@ -83,10 +82,6 @@ class HBaseVariantMetadataUtils {
 
     static byte[] getStudiesSummaryRowKey() {
         return STUDIES_RK;
-    }
-
-    static byte[] getStudyConfigurationRowKey(StudyConfiguration studyConfiguration) {
-        return getStudyConfigurationRowKey(studyConfiguration.getId());
     }
 
     static byte[] getStudyConfigurationRowKey(int studyId) {

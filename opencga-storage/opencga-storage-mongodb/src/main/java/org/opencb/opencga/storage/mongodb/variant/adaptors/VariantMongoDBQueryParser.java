@@ -587,7 +587,7 @@ public class VariantMongoDBQueryParser {
                         if (infoInFileElemMatch && !infoMap.isEmpty()) {
                             if (defaultStudy == null) {
                                 throw VariantQueryException.missingStudyForFile(fileId.toString(),
-                                        metadataManager.getStudyNames(null));
+                                        metadataManager.getStudyNames());
                             }
                             String fileName = metadataManager.getFileName(defaultStudy.getId(), fileId);
                             String infoValue = infoMap.get(fileName);
@@ -612,7 +612,7 @@ public class VariantMongoDBQueryParser {
                     int i = 0;
                     for (Map.Entry<String, String> entry : infoMap.entrySet()) {
                         if (defaultStudy == null) {
-                            throw VariantQueryException.missingStudyForFile(entry.getKey(), metadataManager.getStudyNames(null));
+                            throw VariantQueryException.missingStudyForFile(entry.getKey(), metadataManager.getStudyNames());
                         }
                         QueryBuilder infoBuilder = new QueryBuilder();
                         Integer fileId = metadataManager.getFileId(defaultStudy.getId(), entry.getKey(), true);

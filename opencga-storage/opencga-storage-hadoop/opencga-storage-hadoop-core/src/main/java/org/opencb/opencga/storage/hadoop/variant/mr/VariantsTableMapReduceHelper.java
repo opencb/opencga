@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -95,11 +94,6 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
         }
 
         return indexedSamples;
-    }
-
-    @Deprecated
-    public StudyConfiguration getStudyConfiguration() {
-        return null;
     }
 
     public StudyMetadata getStudyMetadata() {

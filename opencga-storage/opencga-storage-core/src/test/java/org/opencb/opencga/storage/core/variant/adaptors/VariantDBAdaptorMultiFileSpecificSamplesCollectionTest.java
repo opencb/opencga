@@ -43,7 +43,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
         super.load();
 
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
-        for (String studyName : scm.getStudyNames(null)) {
+        for (String studyName : scm.getStudyNames()) {
             StudyMetadata sc = scm.getStudyMetadata(studyName);
             ArrayList<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(sc.getId()).keySet());
             samples.sort(String::compareTo);

@@ -360,7 +360,7 @@ public class VariantHbaseTestUtils {
 
     public static void printVariants(VariantHadoopDBAdaptor dbAdaptor, URI outDir) throws Exception {
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
-        List<StudyMetadata> studies = scm.getStudyNames(null)
+        List<StudyMetadata> studies = scm.getStudyNames()
                 .stream()
                 .map(scm::getStudyMetadata)
                 .collect(Collectors.toList());

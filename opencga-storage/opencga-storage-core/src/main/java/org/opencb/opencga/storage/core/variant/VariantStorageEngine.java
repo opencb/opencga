@@ -769,7 +769,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public abstract void removeFiles(String study, List<String> files) throws StorageEngineException;
 
     /**
-     * Atomically updates the studyConfiguration before removing samples.
+     * Atomically updates the storage metadata before removing samples.
      *
      * @param study    Study
      * @param files    Files to remove
@@ -807,7 +807,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Atomically updates the StudyConfiguration after removing samples.
+     * Atomically updates the storage metadata after removing samples.
      *
      * If success:
      *    Updates remove status with READY
@@ -913,9 +913,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Build the default StudyConfigurationManager. This method could be override by children classes if they want to use other class.
+     * Build the default VariantStorageMetadataManager. This method could be override by children classes if they want to use other class.
      *
-     * @return A StudyConfigurationManager object
+     * @return VariantStorageMetadataManager
      * @throws StorageEngineException If object is null
      */
     public abstract VariantStorageMetadataManager getMetadataManager() throws StorageEngineException;
@@ -1204,7 +1204,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
                 String sampleName = entry.getKey();
                 if (defaultStudy == null) {
-                    throw VariantQueryException.missingStudyForSample(sampleName, metadataManager.getStudyNames(null));
+                    throw VariantQueryException.missingStudyForSample(sampleName, metadataManager.getStudyNames());
                 }
                 Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), sampleName, true);
                 if (sampleId == null) {
@@ -1234,7 +1234,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
                 String fileName = entry.getKey();
                 if (defaultStudy == null) {
-                    throw VariantQueryException.missingStudyForFile(fileName, metadataManager.getStudyNames(null));
+                    throw VariantQueryException.missingStudyForFile(fileName, metadataManager.getStudyNames());
                 }
                 Integer fileId = metadataManager.getFileId(defaultStudy.getId(), fileName, true);
                 if (fileId == null) {
@@ -1264,7 +1264,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
             if (defaultStudy == null) {
                 throw VariantQueryException.missingStudyForSamples(query.getAsStringList(SAMPLE.key()),
-                        metadataManager.getStudyNames(null));
+                        metadataManager.getStudyNames());
             }
             List<String> loadedGenotypes = defaultStudy.getAttributes().getAsStringList(LOADED_GENOTYPES.key());
             if (CollectionUtils.isEmpty(loadedGenotypes)) {

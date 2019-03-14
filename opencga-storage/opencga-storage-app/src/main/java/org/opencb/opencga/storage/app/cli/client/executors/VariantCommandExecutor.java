@@ -331,7 +331,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         storageConfiguration.getVariant().getOptions().putAll(variantQueryCommandOptions.commonOptions.params);
 
-        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames(new QueryOptions());
+        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
@@ -666,7 +666,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        storageConfiguration.getVariant().getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
 
 
-        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames(new QueryOptions());
+        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
 
 
         // TODO: JT

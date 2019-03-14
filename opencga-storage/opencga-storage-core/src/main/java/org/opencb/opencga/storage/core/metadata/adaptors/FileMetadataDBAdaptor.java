@@ -19,13 +19,11 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Locked;
 
@@ -119,7 +117,7 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
 //    QueryResult<String> getSamplesBySources(List<String> fileIds, QueryOptions options);
 
-    QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
+//    QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
 
     void removeVariantFileMetadata(int study, int file) throws IOException;
 

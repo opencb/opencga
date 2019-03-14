@@ -24,7 +24,6 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.slf4j.Logger;
@@ -69,10 +68,10 @@ public class DocumentToVariantStatsConverter {
     }
 
     @Deprecated
-    public DocumentToVariantStatsConverter(List<StudyConfiguration> studyConfigurations) {
-        this.studyMetadataMap = studyConfigurations
+    public DocumentToVariantStatsConverter(List<? extends StudyMetadata> list) {
+        this.studyMetadataMap = list
                 .stream()
-                .collect(Collectors.toMap(studyConfiguration -> studyConfiguration.getId(), Function.identity()));
+                .collect(Collectors.toMap(StudyMetadata::getId, Function.identity()));
     }
 
     public DocumentToVariantStatsConverter(VariantStorageMetadataManager variantStorageMetadataManager) {

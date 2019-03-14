@@ -104,7 +104,7 @@ public class NewProjectMetadataMigration {
 
                             Map<String, Integer> counters = new HashMap<>();
 
-                            for (String studyName : scm.getStudyNames(null)) {
+                            for (String studyName : scm.getStudyNames()) {
                                 StudyConfiguration studyConfiguration = scm.getStudyConfiguration(studyName, null).first();
                                 int studyId = studyConfiguration.getId();
 

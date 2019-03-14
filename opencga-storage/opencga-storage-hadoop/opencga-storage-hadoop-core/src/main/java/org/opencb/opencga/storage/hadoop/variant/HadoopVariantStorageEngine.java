@@ -832,7 +832,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         Query query = super.preProcessQuery(originalQuery, options);
 
         VariantStorageMetadataManager variantStorageMetadataManager = getMetadataManager();
-        List<String> studyNames = variantStorageMetadataManager.getStudyNames(QueryOptions.empty());
+        List<String> studyNames = variantStorageMetadataManager.getStudyNames();
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, STUDY) && studyNames.size() == 1) {

@@ -590,7 +590,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         }
 
         Query query = super.preProcessQuery(originalQuery, options);
-        List<String> studyNames = metadataManager.getStudyNames(QueryOptions.empty());
+        List<String> studyNames = metadataManager.getStudyNames();
         CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, VariantQueryParam.STUDY)

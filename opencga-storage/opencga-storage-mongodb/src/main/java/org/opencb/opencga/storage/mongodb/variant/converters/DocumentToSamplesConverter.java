@@ -25,7 +25,6 @@ import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CompressionUtils;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -146,46 +145,10 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
     }
 
-    /**
-     * Create a converter from Document to a Map of samples, providing the list
-     * of sample names.
-     *
-     * @param studyId StudyId
-     * @param samples         The list of samples, if any
-     * @param defaultGenotype Default genotype
-     */
     @Deprecated
-    public DocumentToSamplesConverter(int studyId, List<String> samples, String defaultGenotype) {
-        this(studyId, null, samples, defaultGenotype);
-    }
-
-    /**
-     * Create a converter from Document to a Map of samples, providing the list
-     * of sample names.
-     *
-     * @param studyId StudyId
-     * @param fileId File id
-     * @param samples The list of samples, if any
-     * @param defaultGenotype Default genotype
-     */
-    @Deprecated
-    public DocumentToSamplesConverter(int studyId, Integer fileId, List<String> samples, String defaultGenotype) {
+    public DocumentToSamplesConverter(List<? extends StudyMetadata> list) {
         this();
-        setSamples(studyId, fileId, samples);
-        studyMetadatas.get(studyId).getAttributes()
-                .put(DEFAULT_GENOTYPE.key(), Collections.singleton(defaultGenotype));
-        studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
-    }
-
-    @Deprecated
-    public DocumentToSamplesConverter(StudyConfiguration studyConfiguration) {
-        this(Collections.singletonList(studyConfiguration));
-    }
-
-    @Deprecated
-    public DocumentToSamplesConverter(List<StudyConfiguration> studyConfigurations) {
-        this();
-        studyConfigurations.forEach(studyMetadata -> addStudyMetadata(studyMetadata));
+        list.forEach(this::addStudyMetadata);
     }
 
     public List<List<String>> convertToDataModelType(Document object, int studyId) {
@@ -608,28 +571,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
 
         return mongoSamples;
-    }
-
-    public void setSamples(int studyId, Integer fileId, List<String> samples) {
-        int i = 0;
-        int size = samples == null ? 0 : samples.size();
-        LinkedHashMap<String, Integer> sampleIdsMap = new LinkedHashMap<>(size);
-        LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>(size);
-        if (samples != null) {
-            for (String sample : samples) {
-                sampleIdsMap.put(sample, i);
-                sampleIds.add(i);
-                i++;
-            }
-        }
-        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, "",
-                Collections.emptyMap(), sampleIdsMap,
-                Collections.emptyMap(),
-                Collections.emptyMap());
-        if (fileId != null) {
-            studyConfiguration.setSamplesInFiles(Collections.singletonMap(fileId, sampleIds));
-        }
-        addStudyMetadata(studyConfiguration);
     }
 
     public void setIncludeSamples(Map<Integer, List<Integer>> includeSamples) {

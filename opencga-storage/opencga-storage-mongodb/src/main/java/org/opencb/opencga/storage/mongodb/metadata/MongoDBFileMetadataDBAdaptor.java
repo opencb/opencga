@@ -23,13 +23,11 @@ import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -322,21 +320,21 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //        queryResult.setNumTotalResults(fileIds.size());
 //    }
 
-
-    @Override
-    public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
-            queryOptions) {
-
-        VariantFileMetadata source = new VariantFileMetadata("", "");
-        source.setStats(variantSourceStats.getFileStats());
-        Document globalStats = variantFileMetadataConverter.convertToStorageType("", source).get("stats", Document.class);
-
-        Bson query = parseQuery(new Query(VariantFileMetadataQueryParam.STUDY_ID.key(), variantSourceStats.getStudyId())
-                .append(VariantFileMetadataQueryParam.FILE_ID.key(), variantSourceStats.getFileId()));
-        Bson update = Updates.set("stats", globalStats);
-
-        return collection.update(query, update, null);
-    }
+//
+//    @Override
+//    public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
+//            queryOptions) {
+//
+//        VariantFileMetadata source = new VariantFileMetadata("", "");
+//        source.setStats(variantSourceStats.getFileStats());
+//        Document globalStats = variantFileMetadataConverter.convertToStorageType("", source).get("stats", Document.class);
+//
+//        Bson query = parseQuery(new Query(VariantFileMetadataQueryParam.STUDY_ID.key(), variantSourceStats.getStudyId())
+//                .append(VariantFileMetadataQueryParam.FILE_ID.key(), variantSourceStats.getFileId()));
+//        Bson update = Updates.set("stats", globalStats);
+//
+//        return collection.update(query, update, null);
+//    }
 
 
 }

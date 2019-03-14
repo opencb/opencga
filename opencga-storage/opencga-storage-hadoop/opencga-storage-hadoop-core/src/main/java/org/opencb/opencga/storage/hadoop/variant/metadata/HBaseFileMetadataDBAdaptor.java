@@ -26,18 +26,16 @@ import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,14 +173,6 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
         } catch (IOException e) {
             throw new UncheckedIOException("Problem with " + Bytes.toString(result.getRow()), e);
         }
-    }
-
-    @Override
-    public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration,
-                                   QueryOptions queryOptions) {
-//        String tableName = HadoopVariantStorageEngine.getTableName(Integer.parseInt(variantSource.getStudyId()));
-        logger.warn("Unimplemented method!");
-        return null;
     }
 
     @Override

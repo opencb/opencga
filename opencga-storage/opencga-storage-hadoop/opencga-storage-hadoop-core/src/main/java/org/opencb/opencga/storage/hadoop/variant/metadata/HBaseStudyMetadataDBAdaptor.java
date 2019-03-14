@@ -171,7 +171,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
                 // Compress json
                 // Avoid "java.lang.IllegalArgumentException: KeyValue size too large"
                 bytes = CompressionUtils.compress(bytes);
-                Put put = new Put(getStudyConfigurationRowKey(studyConfiguration));
+                Put put = new Put(getStudyConfigurationRowKey(studyConfiguration.getId()));
                 put.addColumn(family, getValueColumn(), studyConfiguration.getTimeStamp(), bytes);
                 put.addColumn(family, getTypeColumn(), studyConfiguration.getTimeStamp(),
                         Type.STUDY_CONFIGURATION.bytes());

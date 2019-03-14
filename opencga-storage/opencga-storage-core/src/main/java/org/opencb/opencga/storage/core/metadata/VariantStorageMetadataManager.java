@@ -235,11 +235,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
-    @Deprecated
-    public List<String> getStudyNames(QueryOptions options) {
-        return studyDBAdaptor.getStudyNames(options);
-    }
-
     public List<String> getStudyNames() {
         return studyDBAdaptor.getStudyNames(null);
     }

@@ -848,7 +848,7 @@ public class VariantSqlQueryParser {
             List<String> gtFilters = new ArrayList<>(genotypesMap.size());
             for (Map.Entry<Object, List<String>> entry : genotypesMap.entrySet()) {
                 if (defaultStudyMetadata == null) {
-                    List<String> studyNames = metadataManager.getStudyNames(null);
+                    List<String> studyNames = metadataManager.getStudyNames();
                     throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
                 }
                 int studyId = defaultStudyMetadata.getId();

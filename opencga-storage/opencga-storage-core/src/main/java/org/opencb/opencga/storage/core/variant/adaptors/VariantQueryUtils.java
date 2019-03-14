@@ -563,7 +563,7 @@ public final class VariantQueryUtils {
             }
 
         } else {
-            List<String> studyNames = metadataManager.getStudyNames(null);
+            List<String> studyNames = metadataManager.getStudyNames();
             if (studyNames != null && studyNames.size() == 1) {
                 defaultStudy = metadataManager.getStudyMetadata(studyNames.get(0));
             } else {

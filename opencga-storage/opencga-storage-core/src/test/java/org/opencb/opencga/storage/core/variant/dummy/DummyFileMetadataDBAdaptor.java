@@ -115,11 +115,6 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     }
 
     @Override
-    public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
-        return new QueryResult();
-    }
-
-    @Override
     public void removeVariantFileMetadata(int study, int file) {
 
     }
