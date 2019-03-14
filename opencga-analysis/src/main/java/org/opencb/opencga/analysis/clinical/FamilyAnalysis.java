@@ -291,7 +291,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         return reportedLowCoverages;
     }
 
-    private List<ReportedLowCoverage> getReportedLowCoverages(String geneName, String bamFileId, int maxCoverage) {
+    protected List<ReportedLowCoverage> getReportedLowCoverages(String geneName, String bamFileId, int maxCoverage) {
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
         try {
             // Get gene exons from CellBase
