@@ -1,13 +1,13 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient
 
-class AnalysisVariant(_ParentRestClient):
+class Variant(_ParentRestClient):
     """
     This class contains method for AnalysisVariant ws
     """
 
     def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
         _category = "analysis/variant"
-        super(AnalysisVariant, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+        super(Variant, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
     def index(self, file, **options):
         """

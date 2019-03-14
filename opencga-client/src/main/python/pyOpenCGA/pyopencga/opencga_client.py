@@ -10,8 +10,8 @@ from pyopencga.rest_clients.job_client import Jobs
 from pyopencga.rest_clients.individual_client import Individuals
 from pyopencga.rest_clients.clinical_client import Clinical
 from pyopencga.rest_clients.variableset_client import VariableSets
-from pyopencga.rest_clients.alignment_client import AnalysisAlignment
-from pyopencga.rest_clients.variant_client import AnalysisVariant
+from pyopencga.rest_clients.alignment_client import Alignment
+from pyopencga.rest_clients.variant_client import Variant
 from pyopencga.rest_clients.ga4gh_client import GA4GH
 from pyopencga.rest_clients.meta_client import Meta
 from pyopencga.rest_clients.admin_client import Admin
@@ -65,8 +65,8 @@ class OpenCGAClient(object):
         self.individuals = None
         self.clinical = None
         self.variable_sets = None
-        self.analysis_alignment = None
-        self.analysis_variant = None
+        self.alignment = None
+        self.variant = None
         self.ga4gh = None
         self.meta = None
 
@@ -82,8 +82,8 @@ class OpenCGAClient(object):
         self.individuals = Individuals(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.clinical = Clinical(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.analysis_alignment = AnalysisAlignment(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.analysis_variant = AnalysisVariant(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        self.alignment = Alignment(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        self.variant = Variant(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.meta = Meta(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.admin = Admin(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
@@ -93,7 +93,7 @@ class OpenCGAClient(object):
         self.clients = [self.users, self.projects, self.studies, self.files,
                         self.samples, self.cohorts, self.families, self.jobs,
                         self.individuals, self.variable_sets, self.clinical,
-                        self.analysis_alignment, self.analysis_variant,
+                        self.alignment, self.variant,
                         self.ga4gh, self.meta, self.admin, self.panels, self.tool]
 
         for client in self.clients:
