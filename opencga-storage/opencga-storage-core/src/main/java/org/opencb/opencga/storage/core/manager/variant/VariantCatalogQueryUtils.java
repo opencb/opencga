@@ -495,6 +495,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         }
 
+        logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
+
         return query;
     }
 

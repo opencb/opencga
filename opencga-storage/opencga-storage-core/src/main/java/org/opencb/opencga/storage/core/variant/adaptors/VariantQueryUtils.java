@@ -998,11 +998,17 @@ public final class VariantQueryUtils {
             }
             if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
                 String value = query.getString(SAMPLE_MENDELIAN_ERROR.key());
-                samples = splitValue(value, checkOperator(value));
+                if (samples == null) {
+                    samples = new ArrayList<>();
+                }
+                samples.addAll(splitValue(value, checkOperator(value)));
             }
             if (isValidParam(query, SAMPLE_DE_NOVO)) {
                 String value = query.getString(SAMPLE_DE_NOVO.key());
-                samples = splitValue(value, checkOperator(value));
+                if (samples == null) {
+                    samples = new ArrayList<>();
+                }
+                samples.addAll(splitValue(value, checkOperator(value)));
             }
             if (CollectionUtils.isEmpty(samples)) {
                 samples = null;

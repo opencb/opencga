@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -22,6 +23,7 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -263,8 +265,26 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void queryByFamilySegregation() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "BIALLELIC"), sessionId);
-        assertEquals("sample3:1/1,1|1;sample4:0/0,0|0,0/1,0|1,1|0;sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0", query.getString(GENOTYPE.key()));
+        assertEquals("sample3:1/1,1|1;sample4:0/0,0/1,0|0,0|1,1|0;sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0", query.getString(GENOTYPE.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
+    public void queryByFamilySegregationMendelianError() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "mendelianError"), sessionId);
+        assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+        assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO));
+        assertTrue(VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
+    }
+
+    @Test
+    public void queryByFamilySegregationDeNovo() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "deNovo"), sessionId);
+        assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_DE_NOVO.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+        assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR));
+        assertTrue(VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
     }
 
     @Test

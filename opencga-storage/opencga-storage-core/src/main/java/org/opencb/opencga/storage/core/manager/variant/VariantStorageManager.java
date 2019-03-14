@@ -554,7 +554,7 @@ public class VariantStorageManager extends StorageManager {
                 }
             }
         } else {
-            logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
+            logger.debug("Missing include samples! Obtaining samples to include from catalog.");
             List<String> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm)
                     .stream()
                     .map(scm.getStudies(null).inverse()::get)
