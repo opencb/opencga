@@ -114,11 +114,11 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam INCLUDE_GENOTYPE = new VariantQueryParam("includeGenotype", BOOLEAN, INCLUDE_GENOTYPE_DESCR);
 
     public static final String SAMPLE_LIMIT_DESCR
-            = "";
+            = "Limit the number of samples to be included in the result";
     public static final VariantQueryParam SAMPLE_LIMIT = new VariantQueryParam("sampleLimit", INTEGER, SAMPLE_LIMIT_DESCR);
 
     public static final String SAMPLE_SKIP_DESCR
-            = "";
+            = "Skip some samples from the result. Useful for sample pagination.";
     public static final VariantQueryParam SAMPLE_SKIP = new VariantQueryParam("sampleSkip", INTEGER, SAMPLE_SKIP_DESCR);
 
     public static final String FILE_DESCR
