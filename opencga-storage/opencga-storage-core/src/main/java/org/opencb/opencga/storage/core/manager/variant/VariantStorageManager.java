@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -348,7 +349,7 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, engine -> {
+        return secure(query, queryOptions, sessionId, "get variants", engine -> {
             logger.debug("getVariants {}, {}", query, queryOptions);
             VariantQueryResult<Variant> result = engine.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
@@ -512,6 +513,49 @@ public class VariantStorageManager extends StorageManager {
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
         return supplier.apply(variantStorageEngine);
     }
+
+    private <R extends QueryResult> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
+                                             VariantReadOperation<R> supplier)
+            throws CatalogException, StorageEngineException, IOException {
+        ObjectMap auditAttributes = new ObjectMap()
+                .append("query", new Query(query))
+                .append("queryOptions", new QueryOptions(queryOptions));
+        R result = null;
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String dbName = null;
+        Exception exception = null;
+        try {
+            String study = catalogUtils.getAnyStudy(query, sessionId);
+
+            catalogUtils.parseQuery(query, sessionId);
+            DataStore dataStore = getDataStore(study, sessionId);
+            dbName = dataStore.getDbName();
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+
+            checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
+            result = supplier.apply(variantStorageEngine);
+            return result;
+        } catch (Exception e) {
+            exception = e;
+            throw e;
+        } finally {
+            auditAttributes.append("error", result == null);
+            if (exception != null) {
+                auditAttributes.append("errorType", exception.getClass());
+                auditAttributes.append("errorMessage", exception.getMessage());
+            }
+            if (result != null) {
+                auditAttributes.append("numResults", result.getResult().size());
+            }
+            catalogManager.getAuditManager().recordAction(
+                    AuditRecord.Resource.variant,
+                    AuditRecord.Action.view,
+                    AuditRecord.Magnitude.low,
+                    dbName,
+                    userId, null, null, "Get variants", auditAttributes);
+        }
+    }
+
     private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
                          String sessionId, VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
