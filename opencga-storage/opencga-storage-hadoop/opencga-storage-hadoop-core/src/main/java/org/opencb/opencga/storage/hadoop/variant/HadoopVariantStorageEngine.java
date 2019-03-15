@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -35,6 +36,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
@@ -1001,8 +1003,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
                         totalCount = sampleIndexDBAdaptor.count(sampleIndexQuery, entry.getKey());
                     } else {
+                        StopWatch stopWatch = StopWatch.createStarted();
                         Iterators.getLast(variants);
                         totalCount = variants.getCount();
+                        logger.info("Drain variants from sample index table in " + TimeUtils.durationToString(stopWatch));
                     }
                     long approxCount = totalCount / sampling * result.getNumResults();
                     logger.info("totalCount = " + totalCount);
