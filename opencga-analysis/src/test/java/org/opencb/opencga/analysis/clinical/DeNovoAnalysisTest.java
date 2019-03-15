@@ -39,44 +39,11 @@ public class DeNovoAnalysisTest extends VariantStorageBaseTest implements MongoD
     @Before
     public void setUp() throws Exception {
         clearDB("opencga_test_user_1000G");
-
-        clinicalTest = new AbstractClinicalManagerTest();
-
-        clinicalTest.catalogManagerResource = catalogManagerResource;
-        clinicalTest.setUp();
-
-        // Copy config files in the OpenCGA home conf folder
-        Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("conf"));
-        catalogManagerResource.getConfiguration().serialize(
-                new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("configuration.yml").toString()));
-
-        InputStream storageConfigurationStream = MongoDBVariantStorageTest.class.getClassLoader()
-                .getResourceAsStream("storage-configuration.yml");
-        Files.copy(storageConfigurationStream, catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml"),
-                StandardCopyOption.REPLACE_EXISTING);
+        clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(catalogManagerResource, getVariantStorageEngine());
     }
 
     @Test
     public void denovoTest() throws Exception {
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-
-        ObjectMap storageOptions = new ObjectMap()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
-
-        StorageConfiguration configuration = variantStorageEngine.getConfiguration();
-        configuration.setDefaultStorageEngineId(variantStorageEngine.getStorageEngineId());
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
-        storageEngineFactory.registerVariantStorageEngine(variantStorageEngine);
-
-        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManagerResource.getCatalogManager(), storageEngineFactory);
-
-        variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", ".", storageOptions, clinicalTest.token);
-//        for (Variant variant : variantStorageManager.iterable(clinicalTest.token)) {
-//            System.out.println("variant = " + variant.toStringSimple());// + ", ALL:maf = " + variant.getStudies().get(0).getStats("ALL").getMaf());
-//        }
-
-
         DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalTest.clinicalAnalysis.getId(), null, null, null, null, null,
                 clinicalTest.studyFqn, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         AnalysisResult<List<Variant>> execute = deNovoAnalysis.execute();

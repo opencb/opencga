@@ -74,6 +74,8 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
             query = new Query(VariantQueryParam.STUDY.key(), studyStr);
         }
 
+        String segregation = this.query.getString(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key());
+
         if (!query.containsKey(VariantQueryParam.STUDY.key())) {
             query.put(VariantQueryParam.STUDY.key(), studyStr);
         }
@@ -96,19 +98,21 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
             // Family parameter
             if (clinicalAnalysis.getFamily() != null) {
                 // Query contains a different family than ClinicAnalysis
-                if (query.containsKey("family") && !clinicalAnalysis.getFamily().getId().equals(query.get("family"))) {
+                if (query.containsKey(VariantCatalogQueryUtils.FAMILY.key())
+                        && !clinicalAnalysis.getFamily().getId().equals(query.get(VariantCatalogQueryUtils.FAMILY.key()))) {
                     logger.warn("Two families passed");
                 } else {
-                    query.put("family", clinicalAnalysis.getFamily().getId());
+                    query.put(VariantCatalogQueryUtils.FAMILY.key(), clinicalAnalysis.getFamily().getId());
                 }
             } else {
                 // Individual parameter
                 if (clinicalAnalysis.getProband() != null) {
                     // Query contains a different sample than ClinicAnalysis
-                    if (query.containsKey("sample") && !clinicalAnalysis.getProband().getId().equals(query.get("sample"))) {
+                    if (query.containsKey(VariantQueryParam.SAMPLE.key())
+                            && !clinicalAnalysis.getProband().getId().equals(query.get(VariantQueryParam.SAMPLE.key()))) {
                         logger.warn("Two samples passed");
                     } else {
-                        query.put("sample", clinicalAnalysis.getProband().getId());
+                        query.put(VariantQueryParam.SAMPLE.key(), clinicalAnalysis.getProband().getId());
                     }
                 }
             }
@@ -119,7 +123,10 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
             if (clinicalAnalysis.getDisorder() != null) {
                 disorder = clinicalAnalysis.getDisorder();
-                query.put("familyPhenotype", disorder.getId());
+                if (StringUtils.isNotEmpty(segregation) && disorder != null) {
+                    query.put(VariantCatalogQueryUtils.FAMILY_DISORDER.key(), disorder.getId());
+                    query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(), segregation);
+                }
             }
         }
 
@@ -178,7 +185,6 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
         int dbTime = -1;
 
-        String segregation = this.query.getString(MODE_OF_INHERITANCE.key());
         if (StringUtils.isNotEmpty(segregation) && (segregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.DE_NOVO.toString())
                 || segregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS.toString()))) {
             if (segregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.DE_NOVO.toString())) {
@@ -236,7 +242,6 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
         List<ReportedVariant> primaryFindings;
         DefaultReportedVariantCreator creator;
 
-
         creator = new DefaultReportedVariantCreator(roleInCancer, actionableVariants, disorder, moi,
                 ClinicalProperty.Penetrance.COMPLETE, biodataDiseasePanels, biotypes, soNames, !skipUntieredVariants);
 
@@ -255,7 +260,8 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
         // Secondary findings, if clinical consent is TRUE
         List<ReportedVariant> secondaryFindings = null;
         if (clinicalAnalysis != null) {
-            secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings, query.getAsStringList("sample"), creator);
+            secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings,
+                    query.getAsStringList(VariantQueryParam.SAMPLE.key()), creator);
         }
 
         // Low coverage support
@@ -341,33 +347,6 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
             }
         }
     }
-
-//    private ReportedEvent createReportedEvent(String id, Phenotype phenotype, Variant variant, ConsequenceType ct,
-//                                              String panelId, ClinicalProperty.ModeOfInheritance moi) {
-//        // Create the reported event
-//        ReportedEvent reportedEvent = new ReportedEvent()
-//                .setId(id)
-//                .setPhenotypes(Collections.singletonList(phenotype))
-//                .setConsequenceTypeIds(Collections.singletonList(ct.getBiotype()))
-//                .setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), ct.getEnsemblTranscriptId(), ct.getGeneName(),
-//                        null, null));
-//
-//        if (panelId != null) {
-//            reportedEvent.setPanelId(panelId);
-//        }
-//
-//        if (moi != null) {
-//            reportedEvent.setModeOfInheritance(moi);
-//        }
-//
-//        // TODO: add additional reported event fields
-//
-//        VariantClassification variantClassification = new VariantClassification();
-//        variantClassification.setAcmg(VariantClassification.calculateAcmgClassification(variant, reportedEvent));
-//        reportedEvent.setClassification(variantClassification);
-//
-//        return reportedEvent;
-//    }
 
     public Query getQuery() {
         return query;
