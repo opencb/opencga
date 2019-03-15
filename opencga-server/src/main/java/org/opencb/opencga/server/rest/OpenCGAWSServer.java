@@ -17,8 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
@@ -55,8 +53,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -477,8 +475,10 @@ public class OpenCGAWSServer {
     
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
+            Response response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
                     MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
+            return response;
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -517,7 +517,9 @@ public class OpenCGAWSServer {
         try {
             String res = jsonObjectWriter.writeValueAsString(obj);
 //            System.out.println("\n\n\n" + res + "\n\n");
-            return buildResponse(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
+            Response response = buildResponse(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
+            return response;
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing response object");
@@ -535,7 +537,7 @@ public class OpenCGAWSServer {
         Response response;
         try {
             response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
-//            logResponse(response.getStatusInfo(), queryResponseMap);
+            logResponse(response.getStatusInfo());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
@@ -552,6 +554,10 @@ public class OpenCGAWSServer {
 
     protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
+    }
+
+    private void logResponse(Response.StatusType statusInfo) {
+        logResponse(statusInfo, null);
     }
 
     private void logResponse(Response.StatusType statusInfo, QueryResponse<?> queryResponse) {
