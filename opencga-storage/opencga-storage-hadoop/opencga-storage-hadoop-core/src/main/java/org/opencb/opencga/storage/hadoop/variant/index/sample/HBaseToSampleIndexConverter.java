@@ -9,6 +9,7 @@ import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
@@ -51,6 +52,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
 
     // Region filter
     private final Region regionFilter;
+    private final Set<VariantType> typesFilter;
     // Annotation mask filter
     private final byte annotationIndexMask;
     private final byte fileIndexMask;
@@ -61,6 +63,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
 
     public HBaseToSampleIndexConverter(byte[] family) {
         this.regionFilter = null;
+        this.typesFilter = null;
         this.annotationIndexMask = IndexUtils.EMPTY_MASK;
         this.fileIndexMask = IndexUtils.EMPTY_MASK;
         this.fileIndex = IndexUtils.EMPTY_MASK;
@@ -71,6 +74,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
 
     public HBaseToSampleIndexConverter(SingleSampleIndexQuery query, Region region, byte[] family) {
         this.regionFilter = region;
+        this.typesFilter = query.getVariantTypes();
         this.annotationIndexMask = query.getAnnotationIndexMask();
         this.fileIndexMask = query.getFileIndexMask();
         this.fileIndex = query.getFileIndex();
@@ -262,7 +266,11 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
                     // Test region filter (if any)
                     Variant v = new Variant(variant);
                     if (regionFilter == null || regionFilter.contains(v.getChromosome(), v.getStart())) {
-                        return v;
+
+                        // Test type filter (if any)
+                        if (typesFilter == null || typesFilter.contains(v.getType())) {
+                            return v;
+                        }
                     }
                 }
             }

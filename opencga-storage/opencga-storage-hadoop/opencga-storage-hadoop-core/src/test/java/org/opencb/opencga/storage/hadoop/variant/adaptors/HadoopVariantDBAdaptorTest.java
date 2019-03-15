@@ -275,7 +275,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     public void testQueryFileIndex(Query annotationQuery) throws Exception {
-        assertFalse(testQueryIndex(annotationQuery).emptyFileIndex());
+        testQueryIndex(annotationQuery);
     }
 
     public SampleIndexQuery testQueryIndex(Query annotationQuery) throws Exception {

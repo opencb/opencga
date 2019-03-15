@@ -10,6 +10,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -203,6 +204,7 @@ public class SampleIndexDBAdaptor {
                         SingleSampleIndexQuery sampleIndexQuery = query.forSample(sample, finalGts);
                         HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(sampleIndexQuery, subRegion, family);
                         if (query.emptyAnnotationIndex() && query.emptyFileIndex()
+                                && (query.getVariantTypes() == null || query.getVariantTypes().size() == VariantType.values().length)
                                 && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
                             Scan scan = parse(sampleIndexQuery, subRegion, true);
                             try {

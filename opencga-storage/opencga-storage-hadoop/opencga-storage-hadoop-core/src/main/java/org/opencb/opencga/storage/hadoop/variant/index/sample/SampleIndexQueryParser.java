@@ -181,7 +181,19 @@ public class SampleIndexQueryParser {
         }
         byte annotationMask = parseAnnotationMask(query);
 
-        return new SampleIndexQuery(regions, study, samplesMap, fileIndexMap, annotationMask, mendelianErrorSet, queryOperation);
+        Set<VariantType> variantTypes = null;
+        if (isValidParam(query, TYPE)) {
+            List<String> typesStr = query.getAsStringList(VariantQueryParam.TYPE.key());
+            if (!typesStr.isEmpty()) {
+                variantTypes = new HashSet<>(typesStr.size());
+                for (String type : typesStr) {
+                    variantTypes.add(VariantType.valueOf(type));
+                }
+            }
+        }
+
+        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, fileIndexMap, annotationMask,
+                mendelianErrorSet, queryOperation);
     }
 
     protected static byte[] parseFileMask(Query query, String sample, Function<String, Collection<String>> filesFromSample) {

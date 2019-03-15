@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.*;
@@ -17,6 +18,7 @@ public class SampleIndexQuery {
     private static final byte[] EMPTY_INDEX_MASK = {0, 0};
 
     private final List<Region> regions;
+    private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
     private final Map<String, byte[]> fileIndexMap; // byte[] = {mask , index}
@@ -25,13 +27,14 @@ public class SampleIndexQuery {
     private final VariantQueryUtils.QueryOperation queryOperation;
 
     public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
-        this(regions, study, samplesMap, Collections.emptyMap(), EMPTY_MASK, Collections.emptySet(), queryOperation);
+        this(regions, null, study, samplesMap, Collections.emptyMap(), EMPTY_MASK, Collections.emptySet(), queryOperation);
     }
 
-    public SampleIndexQuery(List<Region> regions, String study,
+    public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study,
                             Map<String, List<String>> samplesMap, Map<String, byte[]> fileIndexMap,
                             byte annotationIndexMask, Set<String> mendelianErrorSet, QueryOperation queryOperation) {
         this.regions = regions;
+        this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
         this.fileIndexMap = fileIndexMap;
@@ -42,6 +45,10 @@ public class SampleIndexQuery {
 
     public List<Region> getRegions() {
         return regions;
+    }
+
+    public Set<VariantType> getVariantTypes() {
+        return variantTypes;
     }
 
     public String getStudy() {
@@ -101,6 +108,7 @@ public class SampleIndexQuery {
 
         protected SingleSampleIndexQuery(SampleIndexQuery query, String sample, List<String> gts) {
             super(query.regions == null ? null : new ArrayList<>(query.regions),
+                    query.variantTypes == null ? null : new HashSet<>(query.variantTypes),
                     query.study,
                     Collections.singletonMap(sample, gts),
                     query.fileIndexMap,
