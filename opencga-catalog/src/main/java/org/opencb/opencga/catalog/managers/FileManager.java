@@ -50,14 +50,16 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -1808,6 +1810,8 @@ public class FileManager extends AnnotationSetManager<File> {
         authorizationManager.checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
                 FileAclEntry.FilePermissions.DOWNLOAD);
         URI fileUri = getUri(resource.getResource());
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.download, AuditRecord.Magnitude.medium,
+                resource.getResource().getUuid(), resource.getUser(), null, null, "File download", null);
         return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
     }
 
