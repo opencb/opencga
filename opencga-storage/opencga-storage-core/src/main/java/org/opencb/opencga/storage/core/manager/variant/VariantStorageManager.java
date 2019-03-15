@@ -52,6 +52,7 @@ import org.opencb.opencga.storage.core.manager.variant.operations.*;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -478,6 +479,25 @@ public class VariantStorageManager extends StorageManager {
         Query intersectQuery = new Query(query);
         intersectQuery.put(VariantQueryParam.STUDY.key(), String.join(VariantQueryUtils.AND, studyIds));
         return get(intersectQuery, queryOptions, sessionId);
+    }
+
+    public SampleMetadata getSampleMetadata(String study, String sample, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        Query query = new Query(STUDY.key(), study)
+                .append(SAMPLE.key(), sample)
+                .append(INCLUDE_FILE.key(), VariantQueryUtils.NONE);
+        return secure(query, new QueryOptions(), sessionId, engine -> {
+
+            VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+            int studyId = metadataManager.getStudyId(study);
+            Integer sampleId = metadataManager.getSampleId(studyId, sample);
+            if (sampleId == null) {
+                // Sample does not exist in storage!
+                throw VariantQueryException.sampleNotFound(sample, study);
+            } else {
+                return metadataManager.getSampleMetadata(studyId, sampleId);
+            }
+        });
     }
 
     private DataStore getDataStore(String study, String sessionId) throws CatalogException {

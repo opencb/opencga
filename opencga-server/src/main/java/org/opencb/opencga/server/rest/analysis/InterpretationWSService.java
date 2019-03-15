@@ -932,6 +932,7 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
             ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
+            customAnalysisOptions.put(FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, false);
 
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
