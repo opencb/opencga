@@ -286,14 +286,14 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
             result = query(new Query(VariantQueryParam.SAMPLE_SKIP.key(), i).append(SAMPLE_METADATA.key(), true), options);
 //            System.out.println("samples(SKIP=" + i + ") = " + result.getSamples());
             assertEquals(Math.max(0, 8 - i), result.getSamples().values().stream().mapToInt(List::size).sum());
-            assertEquals(Math.max(0, 8 - i), result.getNumSamples());
-            assertEquals(8, result.getNumTotalSamples());
+            assertEquals(Math.max(0, 8 - i), result.getNumSamples().intValue());
+            assertEquals(8, result.getNumTotalSamples().intValue());
 
             result = query(new Query(VariantQueryParam.SAMPLE_LIMIT.key(), i).append(SAMPLE_METADATA.key(), true), options);
 //            System.out.println("samples(LIMIT=" + i + ") = " + result.getSamples());
             assertEquals(Math.min(8, i), result.getSamples().values().stream().mapToInt(List::size).sum());
-            assertEquals(Math.min(8, i), result.getNumSamples());
-            assertEquals(8, result.getNumTotalSamples());
+            assertEquals(Math.min(8, i), result.getNumSamples().intValue());
+            assertEquals(8, result.getNumTotalSamples().intValue());
         }
     }
 
