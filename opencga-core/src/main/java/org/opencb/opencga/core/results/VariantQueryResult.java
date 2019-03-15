@@ -95,7 +95,7 @@ public class VariantQueryResult<T> extends QueryResult<T> {
         return this;
     }
 
-    public int getNumTotalSamples() {
+    public Integer getNumTotalSamples() {
         return numTotalSamples;
     }
 
@@ -104,7 +104,7 @@ public class VariantQueryResult<T> extends QueryResult<T> {
         return this;
     }
 
-    public int getNumSamples() {
+    public Integer getNumSamples() {
         return numSamples;
     }
 
