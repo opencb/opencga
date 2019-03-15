@@ -64,13 +64,13 @@ class OpenCGAClient(object):
         self.jobs = None
         self.individuals = None
         self.clinical = None
-        self.variable_sets = None
+        self.variablesets = None
         self.alignment = None
         self.variant = None
         self.ga4gh = None
         self.meta = None
 
-        ## prepare for @properties 
+        ## [TODO] convert to @properties 
         self.users = Users(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.projects = Projects(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.studies = Studies(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
@@ -81,7 +81,7 @@ class OpenCGAClient(object):
         self.jobs = Jobs(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.individuals = Individuals(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.clinical = Clinical(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.variable_sets = VariableSets(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
+        self.variablesets = VariableSets(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.alignment = Alignment(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.variant = Variant(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
@@ -92,9 +92,9 @@ class OpenCGAClient(object):
 
         self.clients = [self.users, self.projects, self.studies, self.files,
                         self.samples, self.cohorts, self.families, self.jobs,
-                        self.individuals, self.variable_sets, self.clinical,
-                        self.alignment, self.variant,
-                        self.ga4gh, self.meta, self.admin, self.panels, self.tool]
+                        self.individuals, self.variablesets, self.clinical,
+                        self.alignment, self.variant, self.ga4gh, self.meta, 
+                        self.admin, self.panels, self.tool]
 
         for client in self.clients:
             # only retry the ones with objects (instantiated clients)
