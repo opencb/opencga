@@ -42,17 +42,19 @@ public class CellBaseUtils {
     private static Logger logger = LoggerFactory.getLogger(CellBaseUtils.class);
     private static final int GENE_EXTRA_REGION = 5000;
     private final CellBaseClient cellBaseClient;
+    private final String assembly;
     public static final QueryOptions GENE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             "id,name,chromosome,start,end,transcripts.id,transcripts.name,transcripts.proteinId");
 
     private ConcurrentHashMap<String, Region> cache = new ConcurrentHashMap<>();
 
-    public CellBaseUtils(CellBaseClient cellBaseClient) {
+    public CellBaseUtils(CellBaseClient cellBaseClient, String assembly) {
         this.cellBaseClient = cellBaseClient;
+        this.assembly = assembly;
     }
 
     public Region getGeneRegion(String geneStr) {
-        List<Region> regions = getGeneRegion(Collections.singletonList(geneStr));
+        List<Region> regions = getGeneRegion(Collections.singletonList(geneStr), false);
         if (regions.isEmpty()) {
             return null;
         } else {
@@ -60,7 +62,7 @@ public class CellBaseUtils {
         }
     }
 
-    public List<Region> getGeneRegion(List<String> geneStrs) {
+    public List<Region> getGeneRegion(List<String> geneStrs, boolean skipMissing) {
         geneStrs = new LinkedList<>(geneStrs);
         List<Region> regions = new ArrayList<>(geneStrs.size());
         Iterator<String> iterator = geneStrs.iterator();
@@ -78,7 +80,8 @@ public class CellBaseUtils {
         try {
             long ts = System.currentTimeMillis();
             QueryResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, GENE_QUERY_OPTIONS);
-            logger.info("Query genes " + geneStrs + " -> " + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
+            logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
+                    + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
             for (QueryResult<Gene> result : response.getResponse()) {
                 Gene gene = null;
@@ -92,13 +95,14 @@ public class CellBaseUtils {
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getName()))
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getId()))
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getProteinID()))) {
-                            if (gene != null) {
-                                // More than one gene found!
-                                // Leave gene empty, so it is marked as "not found"
-                                gene = null;
-                                break;
-                            }
+//                            if (gene != null) {
+//                                // More than one gene found!
+//                                // Leave gene empty, so it is marked as "not found"
+//                                gene = null;
+//                                break;
+//                            }
                             gene = aGene;
+                            break;
                         }
                     }
                 } else {
@@ -119,7 +123,7 @@ public class CellBaseUtils {
                 cache.put(gene.getId(), region);
                 cache.put(geneStr, region);
             }
-            if (missingGenes != null) {
+            if (!skipMissing && missingGenes != null) {
                 throw VariantQueryException.geneNotFound(String.join(",", missingGenes));
             }
             return regions;

@@ -93,6 +93,7 @@ public final class VariantQueryUtils {
             SAMPLE_SKIP
     )));
     public static final boolean DEFAULT_SKIP_COUNT = true;
+    public static final String SKIP_MISSING_GENES = "skipMissingGenes";
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
@@ -1557,7 +1558,7 @@ public final class VariantQueryUtils {
         List<String> genes = variantQueryXref.getGenes();
         if (!genes.isEmpty()) {
 
-            List<Region> regions = cellBaseUtils.getGeneRegion(genes);
+            List<Region> regions = cellBaseUtils.getGeneRegion(genes, query.getBoolean(SKIP_MISSING_GENES, false));
 
             regions = mergeRegions(regions);
 

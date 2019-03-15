@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.SKIP_MISSING_GENES;
 
 /**
  * Created on 12/12/17.
@@ -329,6 +330,7 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL")), new HashSet<>(query.getAsList(GENE.key())));
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), sessionId);
         assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF")), new HashSet<>(query.getAsList(GENE.key())));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
     }
 
     @Test

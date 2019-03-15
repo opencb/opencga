@@ -492,7 +492,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 geneNames.addAll(query.getAsStringList(GENE.key()));
             }
             query.put(GENE.key(), geneNames);
-
+            query.put(SKIP_MISSING_GENES, true);
         }
 
         logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
