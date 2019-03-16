@@ -127,8 +127,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
         Object sampleId = PInteger.INSTANCE.toObject(row, 0, 4);
         if (row.length > 5) {
             Object chr = PVarchar.INSTANCE.toObject(row, 4, row.length - 4 - 1 - 4);
-            Object pos = PInteger.INSTANCE.toObject(row, row.length - 4, 4);
-            return sampleId + "_" + chr + "_" + pos;
+            try {
+                Object pos = PInteger.INSTANCE.toObject(row, row.length - 4, 4);
+                return sampleId + "_" + chr + "_" + pos;
+            } catch (RuntimeException e) {
+                return sampleId + "_" + chr + "_########";
+            }
         } else {
             return sampleId + "_";
         }
