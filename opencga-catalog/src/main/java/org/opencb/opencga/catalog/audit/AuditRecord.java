@@ -27,8 +27,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 public class AuditRecord {
 
     public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, family, interpretation, tool,
-        variableSet}
-    public enum Action {create, update, view, delete, restore, index, login, logout, share}
+        variant, variableSet}
+    public enum Action {create, update, view, delete, download, restore, index, login, logout, share}
     public enum Magnitude {low, medium, high}
 
     private Object id;

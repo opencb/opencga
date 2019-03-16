@@ -16,9 +16,10 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters;
 
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.*;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 
 import java.sql.Array;
 import java.sql.SQLException;
@@ -87,7 +88,12 @@ public abstract class AbstractPhoenixConverter {
                 throw new IllegalArgumentException("Not expected array phoenix data type");
             }
         }
-        byte[] bytes = dataType.toBytes(value);
+        byte[] bytes;
+        if (value instanceof byte[]) {
+            bytes = ((byte[]) value);
+        } else {
+            bytes = dataType.toBytes(value);
+        }
         put.addColumn(columnFamily, column, bytes);
     }
 
@@ -103,11 +109,29 @@ public abstract class AbstractPhoenixConverter {
         return true;
     }
 
-    public static boolean endsWith(byte[] bytes, byte[] endsWith) {
-        if (bytes.length < endsWith.length) {
+    public static boolean columnStartsWith(Cell cell, byte[] prefix) {
+        if (cell.getQualifierLength() < prefix.length) {
             return false;
         }
-        for (int i = endsWith.length - 1, f = bytes.length - 1; i >= 0; i--, f--) {
+        byte[] qualifierArray = cell.getQualifierArray();
+        int qualifierOffset = cell.getQualifierOffset();
+        for (int i = 0; i < prefix.length; i++) {
+            if (qualifierArray[qualifierOffset + i] != prefix[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean endsWith(byte[] bytes, byte[] endsWith) {
+        return endsWith(bytes, 0, bytes.length, endsWith);
+    }
+
+    public static boolean endsWith(byte[] bytes, int offset, int length, byte[] endsWith) {
+        if (length < endsWith.length) {
+            return false;
+        }
+        for (int i = endsWith.length - 1, f = offset + length - 1; i >= 0; i--, f--) {
             if (endsWith[i] != bytes[f]) {
                 return false;
             }

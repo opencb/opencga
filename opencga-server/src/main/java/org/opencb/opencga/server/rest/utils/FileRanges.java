@@ -20,7 +20,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -47,7 +46,7 @@ public class FileRanges extends OpenCGAWSServer {
 
     @GET
     @Path("/ranges/{file}")
-    @ApiOperation(value = "Fetchs alignment files using HTTP Ranges protocol")
+    @ApiOperation(value = "Fetch alignment files using HTTP Ranges protocol")
     @Produces("text/plain")
     public Response getRanges(@Context HttpHeaders headers,
                               @ApiParam(value = "File id, name or path") @PathParam("file") String fileIdStr,

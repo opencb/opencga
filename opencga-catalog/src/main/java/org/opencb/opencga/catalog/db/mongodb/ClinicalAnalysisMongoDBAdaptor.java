@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.ANALYST_ASSIGNEE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -180,9 +181,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
+        String[] acceptedListParams = {QueryParams.FLAGS.key()};
+        filterStringListParams(parameters, document.getSet(), acceptedListParams);
+
         String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
-                QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.STATUS.key()};
+                QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.STATUS.key(), QueryParams.ANALYST.key(),
+                QueryParams.CONSENT.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        String[] acceptedMapParams = {QueryParams.ROLE_TO_PROBAND.key()};
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
+
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
 
@@ -334,8 +343,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public DBIterator<ClinicalAnalysis> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, clinicalConverter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), null,
-                options);
+        return new ClinicalAnalysisMongoDBIterator<>(mongoCursor, clinicalConverter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID),
+                null, options);
     }
 
     @Override
@@ -365,8 +374,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         Document studyDocument = getStudyDocument(query);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user,
-                options);
+        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -397,8 +405,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = removeInnerProjections(qOptions, QueryParams.PROBAND.key());
-        qOptions = removeInnerProjections(qOptions, QueryParams.FAMILY.key());
+        qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATIONS.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return clinicalCollection.nativeQuery().find(bson, qOptions).iterator();
@@ -483,12 +490,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
-        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
         QueryResult<Long> count = clinicalCollection.count(bson);
         if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { name: '"
+            throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { id: '"
                     + clinicalAnalysis.getId() + "'} already exists.");
         }
 
@@ -612,8 +618,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
+                                Status.getPositiveStatus(ClinicalAnalysis.ClinicalStatus.STATUS_LIST, query.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case ANALYST:
+                    case ANALYST_ASSIGNEE:
+                        addAutoOrQuery(ANALYST_ASSIGNEE.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:
@@ -624,13 +634,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case SAMPLE_UID:
                     case PROBAND_UID:
                     case FAMILY_UID:
-                    case GERMLINE_UID:
-                    case SOMATIC_UID:
                     case DESCRIPTION:
                     case RELEASE:
                     case STATUS:
                     case STATUS_MSG:
                     case STATUS_DATE:
+                    case FLAGS:
                     case ACL:
                     case ACL_MEMBER:
                     case ACL_PERMISSIONS:

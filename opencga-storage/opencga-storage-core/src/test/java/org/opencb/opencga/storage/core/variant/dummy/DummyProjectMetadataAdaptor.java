@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 
 import java.io.FileOutputStream;
@@ -14,6 +13,8 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     private static ProjectMetadata projectMetadata;
+    private static Map<String, Integer> counters = new HashMap<>();
 
     @Override
     public long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
@@ -38,26 +40,22 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     public synchronized QueryResult<ProjectMetadata> getProjectMetadata() {
         final QueryResult<ProjectMetadata> result = new QueryResult<>("");
         if (projectMetadata == null) {
-            result.setResult(Collections.singletonList(new ProjectMetadata("hsapiens", "grch37", 1)));
-        } else {
-            result.setResult(Collections.singletonList(projectMetadata.copy()));
+            projectMetadata = new ProjectMetadata("hsapiens", "grch37", 1);
         }
+        result.setResult(Collections.singletonList(projectMetadata.copy()));
         return result;
     }
 
     @Override
     public synchronized QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
-        this.projectMetadata = projectMetadata;
+        DummyProjectMetadataAdaptor.projectMetadata = projectMetadata;
         return new QueryResult<>();
     }
 
     @Override
-    public synchronized int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
-        ProjectMetadata projectMetadata = getProjectMetadata().first();
-        Integer id = projectMetadata.getCounters().compute(idType + (studyConfiguration == null ? "" : ('_' + studyConfiguration.getStudyId())),
+    public synchronized int generateId(Integer studyId, String idType) throws StorageEngineException {
+        return counters.compute(idType + (studyId == null ? "" : ("_" + studyId)),
                 (key, value) -> value == null ? 1 : value + 1);
-        updateProjectMetadata(projectMetadata, true);
-        return id;
     }
 
     private static final AtomicInteger NUM_PRINTS = new AtomicInteger();
@@ -75,6 +73,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
 
     public static void clear() {
         projectMetadata = null;
+        counters.clear();
     }
 
 

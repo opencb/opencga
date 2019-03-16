@@ -17,6 +17,8 @@
 package org.opencb.opencga.core.models;
 
 import org.opencb.biodata.models.clinical.interpretation.Comment;
+import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,9 +43,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private Individual proband;
     private Family family;
+    private Map<String, FamiliarRelationship> roleToProband;
     private List<Interpretation> interpretations;
 
+    private ClinicalConsent consent;
+
+    private ClinicalAnalyst analyst;
     private Priority priority;
+    private List<String> flags;
 
     private String creationDate;
     private String modificationDate;
@@ -59,7 +66,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     }
 
     public enum Type {
-        SINGLE, DUO, TRIO, FAMILY, AUTO, MULTISAMPLE
+        SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
     }
 
     // Todo: Think about a better place to have this enum
@@ -70,22 +77,103 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         REMOVE
     }
 
+    public enum FamiliarRelationship {
+        TWINS_MONOZYGOUS("TwinsMonozygous"), TWINS_DIZYGOUS("TwinsDizygous"), TWINS_UNKNOWN("TwinsUnknown"), FULL_SIBLING("FullSibling"),
+        FULL_SIBLING_F("FullSiblingF"), FULL_SIBLING_M("FullSiblingM"), MOTHER("Mother"), FATHER("Father"), SON("Son"),
+        DAUGHTER("Daughter"), CHILD_OF_UNKNOWN_SEX("ChildOfUnknownSex"), MATERNAL_AUNT("MaternalAunt"), MATERNAL_UNCLE("MaternalUncle"),
+        MATERNAL_UNCLE_OR_AUNT("MaternalUncleOrAunt"), PATERNAL_AUNT("PaternalAunt"), PATERNAL_UNCLE("PaternalUncle"),
+        PATERNAL_UNCLE_OR_AUNT("PaternalUncleOrAunt"), MATERNAL_GRANDMOTHER("MaternalGrandmother"),
+        PATERNAL_GRANDMOTHER("PaternalGrandmother"), MATERNAL_GRANDFATHER("MaternalGrandfather"),
+        PATERNAL_GRANDFATHER("PaternalGrandfather"), DOUBLE_FIRST_COUSIN("DoubleFirstCousin"),
+        MATERNAL_COUSIN_SISTER("MaternalCousinSister"), PATERNAL_COUSIN_SISTER("PaternalCousinSister"),
+        MATERNAL_COUSIN_BROTHER("MaternalCousinBrother"), PATERNAL_COUSIN_BROTHER("PaternalCousinBrother"), COUSIN("Cousin"),
+        SPOUSE("Spouse"), HUSBAND("Husband"), OTHER("Other"), RELATION_IS_NOT_CLEAR("RelationIsNotClear"), UNRELATED("Unrelated"),
+        PROBAND("Proband"), UNKNOWN("Unknown");
+
+        private final String value;
+
+        FamiliarRelationship(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
+    public static class ClinicalAnalyst {
+        private String assignedBy;
+        private String assignee;
+        private String date;
+
+        public ClinicalAnalyst() {
+            this("", "");
+        }
+
+        public ClinicalAnalyst(String assignee, String assignedBy) {
+            this.assignee = assignee;
+            this.assignedBy = assignedBy;
+            this.date = TimeUtils.getTime();
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("ClinicalAnalyst{");
+            sb.append("assignee='").append(assignee).append('\'');
+            sb.append(", assignedBy='").append(assignedBy).append('\'');
+            sb.append(", date='").append(date).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getAssignee() {
+            return assignee;
+        }
+
+        public ClinicalAnalyst setAssignee(String assignee) {
+            this.assignee = assignee;
+            return this;
+        }
+
+        public String getAssignedBy() {
+            return assignedBy;
+        }
+
+        public ClinicalAnalyst setAssignedBy(String assignedBy) {
+            this.assignedBy = assignedBy;
+            return this;
+        }
+
+        public String getDate() {
+            return date;
+        }
+
+        public ClinicalAnalyst setDate(String date) {
+            this.date = date;
+            return this;
+        }
+    }
+
     public static class ClinicalStatus extends Status {
 
-        public static final String WAIT = "WAIT";
-        public static final String REJECTED = "REJECTED";
+        public static final String INCOMPLETE = "INCOMPLETE";
+        public static final String READY_FOR_VALIDATION = "READY_FOR_VALIDATION";
         public static final String READY_FOR_INTERPRETATION = "READY_FOR_INTERPRETATION";
         public static final String INTERPRETATION_IN_PROGRESS = "INTERPRETATION_IN_PROGRESS";
-        public static final String INTERPRETED = "INTERPRETED";
-        public static final String PENDING_REVIEW = "PENDING_REVIEW";
+//        public static final String INTERPRETED = "INTERPRETED";
+        public static final String READY_FOR_INTEPRETATION_REVIEW = "READY_FOR_INTEPRETATION_REVIEW";
+        public static final String INTERPRETATION_REVIEW_IN_PROGRESS = "INTERPRETATION_REVIEW_IN_PROGRESS";
         public static final String READY_FOR_REPORT = "READY_FOR_REPORT";
         public static final String REPORT_IN_PROGRESS = "REPORT_IN_PROGRESS";
         public static final String DONE = "DONE";
-        public static final String REVIEW = "REVIEW";
+        public static final String REVIEW_IN_PROGRESS = "REVIEW_IN_PROGRESS";
         public static final String CLOSED = "CLOSED";
+        public static final String REJECTED = "REJECTED";
 
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, WAIT, REJECTED, READY_FOR_INTERPRETATION,
-                INTERPRETATION_IN_PROGRESS, INTERPRETED, PENDING_REVIEW, READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW, CLOSED);
+        public static final List<String> STATUS_LIST = Arrays.asList(INCOMPLETE, READY, DELETED, READY_FOR_VALIDATION,
+                READY_FOR_INTERPRETATION, INTERPRETATION_IN_PROGRESS, READY_FOR_INTEPRETATION_REVIEW, INTERPRETATION_REVIEW_IN_PROGRESS,
+                READY_FOR_REPORT, REPORT_IN_PROGRESS, DONE, REVIEW_IN_PROGRESS, CLOSED, REJECTED);
 
         public ClinicalStatus(String status, String message) {
             if (isValid(status)) {
@@ -100,13 +188,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         }
 
         public ClinicalStatus() {
-            this(WAIT, "");
+            this(READY_FOR_INTERPRETATION, "");
         }
 
         public static boolean isValid(String status) {
             if (Status.isValid(status)) {
                 return true;
             }
+
             if (STATUS_LIST.contains(status)) {
                 return true;
             }
@@ -117,9 +206,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis() {
     }
 
-    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files,
-                            Individual proband, Family family, List<Interpretation> interpretations, Priority priority, String creationDate,
-                            String dueDate, List<Comment> comments, ClinicalStatus status, int release, Map<String, Object> attributes) {
+    public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
+                            Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
+                            List<Interpretation> interpretations, Priority priority, ClinicalAnalyst analyst, List<String> flags,
+                            String creationDate, String dueDate, List<Comment> comments, ClinicalStatus status, int release,
+                            Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -127,8 +218,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.files = files;
         this.proband = proband;
         this.family = family;
+        this.roleToProband = roleToProband;
         this.interpretations = interpretations;
         this.priority = priority;
+        this.flags = flags;
+        this.analyst = analyst;
+        this.consent = consent;
         this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -148,8 +243,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
+        sb.append(", roleToProband=").append(roleToProband);
         sb.append(", interpretations=").append(interpretations);
+        sb.append(", analyst=").append(analyst);
         sb.append(", priority=").append(priority);
+        sb.append(", flags=").append(flags);
+        sb.append(", consent=").append(consent);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -254,6 +353,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public Map<String, FamiliarRelationship> getRoleToProband() {
+        return roleToProband;
+    }
+
+    public ClinicalAnalysis setRoleToProband(Map<String, FamiliarRelationship> roleToProband) {
+        this.roleToProband = roleToProband;
+        return this;
+    }
+
     public List<Interpretation> getInterpretations() {
         return interpretations;
     }
@@ -263,12 +371,39 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public ClinicalAnalyst getAnalyst() {
+        return analyst;
+    }
+
+    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
+        this.analyst = analyst;
+        return this;
+    }
+
+    public ClinicalConsent getConsent() {
+        return consent;
+    }
+
+    public ClinicalAnalysis setConsent(ClinicalConsent consent) {
+        this.consent = consent;
+        return this;
+    }
+
     public Priority getPriority() {
         return priority;
     }
 
     public ClinicalAnalysis setPriority(Priority priority) {
         this.priority = priority;
+        return this;
+    }
+
+    public List<String> getFlags() {
+        return flags;
+    }
+
+    public ClinicalAnalysis setFlags(List<String> flags) {
+        this.flags = flags;
         return this;
     }
 

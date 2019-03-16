@@ -19,10 +19,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -36,6 +33,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.opencb.opencga.storage.hadoop.utils.PersistentResultScanner.isValid;
 
 /**
  * Created on 13/11/15.
@@ -119,30 +118,39 @@ public class HBaseManager implements AutoCloseable {
 
     public Connection getConnection() {
         Connection con = this.connection.get();
-        if (this.closeConnection.get() && null == con) {
-            while (null == con) {
-                try {
-                    con = ConnectionFactory.createConnection(this.getConf());
+        if (con == null) {
+            synchronized (this.connection) {
+                con = this.connection.get();
+                if (con == null) {
+                    try {
+                        con = ConnectionFactory.createConnection(this.getConf());
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Problems opening connection to DB", e);
+                    }
                     OPEN_CONNECTIONS.incrementAndGet();
-//                    CONNECTIONS.add(con);
+                    //                    CONNECTIONS.add(con);
                     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                     LOGGER.info("Opened Hadoop DB connection {} called from {}", con, stackTrace);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Problems opening connection to DB", e);
+                    this.connection.set(con);
                 }
-                if (!this.connection.compareAndSet(null, con)) {
-                    try {
-                        con.close();
-                        OPEN_CONNECTIONS.decrementAndGet();
-//                        CONNECTIONS.remove(con);
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Problems closing connection to DB", e);
-                    }
-                }
-                con = this.connection.get();
             }
         }
         return con;
+    }
+
+    /**
+     * Get, if possible, a PersistentResultScanner. Otherwise, get a normal scanner.
+     *
+     * @param tableName Table name
+     * @param scan      Scan to execute
+     * @return ResultScanner
+     * @throws IOException If any IO problem occurs
+     */
+    public ResultScanner getScanner(String tableName, Scan scan) throws IOException {
+        if (isValid(scan) != null) {
+            return act(tableName, (Table table) -> table.getScanner(scan));
+        }
+        return new PersistentResultScanner(this, scan, tableName);
     }
 
     /**

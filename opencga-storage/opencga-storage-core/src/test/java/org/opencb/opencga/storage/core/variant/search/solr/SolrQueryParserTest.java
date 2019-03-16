@@ -22,12 +22,10 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -38,17 +36,20 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public class SolrQueryParserTest {
 
-    private String flBase = "fl=popFreq_*,geneToSoAcc,traits,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,type,soAcc,polyphen,sift,siftDesc,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,phastCons,phylop,id,chromosome,start,end,type";
-    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*__format,sampleFormat__*";
+    private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
+            + "popFreq_*,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,polyphen,siftDesc,"
+            + "phastCons,phylop,id,chromosome,start,end,type";
+//    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*__format,sampleFormat__*";
+    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*";
 
     SolrQueryParser solrQueryParser;
 
     String studyName = "platinum";
-    StudyConfigurationManager scm;
+    VariantStorageMetadataManager scm;
 
     @Before
     public void init() throws StorageEngineException {
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         scm.createStudy(studyName);
 
         solrQueryParser = new SolrQueryParser(scm);
@@ -167,7 +168,7 @@ public class SolrQueryParserTest {
     }
 
     @Test
-    public void parseSiftScore() {
+    public void parseProteinSubstitutionScore() {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
@@ -176,6 +177,13 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
         assertEquals(flDefault1 + "&q=*:*&fq=(siftDesc:\"tolerated\"+OR+polyphenDesc:\"bening\")", solrQuery.toString());
+
+
+        query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen==possibly damaging,probably damaging");
+
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=(polyphenDesc:\"possibly+damaging\"+OR+polyphenDesc:\"probably+damaging\")", solrQuery.toString());
     }
 
     @Test

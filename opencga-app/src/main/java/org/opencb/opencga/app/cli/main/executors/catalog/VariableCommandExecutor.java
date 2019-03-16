@@ -61,9 +61,6 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
             case "search":
                 queryResponse = search();
                 break;
-            case "update":
-                queryResponse = update();
-                break;
             case "delete":
                 queryResponse = delete();
                 break;
@@ -129,25 +126,6 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         //queryOptions.putIfNotNull("count", variableCommandOptions.searchCommandOptions.count);
 
         return openCGAClient.getVariableClient().search(query, queryOptions);
-    }
-
-    private QueryResponse<VariableSet> update() throws CatalogException, IOException {
-        logger.debug("Updating variable");
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull(VariableSetParams.ID.key(), variableCommandOptions.updateCommandOptions.name);
-        params.putIfNotNull(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.updateCommandOptions.description);
-
-//        Object variables = null;
-//        if (variableCommandOptions.updateCommandOptions.jsonFile != null
-//                && !variableCommandOptions.updateCommandOptions.jsonFile.isEmpty()) {
-//            ObjectMapper mapper = new ObjectMapper();
-//            variables = mapper.readValue(new File(variableCommandOptions.updateCommandOptions.jsonFile),
-// ObjectMap.class).get("variables");
-//        }
-
-        return openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id,
-                resolveStudy(variableCommandOptions.updateCommandOptions.studyId), params);
     }
 
     private QueryResponse<VariableSet> delete() throws CatalogException, IOException {

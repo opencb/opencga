@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,7 +162,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                                 + variantAnnotation.getReference() + ':'
                                 + variantAnnotation.getAlternate());
                     }
-                    if (variant.isSV()) {
+                    if (variant.isSV() || variant.getSv() != null) {
                         // Variant annotation class does not have information about Structural Variations.
                         // Store the original Variant.toString as an additional attribute.
                         AdditionalAttribute additionalAttribute =

@@ -27,11 +27,14 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -64,6 +67,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setAlgorithm("HS256");
+        configuration.getAdmin().setSecretKey("dummy");
         configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
         configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
 

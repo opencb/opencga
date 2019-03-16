@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,9 +49,10 @@ import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -69,7 +71,6 @@ import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getDefaultLimit;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -189,7 +190,7 @@ public class VariantStorageManager extends StorageManager {
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         variantStorageEngine.getOptions().putAll(queryOptions);
 
-        variantStorageEngine.searchIndexSamples(study, samples);
+        variantStorageEngine.secondaryIndexSamples(study, samples);
     }
 
     public void removeSearchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String sessionId)
@@ -200,7 +201,7 @@ public class VariantStorageManager extends StorageManager {
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         variantStorageEngine.getOptions().putAll(queryOptions);
 
-        variantStorageEngine.removeSearchIndexSamples(study, samples);
+        variantStorageEngine.removeSecondaryIndexSamples(study, samples);
 
     }
 
@@ -274,7 +275,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
+        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
         variantStorageEngine.saveAnnotation(annotationName, params);
     }
@@ -287,7 +288,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getStudyConfigurationManager(), project, sessionId);
+        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
         variantStorageEngine.deleteAnnotation(annotationName, params);
     }
@@ -349,8 +350,7 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, engine -> {
-            addDefaultLimit(queryOptions);
+        return secure(query, queryOptions, sessionId, "get variants", engine -> {
             logger.debug("getVariants {}, {}", query, queryOptions);
             VariantQueryResult<Variant> result = engine.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
@@ -385,7 +385,7 @@ public class VariantStorageManager extends StorageManager {
                 result.getSamples(),
                 result.getSource(),
                 result.getApproximateCount(),
-                result.getApproximateCountSamplingSize());
+                result.getApproximateCountSamplingSize(), null);
 
     }
 
@@ -407,8 +407,10 @@ public class VariantStorageManager extends StorageManager {
 
     public QueryResult rank(Query query, String field, int limit, boolean asc, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
-        getDefaultLimit(limit, 30, 10);
-        return (QueryResult) secure(query, null, sessionId, engine -> engine.rank(query, field, limit, asc));
+        int limitMax = 30;
+        int limitDefault = 10;
+        return (QueryResult) secure(query, null, sessionId,
+                engine -> engine.rank(query, field, (limit > 0) ? Math.min(limit, limitMax) : limitDefault, asc));
     }
 
     public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageEngineException, IOException {
@@ -464,7 +466,7 @@ public class VariantStorageManager extends StorageManager {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine storageEngine = getVariantStorageEngine(dataStore);
         catalogUtils.parseQuery(query, sessionId);
-        checkSamplesPermissions(query, queryOptions, storageEngine.getStudyConfigurationManager(), sessionId);
+        checkSamplesPermissions(query, queryOptions, storageEngine.getMetadataManager(), sessionId);
         return storageEngine.iterator(query, queryOptions);
     }
 
@@ -477,6 +479,25 @@ public class VariantStorageManager extends StorageManager {
         Query intersectQuery = new Query(query);
         intersectQuery.put(VariantQueryParam.STUDY.key(), String.join(VariantQueryUtils.AND, studyIds));
         return get(intersectQuery, queryOptions, sessionId);
+    }
+
+    public SampleMetadata getSampleMetadata(String study, String sample, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        Query query = new Query(STUDY.key(), study)
+                .append(SAMPLE.key(), sample)
+                .append(INCLUDE_FILE.key(), VariantQueryUtils.NONE);
+        return secure(query, new QueryOptions(), sessionId, engine -> {
+
+            VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+            int studyId = metadataManager.getStudyId(study);
+            Integer sampleId = metadataManager.getSampleId(studyId, sample);
+            if (sampleId == null) {
+                // Sample does not exist in storage!
+                throw VariantQueryException.sampleNotFound(sample, study);
+            } else {
+                return metadataManager.getSampleMetadata(studyId, sampleId);
+            }
+        });
     }
 
     private DataStore getDataStore(String study, String sessionId) throws CatalogException {
@@ -509,9 +530,52 @@ public class VariantStorageManager extends StorageManager {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
-        checkSamplesPermissions(query, queryOptions, variantStorageEngine.getStudyConfigurationManager(), sessionId);
+        checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
         return supplier.apply(variantStorageEngine);
     }
+
+    private <R extends QueryResult> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
+                                             VariantReadOperation<R> supplier)
+            throws CatalogException, StorageEngineException, IOException {
+        ObjectMap auditAttributes = new ObjectMap()
+                .append("query", new Query(query))
+                .append("queryOptions", new QueryOptions(queryOptions));
+        R result = null;
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String dbName = null;
+        Exception exception = null;
+        try {
+            String study = catalogUtils.getAnyStudy(query, sessionId);
+
+            catalogUtils.parseQuery(query, sessionId);
+            DataStore dataStore = getDataStore(study, sessionId);
+            dbName = dataStore.getDbName();
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+
+            checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
+            result = supplier.apply(variantStorageEngine);
+            return result;
+        } catch (Exception e) {
+            exception = e;
+            throw e;
+        } finally {
+            auditAttributes.append("error", result == null);
+            if (exception != null) {
+                auditAttributes.append("errorType", exception.getClass());
+                auditAttributes.append("errorMessage", exception.getMessage());
+            }
+            if (result != null) {
+                auditAttributes.append("numResults", result.getResult().size());
+            }
+            catalogManager.getAuditManager().recordAction(
+                    AuditRecord.Resource.variant,
+                    AuditRecord.Action.view,
+                    AuditRecord.Magnitude.low,
+                    dbName,
+                    userId, null, null, "Get variants", auditAttributes);
+        }
+    }
+
     private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
                          String sessionId, VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
@@ -523,11 +587,11 @@ public class VariantStorageManager extends StorageManager {
         String study = catalogUtils.getAnyStudy(query, sessionId);
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-        return checkSamplesPermissions(query, queryOptions, variantStorageEngine.getStudyConfigurationManager(), sessionId);
+        return checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
     }
 
     // package protected for test visibility
-    Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, StudyConfigurationManager scm,
+    Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager scm,
                                                       String sessionId)
             throws CatalogException {
         final Map<String, List<Sample>> samplesMap = new HashMap<>();
@@ -554,7 +618,7 @@ public class VariantStorageManager extends StorageManager {
                 }
             }
         } else {
-            logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
+            logger.debug("Missing include samples! Obtaining samples to include from catalog.");
             List<String> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm)
                     .stream()
                     .map(scm.getStudies(null).inverse()::get)
@@ -611,12 +675,16 @@ public class VariantStorageManager extends StorageManager {
         if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY.key())) {
             query.put(VariantCatalogQueryUtils.FAMILY.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY.key()));
         }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key())) {
-            query.put(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key()));
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_DISORDER.key())) {
+            query.put(VariantCatalogQueryUtils.FAMILY_DISORDER.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_DISORDER.key()));
         }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key())) {
-            query.put(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key(),
-                    queryOptions.get(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key()));
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key())) {
+            query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(),
+                    queryOptions.get(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key()));
+        }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_MEMBERS.key())) {
+            query.put(VariantCatalogQueryUtils.FAMILY_MEMBERS.key(),
+                    queryOptions.get(VariantCatalogQueryUtils.FAMILY_MEMBERS.key()));
         }
         if (queryOptions.containsKey(VariantCatalogQueryUtils.PANEL.key())) {
             query.put(VariantCatalogQueryUtils.PANEL.key(), queryOptions.get(VariantCatalogQueryUtils.PANEL.key()));
@@ -636,10 +704,10 @@ public class VariantStorageManager extends StorageManager {
 
     public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, dbAdaptor -> {
-            addDefaultLimit(queryOptions);
+        return secure(query, queryOptions, sessionId, engine -> {
+            addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
-            FacetQueryResult result = dbAdaptor.facet(query, queryOptions);
+            FacetQueryResult result = engine.facet(query, queryOptions);
             logger.debug("getFacets in {}ms", result.getDbTime());
             return result;
         });

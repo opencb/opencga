@@ -3,12 +3,12 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.apache.hadoop.io.BytesWritable;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillMissingFromArchiveMapper extends TableMapper<BytesWritable, BytesWritable> {
+public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<BytesWritable, BytesWritable> {
     private AbstractFillFromArchiveTask task;
 
     @Override
@@ -27,9 +27,10 @@ public class FillMissingFromArchiveMapper extends TableMapper<BytesWritable, Byt
         super.setup(context);
         VariantTableHelper helper = new VariantTableHelper(context.getConfiguration());
 
-        StudyConfiguration studyConfiguration = helper.readStudyConfiguration();
+
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
         boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
-        task = new FillMissingFromArchiveTask(studyConfiguration, helper, overwrite);
+        task = new FillMissingFromArchiveTask(getStudyMetadata(), metadataManager, helper, overwrite);
         task.setQuiet(true);
         task.pre();
     }

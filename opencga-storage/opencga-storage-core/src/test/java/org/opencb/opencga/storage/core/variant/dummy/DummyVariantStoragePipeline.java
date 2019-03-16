@@ -20,8 +20,8 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -55,13 +55,11 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     }
 
     @Override
-    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantFileMetadata source) throws StorageEngineException {
-        super.securePreLoad(studyConfiguration, source);
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata source) throws StorageEngineException {
+        super.securePreLoad(studyMetadata, source);
 
         List<Integer> fileIds = Collections.singletonList(getFileId());
-        BatchFileOperation op = new BatchFileOperation("load", fileIds, 1, BatchFileOperation.Type.LOAD);
-        op.addStatus(BatchFileOperation.Status.RUNNING);
-        studyConfiguration.getBatches().add(op);
+        getMetadataManager().addRunningTask(getStudyId(), "load", fileIds, false, TaskMetadata.Type.LOAD);
     }
 
     @Override
@@ -77,10 +75,10 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
             }
         }
         if (getOptions().getBoolean(VARIANTS_LOAD_FAIL) || getOptions().getString(VARIANTS_LOAD_FAIL).equals(Paths.get(input).getFileName().toString())) {
-            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.ERROR, "load", fileIds);
+            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.ERROR, "load", fileIds);
             throw new StorageEngineException("Error loading file " + input);
         } else {
-            getStudyConfigurationManager().atomicSetStatus(getStudyId(), BatchFileOperation.Status.DONE, "load", fileIds);
+            getMetadataManager().atomicSetStatus(getStudyId(), TaskMetadata.Status.DONE, "load", fileIds);
         }
         return input;
     }
@@ -91,23 +89,23 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         fileMetadata.setId(String.valueOf(getFileId()));
-        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
+        dbAdaptor.getMetadataManager().updateVariantFileMetadata(getStudyId(), fileMetadata);
 
         return super.postLoad(input, output);
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageEngineException {
-        super.securePostLoad(fileIds, studyConfiguration);
-        BatchFileOperation.Status status = dbAdaptor.getStudyConfigurationManager()
-                .setStatus(studyConfiguration, BatchFileOperation.Status.READY, "load", fileIds);
-        if (status != BatchFileOperation.Status.DONE) {
+    protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
+        super.securePostLoad(fileIds, studyMetadata);
+        TaskMetadata.Status status = dbAdaptor.getMetadataManager()
+                .setStatus(studyMetadata.getId(), "load", fileIds, TaskMetadata.Status.READY);
+        if (status != TaskMetadata.Status.DONE) {
             logger.warn("Unexpected status " + status);
         }
     }
 
     @Override
-    protected void checkLoadedVariants(int fileId, StudyConfiguration studyConfiguration) throws StorageEngineException {
+    protected void checkLoadedVariants(int fileId, StudyMetadata studyMetadata) throws StorageEngineException {
 
     }
 }

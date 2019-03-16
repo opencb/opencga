@@ -5,10 +5,11 @@ import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -23,10 +24,10 @@ import java.util.stream.Collectors;
  */
 public class VariantMetadataFactory {
 
-    protected final StudyConfigurationManager scm;
+    protected final VariantStorageMetadataManager scm;
 
-    public VariantMetadataFactory(StudyConfigurationManager studyConfigurationManager) {
-        scm = studyConfigurationManager;
+    public VariantMetadataFactory(VariantStorageMetadataManager variantStorageMetadataManager) {
+        scm = variantStorageMetadataManager;
     }
 
     public VariantMetadata makeVariantMetadata() throws StorageEngineException {
@@ -34,48 +35,29 @@ public class VariantMetadataFactory {
     }
 
     public VariantMetadata makeVariantMetadata(Query query, QueryOptions queryOptions) throws StorageEngineException {
-        VariantQueryUtils.SelectVariantElements selectElements = VariantQueryUtils.parseSelectElements(query, queryOptions, scm);
-        Map<Integer, List<Integer>> returnedSamples = selectElements.getSamples();
-        Map<Integer, List<Integer>> returnedFiles = selectElements.getFiles();
+        VariantQueryFields queryFields = VariantQueryUtils.parseVariantQueryFields(query, queryOptions, scm);
 
-        ProjectMetadata projectMetadata = scm.getProjectMetadata().first();
-
-        List<StudyConfiguration> studyConfigurations = new ArrayList<>(selectElements.getStudies().size());
-
-        for (Integer studyId : selectElements.getStudies()) {
-            studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
-        }
-
-        return makeVariantMetadata(studyConfigurations, projectMetadata, returnedSamples, returnedFiles, queryOptions);
+        return makeVariantMetadata(queryFields, queryOptions);
     }
 
-    protected VariantMetadata makeVariantMetadata(List<StudyConfiguration> studyConfigurations,
-                                                  ProjectMetadata projectMetadata, Map<Integer, List<Integer>> returnedSamples,
-                                                  Map<Integer, List<Integer>> returnedFiles, QueryOptions queryOptions)
+    protected VariantMetadata makeVariantMetadata(VariantQueryFields queryFields, QueryOptions queryOptions)
             throws StorageEngineException {
-        VariantMetadata metadata = new VariantMetadataConverter()
-                .toVariantMetadata(studyConfigurations, projectMetadata, returnedSamples, returnedFiles);
+        VariantMetadata metadata = new VariantMetadataConverter(scm)
+                .toVariantMetadata(queryFields);
 
-        Map<String, StudyConfiguration> studyConfigurationMap = studyConfigurations.stream()
-                .collect(Collectors.toMap(StudyConfiguration::getStudyName, Function.identity()));
+        Map<String, StudyMetadata> studyConfigurationMap = queryFields.getStudyMetadatas().values().stream()
+                .collect(Collectors.toMap(StudyMetadata::getName, Function.identity()));
 
-        for (VariantStudyMetadata studyMetadata : metadata.getStudies()) {
-            StudyConfiguration studyConfiguration = studyConfigurationMap.get(studyMetadata.getId());
-            List<Integer> fileIds = studyMetadata.getFiles().stream()
-                    .map(fileMetadata -> {
-                        Integer fileId = studyConfiguration.getFileIds().get(fileMetadata.getId());
-                        if (fileId == null) {
-                            fileId = studyConfiguration.getFileIds().get(fileMetadata.getPath());
-                        }
-                        return fileId;
-                    }).collect(Collectors.toList());
+        for (VariantStudyMetadata variantStudyMetadata : metadata.getStudies()) {
+            StudyMetadata studyMetadata = studyConfigurationMap.get(variantStudyMetadata.getId());
+            List<Integer> fileIds = queryFields.getFiles().get(studyMetadata.getId());
             if (fileIds != null && !fileIds.isEmpty()) {
                 Query query = new Query()
-                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId())
-                        .append(VariantFileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
+                        .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyMetadata.getId())
+                        .append(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.FILE_ID.key(), fileIds);
                 scm.variantFileMetadataIterator(query, new QueryOptions()).forEachRemaining(fileMetadata -> {
-                    studyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
-                    studyMetadata.getFiles().add(fileMetadata.getImpl());
+                    variantStudyMetadata.getFiles().removeIf(file -> file.getId().equals(fileMetadata.getId()));
+                    variantStudyMetadata.getFiles().add(fileMetadata.getImpl());
                 });
             }
         }

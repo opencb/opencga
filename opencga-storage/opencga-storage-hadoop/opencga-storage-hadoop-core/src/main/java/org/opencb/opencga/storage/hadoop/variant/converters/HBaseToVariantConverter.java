@@ -24,21 +24,24 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +53,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
 
 /**
  * Created on 20/11/15.
@@ -71,34 +74,34 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     protected static boolean failOnWrongVariants = false; //FIXME
     protected boolean failOnEmptyVariants = false;
-    protected VariantQueryUtils.SelectVariantElements selectVariantElements;
+    protected VariantQueryFields selectVariantElements;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
-        this(variantTableHelper, new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(variantTableHelper)));
+        this(variantTableHelper, new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(variantTableHelper)));
     }
 
-    public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+    public HBaseToVariantConverter(GenomeHelper genomeHelper, VariantStorageMetadataManager scm) {
         this.genomeHelper = genomeHelper;
-        long ts = scm.getProjectMetadata().first().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+        long ts = scm.getProjectMetadata().getAttributes().getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
-                .setAnnotationIds(scm.getProjectMetadata().first().getAnnotation());
+                .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
         this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, statsConverter);
     }
 
     /**
      * Get fixed format for the VARCHAR ARRAY sample columns.
-     * @param studyConfiguration    StudyConfiguration
+     * @param attributes study attributes
      * @return  List of fixed formats
      */
-    public static List<String> getFixedFormat(StudyConfiguration studyConfiguration) {
+    public static List<String> getFixedFormat(ObjectMap attributes) {
         List<String> format;
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFields = attributes.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
         if (extraFields.isEmpty()) {
             extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
         }
 
-        boolean excludeGenotypes = studyConfiguration.getAttributes()
+        boolean excludeGenotypes = attributes
                 .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
 
         if (excludeGenotypes) {
@@ -111,8 +114,17 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return format;
     }
 
+    @Deprecated
     public static List<String> getFixedAttributes(StudyConfiguration studyConfiguration) {
-        return studyConfiguration.getVariantHeader()
+        return getFixedAttributes(studyConfiguration.getVariantHeader());
+    }
+
+    public static List<String> getFixedAttributes(StudyMetadata studyMetadata) {
+        return getFixedAttributes(studyMetadata.getVariantHeader());
+    }
+
+    public static List<String> getFixedAttributes(VariantFileHeader variantHeader) {
+        return variantHeader
                 .getComplexLines()
                 .stream()
                 .filter(line -> line.getKey().equalsIgnoreCase("INFO"))
@@ -150,7 +162,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return this;
     }
 
-    public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryUtils.SelectVariantElements selectVariantElements) {
+    public HBaseToVariantConverter<T> setSelectVariantElements(VariantQueryFields selectVariantElements) {
         this.selectVariantElements = selectVariantElements;
         studyEntryConverter.setSelectVariantElements(selectVariantElements);
         annotationConverter.setIncludeFields(selectVariantElements.getFields());
@@ -181,7 +193,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new ResultToVariantConverter(helper);
     }
 
-    public static HBaseToVariantConverter<Result> fromResult(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+    public static HBaseToVariantConverter<Result> fromResult(GenomeHelper genomeHelper, VariantStorageMetadataManager scm) {
         return new ResultToVariantConverter(genomeHelper, scm);
     }
 
@@ -189,7 +201,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return new ResultSetToVariantConverter(helper);
     }
 
-    public static HBaseToVariantConverter<ResultSet> fromResultSet(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+    public static HBaseToVariantConverter<ResultSet> fromResultSet(GenomeHelper genomeHelper, VariantStorageMetadataManager scm) {
         return new ResultSetToVariantConverter(genomeHelper, scm);
     }
 
@@ -242,7 +254,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             super(helper);
         }
 
-        ResultSetToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+        ResultSetToVariantConverter(GenomeHelper genomeHelper, VariantStorageMetadataManager scm) {
             super(genomeHelper, scm);
         }
 
@@ -271,7 +283,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
             super(helper);
         }
 
-        ResultToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+        ResultToVariantConverter(GenomeHelper genomeHelper, VariantStorageMetadataManager scm) {
             super(genomeHelper, scm);
         }
 

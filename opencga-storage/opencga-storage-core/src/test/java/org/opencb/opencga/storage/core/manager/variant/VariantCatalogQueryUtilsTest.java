@@ -5,6 +5,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -13,20 +14,20 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.SKIP_MISSING_GENES;
 
 /**
  * Created on 12/12/17.
@@ -56,7 +57,8 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, null, null, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.FULL, null, null).first();
+
         sessionId = catalog.getUserManager().login("user", "1234");
         catalog.getProjectManager().create("p1", "p1", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p1", "s1", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
@@ -67,11 +69,12 @@ public class VariantCatalogQueryUtilsTest {
 
 
         Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
+        Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual1", "individual1", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setPhenotypes(Collections.singletonList(phenotype)), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
-        catalog.getFamilyManager().create("s1", new Family("f1", "f1", Collections.singletonList(phenotype), null, individuals, null, 3, null, null), null, sessionId);
+        catalog.getFamilyManager().create("s1", new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), individuals, null, 3, null, null), null, sessionId);
 
 
         createSample("sample1", "individual1");
@@ -124,12 +127,12 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queriesWithRelease() throws Exception {
-        System.out.println(queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 2), sessionId).toJson());
-        System.out.println(queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
-        System.out.println(queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
-        System.out.println(queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.FILE.key(), "file1.vcf").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
-        System.out.println(queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.STATS_MAF.key(), "c1>0.1").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
-        System.out.println(queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.GENOTYPE.key(), "sample1:HOM_ALT,sample2:HET_REF").append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson());
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 2), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.FILE.key(), "file1.vcf").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.STATS_MAF.key(), "c1>0.1").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.GENOTYPE.key(), "sample1:HOM_ALT,sample2:HET_REF").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
     }
 
     @Test
@@ -252,10 +255,37 @@ public class VariantCatalogQueryUtilsTest {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), sessionId);
         assertEquals(Arrays.asList("sample1", "sample2", "sample3", "sample4"), query.getAsStringList(SAMPLE.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
+    }
 
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(MODE_OF_INHERITANCE.key(), "MONOALLELIC"), sessionId);
-        assertEquals("sample3:0/1,1/1;sample4:0/0;sample1:0/0;sample2:0/0", query.getString(GENOTYPE.key()));
+    @Test
+    public void queryByFamilyMembers() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_MEMBERS.key(), "individual1,individual4"), sessionId);
+        assertEquals(Arrays.asList("sample1", "sample4"), query.getAsStringList(SAMPLE.key()));
+    }
+
+    @Test
+    public void queryByFamilySegregation() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "BIALLELIC"), sessionId);
+        assertEquals("sample3:1/1,1|1;sample4:0/0,0/1,0|0,0|1,1|0;sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0", query.getString(GENOTYPE.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+    }
+
+    @Test
+    public void queryByFamilySegregationMendelianError() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "mendelianError"), sessionId);
+        assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+        assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO));
+        assertTrue(VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
+    }
+
+    @Test
+    public void queryByFamilySegregationDeNovo() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "deNovo"), sessionId);
+        assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_DE_NOVO.key()));
+        assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
+        assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR));
+        assertTrue(VariantQueryUtils.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES_DATA)));
     }
 
     @Test
@@ -271,34 +301,36 @@ public class VariantCatalogQueryUtilsTest {
         CatalogException e = new CatalogException("Family asdf not found");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_DISORDER.key(), "asdf"), sessionId);
     }
 
     @Test
     public void queryByFamilyMissingModeOfInheritance() throws CatalogException {
-        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_PHENOTYPE, "asdf", "Require parameter \"family\" and \"modeOfInheritance\" to use \"familyDisease\".");
+        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_DISORDER, "asdf", "Require parameter \""
+                + FAMILY.key() + "\" and \"" + FAMILY_SEGREGATION.key() + "\" to use \""+FAMILY_DISORDER.key()+"\".");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_DISORDER.key(), "asdf"), sessionId);
     }
 
     @Test
-    public void queryByFamilyUnknownDisease() throws CatalogException {
-        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_PHENOTYPE, "asdf", "Available phenotypes: [phenotype]");
+    public void queryByFamilyUnknownDisorder() throws CatalogException {
+        VariantQueryException e = VariantQueryException.malformedParam(FAMILY_DISORDER, "asdf", "Available disorders: [disorder]");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1")
                 .append(FAMILY.key(), "f1")
-                .append(MODE_OF_INHERITANCE.key(), "monoallelic")
-                .append(FAMILY_PHENOTYPE.key(), "asdf"), sessionId);
+                .append(FAMILY_SEGREGATION.key(), "monoallelic")
+                .append(FAMILY_DISORDER.key(), "asdf"), sessionId);
     }
 
     @Test
     public void queryByPanel() throws Exception {
         Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), sessionId);
-        assertEquals(Arrays.asList("BRCA2","CADM1","CTBP2P1","ADSL"), query.getAsList(GENE.key()));
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL")), new HashSet<>(query.getAsList(GENE.key())));
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), sessionId);
-        assertEquals(Arrays.asList("BRCA2","CADM1","CTBP2P1","ADSL", "ASDF"), query.getAsList(GENE.key()));
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF")), new HashSet<>(query.getAsList(GENE.key())));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
     }
 
     @Test

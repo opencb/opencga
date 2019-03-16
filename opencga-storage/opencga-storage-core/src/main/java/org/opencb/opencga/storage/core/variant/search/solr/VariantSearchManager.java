@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,14 +39,16 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -59,6 +62,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 /**
  * Created by imedina on 09/11/16.
@@ -75,7 +81,7 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final String CONF_SET = "OpenCGAConfSet-1.4.x";
+    public static final String CONF_SET = "OpenCGAConfSet-1.4.0";
     public static final String SEARCH_ENGINE_ID = "solr";
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
@@ -85,10 +91,10 @@ public class VariantSearchManager {
         throw new UnsupportedOperationException("Not supported!!");
     }
 
-    public VariantSearchManager(StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration) {
+    public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager, StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
 
-        this.solrQueryParser = new SolrQueryParser(studyConfigurationManager);
+        this.solrQueryParser = new SolrQueryParser(variantStorageMetadataManager);
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
 
@@ -172,7 +178,7 @@ public class VariantSearchManager {
      * @throws SolrServerException SolrServerException
      */
     public void insert(String collection, List<Variant> variants) throws IOException, SolrServerException {
-        if (variants != null && CollectionUtils.isNotEmpty(variants)) {
+        if (CollectionUtils.isNotEmpty(variants)) {
             List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
             if (!variantSearchModels.isEmpty()) {
@@ -227,51 +233,55 @@ public class VariantSearchManager {
      * @param loadListener      Load listener
      * @return VariantSearchLoadResult
      * @throws VariantSearchException VariantSearchException
-     * @throws IOException IOException
      */
     public VariantSearchLoadResult load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
-                                        VariantSearchLoadListener loadListener) throws VariantSearchException, IOException {
+                                        VariantSearchLoadListener loadListener) throws VariantSearchException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("Missing variant DB iterator when loading Solr variant collection");
         }
 
-        int count = 0;
-        int numLoadedVariants = 0;
-        List<Variant> variantList = new ArrayList<>(insertBatchSize);
-        while (variantDBIterator.hasNext()) {
-            Variant variant = variantDBIterator.next();
-            progressLogger.increment(1, () -> "up to position " + variant.toString());
-            variantList.add(variant);
-            count++;
-            if (count % insertBatchSize == 0) {
-                loadListener.preLoad(variantList);
-                numLoadedVariants += variantList.size();
-                try {
-                    insert(collection, variantList);
-                } catch (SolrServerException e) {
-                    throw new VariantSearchException("Error inserting variant.", e);
-                }
-                loadListener.postLoad(variantList);
-                variantList.clear();
+        AtomicInteger count = new AtomicInteger();
+        AtomicInteger numLoadedVariants = new AtomicInteger();
+
+        ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>((n) -> {
+            List<Variant> batch = new ArrayList<>(n);
+            while (batch.size() < n && variantDBIterator.hasNext()) {
+                batch.add(variantDBIterator.next());
             }
+            count.addAndGet(batch.size());
+            return batch;
+        }, batch -> {
+            progressLogger.increment(batch.size(), () -> "up to position " + batch.get(batch.size() - 1).toString());
+            return batch;
+        }, batch -> {
+            try {
+                loadListener.preLoad(batch);
+                numLoadedVariants.addAndGet(batch.size());
+                insert(collection, batch);
+                loadListener.postLoad(batch);
+            } catch (SolrServerException | IOException e) {
+                throw new RuntimeException(e);
+            }
+            return true;
+        }, ParallelTaskRunner.Config.builder()
+                .setBatchSize(insertBatchSize)
+                .setCapacity(3)
+                .setNumTasks(1)
+                .build());
+
+        StopWatch stopWatch = StopWatch.createStarted();
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            throw new VariantSearchException("Error loading secondary index", e);
         }
 
-        // Insert the remaining variants
-        if (CollectionUtils.isNotEmpty(variantList)) {
-            loadListener.preLoad(variantList);
-            numLoadedVariants += variantList.size();
-            try {
-                insert(collection, variantList);
-            } catch (SolrServerException e) {
-                throw new VariantSearchException("Error inserting variant.", e);
-            }
-            loadListener.postLoad(variantList);
-        }
         loadListener.close();
 
-        logger.debug("Variant Search loading done: {} variants indexed", count);
-        return new VariantSearchLoadResult(count, numLoadedVariants, 0);
+        logger.info("Variant Search loading done. " + numLoadedVariants + " variants indexed in " + TimeUtils.durationToString(stopWatch));
+        return new VariantSearchLoadResult(count.get(), numLoadedVariants.get(), 0);
     }
+
 
     /**
      * Delete variants a Solr core/collection from a variant DB iterator.
@@ -332,8 +342,7 @@ public class VariantSearchManager {
             throw new VariantSearchException("Error executing variant query", e);
         }
 
-        return new VariantQueryResult<>("", queryResult.getDbTime(), queryResult.getNumResults(),
-                queryResult.getNumTotalResults(), "", "", queryResult.getResult(), null, SEARCH_ENGINE_ID);
+        return new VariantQueryResult<>(queryResult, null, SEARCH_ENGINE_ID);
     }
 
     /**
@@ -358,8 +367,7 @@ public class VariantSearchManager {
             throw new VariantSearchException("Error executing variant query (nativeQuery)", e);
         }
 
-        return new VariantQueryResult<>("", queryResult.getDbTime(), queryResult.getNumResults(),
-                queryResult.getNumTotalResults(), "", "", queryResult.getResult(), null, SEARCH_ENGINE_ID);
+        return new VariantQueryResult<>(queryResult, null, SEARCH_ENGINE_ID);
     }
 
     /**

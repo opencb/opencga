@@ -11,7 +11,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -38,10 +39,10 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
                                    String archiveTableName,
-                                   StudyConfiguration studyConfiguration,
+                                   StudyMetadata studyMetadata,
                                    GenomeHelper helper,
-                                   Collection<Integer> samples) {
-        super(studyConfiguration, helper, samples, false);
+                                   Collection<Integer> samples, VariantStorageMetadataManager metadataManager) {
+        super(studyMetadata, metadataManager, helper, samples, false);
         this.archiveTableName = archiveTableName;
         this.hBaseManager = hBaseManager;
 

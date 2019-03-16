@@ -27,11 +27,14 @@ import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.ReadAlignment;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -43,6 +46,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -164,6 +170,54 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
     }
 
     /* =================    ALIGNMENTS     ===================*/
+
+    @GET
+    @Path("/reads/{file}")
+    @ApiOperation(value = "Fetch alignment files using HTSget protocol")
+    @Produces("text/plain")
+    public Response getHtsget(
+            @Context HttpHeaders headers,
+            @ApiParam(value = "File id, name or path") @PathParam("file") String fileIdStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Reference sequence name (Example: 'chr1', '1' or 'chrX'") @QueryParam("referenceName") String reference,
+            @ApiParam(value = "The start position of the range on the reference, 0-based, inclusive.") @QueryParam("start") int start,
+            @ApiParam(value = "The end position of the range on the reference, 0-based, exclusive.") @QueryParam("end") int end) {
+        try {
+            QueryResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, sessionId);
+
+            BamManager bamManager = new BamManager(Paths.get(queryResult.first().getUri().getPath()));
+            List<String> chunkOffsetList = bamManager.getBreakpoints(new Region(reference, start, end));
+
+            String url = uriInfo.getBaseUri().toString() + apiVersion + "/utils/ranges/" + fileIdStr + "?study=" + studyStr;
+            List<ObjectMap> urls = new ArrayList<>(chunkOffsetList.size() + 2);
+
+            // Add header
+            urls.add(new ObjectMap("url", "data:application/octet-stream;base64,"
+                    + Base64.getEncoder().encodeToString(bamManager.compressedHeader())));
+
+            // Add urls to ranges
+            for (String byteRange : chunkOffsetList) {
+                urls.add(new ObjectMap()
+                        .append("url", url)
+                        .append("headers", new ObjectMap()
+                                .append("Authorization", "Bearer " + sessionId)
+                                .append("Range", "bytes=" + byteRange)
+                        )
+                );
+            }
+
+            // Add EOF marker
+            urls.add(new ObjectMap("url", "data:application/octet-stream;base64,H4sIBAAAAAAA/wYAQkMCABsAAwAAAAAAAAAAAA=="));
+
+            ObjectMap result = new ObjectMap("htsget", new ObjectMap()
+                    .append("format", queryResult.first().getFormat())
+                    .append("urls", urls)
+            );
+            return createRawOkResponse(result);
+        } catch (CatalogException | IOException e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @POST
     @Path("/reads/search")

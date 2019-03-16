@@ -416,9 +416,9 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration.getSamplesInFiles().get(fileId).forEach((sampleId) ->
         {
             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-            StudyEntry study = variant.getStudy(studyConfiguration.getStudyName());
+            StudyEntry study = variant.getStudy(studyConfiguration.getName());
             assertTrue(study.getSamplesName().contains(sampleName));
-            assertEquals("Variant=" + variant + " StudyId=" + studyConfiguration.getStudyId() + " FileId=" + fileId + " Field=" + field + " Sample=" + sampleName + " (" + sampleId + ")\n"+variant.toJson(),
+            assertEquals("Variant=" + variant + " StudyId=" + studyConfiguration.getId() + " FileId=" + fileId + " Field=" + field + " Sample=" + sampleName + " (" + sampleId + ")\n"+variant.toJson(),
                     valueProvider.apply(sampleId), study.getSampleData(sampleName, field));
         });
     }
@@ -433,7 +433,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         System.out.println("chromosome = " + chromosome);
         System.out.println("fileId = " + fileId);
         System.out.println("samples = " + file1SampleIds.stream().map(i -> studyConfiguration.getSampleIds().inverse().get(i)).collect(Collectors.toList()) + " : " + file1SampleIds);
-        return loadFile(studyConfiguration, createFile1Variants(chromosome, fileId.toString(), Integer.toString(studyConfiguration.getStudyId())), fileId, chromosomes);
+        return loadFile(studyConfiguration, createFile1Variants(chromosome, fileId.toString(), Integer.toString(studyConfiguration.getId())), fileId, chromosomes);
     }
 
     public MongoDBVariantWriteResult loadFile2() throws StorageEngineException {
@@ -475,8 +475,8 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     }
 
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
-        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
-        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, false);
+        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getId());
+        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getId(), fileId, false);
         MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(null);
 
         variantStageLoader.write(converterTask.apply(variants));
@@ -492,12 +492,12 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
     public MongoDBVariantWriteResult mergeVariants(StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                                    MongoDBVariantWriteResult stageWriteResult, List<String> chromosomes) {
-        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
+        MongoDBCollection stage = dbAdaptor.getStageCollection(studyConfiguration.getId());
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
-        MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
+        MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds, false, ignoreOverlappingVariants, 1);
         boolean resume = false;
-        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(studyConfiguration.getStudyId()),
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(studyConfiguration.getId()),
                 dbAdaptor.getStudiesCollection(), studyConfiguration, fileIds, resume, cleanWhileLoading, null);
 
         reader.open();
@@ -513,14 +513,14 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         reader.post();
         reader.close();
 
-        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds, null, null);
+        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getId(), fileIds, null, null);
         if (cleanWhileLoading) {
             assertEquals(0, cleanedDocuments);
         } else {
             assertNotEquals(0, cleanedDocuments);
         }
         studyConfiguration.getIndexedFiles().addAll(fileIds);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, null);
         return variantLoader.getResult().setSkippedVariants(stageWriteResult != null ? stageWriteResult.getSkippedVariants() : 0);
     }
 
@@ -737,7 +737,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
         VariantNormalizer normalizer = new VariantNormalizer().configure(header);
         VariantFileMetadata file = new VariantFileMetadata(fileId.toString(), "file");
-        VariantStudyMetadata studyMetadata = file.toVariantStudyMetadata(String.valueOf(sc.getStudyId()));
+        VariantStudyMetadata studyMetadata = file.toVariantStudyMetadata(String.valueOf(sc.getId()));
 
         VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(getClass().getResourceAsStream(fileName), studyMetadata, normalizer);
         reader.open();

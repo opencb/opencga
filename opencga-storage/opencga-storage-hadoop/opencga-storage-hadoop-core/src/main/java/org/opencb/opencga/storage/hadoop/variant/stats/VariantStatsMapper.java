@@ -6,14 +6,17 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +40,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
     private VariantStatisticsCalculator calculator;
     private Map<String, Set<String>> samples;
     private VariantTableHelper helper;
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
     private VariantStatsToHBaseConverter converter;
     private final Logger logger = LoggerFactory.getLogger(VariantStatsMapper.class);
 
@@ -45,23 +48,34 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         helper = new VariantTableHelper(context.getConfiguration());
-        studyConfiguration = helper.readStudyConfiguration();
-        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
-        calculator = new VariantStatisticsCalculator(overwrite);
-        Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
-        calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
-        study = studyConfiguration.getStudyName();
-        converter = new VariantStatsToHBaseConverter(helper, studyConfiguration);
 
-        Collection<Integer> cohorts = getCohorts(context.getConfiguration());
-        samples = new HashMap<>(cohorts.size());
-        cohorts.forEach(cohortId -> {
-            String cohort = studyConfiguration.getCohortIds().inverse().get(cohortId);
-            Set<String> samplesInCohort = studyConfiguration.getCohorts().get(cohortId).stream()
-                    .map(studyConfiguration.getSampleIds().inverse()::get)
-                    .collect(Collectors.toSet());
-            samples.put(cohort, samplesInCohort);
-        });
+        try (VariantStorageMetadataManager metadataManager =
+                     new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+            studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId());
+
+            boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+            calculator = new VariantStatisticsCalculator(overwrite);
+            Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
+            calculator.setAggregationType(studyMetadata.getAggregation(), tagmap);
+            study = studyMetadata.getName();
+
+            Collection<Integer> cohorts = getCohorts(context.getConfiguration());
+            Map<String, Integer> cohortIds = new HashMap<>(cohorts.size());
+            samples = new HashMap<>(cohorts.size());
+
+            cohorts.forEach(cohortId -> {
+                CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortId);
+                String cohort = cohortMetadata.getName();
+                cohortIds.put(cohort, cohortId);
+
+                Set<String> samplesInCohort = cohortMetadata.getSamples().stream()
+                        .map(s -> metadataManager.getSampleName(studyMetadata.getId(), s))
+                        .collect(Collectors.toSet());
+                samples.put(cohort, samplesInCohort);
+            });
+
+            converter = new VariantStatsToHBaseConverter(helper, studyMetadata, cohortIds);
+        }
     }
 
     @Override
@@ -106,10 +120,16 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
         for (int cohortId : ints) {
             cohorts.add(cohortId);
         }
+        if (cohorts.isEmpty()) {
+            throw new IllegalArgumentException("Missing cohorts!");
+        }
         return cohorts;
     }
 
     public static void setCohorts(Job job, Collection<Integer> cohorts) {
+        if (cohorts.isEmpty()) {
+            throw new IllegalArgumentException("Missing cohorts!");
+        }
         job.getConfiguration().set(COHORTS, cohorts.stream().map(Object::toString).collect(Collectors.joining(",")));
     }
 

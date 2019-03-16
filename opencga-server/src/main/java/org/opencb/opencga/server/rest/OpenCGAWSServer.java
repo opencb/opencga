@@ -64,7 +64,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")
@@ -221,7 +220,7 @@ public class OpenCGAWSServer {
             initLogger(configDirPath.getParent().resolve("logs"));
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
-            logger.error("No valid configuration directory provided: '{}'");
+            logger.error(errorMessage);
         }
 
         logger.info("========================================================================\n");
@@ -476,8 +475,10 @@ public class OpenCGAWSServer {
     
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
+            Response response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
                     MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
+            return response;
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -512,6 +513,40 @@ public class OpenCGAWSServer {
         return response;
     }
 
+    protected Response createRawOkResponse(Object obj) {
+        try {
+            String res = jsonObjectWriter.writeValueAsString(obj);
+//            System.out.println("\n\n\n" + res + "\n\n");
+            Response response = buildResponse(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
+            return response;
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            logger.error("Error parsing response object");
+            return createErrorResponse("", "Error parsing response object:\n" + Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    protected Response createAnalysisOkResponse(Object obj) {
+        Map<String, Object> queryResponseMap = new LinkedHashMap<>();
+        queryResponseMap.put("time", new Long(System.currentTimeMillis() - startTime).intValue());
+        queryResponseMap.put("apiVersion", apiVersion);
+        queryResponseMap.put("queryOptions", queryOptions);
+        queryResponseMap.put("response", Collections.singletonList(obj));
+
+        Response response;
+        try {
+            response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            logger.error("Error parsing queryResponse object");
+            return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
+        }
+
+        return response;
+    }
+
     //Response methods
     protected Response createOkResponse(Object o1, MediaType o2) {
         return buildResponse(Response.ok(o1, o2));
@@ -519,6 +554,10 @@ public class OpenCGAWSServer {
 
     protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
+    }
+
+    private void logResponse(Response.StatusType statusInfo) {
+        logResponse(statusInfo, null);
     }
 
     private void logResponse(Response.StatusType statusInfo, QueryResponse<?> queryResponse) {
@@ -588,13 +627,16 @@ public class OpenCGAWSServer {
     }
 
     protected List<String> getIdList(String id) throws WebServiceException {
+        return getIdList(id, true);
+    }
+
+    protected List<String> getIdList(String id, boolean checkMaxNumberElements) throws WebServiceException {
         if (StringUtils.isNotEmpty(id)) {
             List<String> ids = checkUniqueList(id);
-            if (ids.size() <= MAX_ID_SIZE) {
-                return ids;
-            } else {
+            if (checkMaxNumberElements && ids.size() > MAX_ID_SIZE) {
                 throw new WebServiceException("More than " + MAX_ID_SIZE + " IDs are provided");
             }
+            return ids;
         } else {
             throw new WebServiceException("ID is null or Empty");
         }

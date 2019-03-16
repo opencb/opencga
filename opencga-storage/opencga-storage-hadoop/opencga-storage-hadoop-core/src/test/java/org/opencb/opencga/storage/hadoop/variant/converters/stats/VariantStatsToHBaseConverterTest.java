@@ -24,13 +24,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -49,12 +50,13 @@ public class VariantStatsToHBaseConverterTest {
     @Before
     public void setUp() {
 
-        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "s1");
-        studyConfiguration.getCohortIds().put("c1", 1);
-        studyConfiguration.getCohortIds().put("c2", 2);
+        StudyMetadata studyMetadata = new StudyMetadata().setId(1).setName("s1");
+        Map<String, Integer> cohortIds = new HashMap<>();
+        cohortIds.put("c1", 1);
+        cohortIds.put("c2", 2);
 
         genomeHelper = new GenomeHelper(new Configuration());
-        toHbase = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration);
+        toHbase = new VariantStatsToHBaseConverter(genomeHelper, studyMetadata, cohortIds);
         toJava = new HBaseToVariantStatsConverter(genomeHelper);
 
     }

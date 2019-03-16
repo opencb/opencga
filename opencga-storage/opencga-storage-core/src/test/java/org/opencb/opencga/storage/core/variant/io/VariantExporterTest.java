@@ -23,8 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
@@ -46,7 +45,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
 
     @Before
     public void setUp() throws Exception {
-        runDefaultETL(inputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(inputUri, variantStorageEngine, newStudyMetadata(),
                 new QueryOptions()
 //                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false));
@@ -54,8 +53,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
 
     @After
     public void tearDown() throws Exception {
-        DummyProjectMetadataAdaptor.writeAndClear(getTmpRootDir());
-        DummyStudyConfigurationAdaptor.writeAndClear(getTmpRootDir());
+        DummyVariantStorageMetadataDBAdaptorFactory.writeAndClear(getTmpRootDir());
     }
 
     @Test

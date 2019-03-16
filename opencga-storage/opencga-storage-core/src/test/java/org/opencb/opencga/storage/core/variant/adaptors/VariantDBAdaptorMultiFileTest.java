@@ -11,12 +11,15 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -71,15 +74,17 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         int studyId = 1;
         int release = 1;
         List<URI> inputFiles = new ArrayList<>();
-        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        StudyMetadata studyMetadata = metadataManager.createStudy("S_" + studyId);
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             URI inputFile = getResourceUri("platinum/" + fileName);
             inputFiles.add(inputFile);
-            studyConfiguration.getFileIds().put(fileName, fileId);
-            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
+            metadataManager.unsecureUpdateFileMetadata(studyMetadata.getId(), new FileMetadata(studyMetadata.getId(), fileId, fileName));
+            metadataManager.registerFileSamples(studyMetadata.getId(), fileId, Collections.singletonList("NA" + fileId));
+
             if (inputFiles.size() == 4) {
-                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+
                 options.put(VariantStorageEngine.Options.STUDY.key(), "S_" + studyId);
                 storageEngine.getOptions().putAll(options);
                 storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
@@ -88,11 +93,11 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 storageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
 
                 studyId++;
-                studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
-                inputFiles.clear();
                 if (studyId > maxStudies) {
                     break;
                 }
+                studyMetadata = metadataManager.createStudy("S_" + studyId);
+                inputFiles.clear();
             }
         }
     }
@@ -270,6 +275,44 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.GENOTYPE.key(), "NA12877:" + GenotypeClass.HET_ALT);
         queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, withStudy("S_1", allOf(withFileId(file12877), withSampleData("NA12877", "GT", anyOf(is("1/2"), is("2/3")))))));
+    }
+
+    @Test
+    public void testSampleLimitSkip() throws Exception {
+        VariantQueryResult<Variant> result = query(new Query(SAMPLE_METADATA.key(), true), options);
+        System.out.println("samples(ALL) = " + result.getSamples());
+
+        for (int i : new int[]{1, 3, 6, 8, 10}) {
+            result = query(new Query(VariantQueryParam.SAMPLE_SKIP.key(), i).append(SAMPLE_METADATA.key(), true), options);
+//            System.out.println("samples(SKIP=" + i + ") = " + result.getSamples());
+            assertEquals(Math.max(0, 8 - i), result.getSamples().values().stream().mapToInt(List::size).sum());
+            assertEquals(Math.max(0, 8 - i), result.getNumSamples().intValue());
+            assertEquals(8, result.getNumTotalSamples().intValue());
+
+            result = query(new Query(VariantQueryParam.SAMPLE_LIMIT.key(), i).append(SAMPLE_METADATA.key(), true), options);
+//            System.out.println("samples(LIMIT=" + i + ") = " + result.getSamples());
+            assertEquals(Math.min(8, i), result.getSamples().values().stream().mapToInt(List::size).sum());
+            assertEquals(Math.min(8, i), result.getNumSamples().intValue());
+            assertEquals(8, result.getNumTotalSamples().intValue());
+        }
+    }
+
+    @Test
+    public void testSampleLimitFail() throws Exception {
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_MAX.key(), 2);
+        VariantQueryException e = VariantQueryException.maxLimitReached("samples", 10, 2);
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        variantStorageEngine.get(new Query(SAMPLE_LIMIT.key(), 10), options);
+    }
+
+    @Test
+    public void testLimitFail() throws Exception {
+        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_MAX.key(), 2);
+        VariantQueryException e = VariantQueryException.maxLimitReached("variants", 10, 2);
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        variantStorageEngine.get(new Query(), new QueryOptions(QueryOptions.LIMIT, 10));
     }
 
     @Test

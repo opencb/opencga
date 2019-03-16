@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -9,6 +10,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,6 +101,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
         preExecution();
 
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         LOGGER.info("=================================================");
         LOGGER.info("Execute " + getJobName());
         LOGGER.info("=================================================");
@@ -106,6 +110,9 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         if (!succeed) {
             LOGGER.error("error with job!");
         }
+        LOGGER.info("=================================================");
+        LOGGER.info("Finish job " + getJobName() + " in " + TimeUtils.durationToString(stopWatch));
+        LOGGER.info("=================================================");
         postExecution(job);
         close();
 

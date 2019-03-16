@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
@@ -50,7 +51,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public class SolrQueryParser {
 
-    private final StudyConfigurationManager studyConfigurationManager;
+    private final VariantStorageMetadataManager variantStorageMetadataManager;
 
     private static Map<String, String> includeMap;
 
@@ -89,8 +90,8 @@ public class SolrQueryParser {
         includeMap.put("annotation.traitAssociation", "traits");
     }
 
-    public SolrQueryParser(StudyConfigurationManager studyConfigurationManager) {
-        this.studyConfigurationManager = studyConfigurationManager;
+    public SolrQueryParser(VariantStorageMetadataManager variantStorageMetadataManager) {
+        this.variantStorageMetadataManager = variantStorageMetadataManager;
         initChromosomeMap();
     }
 
@@ -239,9 +240,9 @@ public class SolrQueryParser {
         if (isValidParam(query, VariantQueryParam.STUDY)) {
             String value = query.getString(key);
             VariantQueryUtils.QueryOperation op = checkOperator(value);
-            Set<Integer> studyIds = new HashSet<>(studyConfigurationManager.getStudyIds(splitValue(value, op), queryOptions));
+            Set<Integer> studyIds = new HashSet<>(variantStorageMetadataManager.getStudyIds(splitValue(value, op)));
             List<String> studyNames = new ArrayList<>(studyIds.size());
-            Map<String, Integer> map = studyConfigurationManager.getStudies(null);
+            Map<String, Integer> map = variantStorageMetadataManager.getStudies(null);
             if (map != null && map.size() > 1) {
                 map.forEach((name, id) -> {
                     if (studyIds.contains(id)) {
@@ -272,19 +273,19 @@ public class SolrQueryParser {
         // protein-substitution
         key = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(key, query.getString(key)));
+            filterList.add(parseScoreValue(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION, query.getString(key)));
         }
 
         // conservation
         key = VariantQueryParam.ANNOT_CONSERVATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(key, query.getString(key)));
+            filterList.add(parseScoreValue(VariantQueryParam.ANNOT_CONSERVATION, query.getString(key)));
         }
 
         // cadd, functional score
         key = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(key, query.getString(key)));
+            filterList.add(parseScoreValue(VariantQueryParam.ANNOT_FUNCTIONAL_SCORE, query.getString(key)));
         }
 
         // ALT population frequency
@@ -369,9 +370,9 @@ public class SolrQueryParser {
         if (StringUtils.isNotEmpty(query.getString(key))) {
             String[] clinSig = query.getString(key).split("[,;]");
             StringBuilder sb = new StringBuilder();
-            sb.append("(").append("traits: \"cs:").append(clinSig[0]).append("\"");
+            sb.append("(").append("traits:*cs\\:").append(clinSig[0]).append("*");
             for (int i = 1; i < clinSig.length; i++) {
-                sb.append(" OR ").append("traits: \"cs:").append(clinSig[i]).append("\"");
+                sb.append(" OR ").append("traits:*cs\\:").append(clinSig[i]).append("*");
             }
             sb.append(")");
             filterList.add(sb.toString());
@@ -797,14 +798,15 @@ public class SolrQueryParser {
      *     "," to apply a "OR condition"
      *     ";" to apply a "AND condition"
      *
-     * @param name         Field name, e.g.: conservation, functionalScore, proteinSubstitution
+     * @param param        VariantQueryParam, e.g.: conservation, functionalScore, proteinSubstitution
      * @param value        Field value
      * @return             The string with the boolean conditions
      */
-    public String parseScoreValue(String name, String value) {
+    public String parseScoreValue(VariantQueryParam param, String value) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
+        String name = param.key();
         StringBuilder sb = new StringBuilder();
         if (StringUtils.isNotEmpty(value)) {
             QueryOperation queryOperation = parseOrAndFilter(name, value);
@@ -823,11 +825,28 @@ public class SolrQueryParser {
                 }
             } else {
                 List<String> list = new ArrayList<>(values.length);
+                String prevName = null;
+                String prevOp = null;
                 for (String v : values) {
                     matcher = SCORE_PATTERN.matcher(v);
                     if (matcher.find()) {
                         // concat expression, e.g.: value:[0 TO 12]
-                        list.add(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
+                        String filterName = matcher.group(1);
+                        String filterOp = matcher.group(2);
+                        String filterValue = matcher.group(3);
+                        if (StringUtils.isEmpty(filterOp)) {
+                            filterName = prevName;
+                            filterOp = prevOp;
+                            filterValue = v;
+                        } else {
+                            prevName = filterName;
+                            prevOp = filterOp;
+                        }
+                        if (StringUtils.isEmpty(filterName)) {
+                            throw VariantQueryException.malformedParam(param, value);
+                        }
+
+                        list.add(getRange("", filterName, filterOp, filterValue));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
                     }
@@ -1060,8 +1079,7 @@ public class SolrQueryParser {
                 sb.append(")");
                 break;
             default:
-                logger.debug("Unknown operator {}", op);
-                break;
+                throw new VariantQueryException("Unknown operator " + op);
         }
         return sb.toString();
     }
@@ -1262,7 +1280,7 @@ public class SolrQueryParser {
             return solrFields;
         }
         if (incStudies != null) {
-            incStudies.replaceAll(VariantSearchToVariantConverter::studyIdToSearchModel);
+            incStudies = incStudies.stream().map(VariantSearchToVariantConverter::studyIdToSearchModel).collect(Collectors.toList());
         }
 
         // --include-file management
@@ -1309,7 +1327,7 @@ public class SolrQueryParser {
             // Empty list means NONE sample!
             return solrFields;
         }
-        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR + "format");
+
         if (incSamples == null) {
             // null means ALL samples
             if (query.getBoolean(VariantQueryParam.INCLUDE_GENOTYPE.key())) {
@@ -1317,14 +1335,18 @@ public class SolrQueryParser {
                 if (incStudies == null) {
                     // null means ALL studies: include genotype for all studies and samples
                     solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + "*");
-                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR
-                            + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "format");
                 } else {
                     // Include genotype for the specified studies and all samples
                     for (String incStudy: incStudies) {
                         solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR + "*");
-                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR
-                                + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "format");
                     }
                 }
             } else {
@@ -1335,8 +1357,8 @@ public class SolrQueryParser {
                 } else {
                     // Include sample format for the specified studies and samples
                     for (String incStudy: incStudies) {
-                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR
-                                + "*");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "*");
                     }
                 }
             }
@@ -1346,16 +1368,21 @@ public class SolrQueryParser {
                 // Genotype
                 if (incStudies == null) {
                     // null means ALL studies: include genotype for all studies and the specified samples
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "format");
                     for (String incSample: incSamples) {
-                        solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR + incSample);
-                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR
-                                + "sampleName");
+                        solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                                + VariantSearchUtils.FIELD_SEPARATOR + incSample);
                     }
                 } else {
                     // Include genotype for the specified studies and samples
                     for (String incStudy: incStudies) {
                         solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
                                 + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "format");
                         for (String incSample: incSamples) {
                             solrFields.add("gt" + VariantSearchUtils.FIELD_SEPARATOR + incStudy + VariantSearchUtils.FIELD_SEPARATOR
                                     + incSample);
@@ -1366,6 +1393,10 @@ public class SolrQueryParser {
                 // Sample format
                 if (incStudies == null) {
                     // null means ALL studies: include sample format for all studies and the specified samples
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                    solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*"
+                            + VariantSearchUtils.FIELD_SEPARATOR + "format");
                     for (String incSample: incSamples) {
                         solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + "*" + VariantSearchUtils.FIELD_SEPARATOR
                                 + incSample);
@@ -1375,6 +1406,8 @@ public class SolrQueryParser {
                     for (String incStudy: incStudies) {
                         solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
                                 + VariantSearchUtils.FIELD_SEPARATOR + "sampleName");
+                        solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
+                                + VariantSearchUtils.FIELD_SEPARATOR + "format");
                         for (String incSample: incSamples) {
                             solrFields.add("sampleFormat" + VariantSearchUtils.FIELD_SEPARATOR + incStudy
                                     + VariantSearchUtils.FIELD_SEPARATOR + incSample);

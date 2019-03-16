@@ -169,76 +169,65 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void importLdapUsers() throws CatalogException, NamingException, IOException {
         // Action only for admins
-        ObjectMap params = new ObjectMap()
-                .append("users", "pfurio,imedina");
-
-        QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params,
-                getAdminToken());
-
-        assertEquals(2, ldapImportResult.getNumResults());
+        catalogManager.getUserManager().importRemoteUsers("ldap", Arrays.asList("pfurio", "imedina"), null, null, getAdminToken());
+        // TODO: Validate the users have been imported
     }
 
     // To make this test work we will need to add a correct user and password to be able to login
     @Ignore
     @Test
-    public void loginNotRegisteredUsers() throws CatalogException, NamingException, IOException {
+    public void loginNotRegisteredUsers() throws CatalogException {
         // Action only for admins
-        catalogManager.getStudyManager().createGroup(studyFqn, "ldap", "", sessionIdUser);
-        catalogManager.getStudyManager().syncGroupWith(studyFqn, "ldap", new Group.Sync("ldap", "bio"), sessionIdUser);
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new Study.StudyAclParams("",
-                AclParams.Action.SET, "view_only"), sessionIdUser);
+        Group group = new Group("ldap", Collections.emptyList()).setSyncedFrom(new Group.Sync("ldap", "bio"));
+        catalogManager.getStudyManager().createGroup(studyFqn, group, sessionIdUser);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new Study.StudyAclParams("", AclParams.Action.SET,
+                "view_only"), sessionIdUser);
         String token = catalogManager.getUserManager().login("user", "password");
 
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(String.valueOf((Long) studyUid), QueryOptions.empty(),
-                token);
-        assertEquals(1, studyQueryResult.getNumResults());
+        assertEquals(9, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
 
         // We remove the permissions for group ldap
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new Study.StudyAclParams("",
-                AclParams.Action.RESET, ""), sessionIdUser);
-        thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getStudyManager().get(String.valueOf((Long) studyUid), QueryOptions.empty(), token);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@ldap", new Study.StudyAclParams("", AclParams.Action.RESET,
+                ""), sessionIdUser);
+
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
     }
 
     @Ignore
     @Test
-    public void importLdapGroups() throws CatalogException, NamingException, IOException {
+    public void importLdapGroups() throws CatalogException, IOException {
         // Action only for admins
-        ObjectMap params = new ObjectMap()
-                .append("group", "bio")
-                .append("study", "user@1000G:phase1")
-                .append("study-group", "test");
-        catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, getAdminToken());
+        String remoteGroup = "bio";
+        String internalGroup = "test";
+        String study = "user@1000G:phase1";
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, true, getAdminToken());
 
         QueryResult<Group> test = catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test", sessionIdUser);
         assertEquals(1, test.getNumResults());
-        assertEquals("@test", test.first().getName());
+        assertEquals("@test", test.first().getId());
         assertTrue(test.first().getUserIds().size() > 0);
 
-        params.put("study-group", "test1");
-        try {
-            catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, getAdminToken());
-            fail("Should not be possible creating another group containing the same users that belong to a different group");
-        } catch (CatalogException e) {
-            System.out.println(e.getMessage());
-        }
+//        internalGroup = "test1";
+//        try {
+//            catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, getAdminToken());
+//            fail("Should not be possible creating another group containing the same users that belong to a different group");
+//        } catch (CatalogException e) {
+//            System.out.println(e.getMessage());
+//        }
 
-        params = new ObjectMap()
-                .append("group", "bioo")
-                .append("study", "user@1000G:phase1")
-                .append("study-group", "test2");
-        catalogManager.getUserManager().importFromExternalAuthOrigin("ldap", Account.GUEST, params, getAdminToken());
-
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("not exist");
-        catalogManager.getStudyManager().getGroup("user@1000G:phase1", "test2", sessionIdUser);
+        remoteGroup = "bioo";
+        internalGroup = "test2";
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, true, getAdminToken());
     }
 
     @Test
-    public void testAssignPermissions() throws CatalogException, IOException {
+    public void testAssignPermissions() throws CatalogException {
         catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, "guest", null, null);
 
-        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "test", sessionIdUser);
+        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "group_cancer_some_thing_else",
+                "test", sessionIdUser);
         List<QueryResult<StudyAclEntry>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
                 new Study.StudyAclParams("", AclParams.Action.SET, "view_only"), sessionIdUser);
@@ -504,8 +493,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUpdateGroupInfo() throws CatalogException {
         StudyManager studyManager = catalogManager.getStudyManager();
 
-        studyManager.createGroup(studyFqn, "group1", "", sessionIdUser);
-        studyManager.createGroup(studyFqn, "group2", "", sessionIdUser);
+        studyManager.createGroup(studyFqn, "group1", "group1", "", sessionIdUser);
+        studyManager.createGroup(studyFqn, "group2", "group2", "", sessionIdUser);
 
         Group.Sync syncFrom = new Group.Sync("auth", "aaa");
         studyManager.syncGroupWith(studyFqn, "group2", syncFrom, sessionIdUser);
@@ -569,8 +558,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Assign permissions to study
         QueryResult<Group> groupQueryResult = studyManager.updateGroup(studyFqn, "@members",
                 new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
-        assertEquals(2, groupQueryResult.first().getUserIds().size());
-        assertEquals("@members", groupQueryResult.first().getName());
+        assertEquals(3, groupQueryResult.first().getUserIds().size());
+        assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, new Query(), QueryOptions
@@ -597,7 +586,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
         groupQueryResult = studyManager.updateGroup(studyFqn, "@members", new GroupParams("user2,user3",
                 GroupParams.Action.REMOVE), sessionIdUser);
-        assertEquals(0, groupQueryResult.first().getUserIds().size());
+        assertEquals(1, groupQueryResult.first().getUserIds().size());
 
         // Get sample permissions for those members
         for (Sample sample : sampleQueryResult.getResult()) {
@@ -617,8 +606,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Assign permissions to study
         QueryResult<Group> groupQueryResult = studyManager.updateGroup(studyFqn, "@members",
                 new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
-        assertEquals(2, groupQueryResult.first().getUserIds().size());
-        assertEquals("@members", groupQueryResult.first().getName());
+        assertEquals(3, groupQueryResult.first().getUserIds().size());
+        assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
         QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, new Query(), QueryOptions
@@ -745,7 +734,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         null, Collections.<String, Object>emptyMap())
         ));
         QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true,
-                false, "", null, variables, sessionIdUser);
+                false, "", null, variables, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser);
 
         assertEquals(1, queryResult.getResult().size());
 
@@ -770,7 +759,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         null, Collections.<String, Object>emptyMap())
         );
         thrown.expect(CatalogException.class);
-        catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables, sessionIdUser);
+        catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser);
     }
 
     @Test
@@ -783,7 +773,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.<String, Object>emptyMap())
         );
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         VariableSet vs1_deleted = catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()),
                 sessionIdUser).first();
@@ -805,10 +796,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.<String, Object>emptyMap())
         );
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "Cancer", null, variables, sessionIdUser).first();
-        VariableSet vs2 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs2", "vs2", true, false, "Virgo", null, variables, sessionIdUser).first();
-        VariableSet vs3 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs3", "vs3", true, false, "Piscis", null, variables, sessionIdUser).first();
-        VariableSet vs4 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs4", "vs4", true, false, "Aries", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "Cancer", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+        VariableSet vs2 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs2", "vs2", true, false, "Virgo", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+        VariableSet vs3 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs3", "vs3", true, false, "Piscis", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+        VariableSet vs4 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs4", "vs4", true, false, "Aries", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         long numResults;
         numResults = catalogManager.getStudyManager().searchVariableSets(study.getFqn(),
@@ -846,7 +841,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("AGE", "", "", Variable.VariableType.DOUBLE, null, false, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.emptyMap())
         );
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         Map<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "LINUS");

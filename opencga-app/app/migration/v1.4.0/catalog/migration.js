@@ -549,6 +549,7 @@ migrateCollection("study", {"uuid": {$exists: false}}, {attributes: 0}, function
             var variableSet = doc.variableSets[i];
             variableSet["uid"] = variableSet["id"];
             variableSet["id"] = variableSet["name"];
+            variableSet["entities"] = [];
 
             changeVariableIds(variableSet.variables);
         }
@@ -556,6 +557,22 @@ migrateCollection("study", {"uuid": {$exists: false}}, {attributes: 0}, function
     }
     /* end uid and uuid migration: #819 */
 
+    // Add 'id' to groups
+    var groups = doc["groups"];
+    for (var i in groups) {
+        var group = groups[i];
+        if (!group.hasOwnProperty('id')) {
+            group['id'] = group['name'];
+        }
+        // Add owner to @members group
+        if (group['id'] === "@members") {
+            var owner = projectUidFqnMap[doc._projectId].split("@")[0];
+            if (group['userIds'].indexOf(owner) < 0) {
+                group['userIds'].push(owner);
+            }
+        }
+    }
+    setChanges["groups"] = groups;
 
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
 });
@@ -564,6 +581,7 @@ print("");
 // Update metadata version
 db.metadata.update({}, {"$set": {"version": "1.4.0"}});
 
+print("\nCreating new indexes...")
 // Create all the indexes
 db.user.createIndex({"id": 1}, {"background": true});
 db.user.createIndex({"projects.uid": 1}, {"background": true});

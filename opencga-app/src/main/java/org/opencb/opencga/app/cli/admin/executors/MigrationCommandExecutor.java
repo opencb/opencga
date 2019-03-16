@@ -1,10 +1,10 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.app.cli.admin.executors.migration.AddFilePathToStudyConfigurationMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
-import org.opencb.opencga.app.cli.admin.executors.migration.NewProjectMetadataMigration;
+import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
+import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewStudyMetadata;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -132,7 +132,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // We get a non-expiring token
-            String sessionId = catalogManager.getUserManager().getSystemTokenForUser("admin", options.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+            String nonExpiringToken = catalogManager.getUserManager().getSystemTokenForUser("admin", token);
 
             // Catalog
             if (!skipCatalogJS) {
@@ -183,8 +184,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
 
             if (!skipStorage) {
-                new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(sessionId);
-                new AddFilePathToStudyConfigurationMigration(storageConfiguration, catalogManager).migrate(sessionId);
+                new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(nonExpiringToken);
+                new NewStudyMetadata(storageConfiguration, catalogManager).migrate(nonExpiringToken);
             }
 
         }

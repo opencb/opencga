@@ -19,10 +19,10 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AbstractPhoenixMapper<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<NullWritable, PHOENIXIN, KEYOUT, VALUEOUT> {
     private Logger LOG = LoggerFactory.getLogger(this.getClass());
     private final AtomicReference<VariantsTableMapReduceHelper> mrHelper = new AtomicReference<>();
-
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -69,8 +68,12 @@ public class AbstractPhoenixMapper<PHOENIXIN, KEYOUT, VALUEOUT> extends Mapper<N
         return getMrHelper().getIndexedSamples();
     }
 
-    public StudyConfiguration getStudyConfiguration() {
-        return getMrHelper().getStudyConfiguration();
+    public StudyMetadata getStudyConfiguration() {
+        return getMrHelper().getStudyMetadata();
+    }
+
+    public VariantStorageMetadataManager getMetadataManager() {
+        return getMrHelper().getMetadataManager();
     }
 
     public HBaseToVariantConverter getHbaseToVariantConverter() {

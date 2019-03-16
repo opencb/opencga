@@ -39,6 +39,10 @@
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-analysis</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.bionetdb</groupId>
+            <artifactId>bionetdb-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.reflections</groupId>
@@ -55,6 +59,19 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-mongodb</artifactId>
+            <version>${opencga.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-mongodb</artifactId>
             <version>${opencga.version}</version>
             <type>test-jar</type>
             <scope>test</scope>

@@ -28,11 +28,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.io.IOException;
@@ -41,10 +45,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by hpccoll1 on 01/06/15.
@@ -53,11 +56,12 @@ import static org.junit.Assert.*;
 public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTest {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
     private VariantDBAdaptor dbAdaptor;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+    private VariantStorageMetadataManager metadataManager;
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -71,56 +75,57 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     @Override
     @Before
     public void before() throws Exception {
-        studyConfiguration = newStudyConfiguration();
+        studyMetadata = newStudyMetadata();
         clearDB(DB_NAME);
-        runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration,
+        runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        metadataManager = dbAdaptor.getMetadataManager();
     }
 
     @Test
     public void calculateStatsMultiCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        checkCohorts(dbAdaptor, studyConfiguration);
+        checkCohorts(dbAdaptor, studyMetadata);
 
         QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
-        Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
+        Iterator<SampleMetadata> iterator = metadataManager.sampleMetadataIterator(studyMetadata.getId());
 
         /** Create cohorts **/
         HashSet<String> cohort1 = new HashSet<>();
-        cohort1.add(iterator.next());
-        cohort1.add(iterator.next());
+        cohort1.add(iterator.next().getName());
+        cohort1.add(iterator.next().getName());
 
         HashSet<String> cohort2 = new HashSet<>();
-        cohort2.add(iterator.next());
-        cohort2.add(iterator.next());
+        cohort2.add(iterator.next().getName());
+        cohort2.add(iterator.next().getName());
 
         Map<String, Set<String>> cohorts = new HashMap<>();
         cohorts.put("cohort1", cohort1);
         cohorts.put("cohort2", cohort2);
 
         //Calculate stats
-        stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort1.cohort2.stats"));
+        stats(options, studyMetadata, cohorts, outputUri.resolve("cohort1.cohort2.stats"));
 
-        checkCohorts(dbAdaptor, studyConfiguration);
+        checkCohorts(dbAdaptor, studyMetadata);
     }
 
     @Test
     public void calculateStatsSeparatedCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts separately
 
-        String studyName = studyConfiguration.getStudyName();
+        String studyName = studyMetadata.getName();
         QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
-        Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
-        StudyConfiguration studyConfiguration;
+        Iterator<SampleMetadata> iterator = metadataManager.sampleMetadataIterator(studyMetadata.getId());
+        StudyMetadata studyMetadata;
 
         /** Create first cohort **/
-        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, QueryOptions.empty()).first();
+        studyMetadata = metadataManager.getStudyMetadata(studyName);
         HashSet<String> cohort1 = new HashSet<>();
-        cohort1.add(iterator.next());
-        cohort1.add(iterator.next());
+        cohort1.add(iterator.next().getName());
+        cohort1.add(iterator.next().getName());
 
         Map<String, Set<String>> cohorts;
 
@@ -128,88 +133,96 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         cohorts.put("cohort1", cohort1);
 
         //Calculate stats for cohort1
-        studyConfiguration = stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort1.stats"));
+        studyMetadata = stats(options, studyMetadata, cohorts, outputUri.resolve("cohort1.stats"));
 
-        int cohort1Id = studyConfiguration.getCohortIds().get("cohort1");
-        assertThat(studyConfiguration.getCalculatedStats(), hasItem(cohort1Id));
-        checkCohorts(dbAdaptor, studyConfiguration);
+        CohortMetadata cohort1Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
+//        assertThat(studyMetadata.getCalculatedStats(), hasItem(cohort1Id));
+        assertTrue(cohort1Metadata.isStatsReady());
+        checkCohorts(dbAdaptor, studyMetadata);
 
         /** Create second cohort **/
-        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, QueryOptions.empty()).first();
+        studyMetadata = metadataManager.getStudyMetadata(studyName);
         HashSet<String> cohort2 = new HashSet<>();
-        cohort2.add(iterator.next());
-        cohort2.add(iterator.next());
+        cohort2.add(iterator.next().getName());
+        cohort2.add(iterator.next().getName());
 
         cohorts = new HashMap<>();
         cohorts.put("cohort2", cohort2);
 
         //Calculate stats for cohort2
-        studyConfiguration = stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort2.stats"));
+        studyMetadata = stats(options, studyMetadata, cohorts, outputUri.resolve("cohort2.stats"));
 
-        int cohort2Id = studyConfiguration.getCohortIds().get("cohort2");
-        assertThat(studyConfiguration.getCalculatedStats(), hasItem(cohort1Id));
-        assertThat(studyConfiguration.getCalculatedStats(), hasItem(cohort2Id));
+        cohort1Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
+        CohortMetadata cohort2Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
+        assertTrue(cohort1Metadata.isStatsReady());
+        assertTrue(cohort2Metadata.isStatsReady());
 
-        checkCohorts(dbAdaptor, studyConfiguration);
+        checkCohorts(dbAdaptor, studyMetadata);
 
         //Try to recalculate stats for cohort2. Will fail
-        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, QueryOptions.empty()).first();
+        studyMetadata = metadataManager.getStudyMetadata(studyName);
         thrown.expect(StorageEngineException.class);
-        stats(options, studyConfiguration, cohorts, outputUri.resolve("cohort2.stats"));
+        stats(options, studyMetadata, cohorts, outputUri.resolve("cohort2.stats"));
 
     }
 
-    public StudyConfiguration stats(QueryOptions options, StudyConfiguration studyConfiguration, Map<String, Set<String>> cohorts,
+    public StudyMetadata stats(QueryOptions options, StudyMetadata studyMetadata, Map<String, Set<String>> cohorts,
                                     URI output) throws IOException, StorageEngineException {
         options.put(DefaultVariantStatisticsManager.OUTPUT, output.toString());
-        variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohorts, options);
-        return dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        variantStorageEngine.calculateStats(studyMetadata.getName(), cohorts, options);
+        return metadataManager.getStudyMetadata(studyMetadata.getId());
     }
 
-    public static StudyConfiguration stats(VariantStatisticsManager vsm, QueryOptions options, StudyConfiguration studyConfiguration,
+    public static StudyMetadata stats(VariantStatisticsManager vsm, QueryOptions options, StudyMetadata studyMetadata,
                                            Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds, VariantDBAdaptor dbAdaptor,
                                            URI resolve) throws IOException, StorageEngineException {
         if (vsm instanceof DefaultVariantStatisticsManager) {
             DefaultVariantStatisticsManager dvsm = (DefaultVariantStatisticsManager) vsm;
-            URI stats = dvsm.createStats(dbAdaptor, resolve, cohorts, cohortIds, studyConfiguration, options);
-            dvsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+            URI stats = dvsm.createStats(dbAdaptor, resolve, cohorts, cohortIds, studyMetadata, options);
+            dvsm.loadStats(stats, studyMetadata, options);
         } else {
-            studyConfiguration.getCohortIds().putAll(cohortIds);
-            cohorts.forEach((cohort, samples) -> {
-                Set<Integer> sampleIds = samples.stream().map(studyConfiguration.getSampleIds()::get).collect(Collectors.toSet());
-                studyConfiguration.getCohorts().put(cohortIds.get(cohort), sampleIds);
-            });
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-            vsm.calculateStatistics(studyConfiguration.getStudyName(), new ArrayList<>(cohorts.keySet()), options);
+            dbAdaptor.getMetadataManager().registerCohorts(studyMetadata.getName(), cohorts);
+//            studyMetadata.getCohortIds().putAll(cohortIds);
+//            cohorts.forEach((cohort, samples) -> {
+//                Set<Integer> sampleIds = samples.stream().map(studyMetadata.getSampleIds()::get).collect(Collectors.toSet());
+//                studyMetadata.getCohorts().put(cohortIds.get(cohort), sampleIds);
+//            });
+//            dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata);
+            vsm.calculateStatistics(studyMetadata.getName(), new ArrayList<>(cohorts.keySet()), options);
         }
-        return dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        return dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
     }
 
-    static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(), null);
+    static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata) {
+        Map<String, CohortMetadata> cohorts = new HashMap<>();
+        dbAdaptor.getMetadataManager().cohortIterator(studyMetadata.getId()).forEachRemaining(cohort -> {
+            cohorts.put(cohort.getName(), cohort);
+        });
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), null);
              iterator.hasNext(); ) {
             Variant variant = iterator.next();
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 Map<String, VariantStats> cohortsStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortsStats.keySet().toString();
-                for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
-                    if (!studyConfiguration.getCalculatedStats().contains(entry.getValue())) {
+                for (Map.Entry<String, CohortMetadata> entry : cohorts.entrySet()) {
+                    CohortMetadata cohort = entry.getValue();
+                    if (!cohort.isStatsReady()) {
                         continue;
                     }
-                    assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " +
+                    assertTrue("CohortStats should contain stats for cohort '" + entry.getKey() + "'. Contains stats for " +
                                     calculatedCohorts,
                             cohortsStats.containsKey(entry.getKey()));    //Check stats are calculated
 
                     VariantStats cohortStats = cohortsStats.get(entry.getKey());
                     assertEquals("Stats for cohort " + entry.getKey() + " have less genotypes than expected. "
                                     + cohortStats.getGenotypeCount(),
-                            studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to
+                            cohort.getSamples().size(),  //Check numGenotypes are correct (equals to
                             // the number of samples)
                             cohortStats.getGenotypeCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
 
                     HashMap<Genotype, Integer> genotypeCount = new HashMap<>();
-                    for (Integer sampleId : studyConfiguration.getCohorts().get(entry.getValue())) {
-                        String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                    for (Integer sampleId : cohort.getSamples()) {
+                        String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyMetadata.getId(), sampleId);
                         String gt = sourceEntry.getSampleData(sampleName, "GT");
                         genotypeCount.compute(new Genotype(gt), (key, value) -> value == null ? 1 : value + 1);
                     }

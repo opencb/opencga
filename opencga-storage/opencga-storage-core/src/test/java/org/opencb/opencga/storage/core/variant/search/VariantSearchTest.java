@@ -20,8 +20,9 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -29,7 +30,10 @@ import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.fail;
@@ -43,29 +47,15 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     public void testTranscriptInfo() throws IOException, VariantSearchException, StorageEngineException, FileFormatException, SolrServerException {
         int limit = 500;
 
-        StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
 
         solr.configure(variantStorageEngine);
         VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
 
         System.out.println(smallInputUri.getPath());
 
-        VariantVcfHtsjdkReader reader = VariantReaderUtils.getVariantVcfReader(Paths.get(smallInputUri.getPath()), null);
-        reader.open();
-        reader.pre();
-        VCFHeader vcfHeader = reader.getVCFHeader();
-        List<Variant> variants = reader.read(limit);
-
-        CellBaseClient cellBaseClient = new CellBaseClient(variantStorageEngine.getConfiguration().getCellbase().toClientConfiguration());
-        QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
-
-        // Set annotations
-        for (int i = 0; i < variants.size(); i++) {
-            variants.get(i).setAnnotation(queryResponse.getResponse().get(i).first());
-        }
-
-        reader.post();
-        reader.close();
+        List<Variant> variants = getVariants(limit);
+        List<Variant> annotatedVariants = annotatedVariants(variants);
 
         StudyConfiguration sc = new StudyConfiguration(1, "s1");
         scm.updateStudyConfiguration(sc, new QueryOptions());
@@ -73,13 +63,13 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         String collection = solr.coreName;
         variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
 
-        variantSearchManager.insert(collection, variants);
+        variantSearchManager.insert(collection, annotatedVariants);
 
         VariantQueryResult<Variant> results = variantSearchManager.query(collection, new Query(),
                 new QueryOptions(QueryOptions.LIMIT, limit));
 
         for (int i = 0; i < limit; i++) {
-            Map<String, ConsequenceType> inMap = getConsequenceTypeMap(variants.get(i));
+            Map<String, ConsequenceType> inMap = getConsequenceTypeMap(annotatedVariants.get(i));
             Map<String, ConsequenceType> outMap = getConsequenceTypeMap(results.getResult().get(i));
 
             System.out.println(inMap.size() + " vs " + outMap.size());
@@ -91,6 +81,35 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
                 // Check biotype
                 System.out.println(inCT.getBiotype() + " vs " + outCT.getBiotype());
                 assert(inCT.getBiotype().equals(outCT.getBiotype()));
+
+                // Check annotation flags
+                System.out.println("inCT, annotation flags:");
+                if (ListUtils.isNotEmpty(inCT.getTranscriptAnnotationFlags())) {
+                    System.out.println("\t" + StringUtils.join(inCT.getTranscriptAnnotationFlags(), ","));
+                }
+                System.out.println();
+                System.out.println("outCT, annotation flags:");
+                if (ListUtils.isNotEmpty(outCT.getTranscriptAnnotationFlags())) {
+                    System.out.println("\t" + StringUtils.join(outCT.getTranscriptAnnotationFlags(), ","));
+                }
+                System.out.println();
+                if (ListUtils.isNotEmpty(inCT.getTranscriptAnnotationFlags())
+                        && ListUtils.isNotEmpty(outCT.getTranscriptAnnotationFlags())) {
+                    if (inCT.getTranscriptAnnotationFlags().size() == outCT.getTranscriptAnnotationFlags().size()) {
+                        for (int j = 0; j < inCT.getTranscriptAnnotationFlags().size(); j++) {
+                            if (!inCT.getTranscriptAnnotationFlags().get(j)
+                                    .equals(outCT.getTranscriptAnnotationFlags().get(j))) {
+                                fail("Annotation flags mismatch: " + inCT.getTranscriptAnnotationFlags().get(j) + " vs "
+                                        + outCT.getTranscriptAnnotationFlags().get(j));
+                            }
+                        }
+                    } else {
+                        fail("Annotation flags mismatch (size)");
+                    }
+                } else if (ListUtils.isNotEmpty(inCT.getTranscriptAnnotationFlags())
+                        || ListUtils.isNotEmpty(outCT.getTranscriptAnnotationFlags())) {
+                    fail("Annotation flags mismatch");
+                }
 
                 // Check cdnaPosition, cdsPostion and codon
                 int inCdnaPosition =  inCT.getCdnaPosition() == null ? 0 : inCT.getCdnaPosition();
@@ -146,8 +165,58 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         }
 
         System.out.println("#variants = " + variants.size());
-        System.out.println("#annotations = " + queryResponse.getResponse().size());
+        System.out.println("#annotations = " + annotatedVariants.size());
         System.out.println("#variants from Solr = " + results.getResult().size());
+    }
+
+    @Test
+    public void testSpecialCharacter() throws IOException, VariantSearchException, StorageEngineException, FileFormatException, SolrServerException {
+        int limit = 1;
+
+        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
+
+        solr.configure(variantStorageEngine);
+        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
+
+        System.out.println(smallInputUri.getPath());
+
+        List<Variant> variants = getVariants(limit);
+        List<Variant> annotatedVariants = annotatedVariants(variants);
+
+        String studyId = "abyu12";
+        String fileId = "a.vcf";
+
+        variants.get(0).getStudies().get(0).getFiles().get(0).setFileId(fileId);
+        System.out.println(variants.get(0).getStudies().get(0).getFiles().get(0).getFileId());
+        //System.exit(-1);
+
+        scm.createStudy(studyId);
+
+        String collection = solr.coreName;
+        variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
+
+        LinkedHashMap<String, Integer> samplePosition = new LinkedHashMap<>();
+        samplePosition.put("A-A", 0);
+        samplePosition.put("B", 1);
+        samplePosition.put("C", 2);
+        samplePosition.put("D", 3);
+        annotatedVariants.get(0).getStudies().get(0).setStudyId(studyId).setSortedSamplesPosition(samplePosition);
+        variantSearchManager.insert(collection, annotatedVariants);
+
+        Query query = new Query();
+        query.put(VariantQueryParam.STUDY.key(), studyId);
+//        query.put(VariantQueryParam.SAMPLE.key(), samplePosition.keySet().toArray()[0]);
+        query.put(VariantQueryParam.FILE.key(), fileId);
+        query.put(VariantQueryParam.FILTER.key(), "PASS");
+        query.put(VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign");
+        VariantQueryResult<Variant> results = variantSearchManager.query(collection, query,
+                new QueryOptions(QueryOptions.LIMIT, limit));
+
+        if (results.getResult().size() > 0) {
+            System.out.println(results.getResult().get(0).toJson());
+        } else {
+            System.out.println("Not found!!!!");
+        }
     }
 
     private Map<String, ConsequenceType> getConsequenceTypeMap (Variant variant){
@@ -187,5 +256,28 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         } else if (inScore != null || outScore != null) {
             fail("Mismatchtch " + source + " values");
         }
+    }
+
+    private List<Variant> getVariants(int limit) {
+        VariantVcfHtsjdkReader reader = VariantReaderUtils.getVariantVcfReader(Paths.get(smallInputUri.getPath()), null);
+        reader.open();
+        reader.pre();
+        VCFHeader vcfHeader = reader.getVCFHeader();
+        List<Variant> variants = reader.read(limit);
+
+        reader.post();
+        reader.close();
+        return variants;
+    }
+
+    private List<Variant> annotatedVariants(List<Variant> variants) throws IOException {
+        CellBaseClient cellBaseClient = new CellBaseClient(variantStorageEngine.getConfiguration().getCellbase().toClientConfiguration());
+        QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
+
+        // Set annotations
+        for (int i = 0; i < variants.size(); i++) {
+            variants.get(i).setAnnotation(queryResponse.getResponse().get(i).first());
+        }
+        return variants;
     }
 }

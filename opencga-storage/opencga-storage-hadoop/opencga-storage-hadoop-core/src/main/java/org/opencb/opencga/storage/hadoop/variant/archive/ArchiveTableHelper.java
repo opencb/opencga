@@ -28,11 +28,12 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseFileMetadataDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,11 +70,13 @@ public class ArchiveTableHelper extends GenomeHelper {
         super(conf);
         fileId = conf.getInt(HadoopVariantStorageEngine.FILE_ID, 0);
 
-        try (HBaseVariantFileMetadataDBAdaptor metadataManager = new HBaseVariantFileMetadataDBAdaptor(null, metaTableName, conf)) {
-            VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null);
+        try (HBaseFileMetadataDBAdaptor metadataManager = new HBaseFileMetadataDBAdaptor(null, metaTableName, conf)) {
+            VariantFileMetadata meta = metadataManager.getVariantFileMetadata(getStudyId(), fileId, null).first();
             this.meta.set(meta);
             nonRefColumn = Bytes.toBytes(getNonRefColumnName(meta));
             refColumn = Bytes.toBytes(getRefColumnName(meta));
+        } catch (StorageEngineException e) {
+            throw new IOException(e);
         }
         keyFactory = new ArchiveRowKeyFactory(conf);
     }

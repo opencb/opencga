@@ -20,43 +20,35 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created by wasim on 31/10/18.
  */
 public class FixedQueryGeneratorTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
-    private FixedQueryGenerator fixedQueryGenerator;
-    private BenchmarkRunner benchmarkRunner;
-
-    @Before
-    public void setup() throws Exception {
-    /*    runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyConfiguration());
-
-        Map<String, String> params = new HashMap<>();
-        params.put(FixedQueryGenerator.DATA_DIR, "src/test/resources/hsapiens");
-
-        fixedQueryGenerator = new FixedQueryGenerator();
-        fixedQueryGenerator.setUp(params);
-
-        benchmarkRunner = new BenchmarkRunner(getVariantStorageEngine().getConfiguration(),
-                null,
-                Paths.get(newOutputUri()));*/
-    }
 
     @Test
-    public void test() throws IOException {
-        try (FileInputStream inputStream = new FileInputStream(Paths.get("src/test/resources/hsapiens/randomQueries.yml").toFile());) {
+    public void fixedQueryMappingTest() throws IOException {
+        try (FileInputStream inputStream = new FileInputStream(Paths.get("src/test/resources/hsapiens/fixedQueries.yml").toFile());) {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            RandomQueries randomQueries = objectMapper.readValue(inputStream, RandomQueries.class);
-            System.out.println(randomQueries.toString());
+            FixedQueries fixedQueries = objectMapper.readValue(inputStream, FixedQueries.class);
 
-        }
-    }
+            assertEquals(fixedQueries.getBaseQuery().keySet().size(), 1);
+            assertEquals(fixedQueries.getBaseQuery().get("summary"), "true");
+            assertEquals(fixedQueries.getQueries().size(), 7);
+            assertEquals(fixedQueries.getSessionIds().size(), 2);
 
-    @Test
-    public void generateFixedQueryTest() {
-        for (int i = 0; i < 3; i++) {
-            System.out.println(fixedQueryGenerator.generateQuery(new Query()).entrySet());
+            assertEquals(fixedQueries.getQueries().get(0).getId(), "RegionAndBiotype");
+            assertEquals(fixedQueries.getQueries().get(0).getDescription(), "Purpose of this query");
+            assertEquals(fixedQueries.getQueries().get(0).getQuery().keySet().size(), 4);
+            assertEquals(fixedQueries.getQueries().get(0).getQuery().keySet().size(), 4);
+            assertEquals(fixedQueries.getQueries().get(0).getQuery().get("region"), "22:16052853-16054112");
+            assertEquals(fixedQueries.getQueries().get(0).getQuery().get("gene"), "BRCA2");
+            assertEquals(fixedQueries.getQueries().get(0).getQuery().get("biotype"), "coding");
+            assertEquals(fixedQueries.getQueries().get(0).getQuery().get("populationFrequencyMaf"), "1kG_phase3:ALL>0.1");
+            assertEquals(fixedQueries.getQueries().get(0).getTolerationThreshold(), 300);
+
         }
     }
 }

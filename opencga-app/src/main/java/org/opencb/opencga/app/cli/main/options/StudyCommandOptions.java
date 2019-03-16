@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.MemberParams;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -34,17 +35,13 @@ public class StudyCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
-    public FilesCommandOptions filesCommandOptions;
     public ScanFilesCommandOptions scanFilesCommandOptions;
     public ResyncFilesCommandOptions resyncFilesCommandOptions;
     public StatusCommandOptions statusCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public SummaryCommandOptions summaryCommandOptions;
-    public JobsCommandOptions jobsCommandOptions;
-    public SamplesCommandOptions samplesCommandOptions;
-    public HelpCommandOptions helpCommandOptions;
+    public StatsCommandOptions statsCommandOptions;
 
     public GroupsCommandOptions groupsCommandOptions;
     public GroupsCreateCommandOptions groupsCreateCommandOptions;
@@ -53,6 +50,10 @@ public class StudyCommandOptions {
     public MemberGroupUpdateCommandOptions memberGroupUpdateCommandOptions;
     public AdminsGroupUpdateCommandOptions adminsGroupUpdateCommandOptions;
 
+    public VariableSetsCommandOptions variableSetsCommandOptions;
+    public VariableSetsUpdateCommandOptions variableSetsUpdateCommandOptions;
+    public VariablesUpdateCommandOptions variablesUpdateCommandOptions;
+
     public AclsCommandOptions aclsCommandOptions;
     public AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
@@ -60,6 +61,8 @@ public class StudyCommandOptions {
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
+
+    protected static final String DEPRECATED = "[DEPRECATED] ";
 
     public StudyCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                                JCommander jCommander) {
@@ -71,17 +74,13 @@ public class StudyCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
-        this.filesCommandOptions = new FilesCommandOptions();
         this.scanFilesCommandOptions = new ScanFilesCommandOptions();
         this.resyncFilesCommandOptions = new ResyncFilesCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.summaryCommandOptions = new SummaryCommandOptions();
-        this.jobsCommandOptions = new JobsCommandOptions();
-        this.samplesCommandOptions = new SamplesCommandOptions();
-        this.helpCommandOptions = new HelpCommandOptions();
+        this.statsCommandOptions = new StatsCommandOptions();
 
         this.groupsCommandOptions = new GroupsCommandOptions();
         this.groupsCreateCommandOptions = new GroupsCreateCommandOptions();
@@ -89,6 +88,10 @@ public class StudyCommandOptions {
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
         this.memberGroupUpdateCommandOptions = new MemberGroupUpdateCommandOptions();
         this.adminsGroupUpdateCommandOptions = new AdminsGroupUpdateCommandOptions();
+
+        this.variableSetsCommandOptions = new VariableSetsCommandOptions();
+        this.variableSetsUpdateCommandOptions = new VariableSetsUpdateCommandOptions();
+        this.variablesUpdateCommandOptions = new VariablesUpdateCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
@@ -103,7 +106,6 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
-
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -117,7 +119,7 @@ public class StudyCommandOptions {
         @Parameter(names = {"--id"}, description = "Study id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Study alias", arity = 1)
+        @Parameter(names = {"-a", "--alias"}, description = DEPRECATED + "Replaced by 'id'", arity = 1)
         public String alias;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
@@ -187,94 +189,36 @@ public class StudyCommandOptions {
 
     }
 
-
-    @Parameters(commandNames = {"files"}, commandDescription = "Fetch files from a study")
-    public class FilesCommandOptions extends BaseStudyCommand {
-
-        @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
-
-        @ParametersDelegate
-        public NumericOptions numericOptions = commonNumericOptions;
-
-        @Deprecated
-        @Parameter(names = {"--file"}, description = "[DEPRECATED] File id", arity = 1)
-        public String file;
-
-        @Parameter(names = {"-n", "--name"}, description = "Name", arity = 1)
-        public String name;
-
-        @Deprecated
-        @Parameter(names = {"--path"}, description = "[DEPRECATED] Path", arity = 1)
-        public String path;
-
-        @Parameter(names = {"-t", "--file-type"}, description = "Comma separated Type values. For existing Types see files/help", arity = 1)
-        public String type = "FILE";
-
-        @Parameter(names = {"-b", "--bioformat"}, description = "Comma separated Bioformat values. For existing Bioformats see files/help",
-                arity = 1)
-        public String bioformat;
-
-        @Parameter(names = {"--format"}, description = "Comma separated Format values. For existing Formats see files/help", arity = 1)
-        public String format;
-
-        @Parameter(names = {"--status"}, description = "Status", arity = 1)
-        public String status;
-
-        @Parameter(names = {"--directory"}, description = "Directory", arity = 1)
-        public String directory;
-
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
-        public String creationDate;
-
-        @Parameter(names = {"--modification-date"}, description = "Modification Date.", arity = 1)
-        public String modificationDate;
-
-        @Deprecated
-        @Parameter(names = {"--description"}, description = "Description", arity = 1)
-        public String description;
-
-        @Parameter(names = {"--size"}, description = "Filter by size of the file", arity = 1)
-        public String size;
-
-        @Parameter(names = {"--sample-ids"}, description = "Comma separated sampleIds", arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"--job-id"}, description = "Job Id", arity = 1)
-        public String jobId;
-
-        @Parameter(names = {"--attributes"}, description = "Attributes.", arity = 1)
-        public String attributes;
-
-        @Parameter(names = {"--nattributes"}, description = "Numerical attributes.", arity = 1)
-        public String nattributes;
-
-        @Parameter(names = {"-e", "--external"}, description = "Whether to fetch external linked files", arity = 0)
-        public boolean external;
-    }
-
-
     @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
     public class StatusCommandOptions extends BaseStudyCommand {
 
     }
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update the attributes of a study")
-    public class UpdateCommandOptions extends BaseStudyCommand {
+    @Parameters(commandNames = {"update"}, commandDescription = "Update a study")
+    public class UpdateCommandOptions {
 
-        @Parameter(names = {"-n", "--name"}, description = "Study name", arity = 1)
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1, required = true)
+        public String study;
+
+        @Parameter(names = {"--json"}, description = "JSON file containing the study fields to be updated", arity = 1)
+        public String json;
+
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String name;
 
-        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
+        @Parameter(names = {"-t", "--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String type;
 
-        @Parameter(names = {"-d", "--description"}, description = "Organization", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String description;
 
-        @Parameter(names = {"--stats"}, description = "Stats", arity = 1)
+        @Parameter(names = {"--stats"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String stats;
 
-        @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
+        @Parameter(names = {"--attributes"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String attributes;
 
     }
@@ -284,69 +228,31 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"summary"}, commandDescription = "Summary with the general stats of a study")
-    public class SummaryCommandOptions extends BaseStudyCommand {
+    @Parameters(commandNames = {"stats"}, commandDescription = "General stats of a study")
+    public class StatsCommandOptions extends BaseStudyCommand {
 
-    }
+        @Parameter(names = {"default"}, description = "Calculate default stats")
+        public boolean defaultStats;
 
-    @Parameters(commandNames = {"jobs"}, commandDescription = "Study jobs information")
-    public class JobsCommandOptions extends BaseStudyCommand {
+        @Parameter(names = {"--file-fields"}, description = "List of file fields separated by semicolons, e.g.: studies;type. "
+                + "For nested fields use >>, e.g.: studies>>biotype;typ", arity = 1)
+        public String fileFields;
 
-        @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
+        @Parameter(names = {"--family-fields"}, description = "List of family fields separated by semicolons, e.g.: studies;type. "
+                + "For nested fields use >>, e.g.: studies>>biotype;typ", arity = 1)
+        public String familyFields;
 
-        @ParametersDelegate
-        public NumericOptions numericOptions = commonNumericOptions;
+        @Parameter(names = {"--individual-fields"}, description = "List of individual fields separated by semicolons, e.g.: studies;type. "
+                + "For nested fields use >>, e.g.: studies>>biotype;typ", arity = 1)
+        public String individualFields;
 
-        @Parameter(names = {"-n", "--name"}, description = "Job name", arity = 1)
-        public String name;
+        @Parameter(names = {"--sample-fields"}, description = "List of sample fields separated by semicolons, e.g.: studies;type. "
+                + "For nested fields use >>, e.g.: studies>>biotype;typ", arity = 1)
+        public String sampleFields;
 
-        @Parameter(names = {"--tool-name"}, description = "Tool name", arity = 1)
-        public String toolName;
-
-        @Parameter(names = {"--status"}, description = "Job status", arity = 1)
-        public String status;
-
-        @Parameter(names = {"--owner-id"}, description = "User that created the job", arity = 1)
-        public String ownerId;
-
-        @Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
-        public String date;
-
-        @Deprecated
-        @Parameter(names = {"--input-files"}, description = "[DEPRECATED] Comma separated list of input file ids", arity = 1)
-        public String inputFiles;
-
-        @Deprecated
-        @Parameter(names = {"--output-files"}, description = "[DEPRECATED] Comma separated list of output file ids", arity = 1)
-        public String outputFiles;
-
-    }
-
-    @Parameters(commandNames = {"samples"}, commandDescription = "Study samples information")
-    public class SamplesCommandOptions extends BaseStudyCommand {
-
-        @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
-
-        @ParametersDelegate
-        public NumericOptions numericOptions = commonNumericOptions;
-
-        @Parameter(names = {"-n", "--name"}, description = "Sample name", arity = 1)
-        public String name;
-
-        @Parameter(names = {"--source"}, description = "Source of the sample", arity = 1)
-        public String source;
-
-        @Parameter(names = {"-d", "--description"}, description = "Sample description", arity = 1)
-        public String description;
-
-        @Parameter(names = {"--individual"}, description = "Individual id", arity = 1)
-        public String individual;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation", arity = 1)
-        public String annotation;
-
+        @Parameter(names = {"--cohort-fields"}, description = "List of cohort fields separated by semicolons, e.g.: studies;type. "
+                + "For nested fields use >>, e.g.: studies>>biotype;typ", arity = 1)
+        public String cohortFields;
     }
 
     @Parameters(commandNames = {"groups"}, commandDescription = "Return the groups present in the studies")
@@ -356,19 +262,14 @@ public class StudyCommandOptions {
         public String group;
     }
 
-    @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
-    public class HelpCommandOptions {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-    }
-
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")
     public class GroupsCreateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--name"}, description = "Group name.", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Group id.", required = true, arity = 1)
         public String groupId;
+
+        @Parameter(names = {"--name"}, description = "Group name.", arity = 1)
+        public String groupName;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", arity = 1)
         public String users;
@@ -414,6 +315,37 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, REMOVE)", required = true, arity = 1)
         public MemberParams.Action action;
+    }
+
+    @Parameters(commandNames = {"variable-sets"}, commandDescription = "Return the variable sets of a study")
+    public class VariableSetsCommandOptions extends BaseStudyCommand {
+        @Parameter(names = {"--variable-set"}, description = "Id of the variable set to be retrieved. If no id is passed, it will fetch "
+                + "all the variable sets of the study.", arity = 1)
+        public String variableSet;
+    }
+
+    @Parameters(commandNames = {"variable-sets-update"}, commandDescription = "Create or remove a variable set")
+    public class VariableSetsUpdateCommandOptions extends BaseStudyCommand {
+        @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable set.", arity = 1)
+        public ParamUtils.BasicUpdateAction action;
+
+        @Parameter(names = {"--variable-set"}, description = "JSON file containing the variable set to be created or removed.",
+                required = true, arity = 1)
+        public String variableSet;
+    }
+
+    @Parameters(commandNames = {"variable-sets-variables-update"}, commandDescription = "Add or remove variables to a variable set")
+    public class VariablesUpdateCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable.", arity = 1)
+        public ParamUtils.BasicUpdateAction action;
+
+        @Parameter(names = {"--variable-set"}, description = "Variable set id", required = true, arity = 1)
+        public String variableSet;
+
+        @Parameter(names = {"--variable"}, description = "JSON file containing the variable to be added or removed to the variable set.",
+                required = true, arity = 1)
+        public String variable;
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription = "Return the acls set for the resource")

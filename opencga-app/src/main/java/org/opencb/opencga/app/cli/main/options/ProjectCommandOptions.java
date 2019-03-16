@@ -41,6 +41,8 @@ public class ProjectCommandOptions {
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
+
     public ProjectCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                                  JCommander jCommander) {
 
@@ -72,13 +74,13 @@ public class ProjectCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
-        public String name;
-
         @Parameter(names = {"--id"}, description = "Project id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Alias", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
+        public String name;
+
+        @Parameter(names = {"-a", "--alias"}, description = DEPRECATED + "Replaced by 'id'", arity = 1)
         public String alias;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
@@ -88,7 +90,7 @@ public class ProjectCommandOptions {
         public String organization;
 
         @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name. Mandatory parameter if not defined "
-                + "in the client configuration file.", required = false, arity = 1)
+                + "in the client configuration file.", arity = 1)
         public String scientificName;
 
         @Parameter(names = {"--organism-common-name"}, description = "Organism common name", required = false, arity = 1)
@@ -98,7 +100,7 @@ public class ProjectCommandOptions {
         public String taxonomyCode;
 
         @Parameter(names = {"--organism-assembly"}, description = "Organism assembly. Mandatory parameter if not defined "
-                + "in the client configuration file.", required = false, arity = 1)
+                + "in the client configuration file.", arity = 1)
         public String assembly;
     }
 
@@ -125,7 +127,7 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Project name.", arity = 1)
         public String name;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Project alias.", arity = 1)
+        @Parameter(names = {"-a", "--alias"}, description = "DEPRECATED: Project alias.", arity = 1)
         public String alias;
 
         @Parameter(names = {"--organization"}, description = "Organization", arity = 1)
@@ -134,7 +136,7 @@ public class ProjectCommandOptions {
         @Parameter(names = {"--description"}, description = "Project description", arity = 1)
         public String description;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study id or alias", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study id", arity = 1)
         public String study;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
@@ -161,23 +163,26 @@ public class ProjectCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
     public class UpdateCommandOptions extends BaseProjectCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "Project name", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String name;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String description;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String organization;
 
-        @Parameter(names = {"-a", "--attributes"}, description = "Attributes", required = false, arity = 1)
+        @Parameter(names = {"-a", "--attributes"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String attributes;
 
-        @Parameter(names = {"--organism-common-name"}, description = "Organism common name", required = false, arity = 1)
+        @Parameter(names = {"--organism-common-name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String commonName;
 
-        @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", required = false, arity = 1)
+        @Parameter(names = {"--organism-taxonomy-code"}, description = DEPRECATED + "Use --json instead.", arity = 1)
         public String taxonomyCode;
+
+        @Parameter(names = {"--json"}, description = "JSON file containing the project fields to be updated", arity = 1)
+        public String json;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a project")

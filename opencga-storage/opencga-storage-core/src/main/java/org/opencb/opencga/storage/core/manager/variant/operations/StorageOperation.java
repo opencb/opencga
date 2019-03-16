@@ -32,10 +32,10 @@ import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStorageMetadataSynchronizer;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.Logger;
@@ -110,18 +110,41 @@ public abstract class StorageOperation {
         return catalogOutDirId;
     }
 
-    public StudyConfiguration updateCatalogFromStudyConfiguration(String sessionId, String study, DataStore dataStore)
+    public StudyMetadata synchronizeCatalogStudyFromStorage(DataStore dataStore, String study, String sessionId)
+            throws IOException, CatalogException, StorageEngineException {
+        return synchronizeCatalog(dataStore, study, null, null, sessionId);
+    }
+
+    public StudyMetadata synchronizeCatalogFilesFromStorage(DataStore dataStore, String study, List<File> files, String sessionId,
+                                                            QueryOptions options)
+            throws IOException, CatalogException, StorageEngineException {
+        return synchronizeCatalog(dataStore, study, files, options, sessionId);
+    }
+
+    private StudyMetadata synchronizeCatalog(DataStore dataStore, String study, List<File> files, QueryOptions options, String sessionId)
             throws IOException, CatalogException, StorageEngineException {
 
-        CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        StudyConfigurationManager studyConfigurationManager = getVariantStorageEngine(dataStore).getStudyConfigurationManager();
+        VariantStorageMetadataManager metadataManager = getVariantStorageEngine(dataStore).getMetadataManager();
+        CatalogStorageMetadataSynchronizer studyConfigurationFactory
+                = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
 
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
-        if (studyConfiguration != null) {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        if (studyMetadata != null) {
             // Update Catalog file and cohort status.
-            studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, sessionId);
+            if (files == null || files.isEmpty()) {
+                studyConfigurationFactory.synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
+            } else {
+                boolean modified = studyConfigurationFactory.synchronizeCatalogFilesFromStorage(studyMetadata, files, sessionId);
+                if (modified) {
+                    // Files updated. Reload files from catalog
+                    for (int i = 0; i < files.size(); i++) {
+                        File file = files.get(i);
+                        files.set(i, catalogManager.getFileManager().get(study, file.getId(), options, sessionId).first());
+                    }
+                }
+            }
         }
-        return studyConfiguration;
+        return studyMetadata;
     }
 
     protected Thread buildHook(Path outdir) {
@@ -257,7 +280,7 @@ public abstract class StorageOperation {
         return prefix + userId + '_' + alias;
     }
 
-    public static void updateProjectMetadata(CatalogManager catalog, StudyConfigurationManager scm, String project, String sessionId)
+    public static void updateProjectMetadata(CatalogManager catalog, VariantStorageMetadataManager scm, String project, String sessionId)
             throws CatalogException, StorageEngineException {
         final Project p = catalog.getProjectManager().get(project,
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -268,11 +291,11 @@ public abstract class StorageOperation {
         StorageOperation.updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease());
     }
 
-    public static void updateProjectMetadata(StudyConfigurationManager scm, Project.Organism organism, int release)
+    public static void updateProjectMetadata(VariantStorageMetadataManager scm, Project.Organism organism, int release)
             throws CatalogException, StorageEngineException {
         String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
 
-        scm.lockAndUpdateProject(projectMetadata -> {
+        scm.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
                 projectMetadata = new ProjectMetadata();
             }
@@ -331,5 +354,25 @@ public abstract class StorageOperation {
         return aggregation;
     }
 
+    public static boolean isVcfFormat(File file) {
+        File.Format format = file.getFormat();
+        if (isVcfFormat(format)) {
+            return true;
+        } else {
+            // Do not trust the file format. Defect format from URI
+            format = org.opencb.opencga.catalog.managers.FileUtils.detectFormat(file.getUri());
+            if (isVcfFormat(format)) {
+                // Overwrite temporary the format
+                file.setFormat(format);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    private static boolean isVcfFormat(File.Format format) {
+        return format.equals(File.Format.VCF) || format.equals(File.Format.BCF);
+    }
 
 }

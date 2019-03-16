@@ -94,7 +94,7 @@ public class CatalogUtils {
     /**
      * Get the list of studies. Discards negated studies (starting with '!').
      *
-     * @see org.opencb.opencga.storage.core.metadata.StudyConfigurationManager#getStudyIds(List, QueryOptions)
+     * @see org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager#getStudyIds(List)
      * @param query     Query with the values
      * @param sessionId User's sessionId
      * @return          List of positive studies.

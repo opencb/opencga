@@ -96,9 +96,11 @@
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>false</useWildcardClassPath>
+                    <!--By default, "etc".-->
+                    <configurationDirectory>conf</configurationDirectory>
                     <extraJvmArguments>-Xms256m -Xmx16384m -Dfile.encoding=UTF-8</extraJvmArguments>
-                    <!-- -Dlog4j.debug -->
-                    <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
+                    <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
+                    <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
