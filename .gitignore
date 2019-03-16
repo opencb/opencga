@@ -49,6 +49,7 @@ local.properties
 
 #python
 *.pyc
+*.ipynb_checkpoints/
 
 # NetBeans
 nb*.xml
