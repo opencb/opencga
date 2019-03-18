@@ -49,7 +49,7 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduc
  * hbase_conf=$(hbase classpath | tr ":" "\n" | grep "/conf" | tr "\n" ":")
  * export HADOOP_CLASSPATH=${hbase_conf}:$PWD/libs/avro-1.7.7.jar:$PWD/libs/jackson-databind-2.6.6.jar:$PWD/libs/jackson-core-2.6.6.jar
  * export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:$PWD/libs/jackson-annotations-2.6.6.jar
- * yarn jar opencga-storage-hadoop-core-1.4.0-rc3-dev-jar-with-dependencies.jar \
+ * yarn jar opencga-storage-hadoop-core-1.4.0-jar-with-dependencies.jar \
  *      org.opencb.opencga.storage.hadoop.variant.io.VariantExporterDriver \
  *      opencga_variants study myStudy --of avro --output my.variants.avro --region 22
  *
