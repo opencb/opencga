@@ -40,7 +40,8 @@
         }
     },
     "variables": {
-        "functionAppName": "[concat('appgwfn-', uniquestring(resourceGroup().name))]"
+        "functionAppName": "[concat('appgwfn-', uniquestring(resourceGroup().name))]",
+        "keyVaultName": "[concat('keyvault-', uniquestring(resourceGroup().name))]"
     },
     "resources": [
         {
@@ -91,6 +92,11 @@
                 "templateLink": {
                     "uri": "[concat(parameters('_artifactsLocation'), '/appgw/keyvault.json')]",
                     "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[variables('keyVaultName')]"
+                    }
                 }
             }
         },
@@ -99,7 +105,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "functions",
-            "dependsOn": ["keyvault"],
+            "dependsOn": [],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -114,26 +120,7 @@
                         "value": "[parameters('appGwSslEmail')]"
                     },
                     "keyVaultName": {
-                        "value": "[reference('keyvault').outputs.keyVaultName.value]"
-                    }
-                }
-            }
-        },
-        {
-            "resourceGroup": "[parameters('rgName')]",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
-            "name": "configure-functions",
-            "dependsOn": ["keyvault", "functions", "appgw"],
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/configure-functions.json')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "functionAppName": {
-                        "value": "[variables('functionAppName')]"
+                        "value": "[variables('keyVaultName')]"
                     }
                 }
             }
@@ -143,7 +130,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "msi",
-            "dependsOn": ["keyfault", "functions", "appgw", "configure-functions"],
+            "dependsOn": ["keyfault", "functions", "appgw"],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {

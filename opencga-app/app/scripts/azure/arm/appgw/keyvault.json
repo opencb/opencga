@@ -2,6 +2,9 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+        "keyVaultName": {
+            "type": "string"
+        },
         "location": {
             "type": "string",
             "defaultValue": "[resourceGroup().location]",
@@ -22,13 +25,12 @@
         }
     },
     "variables": {
-        "tenantId": "[subscription().tenantId]",
-        "keyVaultName": "[concat('keyvault-', uniquestring(resourceGroup().id))]"
+        "tenantId": "[subscription().tenantId]"
     },
     "resources": [
         {
             "type": "Microsoft.KeyVault/vaults",
-            "name": "[variables('keyVaultName')]",
+            "name": "[parameters('keyVaultName')]",
             "apiVersion": "2018-02-14",
             "location": "[parameters('location')]",
             "properties": {
@@ -40,11 +42,5 @@
                 }
             }
         }
-    ],
-    "outputs": {
-        "keyVaultName": {
-            "type": "string",
-            "value": "[variables('keyVaultName')]"
-        }
-    }
+    ]
 }
