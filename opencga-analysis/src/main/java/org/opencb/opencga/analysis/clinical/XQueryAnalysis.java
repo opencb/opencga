@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
@@ -35,25 +36,16 @@ import org.opencb.opencga.core.models.User;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class XQueryAnalysis extends FamilyAnalysis {
-
-    private String clinicalAnalysisId;
-    private List<String> diseasePanelIds;
+public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
 
     private BioNetDbManager bioNetDbManager;
 
     private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
 
-    public XQueryAnalysis(String opencgaHome, String studyStr, String token) {
-        super(opencgaHome, studyStr, token);
-    }
-
-    public XQueryAnalysis(String opencgaHome, String studyStr, String token, String clinicalAnalysisId,
-                          List<String> diseasePanelIds, BioNetDBConfiguration configuration) throws BioNetDBException {
-        super(opencgaHome, studyStr, token);
-
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        this.diseasePanelIds = diseasePanelIds;
+    public XQueryAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
+                          Map<String, List<String>> actionableVariants, ObjectMap options, BioNetDBConfiguration configuration,
+                          String opencgaHome, String token) throws BioNetDBException {
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
 
         this.bioNetDbManager = new BioNetDbManager(configuration);
     }
@@ -111,7 +103,7 @@ public class XQueryAnalysis extends FamilyAnalysis {
         }
 
         // Check sample and proband exists
-        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily());
+        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
         OntologyTerm disorder = clinicalAnalysis.getDisorder();
         Phenotype phenotype = new Phenotype(disorder.getId(), disorder.getName(), disorder.getSource(),
                 Phenotype.Status.UNKNOWN);
@@ -127,15 +119,18 @@ public class XQueryAnalysis extends FamilyAnalysis {
         long dbTime = dbWatcher.getTime();
 
         // Create reported variants and events
-        List<ReportedVariant> reportedVariants = null;
-        int numResults = 0;
+        List<ReportedVariant> primaryFindings = null;
+        List<ReportedVariant> secondaryFindings = null;
+
         if (CollectionUtils.isNotEmpty(variantContainer.getComplexVariantList())) {
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
-            reportedVariants = creator.create(variantContainer.getComplexVariantList());
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+                    clinicalAnalysis.getDisorder(), null, null);
+            primaryFindings = creator.create(variantContainer.getComplexVariantList());
         }
         if (CollectionUtils.isNotEmpty(variantContainer.getReactionVariantList())) {
-            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, null, phenotype, null, null);
-            reportedVariants.addAll(creator.create(variantContainer.getReactionVariantList()));
+            TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+                    clinicalAnalysis.getDisorder(), null, null);
+            primaryFindings.addAll(creator.create(variantContainer.getReactionVariantList()));
         }
 
         // Create user information
@@ -151,12 +146,17 @@ public class XQueryAnalysis extends FamilyAnalysis {
                 .setCreationDate(TimeUtils.getTime())
                 .setPanels(biodataDiseasePanels)
                 .setFilters(getFilters(familyFilter, geneFilter))
-                .setSoftware(new Software().setName(XQUERY_ANALYSIS_NAME));
+                .setSoftware(new Software().setName(XQUERY_ANALYSIS_NAME))
+                .setPrimaryFindings(primaryFindings)
+                .setSecondaryFindings(secondaryFindings);
 
-        // Set reported variants
-        if (ListUtils.isNotEmpty(reportedVariants)) {
-            interpretation.setReportedVariants(reportedVariants);
-            numResults = reportedVariants.size();
+        // Compute number of results (primary and secondary findings)
+        int numResults = 0;
+        if (ListUtils.isNotEmpty(primaryFindings)) {
+            numResults += primaryFindings.size();
+        }
+        if (ListUtils.isNotEmpty(secondaryFindings)) {
+            numResults += secondaryFindings.size();
         }
 
         // Set low coverage

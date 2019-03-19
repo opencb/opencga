@@ -341,7 +341,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getUserManager().create(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, Account.FULL, null, null);
         String group = "@newGroup";
 //        catalogManager.addUsersToGroup(studyFqn, group, newUser, studyAdmin1SessionId);
-        catalogManager.getStudyManager().createGroup(studyFqn, group, newUser, studyAdmin1SessionId);
+        catalogManager.getStudyManager().createGroup(studyFqn, group, group, newUser, studyAdmin1SessionId);
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_ANALYST);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), group, aclParams, studyAdmin1SessionId).get(0);
         QueryResult<StudyAclEntry> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1, studyUid, group);
@@ -571,7 +571,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         String sessionId = catalogManager.getUserManager().login(newUser, password);
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(studyFqn, "@external", newUser, ownerSessionId);
-        catalogManager.getStudyManager().createGroup(studyFqn, newGroup, newUser, ownerSessionId);
+        catalogManager.getStudyManager().createGroup(studyFqn, newGroup, newGroup, newUser, ownerSessionId);
         // Add the group to the locked role, so no permissions will be given
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_LOCKED);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), newGroup, aclParams, ownerSessionId).get(0);
@@ -584,7 +584,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readFileForbiddenForUser() throws CatalogException {
         // Remove all permissions to the admin group in that folder
-        catalogManager.getStudyManager().createGroup(studyFqn, groupMember, externalUser, ownerSessionId);
+        catalogManager.getStudyManager().createGroup(studyFqn, groupMember, groupMember, externalUser, ownerSessionId);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), groupMember, new Study.StudyAclParams("", AclParams.Action.SET,
                 "admin"), ownerSessionId);
         fileManager.updateAcl(studyFqn, Arrays.asList(data_d1_d2), externalUser, new File.FileAclParams(DENY_FILE_PERMISSIONS,
@@ -601,7 +601,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         String sessionId = catalogManager.getUserManager().login(ownerUser, password);
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(studyFqn, "@external", newUser, ownerSessionId);
-        catalogManager.getStudyManager().createGroup(studyFqn, newGroup, newUser, ownerSessionId);
+        catalogManager.getStudyManager().createGroup(studyFqn, newGroup, newGroup, newUser, ownerSessionId);
         // Add the group to the locked role, so no permissions will be given
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_LOCKED);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), newGroup, aclParams, ownerSessionId).get(0);
@@ -749,7 +749,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         String sessionId = catalogManager.getUserManager().login(ownerUser, password);
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(studyFqn, "@external", newUser, ownerSessionId);
-        catalogManager.getStudyManager().createGroup(studyFqn, newGroup, newUser, ownerSessionId);
+        catalogManager.getStudyManager().createGroup(studyFqn, newGroup, newGroup, newUser, ownerSessionId);
         // Add the group to the locked role, so no permissions will be given
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_LOCKED);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), newGroup, aclParams, ownerSessionId);

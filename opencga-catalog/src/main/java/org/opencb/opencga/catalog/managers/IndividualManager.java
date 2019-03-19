@@ -748,7 +748,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         MyResource<Individual> resource = new MyResource<>(userId, study, individual);
         List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
-                individualDBAdaptor);
+                VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version

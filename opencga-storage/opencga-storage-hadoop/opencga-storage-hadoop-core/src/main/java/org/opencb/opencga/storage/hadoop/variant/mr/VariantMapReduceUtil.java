@@ -7,21 +7,23 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.mapreduce.PhoenixOutputFormat;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +64,22 @@ public class VariantMapReduceUtil {
         setNoneReduce(job);
     }
 
+    public static void initPartialResultTableMapperJob(Job job, String inTable, String outTable, Scan scan,
+                                                       Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        LOGGER.info("Allow partial results from HBase");
+        initTableMapperJob(job, inTable, scan, mapperClass, PartialResultTableInputFormat.class);
+        setOutputHBaseTable(job, outTable);
+        setNoneReduce(job);
+    }
+
     public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass)
+            throws IOException {
+        initTableMapperJob(job, inTable, scan, mapperClass, TableInputFormat.class);
+    }
+
+    public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass,
+                                          Class<? extends InputFormat> inputFormatClass)
             throws IOException {
         boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
         LOGGER.info("Use table {} as input", inTable);
@@ -73,7 +90,8 @@ public class VariantMapReduceUtil {
                 null,             // mapper output key
                 null,             // mapper output value
                 job,
-                addDependencyJar);
+                addDependencyJar,
+                inputFormatClass);
     }
 
     public static void initTableMapperJob(Job job, String inTable, List<Scan> scans, Class<? extends TableMapper> mapperClass)
@@ -134,7 +152,7 @@ public class VariantMapReduceUtil {
             throws IOException {
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         String variantTableName = dbAdaptor.getVariantTable();
-        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+        VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
         VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, false);
 
         String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();
@@ -252,6 +270,20 @@ public class VariantMapReduceUtil {
                 query.put(param.key(), value);
             }
         }
+    }
+
+    public static Scan configureMapReduceScan(Scan scan, Configuration conf) {
+        return configureMapReduceScan(scan, conf, 50);
+    }
+
+    public static Scan configureMapReduceScan(Scan scan, Configuration conf, int defaultCacheSize) {
+        int caching = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, defaultCacheSize);
+
+        LOGGER.info("Scan set Caching to " + caching);
+        scan.setCaching(caching);        // 1 is the default in Scan
+        scan.setCacheBlocks(false);  // don't set to true for MR jobs
+
+        return scan;
     }
 
 }

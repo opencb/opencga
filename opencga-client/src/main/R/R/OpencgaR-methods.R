@@ -67,8 +67,12 @@ setMethod("show", signature = "OpencgaR", definition = function(object){
     cat("An object of class ", class(object), "\n", sep = "")
     cat(paste("| Host:", object@host))
     cat(paste("\n| Version:", object@version))
-    cat(paste("\n| Token:", object@sessionId))
-    cat(paste("\n| Expiration time:", object@expirationTime))
+    if (.hasSlot(object, "sessionId")) {
+      cat(paste("\n| Token:", object@sessionId))
+    }
+    if (.hasSlot(object, "expirationTime")) {
+      cat(paste("\n| Expiration time:", object@expirationTime))
+    }
 })
 
 

@@ -1,16 +1,20 @@
 package org.opencb.opencga.storage.core.metadata;
 
-import com.google.common.collect.BiMap;
 import org.opencb.biodata.models.metadata.*;
 import org.opencb.biodata.models.variant.metadata.*;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 
 import java.util.*;
 
 /**
- * Converts from VariantMetadata to Collection&lt;StudyConfiguration&gt; and vice versa
+ * Converts from VariantMetadata to Collection&lt;StudyMetadata&gt; and vice versa
  *
  * Created on 02/08/17.
  *
@@ -18,20 +22,22 @@ import java.util.*;
  */
 public class VariantMetadataConverter {
 
-    public VariantMetadataConverter() {
+    private final VariantStorageMetadataManager metadataManager;
+
+    public VariantMetadataConverter(VariantStorageMetadataManager metadataManager) {
+        this.metadataManager = metadataManager;
     }
 
-    public VariantMetadata toVariantMetadata(Collection<StudyConfiguration> studyConfigurations,
-                                             ProjectMetadata projectMetadata, Map<Integer, List<Integer>> returnedSamples,
-                                             Map<Integer, List<Integer>> returnedFiles) {
+    public VariantMetadata toVariantMetadata(VariantQueryFields variantQueryFields) {
+        ProjectMetadata projectMetadata = metadataManager.getProjectMetadata();
         List<VariantStudyMetadata> studies = new ArrayList<>();
         String specie = projectMetadata.getSpecies();
         String assembly = projectMetadata.getAssembly();
-        for (StudyConfiguration studyConfiguration : studyConfigurations) {
-            VariantStudyMetadata studyMetadata = toVariantStudyMetadata(studyConfiguration,
-                    returnedSamples == null ? null : returnedSamples.get(studyConfiguration.getStudyId()),
-                    returnedFiles == null ? null : returnedFiles.get(studyConfiguration.getStudyId()));
-            studies.add(studyMetadata);
+        for (StudyMetadata studyMetadata : variantQueryFields.getStudyMetadatas().values()) {
+            VariantStudyMetadata variantStudyMetadata = toVariantStudyMetadata(studyMetadata,
+                    variantQueryFields.getSamples().get(studyMetadata.getId()),
+                    variantQueryFields.getFiles().get(studyMetadata.getId()));
+            studies.add(variantStudyMetadata);
         }
 
         Species species = Species.newBuilder()
@@ -48,27 +54,32 @@ public class VariantMetadataConverter {
 
     }
 
-    public VariantStudyMetadata toVariantStudyMetadata(StudyConfiguration studyConfiguration) {
-        return toVariantStudyMetadata(studyConfiguration, null, null);
+    public VariantStudyMetadata toVariantStudyMetadata(StudyMetadata studyMetadata) {
+        return toVariantStudyMetadata(studyMetadata, null, null);
     }
 
-    public VariantStudyMetadata toVariantStudyMetadata(StudyConfiguration studyConfiguration,
+    public VariantStudyMetadata toVariantStudyMetadata(StudyMetadata studyMetadata,
                                                        List<Integer> returnedSamples,
                                                        List<Integer> returnedFiles) {
 
-        List<VariantFileMetadata> fileMetadata = new ArrayList<>(studyConfiguration.getIndexedFiles().size());
+        int studyId = studyMetadata.getId();
+        LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(studyId);
+        if (returnedFiles == null) {
+            returnedFiles = new ArrayList<>(indexedFiles);
+        }
+        List<VariantFileMetadata> fileMetadata = new ArrayList<>(returnedFiles.size());
 
-        for (Integer fileId : studyConfiguration.getIndexedFiles()) {
-            if (returnedFiles != null && !returnedFiles.contains(fileId)) {
+        for (Integer fileId : returnedFiles) {
+            if (!indexedFiles.contains(fileId)) {
                 continue;
             }
+            FileMetadata file = metadataManager.getFileMetadata(studyId, fileId);
+            LinkedHashSet<Integer> sampleIds = file.getSamples();
 
-            LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
-
-            List<String> sampleNames = toSampleNames(studyConfiguration, sampleIds);
+            List<String> sampleNames = toSampleNames(studyMetadata, sampleIds);
             fileMetadata.add(VariantFileMetadata.newBuilder()
-                    .setId(fileId.toString())
-                    .setPath(studyConfiguration.getFileIds().inverse().get(fileId))
+                    .setId(file.getName())
+                    .setPath(file.getPath())
                     .setSampleIds(sampleNames)
                     .build());
         }
@@ -77,34 +88,34 @@ public class VariantMetadataConverter {
 
         Collection<String> sampleNames;
         if (returnedSamples == null) {
-            sampleNames = StudyConfiguration.getSortedIndexedSamplesPosition(studyConfiguration).keySet();
+            sampleNames = metadataManager.getSamplesPosition(studyMetadata, null).keySet();
         } else {
-            sampleNames = toSampleNames(studyConfiguration, returnedSamples);
+            sampleNames = toSampleNames(studyMetadata, returnedSamples);
         }
         for (String sampleName : sampleNames) {
             individuals.add(createIndividual(sampleName));
         }
 
         ArrayList<Cohort> cohorts = new ArrayList<>();
-        for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
-            cohorts.add(getCohort(studyConfiguration, cohortId));
-        }
-        for (Integer cohortId : studyConfiguration.getInvalidStats()) {
-            cohorts.add(getCohort(studyConfiguration, cohortId));
+        metadataManager.cohortIterator(studyMetadata.getId()).forEachRemaining(cohortMetadata -> {
+            cohorts.add(getCohort(studyMetadata, cohortMetadata));
+        });
+
+        Map<String, String> attributes = new HashMap<>(studyMetadata.getAttributes().size());
+        for (String key : studyMetadata.getAttributes().keySet()) {
+            attributes.put(key, studyMetadata.getAttributes().getString(key));
         }
 
-        Map<String, String> attributes = new HashMap<>(studyConfiguration.getAttributes().size());
-        for (String key : studyConfiguration.getAttributes().keySet()) {
-            attributes.put(key, studyConfiguration.getAttributes().getString(key));
-        }
-
-        // Header from the StudyConfiguration stores variable attributes (where the value changes for every file) as unknown values.
+        // Header from the StudyMetadata stores variable attributes (where the value changes for every file) as unknown values.
         // We don't want to export those values at the aggregated header.
         // Copy the header and remove unknown attributes
-        VariantFileHeader studyHeader = studyConfiguration.getVariantHeader();
-        List<VariantFileHeaderSimpleLine> headerSimpleLines = new ArrayList<>(studyHeader.getSimpleLines().size());
-        studyHeader.getSimpleLines().forEach(line -> {
-            if (!StudyConfiguration.UNKNOWN_HEADER_ATTRIBUTE.equals(line.getValue())) {
+        VariantFileHeader studyHeader = studyMetadata.getVariantHeader();
+        List<VariantFileHeaderSimpleLine> simpleLines = studyHeader.getSimpleLines() == null
+                ? Collections.emptyList()
+                : studyHeader.getSimpleLines();
+        List<VariantFileHeaderSimpleLine> headerSimpleLines = new ArrayList<>(simpleLines.size());
+        simpleLines.forEach(line -> {
+            if (!StudyMetadata.UNKNOWN_HEADER_ATTRIBUTE.equals(line.getValue())) {
                 headerSimpleLines.add(line);
             }
         });
@@ -112,14 +123,14 @@ public class VariantMetadataConverter {
                 headerSimpleLines);
 
         return VariantStudyMetadata.newBuilder()
-                .setId(studyConfiguration.getStudyName())
+                .setId(studyMetadata.getName())
                 .setDescription(null)
                 .setStats(null)
                 .setFiles(fileMetadata)
                 .setIndividuals(individuals)
                 .setCohorts(cohorts)
                 .setSampleSetType(SampleSetType.UNKNOWN)
-                .setAggregation(studyConfiguration.getAggregation())
+                .setAggregation(studyMetadata.getAggregation())
                 .setAggregatedHeader(aggregatedHeader)
                 .setAttributes(attributes)
                 .build();
@@ -134,18 +145,17 @@ public class VariantMetadataConverter {
                 .build();
     }
 
-    protected Cohort getCohort(StudyConfiguration studyConfiguration, Integer cohortId) {
+    protected Cohort getCohort(StudyMetadata studyMetadata, CohortMetadata cohortMetadata) {
         return Cohort.newBuilder()
-                .setId(studyConfiguration.getCohortIds().inverse().get(cohortId))
-                .setSampleIds(toSampleNames(studyConfiguration, studyConfiguration.getCohorts().get(cohortId)))
+                .setId(cohortMetadata.getName())
+                .setSampleIds(toSampleNames(studyMetadata, cohortMetadata.getSamples()))
                 .setSampleSetType(SampleSetType.UNKNOWN)
                 .build();
     }
 
-    protected List<String> toSampleNames(StudyConfiguration studyConfiguration, Collection<Integer> sampleIds) {
+    protected List<String> toSampleNames(StudyMetadata studyMetadata, Collection<Integer> sampleIds) {
         List<String> sampleNames = new ArrayList<>(sampleIds.size());
-        BiMap<Integer, String> sampleIdToSampleName = studyConfiguration.getSampleIds().inverse();
-        sampleIds.forEach(sampleId -> sampleNames.add(sampleIdToSampleName.get(sampleId)));
+        sampleIds.forEach(sampleId -> sampleNames.add(metadataManager.getSampleName(studyMetadata.getId(), sampleId)));
         return sampleNames;
     }
 
@@ -182,10 +192,10 @@ public class VariantMetadataConverter {
         return studyConfigurations;
     }
 
-    protected List<Integer> toSampleIds(StudyConfiguration sc, Collection<String> sampleNames) {
+    protected List<Integer> toSampleIds(StudyMetadata studyMetadata, Collection<String> sampleNames) {
         List<Integer> sampleIds = new ArrayList<>(sampleNames.size());
         sampleNames.forEach(sampleName -> {
-            Integer sampleId = sc.getSampleIds().get(sampleName);
+            Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sampleName);
             // Skip non exported samples
             if (sampleId != null) {
                 sampleIds.add(sampleId);

@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.mongodb.metadata;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.StudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantFileMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
 /**
@@ -32,18 +29,45 @@ public class MongoDBVariantStorageMetadataDBAdaptorFactory implements VariantSto
     }
 
     @Override
-    public StudyConfigurationAdaptor buildStudyConfigurationDBAdaptor() {
-        return new MongoDBStudyConfigurationDBAdaptor(db, options.getString(
+    public StudyMetadataDBAdaptor buildStudyMetadataDBAdaptor() {
+        return new MongoDBStudyMetadataDBAdaptor(db, options.getString(
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.key(),
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.defaultValue()
                 ));
     }
 
     @Override
-    public VariantFileMetadataDBAdaptor buildVariantFileMetadataDBAdaptor() {
-        return new MongoDBVariantFileMetadataDBAdaptor(db, options.getString(
+    public SampleMetadataDBAdaptor buildSampleMetadataDBAdaptor() {
+        return new MongoDBSampleMetadataDBAdaptor(db, options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_SAMPLES.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_SAMPLES.defaultValue()
+        ));
+    }
+
+    @Override
+    public CohortMetadataDBAdaptor buildCohortMetadataDBAdaptor() {
+        return new MongoDBCohortMetadataDBAdaptor(db, options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_COHORTS.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_COHORTS.defaultValue()
+        ));
+    }
+
+    @Override
+    public TaskMetadataDBAdaptor buildTaskDBAdaptor() {
+        return new MongoDBTaskMetadataDBAdaptor(db, options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_TASKS.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_TASKS.defaultValue()
+        ));
+    }
+
+    @Override
+    public FileMetadataDBAdaptor buildFileMetadataDBAdaptor() {
+        return new MongoDBFileMetadataDBAdaptor(db, options.getString(
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES.key(),
                 MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES.defaultValue()
+        ), options.getString(
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.key(),
+                MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES.defaultValue()
         ));
     }
 }

@@ -28,14 +28,14 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.slf4j.Logger;
@@ -75,8 +75,9 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         String storageEngine = "hadoop"; //
         ObjectMap options = new ObjectMap(); // empty
         ProjectMetadata projectMetadata;
-        try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()))) {
-            projectMetadata = scm.getProjectMetadata().first();
+        HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper());
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
+            projectMetadata = scm.getProjectMetadata();
         }
         try {
             // FIXME! This is WRONG. Should read StorageConfigurationFile from client

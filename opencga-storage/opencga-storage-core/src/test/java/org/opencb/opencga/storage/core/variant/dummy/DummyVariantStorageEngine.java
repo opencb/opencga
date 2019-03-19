@@ -16,19 +16,18 @@
 
 package org.opencb.opencga.storage.core.variant.dummy;
 
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -77,28 +76,26 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        List<Integer> fileIds = preRemoveFiles(study, files).getFileIds();
+        TaskMetadata task = preRemoveFiles(study, files);
         try {
             Thread.sleep(1);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        postRemoveFiles(study, fileIds, false);
+        postRemoveFiles(study, task.getFileIds(), task.getId(), false);
     }
 
     @Override
     public void removeStudy(String studyName) throws StorageEngineException {
-        getStudyConfigurationManager().lockAndUpdate(studyName, studyConfiguration -> {
-            studyConfiguration.getIndexedFiles().clear();
-            studyConfiguration.getCalculatedStats().clear();
-            studyConfiguration.getInvalidStats().clear();
-            studyConfiguration.getCohorts().put(studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT), Collections.emptySet());
-            return studyConfiguration;
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        metadataManager.updateStudyMetadata(studyName, studyMetadata -> {
+            metadataManager.removeIndexedFiles(studyMetadata.getId(), metadataManager.getIndexedFiles(studyMetadata.getId()));
+            return studyMetadata;
         });
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager() throws StorageEngineException {
-        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+    public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
+        return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 }

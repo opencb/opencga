@@ -210,11 +210,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             StringBuilder commandLine = new StringBuilder(binAnalysis).append(' ');
             if (job.getToolId().equals("opencga-analysis")) {
-                commandLine.append(job.getExecution()).append(' ');
+                commandLine.append(job.getExecution());
             } else {
-                commandLine.append("tools execute ");
+                commandLine.append("tools execute");
             }
-            commandLine.append("--job ").append(job.getUid()).append(' ');
+            commandLine.append(" ")
+                    .append("--job ").append(job.getUid())
+                    .append(" --outdir ").append(path)
+                    .append(" --study ").append(job.getAttributes().get(Job.OPENCGA_STUDY));
 
             logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
             try {

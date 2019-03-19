@@ -21,7 +21,7 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataConverter;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ import java.util.Map;
  */
 public class VariantMetadataImporter {
 
-    public VariantMetadata importMetaData(URI inputUri, StudyConfigurationManager scm) throws IOException {
+    public VariantMetadata importMetaData(URI inputUri, VariantStorageMetadataManager scm) throws IOException {
 
         // Check if can be loaded
         Map<String, Integer> studies = scm.getStudies(QueryOptions.empty());
@@ -49,7 +49,7 @@ public class VariantMetadataImporter {
 
         // Load metadata
         VariantMetadata metadata = readMetadata(inputUri);
-        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter().toStudyConfigurations(metadata);
+        List<StudyConfiguration> studyConfigurations = new VariantMetadataConverter(scm).toStudyConfigurations(metadata);
 
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
             processStudyConfiguration(studyConfiguration);

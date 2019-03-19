@@ -50,14 +50,16 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -179,7 +181,7 @@ public class FileManager extends AnnotationSetManager<File> {
             String variantPathName = getOriginalFile(transformedFile.getPath());
             if (variantPathName == null) {
                 // Skip the file.
-                logger.warn("The file {} is not a variant transformed file", transformedFile.getName());
+                logger.debug("The file {} is not a variant transformed file", transformedFile.getName());
                 continue;
             }
 
@@ -1461,7 +1463,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         MyResource<File> resource = new MyResource<>(userId, study, file);
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, fileDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                VariableSet.AnnotableDataModels.FILE, fileDBAdaptor);
 
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         fileDBAdaptor.update(file.getUid(), parameters, variableSetList, options);
@@ -1807,6 +1810,8 @@ public class FileManager extends AnnotationSetManager<File> {
         authorizationManager.checkFilePermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
                 FileAclEntry.FilePermissions.DOWNLOAD);
         URI fileUri = getUri(resource.getResource());
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.download, AuditRecord.Magnitude.medium,
+                resource.getResource().getUuid(), resource.getUser(), null, null, "File download", null);
         return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
     }
 
@@ -1977,7 +1982,7 @@ public class FileManager extends AnnotationSetManager<File> {
         attributes.putIfNotNull(Job.OPENCGA_STUDY, resource.getStudy().getFqn());
 
         logger.info("job description: " + description);
-        jobQueryResult = catalogManager.getJobManager().queue(studyStr, jobName, description, "opencga-analysis.sh",
+        jobQueryResult = catalogManager.getJobManager().queue(studyStr, jobName, "variant_index", description, null,
                 Job.Type.INDEX, params, fileIdList, outputList, outDir, attributes, sessionId);
         jobQueryResult.first().setToolId(jobName);
 
@@ -2328,8 +2333,8 @@ public class FileManager extends AnnotationSetManager<File> {
         String studyFilePath = studyUri.resolve(catalogFilePath).getPath();
         String originalFilePath = fileUri.getPath();
 
-        logger.info("Study file path: {}", studyFilePath);
-        logger.info("File path: {}", originalFilePath);
+        logger.debug("Study file path: {}", studyFilePath);
+        logger.debug("File path: {}", originalFilePath);
         return !studyFilePath.equals(originalFilePath);
     }
 

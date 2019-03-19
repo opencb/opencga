@@ -27,11 +27,10 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -42,11 +41,8 @@ import java.util.stream.Collectors;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class StudyConfiguration {
-
-    public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
-    private int studyId;
-    private String studyName;
+@Deprecated
+public class StudyConfiguration extends StudyMetadata {
 
     private BiMap<String, Integer> fileIds;
     private BiMap<String, Integer> filePaths;
@@ -65,10 +61,10 @@ public class StudyConfiguration {
     private Set<Integer> invalidStats;
 
     private Map<Integer, Integer> searchIndexedSampleSets;
-    private Map<Integer, BatchFileOperation.Status> searchIndexedSampleSetsStatus;
+    private Map<Integer, TaskMetadata.Status> searchIndexedSampleSetsStatus;
 
 
-    private List<BatchFileOperation> batches;
+    private List<TaskMetadata> batches;
 
     private Aggregation aggregation;
 
@@ -76,9 +72,6 @@ public class StudyConfiguration {
 
     private VariantFileHeader variantHeader;
 
-    private ObjectMap attributes;
-
-    private Logger logger = LoggerFactory.getLogger(StudyConfiguration.class);
 
     protected StudyConfiguration() {
     }
@@ -88,8 +81,8 @@ public class StudyConfiguration {
     }
 
     public void copy(StudyConfiguration other) {
-        this.studyId = other.studyId;
-        this.studyName = other.studyName;
+        this.setId(other.getId());
+        this.setName(other.getName());
         this.fileIds = HashBiMap.create(other.fileIds == null ? Collections.emptyMap() : other.fileIds);
         this.filePaths = HashBiMap.create(other.filePaths == null ? Collections.emptyMap() : other.filePaths);
         this.sampleIds = HashBiMap.create(other.sampleIds == null ? Collections.emptyMap() : other.sampleIds);
@@ -105,8 +98,8 @@ public class StudyConfiguration {
         this.searchIndexedSampleSetsStatus = other.searchIndexedSampleSetsStatus == null
                 ? new HashMap<>() : new HashMap<>(other.searchIndexedSampleSetsStatus);
         this.batches = new ArrayList<>(other.batches.size());
-        for (BatchFileOperation batch : other.batches) {
-            this.batches.add(new BatchFileOperation(batch));
+        for (TaskMetadata batch : other.batches) {
+            this.batches.add(new TaskMetadata(batch));
         }
         this.aggregation = other.aggregation;
         this.timeStamp = other.timeStamp;
@@ -116,7 +109,7 @@ public class StudyConfiguration {
             this.variantHeader = VariantFileHeader.newBuilder(other.variantHeader).setVersion("").build();
         }
 
-        this.attributes = new ObjectMap(other.attributes);
+        this.setAttributes(new ObjectMap(other.getAttributes()));
     }
 
     public StudyConfiguration newInstance() {
@@ -135,8 +128,8 @@ public class StudyConfiguration {
     public StudyConfiguration(int studyId, String studyName, Map<String, Integer> fileIds,
                               Map<String, Integer> sampleIds, Map<String, Integer> cohortIds,
                               Map<Integer, Set<Integer>> cohorts) {
-        this.studyId = studyId;
-        this.studyName = studyName;
+        this.setId(studyId);
+        this.setName(studyName);
         this.fileIds = HashBiMap.create(fileIds == null ? Collections.emptyMap() : fileIds);
         this.filePaths = HashBiMap.create();
         this.sampleIds = HashBiMap.create(sampleIds == null ? Collections.emptyMap() : sampleIds);
@@ -153,7 +146,7 @@ public class StudyConfiguration {
         this.aggregation = Aggregation.NONE;
         this.timeStamp = 0L;
         this.variantHeader = VariantFileHeader.newBuilder().setVersion("").build();
-        this.attributes = new ObjectMap();
+        this.setAttributes(new ObjectMap());
     }
 
     @Deprecated
@@ -178,8 +171,8 @@ public class StudyConfiguration {
 
     public String toString(ToStringStyle style) {
         return new ToStringBuilder(this, style)
-                .append("studyId", studyId)
-                .append("studyName", studyName)
+                .append("studyId", getId())
+                .append("studyName", getName())
                 .append("fileIds", fileIds)
                 .append("filePaths", filePaths)
                 .append("sampleIds", sampleIds)
@@ -193,24 +186,16 @@ public class StudyConfiguration {
                 .append("batches", batches)
                 .append("aggregation", aggregation)
                 .append("timeStamp", timeStamp)
-                .append("attributes", attributes)
+                .append("attributes", getAttributes())
                 .toString();
     }
 
-    public int getStudyId() {
-        return studyId;
-    }
-
     public void setStudyId(int studyId) {
-        this.studyId = studyId;
-    }
-
-    public String getStudyName() {
-        return studyName;
+        this.setId(studyId);
     }
 
     public void setStudyName(String studyName) {
-        this.studyName = studyName;
+        this.setName(studyName);
     }
 
     public BiMap<String, Integer> getFileIds() {
@@ -304,25 +289,25 @@ public class StudyConfiguration {
         return this;
     }
 
-    public Map<Integer, BatchFileOperation.Status> getSearchIndexedSampleSetsStatus() {
+    public Map<Integer, TaskMetadata.Status> getSearchIndexedSampleSetsStatus() {
         return searchIndexedSampleSetsStatus;
     }
 
-    public StudyConfiguration setSearchIndexedSampleSetsStatus(Map<Integer, BatchFileOperation.Status> searchIndexedSampleSetsStatus) {
+    public StudyConfiguration setSearchIndexedSampleSetsStatus(Map<Integer, TaskMetadata.Status> searchIndexedSampleSetsStatus) {
         this.searchIndexedSampleSetsStatus = searchIndexedSampleSetsStatus;
         return this;
     }
 
-    public List<BatchFileOperation> getBatches() {
+    public List<TaskMetadata> getBatches() {
         return batches;
     }
 
-    public StudyConfiguration setBatches(List<BatchFileOperation> batches) {
+    public StudyConfiguration setBatches(List<TaskMetadata> batches) {
         this.batches = batches;
         return this;
     }
 
-    public BatchFileOperation lastBatch() {
+    public TaskMetadata lastBatch() {
         return getBatches().get(getBatches().size() - 1);
     }
 
@@ -347,8 +332,9 @@ public class StudyConfiguration {
         return timeStamp;
     }
 
-    public void setTimeStamp(Long timeStamp) {
+    public StudyConfiguration setTimeStamp(Long timeStamp) {
         this.timeStamp = timeStamp;
+        return this;
     }
 
     public VariantFileHeader getVariantHeader() {
@@ -374,12 +360,10 @@ public class StudyConfiguration {
         return this;
     }
 
-    public ObjectMap getAttributes() {
-        return attributes;
-    }
 
-    public void setAttributes(ObjectMap attributes) {
-        this.attributes = attributes;
+    public StudyConfiguration setAttributes(ObjectMap attributes) {
+        super.setAttributes(attributes);
+        return this;
     }
 
     @Override
@@ -392,8 +376,8 @@ public class StudyConfiguration {
         }
 
         StudyConfiguration that = (StudyConfiguration) o;
-        return studyId == that.studyId
-                && Objects.equals(studyName, that.studyName)
+        return getId() == that.getId()
+                && Objects.equals(getName(), that.getName())
                 && Objects.equals(fileIds, that.fileIds)
                 && Objects.equals(filePaths, that.filePaths)
                 && Objects.equals(sampleIds, that.sampleIds)
@@ -407,13 +391,14 @@ public class StudyConfiguration {
                 && Objects.equals(batches, that.batches)
                 && aggregation == that.aggregation
                 && Objects.equals(timeStamp, that.timeStamp)
-                && Objects.equals(attributes, that.attributes);
+                && Objects.equals(getAttributes(), that.getAttributes());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(studyId, studyName, fileIds, filePaths, sampleIds, cohortIds, cohorts, indexedFiles, headers, samplesInFiles,
-                calculatedStats, invalidStats, batches, aggregation, timeStamp, attributes);
+        return Objects.hash(getId(), getName(), fileIds, filePaths, sampleIds, cohortIds, cohorts, indexedFiles, headers,
+                samplesInFiles,
+                calculatedStats, invalidStats, batches, aggregation, timeStamp, getAttributes());
     }
 
     public static <T, R> BiMap<R, T> inverseMap(BiMap<T, R> map) {
@@ -492,12 +477,14 @@ public class StudyConfiguration {
      * @param includeSamples        List of samples to be included in the result
      * @return The samples IDs
      */
+    @Deprecated
     public static LinkedHashMap<String, Integer> getSamplesPosition(
             StudyConfiguration studyConfiguration,
             LinkedHashSet<?> includeSamples) {
         return getSamplesPosition(studyConfiguration, includeSamples, StudyConfiguration::getIndexedSamplesPosition);
     }
 
+    @Deprecated
     public static LinkedHashMap<String, Integer> getSamplesPosition(
             StudyConfiguration studyConfiguration,
             LinkedHashSet<?> includeSamples,
@@ -537,41 +524,4 @@ public class StudyConfiguration {
         return samplesPosition;
     }
 
-    public void addVariantFileHeader(VariantFileHeader header, List<String> formats) {
-        Map<String, Map<String, VariantFileHeaderComplexLine>> map = new HashMap<>();
-        for (VariantFileHeaderComplexLine line : this.variantHeader.getComplexLines()) {
-            Map<String, VariantFileHeaderComplexLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
-            keyMap.put(line.getId(), line);
-        }
-        for (VariantFileHeaderComplexLine line : header.getComplexLines()) {
-            if (formats == null || !line.getKey().equalsIgnoreCase("format") || formats.contains(line.getId())) {
-                Map<String, VariantFileHeaderComplexLine> keyMap = map.computeIfAbsent(line.getKey(), key -> new HashMap<>());
-                if (keyMap.containsKey(line.getId())) {
-                    VariantFileHeaderComplexLine prevLine = keyMap.get(line.getId());
-                    if (!prevLine.equals(line)) {
-                        logger.warn("Previous header line does not match with new header. previous: " + prevLine + " , new: " + line);
-//                        throw new IllegalArgumentException();
-                    }
-                } else {
-                    keyMap.put(line.getId(), line);
-                    variantHeader.getComplexLines().add(line);
-                }
-            }
-        }
-        Map<String, String> simpleLines = this.variantHeader.getSimpleLines()
-                .stream()
-                .collect(Collectors.toMap(VariantFileHeaderSimpleLine::getKey, VariantFileHeaderSimpleLine::getValue));
-        header.getSimpleLines().forEach((line) -> {
-            String oldValue = simpleLines.put(line.getKey(), line.getValue());
-            if (oldValue != null && !oldValue.equals(line.getValue())) {
-                // If the value changes among files, replace it with a dot, as it is an unknown value.
-                simpleLines.put(line.getKey(), UNKNOWN_HEADER_ATTRIBUTE);
-//                throw new IllegalArgumentException();
-            }
-        });
-        this.variantHeader.setSimpleLines(simpleLines.entrySet()
-                .stream()
-                .map(e -> new VariantFileHeaderSimpleLine(e.getKey(), e.getValue()))
-                .collect(Collectors.toList()));
-    }
 }

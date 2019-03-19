@@ -502,14 +502,14 @@ public class JobManager extends ResourceManager<Job> {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    public QueryResult<Job> queue(String studyStr, String jobName, String description, String executable, Job.Type type,
+    public QueryResult<Job> queue(String studyStr, String jobName, String toolId, String description, String execution, Job.Type type,
                                   Map<String, String> params, List<File> input, List<File> output, File outDir,
                                   Map<String, Object> attributes, String token)
             throws CatalogException {
-        Job job = new Job(jobName, null, executable, type, input, output, outDir, params, -1)
-                .setDescription(description)
-                .setToolId("variant_index")
-                .setAttributes(attributes);
+        Job job = new Job(jobName, toolId, execution, type, description, params, attributes)
+                .setInput(input)
+                .setOutput(output)
+                .setOutDir(outDir);
 
         return create(studyStr, job, QueryOptions.empty(), token);
     }

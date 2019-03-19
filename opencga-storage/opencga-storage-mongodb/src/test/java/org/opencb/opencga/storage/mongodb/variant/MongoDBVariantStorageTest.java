@@ -83,10 +83,12 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
 
     default void clearDB(String dbName) throws Exception {
         MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials();
-        logger.info("Cleaning MongoDB {}", credentials.getMongoDbName());
+//        String mongoDbName = credentials.getMongoDbName();
+        String mongoDbName = dbName;
+        logger.info("Cleaning MongoDB {}", mongoDbName);
         try (MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses())) {
-            mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-            mongoManager.drop(credentials.getMongoDbName());
+            mongoManager.get(mongoDbName, credentials.getMongoDBConfiguration());
+            mongoManager.drop(mongoDbName);
         }
     }
 

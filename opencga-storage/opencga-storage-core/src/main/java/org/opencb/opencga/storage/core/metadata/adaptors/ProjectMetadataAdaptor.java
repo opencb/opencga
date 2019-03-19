@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 
 import java.io.IOException;
@@ -28,5 +28,10 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
     default void close() throws IOException {
     }
 
-    int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException;
+    @Deprecated
+    default int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
+        return generateId(studyConfiguration == null ? null : studyConfiguration.getId(), idType);
+    }
+
+    int generateId(Integer studyId, String idType) throws StorageEngineException;
 }

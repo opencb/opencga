@@ -454,6 +454,12 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--sample-metadata"}, description = SAMPLE_METADATA_DESCR)
         public boolean samplesMetadata;
 
+        @Parameter(names = {"--sample-limit"}, description = SAMPLE_LIMIT_DESCR)
+        public int sampleLimit;
+
+        @Parameter(names = {"--sample-skip"}, description = SAMPLE_SKIP_DESCR)
+        public int sampleSkip;
+
         @Parameter(names = {"--summary"}, description = "Fast fetch of main variant parameters")
         public boolean summary;
 

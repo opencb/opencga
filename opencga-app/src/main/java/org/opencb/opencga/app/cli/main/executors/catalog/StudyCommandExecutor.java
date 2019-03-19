@@ -166,16 +166,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         StudyCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
 
-        ObjectMap params;
-        if (StringUtils.isNotEmpty(commandOptions.json)) {
-            params = loadFile(commandOptions.json);
-        } else {
-            params = new ObjectMap();
-            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(commandOptions.type));
-            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), commandOptions.alias);
-            params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
-        }
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(commandOptions.type));
+        params.put(StudyDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        params.putIfNotEmpty("alias", commandOptions.alias);
 
         return openCGAClient.getStudyClient().create(commandOptions.project, commandOptions.id, params);
     }
@@ -299,7 +294,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
 
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
-                studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users);
+                studiesCommandOptions.groupsCreateCommandOptions.groupId,
+                studiesCommandOptions.groupsCreateCommandOptions.groupName, studiesCommandOptions.groupsCreateCommandOptions.users);
     }
 
     private QueryResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {

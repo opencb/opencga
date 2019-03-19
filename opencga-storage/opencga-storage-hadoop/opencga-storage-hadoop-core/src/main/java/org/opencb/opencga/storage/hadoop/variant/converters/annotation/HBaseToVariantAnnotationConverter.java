@@ -23,6 +23,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
@@ -32,7 +33,8 @@ import org.opencb.biodata.models.variant.avro.EthnicCategory;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.Converter;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.commons.utils.CompressionUtils;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -40,9 +42,9 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
 import java.io.IOException;
@@ -53,6 +55,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 
@@ -142,12 +145,27 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     public VariantAnnotation convert(Result result) {
         VariantAnnotation variantAnnotation = null;
 
-        byte[] value = result.getValue(columnFamily, annotationColumn);
-        if (ArrayUtils.isNotEmpty(value)) {
+        Cell cell = result.getColumnLatestCell(columnFamily, annotationColumn);
+        if (cell != null && cell.getValueLength() > 0) {
             try {
-                variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                if (cell.getValueArray()[cell.getValueOffset()] == '{') {
+                    // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
+                    try {
+                        variantAnnotation = objectMapper.readValue(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength(),
+                                VariantAnnotation.class);
+                    } catch (IOException e) {
+                        byte[] value = CompressionUtils.decompress(CellUtil.cloneValue(cell));
+                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                    }
+                } else {
+                    // Value is compressed. Decompress and parse
+                    byte[] value = CompressionUtils.decompress(CellUtil.cloneValue(cell));
+                    variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
+            } catch (DataFormatException e) {
+                throw new IllegalStateException(e);
             }
         }
         List<Integer> releases = new ArrayList<>();
@@ -194,15 +212,23 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         Integer column = findColumn(resultSet, annotationColumnStr);
         if (column != null) {
             try {
-                    String value = resultSet.getString(column);
-                    if (StringUtils.isNotEmpty(value)) {
+                byte[] value = resultSet.getBytes(column);
+                if (value != null && value.length > 0) {
+                    if (value[0] == '{') {
+                        // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
                         try {
                             variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                         } catch (IOException e) {
-                            throw new UncheckedIOException(e);
+                            value = CompressionUtils.decompress(value);
+                            variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                         }
+                    } else {
+                        // Value is compressed. Decompress and parse
+                        value = CompressionUtils.decompress(value);
+                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
                     }
-            } catch (SQLException e) {
+                }
+            } catch (IOException | DataFormatException | SQLException e) {
                 // This should never happen!
                 throw new IllegalStateException(e);
             }

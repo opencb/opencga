@@ -1,0 +1,108 @@
+package org.opencb.opencga.analysis.clinical;
+
+import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.AnalysisResult;
+import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, List<Variant>>> {
+
+    private Query query;
+
+    private static Query defaultQuery;
+
+    static {
+        defaultQuery = new Query()
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
+    }
+
+    public CompoundHeterozygousAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Query query,
+                                        Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+                                        Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome,
+                                        String token) {
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, config, studyStr, opencgaHome, token);
+        this.query = new Query(defaultQuery);
+        this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
+                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+
+        if (MapUtils.isNotEmpty(query)) {
+            this.query.putAll(query);
+        }
+    }
+
+    @Override
+    public AnalysisResult<Map<String, List<Variant>>> execute() throws Exception {
+        StopWatch watcher = StopWatch.createStarted();
+
+        // Get and check clinical analysis and proband
+        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
+        Individual proband = getProband(clinicalAnalysis);
+
+        // Get pedigree
+        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
+
+        // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
+        // samples easily)
+        Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);
+
+        Map<String, List<String>> genotypeMap = ModeOfInheritance.compoundHeterozygous(pedigree);
+        logger.debug("CH Clinical Analysis: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(clinicalAnalysis));
+        logger.debug("CH Pedigree: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(pedigree));
+        logger.debug("CH Pedigree proband: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(pedigree.getProband()));
+        logger.debug("CH Genotype: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(genotypeMap));
+        logger.debug("CH Proband: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(proband));
+        logger.debug("CH Sample map: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(sampleMap));
+
+        List<String> samples = new ArrayList<>();
+        List<String> genotypeList = new ArrayList<>();
+
+        for (Map.Entry<String, List<String>> entry : genotypeMap.entrySet()) {
+            if (sampleMap.containsKey(entry.getKey())) {
+                samples.add(sampleMap.get(entry.getKey()));
+                genotypeList.add(sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR));
+            }
+        }
+
+        int probandSampleIdx = samples.indexOf(proband.getSamples().get(0).getId());
+        int fatherSampleIdx = samples.indexOf(proband.getFather().getSamples().get(0).getId());
+        int motherSampleIdx = samples.indexOf(proband.getMother().getSamples().get(0).getId());
+
+        if (genotypeList.isEmpty()) {
+            logger.error("No genotypes found");
+            return null;
+        }
+        query.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
+
+        cleanQuery(query);
+        logger.debug("CH Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
+        VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
+        Map<String, List<Variant>> variantMap =
+                ModeOfInheritance.compoundHeterozygous(iterator, probandSampleIdx, motherSampleIdx, fatherSampleIdx);
+
+        logger.debug("CH time: {}", watcher.getTime());
+        return new AnalysisResult<>(variantMap, Math.toIntExact(watcher.getTime()), null);
+    }
+
+}

@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.search;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.phoenix.schema.types.PBoolean;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 
 import java.util.List;
 

@@ -6,19 +6,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -36,44 +36,51 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
 public class VariantMongoDBQueryParserTest {
 
     private VariantMongoDBQueryParser parser;
-    private StudyConfigurationManager scm;
+    private VariantStorageMetadataManager metadataManager;
 
     @Before
     public void setUp() throws Exception {
-        DummyStudyConfigurationAdaptor.clear();
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
-        parser = new VariantMongoDBQueryParser(scm);
-        scm.updateStudyConfiguration(newStudyConfiguration(1, Arrays.asList(1, 2, 3, 4), false), null);
-        scm.updateStudyConfiguration(newStudyConfiguration(2, Arrays.asList(1, 2, 3, 4), true), null);
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        parser = new VariantMongoDBQueryParser(metadataManager);
+
+        newStudy("study_1", 4, false);
+        newStudy("study_2", 4, true);
     }
 
     @After
     public void tearDown() throws Exception {
-        DummyStudyConfigurationAdaptor.clear();
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
     }
 
-    protected StudyConfiguration newStudyConfiguration(int studyId, List<Integer> fileIds, boolean sameSamples) {
-        StudyConfiguration sc = new StudyConfiguration(studyId, "study_" + studyId);
-        for (Integer fileId : fileIds) {
-            sc.getFileIds().put("file_" + fileId, fileId);
+    protected StudyMetadata newStudy(String studyName, int files, boolean sameSamples) throws StorageEngineException {
+        StudyMetadata sm = metadataManager.createStudy(studyName);
+        int studyId = sm.getId();
+        for (int fileIdx = 1; fileIdx <= files; fileIdx++) {
+            int fileId = metadataManager.registerFile(studyId, "/data/file_" + fileIdx);
+
             LinkedHashSet<Integer> samplesInFile = new LinkedHashSet<>();
-            for (int i = 1; i <= 5; i++) {
+            for (int sampleIdx = 1; sampleIdx <= 5; sampleIdx++) {
                 int sampleId;
                 if (sameSamples) {
-                    sampleId = studyId * 10000 + i;
+                    sampleId = studyId * 10000 + sampleIdx;
                 } else {
-                    sampleId = studyId * 10000 + 100 * fileId + i;
+                    sampleId = studyId * 10000 + 100 * fileId + sampleIdx;
                 }
                 samplesInFile.add(sampleId);
-                sc.getSampleIds().put("sample_" + sampleId, sampleId);
+                metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, sampleId, "sample_" + sampleId));
             }
-            sc.getSamplesInFiles().put(fileId, samplesInFile);
+            metadataManager.updateFileMetadata(studyId, fileId, fileMetadata -> fileMetadata.setSamples(samplesInFile));
+            metadataManager.addIndexedFiles(studyId, Collections.singletonList(fileId));
         }
-        sc.setIndexedFiles(new LinkedHashSet<>(fileIds));
-        sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), "0/1,1/1,?/?");
-        sc.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
 
-        return sc;
+        metadataManager.updateStudyMetadata(studyId, studyMetadata -> {
+            studyMetadata.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), "0/1,1/1,?/?");
+            studyMetadata.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
+            return studyMetadata;
+        });
+
+        return sm;
     }
 
     @Test
@@ -106,11 +113,13 @@ public class VariantMongoDBQueryParserTest {
     }
 
     @Test
-    public void testQuerySampleAddMultipleFile() {
-        StudyConfiguration sc = scm.getStudyConfiguration(2, null).first();
-        sc.getIndexedFiles().add(4);
-        sc.getSamplesInFiles().put(4, new LinkedHashSet<>());
-        scm.updateStudyConfiguration(sc, null);
+    public void testQuerySampleAddMultipleFile() throws StorageEngineException {
+        int studyId = metadataManager.getStudyId("study_2");
+        metadataManager.updateFileMetadata(studyId, 4, fileMetadata -> {
+            fileMetadata.setSamples(new LinkedHashSet<>());
+            return fileMetadata;
+        });
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(4));
 
         // Now, in Study2, not all the files have the same samples, so the parser must add fileId : $in:[1,2,3]
         // Improvement to #641
@@ -127,18 +136,22 @@ public class VariantMongoDBQueryParserTest {
     }
 
     @Test
-    public void testQuerySampleAddMultipleFileOr() {
-        StudyConfiguration sc = scm.getStudyConfiguration(2, null).first();
-        sc.getSampleIds().put("sample_20004", 4);
-        sc.getSampleIds().put("sample_20005", 5);
-        sc.getSampleIds().put("sample_20006", 6);
-        sc.getIndexedFiles().add(4);
-        sc.getSamplesInFiles().put(4, new LinkedHashSet<>(Arrays.asList(4, 5, 6)));
-        sc.getIndexedFiles().add(5);
-        sc.getSamplesInFiles().put(5, new LinkedHashSet<>(Arrays.asList(4, 5, 6)));
-        sc.getIndexedFiles().add(10);
-        sc.getSamplesInFiles().put(10, new LinkedHashSet<>(Arrays.asList(10)));
-        scm.updateStudyConfiguration(sc, null);
+    public void testQuerySampleAddMultipleFileOr() throws StorageEngineException {
+
+        int studyId = metadataManager.getStudyId("study_2");
+        DummyStudyMetadataDBAdaptor.SAMPLE_METADATA_MAP.get(studyId).remove(20004); // Replace SampleID
+        DummyStudyMetadataDBAdaptor.SAMPLE_METADATA_MAP.get(studyId).remove(20005); // Replace SampleID
+        DummyStudyMetadataDBAdaptor.SAMPLE_METADATA_MAP.get(studyId).remove(20006); // Replace SampleID
+        metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 4, "sample_20004"));
+        metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 5, "sample_20005"));
+        metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 6, "sample_20006"));
+//        metadataManager.registerSamples(studyId, Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
+        metadataManager.registerFileSamples(studyId, 4, Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
+        metadataManager.registerFile(studyId, "file_5", Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(4));
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(5));
+
+        metadataManager.registerFile(studyId, "file_10", Collections.singletonList("sample_20010"));
 
         // Now, in Study2, not all the files have the same samples, so the parser must add fileId : $in:[1,2,3]
         // Improvement to #641
@@ -156,18 +169,21 @@ public class VariantMongoDBQueryParserTest {
     }
 
     @Test
-    public void testQuerySampleAddMultipleFileAnd() {
-        StudyConfiguration sc = scm.getStudyConfiguration(2, null).first();
-        sc.getSampleIds().put("sample_20004", 4);
-        sc.getSampleIds().put("sample_20005", 5);
-        sc.getSampleIds().put("sample_20006", 6);
-        sc.getIndexedFiles().add(4);
-        sc.getSamplesInFiles().put(4, new LinkedHashSet<>(Arrays.asList(4, 5, 6)));
-        sc.getIndexedFiles().add(5);
-        sc.getSamplesInFiles().put(5, new LinkedHashSet<>(Arrays.asList(4, 5, 6)));
-        sc.getIndexedFiles().add(10);
-        sc.getSamplesInFiles().put(10, new LinkedHashSet<>(Arrays.asList(10)));
-        scm.updateStudyConfiguration(sc, null);
+    public void testQuerySampleAddMultipleFileAnd() throws StorageEngineException {
+        int studyId = metadataManager.getStudyId("study_2");
+        DummyStudyMetadataDBAdaptor.SAMPLE_METADATA_MAP.get(studyId).remove(20004); // Replace SampleID
+        DummyStudyMetadataDBAdaptor.SAMPLE_METADATA_MAP.get(studyId).remove(20005); // Replace SampleID
+        DummyStudyMetadataDBAdaptor.SAMPLE_METADATA_MAP.get(studyId).remove(20006); // Replace SampleID
+        metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 4, "sample_20004"));
+        metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 5, "sample_20005"));
+        metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, 6, "sample_20006"));
+//        metadataManager.registerSamples(studyId, Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
+        metadataManager.registerFileSamples(studyId, 4, Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
+        metadataManager.registerFile(studyId, "file_5", Arrays.asList("sample_20004", "sample_20005", "sample_20006"));
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(4));
+        metadataManager.addIndexedFiles(studyId, Collections.singletonList(5));
+
+        metadataManager.registerFile(studyId, "file_10", Collections.singletonList("sample_20010"));
 
         // Now, in Study2, not all the files have the same samples, so the parser must add fileId : $in:[1,2,3]
         // Improvement to #641

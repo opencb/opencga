@@ -65,6 +65,10 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
         return storageEngineId;
     }
 
+    public String getDBName() {
+        return dbName;
+    }
+
     public List<StoragePipelineResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageEngineException {
 

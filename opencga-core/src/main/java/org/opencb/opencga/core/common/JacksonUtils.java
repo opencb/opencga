@@ -43,6 +43,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Job.class, PrivateUidMixin.class);
         objectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         objectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
+        objectMapper.addMixIn(Interpretation.class, PrivateUidMixin.class);
 
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
@@ -62,6 +63,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Job.class, PrivateUidMixin.class);
         objectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         objectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
+        objectMapper.addMixIn(Interpretation.class, PrivateUidMixin.class);
 
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 

@@ -20,8 +20,8 @@ import com.google.common.base.Function;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.UpsertExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
