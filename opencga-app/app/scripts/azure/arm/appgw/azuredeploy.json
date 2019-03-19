@@ -49,7 +49,6 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "appgw",
-            "dependsOn": [],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -86,7 +85,6 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "keyvault",
-            "dependsOn": [],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -105,7 +103,6 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "functions",
-            "dependsOn": [],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
@@ -145,7 +142,7 @@
                         "value": "[reference('functions').outputs.identityName.value]"
                     },
                     "vaultName": {
-                        "value": "[reference('keyvault').outputs.keyVaultName.value]"
+                        "value": "[variables('keyVaultName')]"
                     },
                     "objectId": {
                         "value": "[reference('functions').outputs.principalId.value]"
