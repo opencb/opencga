@@ -130,7 +130,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "msi",
-            "dependsOn": ["keyfault", "functions", "appgw"],
+            "dependsOn": ["keyvault", "functions", "appgw"],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
