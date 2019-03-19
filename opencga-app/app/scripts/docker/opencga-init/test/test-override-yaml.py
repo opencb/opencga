@@ -1,4 +1,5 @@
 import subprocess
+from shutil import copyfile
 import unittest
 import yaml
 from io import StringIO
@@ -11,14 +12,29 @@ os.chdir(sys.path[0])
 
 
 class Test_init_script(unittest.TestCase):
+    def setUp(self):
+        config_dir = os.environ["OPENCGA_CONFIG_DIR"]
+        
+        storage_config = os.path.join(config_dir, "storage-configuration.yml")
+        copyfile(storage_config, "./storage-configuration.yml")
+
+        client_config = os.path.join(config_dir, "client-configuration.yml")
+        copyfile(client_config, "./client-configuration.yml")
+
+        config = os.path.join(config_dir, "configuration.yml")
+        copyfile(config, "./configuration.yml")
+
+
     def test_end_2_end(self):
         res = subprocess.run(["python3", "../override-yaml.py",
-                    "--config-path", "./test-conf.yml",
-                    "--client-config-path", "./test-client-conf.yml",
-                    "--storage-config-path", "./test-storage-conf.yml",
+                    "--config-path", "./configuration.yml",
+                    "--client-config-path", "./client-configuration.yml",
+                    "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
                     "--clinical-hosts", "test-clinical-host",
-                    "--cellbase-hosts", "test-cellbase-host",
+                    "--cellbase-mongo-hosts", "test-cellbase-host",
+                    "--cellbase-mongo-hosts-user", "cellbaseuser",
+                    "--cellbase-mongo-hosts-password", "cellbasepassword",
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
@@ -63,6 +79,9 @@ class Test_init_script(unittest.TestCase):
         self.assertEqual(storage_config["search"]["hosts"][1], "test-search-host2")
         self.assertEqual(storage_config["clinical"]["hosts"][0], "test-clinical-host")
         self.assertEqual(storage_config["cellbase"]["database"]["hosts"][0], "test-cellbase-host")
+        self.assertEqual(storage_config["cellbase"]["database"]["user"], "cellbaseuser")
+        self.assertEqual(storage_config["cellbase"]["database"]["password"], "cellbasepassword")
+        self.assertEqual(storage_config["cellbase"]["database"]["options"]["enableSSL"], True)
         self.assertEqual(storage_config["storageEngines"][1]["variant"]["options"]["annotator"], "cellbase_db_adaptor")
         self.assertEqual(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor"], "ssh")
         self.assertEqual(storage_config["storageEngines"][1]["variant"]["options"]["opencga.mr.executor.ssh.host"], "test-hadoop-ssh-host")
@@ -95,10 +114,10 @@ class Test_init_script(unittest.TestCase):
     def test_cellbasedb_with_empty_hosts(self):
 
         res = subprocess.run(["python3", "../override-yaml.py",
-                    "--config-path", "./test-conf.yml",
-                    "--client-config-path", "./test-client-conf.yml",
-                    "--storage-config-path", "./test-storage-conf.yml",
-                    "--cellbase-hosts", "",
+                    "--config-path", "./configuration.yml",
+                    "--client-config-path", "./client-configuration.yml",
+                    "--storage-config-path", "./storage-configuration.yml",
+                    "--cellbase-mongo-hosts", "",
                     "--search-hosts", "test-search-host1,test-search-host2",
                     "--clinical-hosts", "test-clinical-host",
                     "--catalog-database-hosts", "test-catalog-host",
@@ -144,9 +163,9 @@ class Test_init_script(unittest.TestCase):
     def test_cellbasedb_with_no_db_hosts(self):
 
         res = subprocess.run(["python3", "../override-yaml.py",
-                    "--config-path", "./test-conf.yml",
-                    "--client-config-path", "./test-client-conf.yml",
-                    "--storage-config-path", "./test-storage-conf.yml",
+                    "--config-path", "./configuration.yml",
+                    "--client-config-path", "./client-configuration.yml",
+                    "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
                     "--clinical-hosts", "test-clinical-host",
                     "--catalog-database-hosts", "test-catalog-host",
@@ -193,10 +212,10 @@ class Test_init_script(unittest.TestCase):
 
         res = subprocess.run(["python3", "../override-yaml.py",
                     "--cellbase-rest-url", "http://test-cellbase-server1:8080, http://test-cellbase-server2:8080",
-                    "--cellbase-hosts", "",
-                    "--config-path", "./test-conf.yml",
-                    "--client-config-path", "./test-client-conf.yml",
-                    "--storage-config-path", "./test-storage-conf.yml",
+                    "--cellbase-mongo-hosts", "",
+                    "--config-path", "./configuration.yml",
+                    "--client-config-path", "./client-configuration.yml",
+                    "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
                     "--clinical-hosts", "test-clinical-host",
                     "--catalog-database-hosts", "test-catalog-host",
@@ -245,9 +264,9 @@ class Test_init_script(unittest.TestCase):
 
         res = subprocess.run(["python3", "../override-yaml.py",
                     "--cellbase-rest-url", "",
-                    "--config-path", "./test-conf.yml",
-                    "--client-config-path", "./test-client-conf.yml",
-                    "--storage-config-path", "./test-storage-conf.yml",
+                    "--config-path", "./configuration.yml",
+                    "--client-config-path", "./client-configuration.yml",
+                    "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
                     "--clinical-hosts", "test-clinical-host",
                     "--catalog-database-hosts", "test-catalog-host",
@@ -294,9 +313,9 @@ class Test_init_script(unittest.TestCase):
     def test_cellbase_rest_not_set(self):
 
         res = subprocess.run(["python3", "../override-yaml.py",
-                    "--config-path", "./test-conf.yml",
-                    "--client-config-path", "./test-client-conf.yml",
-                    "--storage-config-path", "./test-storage-conf.yml",
+                    "--config-path", "./configuration.yml",
+                    "--client-config-path", "./client-configuration.yml",
+                    "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
                     "--clinical-hosts", "test-clinical-host",
                     "--catalog-database-hosts", "test-catalog-host",

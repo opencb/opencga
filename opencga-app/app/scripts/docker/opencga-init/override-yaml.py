@@ -8,7 +8,9 @@ parser.add_argument("--client-config-path", help="path to the client-configurati
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
-parser.add_argument("--cellbase-hosts", required=False, help="A CSV list of mongodb hosts which are running the cellbase database")
+parser.add_argument("--cellbase-mongo-hosts", required=False, help="A CSV list of mongodb hosts which are running the cellbase database")
+parser.add_argument("--cellbase-mongo-hosts-password", required=False, help="The password for the cellbase mongo server provided in '--cellbase-mongo-hosts'")
+parser.add_argument("--cellbase-mongo-hosts-user", required=False, help="The username for the cellbase mongo server provided in '--cellbase-mongo-hosts'")
 parser.add_argument("--cellbase-rest-urls", required=False, help="A CSV list of cellbase rest servers hosting the cellbase service")
 parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
@@ -60,21 +62,21 @@ for i, clinical_host in enumerate(clinical_hosts):
     storage_config["clinical"]["hosts"].insert(i, clinical_host.strip())
 
 # Inject cellbase database
-has_cellbase_mongo_hosts = args.cellbase_hosts is not None and args.cellbase_hosts != ""
+has_cellbase_mongo_hosts = args.cellbase_mongo_hosts is not None and args.cellbase_mongo_hosts != ""
 
 if has_cellbase_mongo_hosts:
-    cellbase_mongo_hosts = args.cellbase_hosts.replace('\"','').split(",")
-    for i, cellbase_host in enumerate(cellbase_mongo_hosts):
+    cellbase_mongo_hosts = args.cellbase_mongo_hosts.replace('\"','').split(",")
+    for i, cellbase_mongo_host in enumerate(cellbase_mongo_hosts):
         if i == 0:
             # If we are overriding the default hosts,
             # clear them only on the first iteration
             storage_config["cellbase"]["database"]["hosts"].clear()
-        storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_host.strip())
+        storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_mongo_host.strip())
 
     storage_config["cellbase"]["database"]["options"]["authenticationDatabase"] = "admin"
     storage_config["cellbase"]["database"]["options"]["sslEnabled"] = True
-    storage_config["cellbase"]["database"]["user"] = args.catalog_database_user
-    storage_config["cellbase"]["database"]["password"] = args.catalog_database_password
+    storage_config["cellbase"]["database"]["user"] = args.cellbase_mongo_hosts_user
+    storage_config["cellbase"]["database"]["password"] = args.cellbase_mongo_hosts_password
     storage_config["cellbase"]["preferred"] = "local"
 
 # Inject cellbase rest host, if set
