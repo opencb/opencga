@@ -68,12 +68,12 @@ formatAndMountDisk() {
         echo "Waiting for drive to be partitioned"
         sleep 2
     done
-    echo "Formatting Partition"
-    mkfs -t ext4 ${1}1
+    echo "Formatting Partition as XFS"
+    mkfs -t xfs ${1}1
     mkdir /datadrive
-    mount -o acl ${1}1 /datadrive
+    mount ${1}1 /datadrive
     fs_uuid=$(blkid -o value -s UUID ${1}1)
-    echo "UUID=${fs_uuid}   /datadrive   ext4   defaults,nofail,acl   1   2" >> /etc/fstab
+    echo "UUID=${fs_uuid}   /datadrive   xfs   defaults,nofail   1   2" >> /etc/fstab
 }
 
 generateCertificate() {
