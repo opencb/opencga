@@ -3,7 +3,10 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "functionAppName": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "The name of the function app that you wish to create."
+            }
         },
         "location": {
             "type": "string",
@@ -91,7 +94,6 @@
             "properties": {
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
                 "clientAffinityEnabled": false,
-                "reserved": true,
                 "siteConfig": {
                     "alwaysOn": true,
                     "linuxFxVersion": "DOCKER|mcr.microsoft.com/azure-functions/node:2.0"
@@ -121,6 +123,20 @@
                         "APPGW_RG": "[parameters('appGwRg')]",
                         "EMAIL_CERT": "[parameters('appGwSslEmail')]",
                         "KEYVAULT_NAME": "[parameters('keyVaultName')]"
+                    }
+                },
+                {
+                    "apiVersion": "2016-08-01",
+                    "name": "web",
+                    "type": "sourcecontrols",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]",
+                        "[resourceId('Microsoft.Web/sites/config', parameters('functionAppName'), 'appsettings')]"
+                    ],
+                    "properties": {
+                        "repoUrl": "[variables('repoURL')]",
+                        "branch": "[variables('repoBranch')]",
+                        "IsManualIntegration": true
                     }
                 }
             ]
