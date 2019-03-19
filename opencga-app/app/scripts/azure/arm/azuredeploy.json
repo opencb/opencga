@@ -911,9 +911,6 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "mongoDbDumpUrl": {
-                        "value": "[parameters('mongoDbDumpUrl')]"
-                    },
                     "subnetId": {
                         "value": "[reference('vnet').outputs.mongoSubnetId.value]"
                     },

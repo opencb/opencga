@@ -8,7 +8,8 @@ parser.add_argument("--client-config-path", help="path to the client-configurati
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
-parser.add_argument("--cellbase-hosts", required=True)
+parser.add_argument("--cellbase-hosts", required=False, help="A CSV list of mongodb hosts which are running the cellbase database")
+parser.add_argument("--cellbase-rest-urls", required=False, help="A CSV list of cellbase rest servers hosting the cellbase service")
 parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
@@ -47,7 +48,7 @@ for i, search_host in enumerate(search_hosts):
         # If we are overriding the default hosts,
         # clear them only on the first iteration
         storage_config["search"]["hosts"].clear()
-    storage_config["search"]["hosts"].insert(i, search_host)
+    storage_config["search"]["hosts"].insert(i, search_host.strip())
 
 # Inject clinical hosts
 clinical_hosts = args.clinical_hosts.replace('\"','').split(",")
@@ -56,28 +57,44 @@ for i, clinical_host in enumerate(clinical_hosts):
         # If we are overriding the default hosts,
         # clear them only on the first iteration
         storage_config["clinical"]["hosts"].clear()
-    storage_config["clinical"]["hosts"].insert(i, clinical_host)
+    storage_config["clinical"]["hosts"].insert(i, clinical_host.strip())
 
 # Inject cellbase database
-cellbase_hosts = args.cellbase_hosts.replace('\"','').split(",")
-for i, cellbase_host in enumerate(cellbase_hosts):
-    if i == 0:
-        # If we are overriding the default hosts,
-        # clear them only on the first iteration
-        storage_config["cellbase"]["database"]["hosts"].clear()
-    storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_host)
+has_cellbase_mongo_hosts = args.cellbase_hosts is not None and args.cellbase_hosts != ""
 
-storage_config["cellbase"]["database"]["options"]["authenticationDatabase"] = "admin"
-storage_config["cellbase"]["database"]["options"]["sslEnabled"] = True
-storage_config["cellbase"]["database"]["user"] = args.catalog_database_user
-storage_config["cellbase"]["database"]["password"] = args.catalog_database_password
-storage_config["cellbase"]["preferred"] = "local"
+if has_cellbase_mongo_hosts:
+    cellbase_mongo_hosts = args.cellbase_hosts.replace('\"','').split(",")
+    for i, cellbase_host in enumerate(cellbase_mongo_hosts):
+        if i == 0:
+            # If we are overriding the default hosts,
+            # clear them only on the first iteration
+            storage_config["cellbase"]["database"]["hosts"].clear()
+        storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_host.strip())
+
+    storage_config["cellbase"]["database"]["options"]["authenticationDatabase"] = "admin"
+    storage_config["cellbase"]["database"]["options"]["sslEnabled"] = True
+    storage_config["cellbase"]["database"]["user"] = args.catalog_database_user
+    storage_config["cellbase"]["database"]["password"] = args.catalog_database_password
+    storage_config["cellbase"]["preferred"] = "local"
+
+# Inject cellbase rest host, if set
+if args.cellbase_rest_urls is not None and args.cellbase_rest_urls != "":
+    cellbase_rest_urls = args.cellbase_rest_urls.replace('\"', '').split(",")
+    if len(cellbase_rest_urls) > 0:
+        for i, cellbase_url in enumerate(cellbase_rest_urls):
+            if i == 0:
+                # If we are overriding the default hosts,
+                # clear them only on the first iteration
+                storage_config["cellbase"]["hosts"].clear()
+            storage_config["cellbase"]["hosts"].insert(i, cellbase_url.strip())
 
 
 # Inject Hadoop ssh configuration
 if args.hadoop_ssh_host and args.hadoop_ssh_user and args.hadoop_ssh_password and args.hadoop_ssh_remote_opencga_home:
     for _, storage_engine in enumerate(storage_config["storageEngines"]):
-        storage_engine["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
+        # If we have cellbase hosts set the annotator to the DB Adaptor
+        if has_cellbase_mongo_hosts:
+            storage_engine["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
 
         if storage_engine["id"] == "hadoop": 
             storage_engine["variant"]["options"]["opencga.mr.executor"] = "ssh"
@@ -101,7 +118,7 @@ for i, catalog_host in enumerate(catalog_hosts):
         # If we are overriding the default hosts,
         # clear them only on the first iteration
         config["catalog"]["database"]["hosts"].clear()
-    config["catalog"]["database"]["hosts"].insert(i, catalog_host)
+    config["catalog"]["database"]["hosts"].insert(i, catalog_host.strip())
 
 config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
@@ -115,7 +132,7 @@ for i, catalog_search_host in enumerate(catalog_search_hosts):
         # If we are overriding the default hosts,
         # clear them only on the first iteration
         config["catalog"]["search"]["hosts"].clear()
-    config["catalog"]["search"]["hosts"].insert(i, catalog_search_host)
+    config["catalog"]["search"]["hosts"].insert(i, catalog_search_host.strip())
 config["catalog"]["search"]["user"] = args.catalog_search_user
 config["catalog"]["search"]["password"] = args.catalog_search_password
 
