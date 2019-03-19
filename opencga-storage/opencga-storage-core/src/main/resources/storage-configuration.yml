@@ -17,6 +17,7 @@ cellbase:
     options:         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
       authenticationDatabase: "${OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE}"
       readPreference: "${OPENCGA.CELLBASE.DB.READ_PREFERENCE}"
+      enableSSL: false
 
   preferred: "remote"   ## This accept two values: 'local' and 'remote' to fetch data
 

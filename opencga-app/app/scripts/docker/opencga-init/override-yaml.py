@@ -74,7 +74,7 @@ if has_cellbase_mongo_hosts:
         storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_mongo_host.strip())
 
     storage_config["cellbase"]["database"]["options"]["authenticationDatabase"] = "admin"
-    storage_config["cellbase"]["database"]["options"]["sslEnabled"] = True
+    storage_config["cellbase"]["database"]["options"]["enableSSL"] = True
     storage_config["cellbase"]["database"]["user"] = args.cellbase_mongo_hosts_user
     storage_config["cellbase"]["database"]["password"] = args.cellbase_mongo_hosts_password
     storage_config["cellbase"]["preferred"] = "local"
