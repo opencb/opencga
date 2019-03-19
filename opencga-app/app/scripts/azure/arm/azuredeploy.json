@@ -188,12 +188,27 @@
                 "description": "Define an object for a custom tshirt size of the deployment. WARNING: Intended for experimenting or debugging use with care."
             }
         },
-        "mongoDbDumpUrl": {
+        "cellbaseRestUrls": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
-                "description": "The URL pointing to a tar.gz zip of the a mongo dump"
+                "description": "A CSV list of cellbase REST service hosts"
             }
+        },
+        "cellbaseMongoDbHosts": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "A CSV list of mongo DB hosts with the cellbase database"
+            }
+        },
+        "cellbaseMongoDbUser": {
+            "type": "string",
+            "defaultValue": ""
+        },
+        "cellbaseMongoDbPassword": {
+            "type": "securestring",
+            "defaultValue": ""
         }
     },
     "variables": {
@@ -568,6 +583,18 @@
                     },
                     "mongoDbPassword": {
                         "value": "[reference('mongodb').outputs.mongoDBPassword.value]"
+                    },
+                    "cellbaseRestUrls": {
+                        "value": "[parameters('cellbaseRestUrls')]"
+                    },
+                    "cellbaseMongoDbHosts": {
+                        "value": "[parameters('cellbaseMongoDbHosts')]"
+                    },
+                    "cellbaseMongoDbUser": {
+                        "value": "[parameters('cellbaseMongoDbUser')]"
+                    },
+                    "cellbaseMongoDbPassword": {
+                        "value": "[string(parameters('cellbaseMongoDbPassword'))]"
                     },
                     "catalogSecretKey": {
                         "value": "[parameters('catalogSecretKey')]"
