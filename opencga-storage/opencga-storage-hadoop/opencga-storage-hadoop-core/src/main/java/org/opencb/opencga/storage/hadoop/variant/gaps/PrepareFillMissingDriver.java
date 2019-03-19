@@ -6,16 +6,16 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 
 import static org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingMapper.setIndexedFiles;
 
@@ -50,8 +50,8 @@ public class PrepareFillMissingDriver extends AbstractVariantsTableDriver {
         ObjectMap options = new ObjectMap();
         getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
 
-        StudyConfiguration sc = readStudyConfiguration();
-        setIndexedFiles(job.getConfiguration(), sc.getIndexedFiles());
+        LinkedHashSet<Integer> indexedFiles = getMetadataManager().getIndexedFiles(getStudyId());
+        setIndexedFiles(job.getConfiguration(), indexedFiles);
 
         Scan scan = new Scan();
         String region = getConf().get(VariantQueryParam.REGION.key());

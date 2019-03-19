@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
+import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTableType;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -25,8 +27,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -36,14 +40,17 @@ import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.DiscoverPendingVariantsToAnnotateDriver;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.PendingVariantsToAnnotateReader;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 
+import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created on 23/11/16.
@@ -52,9 +59,19 @@ import java.util.Map;
  */
 public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotationManager {
 
+    /**
+     * Skip MapReduce operation to discover pending variants to annotate.
+     */
+    public static final String SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE = "skipDiscoverPendingVariantsToAnnotate";
+    /**
+     * Do not use the pending variants to annotate table.
+     */
+    public static final String SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE = "skipPendingVariantsToAnnotateTable";
+
     private final VariantHadoopDBAdaptor dbAdaptor;
     private final ObjectMap baseOptions;
     private final MRExecutor mrExecutor;
+    private Query query;
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
                                                  MRExecutor mrExecutor, ObjectMap options) {
@@ -65,19 +82,105 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
+    public long annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
+        this.query = query == null ? new Query() : query;
+
+        // Do not allow FILE filter when annotating.
+        this.query.remove(VariantQueryParam.FILE.key());
+
+        if (!skipPendingVariantsToAnnotateTable(params)) {
+            params.put(QueryOptions.SKIP_COUNT, true);
+        }
+
+        return super.annotate(this.query, params);
+    }
+
+    @Override
+    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params) throws StorageEngineException {
+        super.preAnnotate(query, doCreate, doLoad, params);
+
+        if (doCreate) {
+            Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
+            queryParams.remove(VariantQueryParam.ANNOTATION_EXISTS);
+            boolean annotateAll = queryParams.isEmpty();
+
+            if (skipDiscoverPendingVariantsToAnnotate(params)) {
+                logger.info("Skip MapReduce to discover variants to annotate.");
+            } else {
+                ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
+                long lastLoadedFileTs = projectMetadata.getAttributes()
+                        .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
+                long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
+                        .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+
+                // Skip MR if no file has been loaded since the last execution
+                if (lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
+                    logger.info("Skip MapReduce to discover variants to annotate. List of pending annotations to annotate is updated");
+                } else {
+                    long ts = System.currentTimeMillis();
+
+                    mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
+                            DiscoverPendingVariantsToAnnotateDriver.buildArgs(dbAdaptor.getVariantTable(), params),
+                            params, "Prepare variants to annotate");
+
+                    if (annotateAll) {
+                        dbAdaptor.getMetadataManager().updateProjectMetadata(pm -> {
+                            pm.getAttributes().put(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
+                            return pm;
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    protected DataReader<Variant> getVariantDataReader(Query query, QueryOptions iteratorQueryOptions, ObjectMap params) {
+        if (skipPendingVariantsToAnnotateTable(params)) {
+            logger.info("Reading variants to annotate from variants table");
+            return super.getVariantDataReader(query, iteratorQueryOptions, params);
+        } else {
+            logger.info("Reading variants to annotate from pending variants to annotate");
+            return new PendingVariantsToAnnotateReader(dbAdaptor, query);
+        }
+    }
+
+    protected long countVariantsToAnnotate(Query query, ObjectMap params) {
+        if (skipPendingVariantsToAnnotateTable(params)) {
+            return super.countVariantsToAnnotate(query, params);
+        } else {
+            throw new UnsupportedOperationException("");
+        }
+    }
+
+    private boolean skipDiscoverPendingVariantsToAnnotate(ObjectMap params) {
+        // Skip if overwriting annotations, or if specific param
+        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
+    }
+
+    private boolean skipPendingVariantsToAnnotateTable(ObjectMap params) {
+        // Skip if overwriting annotations, or if specific param
+        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
+    }
+
+    @Override
     protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
             DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, false)) {
-            int currentAnnotationId = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()
+            int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
-            VariantAnnotationToHBaseConverter task =
+            VariantAnnotationToHBaseConverter hBaseConverter =
                     new VariantAnnotationToHBaseConverter(dbAdaptor.getGenomeHelper(), progressLogger, currentAnnotationId);
+            AnnotationIndexDBLoader annotationIndexDBLoader = new AnnotationIndexDBLoader(
+                    dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator().getAnnotationIndexTableName());
+
+            Task<VariantAnnotation, Put> task = Task.join(hBaseConverter, annotationIndexDBLoader.asTask(true));
 
             VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(
                     dbAdaptor.getHBaseManager(),
-                    dbAdaptor.getVariantTable(),
+                    dbAdaptor.getTableNameGenerator(),
                     dbAdaptor.getGenomeHelper().getColumnFamily());
             return new ParallelTaskRunner<>(reader, task, writer, config);
         } else {
@@ -88,10 +191,57 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    public URI createAnnotation(Path outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
-        // Do not allow FILE filter when annotating.
-        query.remove(VariantQueryParam.FILE.key());
-        return super.createAnnotation(outDir, fileName, query, params);
+    public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
+        super.loadVariantAnnotation(uri, params);
+
+        updateSampleIndexAnnotation(params);
+    }
+
+    protected void updateSampleIndexAnnotation(ObjectMap params) throws IOException, StorageEngineException {
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        SampleIndexAnnotationLoader indexAnnotationLoader = new SampleIndexAnnotationLoader(
+                dbAdaptor.getGenomeHelper(),
+                dbAdaptor.getHBaseManager(),
+                dbAdaptor.getTableNameGenerator(),
+                metadataManager, mrExecutor);
+
+        List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
+
+        List<String> samples = params.getAsStringList("sampleIndexAnnotation");
+
+        if (samples.size() == 1 && (samples.get(0).equals(VariantQueryUtils.NONE) || samples.get(0).equals("skip"))) {
+            // Nothing to do!
+            return;
+        } else if (samples.isEmpty() || samples.size() == 1 && samples.get(0).equals(VariantQueryUtils.ALL)) {
+            // Run on all pending samples
+            for (Integer studyId : studies) {
+                List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
+                if (!indexedSamples.isEmpty()) {
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples, params);
+                }
+            }
+        } else if (samples.size() == 1 && samples.get(0).equals("force_all")) {
+            // Run on all indexed samples
+            for (Integer studyId : studies) {
+                List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
+                if (!indexedSamples.isEmpty()) {
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples, params);
+                }
+            }
+        } else {
+            for (Integer studyId : studies) {
+                List<Integer> sampleIds = new ArrayList<>(samples.size());
+                for (String sample : samples) {
+                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                    if (sampleId != null) {
+                        sampleIds.add(sampleId);
+                    }
+                }
+                if (!sampleIds.isEmpty()) {
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, sampleIds, params);
+                }
+            }
+        }
     }
 
     @Override
@@ -108,7 +258,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void saveAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata projectMetadata = dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+        ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
             registerNewAnnotationSnapshot(name, variantAnnotator, project);
             return project;
         });
@@ -132,7 +282,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     public void deleteAnnotation(String name, ObjectMap inputOptions) throws StorageEngineException, VariantAnnotatorException {
         QueryOptions options = getOptions(inputOptions);
 
-        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first()
+        ProjectMetadata.VariantAnnotationMetadata saved = dbAdaptor.getMetadataManager().getProjectMetadata()
                 .getAnnotation().getSaved(name);
 
         String columnFamily = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
@@ -144,7 +294,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
 
-        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(project -> {
+        dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
             removeAnnotationSnapshot(name, project);
             return project;
         });

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
@@ -45,8 +46,12 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -54,9 +59,9 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantHadoopDBWriter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 
 import java.io.IOException;
@@ -82,11 +87,12 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
     private HadoopVariantStorageEngine engine;
     private VariantHadoopDBAdaptor dbAdaptor;
-    private StudyConfiguration sc1;
+    private StudyMetadata sm1;
     private int fileId1;
     private int fileId2;
     private AtomicLong timestamp;
     private static final int NUM_SAMPLES = 4;
+    private VariantStorageMetadataManager metadataManager;
 
     @Before
     public void setUp() throws Exception {
@@ -98,52 +104,59 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         engine = getVariantStorageEngine();
         dbAdaptor = engine.getDBAdaptor();
 
-        sc1 = new StudyConfiguration(1, "study_1");
+//        dbAdaptor.getMetadataManager().getProjectMetadata(engine.getOptions());
 
-        fileId1 = createNewFile(sc1);
-        fileId2 = createNewFile(sc1);
-
-        sc1.getVariantHeader().getComplexLines()
+        metadataManager = dbAdaptor.getMetadataManager();
+        sm1 = metadataManager.createStudy("study_1");
+        sm1.getVariantHeader().getComplexLines()
                 .add(new VariantFileHeaderComplexLine("INFO", "AD", "", "R", "Integer", Collections.emptyMap()));
-        sc1.getVariantHeader().getComplexLines()
+        sm1.getVariantHeader().getComplexLines()
                 .add(new VariantFileHeaderComplexLine("FORMAT", "AD", "", "R", "Integer", Collections.emptyMap()));
 
+        metadataManager.unsecureUpdateStudyMetadata(sm1);
+
+
+        fileId1 = createNewFile(sm1);
+        fileId2 = createNewFile(sm1);
         timestamp = new AtomicLong(1L);
     }
 
-    public int createNewFile(StudyConfiguration sc) {
-        int fileId = sc.getFileIds().size() + 1;
+    public int createNewFile(StudyMetadata sc) throws StorageEngineException {
+        int fileId = metadataManager.registerFile(sc.getId(), "file" + RandomUtils.nextInt());
+//        int fileId = sc.getFileIds().size() + 1;
         LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>(NUM_SAMPLES);
         for (int samplePos = 0; samplePos < NUM_SAMPLES; samplePos++) {
             int sampleId = samplePos + 1 + (fileId - 1) * NUM_SAMPLES;
-            sc.getSampleIds().put("S" + sampleId, sampleId);
+            metadataManager.unsecureUpdateSampleMetadata(sc.getId(), new SampleMetadata(sc.getId(), sampleId, "S" + sampleId));
             sampleIds.add(sampleId);
         }
-        sc.getFileIds().put("file" + fileId, fileId);
-        sc.getSamplesInFiles().put(fileId, sampleIds);
+        metadataManager.updateFileMetadata(sc.getId(), fileId, f -> f.setSamples(sampleIds));
         return fileId;
     }
 
     @Test
     public void testBasicMerge() throws Exception {
 
-        sc1.getAttributes()
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        sm1=metadataManager.updateStudyMetadata(sm1.getId(), sm -> {
+            sm.getAttributes()
+                    .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
+                    .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+            return sm;
+        });
 
-        int studyId = sc1.getStudyId();
+        int studyId = sm1.getId();
         List<Variant> variants1 = new LinkedList<>();
         variants1.addAll(newVariants("1", 1000, 1000, "A", asList("C", "T"), fileId1, studyId));
         variants1.addAll(newVariants("1", 1002, 1002, "A", asList("C", "G"), fileId1, studyId));
 
-        loadVariantsBasic(sc1, fileId1, variants1);
+        loadVariantsBasic(sm1, fileId1, variants1);
 
         List<Variant> variants2 = new LinkedList<>();
         variants2.addAll(newVariants("1", 1000, 1000, "A", asList("C", "G"), fileId2, studyId));
         variants2.addAll(newVariants("1", 1002, 1002, "A", asList("C", "G", "T"), fileId2, studyId));
 
-        loadVariantsBasic(sc1, fileId2, variants2);
-        VariantHbaseTestUtils.printVariants(sc1, getVariantStorageEngine().getDBAdaptor(), newOutputUri());
+        loadVariantsBasic(sm1, fileId2, variants2);
+        VariantHbaseTestUtils.printVariants(sm1, getVariantStorageEngine().getDBAdaptor(), newOutputUri());
 
         VariantMerger merger = new VariantMerger(false);
         List<String> expectedSamples = new ArrayList<>(variants1.get(0).getStudies().get(0).getOrderedSamplesName());
@@ -153,7 +166,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         merger.setDefaultValue("DP", ".");
         merger.setDefaultValue("GQX", ".");
         merger.setDefaultValue("AD", ".");
-        merger.configure(sc1.getVariantHeader());
+        merger.configure(sm1.getVariantHeader());
 
         Map<String, Variant> loadedVariants = dbAdaptor.stream(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "."), new QueryOptions(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, false))
                 .collect(Collectors.toMap(Variant::toString, i -> i));
@@ -206,13 +219,14 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
     }
 
-    private void loadVariantsBasic(StudyConfiguration sc, int fileId, List<Variant> variants) throws Exception {
-        String archiveTableName = engine.getArchiveTableName(sc.getStudyId());
+    private void loadVariantsBasic(StudyMetadata sc, int fileId, List<Variant> variants) throws Exception {
+        String archiveTableName = engine.getArchiveTableName(sc.getId());
         sc.getAttributes().append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
+        VariantStorageMetadataManager metadataManager = this.metadataManager;
+        metadataManager.unsecureUpdateStudyMetadata(sc);
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
         VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
-        dbAdaptor.getStudyConfigurationManager().lockAndUpdateProject(projectMetadata -> {
+        metadataManager.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
                 return new ProjectMetadata("hsapiens", "grch37", 1);
             } else {
@@ -223,19 +237,21 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(sc.getStudyId()), fileMetadata);
+        metadataManager.updateVariantFileMetadata(String.valueOf(sc.getId()), fileMetadata);
 
-        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getStudyId(), fileMetadata);
+        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getId(), fileMetadata);
 
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants, sc.getStudyId(), fileId);
+        VariantSliceReader reader = getVariantSliceReader(variants, sc.getId(), fileId);
 
         // Writers
         VariantHBaseArchiveDataWriter archiveWriter = new VariantHBaseArchiveDataWriter(helper, archiveTableName, dbAdaptor.getHBaseManager());
-        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(), dbAdaptor.getStudyConfigurationManager().getProjectMetadata().first(), sc, dbAdaptor.getHBaseManager());
+        VariantHadoopDBWriter hadoopDBWriter = new VariantHadoopDBWriter(helper, dbAdaptor.getVariantTable(),
+                sc.getId(),
+                metadataManager, dbAdaptor.getHBaseManager(), false);
 
-        // Task
+        // TaskMetadata
         HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask task = new HadoopLocalLoadVariantStoragePipeline.GroupedVariantsTask(archiveWriter, hadoopDBWriter, null, null);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(1).build();
@@ -244,27 +260,27 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         ptr.run();
 
         // Mark files as indexed and register new samples in phoenix
-        sc.getIndexedFiles().add(fileId);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, QueryOptions.empty());
+        metadataManager.unsecureUpdateStudyMetadata(sc);
+        metadataManager.updateFileMetadata(sc.getId(), fileId, f->f.setIndexStatus(TaskMetadata.Status.READY));
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId());
-        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getStudyId(), Collections.singleton(fileId), sc.getSamplesInFiles().get(fileId));
+        phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId());
+        phoenixHelper.registerNewFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sc.getId(), Collections.singleton(fileId), metadataManager.getFileMetadata(sc.getId(), fileId).getSamples());
         phoenixHelper.registerRelease(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), 1);
     }
 
-    private void stageVariants(StudyConfiguration study, int fileId, List<Variant> variants) throws Exception {
-        String archiveTableName = engine.getArchiveTableName(study.getStudyId());
+    private void stageVariants(StudyMetadata study, int fileId, List<Variant> variants) throws Exception {
+        String archiveTableName = engine.getArchiveTableName(study.getId());
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
-        dbAdaptor.getStudyConfigurationManager().updateVariantFileMetadata(String.valueOf(study.getStudyId()), fileMetadata);
+        metadataManager.updateVariantFileMetadata(String.valueOf(study.getId()), fileMetadata);
 
         // Create dummy reader
-        VariantSliceReader reader = getVariantSliceReader(variants, study.getStudyId(), fileId);
+        VariantSliceReader reader = getVariantSliceReader(variants, study.getId(), fileId);
 
-        // Task supplier
+        // TaskMetadata supplier
         Supplier<ParallelTaskRunner.Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> taskSupplier = () -> {
             VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
             return list -> {
@@ -278,7 +294,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         };
 
         // Writer
-        VariantHBaseArchiveDataWriter writer = new VariantHBaseArchiveDataWriter(dbAdaptor.getArchiveHelper(study.getStudyId(), fileId), archiveTableName, dbAdaptor.getHBaseManager());
+        VariantHBaseArchiveDataWriter writer = new VariantHBaseArchiveDataWriter(dbAdaptor.getArchiveHelper(study.getId(), fileId), archiveTableName, dbAdaptor.getHBaseManager());
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).build();
         ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr = new ParallelTaskRunner<>(reader, taskSupplier, writer, config);
@@ -323,7 +339,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     }
 
     public List<Variant> createFile1Variants() {
-        return createFile1Variants("1", fileId1, sc1.getStudyId());
+        return createFile1Variants("1", fileId1, sm1.getId());
     }
 
     public static List<Variant> createFile1Variants(String chromosome, Integer fileId, Integer studyId) {
@@ -335,7 +351,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
     }
 
     public List<Variant> createFile2Variants() {
-        return createFile2Variants("1", fileId2, sc1.getStudyId());
+        return createFile2Variants("1", fileId2, sm1.getId());
     }
 
     public static List<Variant> createFile2Variants(String chromosome, Integer fileId, Integer studyId) {

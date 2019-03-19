@@ -7,7 +7,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
@@ -30,15 +30,15 @@ public class MongoDBVariantDirectLoader implements DataWriter<MongoDBOperations>
     private final MongoDBVariantStageLoader stageLoader;
     private final MongoDBVariantMergeLoader variantsLoader;
 
-    public MongoDBVariantDirectLoader(VariantMongoDBAdaptor dbAdaptor, final StudyConfiguration studyConfiguration, int fileId,
+    public MongoDBVariantDirectLoader(VariantMongoDBAdaptor dbAdaptor, final StudyMetadata studyMetadata, int fileId,
                                       boolean resume, ProgressLogger progressLogger) {
-        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyConfiguration.getStudyId());
-        stageLoader = new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, resume, true);
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyMetadata.getId());
+        stageLoader = new MongoDBVariantStageLoader(stageCollection, studyMetadata.getId(), fileId, resume, true);
         variantsLoader = new MongoDBVariantMergeLoader(
                 dbAdaptor.getVariantsCollection(),
                 stageCollection,
                 dbAdaptor.getStudiesCollection(),
-                studyConfiguration, Collections.singletonList(fileId), resume, false, progressLogger);
+                studyMetadata, Collections.singletonList(fileId), resume, false, progressLogger);
     }
 
     @Override

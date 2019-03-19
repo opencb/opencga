@@ -127,9 +127,9 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
             studyConfiguration.getCohorts().put(10, cohort1);
             studyConfiguration.getCohorts().put(11, cohort2);
 
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
+            dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
 
-            variantStorageEngine.calculateStats(studyConfiguration.getStudyName(),
+            variantStorageEngine.calculateStats(studyConfiguration.getName(),
                     new ArrayList<>(cohortIds.keySet()), options);
 
         }

@@ -202,14 +202,17 @@ public class AlignmentStorageManager extends StorageManager {
 
     public QueryResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int windowSize, String sessionId)
             throws Exception {
-        StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
-        checkAlignmentBioformat(studyInfo.getFileInfos());
-        FileInfo fileInfo = studyInfo.getFileInfo();
-        return alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPhysicalFilePath(), region, windowSize);
+        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
+        return alignmentStorageEngine.getDBAdaptor().coverage(Paths.get(file.getUri()), region, windowSize);
     }
 
     public QueryResult<RegionCoverage> getLowCoverageRegions(String studyIdStr, String fileIdStr, Region region, int minCoverage,
                                                              String sessionId) throws Exception {
+        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
+        return alignmentStorageEngine.getDBAdaptor().getLowCoverageRegions(Paths.get(file.getUri()), region, minCoverage);
+    }
+
+    File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.URI.key(),
                         FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.FORMAT.key())), sessionId);
@@ -217,11 +220,12 @@ public class AlignmentStorageManager extends StorageManager {
             throw new CatalogException("File " + fileIdStr + " not found");
         }
 
-        checkAlignmentBioformat(fileQueryResult.first());
-        checkAlignmentFormat(fileQueryResult.first());
-
-        return alignmentStorageEngine.getDBAdaptor()
-                .getLowCoverageRegions(Paths.get(fileQueryResult.first().getUri()), region, minCoverage);
+        File.Bioformat bioformat = fileQueryResult.first().getBioformat();
+        if (bioformat != File.Bioformat.ALIGNMENT && bioformat != File.Bioformat.COVERAGE) {
+            throw new CatalogException("File " + fileQueryResult.first().getName() + " not supported. "
+                    + "Expecting an alignment or coverage file.");
+        }
+        return fileQueryResult.first();
     }
 
     public QueryResult<Long> count(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
@@ -244,19 +248,6 @@ public class AlignmentStorageManager extends StorageManager {
             }
         }
     }
-
-    private void checkAlignmentBioformat(File file) throws CatalogException {
-        if (!file.getBioformat().equals(File.Bioformat.ALIGNMENT)) {
-            throw new CatalogException("File " + file.getName() + " not supported. Expecting an alignment file.");
-        }
-    }
-
-    private void checkAlignmentFormat(File file) throws CatalogException {
-        if (!file.getFormat().equals(File.Format.BAM)) {
-            throw new CatalogException("File " + file.getName() + " not supported. Expecting a BAM file.");
-        }
-    }
-
 
     @Override
     public void testConnection() throws StorageEngineException {

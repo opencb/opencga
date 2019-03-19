@@ -549,7 +549,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         MyResource<Cohort> resource = new MyResource<>(user, study, cohort);
 
         List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
-                cohortDBAdaptor);
+                VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor);
 
         QueryResult<Cohort> queryResult = cohortDBAdaptor.update(cohort.getUid(), parameters, variableSetList, options);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohort.getUid(), resource.getUser(), parameters, null, null);

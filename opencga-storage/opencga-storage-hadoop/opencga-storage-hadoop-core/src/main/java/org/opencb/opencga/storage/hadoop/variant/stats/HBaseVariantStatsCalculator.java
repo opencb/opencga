@@ -4,9 +4,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PInteger;
-import org.apache.phoenix.schema.types.PVarcharArray;
+import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
@@ -14,17 +16,18 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantAlternateRearranger;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 
-import java.sql.Array;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.biodata.models.feature.Genotype.HOM_REF;
 
 /**
  * Created on 13/03/18.
@@ -33,55 +36,76 @@ import java.util.stream.Collectors;
  */
 public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implements Task<Result, VariantStats> {
 
-    private final List<String> samples;
-    private final StudyConfiguration sc;
+    private final List<Integer> sampleIds;
+    private final StudyMetadata sm;
+    private final boolean statsMultiAllelic;
     //    private List<byte[]> rows;
     private HBaseToGenotypeCountConverter converter;
 
-    public HBaseVariantStatsCalculator(byte[] columnFamily, StudyConfiguration sc, List<String> samples) {
+    public HBaseVariantStatsCalculator(byte[] columnFamily, VariantStorageMetadataManager metadataManager, StudyMetadata sm,
+                                       List<Integer> sampleIds, boolean statsMultiAllelic, String unknownGenotype) {
         super(columnFamily);
-        this.sc = sc;
-        this.samples = samples;
-        converter = new HBaseToGenotypeCountConverter(columnFamily);
-    }
-
-    @Override
-    public void pre() throws Exception {
-
+        this.sm = sm;
+        this.sampleIds = sampleIds;
+        this.statsMultiAllelic = statsMultiAllelic;
+        converter = new HBaseToGenotypeCountConverter(metadataManager, columnFamily, statsMultiAllelic, unknownGenotype);
     }
 
     @Override
     public List<VariantStats> apply(List<Result> list) throws Exception {
-        List<VariantStats> statsList = new ArrayList<>(list.size());
-        for (Result result : list) {
-            VariantStats stats = apply(result);
-            statsList.add(stats);
-        }
-        return statsList;
+        return list.stream().map(this::apply).collect(Collectors.toCollection(() -> new ArrayList<>(list.size())));
     }
 
     public VariantStats apply(Result result) {
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
 
-        Map<Genotype, Integer> gtCount = converter.apply(variant, result);
+        Map<Genotype, Integer> gtCount = convert(result, variant, null);
 
-        return VariantStatsCalculator.calculate(variant, gtCount);
+        return calculate(variant, gtCount);
+    }
+
+    protected Map<Genotype, Integer> convert(Result result, Variant variant, Map<Genotype, Integer> gtCount) {
+        Map<Genotype, Integer> newGtCount = converter.apply(variant, result);
+
+        if (gtCount != null) {
+            gtCount.forEach((gt, count) -> newGtCount.merge(gt, count, Integer::sum));
+        }
+        return newGtCount;
+    }
+
+    protected VariantStats calculate(Variant variant, Map<Genotype, Integer> gtCount) {
+        return VariantStatsCalculator.calculate(variant, gtCount, statsMultiAllelic);
     }
 
     private final class HBaseToGenotypeCountConverter extends HBaseToStudyEntryConverter {
-
-        private final List<Integer> sampleIds;
         private final Set<Integer> sampleIdsSet;
         private final Set<Integer> fileIds;
+        private final Map<Integer, Collection<Integer>> samplesInFile;
 
-        private HBaseToGenotypeCountConverter(byte[] columnFamily) {
-            super(columnFamily, null, null);
-            sampleIds = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toList());
-            sampleIdsSet = samples.stream().map(sc.getSampleIds()::get).collect(Collectors.toSet());
+        private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager, byte[] columnFamily,
+                                              boolean statsMultiAllelic, String unknownGenotype) {
+            super(columnFamily, metadataManager, null);
+            sampleIdsSet = new HashSet<>(sampleIds);
+            if (excludeFiles(statsMultiAllelic, unknownGenotype)) {
+                fileIds = Collections.emptySet();
+                samplesInFile = Collections.emptyMap();
+            } else {
+                fileIds = new HashSet<>(sampleIds.size());
+                samplesInFile = new HashMap<>(sampleIds.size());
 
-            fileIds = StudyConfigurationManager.getFileIdsFromSampleIds(sc, sampleIds);
-            super.setSelectVariantElements(new VariantQueryUtils.SelectVariantElements(sc, sampleIds, Collections.emptyList()));
-            super.setUnknownGenotype("./.");
+                metadataManager.sampleMetadataIterator(sm.getId()).forEachRemaining(sampleMetadata -> {
+                    int sampleId = sampleMetadata.getId();
+                    if (sampleIds.contains(sampleId)) {
+                        fileIds.addAll(sampleMetadata.getFiles());
+                        for (Integer file : sampleMetadata.getFiles()) {
+                            samplesInFile.computeIfAbsent(file, f -> new HashSet<>()).add(sampleId);
+                        }
+                    }
+                });
+            }
+
+            super.setSelectVariantElements(new VariantQueryFields(sm, sampleIds, Collections.emptyList()));
+            super.setUnknownGenotype(unknownGenotype);
         }
 
         public Map<Genotype, Integer> apply(Variant variant, Result result) {
@@ -93,7 +117,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             for (Cell cell : result.rawCells()) {
                 byte[] qualifier = CellUtil.cloneQualifier(cell);
                 if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
-                    byte[] value = CellUtil.cloneValue(cell);
+//                    byte[] value = CellUtil.cloneValue(cell);
                     String columnName = Bytes.toString(qualifier);
                     String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                     //                Integer studyId = getStudyId(split);
@@ -102,28 +126,52 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                     if (sampleIdsSet.contains(sampleId)) {
                         processedSamples.add(sampleId);
 
-                        Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
-                        List<String> sampleData = toModifiableList(array, 0, 1);
-                        sampleToGT.put(sampleId, sampleData.get(0));
+                        ImmutableBytesWritable ptr = new ImmutableBytesWritable(
+                                cell.getValueArray(),
+                                cell.getValueOffset(),
+                                cell.getValueLength());
+                        PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                        String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+
+//                        Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
+//                        List<String> sampleData = toModifiableList(array, 0, 1);
+//                        String gt = sampleData.get(0);
+                        if (gt.isEmpty()) {
+                            // This is a really weird situation, most likely due to errors in the input files
+                            logger.error("Empty genotype at sample " + sampleId + " in variant " + variant);
+                        } else {
+                            sampleToGT.put(sampleId, gt);
+                        }
                     }
                 } else if (endsWith(qualifier, VariantPhoenixHelper.FILE_SUFIX_BYTES)) {
-                    byte[] value = CellUtil.cloneValue(cell);
                     String columnName = Bytes.toString(qualifier);
                     String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
 //                    Integer studyId = getStudyId(split);
                     Integer fileId = Integer.valueOf(getFileId(split));
                     if (fileIds.contains(fileId)) {
                         filesInThisVariant.add(fileId);
-                        Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
-                        List<String> fileData = toModifiableList(array, FILE_SEC_ALTS_IDX, FILE_SEC_ALTS_IDX + 1);
-                        String secAlt = fileData.get(0);
+
+                        ImmutableBytesWritable ptr = new ImmutableBytesWritable(
+                                cell.getValueArray(),
+                                cell.getValueOffset(),
+                                cell.getValueLength());
+                        PArrayDataType.positionAtArrayElement(ptr, FILE_SEC_ALTS_IDX, PVarchar.INSTANCE, null);
+                        String secAlt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+
+//                        byte[] value = CellUtil.cloneValue(cell);
+//                        Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
+//                        List<String> fileData = toModifiableList(array, FILE_SEC_ALTS_IDX, FILE_SEC_ALTS_IDX + 1);
+//                        String secAlt = fileData.get(0);
+
                         if (StringUtils.isNotEmpty(secAlt)) {
                             alternateFileMap.computeIfAbsent(secAlt, (key) -> new ArrayList<>()).add(fileId);
                         }
                     }
                 } else if (endsWith(qualifier, VariantPhoenixHelper.FILL_MISSING_SUFIX_BYTES)) {
-                    byte[] value = CellUtil.cloneValue(cell);
-                    fillMissingColumnValue = (Integer) PInteger.INSTANCE.toObject(value);
+                    fillMissingColumnValue = (Integer) PInteger.INSTANCE.toObject(
+                            cell.getValueArray(),
+                            cell.getValueOffset(),
+                            cell.getValueLength());
                 }
             }
 
@@ -138,11 +186,11 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             }
 
             if (processedSamples.size() != sampleIds.size()) {
-                String defaultGenotype = getDefaultGenotype(sc);
+                String defaultGenotype = getDefaultGenotype(sm);
 
-                if (defaultGenotype.equals("0/0")) {
+                if (defaultGenotype.equals(HOM_REF)) {
                     // All missing samples are reference.
-                    addGt(gtStrCount, "0/0", sampleIds.size() - processedSamples.size());
+                    addGt(gtStrCount, HOM_REF, sampleIds.size() - processedSamples.size());
                 } else if (fillMissingColumnValue == -1 && filesInThisVariant.isEmpty()) {
                     // All missing samples are unknown.
                     addGt(gtStrCount, defaultGenotype, sampleIds.size() - processedSamples.size());
@@ -150,8 +198,8 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                     // Some samples are missing, some other are reference.
 
                     // Same order as "sampleIds"
-                    List<Boolean> missingUpdatedList = getMissingUpdatedSamples(sc, fillMissingColumnValue);
-                    List<Boolean> sampleWithVariant = getSampleWithVariant(sc, filesInThisVariant);
+                    List<Boolean> missingUpdatedList = getMissingUpdatedSamples(sm, fillMissingColumnValue);
+                    List<Boolean> sampleWithVariant = getSampleWithVariant(sm, filesInThisVariant);
                     int i = 0;
                     int reference = 0;
                     int missing = 0;
@@ -165,14 +213,13 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                         }
                         i++;
                     }
-                    addGt(gtStrCount, "0/0", reference);
+                    addGt(gtStrCount, HOM_REF, reference);
                     addGt(gtStrCount, defaultGenotype, missing);
                 }
             }
 
             Map<Genotype, Integer> gtCountMap = new HashMap<>(gtStrCount.size());
-            gtStrCount.forEach((str, count) -> gtCountMap.compute(new Genotype(str),
-                    (key, value) -> value == null ? count : value + count));
+            gtStrCount.forEach((str, count) -> gtCountMap.merge(new Genotype(str), count, Integer::sum));
 
             return gtCountMap;
         }
@@ -208,7 +255,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                 VariantAlternateRearranger rearranger = new VariantAlternateRearranger(alternateCoordinates, reorderedAlternates);
 
                 for (Integer fileId : entry.getValue()) {
-                    for (Integer sampleId : sc.getSamplesInFiles().get(fileId)) {
+                    for (Integer sampleId : samplesInFile.get(fileId)) {
                         String gt = sampleToGT.get(sampleId);
                         if (gt != null) {
                             try {
@@ -226,8 +273,12 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         }
 
         private void addGt(Map<String, Integer> gtStrCount, String gt, int num) {
-            gtStrCount.compute(gt, (key, value) -> value == null ? num : value + num);
+            gtStrCount.merge(gt, num, Integer::sum);
         }
+    }
+
+    protected static boolean excludeFiles(boolean statsMultiAllelic, String unknownGenotype) {
+        return !statsMultiAllelic && unknownGenotype.equals(HOM_REF);
     }
 
 }

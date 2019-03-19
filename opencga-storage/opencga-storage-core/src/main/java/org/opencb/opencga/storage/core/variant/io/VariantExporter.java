@@ -63,7 +63,7 @@ public class VariantExporter {
     private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
 
     public VariantExporter(VariantStorageEngine engine) throws StorageEngineException {
-        this(engine, new VariantMetadataFactory(engine.getStudyConfigurationManager()));
+        this(engine, new VariantMetadataFactory(engine.getMetadataManager()));
     }
 
     public VariantExporter(VariantStorageEngine engine, VariantMetadataFactory metadataFactory) throws StorageEngineException {
@@ -113,7 +113,7 @@ public class VariantExporter {
         // DataReader
         VariantDBReader variantDBReader = new VariantDBReader(engine, query, queryOptions);
 
-        // Task<Variant, Variant>
+        // TaskMetadata<Variant, Variant>
         Task<Variant, Variant> progressTask;
         if (logProgress) {
             final Query finalQuery = query;

@@ -80,7 +80,7 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
         } else {
             for (int sample : samples) {
                 Scan newScan = new Scan(templateScan);
-                newScan.setRowPrefixFilter(SampleIndexConverter.toRowKey(sample));
+                newScan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sample));
                 scans.add(newScan);
             }
         }
@@ -111,10 +111,10 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
                 gts.add(counter.getName());
             }
             if (!gts.isEmpty()) {
-                getStudyConfigurationManager().lockAndUpdate(getStudyId(), sc -> {
-                    gts.addAll(sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
-                    sc.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), gts);
-                    return sc;
+                getMetadataManager().updateStudyMetadata(getStudyId(), sm -> {
+                    gts.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
+                    sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), gts);
+                    return sm;
                 });
             }
         }
@@ -142,7 +142,7 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
             Delete delete = new Delete(result.getRow());
             for (Cell cell : result.rawCells()) {
                 byte[] column = CellUtil.cloneQualifier(cell);
-                Pair<String, String> pair = SampleIndexConverter.parsePendingColumn(column);
+                Pair<String, String> pair = HBaseToSampleIndexConverter.parsePendingColumn(column);
                 if (pair != null) {
                     delete.addColumn(family, column);
                     String variant = pair.getKey();
@@ -166,12 +166,12 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
                     if (cell == null) {
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "new_gt").increment(1);
                         put.addColumn(family, Bytes.toBytes(gt), Bytes.toBytes(String.join(",", variants)));
-                        put.addColumn(family, SampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
+                        put.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
                     } else {
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt").increment(1);
                         // Merge with existing values
-                        TreeSet<Variant> variantsSet = new TreeSet<>(SampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
-                        List<Variant> loadedVariants = SampleIndexConverter.getVariants(cell);
+                        TreeSet<Variant> variantsSet = new TreeSet<>(HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+                        List<Variant> loadedVariants = HBaseToSampleIndexConverter.getVariants(cell);
                         variantsSet.addAll(loadedVariants);
                         for (String variant : variants) {
                             variantsSet.add(new Variant(variant));
@@ -190,8 +190,8 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
                                 sb.append(variant.toString());
                             }
 
-                            put.addColumn(family, SampleIndexConverter.toGenotypeColumn(gt), Bytes.toBytes(sb.toString()));
-                            put.addColumn(family, SampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variantsSet.size()));
+                            put.addColumn(family, HBaseToSampleIndexConverter.toGenotypeColumn(gt), Bytes.toBytes(sb.toString()));
+                            put.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variantsSet.size()));
                         }
                     }
                 }

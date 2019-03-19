@@ -549,6 +549,7 @@ migrateCollection("study", {"uuid": {$exists: false}}, {attributes: 0}, function
             var variableSet = doc.variableSets[i];
             variableSet["uid"] = variableSet["id"];
             variableSet["id"] = variableSet["name"];
+            variableSet["entities"] = [];
 
             changeVariableIds(variableSet.variables);
         }

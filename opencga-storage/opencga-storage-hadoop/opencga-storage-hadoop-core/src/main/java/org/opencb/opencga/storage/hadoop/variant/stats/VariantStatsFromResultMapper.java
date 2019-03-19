@@ -4,13 +4,19 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 import org.slf4j.Logger;
@@ -18,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created on 14/03/18.
@@ -28,43 +33,117 @@ import java.util.stream.Collectors;
 public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWritable, Put> {
 
     private String study;
-    private Map<String, Set<String>> samples;
+    private Map<String, List<Integer>> samples;
     private VariantTableHelper helper;
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
     private VariantStatsToHBaseConverter converter;
     private Map<String, HBaseVariantStatsCalculator> calculators;
     private final Logger logger = LoggerFactory.getLogger(VariantStatsFromResultMapper.class);
+    private Collection<Integer> cohorts;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         helper = new VariantTableHelper(context.getConfiguration());
-        studyConfiguration = helper.readStudyConfiguration();
-//        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
-//        calculator = new VariantStatisticsCalculator(overwrite);
-//        Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
-//        calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
-        study = studyConfiguration.getStudyName();
-        converter = new VariantStatsToHBaseConverter(helper, studyConfiguration);
-        Collection<Integer> cohorts = VariantStatsMapper.getCohorts(context.getConfiguration());
-        samples = new HashMap<>(cohorts.size());
-        cohorts.forEach(cohortId -> {
-            String cohort = studyConfiguration.getCohortIds().inverse().get(cohortId);
-            Set<String> samplesInCohort = studyConfiguration.getCohorts().get(cohortId).stream()
-                    .map(studyConfiguration.getSampleIds().inverse()::get)
-                    .collect(Collectors.toSet());
-            samples.put(cohort, samplesInCohort);
-        });
+        try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
+                new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+            studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId());
+            study = studyMetadata.getName();
+
+
+    //        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+    //        calculator = new VariantStatisticsCalculator(overwrite);
+    //        Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
+    //        calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
+            cohorts = VariantStatsMapper.getCohorts(context.getConfiguration());
+            Map<String, Integer> cohortIds = new HashMap<>(cohorts.size());
+            samples = new HashMap<>(cohorts.size());
+            cohorts.forEach(cohortId -> {
+                CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortId);
+                cohortIds.put(cohort.getName(), cohortId);
+                List<Integer> samplesInCohort = cohort.getSamples();
+                samples.put(cohort.getName(), samplesInCohort);
+            });
+            converter = new VariantStatsToHBaseConverter(helper, studyMetadata, cohortIds);
+
+        }
 
         calculators = new HashMap<>(cohorts.size());
-        samples.forEach((cohort, samples) -> {
-            calculators.put(cohort,
-                    new HBaseVariantStatsCalculator(helper.getColumnFamily(), studyConfiguration, new ArrayList<>(samples)));
-        });
+        String unknownGenotype = context.getConfiguration().get(
+                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
+        boolean statsMultiAllelic = context.getConfiguration().getBoolean(
+                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
+                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
+        try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
+                new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+            samples.forEach((cohort, samples) -> {
+                calculators.put(cohort,
+                        new HBaseVariantStatsCalculator(
+                                helper.getColumnFamily(), metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype));
+            });
+        }
     }
 
+
     @Override
+    public void run(Context context) throws IOException, InterruptedException {
+        setup(context);
+        try {
+            while (context.nextKeyValue()) {
+                context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
+                if (context.getCurrentValue().isPartial()) {
+                    mapPartialResult(context.getCurrentKey(), context);
+                    context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "partialVariant").increment(1);
+                } else {
+                    map(context.getCurrentKey(), context.getCurrentValue(), context);
+                }
+            }
+        } finally {
+            cleanup(context);
+        }
+    }
+
+    protected void mapPartialResult(ImmutableBytesWritable key, Context context) throws IOException, InterruptedException {
+        Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(key.get());
+        VariantStatsWrapper wrapper = new VariantStatsWrapper(variant, new HashMap<>(calculators.size()));
+
+        int numPartialResults = 0;
+        Map<String, Map<Genotype, Integer>> gtCountMap = new HashMap<>(calculators.size());
+        while (true) {
+            Result partialResult = context.getCurrentValue();
+            if (!Arrays.equals(partialResult.getRow(), key.get())) {
+                Variant actualVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(partialResult.getRow());
+                throw new IllegalArgumentException("Error reading partial results. Non consecutive results. "
+                        + "Expecting " + variant + " \"" + Bytes.toStringBinary(key.get()) + "\" , "
+                        + "but got " + actualVariant + " \"" + Bytes.toStringBinary(partialResult.getRow()) + "\".");
+            }
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "partialResult").increment(1);
+            calculators.forEach((cohort, calculator) ->
+                    gtCountMap.compute(cohort, (k, gtCount) -> calculator.convert(partialResult, variant, gtCount)));
+            numPartialResults++;
+            if (!context.getCurrentValue().isPartial()) {
+                // Break loop when finding the last partial
+                break;
+            }
+            if (!context.nextKeyValue()) {
+                break;
+            }
+        }
+
+        String counterName = numPartialResults < 5
+                ? ("partialResultSize_" + numPartialResults)
+                : ("partialResultSize_" + (numPartialResults / 5 * 5) + '-' + (numPartialResults / 5 * 5 + 5));
+        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, counterName).increment(1);
+
+        calculators.forEach((cohort, calculator) -> {
+            VariantStats stats = calculator.calculate(variant, gtCountMap.get(cohort));
+            wrapper.getCohortStats().put(cohort, stats);
+        });
+
+        write(context, wrapper);
+    }
+
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
         VariantStatsWrapper wrapper = new VariantStatsWrapper(variant, new HashMap<>(calculators.size()));
 
@@ -73,6 +152,10 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             wrapper.getCohortStats().put(cohort, stats);
         });
 
+        write(context, wrapper);
+    }
+
+    private void write(Context context, VariantStatsWrapper wrapper) throws IOException, InterruptedException {
         Put put = converter.convert(wrapper);
         if (put == null) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
@@ -81,6 +164,5 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
             context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
         }
-
     }
 }

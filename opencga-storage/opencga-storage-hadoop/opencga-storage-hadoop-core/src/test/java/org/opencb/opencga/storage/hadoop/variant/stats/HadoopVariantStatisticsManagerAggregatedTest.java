@@ -25,7 +25,7 @@ public class HadoopVariantStatisticsManagerAggregatedTest extends VariantStatist
 
     @After
     public void tearDown() throws Exception {
-        VariantHbaseTestUtils.printVariants(studyConfiguration, ((VariantHadoopDBAdaptor) dbAdaptor), newOutputUri(getTestName().getMethodName()));
+        VariantHbaseTestUtils.printVariants(studyMetadata, ((VariantHadoopDBAdaptor) dbAdaptor), newOutputUri(getTestName().getMethodName()));
     }
 
     @Override

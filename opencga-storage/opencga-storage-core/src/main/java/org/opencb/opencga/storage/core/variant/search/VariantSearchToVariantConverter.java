@@ -106,13 +106,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // Format
                 stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "format");
                 if (StringUtils.isNotEmpty(stringToList)) {
-                    studyEntry.setFormat(Arrays.asList(stringToList.split(LIST_SEP)));
+                    studyEntry.setFormat(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
                 }
 
                 // Sample Data management
                 stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix + "sampleName");
                 if (StringUtils.isNotEmpty(stringToList)) {
-                    String[] sampleNames = stringToList.split(LIST_SEP);
+                    String[] sampleNames = StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP);
                     List<List<String>> sampleData = new ArrayList<>();
                     Map<String, Integer> samplePosition = new HashMap<>();
                     int pos = 0;
@@ -120,7 +120,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         suffix = VariantSearchUtils.FIELD_SEPARATOR + studyId + VariantSearchUtils.FIELD_SEPARATOR + sampleName;
                         stringToList = variantSearchModel.getSampleFormat().get("sampleFormat" + suffix);
                         if (StringUtils.isNotEmpty(stringToList)) {
-                            sampleData.add(Arrays.asList(stringToList.split(LIST_SEP)));
+                            sampleData.add(Arrays.asList(StringUtils.splitByWholeSeparatorPreserveAllTokens(stringToList, LIST_SEP)));
                             samplePosition.put(sampleName, pos++);
                         }
 //                        else {
@@ -142,7 +142,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             ObjectReader reader = new ObjectMapper().reader(HashMap.class);
             for (String key: variantSearchModel.getFileInfo().keySet()) {
                 // key consists of 'fileInfo' + "__" + studyId + "__" + fileId
-                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
+                String[] fields = StringUtils.splitByWholeSeparator(key, VariantSearchUtils.FIELD_SEPARATOR);
                 FileEntry fileEntry = new FileEntry(fields[2], null, new HashMap<>());
                 try {
                     // We obtain the original call
@@ -164,7 +164,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (MapUtils.isNotEmpty(variantSearchModel.getStats())) {
             for (String key: variantSearchModel.getStats().keySet()) {
                 // key consists of 'stats' + "__" + studyId + "__" + cohort
-                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
+                String[] fields = StringUtils.splitByWholeSeparator(key, VariantSearchUtils.FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
                     variantStats.setRefAlleleFreq(1 - variantSearchModel.getStats().get(key));
@@ -235,7 +235,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (StringUtils.isEmpty(other)) {
                 continue;
             }
-            String[] fields = other.split(FIELD_SEP);
+            String[] fields = StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP);
             switch (fields[0]) {
                 case "DCT":
                     variantAnnotation.setDisplayConsequenceType(fields[1]);
@@ -259,8 +259,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             .setChromosome(variant.getChromosome())
                             .setStart(Integer.parseInt(fields[5]))
                             .setEnd(Integer.parseInt(fields[6]))
-                            .setCopyNumber(Float.parseFloat(fields[3]))
-                            .setPercentageMatch(Float.parseFloat(fields[4]))
+                            .setCopyNumber(parseFloat(fields[3], null))
+                            .setPercentageMatch(parseFloat(fields[4], null))
                             .setPeriod(null)
                             .setConsensusSize(null)
                             .setScore(null)
@@ -314,17 +314,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             protVarAnnotation.setAlternate(refAlt[1]);
                         }
                         // Sift score
-                        List<Score> scores = new ArrayList(2);
+                        List<Score> scores = new ArrayList<>(2);
                         if (fields.length > 12
                                 && (StringUtils.isNotEmpty(fields[12]) || StringUtils.isNotEmpty(fields[13]))) {
                             Score score = new Score();
                             score.setSource("sift");
                             if (StringUtils.isNotEmpty(fields[12])) {
-                                try {
-                                    score.setScore(Double.parseDouble(fields[12]));
-                                } catch (NumberFormatException e) {
-                                    logger.warn("Parsing Sift score: " + e.getMessage());
-                                }
+                                score.setScore(parseDouble(fields[12], null, "Exception parsing Sift score"));
                             }
                             score.setDescription(fields[13]);
                             scores.add(score);
@@ -335,11 +331,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             Score score = new Score();
                             score.setSource("polyphen");
                             if (StringUtils.isNotEmpty(fields[14])) {
-                                try {
-                                    score.setScore(Double.parseDouble(fields[14]));
-                                } catch (NumberFormatException e) {
-                                    logger.warn("Parsing Polyphen score: " + e.getMessage());
-                                }
+                                score.setScore(parseDouble(fields[14], null, "Exception parsing Polyphen score"));
                             }
                             score.setDescription(fields[15]);
                             scores.add(score);
@@ -452,7 +444,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {
             for (String key : variantSearchModel.getPopFreq().keySet()) {
                 PopulationFrequency populationFrequency = new PopulationFrequency();
-                String[] fields = key.split(VariantSearchUtils.FIELD_SEPARATOR);
+                String[] fields = StringUtils.splitByWholeSeparator(key, VariantSearchUtils.FIELD_SEPARATOR);
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
                 populationFrequency.setRefAlleleFreq(1 - variantSearchModel.getPopFreq().get(key));
@@ -818,6 +810,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             geneToSOAccessions.add(conseqType.getGeneName() + "_" + soNumber);
                             geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soNumber);
                             geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soNumber);
+
+                            // Add a combination with the transcript flag
+                            if (conseqType.getTranscriptAnnotationFlags() != null) {
+                                for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
+                                    geneToSOAccessions.add(conseqType.getGeneName() + "_" + soNumber + "_" + transcriptFlag);
+                                    geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soNumber + "_" + transcriptFlag);
+                                    geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soNumber + "_" + transcriptFlag);
+
+                                    // This is useful when no gene or transcript is used, for example we want 'LoF' in 'basic' transcripts
+                                    geneToSOAccessions.add(soNumber + "_" + transcriptFlag);
+                                }
+                            }
                         }
                     }
 
@@ -1114,5 +1118,35 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
         return null;
+    }
+
+    private Double parseDouble(String value, Double defaultValue) {
+        return parseDouble(value, defaultValue, null);
+    }
+
+    private Double parseDouble(String value, Double defaultValue, String message) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            if (message != null) {
+                logger.warn(message + ". Value: '" + value + "'");
+            }
+            return defaultValue;
+        }
+    }
+
+    private Float parseFloat(String value, Float defaultValue) {
+        return parseFloat(value, defaultValue, null);
+    }
+
+    private Float parseFloat(String value, Float defaultValue, String message) {
+        try {
+            return Float.parseFloat(value);
+        } catch (NumberFormatException e) {
+            if (message != null) {
+                logger.warn(message + ". Value: '" + value + "'");
+            }
+            return defaultValue;
+        }
     }
 }

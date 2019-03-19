@@ -31,10 +31,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.DataOutputStream;
@@ -85,7 +84,8 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
 
         DataWriter<Variant> dataWriter;
         VariantTableHelper helper = new VariantTableHelper(conf);
-        try (StudyConfigurationManager scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
+        HBaseVariantStorageMetadataDBAdaptorFactory dbAdaptorFactory = new HBaseVariantStorageMetadataDBAdaptorFactory(helper);
+        try (VariantStorageMetadataManager scm = new VariantStorageMetadataManager(dbAdaptorFactory)) {
             VariantWriterFactory writerFactory = new VariantWriterFactory(scm);
             Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
             QueryOptions options = VariantMapReduceUtil.getQueryOptionsFromConfig(conf);

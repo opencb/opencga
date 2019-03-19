@@ -1,0 +1,55 @@
+README
+
+
+In this folder, users should store external files to be used by some OpenCGA analysis.
+
+1) roleInCancer.txt[.gz]
+
+This file is used by interpretation clinical analysis, e.g., Tiering and TEAM analysis.
+
+It stores those genes which contain mutations that have been casually implicated in cancer. This information can be downloaded
+from the Cancer Gene Census (CGC) at https://cancer.sanger.ac.uk/census
+
+The file consists of two tab-separated columns: the first one contains the gene name, and the second, the role in cancer, i.e.: oncogne,
+TSG, fusion. In addition, lines starting with # are considered comments and will be ignored.
+
+Sample of a roleInCancer file:
+
+#Gene name	Role in Cancer
+A1CF	oncogene
+ABI1	TSG, fusion
+ABL1	oncogene, fusion
+ABL2	oncogene, fusion
+ACKR3	oncogene, fusion
+ACSL3	fusion
+...
+...
+
+
+2) actionableVariants_xxx.txt[.gz] where xxx = assembly, e.g.: grch37
+
+This file is used by interpretation clinical analysis, e.g., TEAM analysis.
+
+It stores variants that were identified as clinically actionable variants. The file consists of the following twelve tab-separated columns:
+  - Chromosome
+  - Start
+  - Stop
+  - Reference allele
+  - Alternate allele
+  - dbSNP ID
+  - ClinVar Variant ID
+  - HGVS
+  - Phenotype list
+  - Clinical significance
+  - Review status
+  - Submitter categories
+
+In addition, lines starting with # are considered comments and will be ignored.
+
+Sample fo an actionableVariants file:
+
+#Chromosome	Start	Stop	ReferenceAllele	AlternateAllele	dbSNP ID    ClinVar Variant ID  hgvs	PhenotypeList   ClinicalSignificance	ReviewStatus	SubmitterCategories
+2	47702269	47702269	C	T   rs28929483  1753    NM_000251.2(MSH2):c.1865C>T (p.Pro622Leu)   Hereditary cancer-predisposing syndrome;Hereditary nonpolyposis colon cancer;Lynch syndrome;Lynch syndrome I    Pathogenic			reviewed by expert panel	3
+2	47657020	47657020	C	T   rs63751108  1755    NM_000251.2(MSH2):c.1216C>T (p.Arg406Ter)   Carcinoma of colon;Hereditary cancer-predisposing syndrome;Hereditary nonpolyposis colon cancer;Lynch syndrome;Lynch syndrome I;not provided    Pathogenic		reviewed by expert panel	3
+...
+...

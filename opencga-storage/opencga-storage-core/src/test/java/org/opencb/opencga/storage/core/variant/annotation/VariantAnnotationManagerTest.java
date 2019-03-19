@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -38,7 +38,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     @Test
     public void testChangeAnnotator() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
@@ -47,11 +47,11 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         // First annotation. Should run ok.
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v1"));
-        assertEquals("v1", variantStorageEngine.getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+        assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Second annotation. New annotator. Overwrite. Should run ok.
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2").append(OVERWRITE_ANNOTATIONS, true));
-        assertEquals("v2", variantStorageEngine.getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+        assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
 
         // Third annotation. New annotator. Do not overwrite. Should fail.
         thrown.expect(VariantAnnotatorException.class);
@@ -61,7 +61,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     @Test
     public void testChangeAnnotatorFail() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
@@ -80,7 +80,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         } catch (VariantAnnotatorException e) {
             e.printStackTrace();
             // Annotator information does not change
-            assertEquals("v1", variantStorageEngine.getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+            assertEquals("v1", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
         }
 
 
@@ -88,14 +88,14 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         variantStorageEngine.annotate(new Query(), new ObjectMap(TestAnnotator.ANNOT_KEY, "v2")
                 .append(TestAnnotator.FAIL, false)
                 .append(OVERWRITE_ANNOTATIONS, true));
-        assertEquals("v2", variantStorageEngine.getStudyConfigurationManager().getProjectMetadata().first().getAnnotation().getCurrent().getAnnotator().getVersion());
+        assertEquals("v2", variantStorageEngine.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getAnnotator().getVersion());
     }
 
     @Test
     public void testMultiAnnotations() throws Exception {
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, newStudyConfiguration(),
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()

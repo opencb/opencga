@@ -69,7 +69,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
 
             if (StringUtils.isNotEmpty(sampleIdsStr)) {
-                List<String> idList = getIdList(sampleIdsStr);
+                List<String> idList = getIdList(sampleIdsStr, false);
                 AbstractManager.MyResources<Sample> resource = catalogManager.getSampleManager().getUids(idList, studyStr, sessionId);
                 List<Sample> sampleList = resource.getResourceList();
                 Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null)

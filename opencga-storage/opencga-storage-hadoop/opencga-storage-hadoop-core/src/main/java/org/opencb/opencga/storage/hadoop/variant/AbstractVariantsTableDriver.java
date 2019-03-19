@@ -28,18 +28,18 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,12 +57,14 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
+    public static final String COUNTER_GROUP_NAME = VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
     private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
     private GenomeHelper helper;
-    private StudyConfigurationManager scm;
+    private VariantStorageMetadataManager metadataManager;
     private List<Integer> fileIds;
     protected HBaseVariantTableNameGenerator generator;
+    private HBaseManager hBaseManager;
 
     public AbstractVariantsTableDriver() {
         super(HBaseConfiguration.create());
@@ -133,9 +135,9 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     @Override
     protected void close() throws IOException, StorageEngineException {
         super.close();
-        if (scm != null) {
-            scm.close();
-            scm = null;
+        if (metadataManager != null) {
+            metadataManager.close();
+            metadataManager = null;
         }
     }
 
@@ -151,7 +153,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link org.opencb.opencga.storage.core.metadata.BatchFileOperation#operationName}
+     * Used to create the jobName and as {@link TaskMetadata#getName()}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *
@@ -208,27 +210,6 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return sb.toString();
     }
 
-    protected List<Integer> getFilesToUse() throws IOException {
-        StudyConfiguration studyConfiguration = readStudyConfiguration();
-        LinkedHashSet<Integer> indexedFiles = studyConfiguration.getIndexedFiles();
-        List<Integer> files = getFiles();
-        if (files.isEmpty()) { // no files specified - use all indexed files for study
-            files = new ArrayList<>(indexedFiles);
-        } else { // Validate that they exist
-            List<Integer> notIndexed = files
-                    .stream()
-                    .filter(fid -> !indexedFiles.contains(fid))
-                    .collect(Collectors.toList());
-            if (!notIndexed.isEmpty()) {
-                throw new IllegalStateException("Provided File ID(s) not indexed!!!" + notIndexed);
-            }
-        }
-        if (files.isEmpty()) { // if still empty (no files provided and / or found in study
-            throw new IllegalArgumentException("No files specified / available for study " + getStudyId());
-        }
-        return files;
-    }
-
     protected List<Integer> getFiles() {
         if (fileIds == null) {
             fileIds = getFiles(getConf());
@@ -260,22 +241,34 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         return getConf().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
     }
 
-    protected StudyConfiguration readStudyConfiguration() throws IOException {
-        StudyConfigurationManager scm = getStudyConfigurationManager();
-        int studyId = getStudyId();
-        QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
-        if (res.getResult().size() != 1) {
-            throw new IllegalStateException("StudyConfiguration " + studyId + " not found! " + res.getResult().size());
-        }
-        return res.first();
+    protected HBaseVariantTableNameGenerator getTableNameGenerator() {
+        String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(getVariantsTable());
+        return new HBaseVariantTableNameGenerator(dbName, getConf());
     }
 
-    protected StudyConfigurationManager getStudyConfigurationManager() throws IOException {
-        if (scm == null) {
-            scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
-                    null, generator.getMetaTableName(), getConf()));
+    protected StudyMetadata readStudyMetadata() throws IOException {
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        int studyId = getStudyId();
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        if (studyMetadata == null) {
+            throw new IllegalStateException("StudyMetadata " + studyId + " not found!");
         }
-        return scm;
+        return studyMetadata;
+    }
+
+    protected HBaseManager getHBaseManager() {
+        if (hBaseManager == null) {
+            hBaseManager = new HBaseManager(getConf());
+        }
+        return hBaseManager;
+    }
+
+    protected VariantStorageMetadataManager getMetadataManager() throws IOException {
+        if (metadataManager == null) {
+            metadataManager = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
+                    getHBaseManager(), generator.getMetaTableName(), getConf()));
+        }
+        return metadataManager;
     }
 
     private void checkTablesExist(HBaseManager hBaseManager, String... tables) throws IOException {
@@ -314,6 +307,14 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     protected Map<String, String> getParams() {
         return Collections.emptyMap();
+    }
+
+    protected String getParam(String key) {
+        return getParam(key, null);
+    }
+
+    protected String getParam(String key, String defaultValue) {
+        return getConf().get(key, getConf().get("--" + key, defaultValue));
     }
 
     public int privateMain(String[] args) throws Exception {

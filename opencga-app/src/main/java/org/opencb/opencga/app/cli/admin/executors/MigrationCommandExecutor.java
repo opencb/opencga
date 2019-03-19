@@ -1,10 +1,10 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.app.cli.admin.executors.migration.AddFilePathToStudyConfigurationMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
-import org.opencb.opencga.app.cli.admin.executors.migration.NewProjectMetadataMigration;
+import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
+import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewStudyMetadata;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -185,7 +185,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
             if (!skipStorage) {
                 new NewProjectMetadataMigration(storageConfiguration, catalogManager, options).migrate(nonExpiringToken);
-                new AddFilePathToStudyConfigurationMigration(storageConfiguration, catalogManager).migrate(nonExpiringToken);
+                new NewStudyMetadata(storageConfiguration, catalogManager).migrate(nonExpiringToken);
             }
 
         }

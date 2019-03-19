@@ -144,7 +144,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
                     queryOptions.append(QueryOptions.LIMIT, limit);
                 }
 
-                VariantQueryUtils.addDefaultLimit(queryOptions, Integer.MAX_VALUE, VariantQueryUtils.LIMIT_DEFAULT);
+                VariantQueryUtils.addDefaultLimit(queryOptions, variantStorageEngine.getOptions());
 
                 result.setResponseMessage(query.toJson());
                 result.setResponseCodeOK();

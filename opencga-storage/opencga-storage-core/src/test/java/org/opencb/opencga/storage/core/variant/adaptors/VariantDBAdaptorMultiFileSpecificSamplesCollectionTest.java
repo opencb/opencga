@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import org.apache.solr.common.SolrException;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
@@ -9,8 +8,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
@@ -18,8 +17,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
@@ -45,13 +42,13 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
     protected void load() throws Exception {
         super.load();
 
-        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        for (String studyName : scm.getStudyNames(null)) {
-            StudyConfiguration sc = scm.getStudyConfiguration(studyName, null).first();
-            ArrayList<String> samples = new ArrayList<>(sc.getSampleIds().keySet());
+        VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
+        for (String studyName : scm.getStudyNames()) {
+            StudyMetadata sc = scm.getStudyMetadata(studyName);
+            ArrayList<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(sc.getId()).keySet());
             samples.sort(String::compareTo);
-            variantStorageEngine.searchIndexSamples(sc.getStudyName(), samples.subList(0, samples.size() / 2));
-            variantStorageEngine.searchIndexSamples(sc.getStudyName(), samples.subList(samples.size() / 2, samples.size()));
+            variantStorageEngine.secondaryIndexSamples(sc.getName(), samples.subList(0, samples.size() / 2));
+            variantStorageEngine.secondaryIndexSamples(sc.getName(), samples.subList(samples.size() / 2, samples.size()));
         }
     }
 
@@ -59,7 +56,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
         try {
             query = preProcessQuery(query, options);
-            StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+            VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
             String collection = VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, scm, DB_NAME);
 
             // Do not execute this test if the query is not covered by the specific search index collection

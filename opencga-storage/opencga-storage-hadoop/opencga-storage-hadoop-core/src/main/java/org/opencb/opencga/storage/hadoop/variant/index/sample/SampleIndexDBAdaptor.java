@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -9,8 +10,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -21,6 +22,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVari
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +32,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.metadata.StudyConfigurationManager.RO_CACHED_OPTIONS;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 
 /**
  * Created on 14/05/18.
@@ -41,46 +44,52 @@ public class SampleIndexDBAdaptor {
 
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
-    private final StudyConfigurationManager scm;
+    private final VariantStorageMetadataManager metadataManager;
     private final byte[] family;
     private static Logger logger = LoggerFactory.getLogger(SampleIndexDBAdaptor.class);
 
     public SampleIndexDBAdaptor(GenomeHelper helper, HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
-                                StudyConfigurationManager scm) {
+                                VariantStorageMetadataManager scm) {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
-        this.scm = scm;
+        this.metadataManager = scm;
         family = helper.getColumnFamily();
     }
 
     public VariantDBIterator iterator(SampleIndexQuery query) {
-        return iterator(query.getRegions(), query.getStudy(), query.getSamplesMap(), query.getQueryOperation());
-    }
+        String study = query.getStudy();
+        Map<String, List<String>> samples = query.getSamplesMap();
 
-    public VariantDBIterator iterator(List<Region> regions, String study, Map<String, List<String>> samples,
-                                                 QueryOperation operation) {
-        if (samples.size() == 1) {
-            Map.Entry<String, List<String>> entry = samples.entrySet().iterator().next();
-            return iterator(regions, study, entry.getKey(), entry.getValue());
-        } else if (samples.isEmpty()) {
+        if (samples.isEmpty()) {
             throw new VariantQueryException("At least one sample expected to query SampleIndex!");
         }
-        Integer studyId = getStudyId(study);
+        List<String> allGts = getAllLoadedGenotypes(study);
+        QueryOperation operation = query.getQueryOperation();
+
+        if (samples.size() == 1) {
+            String sample = samples.entrySet().iterator().next().getKey();
+            List<String> gts = query.getSamplesMap().get(sample);
+            List<String> filteredGts = GenotypeClass.filter(gts, allGts);
+
+            if (!gts.isEmpty() && filteredGts.isEmpty()) {
+                // If empty, should find none. Return empty iterator
+                return VariantDBIterator.emptyIterator();
+            } else {
+                return internalIterator(query.forSample(sample, filteredGts));
+            }
+        }
 
         List<VariantDBIterator> iterators = new ArrayList<>(samples.size());
         List<VariantDBIterator> negatedIterators = new ArrayList<>(samples.size());
-        List<String> allGts = getAllLoadedGenotypes(study);
 
         for (Map.Entry<String, List<String>> entry : samples.entrySet()) {
+            String sample = entry.getKey();
             List<String> gts = GenotypeClass.filter(entry.getValue(), allGts);
             if (!entry.getValue().isEmpty() && gts.isEmpty()) {
-                // If empty, should find none. Add non-existing genotype
-                // TODO: Fast empty result
-                gts = Collections.singletonList("x/x");
-            }
-            String sample = entry.getKey();
-            if (gts.stream().allMatch(SampleIndexDBLoader::validGenotype)) {
-                iterators.add(internalIterator(regions, studyId, sample, gts));
+                // If empty, should find none. Add empty iterator for this sample
+                iterators.add(VariantDBIterator.emptyIterator());
+            } else if (gts.stream().allMatch(SampleIndexDBLoader::validGenotype)) {
+                iterators.add(internalIterator(query.forSample(sample, gts)));
             } else {
                 if (operation.equals(QueryOperation.OR)) {
                     throw new IllegalArgumentException("Unable to query by REF or MISS genotypes!");
@@ -91,7 +100,7 @@ public class SampleIndexDBAdaptor {
                 // Skip if GTs to query is empty!
                 // Otherwise, it will return ALL genotypes instead of none
                 if (!queryGts.isEmpty()) {
-                    negatedIterators.add(internalIterator(regions, studyId, sample, queryGts));
+                    negatedIterators.add(internalIterator(query.forSample(sample, queryGts)));
                 }
             }
         }
@@ -105,38 +114,41 @@ public class SampleIndexDBAdaptor {
 
     }
 
-    public VariantDBIterator iterator(List<Region> regions, String study, String sample, List<String> gts) {
-
-        Integer studyId = getStudyId(study);
-
-        List<String> filteredGts = GenotypeClass.filter(gts, getAllLoadedGenotypes(study));
-        if (!gts.isEmpty() && filteredGts.isEmpty()) {
-            // If empty, should find none. Add non-existing genotype
-            // TODO: Fast empty result
-            filteredGts = Collections.singletonList("x/x");
-        }
-
-        return internalIterator(regions, studyId, sample, filteredGts);
-    }
-
     /**
      * Partially processed iterator. Internal usage only.
-     * @param regions   List of regions
-     * @param studyId   Study ID
-     * @param sample    Sample
-     * @param gts       Processed list of GTs. Real GTs only.
-     * @return          SingleSampleIndexVariantDBIterator
+     *
+     * @param query SingleSampleIndexQuery
+     * @return SingleSampleIndexVariantDBIterator
      */
-    private SingleSampleIndexVariantDBIterator internalIterator(List<Region> regions, int studyId, String sample, List<String> gts) {
-        String tableName = tableNameGenerator.getSampleIndexTableName(studyId);
+    private SingleSampleIndexVariantDBIterator internalIterator(SingleSampleIndexQuery query) {
+        String tableName = tableNameGenerator.getSampleIndexTableName(toStudyId(query.getStudy()));
 
         try {
             return hBaseManager.act(tableName, table -> {
-                return new SingleSampleIndexVariantDBIterator(table, regions, studyId, sample, gts, this);
+                return new SingleSampleIndexVariantDBIterator(table, query, family, this);
             });
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    protected Map<String, List<Variant>> rawQuery(int study, int sample, String chromosome, int position) throws IOException {
+        String tableName = tableNameGenerator.getSampleIndexTableName(study);
+
+        return hBaseManager.act(tableName, table -> {
+            Get get = new Get(HBaseToSampleIndexConverter.toRowKey(sample, chromosome, position));
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
+            try {
+                Result result = table.get(get);
+                if (result != null) {
+                    return converter.convertToMap(result);
+                } else {
+                    return Collections.emptyMap();
+                }
+            } catch (IOException e) {
+                throw VariantQueryException.internalException(e);
+            }
+        });
     }
 
     public Iterator<Map<String, List<Variant>>> rawIterator(int study, int sample) throws IOException {
@@ -145,8 +157,8 @@ public class SampleIndexDBAdaptor {
         return hBaseManager.act(tableName, table -> {
 
             Scan scan = new Scan();
-            scan.setRowPrefixFilter(SampleIndexConverter.toRowKey(sample));
-            SampleIndexConverter converter = new SampleIndexConverter();
+            scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sample));
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
             try {
                 ResultScanner scanner = table.getScanner(scan);
                 Iterator<Result> resultIterator = scanner.iterator();
@@ -159,20 +171,27 @@ public class SampleIndexDBAdaptor {
     }
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
+        return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null), sample);
+    }
+
+    public long count(SampleIndexQuery query, String sample) {
         List<Region> regionsList;
-        if (CollectionUtils.isEmpty(regions)) {
+        if (CollectionUtils.isEmpty(query.getRegions())) {
             // If no regions are defined, get a list of one null element to initialize the stream.
             regionsList = Collections.singletonList(null);
         } else {
-            regionsList = VariantQueryUtils.mergeRegions(regions);
+            regionsList = VariantQueryUtils.mergeRegions(query.getRegions());
         }
 
-        Integer studyId = getStudyId(study);
+        List<String> allGts = getAllLoadedGenotypes(query.getStudy());
+        List<String> gts = query.getSamplesMap().get(sample);
         if (CollectionUtils.isEmpty(gts)) {
-            StudyConfiguration sc = scm.getStudyConfiguration(studyId, RO_CACHED_OPTIONS).first();
-            gts = sc.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+            gts = allGts;
+        } else {
+            gts = GenotypeClass.filter(gts, allGts);
         }
-        String tableName = tableNameGenerator.getSampleIndexTableName(studyId);
+
+        String tableName = tableNameGenerator.getSampleIndexTableName(toStudyId(query.getStudy()));
 
         List<String> finalGts = gts;
         try {
@@ -182,9 +201,12 @@ public class SampleIndexDBAdaptor {
                     // Split region in countable regions
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
-                        if (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion)) {
-                            SampleIndexConverter converter = new SampleIndexConverter(subRegion);
-                            Scan scan = parse(subRegion, studyId, sample, finalGts, true);
+                        SingleSampleIndexQuery sampleIndexQuery = query.forSample(sample, finalGts);
+                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(sampleIndexQuery, subRegion, family);
+                        if (query.emptyAnnotationIndex() && query.emptyFileIndex()
+                                && (query.getVariantTypes() == null || query.getVariantTypes().size() == VariantType.values().length)
+                                && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
+                            Scan scan = parse(sampleIndexQuery, subRegion, true);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
@@ -196,8 +218,7 @@ public class SampleIndexDBAdaptor {
                                 throw VariantQueryException.internalException(e);
                             }
                         } else {
-                            SampleIndexConverter converter = new SampleIndexConverter(subRegion);
-                            Scan scan = parse(subRegion, studyId, sample, finalGts, false);
+                            Scan scan = parse(sampleIndexQuery, subRegion, false);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
@@ -218,24 +239,23 @@ public class SampleIndexDBAdaptor {
         }
     }
 
-    protected Integer getStudyId(String study) {
-        Integer studyId;
+    protected int toStudyId(String study) {
+        int studyId;
         if (StringUtils.isEmpty(study)) {
-            Map<String, Integer> studies = scm.getStudies(null);
+            Map<String, Integer> studies = metadataManager.getStudies(null);
             if (studies.size() == 1) {
                 studyId = studies.values().iterator().next();
             } else {
                 throw VariantQueryException.studyNotFound(study, studies.keySet());
             }
         } else {
-            studyId = scm.getStudyId(study, null);
+            studyId = metadataManager.getStudyId(study);
         }
         return studyId;
     }
 
     protected List<String> getAllLoadedGenotypes(String study) {
-        List<String> allGts = scm.getStudyConfiguration(study, RO_CACHED_OPTIONS)
-                .first()
+        List<String> allGts = metadataManager.getStudyMetadata(study)
                 .getAttributes()
                 .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
         if (allGts == null || allGts.isEmpty()) {
@@ -285,36 +305,50 @@ public class SampleIndexDBAdaptor {
         return region.getEnd() + 1 % SampleIndexDBLoader.BATCH_SIZE == 0;
     }
 
-    public Scan parse(Region region, int study, String sample, List<String> gts, boolean count) {
+    public Scan parse(SingleSampleIndexQuery query, Region region, boolean count) {
 
         Scan scan = new Scan();
-        int sampleId = toSampleId(study, sample);
+        int studyId = toStudyId(query.getStudy());
+        int sampleId = toSampleId(studyId, query.getSample());
         if (region != null) {
-            scan.setStartRow(SampleIndexConverter.toRowKey(sampleId, region.getChromosome(), region.getStart()));
-            scan.setStopRow(SampleIndexConverter.toRowKey(sampleId, region.getChromosome(),
+            scan.setStartRow(HBaseToSampleIndexConverter.toRowKey(sampleId, region.getChromosome(), region.getStart()));
+            scan.setStopRow(HBaseToSampleIndexConverter.toRowKey(sampleId, region.getChromosome(),
                     region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexDBLoader.BATCH_SIZE)));
         } else {
-            scan.setRowPrefixFilter(SampleIndexConverter.toRowKey(sampleId));
+            scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sampleId));
         }
-        for (String gt : gts) {
+        // If genotypes are not defined, return ALL columns
+        for (String gt : query.getGenotypes()) {
             if (count) {
-                scan.addColumn(family, SampleIndexConverter.toGenotypeCountColumn(gt));
+                scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt));
             } else {
-                scan.addColumn(family, SampleIndexConverter.toGenotypeColumn(gt));
+                if (query.getMendelianError()) {
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn());
+                } else {
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeColumn(gt));
+                }
+                if (query.getAnnotationIndexMask() != EMPTY_MASK) {
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt));
+                }
+                if (query.getFileIndexMask() != EMPTY_MASK) {
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toFileIndexColumn(gt));
+                }
             }
         }
 
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()) + " == "
-                + SampleIndexConverter.rowKeyToString(scan.getStartRow()));
+                + HBaseToSampleIndexConverter.rowKeyToString(scan.getStartRow()));
         logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()) + " == "
-                + SampleIndexConverter.rowKeyToString(scan.getStopRow()));
+                + HBaseToSampleIndexConverter.rowKeyToString(scan.getStopRow()));
         logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
                 .stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());
-        logger.info("Filters = " + scan.getFilter());
-        logger.info("Batch = " + scan.getBatch());
-        logger.info("Caching = " + scan.getCaching());
+//        logger.info("Filters = " + scan.getFilter());
+//        logger.info("Batch = " + scan.getBatch());
+//        logger.info("Caching = " + scan.getCaching());
+        logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), (byte) 0xFF));
+        logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), query.getFileIndex()));
 
 //        try {
 //            System.out.println("scan = " + scan.toJSON() + " " + rowKeyToString(scan.getStartRow()) + " -> + "
@@ -326,13 +360,8 @@ public class SampleIndexDBAdaptor {
         return scan;
     }
 
-
     private int toSampleId(int studyId, String sample) {
-        StudyConfiguration sc = scm.getStudyConfiguration(studyId, RO_CACHED_OPTIONS).first();
-        if (sc == null) {
-            throw VariantQueryException.studyNotFound(studyId, scm.getStudies(null).keySet());
-        }
-        return scm.getSampleId(sample, sc);
+        return metadataManager.getSampleId(studyId, sample);
     }
 
 

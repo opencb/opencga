@@ -29,8 +29,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -38,7 +39,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 28/11/16.
@@ -113,24 +117,25 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
             Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(query, options);
             returnedSamples.forEach((study, samples) -> {
-                StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
-                if (sc.getIndexedFiles().isEmpty()) {
+                VariantStorageMetadataManager metadataManager = getMetadataManager();
+                StudyMetadata sm = metadataManager.getStudyMetadata(study);
+                if (metadataManager.getIndexedFiles(sm.getId()).isEmpty()) {
                     // Ignore non indexed studies
                     return; // continue
                 }
-                StudyEntry st = new StudyEntry(sc.getStudyName(), Collections.emptyList(), Collections.singletonList("GT"));
-                BiMap<Integer, String> samplesMap = sc.getSampleIds().inverse();
+                StudyEntry st = new StudyEntry(sm.getName(), Collections.emptyList(), Collections.singletonList("GT"));
+                BiMap<Integer, String> samplesMap = metadataManager.getIndexedSamplesMap(sm.getId()).inverse();
                 for (Integer sampleId : samples) {
                     st.addSampleData(samplesMap.get(sampleId), Collections.singletonList("0/0"));
                 }
                 variant.addStudyEntry(st);
-                for (Integer cid : sc.getCalculatedStats()) {
+                for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(sm.getId())) {
                     VariantStats stats = new VariantStats();
-                    stats.addGenotype(new Genotype("0/0"), sc.getCohorts().get(cid).size());
-                    st.setStats(sc.getCohortIds().inverse().get(cid), stats);
+                    stats.addGenotype(new Genotype("0/0"), cohort.getSamples().size());
+                    st.setStats(cohort.getName(), stats);
                 }
                 List<FileEntry> files = new ArrayList<>();
-                for (Integer id : sc.getIndexedFiles()) {
+                for (Integer id : metadataManager.getIndexedFiles(sm.getId())) {
                     files.add(new FileEntry(id.toString(), "", Collections.emptyMap()));
                 }
                 st.setFiles(files);
@@ -168,7 +173,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Update methods
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, long timestamp, QueryOptions options) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
         QueryResult queryResult = new QueryResult();
         logger.info("Writing " + variantStatsWrappers.size() + " statistics");
         queryResult.setNumResults(variantStatsWrappers.size());
@@ -190,16 +195,19 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Unsupported methods
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
+        System.out.println("Update stats : "
+                + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().keySet().toString()));
+
+        return new QueryResult();
     }
 
     @Override
-    public StudyConfigurationManager getStudyConfigurationManager() {
-        return new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+    public VariantStorageMetadataManager getMetadataManager() {
+        return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }
 
     @Override
-    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
+    public void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager) {
 
     }
 

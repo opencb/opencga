@@ -93,6 +93,15 @@ public class DocumentToVariantStatsConverterTest {
     }
 
     @Test
+    public void testConvertToDataModelTypeNegativeAF() {
+        DocumentToVariantStatsConverter converter = new DocumentToVariantStatsConverter();
+        mongoStats.put(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, -1);
+        mongoStats.put(DocumentToVariantStatsConverter.REF_FREQ_FIELD, -1);
+        VariantStats converted = converter.convertToDataModelType(mongoStats);
+        assertEquals(stats, converted);
+    }
+
+    @Test
     public void testConvertToDataModelTypeWithoutGtCount() {
         stats.getGenotypeCount().clear();
         stats.getGenotypeFreq().clear();

@@ -17,8 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
@@ -34,7 +32,6 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.clinical.InterpretationResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -56,8 +53,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -223,7 +220,7 @@ public class OpenCGAWSServer {
             initLogger(configDirPath.getParent().resolve("logs"));
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
-            logger.error("No valid configuration directory provided: '{}'");
+            logger.error(errorMessage);
         }
 
         logger.info("========================================================================\n");
@@ -492,8 +489,10 @@ public class OpenCGAWSServer {
 
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
+            Response response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
                     MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
+            return response;
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -529,6 +528,20 @@ public class OpenCGAWSServer {
         return response;
     }
 
+    protected Response createRawOkResponse(Object obj) {
+        try {
+            String res = jsonObjectWriter.writeValueAsString(obj);
+//            System.out.println("\n\n\n" + res + "\n\n");
+            Response response = buildResponse(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
+            return response;
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            logger.error("Error parsing response object");
+            return createErrorResponse("", "Error parsing response object:\n" + Arrays.toString(e.getStackTrace()));
+        }
+    }
+
     protected Response createAnalysisOkResponse(Object obj) {
         Map<String, Object> queryResponseMap = new LinkedHashMap<>();
         queryResponseMap.put("time", new Long(System.currentTimeMillis() - startTime).intValue());
@@ -538,15 +551,8 @@ public class OpenCGAWSServer {
 
         Response response;
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-            objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-            objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-            ObjectWriter writer = objectMapper.writer();
-            response = buildResponse(Response.ok(writer.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
-//            logResponse(response.getStatusInfo(), queryResponseMap);
+            response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponseMap), MediaType.APPLICATION_JSON_TYPE));
+            logResponse(response.getStatusInfo());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
@@ -563,6 +569,10 @@ public class OpenCGAWSServer {
 
     protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
+    }
+
+    private void logResponse(Response.StatusType statusInfo) {
+        logResponse(statusInfo, null);
     }
 
     private void logResponse(Response.StatusType statusInfo, QueryResponse<?> queryResponse) {
@@ -632,13 +642,16 @@ public class OpenCGAWSServer {
     }
 
     protected List<String> getIdList(String id) throws WebServiceException {
+        return getIdList(id, true);
+    }
+
+    protected List<String> getIdList(String id, boolean checkMaxNumberElements) throws WebServiceException {
         if (StringUtils.isNotEmpty(id)) {
             List<String> ids = checkUniqueList(id);
-            if (ids.size() <= MAX_ID_SIZE) {
-                return ids;
-            } else {
+            if (checkMaxNumberElements && ids.size() > MAX_ID_SIZE) {
                 throw new WebServiceException("More than " + MAX_ID_SIZE + " IDs are provided");
             }
+            return ids;
         } else {
             throw new WebServiceException("ID is null or Empty");
         }

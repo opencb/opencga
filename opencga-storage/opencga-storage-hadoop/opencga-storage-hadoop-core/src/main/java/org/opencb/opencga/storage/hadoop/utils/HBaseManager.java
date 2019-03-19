@@ -118,27 +118,21 @@ public class HBaseManager implements AutoCloseable {
 
     public Connection getConnection() {
         Connection con = this.connection.get();
-        if (this.closeConnection.get() && null == con) {
-            while (null == con) {
-                try {
-                    con = ConnectionFactory.createConnection(this.getConf());
+        if (con == null) {
+            synchronized (this.connection) {
+                con = this.connection.get();
+                if (con == null) {
+                    try {
+                        con = ConnectionFactory.createConnection(this.getConf());
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Problems opening connection to DB", e);
+                    }
                     OPEN_CONNECTIONS.incrementAndGet();
-//                    CONNECTIONS.add(con);
+                    //                    CONNECTIONS.add(con);
                     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                     LOGGER.info("Opened Hadoop DB connection {} called from {}", con, stackTrace);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Problems opening connection to DB", e);
+                    this.connection.set(con);
                 }
-                if (!this.connection.compareAndSet(null, con)) {
-                    try {
-                        con.close();
-                        OPEN_CONNECTIONS.decrementAndGet();
-//                        CONNECTIONS.remove(con);
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Problems closing connection to DB", e);
-                    }
-                }
-                con = this.connection.get();
             }
         }
         return con;

@@ -14,10 +14,9 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,18 +50,14 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
     private final String sessionId;
 
     public CatalogVariantMetadataFactory(CatalogManager catalogManager, VariantDBAdaptor dbAdaptor, String sessionId) {
-        super(dbAdaptor.getStudyConfigurationManager());
+        super(dbAdaptor.getMetadataManager());
         this.catalogManager = catalogManager;
         this.sessionId = sessionId;
     }
 
     @Override
-    protected VariantMetadata makeVariantMetadata(List<StudyConfiguration> studyConfigurations,
-                                                  ProjectMetadata projectMetadata, Map<Integer, List<Integer>> returnedSamples,
-                                                  Map<Integer, List<Integer>> returnedFiles,
-                                                  QueryOptions queryOptions) throws StorageEngineException {
-        VariantMetadata metadata = super.makeVariantMetadata(studyConfigurations, projectMetadata,
-                returnedSamples, returnedFiles, queryOptions);
+    protected VariantMetadata makeVariantMetadata(VariantQueryFields queryFields, QueryOptions queryOptions) throws StorageEngineException {
+        VariantMetadata metadata = super.makeVariantMetadata(queryFields, queryOptions);
         if (queryOptions != null) {
             if (queryOptions.getBoolean(BASIC_METADATA, false)) {
                 // If request BasicMetadata, do not return extra catalog information, neither samples in cohorts
@@ -74,8 +69,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 return metadata;
             }
         }
-        Map<String, Integer> studyConfigurationMap = studyConfigurations.stream()
-                .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
+
         try {
             for (VariantStudyMetadata studyMetadata : metadata.getStudies()) {
                 String studyId = studyMetadata.getId();
@@ -122,7 +116,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
                 .getResult();
 
         for (Individual catalogIndividual : catalogIndividuals) {
-            org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getName());
+            org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getId());
 
             individual.setSex(catalogIndividual.getSex().name());
 //            individual.setFamily(catalogIndividual.getFamily());

@@ -27,7 +27,7 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 public abstract class VariantStatisticsManagerAggregatedTest extends VariantStorageBaseTest {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-aggregated-file.vcf.gz";
-    protected StudyConfiguration studyConfiguration;
+    protected StudyMetadata studyMetadata;
     protected VariantDBAdaptor dbAdaptor;
 
     @Rule
@@ -58,11 +58,11 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
     @Override
     @Before
     public void before() throws Exception {
-        studyConfiguration = newStudyConfiguration();
-        studyConfiguration.setAggregation(getAggregationType());
+        studyMetadata = newStudyMetadata();
+        studyMetadata.setAggregation(getAggregationType());
         clearDB(DB_NAME);
         inputUri = getInputUri();
-        runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration,
+        runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
@@ -85,7 +85,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         //Calculate stats for 2 cohorts at one time
         VariantStatisticsManager vsm = variantStorageEngine.newVariantStatisticsManager();
 
-        checkAggregatedCohorts(dbAdaptor, studyConfiguration);
+        checkAggregatedCohorts(dbAdaptor, studyMetadata);
 
         QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
@@ -96,24 +96,24 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
         //Calculate stats
         List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
-        vsm.calculateStatistics(studyConfiguration.getStudyName(), cohorts, options);
+        vsm.calculateStatistics(studyMetadata.getName(), cohorts, options);
 
-        checkAggregatedCohorts(dbAdaptor, studyConfiguration);
+        checkAggregatedCohorts(dbAdaptor, studyMetadata);
     }
 
-    protected void checkAggregatedCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
+    protected void checkAggregatedCohorts(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata) {
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 Map<String, VariantStats> cohortStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortStats.keySet().toString();
-                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
-                    String cohortName = studyConfiguration.getCohortIds().inverse().get(cohortId);
+                dbAdaptor.getMetadataManager().cohortIterator(studyMetadata.getId()).forEachRemaining(cohort -> {
+                    String cohortName = cohort.getName();
                     assertTrue("CohortStats should contain stats for cohort " + cohortName
                                     + ". Only contains stats for " + calculatedCohorts,
                             cohortStats.containsKey(cohortName));    //Check stats are calculated
 
                     assertValidStats(variant, cohortStats.get(cohortName));
-                }
+                });
             }
         }
     }

@@ -12,16 +12,16 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -42,11 +42,11 @@ import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableN
 public class SampleIndexTableRecordReader extends TableRecordReader {
 
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private final StudyConfiguration studyConfiguration;
+    private final StudyMetadata studyMetadata;
     private final Map<String, List<String>> samples;
     private final VariantQueryUtils.QueryOperation operation;
     private final HBaseManager hBaseManager;
-    private final StudyConfigurationManager scm;
+    private final VariantStorageMetadataManager metadataManager;
 
     private Table table;
     private Scan scan;
@@ -66,16 +66,16 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         String variantsTableName = VariantTableHelper.getVariantsTable(conf);
         HBaseVariantTableNameGenerator tableNameGenerator =
                 new HBaseVariantTableNameGenerator(getDBNameFromVariantsTableName(variantsTableName), conf);
-        scm = new StudyConfigurationManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
+        metadataManager = new VariantStorageMetadataManager(new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager,
                 tableNameGenerator.getMetaTableName(),
                 conf));
 
-        sampleIndexDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, scm);
+        sampleIndexDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, metadataManager);
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
-        SampleIndexQuery sampleIndexQuery = SampleIndexQuery.extractSampleIndexQuery(query, scm);
-        studyConfiguration = scm.getStudyConfiguration(sampleIndexQuery.getStudy(), null).first();
+        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
+        studyMetadata = metadataManager.getStudyMetadata(sampleIndexQuery.getStudy());
         operation = sampleIndexQuery.getQueryOperation();
         samples = sampleIndexQuery.getSamplesMap();
 
@@ -126,9 +126,9 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
             logger.error("Error closing hBaseManager", e);
         }
         try {
-            scm.close();
+            metadataManager.close();
         } catch (IOException e) {
-            logger.error("Error closing StudyConfigurationManager", e);
+            logger.error("Error closing MetadataManager", e);
         }
         try {
             if (iterator != null) {
@@ -174,7 +174,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
     @Override
     public void initialize(InputSplit inputsplit, TaskAttemptContext context) throws IOException, InterruptedException {
 
-        List<String> allChromosomes = new ArrayList<>(studyConfiguration.getVariantHeaderLines("contig").keySet());
+        List<String> allChromosomes = new ArrayList<>(studyMetadata.getVariantHeaderLines("contig").keySet());
         if (allChromosomes.isEmpty()) {
             // Contigs not found!
             allChromosomes = Arrays.asList("1", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
@@ -217,7 +217,9 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
                         chromosome.equals(stopChr) ? end : Integer.MAX_VALUE));
             }
         }
-        iterator = sampleIndexDBAdaptor.iterator(regions, studyConfiguration.getStudyName(), samples, operation);
+        // TODO: Use correct filter mask
+        SampleIndexQuery query = new SampleIndexQuery(regions, studyMetadata.getName(), samples, operation);
+        iterator = sampleIndexDBAdaptor.iterator(query);
         loadMoreResults();
     }
 
