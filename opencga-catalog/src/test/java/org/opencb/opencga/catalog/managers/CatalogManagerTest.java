@@ -226,7 +226,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testAssignPermissions() throws CatalogException {
         catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, "guest", null, null);
 
-        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "test", sessionIdUser);
+        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "group_cancer_some_thing_else",
+                "test", sessionIdUser);
         List<QueryResult<StudyAclEntry>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
                 new Study.StudyAclParams("", AclParams.Action.SET, "view_only"), sessionIdUser);
@@ -492,8 +493,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUpdateGroupInfo() throws CatalogException {
         StudyManager studyManager = catalogManager.getStudyManager();
 
-        studyManager.createGroup(studyFqn, "group1", "", sessionIdUser);
-        studyManager.createGroup(studyFqn, "group2", "", sessionIdUser);
+        studyManager.createGroup(studyFqn, "group1", "group1", "", sessionIdUser);
+        studyManager.createGroup(studyFqn, "group2", "group2", "", sessionIdUser);
 
         Group.Sync syncFrom = new Group.Sync("auth", "aaa");
         studyManager.syncGroupWith(studyFqn, "group2", syncFrom, sessionIdUser);
@@ -557,7 +558,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Assign permissions to study
         QueryResult<Group> groupQueryResult = studyManager.updateGroup(studyFqn, "@members",
                 new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
-        assertEquals(2, groupQueryResult.first().getUserIds().size());
+        assertEquals(3, groupQueryResult.first().getUserIds().size());
         assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
@@ -585,7 +586,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
         groupQueryResult = studyManager.updateGroup(studyFqn, "@members", new GroupParams("user2,user3",
                 GroupParams.Action.REMOVE), sessionIdUser);
-        assertEquals(0, groupQueryResult.first().getUserIds().size());
+        assertEquals(1, groupQueryResult.first().getUserIds().size());
 
         // Get sample permissions for those members
         for (Sample sample : sampleQueryResult.getResult()) {
@@ -605,7 +606,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Assign permissions to study
         QueryResult<Group> groupQueryResult = studyManager.updateGroup(studyFqn, "@members",
                 new GroupParams("user2,user3", GroupParams.Action.ADD), sessionIdUser);
-        assertEquals(2, groupQueryResult.first().getUserIds().size());
+        assertEquals(3, groupQueryResult.first().getUserIds().size());
         assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
@@ -733,7 +734,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         null, Collections.<String, Object>emptyMap())
         ));
         QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true,
-                false, "", null, variables, sessionIdUser);
+                false, "", null, variables, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser);
 
         assertEquals(1, queryResult.getResult().size());
 
@@ -758,7 +759,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         null, Collections.<String, Object>emptyMap())
         );
         thrown.expect(CatalogException.class);
-        catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables, sessionIdUser);
+        catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser);
     }
 
     @Test
@@ -771,7 +773,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.<String, Object>emptyMap())
         );
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         VariableSet vs1_deleted = catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()),
                 sessionIdUser).first();
@@ -793,10 +796,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.<String, Object>emptyMap())
         );
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "Cancer", null, variables, sessionIdUser).first();
-        VariableSet vs2 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs2", "vs2", true, false, "Virgo", null, variables, sessionIdUser).first();
-        VariableSet vs3 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs3", "vs3", true, false, "Piscis", null, variables, sessionIdUser).first();
-        VariableSet vs4 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs4", "vs4", true, false, "Aries", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "Cancer", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+        VariableSet vs2 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs2", "vs2", true, false, "Virgo", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+        VariableSet vs3 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs3", "vs3", true, false, "Piscis", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
+        VariableSet vs4 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs4", "vs4", true, false, "Aries", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         long numResults;
         numResults = catalogManager.getStudyManager().searchVariableSets(study.getFqn(),
@@ -834,7 +841,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Variable("AGE", "", "", Variable.VariableType.DOUBLE, null, false, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.emptyMap())
         );
-        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables, sessionIdUser).first();
+        VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
+                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
         Map<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "LINUS");

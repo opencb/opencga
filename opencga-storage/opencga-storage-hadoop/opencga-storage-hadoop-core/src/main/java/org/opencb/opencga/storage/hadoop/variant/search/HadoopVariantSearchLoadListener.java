@@ -10,9 +10,9 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class HadoopVariantSearchLoadListener extends VariantSearchLoadListener {
     private final byte[] family;
 
     public HadoopVariantSearchLoadListener(VariantHadoopDBAdaptor dbAdaptor) {
-        super(dbAdaptor.getStudyConfigurationManager().getStudies(null));
+        super(dbAdaptor.getMetadataManager().getStudies(null));
         family = dbAdaptor.getGenomeHelper().getColumnFamily();
         writer = new HBaseDataWriter<>(dbAdaptor.getHBaseManager(), dbAdaptor.getVariantTable());
         writer.open();

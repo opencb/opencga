@@ -23,14 +23,13 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +37,7 @@ import java.util.concurrent.TimeUnit;
  * Created by jmmut on 3/03/15.
  */
 public class VariantDBReader implements VariantReader {
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
     private VariantIterable iterable;
     private Query query;
     private QueryOptions options;
@@ -56,8 +55,8 @@ public class VariantDBReader implements VariantReader {
         this.iterator = iterator;
     }
 
-    public VariantDBReader(StudyConfiguration studyConfiguration, VariantIterable iterable, Query query, QueryOptions options) {
-        this.studyConfiguration = studyConfiguration;
+    public VariantDBReader(StudyMetadata studyMetadata, VariantIterable iterable, Query query, QueryOptions options) {
+        this.studyMetadata = studyMetadata;
         this.iterable = iterable;
         this.query = query;
         this.options = options;
@@ -65,7 +64,7 @@ public class VariantDBReader implements VariantReader {
 
     @Override
     public List<String> getSampleNames() {
-        return studyConfiguration != null ? new LinkedList<>(studyConfiguration.getSampleIds().keySet()) : null;
+        return null;
     }
 
     @Override

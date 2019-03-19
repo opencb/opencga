@@ -2,10 +2,13 @@ package org.opencb.opencga.storage.hadoop.variant.gaps;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.util.ArrayList;
@@ -23,10 +26,19 @@ import static junit.framework.TestCase.assertTrue;
  */
 public class FillGapsTaskUtilsTest {
 
+    private VariantStorageMetadataManager metadataManager;
+    private StudyMetadata studyMetadata;
+
+    @Before
+    public void setUp() throws Exception {
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        studyMetadata = metadataManager.createStudy("a");
+    }
 
     @Test
     public void testGetOverlappingVariants() {
-        FillGapsTask a = new FillGapsTask(new StudyConfiguration(1, "a"), new GenomeHelper(new Configuration()), true);
+        FillGapsTask a = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, metadataManager);
 
         VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice("17:29113:T:C", "17:29185:A:G", "17:29190-29189::AAAAAAAA", "17:29464:G:");
 
@@ -50,7 +62,7 @@ public class FillGapsTaskUtilsTest {
 
     @Test
     public void testGetOverlappingVariants2() {
-        FillGapsTask a = new FillGapsTask(new StudyConfiguration(1, "a"), new GenomeHelper(new Configuration()), true);
+        FillGapsTask a = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, metadataManager);
 
         VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice(
                 "2:182562574-182562573::T",

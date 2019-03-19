@@ -117,9 +117,9 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
         studyConfiguration.getCohorts().put(10, cohort1);
         studyConfiguration.getCohorts().put(11, cohort2);
 
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
+        dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
 
-        variantStorageEngine.calculateStats(studyConfiguration.getStudyName(),
+        variantStorageEngine.calculateStats(studyConfiguration.getName(),
                 new ArrayList<>(cohortIds.keySet()), options);
 
     }
@@ -131,10 +131,10 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
     @Test
     public void removeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), System.currentTimeMillis(), new QueryOptions("purge", false));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getName(), System.currentTimeMillis(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
-                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
+                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getId() + ""));
             }
         }
         QueryResult<Long> allVariants = dbAdaptor.count(new Query());
@@ -143,10 +143,10 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
     @Test
     public void removeAndPurgeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getStudyName(), System.currentTimeMillis(), new QueryOptions("purge", true));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getName(), System.currentTimeMillis(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
-                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
+                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getId() + ""));
             }
         }
         QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions());
@@ -156,7 +156,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
     @Test
     public void removeStatsTest() throws Exception {
         String deletedCohort = "cohort2";
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStats(studyConfiguration.getName(), deletedCohort, new QueryOptions());
 
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
@@ -171,18 +171,18 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
     @Test
     public void removeAnnotationTest() throws Exception {
         Query query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true);
-        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());
+        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getId());
         long numAnnotatedVariants = dbAdaptor.count(query).first();
 
         assertEquals("All variants should be annotated", numVariants, numAnnotatedVariants);
 
         query = new Query(VariantQueryParam.REGION.key(), "1");
-        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());
+        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getId());
         long numVariantsChr1 = dbAdaptor.count(query).first();
         ((VariantMongoDBAdaptor) dbAdaptor).removeAnnotation("", new Query(VariantQueryParam.REGION.key(), "1"), new QueryOptions());
 
         query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
-        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getStudyId());
+        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getId());
         long numVariantsNoAnnotation = dbAdaptor.count(query).first();
 
         assertNotEquals(numVariantsChr1, numVariants);

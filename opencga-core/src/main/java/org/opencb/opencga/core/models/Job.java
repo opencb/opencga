@@ -160,7 +160,7 @@ public class Job extends PrivateStudyUid {
         this.params = defaultObject(params, HashMap::new);
         this.release = release;
         this.resourceManagerAttributes.putIfAbsent(Job.JOB_SCHEDULER_NAME, "");
-        this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
+//        this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
     }
 
     public static class JobStatus extends Status {

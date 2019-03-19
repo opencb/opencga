@@ -2,9 +2,11 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
-import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
@@ -13,8 +15,6 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeColumn;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConverter.toGenotypeCountColumn;
 
 /**
  * Created on 14/05/18.
@@ -27,13 +27,17 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     private final List<Integer> sampleIds;
     private final byte[] family;
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, StringBuilder>
-    private final Map<IndexChunk, List<Map<String, Set<String>>>> buffer = new LinkedHashMap<>();
+    private final Map<IndexChunk, List<Map<String, SortedSet<Variant>>>> buffer = new LinkedHashMap<>();
     private final HashSet<String> genotypes = new HashSet<>();
+    private final SampleIndexToHBaseConverter converter;
+    private final ObjectMap options;
 
-    public SampleIndexDBLoader(HBaseManager hBaseManager, String tableName, List<Integer> sampleIds, byte[] family) {
+    public SampleIndexDBLoader(HBaseManager hBaseManager, String tableName, List<Integer> sampleIds, byte[] family, ObjectMap options) {
         super(hBaseManager, tableName);
         this.sampleIds = sampleIds;
         this.family = family;
+        converter = new SampleIndexToHBaseConverter(family);
+        this.options = options;
     }
 
     private class IndexChunk {
@@ -69,17 +73,17 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         super.open();
 
         try {
-            int files = hBaseManager.getConf().getInt(EXPECTED_FILES_NUMBER, DEFAULT_EXPECTED_FILES_NUMBER);
-            int preSplitSize = hBaseManager.getConf().getInt(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE, DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE);
+            int files = options.getInt(EXPECTED_FILES_NUMBER, DEFAULT_EXPECTED_FILES_NUMBER);
+            int preSplitSize = options.getInt(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE, DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE);
 
             int splits = files / preSplitSize;
             ArrayList<byte[]> preSplits = new ArrayList<>(splits);
             for (int i = 0; i < splits; i++) {
-                preSplits.add(SampleIndexConverter.toRowKey(i * preSplitSize));
+                preSplits.add(HBaseToSampleIndexConverter.toRowKey(i * preSplitSize));
             }
 
             hBaseManager.createTableIfNeeded(tableName, family, preSplits, Compression.getCompressionAlgorithmByName(
-                    hBaseManager.getConf().get(SAMPLE_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+                    options.getString(SAMPLE_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -91,21 +95,23 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         for (Variant variant : variants) {
             IndexChunk indexChunk = new IndexChunk(variant.getChromosome(), (variant.getStart() / BATCH_SIZE) * BATCH_SIZE);
             int sampleIdx = 0;
-            for (List<String> samplesData : variant.getStudies().get(0).getSamplesData()) {
-                String gt = samplesData.get(0);
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            boolean hasGT = studyEntry.getFormat().get(0).equals("GT");
+            for (List<String> samplesData : studyEntry.getSamplesData()) {
+                String gt = hasGT ? samplesData.get(0) : GenotypeClass.NA_GT_VALUE;
                 if (validVariant(variant) && validGenotype(gt)) {
                     genotypes.add(gt);
-                    Set<String> variantsList = buffer
+                    Set<Variant> variantsList = buffer
                             .computeIfAbsent(indexChunk, k -> {
-                                List<Map<String, Set<String>>> list = new ArrayList<>(sampleIds.size());
+                                List<Map<String, SortedSet<Variant>>> list = new ArrayList<>(sampleIds.size());
                                 for (int i = 0; i < sampleIds.size(); i++) {
                                     list.add(new HashMap<>());
                                 }
                                 return list;
                             })
                             .get(sampleIdx)
-                            .computeIfAbsent(gt, k -> new TreeSet<>());
-                    variantsList.add(variant.toString());
+                            .computeIfAbsent(gt, k -> new TreeSet<>(HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+                    variantsList.add(variant);
                 }
                 sampleIdx++;
             }
@@ -125,12 +131,25 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
      * @return is valid genotype
      */
     public static boolean validGenotype(String gt) {
-        return gt != null
-                && !gt.isEmpty()
-                && !gt.equals("0/0")
-                && !gt.equals("0|0")
-                && !gt.equals("./.")
-                && !gt.equals(".");
+//        return gt != null && gt.contains("1");
+        if (gt != null) {
+            switch (gt) {
+                case "" :
+                case "0" :
+                case "0/0" :
+                case "./0" :
+                case "0|0" :
+                case "0|." :
+                case ".|0" :
+                case "./." :
+                case ".|." :
+                case "." :
+                    return false;
+                default:
+                    return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -154,18 +173,14 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
 
         while (buffer.size() > remain) {
             IndexChunk indexChunk = buffer.keySet().iterator().next();
-            List<Map<String, Set<String>>> sampleList = buffer.remove(indexChunk);
-            Iterator<Integer> sampleIterator = sampleIds.iterator();
-            for (Map<String, Set<String>> gtsMap : sampleList) {
+            List<Map<String, SortedSet<Variant>>> sampleList = buffer.remove(indexChunk);
+            ListIterator<Integer> sampleIterator = sampleIds.listIterator();
+            for (Map<String, SortedSet<Variant>> gtsMap : sampleList) {
+                int sampleIdx = sampleIterator.nextIndex();
                 Integer sampleId = sampleIterator.next();
 
-                byte[] rk = SampleIndexConverter.toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
-                Put put = new Put(rk);
-
-                for (Map.Entry<String, Set<String>> gtsEntry : gtsMap.entrySet()) {
-                    put.addColumn(family, toGenotypeColumn(gtsEntry.getKey()), Bytes.toBytes(String.join(",", gtsEntry.getValue())));
-                    put.addColumn(family, toGenotypeCountColumn(gtsEntry.getKey()), Bytes.toBytes(gtsEntry.getValue().size()));
-                }
+                byte[] rk = HBaseToSampleIndexConverter.toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
+                Put put = converter.convert(rk, gtsMap, sampleIdx);
                 if (!put.isEmpty()) {
                     puts.add(put);
                 }

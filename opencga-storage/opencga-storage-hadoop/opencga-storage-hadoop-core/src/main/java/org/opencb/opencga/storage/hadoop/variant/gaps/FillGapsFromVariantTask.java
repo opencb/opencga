@@ -6,19 +6,23 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.run.ParallelTaskRunner.TaskWithException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.commons.run.Task;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,11 +35,11 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, IOException> {
+public class FillGapsFromVariantTask implements Task<Variant, Put> {
 
     private final HBaseManager hBaseManager;
     private final String archiveTableName;
-    private final StudyConfiguration studyConfiguration;
+    private final StudyMetadata studyMetadata;
     private final GenomeHelper helper;
     private final Integer anyFileId;
     private Table archiveTable;
@@ -48,24 +52,22 @@ public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, 
 
     public FillGapsFromVariantTask(HBaseManager hBaseManager,
                                    String archiveTableName,
-                                   StudyConfiguration studyConfiguration,
+                                   StudyMetadata studyMetadata,
+                                   VariantStorageMetadataManager metadataManager,
                                    GenomeHelper helper,
                                    Collection<Integer> samples) {
         this.hBaseManager = hBaseManager;
         this.archiveTableName = archiveTableName;
-        this.studyConfiguration = studyConfiguration;
+        this.studyMetadata = studyMetadata;
         this.helper = helper;
         archiveRowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
         this.samples = samples;
         samplesFileMap = new HashMap<>();
         for (Integer sample : samples) {
-            for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
-                if (entry.getValue().contains(sample)) {
-                    Integer fileId = entry.getKey();
-                    samplesFileMap.put(sample, fileId);
-                    fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
-                    break;
-                }
+            SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyMetadata.getId(), sample);
+            for (Integer fileId : sampleMetadata.getFiles()) {
+                samplesFileMap.put(sample, fileId);
+                fileToNonRefColumnMap.put(fileId, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
             }
         }
         anyFileId = fileToNonRefColumnMap.keySet().iterator().next();
@@ -75,7 +77,7 @@ public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, 
                 throw new IllegalStateException("Unable to fill gaps for files from different batches in archive!");
             }
         }
-        fillGapsTask = new FillGapsTask(studyConfiguration, helper, false);
+        fillGapsTask = new FillGapsTask(studyMetadata, helper, false, metadataManager);
     }
 
     @Override
@@ -115,9 +117,12 @@ public class FillGapsFromVariantTask implements TaskWithException<Variant, Put, 
      */
     public Put fillGaps(Variant variant) throws IOException {
         HashSet<Integer> missingSamples = new HashSet<>();
-        for (Integer sampleId : samples) {
-            if (variant.getStudies().get(0).getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId)).get(0).equals("?/?")) {
-                missingSamples.add(sampleId);
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        for (Map.Entry<String, Integer> entry : studyEntry.getSamplesPosition().entrySet()) {
+            Integer sampleId = entry.getValue();
+            String sampleName = entry.getKey();
+            if (studyEntry.getSamplesData().get(sampleId).get(0).equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+                missingSamples.add(fillGapsTask.getSampleId(sampleName));
             }
         }
         return fillGaps(variant, missingSamples);

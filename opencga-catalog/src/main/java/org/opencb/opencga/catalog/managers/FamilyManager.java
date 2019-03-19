@@ -39,10 +39,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -575,7 +572,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options, familyDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
+                VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
@@ -588,41 +586,64 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return queryResult;
     }
 
-    public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String familyId, ClinicalProperty.ModeOfInheritance moi,
-                                                         String disease, boolean incompletePenetrance, String token)
-            throws CatalogException {
-        QueryResult<Family> familyQueryResult = get(studyStr, familyId, QueryOptions.empty(), token);
+    public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,
+                                                              ClinicalProperty.ModeOfInheritance moi, String disorderId,
+                                                              boolean incompletePenetrance, String token) throws CatalogException {
+        Pedigree pedigree;
+        Disorder disorder = null;
 
-        if (familyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Family " + familyId + " not found");
-        }
-
-        boolean notFound = true;
-        for (Phenotype phenotype : familyQueryResult.first().getPhenotypes()) {
-            if (phenotype.getId().equals(disease)) {
-                notFound = false;
-                break;
+        if (StringUtils.isNotEmpty(clinicalAnalysisId)) {
+            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyStr,
+                    clinicalAnalysisId, new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key())), token);
+            if (clinicalAnalysisQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Clinical analysis " + clinicalAnalysisId + " not found");
             }
-        }
-        if (notFound) {
-            throw new CatalogException("Phenotype " + disease + " not found in any member of the family");
-        }
 
-        Phenotype phenotype = new Phenotype(disease, disease, "");
+            disorder = clinicalAnalysisQueryResult.first().getDisorder();
+            pedigree = getPedigreeFromFamily(clinicalAnalysisQueryResult.first().getFamily(),
+                    clinicalAnalysisQueryResult.first().getProband().getId());
 
-        Pedigree pedigree = getPedigreeFromFamily(familyQueryResult.first());
+        } else if (StringUtils.isNotEmpty(familyId) && StringUtils.isNotEmpty(disorderId)) {
+            QueryResult<Family> familyQueryResult = get(studyStr, familyId, QueryOptions.empty(), token);
+
+            if (familyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Family " + familyId + " not found");
+            }
+
+            for (Disorder tmpDisorder : familyQueryResult.first().getDisorders()) {
+                if (tmpDisorder.getId().equals(disorderId)) {
+                    disorder = tmpDisorder;
+                    break;
+                }
+            }
+            if (disorder == null) {
+                throw new CatalogException("Disorder " + disorderId + " not found in any member of the family");
+            }
+
+            pedigree = getPedigreeFromFamily(familyQueryResult.first(), null);
+        } else {
+            throw new CatalogException("Missing 'clinicalAnalysis' or ('family' and 'disorderId') parameters");
+        }
 
         switch (moi) {
             case MONOALLELIC:
-                return ModeOfInheritance.dominant(pedigree, phenotype, incompletePenetrance);
+                return ModeOfInheritance.dominant(pedigree, disorder, incompletePenetrance);
             case BIALLELIC:
-                return ModeOfInheritance.recessive(pedigree, phenotype, incompletePenetrance);
+                return ModeOfInheritance.recessive(pedigree, disorder, incompletePenetrance);
             case XLINKED_BIALLELIC:
-                return ModeOfInheritance.xLinked(pedigree, phenotype, false);
+                return ModeOfInheritance.xLinked(pedigree, disorder, false);
             case XLINKED_MONOALLELIC:
-                return ModeOfInheritance.xLinked(pedigree, phenotype, true);
+                return ModeOfInheritance.xLinked(pedigree, disorder, true);
             case YLINKED:
-                return ModeOfInheritance.yLinked(pedigree, phenotype);
+                return ModeOfInheritance.yLinked(pedigree, disorder);
+            case MITOCHONDRIAL:
+                return ModeOfInheritance.mitochondrial(pedigree, disorder);
+            case DE_NOVO:
+                return ModeOfInheritance.deNovo(pedigree);
+            case COMPOUND_HETEROZYGOUS:
+                return ModeOfInheritance.compoundHeterozygous(pedigree);
             default:
                 throw new CatalogException("Unsupported or unknown mode of inheritance " + moi);
         }
@@ -734,7 +755,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, queryOptions, userId);
     }
 
-    public static Pedigree getPedigreeFromFamily(Family family) {
+    public static Pedigree getPedigreeFromFamily(Family family, String probandId) {
         List<Individual> members = family.getMembers();
         Map<String, Member> individualMap = new HashMap<>();
 
@@ -744,7 +765,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     member.getId(), member.getName(), null, null, member.getMultiples(),
                     Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
                     Member.AffectionStatus.getEnum(member.getAffectationStatus().toString()),
-                    member.getPhenotypes(), member.getAttributes());
+                    member.getPhenotypes(), member.getDisorders(), member.getAttributes());
             individualMap.put(individual.getId(), individual);
         }
 
@@ -758,8 +779,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
+        Member proband = null;
+        if (StringUtils.isNotEmpty(probandId)) {
+            proband = individualMap.get(probandId);
+        }
+
         List<Member> individuals = new ArrayList<>(individualMap.values());
-        return new Pedigree(family.getId(), individuals, family.getPhenotypes(), family.getAttributes());
+        return new Pedigree(family.getId(), individuals, proband, family.getPhenotypes(), family.getDisorders(), family.getAttributes());
     }
 
     void updatePhenotypesAndDisorders(Study study, Individual individual) throws CatalogDBException {

@@ -7,10 +7,15 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
  */
 public interface VariantStorageMetadataDBAdaptorFactory {
 
-    VariantFileMetadataDBAdaptor buildVariantFileMetadataDBAdaptor();
+    FileMetadataDBAdaptor buildFileMetadataDBAdaptor();
 
     ProjectMetadataAdaptor buildProjectMetadataDBAdaptor();
 
-    StudyConfigurationAdaptor buildStudyConfigurationDBAdaptor();
+    StudyMetadataDBAdaptor buildStudyMetadataDBAdaptor();
 
+    SampleMetadataDBAdaptor buildSampleMetadataDBAdaptor();
+
+    CohortMetadataDBAdaptor buildCohortMetadataDBAdaptor();
+
+    TaskMetadataDBAdaptor buildTaskDBAdaptor();
 }

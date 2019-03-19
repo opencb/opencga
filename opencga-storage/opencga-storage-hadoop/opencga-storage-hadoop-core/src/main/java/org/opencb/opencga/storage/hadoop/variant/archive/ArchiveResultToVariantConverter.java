@@ -28,7 +28,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
 import org.slf4j.Logger;
@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,15 +50,16 @@ import java.util.stream.Stream;
 public class ArchiveResultToVariantConverter {
     private final Logger LOG = LoggerFactory.getLogger(ArchiveResultToVariantConverter.class);
     private final int studyId;
-    private final AtomicReference<StudyConfiguration> sc = new AtomicReference<>();
+
     private byte[] columnFamily;
+    private final VariantStorageMetadataManager metadataManager;
     private volatile ConcurrentHashMap<Integer, VcfSliceToVariantListConverter> fileidToConverter = new ConcurrentHashMap<>();
     private final AtomicBoolean parallel = new AtomicBoolean(false);
 
-    public ArchiveResultToVariantConverter(int studyId, byte[] columnFamily, StudyConfiguration sc) {
+    public ArchiveResultToVariantConverter(int studyId, byte[] columnFamily, VariantStorageMetadataManager metadataManager) {
         this.studyId = studyId;
         this.columnFamily = columnFamily;
-        this.sc.set(sc);
+        this.metadataManager = metadataManager;
     }
 
     public void setParallel(boolean parallel) {
@@ -68,10 +68,6 @@ public class ArchiveResultToVariantConverter {
 
     public boolean isParallel() {
         return parallel.get();
-    }
-
-    public StudyConfiguration getSc() {
-        return sc.get();
     }
 
     public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws IllegalStateException {
@@ -137,15 +133,13 @@ public class ArchiveResultToVariantConverter {
 
     private VcfSliceToVariantListConverter getConverter(int fileId) {
         return fileidToConverter.computeIfAbsent(fileId, key -> {
-            LinkedHashSet<Integer> sampleIds = getSc().getSamplesInFiles().get(fileId);
-            Map<String, Integer> thisFileSamplePositions = new LinkedHashMap<>();
-            for (Integer sampleId : sampleIds) {
-                String sampleName = getSc().getSampleIds().inverse().get(sampleId);
-                thisFileSamplePositions.put(sampleName, thisFileSamplePositions.size());
+            LinkedHashMap<String, Integer> thisFileSamplePositions = new LinkedHashMap<>();
+            for (Integer sampleId : metadataManager.getFileMetadata(studyId, fileId).getSamples()) {
+                thisFileSamplePositions.put(metadataManager.getSampleName(studyId, sampleId), thisFileSamplePositions.size());
             }
-            VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(
+
+            return new VcfSliceToVariantListConverter(
                     thisFileSamplePositions, Integer.toString(fileId), Integer.toString(studyId));
-            return converter;
         });
     }
 

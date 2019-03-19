@@ -465,10 +465,10 @@ public class VariantCommandOptions {
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
         public String family;
 
-        @Parameter(names = {"--family-phenotype"}, description = FAMILY_PHENOTYPE_DESC, arity = 1)
+        @Parameter(names = {"--family-disorder"}, description = FAMILY_DISORDER_DESC, arity = 1)
         public String familyPhenotype;
 
-        @Parameter(names = {"--moi", "--mode-of-inheritance"}, description = MODE_OF_INHERITANCE_DESC, arity = 1)
+        @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
         public String modeOfInheritance;
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)

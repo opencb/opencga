@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.getSamplesMetadataIfRequested;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addSamplesMetadataIfRequested;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -67,8 +67,8 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return A QueryResult with the result of the query
      */
     default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
-        return iterator(variants, query, options)
-                .toQueryResult(getSamplesMetadataIfRequested(query, options, getStudyConfigurationManager()));
+        QueryResult<Variant> queryResult = iterator(variants, query, options).toQueryResult();
+        return addSamplesMetadataIfRequested(queryResult, query, options, getMetadataManager());
     }
 
     /**
@@ -150,7 +150,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
     default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        return VariantQueryUtils.getIncludeStudies(query, options, getStudyConfigurationManager());
+        return VariantQueryUtils.getIncludeStudies(query, options, getMetadataManager());
     }
     /**
      * Returns all the possible samples to be returned by an specific query.
@@ -160,12 +160,12 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return  Map key: StudyId, value: list of sampleIds
      */
     default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return VariantQueryUtils.getIncludeSamples(query, options, getStudyConfigurationManager());
+        return VariantQueryUtils.getIncludeSamples(query, options, getMetadataManager());
     }
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
 
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, long timestamp,
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp,
                             QueryOptions options);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions);
@@ -182,9 +182,9 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      */
     QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
 
-    StudyConfigurationManager getStudyConfigurationManager();
+    VariantStorageMetadataManager getMetadataManager();
 
-    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
+    void setVariantStorageMetadataManager(VariantStorageMetadataManager variantStorageMetadataManager);
 
     void close() throws IOException;
 }

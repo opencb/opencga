@@ -122,7 +122,17 @@ public enum GenotypeClass {
         return true;
     });
 
+    /**
+     * Indicate that the genotype information is unknown.
+     *
+     * It could be any value: 0/0, ./., 2/2 ...
+     */
     public static final String UNKNOWN_GENOTYPE = "?/?";
+    /**
+     * Indicate that the genotype value was not available in the input variant file.
+     */
+    public static final String NA_GT_VALUE = "NA";
+
     private final Predicate<String> predicate;
 
     GenotypeClass(Predicate<String> predicate) {

@@ -47,7 +47,7 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -331,7 +331,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         storageConfiguration.getVariant().getOptions().putAll(variantQueryCommandOptions.commonOptions.params);
 
-        List<String> studyNames = variantStorageEngine.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
 
         Query query = VariantQueryCommandUtils.parseQuery(variantQueryCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
@@ -666,7 +666,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        storageConfiguration.getVariant().getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
 
 
-        List<String> studyNames = variantStorageEngine.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+        List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
 
 
         // TODO: JT
@@ -729,7 +729,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
 //                variantStorageEngine.getCellBaseUtils(), variantStorageEngine.getConfiguration());
-        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
+        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getMetadataManager(),
                 variantStorageEngine.getConfiguration());
         boolean querying = true;
         QueryOptions options = new QueryOptions();

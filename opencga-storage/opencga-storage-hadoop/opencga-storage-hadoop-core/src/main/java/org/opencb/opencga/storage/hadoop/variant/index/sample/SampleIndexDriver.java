@@ -20,14 +20,13 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,10 +104,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
 
         if (allSamples) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
-            for (Integer fileId : sc.getIndexedFiles()) {
-                sampleIds.addAll(sc.getSamplesInFiles().get(fileId));
-            }
+            sampleIds.addAll(getMetadataManager().getIndexedSamples(study));
         } else {
             for (int sample : samples) {
                 sampleIds.add(sample);
@@ -262,7 +258,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
                 if (SampleIndexDBLoader.validGenotype(gt)) {
                     ImmutableBytesWritable key = new ImmutableBytesWritable(
-                            SampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
+                            HBaseToSampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
                     GtVariantsWritable value = new GtVariantsWritable(gt, variant.toString());
                     context.write(key, value);
                     if (samplesToCount.contains(sampleId)) {

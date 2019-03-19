@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.metadata;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 
 /**
  * Created on 02/05/18.
@@ -29,8 +29,8 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
     }
 
     @Override
-    public HBaseVariantFileMetadataDBAdaptor buildVariantFileMetadataDBAdaptor() {
-        return new HBaseVariantFileMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    public HBaseFileMetadataDBAdaptor buildFileMetadataDBAdaptor() {
+        return new HBaseFileMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
     }
 
     @Override
@@ -39,7 +39,22 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
     }
 
     @Override
-    public HBaseStudyConfigurationDBAdaptor buildStudyConfigurationDBAdaptor() {
-        return new HBaseStudyConfigurationDBAdaptor(hBaseManager, metaTableName, configuration);
+    public HBaseStudyMetadataDBAdaptor buildStudyMetadataDBAdaptor() {
+        return new HBaseStudyMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    }
+
+    @Override
+    public HBaseSampleMetadataDBAdaptor buildSampleMetadataDBAdaptor() {
+        return new HBaseSampleMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    }
+
+    @Override
+    public HBaseCohortMetadataDBAdaptor buildCohortMetadataDBAdaptor() {
+        return new HBaseCohortMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
+    }
+
+    @Override
+    public HBaseTaskMetadataDBAdaptor buildTaskDBAdaptor() {
+        return new HBaseTaskMetadataDBAdaptor(hBaseManager, metaTableName, configuration);
     }
 }

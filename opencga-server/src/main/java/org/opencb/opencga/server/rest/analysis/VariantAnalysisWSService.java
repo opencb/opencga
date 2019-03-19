@@ -35,7 +35,7 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -240,6 +240,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sampleMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sampleLimit", value = SAMPLE_LIMIT_DESCR, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "sampleSkip", value = SAMPLE_SKIP_DESCR, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "maf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
@@ -248,8 +250,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "familyPhenotype", value = VariantCatalogQueryUtils.FAMILY_PHENOTYPE_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "modeOfInheritance", value = VariantCatalogQueryUtils.MODE_OF_INHERITANCE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
@@ -545,14 +547,15 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Calculate the possible genotypes for the members of a family", position = 15, response = Map.class)
     public Response calculateGenotypes(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Family id", required = true) @QueryParam("family") String family,
+            @ApiParam(value = "Family id") @QueryParam("family") String family,
+            @ApiParam(value = "Clinical analysis id") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
             @ApiParam(value = "Mode of inheritance", required = true, defaultValue = "MONOALLELIC")
                 @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
-            @ApiParam(value = "Complete penetrance", defaultValue = "false") @QueryParam("completePenetrance") boolean completePenetrance,
-            @ApiParam(value = "Disease id", required = true) @QueryParam("disease") String disease) {
+            @ApiParam(value = "Complete penetrance", defaultValue = "true") @QueryParam("completePenetrance") boolean completePenetrance,
+            @ApiParam(value = "Disorder id") @QueryParam("disorder") String disorder) {
         try {
-            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, family, moi, disease,
-                    !completePenetrance, sessionId));
+            return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
+                    disorder, !completePenetrance, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

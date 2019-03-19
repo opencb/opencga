@@ -125,6 +125,8 @@ public class VariantQueryCommandUtils {
         addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.includeGenotype);
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
         addParam(query, SAMPLE_METADATA, queryVariantsOptions.samplesMetadata);
+        addParam(query, SAMPLE_LIMIT, queryVariantsOptions.sampleLimit);
+        addParam(query, SAMPLE_SKIP, queryVariantsOptions.sampleSkip);
 
         /**
          * Annotation parameters
@@ -216,7 +218,10 @@ public class VariantQueryCommandUtils {
         if (value) {
             query.put(key.key(), true);
         }
+    }
 
+    protected static void addParam(ObjectMap query, QueryParam key, Number value) {
+        query.put(key.key(), value);
     }
 
 }

@@ -11,7 +11,6 @@ import org.apache.phoenix.jdbc.PhoenixDriver;
 import org.apache.phoenix.mapreduce.util.PhoenixConfigurationUtil;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

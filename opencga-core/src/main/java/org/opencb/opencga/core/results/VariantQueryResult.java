@@ -29,6 +29,8 @@ import java.util.Map;
 public class VariantQueryResult<T> extends QueryResult<T> {
 
     private Map<String, List<String>> samples;
+    private Integer numTotalSamples;
+    private Integer numSamples;
     private String source;
     private Boolean approximateCount;
     private Integer approximateCountSamplingSize;
@@ -40,20 +42,30 @@ public class VariantQueryResult<T> extends QueryResult<T> {
 
     public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
                               List<T> result, Map<String, List<String>> samples, String source) {
-        this(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result, samples, source, null, null);
+        this(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result, samples, source, null, null, null);
     }
 
     public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
                               List<T> result, Map<String, List<String>> samples, String source,
-                              Boolean approximateCount, Integer approximateCountSamplingSize) {
+                              Boolean approximateCount, Integer approximateCountSamplingSize, Integer numTotalSamples) {
         super(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result);
         this.samples = samples;
         this.source = source;
         this.approximateCount = approximateCount;
         this.approximateCountSamplingSize = approximateCountSamplingSize;
+        if (samples == null) {
+            this.numSamples = null;
+        } else {
+            this.numSamples = samples.values().stream().mapToInt(List::size).sum();
+        }
+        this.numTotalSamples = numTotalSamples;
     }
 
     public VariantQueryResult(QueryResult<T> queryResult, Map<String, List<String>> samples) {
+        this(queryResult, samples, null);
+    }
+
+    public VariantQueryResult(QueryResult<T> queryResult, Map<String, List<String>> samples, String source) {
         super(queryResult.getId(),
                 queryResult.getDbTime(),
                 queryResult.getNumResults(),
@@ -65,6 +77,13 @@ public class VariantQueryResult<T> extends QueryResult<T> {
         if (numTotalResults >= 0) {
             approximateCount = false;
         }
+        if (samples == null) {
+            this.numSamples = null;
+        } else {
+            this.numSamples = samples.values().stream().mapToInt(List::size).sum();
+        }
+        this.numTotalSamples = numSamples;
+        this.source = source;
     }
 
     public Map<String, List<String>> getSamples() {
@@ -73,6 +92,24 @@ public class VariantQueryResult<T> extends QueryResult<T> {
 
     public VariantQueryResult<T> setSamples(Map<String, List<String>> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public Integer getNumTotalSamples() {
+        return numTotalSamples;
+    }
+
+    public VariantQueryResult<T> setNumTotalSamples(int numTotalSamples) {
+        this.numTotalSamples = numTotalSamples;
+        return this;
+    }
+
+    public Integer getNumSamples() {
+        return numSamples;
+    }
+
+    public VariantQueryResult<T> setNumSamples(int numSamples) {
+        this.numSamples = numSamples;
         return this;
     }
 

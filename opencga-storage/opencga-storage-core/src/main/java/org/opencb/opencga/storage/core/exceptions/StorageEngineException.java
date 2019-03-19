@@ -16,11 +16,9 @@
 
 package org.opencb.opencga.storage.core.exceptions;
 
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -36,48 +34,39 @@ public class StorageEngineException extends Exception {
         super(message);
     }
 
-
-    public static StorageEngineException alreadyLoaded(int fileId, StudyConfiguration sc) {
-        return unableToExecute("Already loaded", fileId, sc);
-    }
-
     public static StorageEngineException alreadyLoaded(int fileId, String fileName) {
         return unableToExecute("Already loaded", fileId, fileName);
     }
 
-    public static StorageEngineException unableToExecute(String action, int fileId, StudyConfiguration sc) {
-        return unableToExecute(action, fileId, sc.getFileIds().inverse().get(fileId));
+    public static StorageEngineException otherOperationInProgressException(TaskMetadata opInProgress,
+                                                                           TaskMetadata currentOperation) {
+        return otherOperationInProgressException(opInProgress, currentOperation.getName(), currentOperation.getFileIds());
     }
 
-    public static StorageEngineException otherOperationInProgressException(BatchFileOperation opInProgress,
-                                                                           BatchFileOperation currentOperation) {
-        return otherOperationInProgressException(opInProgress, currentOperation.getOperationName(), currentOperation.getFileIds());
-    }
-
-    public static StorageEngineException otherOperationInProgressException(BatchFileOperation operation, String jobOperationName,
+    public static StorageEngineException otherOperationInProgressException(TaskMetadata operation, String jobOperationName,
                                                                            List<Integer> fileIds) {
         return otherOperationInProgressException(operation, jobOperationName, fileIds, false);
     }
 
-    public static StorageEngineException otherOperationInProgressException(BatchFileOperation opInProgress, String currentOperationName,
+    public static StorageEngineException otherOperationInProgressException(TaskMetadata opInProgress, String currentOperationName,
                                                                            List<Integer> fileIds, boolean resume) {
         if (opInProgress.sameOperation(fileIds, opInProgress.getType(), currentOperationName)) {
             return currentOperationInProgressException(opInProgress);
         }
-        if (resume && opInProgress.getOperationName().equals(currentOperationName)) {
+        if (resume && opInProgress.getName().equals(currentOperationName)) {
             return new StorageEngineException("Can not resume \"" + currentOperationName + "\" "
                     + "in status \"" + opInProgress.currentStatus() + "\" with input files " + fileIds + ". "
                     + "Input files must be same from the previous batch: " + opInProgress.getFileIds());
         } else {
             return new StorageEngineException("Can not \"" + currentOperationName + "\" files " + fileIds
-                    + " while there is an operation \"" + opInProgress.getOperationName() + "\" "
+                    + " while there is an operation \"" + opInProgress.getName() + "\" "
                     + "in status \"" + opInProgress.currentStatus() + "\" for files " + opInProgress.getFileIds() + ". "
                     + "Finish or resume operation to continue.");
         }
     }
 
-    public static StorageEngineException currentOperationInProgressException(BatchFileOperation opInProgress) {
-        return new StorageEngineException("Operation \"" + opInProgress.getOperationName() + "\" "
+    public static StorageEngineException currentOperationInProgressException(TaskMetadata opInProgress) {
+        return new StorageEngineException("Operation \"" + opInProgress.getName() + "\" "
                 + "for files " + opInProgress.getFileIds() + ' '
                 + "in status \"" + opInProgress.currentStatus() + "\". "
                 + "Relaunch with " + VariantStorageEngine.Options.RESUME.key() + "=true to finish the operation.");
@@ -92,13 +81,11 @@ public class StorageEngineException extends Exception {
                 + "when the current release is '" + currentRelease + "'.");
     }
 
-    public static StorageEngineException alreadyLoadedSamples(StudyConfiguration studyConfiguration, int fileId) {
-        LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
-
+    public static StorageEngineException alreadyLoadedSamples(String fileName, List<String> samples) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Unable to load file '").append(studyConfiguration.getFileIds().inverse().get(fileId)).append("'. ");
-        if (sampleIds != null && sampleIds.size() == 1) {
-            sb.append("Sample '").append(studyConfiguration.getSamplesInFiles().get(fileId).iterator().next()).append("' is ");
+        sb.append("Unable to load file '").append(fileName).append("'. ");
+        if (samples != null && samples.size() == 1) {
+            sb.append("Sample '").append(samples.get(0)).append("' is ");
         } else {
             sb.append("The samples from this file are ");
         }
@@ -111,9 +98,9 @@ public class StorageEngineException extends Exception {
         return new StorageEngineException(sb.toString());
     }
 
-    public static StorageEngineException alreadyLoadedSomeSamples(StudyConfiguration studyConfiguration, int fileId) {
+    public static StorageEngineException alreadyLoadedSomeSamples(String fileName) {
         return new StorageEngineException(
-                "Unable to load file '" + studyConfiguration.getFileIds().inverse().get(fileId) + "'. "
+                "Unable to load file '" + fileName + "'. "
                         + "There was some already loaded samples, but not all of them.");
     }
 }

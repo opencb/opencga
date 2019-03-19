@@ -16,11 +16,15 @@
 
 package org.opencb.opencga.core.common;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.concurrent.TimeUnit;
 
 public class TimeUtils {
 
@@ -47,6 +51,24 @@ public class TimeUtils {
     public static String getTimeMillis(Date date) {
         SimpleDateFormat sdfMillis = new SimpleDateFormat(yyyyMMddHHmmssSSS);
         return sdfMillis.format(date);
+    }
+
+    public static String durationToString(StopWatch stopWatch) {
+        return durationToString(stopWatch.getTime());
+    }
+
+    public static String durationToString(long duration, TimeUnit timeUnit) {
+        return durationToString(timeUnit.toMillis(duration));
+    }
+
+    public static String durationToString(long durationInMillis) {
+        long durationInSeconds = Math.round(durationInMillis / 1000.0);
+        long h = durationInSeconds / 3600;
+        long m = (durationInSeconds % 3600) / 60;
+        long s = durationInSeconds % 60;
+        return (durationInMillis / 1000.0) + "s [ "+ StringUtils.leftPad(String.valueOf(h), 2, '0') + ':'
+                + StringUtils.leftPad(String.valueOf(m), 2, '0') + ':'
+                + StringUtils.leftPad(String.valueOf(s), 2, '0') + " ]";
     }
 
     public static Date add24HtoDate(Date date) {

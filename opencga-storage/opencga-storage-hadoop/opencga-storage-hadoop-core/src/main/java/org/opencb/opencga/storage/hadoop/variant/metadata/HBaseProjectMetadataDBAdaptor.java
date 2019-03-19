@@ -9,12 +9,11 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.ProjectMetadata;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,7 @@ import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMet
  */
 public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implements ProjectMetadataAdaptor {
 
-    private static Logger logger = LoggerFactory.getLogger(HBaseStudyConfigurationDBAdaptor.class);
+    private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBAdaptor.class);
 
     private final HBaseLock lock;
 
@@ -112,7 +111,6 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
                 Put put = new Put(getProjectRowKey());
                 put.addColumn(family, getValueColumn(), objectMapper.writeValueAsBytes(projectMetadata));
                 put.addColumn(family, getTypeColumn(), Type.PROJECT.bytes());
-                put.addColumn(family, getStatusColumn(), Status.READY.bytes());
                 if (updateCounters) {
                     for (Map.Entry<String, Integer> entry : projectMetadata.getCounters().entrySet()) {
                         put.addColumn(family, Bytes.toBytes(entry.getKey()), Bytes.toBytes(entry.getValue().longValue()));
@@ -128,10 +126,11 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public int generateId(StudyConfiguration studyConfiguration, String idType) throws StorageEngineException {
+    public int generateId(Integer studyId, String idType) throws StorageEngineException {
         try {
+            ensureTableExists();
             return hBaseManager.act(tableName, (table) -> {
-                byte[] column = getCounterColumn(studyConfiguration, idType);
+                byte[] column = getCounterColumn(studyId, idType);
                 return (int) table.incrementColumnValue(getProjectRowKey(), family, column, 1);
 
             });

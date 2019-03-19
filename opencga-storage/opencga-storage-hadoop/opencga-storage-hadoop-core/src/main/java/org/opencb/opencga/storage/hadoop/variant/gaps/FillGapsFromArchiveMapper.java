@@ -7,11 +7,13 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.AbstractArchiveTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.AbstractArchiveTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -63,11 +65,11 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
             String archiveTableName = context.getConfiguration().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
             task = new FillGapsFromArchiveTask(getHBaseManager(),
                     archiveTableName,
-                    getStudyConfiguration(), getHelper(),
-                    samples);
+                    getStudyMetadata(), getHelper(),
+                    samples, getMetadataManager());
         } else {
             boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
-            task = new FillMissingFromArchiveTask(getStudyConfiguration(), getHelper(), overwrite);
+            task = new FillMissingFromArchiveTask(getStudyMetadata(), getMetadataManager(), getHelper(), overwrite);
         }
         task.setTimestamp(timestamp);
         task.setQuiet(true);

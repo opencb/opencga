@@ -12,11 +12,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.dummy.DummyProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationAdaptor;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.util.ArrayList;
@@ -33,11 +31,11 @@ public class HBaseToStudyEntryConverterTest {
 
     private HBaseToStudyEntryConverter converter;
     private StudyConfiguration sc;
-    private StudyConfigurationManager scm;
+    private VariantStorageMetadataManager scm;
 
     @Before
     public void setUp() throws Exception {
-        scm = new StudyConfigurationManager(new DummyProjectMetadataAdaptor(), new DummyStudyConfigurationAdaptor(), new DummyVariantFileMetadataDBAdaptor());
+        scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         sc = new StudyConfiguration(1, "S1");
         sc.getIndexedFiles().add(1);
         sc.getIndexedFiles().add(2);
