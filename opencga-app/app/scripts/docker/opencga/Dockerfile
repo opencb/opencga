@@ -13,6 +13,7 @@ ARG buildPath="./build"
 
 WORKDIR /opt/opencga
 ENV BASEDIR=/opt/opencga
+ENV OPENCGA_CONFIG_DIR=/opt/opencga/conf
 
 RUN adduser -u 1001 opencga
 
