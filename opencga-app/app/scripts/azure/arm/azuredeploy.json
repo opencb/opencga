@@ -364,7 +364,7 @@
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
-            "name": "appgw",
+            "name": "appgw-ssl",
             "dependsOn": [
                 "vnet"
             ],
@@ -551,7 +551,7 @@
                         "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
                     },
                     "opencgaFQDN": {
-                        "value": "[reference('appgw').outputs.fqdn.value]"
+                        "value": "[reference('appgw-ssl').outputs.fqdn.value]"
                     },
                     "solrHosts": {
                         "value": "[reference('solr').outputs.solrConnectionDetails.value]"
@@ -794,7 +794,7 @@
                         "value": "[reference('vnet').outputs.hdinsightSubnetId.value]"
                     },
                     "appgwBackendAddressPoolId": {
-                        "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
+                        "value": "[reference('appgw-ssl').outputs.appgwBackendAddressPoolId.value]"
                     },
                     "mountArgs": {
                         "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('avere ', reference('avere').outputs.VSERVER_IPS.value))]"
