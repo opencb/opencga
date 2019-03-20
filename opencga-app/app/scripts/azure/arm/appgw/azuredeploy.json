@@ -152,6 +152,10 @@
         }
     ],
     "outputs": {
+        "appgwBackendAddressPoolId": {
+            "type": "string",
+            "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
+        },
         "fqdn": {
             "type":"string",
             "value": "[reference('appgw').outputs.fqdn.value]"
