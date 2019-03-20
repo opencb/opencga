@@ -241,7 +241,7 @@
                 },
                 "azureFilesEnabled": false,
                 "solr": {
-                    "ha": true,                    
+                    "ha": true,
                     "nodeSize": "Standard_E8_v3",
                     "nodeCount": 2
                 },
@@ -284,7 +284,7 @@
                 },
                 "azureFilesEnabled": false,
                 "solr": {
-                    "ha": true,                    
+                    "ha": true,
                     "nodeSize": "Standard_E16_v3",
                     "nodeCount": 2
                 },
@@ -374,7 +374,7 @@
                     "uri": "[concat(parameters('_artifactsLocation'), '/appgw/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
-                "parameters":{  
+                "parameters":{
                     "_artifactsLocation": {
                         "value": "[parameters('_artifactsLocation')]"
                     },
@@ -460,10 +460,10 @@
                     },
                     "appInsightsAppId":{
                         "value": "[reference('appinsights').outputs.appId.value]"
-                   }, 
+                   },
                    "appInsightsInstrumentationKey":{
                         "value": "[reference('appinsights').outputs.instrumentationKey.value]"
-                   } 
+                   }
                 }
             }
         },
@@ -606,7 +606,7 @@
                    },
                    "LogAnalyticsWorkspaceResourceID":{
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } 
+                   }
                 }
             }
         },
@@ -680,7 +680,7 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                    } 
+                    }
                 }
             }
         },
@@ -816,7 +816,7 @@
                    },
                    "LogAnalyticsWorkspaceResourceID":{
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   }               
+                   }
                 }
             }
         },
@@ -886,8 +886,8 @@
                     },
                    "LogAnalyticsWorkspaceResourceID":{
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } 
-          
+                   }
+
                 }
             }
         },
@@ -926,7 +926,7 @@
                     "clusterSize": {
                         "value": "[variables('selectedSize').mongo.nodeCount]"
                     },
-                    "mongoCertificateEmail": {
+                    "certificateEmail": {
                         "value": "[parameters('sslCertificateEmail')]"
                     },
                     "adminUsername": {
@@ -969,7 +969,7 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                   
+
                 }
             }
         }
