@@ -2,36 +2,43 @@ import subprocess
 from io import StringIO
 import sys
 import os
+import unittest
 
 os.chdir(sys.path[0])
 
-print("> Running Js overrides")
+class Test_init_script(unittest.TestCase):
+    def test_end_2_end(self):
 
-res = subprocess.run(["python3", "../override-js.py",
-               "--iva-config-path", "./test-config.js",
-               "--cellbase-hosts", "test-cellbase-host1,test-cellbase-host2",
-               "--rest-host", "test-rest-host"],
-               stdout=subprocess.PIPE,
-               stderr=subprocess.STDOUT, check=True)
+        print("> Running Js overrides")
 
-iva_config = res.stdout.decode("utf-8")
-configAsFile = StringIO(iva_config)
+        res = subprocess.run(["python3", "../override-js.py",
+                    "--iva-config-path", "./test-config.js",
+                    "--cellbase-rest-urls", "http://test-cellbase-host1,http://test-cellbase-host2",
+                    "--rest-host", "test-rest-host"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT, check=True)
 
-print("> Testing results")
+        iva_config = res.stdout.decode("utf-8")
+        configAsFile = StringIO(iva_config)
 
-# Not efficent but shouldn't be an issue as only a test
-foundCellbase = False
-foundOpenCGA = False
-for line in configAsFile:
-    if foundCellbase == False and '"test-cellbase-host1", "test-cellbase-host2"' in line:
-        foundCellbase = True
-    if foundOpenCGA == False and 'test-rest-host' in line:
-        foundOpenCGA = True
-    if foundOpenCGA == True and foundCellbase == True:
-        break
+        print("> Testing results")
 
-configAsFile.close()
+        # Not efficent but shouldn't be an issue as only a test
+        foundCellbase = False
+        foundOpenCGA = False
+        for line in configAsFile:
+            if foundCellbase == False and '"http://test-cellbase-host1", "http://test-cellbase-host2"' in line:
+                foundCellbase = True
+            if foundOpenCGA == False and 'test-rest-host' in line:
+                foundOpenCGA = True
+            if foundOpenCGA == True and foundCellbase == True:
+                break
 
-assert(foundCellbase)
-assert(foundOpenCGA)
-print("PASS: Js configuration overrides successful")
+        configAsFile.close()
+
+        self.assertTrue(foundCellbase)
+        self.assertTrue(foundOpenCGA)
+        print("PASS: Js configuration overrides successful")
+
+if __name__ == '__main__':
+    unittest.main()

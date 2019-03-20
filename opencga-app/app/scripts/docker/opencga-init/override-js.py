@@ -3,13 +3,13 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--iva-config-path", help="path to iva config.js file", default="/opt/opencga/ivaconf/config.js")
-parser.add_argument("--cellbase-hosts", required=True)
+parser.add_argument("--cellbase-rest-urls", required=True)
 parser.add_argument("--rest-host", required=True)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
 
 # Unescape parameter strings
-cellbase_hosts = args.cellbase_hosts.replace('\"', '')
+cellbase_hosts = args.cellbase_rest_urls.replace('\"', '')
 rest_host = args.rest_host.replace('\"', '')
 
 # Load IVA configuration JS (hack: wouldn't need to change source file ideally)

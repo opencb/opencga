@@ -52,7 +52,7 @@ RUN chmod +x /tmp/setup.sh
 # Run tests on config script
 # If this line fails then a configuration change has a bug
 # review override-yaml.py or override-js.py
-RUN cd /tmp/test && python3 test-override-yaml.py && python3 test-override-js.py && rm -r /tmp/test
+RUN echo ">Running init container configuration tests" && cd /tmp/test && python3 test-override-yaml.py -v && python3 test-override-js.py -v && rm -r /tmp/test
 
 # It is the responsibility of the setup.sh
 # script to initialise the volume correctly

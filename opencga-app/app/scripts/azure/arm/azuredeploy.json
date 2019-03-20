@@ -190,7 +190,7 @@
         },
         "cellbaseRestUrls": {
             "type": "string",
-            "defaultValue": "",
+            "defaultValue": "http://bioinfo.hpc.cam.ac.uk/cellbase/",
             "metadata": {
                 "description": "A CSV list of cellbase REST service hosts"
             }
@@ -230,7 +230,7 @@
                 },
                 "mongo": {
                     "nodeCount": 1,
-                    "nodeSize": "Standard_D4s_v2",
+                    "nodeSize": "Standard_D4s_v3",
                     "diskType": "E10"
                 },
                 "hdInsight": {
