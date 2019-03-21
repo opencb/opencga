@@ -464,9 +464,7 @@
                         "value": "[variables('selectedSize').batch.nodeSize]"
                     },
                     "dockerImagesToCache": {
-                        "value": [
-                            "[parameters('daemonContainerImage')]"
-                        ]
+                        "value": []
                     },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
