@@ -85,8 +85,8 @@ public class VariantBenchmarkRunnerRESTTest extends VariantBenchmarkRunnerTest {
     }
 
     @Test
-    public void testByTranscriptionFlagRESTAndRandom() throws Exception {
-        queriesTestDefault("transcriptionFlag", 1, BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
+    public void testByTranscriptFlagRESTAndRandom() throws Exception {
+        queriesTestDefault("transcriptFlag", 1, BenchmarkRunner.ConnectionType.REST, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test

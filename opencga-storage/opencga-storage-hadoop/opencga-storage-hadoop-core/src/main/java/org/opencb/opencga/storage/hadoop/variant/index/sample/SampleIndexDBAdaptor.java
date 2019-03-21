@@ -49,10 +49,10 @@ public class SampleIndexDBAdaptor {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexDBAdaptor.class);
 
     public SampleIndexDBAdaptor(GenomeHelper helper, HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
-                                VariantStorageMetadataManager scm) {
+                                VariantStorageMetadataManager metadataManager) {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
-        this.metadataManager = scm;
+        this.metadataManager = metadataManager;
         family = helper.getColumnFamily();
     }
 

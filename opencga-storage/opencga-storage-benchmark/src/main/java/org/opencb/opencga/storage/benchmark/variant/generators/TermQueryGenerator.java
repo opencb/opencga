@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -143,16 +144,16 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
         }
     }
 
-    public static class TranscriptionFlagsQueryGenerator extends TermQueryGenerator {
+    public static class TranscriptFlagsQueryGenerator extends TermQueryGenerator {
 
-        public TranscriptionFlagsQueryGenerator() {
-            super(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAG.key());
+        public TranscriptFlagsQueryGenerator() {
+            super(VariantQueryParam.ANNOT_TRANSCRIPT_FLAG.key());
         }
 
         @Override
         protected void loadTerms(Map<String, String> params, RandomQueries randomQueries) {
-            if (randomQueries.getTranscriptionFlags() != null) {
-                this.terms = randomQueries.getTranscriptionFlags();
+            if (randomQueries.getTranscriptFlags() != null) {
+                this.terms = randomQueries.getTranscriptFlags();
             }
         }
     }

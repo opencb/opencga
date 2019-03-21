@@ -19,7 +19,7 @@ public class RandomQueries {
     private List<String> sample;
     private List<String> filter;
     private List<String> biotype;
-    private List<String> transcriptionFlags;
+    private List<String> transcriptFlags;
     private List<String> xref;
     private List<String> drug;
     private List<String> clinicalSignificance;
@@ -138,12 +138,12 @@ public class RandomQueries {
         return this;
     }
 
-    public List<String> getTranscriptionFlags() {
-        return transcriptionFlags;
+    public List<String> getTranscriptFlags() {
+        return transcriptFlags;
     }
 
-    public RandomQueries setTranscriptionFlags(List<String> transcriptionFlags) {
-        this.transcriptionFlags = transcriptionFlags;
+    public RandomQueries setTranscriptFlags(List<String> transcriptFlags) {
+        this.transcriptFlags = transcriptFlags;
         return this;
     }
 
@@ -258,7 +258,7 @@ public class RandomQueries {
         sb.append(", sample=").append(sample);
         sb.append(", filter=").append(filter);
         sb.append(", biotype=").append(biotype);
-        sb.append(", transcriptionFlags=").append(transcriptionFlags);
+        sb.append(", transcriptFlags=").append(transcriptFlags);
         sb.append(", xref=").append(xref);
         sb.append(", drug=").append(drug);
         sb.append(", clinicalSignificance=").append(clinicalSignificance);

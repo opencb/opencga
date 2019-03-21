@@ -116,9 +116,9 @@ public class MultiQueryGenerator extends QueryGenerator {
                 case "clinicalSignificance":
                     queryGenerator = new TermQueryGenerator.ClinicalSignificanceQueryGenerator();
                     break;
-                case "transcriptionFlag":
-                case "transcriptionFlags":
-                    queryGenerator = new TermQueryGenerator.TranscriptionFlagsQueryGenerator();
+                case "transcriptFlag":
+                case "transcriptFlags":
+                    queryGenerator = new TermQueryGenerator.TranscriptFlagsQueryGenerator();
                     break;
                 case "includeSample":
                     queryGenerator = new TermQueryGenerator.IncludeSampleQueryGenerator();

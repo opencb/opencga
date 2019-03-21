@@ -735,7 +735,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         for (String flag : flags.elementSet()) {
             System.out.println(flag + ", " + flags.count(flag));
-            query = new Query(ANNOT_TRANSCRIPTION_FLAG.key(), flag);
+            query = new Query(ANNOT_TRANSCRIPT_FLAG.key(), flag);
             queryResult = query(query, null);
             assertEquals(flags.count(flag), queryResult.getNumResults());
         }

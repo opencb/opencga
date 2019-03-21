@@ -375,7 +375,7 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--annot-transcription-flags"}, description = "List of transcript annotation flags. "
                 + "e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno", arity = 1)
-        public String transcriptionFlags;
+        public String transcriptFlags;
 
         @Parameter(names = {"--annot-gene-trait-id"}, description = "List of gene trait association id. e.g. \"umls:C0007222\" , "
                 + "\"OMIM:269600\"", arity = 1)

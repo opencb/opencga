@@ -74,8 +74,8 @@ public class VariantBenchmarkRunnerDirectTest extends VariantBenchmarkRunnerTest
     }
 
     @Test
-    public void testByTranscriptionFlagDirectAndRandom() throws Exception {
-        queriesTestDefault("transcriptionFlag", 1, BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
+    public void testByTranscriptFlagDirectAndRandom() throws Exception {
+        queriesTestDefault("transcriptFlag", 1, BenchmarkRunner.ConnectionType.DIRECT, BenchmarkRunner.ExecutionMode.RANDOM);
     }
 
     @Test

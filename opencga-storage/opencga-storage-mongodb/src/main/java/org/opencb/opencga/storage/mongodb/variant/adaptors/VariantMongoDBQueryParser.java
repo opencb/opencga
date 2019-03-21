@@ -260,8 +260,8 @@ public class VariantMongoDBQueryParser {
                 addScoreFilter(value, builder, ANNOT_CONSERVATION, false);
             }
 
-            if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAG)) {
-                String value = query.getString(ANNOT_TRANSCRIPTION_FLAG.key());
+            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                String value = query.getString(ANNOT_TRANSCRIPT_FLAG.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, builder, QueryOperation.AND);
