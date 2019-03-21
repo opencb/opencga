@@ -30,7 +30,7 @@ ARG IVA_TAG="v1.0.0-rc1"
 
 # Install local dependencies
 RUN apt-get update && apt-get install -y python3 python3-pip git && \
-    pip3 install --upgrade pip setuptools && \
+    pip3 install --upgrade pip setuptools ConfigArgParse && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 

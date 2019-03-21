@@ -16,37 +16,9 @@ sshpass -p "$HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFi
 
 echo "Initialising configs"
 # Override Yaml configs
-python3 /tmp/override-yaml.py \
---search-hosts "$SEARCH_HOSTS" \
---clinical-hosts "$CLINICAL_HOSTS" \
---cellbase-hosts "$CELLBASE_HOSTS" \
---catalog-database-hosts "$CATALOG_DATABASE_HOSTS" \
---catalog-database-user "$CATALOG_DATABASE_USER" \
---catalog-database-password "$CATALOG_DATABASE_PASSWORD" \
---catalog-search-hosts "$CATALOG_SEARCH_HOSTS" \
---catalog-search-user "$CATALOG_SEARCH_USER" \
---catalog-search-password "$CATALOG_SEARCH_PASSWORD" \
---rest-host "$REST_HOST" \
---grpc-host "$GRPC_HOST" \
---batch-execution-mode "$BATCH_EXEC_MODE" \
---batch-account-name "$BATCH_ACCOUNT_NAME" \
---batch-account-key "$BATCH_ACCOUNT_KEY" \
---batch-endpoint "$BATCH_ENDPOINT" \
---batch-pool-id "$BATCH_POOL_ID" \
---batch-docker-args "$BATCH_DOCKER_ARGS" \
---batch-docker-image "$BATCH_DOCKER_IMAGE" \
---batch-max-concurrent-jobs "$BATCH_MAX_CONCURRENT_JOBS" \
---hadoop-ssh-host "$HBASE_SSH_DNS" \
---hadoop-ssh-user "$HBASE_SSH_USER" \
---hadoop-ssh-password "$HBASE_SSH_PASS" \
---hadoop-ssh-remote-opencga-home "$REMOTE_OPENCGA_HOME" \
---health-check-interval "$HEALTH_CHECK_INTERVAL" \
---save
+python3 /tmp/override-yaml.py --save
 # Override Js configs
-python3 /tmp/override-js.py \
---cellbase-hosts "$CELLBASE_HOSTS" \
---rest-host "$REST_HOST" \
---save
+python3 /tmp/override-js.py --save
 
 # Copies the config files from our local directory into a
 # persistent volume to be shared by the other containers.
