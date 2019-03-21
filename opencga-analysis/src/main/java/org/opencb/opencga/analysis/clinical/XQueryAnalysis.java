@@ -1,40 +1,15 @@
 package org.opencb.opencga.analysis.clinical;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Analyst;
-import org.opencb.biodata.models.commons.OntologyTerm;
-import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.commons.Software;
-import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.bionetdb.core.neo4j.interpretation.FamilyFilter;
-import org.opencb.bionetdb.core.neo4j.interpretation.GeneFilter;
-import org.opencb.bionetdb.core.neo4j.interpretation.VariantContainer;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
-import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.User;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 
 public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
 
@@ -52,8 +27,8 @@ public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
 
     @Override
     public AnalysisResult<Interpretation> execute() throws Exception {
+/*
         StopWatch watcher = StopWatch.createStarted();
-
         // Sanity check
 
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyStr,
@@ -174,8 +149,12 @@ public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
                 numResults,
                 "", // warning message
                 ""); // error message
+                */
+
+        throw new UnsupportedOperationException("XQuery not yet supported");
     }
 
+/*
     private Map<String, Object> getFilters(FamilyFilter familyFilter, GeneFilter geneFilter) {
         ObjectMap filters = new ObjectMap();
         if (familyFilter != null) {
@@ -186,4 +165,5 @@ public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
         }
         return filters;
     }
+    */
 }
