@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.4.0-rc3-dev</version>
+    <version>1.4.1-dev</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
     
@@ -37,11 +37,11 @@
     </modules>
 
     <properties>
-        <opencga.version>1.4.0-rc3-dev</opencga.version>
+        <opencga.version>1.4.1-dev</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.7.3-SNAPSHOT</java-common-libs.version>
-        <biodata.version>1.4.3-SNAPSHOT</biodata.version>
-        <cellbase.version>4.6.2-SNAPSHOT</cellbase.version>
+        <java-common-libs.version>3.7.4-SNAPSHOT</java-common-libs.version>
+        <biodata.version>1.4.4-SNAPSHOT</biodata.version>
+        <cellbase.version>4.6.2</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <bionet.version>0.2.0-SNAPSHOT</bionet.version>
         <jackson.version>2.9.7</jackson.version>
