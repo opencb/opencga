@@ -30,7 +30,7 @@ ARG IVA_TAG="v1.0.0-rc1"
 
 # Install local dependencies
 RUN apt-get update && apt-get install -y python3 python3-pip git && \
-    pip3 install --upgrade pip setuptools ConfigArgParse && \
+    pip3 install --upgrade pip setuptools && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
 
@@ -45,8 +45,9 @@ RUN git clone "https://github.com/opencb/iva.git" && \
 # Mount volume to copy config into
 VOLUME /opt/volume
 
-RUN pip3 install oyaml
 COPY opencga-app/app/scripts/docker/opencga-init/ /tmp/
+# Install python requirements
+RUN pip3 install -r /tmp/requirements.txt
 RUN chmod +x /tmp/setup.sh
 
 # Run tests on config script

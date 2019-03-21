@@ -13,10 +13,10 @@ class Test_init_script(unittest.TestCase):
 
         res = subprocess.run(["python3", "../override-js.py",
                     "--iva-config-path", "./test-config.js",
-                    "--cellbase-rest-urls", "http://test-cellbase-host1,http://test-cellbase-host2",
-                    "--rest-host", "test-rest-host"],
+                    "--cellbase-rest-urls", "http://test-cellbase-host1,http://test-cellbase-host2"],
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT, check=True)
+                    stderr=subprocess.STDOUT, check=True,
+                    env={**os.environ, "INIT_REST_HOST": "test-rest-host"}) #Test that the auto import of environment vars is working)
 
         iva_config = res.stdout.decode("utf-8")
         configAsFile = StringIO(iva_config)
@@ -35,7 +35,7 @@ class Test_init_script(unittest.TestCase):
                 break
 
         configAsFile.close()
-
+        
         self.assertTrue(foundCellbase)
         self.assertTrue(foundOpenCGA)
         print("PASS: Js configuration overrides successful")

@@ -1,10 +1,8 @@
 import oyaml as yaml
-import argparse
 import sys
-import os
 import configargparse
 
-parser = configargparse.ArgumentParser(auto_env_var_prefix="")
+parser = configargparse.ArgumentParser(auto_env_var_prefix="INIT_")
 parser.add_argument("--config-path", help="path to the configuration.yml file", default="/opt/opencga/conf/configuration.yml")
 parser.add_argument("--client-config-path", help="path to the client-configuration.yml file", default="/opt/opencga/conf/client-configuration.yml")
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")

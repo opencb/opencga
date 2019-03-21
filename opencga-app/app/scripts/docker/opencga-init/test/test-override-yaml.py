@@ -59,7 +59,7 @@ class Test_init_script(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
-            env={**os.environ, "CLINICAL_HOSTS": "test-clinical-host"},
+            env={**os.environ, "INIT_CLINICAL_HOSTS": "test-clinical-host"}, #Test that the auto import of environment vars is working
         )
         if res.returncode != 0:
             print("Error calling override-yaml.py:")

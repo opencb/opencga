@@ -1,7 +1,7 @@
-import argparse
 import sys
+import configargparse
 
-parser = argparse.ArgumentParser()
+parser = configargparse.ArgumentParser(auto_env_var_prefix="INIT_")
 parser.add_argument("--iva-config-path", help="path to iva config.js file", default="/opt/opencga/ivaconf/config.js")
 parser.add_argument("--cellbase-rest-urls", required=True)
 parser.add_argument("--rest-host", required=True)
