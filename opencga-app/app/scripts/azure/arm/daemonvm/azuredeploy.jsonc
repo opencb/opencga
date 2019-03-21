@@ -171,6 +171,8 @@
         // This build the command used to setup the configuration file for OpenCGA
         // it takes in inputs from the larger ARM template to configure Mongo, SOLR, Storage and other settings
         // the script used can be found here /opencga-app/app/scripts/docker/opencga-init/*.py
+        // NOTE> Editors will show this line as invalid JSON but as the `[]` denote the ARM language 
+        //       this functions correctly. 
         "initCmd": "[concat('docker run  --name=opencga-init --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e INIT_OPENCGA_PASS=',parameters('openCgaAdminPassword'), 
             ' -e INIT_HEALTH_CHECK_INTERVAL=',parameters('healthCheckInterval'), 
             ' -e INIT_HBASE_SSH_DNS=',parameters('hdInsightSshDns'), 
@@ -187,7 +189,7 @@
             ' -e INIT_CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'), 
             ' -e INIT_REST_HOST=', variables('singleQuote'),variables('restHost'), variables('singleQuote'),
             ' -e INIT_GRPC_HOST=', variables('singleQuote'), variables('grpcHost'), variables('singleQuote'),
-            ' -e INIT_BATCH_EXEC_MODE=AZURE ', 
+            ' -e INIT_BATCH_EXECUTION_MODE=AZURE ', 
             ' -e INIT_BATCH_ACCOUNT_NAME=',parameters('batchAccountName'), 
             ' -e INIT_BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'), 
             ' -e INIT_BATCH_ENDPOINT=',parameters('batchEndpoint'), 
