@@ -126,7 +126,7 @@
         },
         "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
     
-        "_comment": "The cloud init below is used to install docker then run the Avere mounting scripts located in ./arm/avere/mount.py",
+        "_comment": "The cloud init below is used to install docker then run the Avere mounting scripts located in ./arm/scripts/mount.py",
         "cloud-init": [
             "#cloud-config",
             "package_upgrade: true",
@@ -135,7 +135,7 @@
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- ', variables('logAnalyticsAgent'))]",
-            "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', ' | python3 - ', parameters('mountArgs'))]",
+            "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/scripts/mount.py', ' | python3 - ', parameters('mountArgs'))]",
             "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/scripts/wait_config.sh', ' | bash')]",
             "[concat('- docker run  --name=opencga-app -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('openCGAContainerImage'))]",
             "[concat('- docker run --name=iva -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/ivaconf,dst=/usr/local/apache2/htdocs/conf,readonly ', parameters('ivaContainerImage'))]",
