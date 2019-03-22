@@ -11,8 +11,9 @@ sshpass -p "$INIT_HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no  -o UserKnownH
 
 # Copy the OpenCGA installation directory to the hdinsights cluster
 # TODO - Optimize this down to only required jars
-INIT_REMOTE_OPENCGA_HOME="/home/$INIT_HBASE_SSH_USER/opencga/"
-sshpass -p "$INIT_HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$INIT_HBASE_SSH_USER@$INIT_HBASE_SSH_DNS":"$INIT_REMOTE_OPENCGA_HOME"
+# Note> This is exported as it is used by the `override-yaml.py` script too
+export INIT_HBASE_SSH_REMOTE_OPENCGA_HOME="/home/$INIT_HBASE_SSH_USER/opencga/"
+sshpass -p "$INIT_HBASE_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$INIT_HBASE_SSH_USER@$INIT_HBASE_SSH_DNS":"$INIT_HBASE_SSH_REMOTE_OPENCGA_HOME"
 
 echo "Initialising configs"
 # Override Yaml configs

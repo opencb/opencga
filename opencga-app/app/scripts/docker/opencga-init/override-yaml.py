@@ -28,10 +28,10 @@ parser.add_argument("--batch-pool-id", required=True)
 parser.add_argument("--batch-docker-args", required=True)
 parser.add_argument("--batch-docker-image", required=True)
 parser.add_argument("--batch-max-concurrent-jobs", required=True)
-parser.add_argument("--hadoop-ssh-host", required=False)
-parser.add_argument("--hadoop-ssh-user", required=False)
-parser.add_argument("--hadoop-ssh-password", required=False)
-parser.add_argument("--hadoop-ssh-remote-opencga-home", required=False)
+parser.add_argument("--hbase-ssh-dns", required=True)
+parser.add_argument("--hbase-ssh-user", required=True)
+parser.add_argument("--hbase-ssh-pass", required=True)
+parser.add_argument("--hbase-ssh-remote-opencga-home", required=True)
 parser.add_argument("--health-check-interval", required=True)
 parser.add_argument("--save", help="save update to source configuration files (default: false)", default=False, action='store_true')
 args = parser.parse_args()
@@ -92,19 +92,18 @@ if args.cellbase_rest_urls is not None and args.cellbase_rest_urls != "":
 
 
 # Inject Hadoop ssh configuration
-if args.hadoop_ssh_host and args.hadoop_ssh_user and args.hadoop_ssh_password and args.hadoop_ssh_remote_opencga_home:
-    for _, storage_engine in enumerate(storage_config["storageEngines"]):
-        # If we have cellbase hosts set the annotator to the DB Adaptor
-        if has_cellbase_mongo_hosts:
-            storage_engine["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
+for _, storage_engine in enumerate(storage_config["storageEngines"]):
+    # If we have cellbase hosts set the annotator to the DB Adaptor
+    if has_cellbase_mongo_hosts:
+        storage_engine["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
 
-        if storage_engine["id"] == "hadoop": 
-            storage_engine["variant"]["options"]["opencga.mr.executor"] = "ssh"
-            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.host"] = args.hadoop_ssh_host
-            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.user"] = args.hadoop_ssh_user
-            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.password"] = args.hadoop_ssh_password
-            #storage_engine["variant"]["options"]["opencga.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
-            storage_engine["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] = args.hadoop_ssh_remote_opencga_home
+    if storage_engine["id"] == "hadoop": 
+        storage_engine["variant"]["options"]["opencga.mr.executor"] = "ssh"
+        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.host"] = args.hbase_ssh_dns
+        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.user"] = args.hbase_ssh_user
+        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.password"] = args.hbase_ssh_pass
+        #storage_engine["variant"]["options"]["opencga.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
+        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] = args.hbase_ssh_remote_opencga_home
 
 ##############################################################################################################
 # Load configuration yaml
