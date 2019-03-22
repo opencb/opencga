@@ -390,9 +390,15 @@ public class VariantPhoenixHelper {
         }
     }
 
-    public void createTableIfNeeded(Connection con, String table) throws SQLException {
+    public void createTableIfNeeded(Connection con, String variantTable) throws SQLException {
+        createTableIfNeeded(con, variantTable, null);
+        String summaryTableName = HBaseVariantTableNameGenerator.getVariantSummaryTableNameFromVariantTable(variantTable);
+        createTableIfNeeded(con, summaryTableName, variantTable);
+    }
+
+    private void createTableIfNeeded(Connection con, String table, String fromTable) throws SQLException {
         if (!phoenixHelper.tableExists(con, table)) {
-            String sql = buildCreate(table);
+            String sql = buildCreate(table, DEFAULT_TABLE_TYPE, fromTable);
             logger.info(sql);
             try {
                 phoenixHelper.execute(con, sql);
@@ -415,11 +421,7 @@ public class VariantPhoenixHelper {
         phoenixHelper.addMissingColumns(connection, variantsTableName, newColumns, oneCall, DEFAULT_TABLE_TYPE);
     }
 
-    private String buildCreate(String variantsTableName) {
-        return buildCreate(variantsTableName, Bytes.toString(columnFamily), DEFAULT_TABLE_TYPE);
-    }
-
-    private String buildCreate(String variantsTableName, String columnFamily, PTableType tableType) {
+    private String buildCreate(String variantsTableName, PTableType tableType, String fromTable) {
         StringBuilder sb = new StringBuilder().append("CREATE ").append(tableType).append(" IF NOT EXISTS ")
                 .append(phoenixHelper.getEscapedFullTableName(tableType, variantsTableName)).append(' ').append('(');
         for (VariantColumn variantColumn : VariantColumn.values()) {
@@ -434,9 +436,9 @@ public class VariantPhoenixHelper {
             }
         }
 
-//        for (Column column : VariantPhoenixHelper.HUMAN_POPULATION_FREQUENCIES_COLUMNS) {
-//            sb.append(" \"").append(column).append("\" ").append(column.sqlType()).append(" , ");
-//        }
+        for (Column column : VariantPhoenixHelper.HUMAN_POPULATION_FREQUENCIES_COLUMNS) {
+            sb.append(" \"").append(column).append("\" ").append(column.sqlType()).append(" , ");
+        }
 
         sb.append(" CONSTRAINT PK PRIMARY KEY (");
         for (Iterator<Column> iterator = PRIMARY_KEY.iterator(); iterator.hasNext();) {
@@ -446,7 +448,12 @@ public class VariantPhoenixHelper {
                 sb.append(", ");
             }
         }
-        return sb.append(") )").toString();
+        sb.append(") )");
+        if (StringUtils.isNotEmpty(fromTable)) {
+            sb.append(" AS SELECT * FROM ").append(phoenixHelper.getEscapedFullTableName(tableType, fromTable));
+        }
+
+        return sb.toString();
     }
 
     public void createVariantIndexes(Connection con, String variantsTableName) throws SQLException {
@@ -670,8 +677,8 @@ public class VariantPhoenixHelper {
         return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(FILE_SUFIX);
     }
 
-    public static Column getFileColumn(int studyId, int sampleId) {
-        return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    public static Column getFileColumn(int studyId, int fileId) {
+        return Column.build(buildFileColumnKey(studyId, fileId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
     public static byte[] buildReleaseColumnKey(int release) {

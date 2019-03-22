@@ -372,6 +372,7 @@ public class PhoenixHelper {
         private final String column;
         private final PDataType pDataType;
         private boolean nullable;
+        private byte[] bytes;
 
         ColumnImpl(String column, PDataType pDataType, boolean nullable) {
             this(column, Bytes.toBytes(column), pDataType, nullable);
@@ -388,7 +389,6 @@ public class PhoenixHelper {
             this.nullable = nullable;
         }
 
-        private byte[] bytes;
 
         @Override
         public String column() {

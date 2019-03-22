@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAn
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
+import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +77,7 @@ public class VariantSqlQueryParser {
             "3|0", "3|1", "3|2"));
     private final GenomeHelper genomeHelper;
     private final String variantTable;
+    private final String variantSummaryTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
     private final VariantStorageMetadataManager metadataManager;
     private final boolean clientSideSkip;
@@ -115,6 +117,7 @@ public class VariantSqlQueryParser {
                                  VariantStorageMetadataManager metadataManager, boolean clientSideSkip) {
         this.genomeHelper = genomeHelper;
         this.variantTable = variantTable;
+        this.variantSummaryTable = HBaseVariantTableNameGenerator.getVariantSummaryTableNameFromVariantTable(variantTable);
         this.metadataManager = metadataManager;
         this.clientSideSkip = clientSideSkip;
     }
@@ -124,11 +127,12 @@ public class VariantSqlQueryParser {
         StringBuilder sb = new StringBuilder("SELECT ");
         VariantPhoenixSQLQuery phoenixSQLQuery = new VariantPhoenixSQLQuery();
 
+        boolean useSummaryView = true;
         try {
 
             Set<Column> dynamicColumns = new HashSet<>();
             List<String> regionFilters = getRegionFilters(query);
-            List<String> filters = getOtherFilters(query, options, dynamicColumns);
+            List<String> filters = getOtherFilters(query, options, dynamicColumns, useSummaryView);
 
             List<HintNode.Hint> hints = new ArrayList<>();
             if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
@@ -144,8 +148,8 @@ public class VariantSqlQueryParser {
                 sb.append("/*+ ").append(hints.stream().map(Object::toString).collect(Collectors.joining(","))).append(" */ ");
             }
 
-            appendProjectedColumns(sb, query, options, phoenixSQLQuery);
-            appendFromStatement(sb, dynamicColumns);
+            appendProjectedColumns(sb, query, options, phoenixSQLQuery, dynamicColumns, useSummaryView);
+            appendFromStatement(sb, dynamicColumns, useSummaryView);
             appendWhereStatement(sb, regionFilters, filters);
 
         } catch (VariantQueryException e) {
@@ -196,10 +200,13 @@ public class VariantSqlQueryParser {
      * @param query           Query to parse
      * @param options         other options
      * @param phoenixSQLQuery VariantPhoenixSQLQuery
+     * @param dynamicColumns Initialized empty set to be filled with dynamic columns required by the queries
+     * @param useSummaryView Use summary view instead of table with all columns defined
      * @return String builder
      */
-    protected StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options,
-                                                   VariantPhoenixSQLQuery phoenixSQLQuery) {
+    protected StringBuilder appendProjectedColumns(
+            StringBuilder sb, Query query, QueryOptions options, VariantPhoenixSQLQuery phoenixSQLQuery,
+            Set<Column> dynamicColumns, boolean useSummaryView) {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
@@ -218,11 +225,19 @@ public class VariantSqlQueryParser {
             if (returnedFields.contains(VariantField.STUDIES)) {
                 for (Integer studyId : studyIds) {
                     Column studyColumn = VariantPhoenixHelper.getStudyColumn(studyId);
+                    Column fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyId);
+                    if (useSummaryView) {
+                        dynamicColumns.add(studyColumn);
+                        dynamicColumns.add(fillMissingColumn);
+                    }
                     sb.append(",\"").append(studyColumn.column()).append('"');
-                    sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
+                    sb.append(",\"").append(fillMissingColumn.column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
                         for (Integer cohortId : queryFields.getCohorts().getOrDefault(studyId, Collections.emptyList())) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
+                            if (useSummaryView) {
+                                dynamicColumns.add(statsColumn);
+                            }
                             sb.append(",\"").append(statsColumn.column()).append('"');
                         }
                     }
@@ -231,8 +246,12 @@ public class VariantSqlQueryParser {
             if (returnedFields.contains(VariantField.STUDIES_FILES)) {
                 queryFields.getFiles().forEach((studyId, fileIds) -> {
                     for (Integer fileId : fileIds) {
+                        Column fileColumn = getFileColumn(studyId, fileId);
+                        if (useSummaryView) {
+                            dynamicColumns.add(fileColumn);
+                        }
                         sb.append(",\"");
-                        buildFileColumnKey(studyId, fileId, sb);
+                        sb.append(fileColumn.column());
                         sb.append('"');
                     }
                 });
@@ -240,8 +259,12 @@ public class VariantSqlQueryParser {
             if (returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 returnedSamples.forEach((studyId, sampleIds) -> {
                     for (Integer sampleId : sampleIds) {
+                        Column sampleColumn = getSampleColumn(studyId, sampleId);
+                        if (useSummaryView) {
+                            dynamicColumns.add(sampleColumn);
+                        }
                         sb.append(",\"");
-                        buildSampleColumnKey(studyId, sampleId, sb);
+                        sb.append(sampleColumn.column());
                         sb.append('"');
                     }
                     // Check if any of the files from the included samples is not being returned.
@@ -250,8 +273,12 @@ public class VariantSqlQueryParser {
                     List<Integer> includeFiles = queryFields.getFiles().get(studyId);
                     for (Integer fileId : fileIds) {
                         if (!includeFiles.contains(fileId)) {
+                            Column fileColumn = getFileColumn(studyId, fileId);
+                            if (useSummaryView) {
+                                dynamicColumns.add(fileColumn);
+                            }
                             sb.append(",\"");
-                            buildFileColumnKey(studyId, fileId, sb);
+                            sb.append(fileColumn.column());
                             sb.append('"');
                         }
                     }
@@ -263,8 +290,12 @@ public class VariantSqlQueryParser {
 
                 int release = metadataManager.getProjectMetadata().getRelease();
                 for (int i = 1; i <= release; i++) {
+                    Column releaseColumn = getReleaseColumn(i);
+                    if (useSummaryView) {
+                        dynamicColumns.add(releaseColumn);
+                    }
                     sb.append(',');
-                    VariantPhoenixHelper.buildReleaseColumnKey(i, sb);
+                    sb.append(releaseColumn.column());
                 }
             }
 
@@ -272,8 +303,13 @@ public class VariantSqlQueryParser {
         }
     }
 
-    protected void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns) {
-        sb.append(" FROM ").append(getEscapedFullTableName(variantTable, genomeHelper.getConf()));
+    protected void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns, boolean useSummaryView) {
+        sb.append(" FROM ");
+        if (useSummaryView) {
+            sb.append(getEscapedFullTableName(variantSummaryTable, genomeHelper.getConf()));
+        } else {
+            sb.append(getEscapedFullTableName(variantTable, genomeHelper.getConf()));
+        }
 
         if (!dynamicColumns.isEmpty()) {
             sb.append(dynamicColumns.stream()
@@ -514,24 +550,26 @@ public class VariantSqlQueryParser {
      * @param query     Query to parse
      * @param options   Options
      * @param dynamicColumns Initialized empty set to be filled with dynamic columns required by the queries
+     * @param useSummaryView Use summary view instead of table with all columns defined
      * @return List of sql filters
      */
-    protected List<String> getOtherFilters(Query query, QueryOptions options, final Set<Column> dynamicColumns) {
+    protected List<String> getOtherFilters(Query query, QueryOptions options, final Set<Column> dynamicColumns, boolean useSummaryView) {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
-        StudyMetadata defaultStudyMetadata = addVariantFilters(query, options, filters);
+        StudyMetadata defaultStudyMetadata = addVariantFilters(query, options, filters, dynamicColumns, useSummaryView);
 
         // Annotation filters:
         addAnnotFilters(query, dynamicColumns, filters);
 
         // Stats filters:
-        addStatsFilters(query, defaultStudyMetadata, filters);
+        addStatsFilters(query, defaultStudyMetadata, filters, dynamicColumns, useSummaryView);
 
         return filters;
     }
 
-    protected StudyMetadata addVariantFilters(Query query, QueryOptions options, List<String> filters) {
+    protected StudyMetadata addVariantFilters(Query query, QueryOptions options, List<String> filters,
+                                              Set<Column> dynamicColumns, boolean useSummaryView) {
         addQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
         addQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
@@ -550,11 +588,15 @@ public class VariantSqlQueryParser {
             while (iterator.hasNext()) {
                 String study = iterator.next();
                 Integer studyId = metadataManager.getStudyId(study, false, studies);
+                Column studyColumn = getStudyColumn(studyId);
+                if (useSummaryView) {
+                    dynamicColumns.add(studyColumn);
+                }
                 if (isNegated(study)) {
-                    sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NULL ");
+                    sb.append("\"").append(studyColumn.column()).append("\" IS NULL ");
                 } else {
                     notNullStudies.add(studyId);
-                    sb.append("\"").append(getStudyColumn(studyId).column()).append("\" IS NOT NULL ");
+                    sb.append("\"").append(studyColumn.column()).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
                     if (operation == null || operation.equals(QueryOperation.AND)) {
@@ -619,11 +661,11 @@ public class VariantSqlQueryParser {
         }
 
         if (isValidParam(query, INFO)) {
-            addInfoFilter(query, filters, defaultStudyMetadata);
+            addInfoFilter(query, filters, defaultStudyMetadata, dynamicColumns, useSummaryView);
         }
 
         if (isValidParam(query, FORMAT)) {
-            addFormatFilter(query, filters, defaultStudyMetadata);
+            addFormatFilter(query, filters, defaultStudyMetadata, dynamicColumns, useSummaryView);
         }
 
         List<String> files = Collections.emptyList();
@@ -644,19 +686,23 @@ public class VariantSqlQueryParser {
             for (Iterator<String> iterator = files.iterator(); iterator.hasNext();) {
                 String file = iterator.next();
                 Pair<Integer, Integer> fileIdPair = metadataManager.getFileIdPair(file, false, defaultStudyMetadata);
+                Column fileColumn = getFileColumn(fileIdPair.getKey(), fileIdPair.getValue());
+                if (useSummaryView) {
+                    dynamicColumns.add(fileColumn);
+                }
 
                 sb.append(" ( ");
                 if (isNegated(file)) {
                     // ( "FILE" IS NULL OR "FILE"[3] != 'N' )
 
                     sb.append('"');
-                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append(fileColumn.column());
                     sb.append("\" IS NULL ");
 
                     sb.append(" OR ");
 
                     sb.append('"');
-                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append(fileColumn.column());
                     sb.append('"');
                     // Arrays in SQL are 1-based.
                     sb.append('[').append(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX + 1).append(']');
@@ -665,7 +711,7 @@ public class VariantSqlQueryParser {
                 } else {
                     // ( "FILE"[3] = 'N' )
                     sb.append('"');
-                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append(fileColumn.column());
                     sb.append('"');
                     // Arrays in SQL are 1-based.
                     sb.append('[').append(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX + 1).append(']');
@@ -686,7 +732,7 @@ public class VariantSqlQueryParser {
                             }
 
                             sb.append('"');
-                            buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                            sb.append(fileColumn.column());
                             sb.append('"');
 
                             // Arrays in SQL are 1-based.
@@ -722,7 +768,7 @@ public class VariantSqlQueryParser {
 
                             sb.append("TO_NUMBER(");
                             sb.append('"');
-                            buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                            sb.append(fileColumn.column());
                             sb.append('"');
 
                             // Arrays in SQL are 1-based.
@@ -734,7 +780,7 @@ public class VariantSqlQueryParser {
 
                             if (op.startsWith(">>") || op.startsWith("<<")) {
                                 sb.append(" OR \"");
-                                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                                sb.append(fileColumn.column());
                                 sb.append('"');
 
                                 // Arrays in SQL are 1-based.
@@ -876,7 +922,11 @@ public class VariantSqlQueryParser {
                     if (negated) {
                         genotype = removeNegation(genotype);
                     }
-                    String key = buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString();
+                    Column sampleColumn = getSampleColumn(studyId, sampleId);
+                    if (useSummaryView) {
+                        dynamicColumns.add(sampleColumn);
+                    }
+                    String key = sampleColumn.column();
                     final String filter;
                     if (FillGapsTask.isHomRefDiploid(genotype)) {
                         if (negated) {
@@ -919,7 +969,8 @@ public class VariantSqlQueryParser {
         return defaultStudyMetadata;
     }
 
-    private void addInfoFilter(Query query, List<String> filters, StudyMetadata defaultStudyMetadata) {
+    private void addInfoFilter(Query query, List<String> filters, StudyMetadata defaultStudyMetadata,
+                               Set<Column> dynamicColumns, boolean useSummaryView) {
         Pair<QueryOperation, Map<String, String>> pair = VariantQueryUtils.parseInfo(query);
         QueryOperation infoOperation = pair.getKey();
         Map<String, String> infoValuesMap = pair.getValue();
@@ -935,6 +986,10 @@ public class VariantSqlQueryParser {
                 String infoValues = entry.getValue();
                 Pair<Integer, Integer> fileIdPair = metadataManager
                         .getFileIdPair(entry.getKey(), false, defaultStudyMetadata);
+                Column fileColumn = getFileColumn(fileIdPair.getKey(), fileIdPair.getValue());
+                if (useSummaryView) {
+                    dynamicColumns.add(fileColumn);
+                }
                 Pair<QueryOperation, List<String>> infoPair = splitValue(infoValues);
                 for (String infoValue : infoPair.getValue()) {
 
@@ -956,7 +1011,7 @@ public class VariantSqlQueryParser {
                         sb.append("TO_NUMBER(");
                     }
                     sb.append('"');
-                    buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                    sb.append(fileColumn.column());
                     sb.append('"');
 
                     // Arrays in SQL are 1-based.
@@ -969,7 +1024,7 @@ public class VariantSqlQueryParser {
 
                         if (op.startsWith(">>") || op.startsWith("<<")) {
                             sb.append(" OR \"");
-                            buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                            sb.append(fileColumn.column());
                             sb.append('"');
 
                             // Arrays in SQL are 1-based.
@@ -987,7 +1042,8 @@ public class VariantSqlQueryParser {
         }
     }
 
-    private void addFormatFilter(Query query, List<String> filters, StudyMetadata defaultStudyMetadata) {
+    private void addFormatFilter(Query query, List<String> filters, StudyMetadata defaultStudyMetadata,
+                                 Set<Column> dynamicColumns, boolean useSummaryView) {
         Pair<QueryOperation, Map<String, String>> pair = VariantQueryUtils.parseFormat(query);
         QueryOperation formatOperation = pair.getKey();
         Map<String, String> formatValuesMap = pair.getValue();
@@ -1001,7 +1057,12 @@ public class VariantSqlQueryParser {
                 i++;
 
                 String formatValues = entry.getValue();
-                int sampleId = metadataManager.getSampleId(defaultStudyMetadata.getId(), entry.getKey());
+                int studyId = defaultStudyMetadata.getId();
+                int sampleId = metadataManager.getSampleId(studyId, entry.getKey());
+                Column sampleColumn = getSampleColumn(studyId, sampleId);
+                if (useSummaryView) {
+                    dynamicColumns.add(sampleColumn);
+                }
                 Pair<QueryOperation, List<String>> formatPair = splitValue(formatValues);
                 for (String formatValue : formatPair.getValue()) {
 
@@ -1024,7 +1085,7 @@ public class VariantSqlQueryParser {
                         sb.append("TO_NUMBER(");
                     }
                     sb.append('"');
-                    buildSampleColumnKey(defaultStudyMetadata.getId(), sampleId, sb);
+                    sb.append(sampleColumn.column());
                     sb.append('"');
 
                     // Arrays in SQL are 1-based.
@@ -1037,7 +1098,7 @@ public class VariantSqlQueryParser {
 
                         if (op.startsWith(">>") || op.startsWith("<<")) {
                             sb.append(" OR \"");
-                            buildSampleColumnKey(defaultStudyMetadata.getId(), sampleId, sb);
+                            sb.append(sampleColumn.column());
                             sb.append('"');
 
                             // Arrays in SQL are 1-based.
@@ -1229,11 +1290,14 @@ public class VariantSqlQueryParser {
         return buildFilter(VariantColumn.CHROMOSOME, "=", "_VOID");
     }
 
-    protected void addStatsFilters(Query query, StudyMetadata defaultStudyMetadata, List<String> filters) {
-        addQueryFilter(query, STATS_MAF, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getMafColumn),
+    protected void addStatsFilters(Query query, StudyMetadata defaultStudyMetadata, List<String> filters,
+                                   Set<Column> dynamicColumns, boolean useSummaryView) {
+        addQueryFilter(query, STATS_MAF,
+                getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getMafColumn, dynamicColumns, useSummaryView),
                 null, filters);
 
-        addQueryFilter(query, STATS_MGF, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getMgfColumn),
+        addQueryFilter(query, STATS_MGF,
+                getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getMgfColumn, dynamicColumns, useSummaryView),
                 null, filters);
 
         unsupportedFilter(query, MISSING_ALLELES);
@@ -1241,8 +1305,9 @@ public class VariantSqlQueryParser {
         unsupportedFilter(query, MISSING_GENOTYPES);
     }
 
-    private BiFunction<String[], String, Column> getStatsColumnParser(StudyMetadata defaultMetadata,
-                                                                      BiFunction<Integer, Integer, Column> columnBuilder) {
+    private BiFunction<String[], String, Column> getStatsColumnParser(
+            StudyMetadata defaultMetadata, BiFunction<Integer, Integer, Column> columnBuilder,
+            Set<Column> dynamicColumns, boolean useSummaryView) {
         return (keyOpValue, v) -> {
             String key = keyOpValue[0];
             String[] split = VariantQueryUtils.splitStudyResource(key);
@@ -1262,7 +1327,11 @@ public class VariantSqlQueryParser {
                 throw VariantQueryException.cohortNotFound(cohort, sm.getId(), metadataManager);
             }
 
-            return columnBuilder.apply(sm.getId(), cohortId);
+            Column statsColumn = columnBuilder.apply(sm.getId(), cohortId);
+            if (useSummaryView) {
+                dynamicColumns.add(statsColumn);
+            }
+            return statsColumn;
         };
     }
 

@@ -14,6 +14,8 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 public class HBaseVariantTableNameGenerator {
 
     private static final String VARIANTS_SUFIX = "_variants";
+    private static final String SUMMARY = "_summary";
+    private static final String VARIANTS_SUMMARY_SUFIX = VARIANTS_SUFIX + SUMMARY;
     private static final String META_SUFIX = "_meta";
     private static final String ARCHIVE_SUFIX = "_archive_";
     private static final String SAMPLE_SUFIX = "_sample_index_";
@@ -24,6 +26,7 @@ public class HBaseVariantTableNameGenerator {
     private final String namespace;
     private final String dbName;
     private final String variantTableName;
+    private final String variantSummaryTableName;
     private final String metaTableName;
     private final String annotationIndexTableName;
     private final String pendingAnnotationTableName;
@@ -44,6 +47,7 @@ public class HBaseVariantTableNameGenerator {
         this.namespace = namespace;
         this.dbName = dbName;
         variantTableName = getVariantTableName(namespace, this.dbName);
+        variantSummaryTableName = getVariantSummaryTableName(namespace, this.dbName);
         metaTableName = getMetaTableName(namespace, this.dbName);
         annotationIndexTableName = getAnnotationIndexTableName(namespace, this.dbName);
         pendingAnnotationTableName = getPendingAnnotationTableName(namespace, this.dbName);
@@ -51,6 +55,10 @@ public class HBaseVariantTableNameGenerator {
 
     public String getVariantTableName() {
         return variantTableName;
+    }
+
+    public String getVariantSummaryTableName() {
+        return variantSummaryTableName;
     }
 
     public String getArchiveTableName(int studyId) {
@@ -193,6 +201,15 @@ public class HBaseVariantTableNameGenerator {
 
     public static String getVariantTableName(String namespace, String dbName) {
         return buildTableName(namespace, dbName, VARIANTS_SUFIX);
+    }
+
+    public static String getVariantSummaryTableName(String namespace, String dbName) {
+        return buildTableName(namespace, dbName, VARIANTS_SUMMARY_SUFIX);
+    }
+
+    public static String getVariantSummaryTableNameFromVariantTable(String variantTable) {
+        checkValidVariantsTableName(variantTable);
+        return variantTable + SUMMARY;
     }
 
     public static String getAnnotationIndexTableName(String namespace, String dbName) {
