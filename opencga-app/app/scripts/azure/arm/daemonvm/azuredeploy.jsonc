@@ -230,7 +230,6 @@
             "[concat(' - ', variables('mountCmd'))]",
             "[concat(' - ', variables('initCmd'))]",
             "[concat(' - ', variables('daemonCmd'))]",
-            " - 'systemctl start --no-block opencga'",
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
