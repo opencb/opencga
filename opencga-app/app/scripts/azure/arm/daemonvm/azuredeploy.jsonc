@@ -206,8 +206,15 @@
             ' ', parameters('catalogSecretKey'))]",
         // This command is used by cloud init to start the daemon service which monitors work and 
         // queues jobs to run on AzureBatch when submitted
-        "daemonCmd": "[concat('docker run --name=opencga-daemon -d --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',parameters('daemonContainerImage'))]",
-        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+        "daemonCmd": "[concat('docker run --name=opencga-daemon -d --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly',
+            ' --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions',
+            ' --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants',
+            ' -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',parameters('daemonContainerImage'))]",
+        // This command is used to start the Azure Monitoring agent and allow it to collect container logs
+        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock',
+            ' -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers',
+            ' -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),
+            ' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
         "cloud-init": [
             "#cloud-config",
             "",
