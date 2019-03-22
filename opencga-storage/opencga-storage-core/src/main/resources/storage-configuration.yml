@@ -202,7 +202,7 @@ storageEngines:
       opencga.mr.executor.ssh.user: ""             # Hadoop edge node user name
       # opencga.mr.executor.ssh.key: "~/.ssh/id_rsa" # Hadoop edge node ssh-key file
       opencga.mr.executor.ssh.password: ""         # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
-      opencga.mr.executor.ssh.remote_opencga_home: "" # Remote opencga home location. Only if different than local location.
+      opencga.mr.executor.ssh.remote_opencga_home:  # Remote opencga home location. Only if different than local location.
 
 ### hadoop properties
       mapreduce.map.cpu.vcores: 1
