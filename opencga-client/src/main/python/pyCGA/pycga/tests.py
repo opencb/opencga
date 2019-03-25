@@ -1,7 +1,10 @@
 import json
 import re
 import unittest
-from urlparse import parse_qs
+try:
+    from urlparse import parse_qs
+except:
+    from urllib.parse import parse_qs
 
 import httpretty
 from sure import expect
@@ -108,13 +111,15 @@ class OpenCGAClinetTest(unittest.TestCase):
         open_cga_client = OpenCGAClient(self.configuration, session_id='XOkCfKX09FV0YyPJCBvd')
         expect(open_cga_client.session_id).to.equal('XOkCfKX09FV0YyPJCBvd')
         open_cga_client.projects.info('pt')
-        expect(httpretty.last_request()).to.have.property(
-            "headers").which.have.property('headers').which.should.equal(['Host: mock-opencga\r\n',
-                                                                          'Connection: keep-alive\r\n',
-                                                                          'Accept-Encoding: gzip\r\n',
-                                                                          'Accept: */*\r\n',
-                                                                          'User-Agent: python-requests/2.17.3\r\n',
-                                                                          'Authorization: Bearer XOkCfKX09FV0YyPJCBvd\r\n']
+        last_request = httpretty.last_request()
+        expect(last_request).to.have.property("headers")
+        headers = last_request.headers
+        expect(dict(headers)).should.equal({'Host': 'mock-opencga',
+                                            'Connection': 'keep-alive',
+                                            'Accept-Encoding': 'gzip',
+                                            'Accept': '*/*',
+                                            'User-Agent': 'python-requests/2.21.0',
+                                            'Authorization': 'Bearer XOkCfKX09FV0YyPJCBvd'}
                                                                          )
 
     def test_extra_parameters(self):
