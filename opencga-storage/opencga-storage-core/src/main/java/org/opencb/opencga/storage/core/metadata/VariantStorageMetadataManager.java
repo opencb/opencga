@@ -712,14 +712,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             List<Integer> orderedSamplesPosition = getIndexedSamples(sm.getId());
             samplesPosition = new LinkedHashMap<>(orderedSamplesPosition.size());
             for (Integer sampleId : orderedSamplesPosition) {
-                samplesPosition.put(getSampleMetadata(sm.getId(), sampleId).getName(), samplesPosition.size());
+                samplesPosition.put(getSampleName(sm.getId(), sampleId), samplesPosition.size());
             }
         } else {
             samplesPosition = new LinkedHashMap<>(includeSamples.size());
             int index = 0;
-            Set<Integer> indexedSamplesId = new HashSet<>(getIndexedSamples(sm.getId()));
             for (Object includeSampleObj : includeSamples) {
-                Integer sampleId = getSampleId(sm.getId(), includeSampleObj, false);
+                Integer sampleId = getSampleId(sm.getId(), includeSampleObj, true);
                 if (sampleId == null) {
                     continue;
 //                    throw VariantQueryException.sampleNotFound(includeSampleObj, sm.getName());
@@ -727,9 +726,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 String includeSample = getSampleName(sm.getId(), sampleId);
 
                 if (!samplesPosition.containsKey(includeSample)) {
-                    if (indexedSamplesId.contains(sampleId)) {
-                        samplesPosition.put(includeSample, index++);
-                    }
+                    samplesPosition.put(includeSample, index++);
                 }
             }
         }
