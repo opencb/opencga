@@ -50,9 +50,6 @@
         "avereServicePrincipalPassword": {
             "value": ""
         },
-        "mongoDbDumpUrl": {
-            "value": ""
-        },
         "openCgaAdminPassword": {
             "value": "SECUREPASSWORD"
         },
