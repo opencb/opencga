@@ -10,6 +10,15 @@ pipeline {
             }
         }
 
+        stage ('Test ARM Scripts') {
+            options {
+                timeout(time: 5, unit: 'MINUTES')
+            }
+            steps {
+                sh 'cd opencga-app/app/scripts/azure/arm/scripts && docker build .'
+            }
+        }
+
         stage ('Build') {
             options {
                 timeout(time: 30, unit: 'MINUTES')

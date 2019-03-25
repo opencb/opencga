@@ -7,40 +7,13 @@ import os
 import shutil
 import subprocess
 import time
+import csv
 import ipaddress
 
 # Run `python3 -m unittest discover` in this dir to execute tests
 
 default_mount_options_nfs = "nfs hard,nointr,proto=tcp,mountproto=tcp,retry=30 0 0"
 default_mount_options_cifs = "dir_mode=0777,file_mode=0777,serverino,nofail,uid=1001,gid=1001,vers=3.0"
-
-
-def get_avere_ips(vserver_string):
-    vserver_range = vserver_string.split("-")
-    if len(vserver_range) < 2:
-        print(
-            "Expect vserver ip range to be in the format 'startip-endip' got:{}".format(
-                vserver_string
-            )
-        )
-        exit(3)
-
-    all_ips = []
-    start_ip = vserver_range[0]
-    end_ip = vserver_range[1]
-
-    start_ip_parts = start_ip.split(".")
-    start_ip_last_digit = int(start_ip_parts[3])
-    ip_prefix = "{}.{}.{}.".format(
-        start_ip_parts[0], start_ip_parts[1], start_ip_parts[2]
-    )
-    end_ip_last_digit = int(end_ip.split(".")[3])
-
-    for ip in range(start_ip_last_digit, end_ip_last_digit + 1):
-        all_ips.append(ip_prefix + str(ip))
-
-    return all_ips
-
 
 def get_ip_address():
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -50,7 +23,6 @@ def get_ip_address():
             return s.getsockname()[0]
         except:
             return "127.0.0.1"
-
 
 def ip_as_int(ip):
     return int(ipaddress.ip_address(ip))
@@ -67,7 +39,7 @@ def remove_lines_containing(file, contains):
 
 
 def print_help():
-    print("For example 'sudo python mount.py avere 10.0.1.10-10.0.1.14'")
+    print("For example 'sudo python mount.py nfs 10.0.1.1,10.0.1.2'")
     print(
         "or 'sudo python mount.py azurefiles <storage-account-name>,<share-name>,<storage-account-key>'"
     )
@@ -98,14 +70,14 @@ def main():
 # mount_share allows it to be invoked from other python scripts
 def mount_share(mount_type, mount_data):
 
-    if mount_type.lower() != "avere" and mount_type.lower() != "azurefiles":
-        print("Expected first arg to be either 'avere' or 'azurefiles'")
+    if mount_type.lower() != "nfs" and mount_type.lower() != "azurefiles":
+        print("Expected first arg to be either 'nfs' or 'azurefiles'")
         print_help()
         exit(1)
 
     if mount_data == "":
         print(
-            "Expected second arg to be the mounting data. For avere, this is the vserver iprange. For azure files this should be the azure files connection details."
+            "Expected second arg to be the mounting data. For NFS, this should be a CSV of IPs/FQDNS for the NFS servers. For azure files this should be the azure files connection details."
         )
         print_help()
         exit(2)
@@ -116,6 +88,7 @@ def mount_share(mount_type, mount_data):
     mount_point_permissions = 0o0777  # Todo: What permissions does this really need?
     primary_mount_folder = "/media/primarynfs"
     seconday_mount_folder_prefix = "/media/secondarynfs"
+    fstab_file_path = "/etc/fstab"
 
     try:
         # Create folder to mount to
@@ -124,17 +97,17 @@ def mount_share(mount_type, mount_data):
             os.chmod(primary_mount_folder, mount_point_permissions)
 
         # Make a backup of the fstab config incase we go wrong
-        shutil.copy("/etc/fstab", "/etc/fstab-averescriptbackup")
+        shutil.copy(fstab_file_path, "/etc/fstab-mountscriptbackup")
 
         # Clear existing NFS mount data to make script idempotent
-        remove_lines_containing("/etc/fstab", primary_mount_folder)
-        remove_lines_containing("/etc/fstab", seconday_mount_folder_prefix)
+        remove_lines_containing(fstab_file_path, primary_mount_folder)
+        remove_lines_containing(fstab_file_path, seconday_mount_folder_prefix)
 
         if mount_type.lower() == "azurefiles":
             mount_azurefiles(mount_data, primary_mount_folder)
 
-        if mount_type.lower() == "avere":
-            mount_avere(mount_data, primary_mount_folder, mount_point_permissions)
+        if mount_type.lower() == "nfs":
+            mount_nfs(mount_data, primary_mount_folder, mount_point_permissions)
 
     except IOError as e:
         print("I/O error({0})".format(e))
@@ -174,20 +147,22 @@ def retryFunc(desc, funcToRetry, maxRetries):
             break
 
 
-def mount_avere(mount_data, primary_mount_folder, mount_point_permissions):
-    # Other apt instances on the machine may be doing an install 
-    # this means ours will fail so we retry to ensure success
-    def install_nfs():
-        install_apt_package("nfs-common")
+def mount_nfs(fstab_file_path, mount_data, primary_mount_folder, mount_point_permissions):
+    # # Other apt instances on the machine may be doing an install 
+    # # this means ours will fail so we retry to ensure success
+    # def install_nfs():
+    #     install_apt_package("nfs-common")
 
-    retryFunc("install nfs-common", install_nfs, 20)
+    # retryFunc("install nfs-common", install_nfs, 20)
 
-    ips = get_avere_ips(mount_data)
+    ips = mount_data.split(",")
     print("Found ips:{}".format(",".join(ips)))
 
     # Deterministically select a primary node from the available
     # servers for this vm to use. By using the ip as a seed this ensures
-    # re-running will get the same node as primary
+    # re-running will get the same node as primary.
+    # This enables spreading the load across multiple storage servers in a cluster
+    # like `Avere` or `Gluster` for higher throughput.
     current_ip = get_ip_address()
     current_ip_int = ip_as_int(current_ip)
     print("Using ip as int: {0} for random seed".format((current_ip_int)))
@@ -201,12 +176,12 @@ def mount_avere(mount_data, primary_mount_folder, mount_point_permissions):
     print("Primary node selected: {}".format(primary))
     print("Secondary nodes selected: {}".format(",".join(secondarys)))
 
-    with open("/etc/fstab", "a") as file:
+    with open(fstab_file_path, "a") as file:
 
         print("Mounting primary")
         file.write(
-            "\n{}:/msazure {} {} \n".format(
-                primary, primary_mount_folder, default_mount_options_nfs
+            "\n{}:/opencga {} {}".format(
+                primary.strip(), primary_mount_folder, default_mount_options_nfs
             )
         )
 
@@ -220,11 +195,11 @@ def mount_avere(mount_data, primary_mount_folder, mount_point_permissions):
                 os.chmod(folder, mount_point_permissions)
 
             file.write(
-                "\n{}:/msazure {} {} \n".format(ip, folder, default_mount_options_nfs)
+                "\n{}:/opencga {} {}".format(ip.strip(), folder, default_mount_options_nfs)
             )
 
 
-def mount_azurefiles(mount_data, primary_mount_folder):
+def mount_azurefiles(fstab_file_path, mount_data, primary_mount_folder):
     # Other apt instances on the machine may be doing an install 
     # this means ours will fail so we retry to ensure success
     def install_cifs():
@@ -242,10 +217,10 @@ def mount_azurefiles(mount_data, primary_mount_folder):
     share_name = params[1]
     account_key = params[2]
 
-    with open("/etc/fstab", "a") as file:
+    with open(fstab_file_path, "a") as file:
         print("Mounting primary")
         file.write(
-            "\n//{0}.file.core.windows.net/{1} {2} cifs username={0},password={3},{4} \n".format(
+            "\n//{0}.file.core.windows.net/{1} {2} cifs username={0},password={3},{4}".format(
                 account_name,
                 share_name,
                 primary_mount_folder,

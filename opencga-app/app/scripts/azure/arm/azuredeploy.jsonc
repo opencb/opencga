@@ -198,15 +198,33 @@
         "cellbaseMongoDbPassword": {
             "type": "securestring",
             "defaultValue": ""
+        },
+        "fileSystemType": {
+            "type": "string",
+            "defaultValue": "azurefiles",
+            "allowedValues": [
+                "azurefiles",
+                "nfs"
+            ],
+            "metadata": {
+                "description": "Defines the file system type the sytem will use when deployed in Azure. When using `NFS` the servers must have a mountable folder `opencga` available for mouting by the USER: `opencga` UID: `1001`"
+            }
+        },
+        "fileSystemParams": {
+            "type": "securestring",
+            "defaultValue": "AUTOCREATE",
+            "metadata": {
+                "description": "When `fileSystemType` is set to `nfs` this should be a list of NFS server IPs or FQDNS accessible from the OpenCGA VNET. When `fileSystemType` is set to AzureFiles this parameter can be set to `<storage-account-name>,<share-name>,<storage-account-key>` to use an existing storage account."
+            }
         }
     },
     "variables": {
         "dnsNamePrefix": "[toLower(substring(concat('opencga', uniqueString(subscription().subscriptionId,parameters('rgPrefix'))), 0, 16))]",
+        "createAzureFilesShare": "[if(equals(parameters('fileSystemParams'), 'AUTOCREATE'), bool('true'), bool('false'))]",
         "sizingOptions": [
             "[parameters('customDeploymentSize')]",
             {
                 "type": "1 = Small",
-                "azureFilesEnabled": true,
                 "solr": {
                     "ha": false,
                     "nodeSize": "Standard_E4_v3",
@@ -243,7 +261,6 @@
             },
             {
                 "type": "2 = Medium",
-                "azureFilesEnabled": false,
                 "solr": {
                     "ha": true,
                     "nodeSize": "Standard_E8_v3",
@@ -280,7 +297,6 @@
             },
             {
                 "type": "3 = Large",
-                "azureFilesEnabled": false,
                 "solr": {
                     "ha": true,
                     "nodeSize": "Standard_E16_v3",
@@ -386,7 +402,7 @@
             }
         },
         {
-            "condition": "[variables('selectedSize').azureFilesEnabled]",
+            "condition": "[variables('createAzureFilesShare')]",
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
@@ -430,7 +446,17 @@
                         "value": "[reference('vnet').outputs.defaultSubnetId.value]"
                     },
                     "mountArgs": {
-                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('nfs ', parameters('nfsCsvServerList')))]"
+                        // Explaination: The user can set the `fileSystemType` and `fileSystemParams` used by the mount script here `./scripts/mount.py` or 
+                        //  when not set the defaults of `azurefiles` and `AUTOCREATE` are used to create an AzureFile share and mount it. 
+                        // 
+                        // Ideally this would be moved to a top level variable as it is reused but these don't support the required `reference` function
+                        // so this chunk is repeated for all elements which mount the shared filesystem 
+                        "value": "[
+                            if(variables('createAzureFilesShare'), 
+                                concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),
+                                concat(parameters('fileSystemType'), ' ', parameters('fileSystemParams'))
+                              )
+                            ]"
                     },
                     "maxNodeCount": {
                         "value": "[variables('selectedSize').batch.maxNodeCount]"
