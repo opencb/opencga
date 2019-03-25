@@ -64,6 +64,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
@@ -544,35 +545,53 @@ public class VariantStorageManager extends StorageManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         String dbName = null;
         Exception exception = null;
+        StopWatch totalStopWatch = StopWatch.createStarted();
+        StopWatch storageStopWatch = null;
         try {
             String study = catalogUtils.getAnyStudy(query, sessionId);
 
+            StopWatch stopWatch = StopWatch.createStarted();
             catalogUtils.parseQuery(query, sessionId);
+            auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
             DataStore dataStore = getDataStore(study, sessionId);
             dbName = dataStore.getDbName();
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
+            stopWatch.reset();
             checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
+            auditAttributes.append("checkPermissionsTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
+
+            storageStopWatch = StopWatch.createStarted();
             result = supplier.apply(variantStorageEngine);
             return result;
         } catch (Exception e) {
             exception = e;
             throw e;
         } finally {
+            auditAttributes.append("storageTimeMillis", storageStopWatch == null
+                    ? -1
+                    : storageStopWatch.getTime(TimeUnit.MILLISECONDS));
+            if (result != null) {
+                auditAttributes.append("dbTime", result.getDbTime());
+                auditAttributes.append("numResults", result.getResult().size());
+            }
+            auditAttributes.append("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS));
             auditAttributes.append("error", result == null);
             if (exception != null) {
                 auditAttributes.append("errorType", exception.getClass());
                 auditAttributes.append("errorMessage", exception.getMessage());
             }
-            if (result != null) {
-                auditAttributes.append("numResults", result.getResult().size());
-            }
+            logger.debug("catalogParseQueryTimeMillis = " + auditAttributes.getInt("catalogParseQueryTimeMillis"));
+            logger.debug("checkPermissionsTimeMillis = " + auditAttributes.getInt("checkPermissionsTimeMillis"));
+            logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
+            logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
+            logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
             catalogManager.getAuditManager().recordAction(
                     AuditRecord.Resource.variant,
                     AuditRecord.Action.view,
                     AuditRecord.Magnitude.low,
                     dbName,
-                    userId, null, null, "Get variants", auditAttributes);
+                    userId, null, null, auditAction, auditAttributes);
         }
     }
 
