@@ -446,17 +446,7 @@
                         "value": "[reference('vnet').outputs.defaultSubnetId.value]"
                     },
                     "mountArgs": {
-                        // Explaination: The user can set the `fileSystemType` and `fileSystemParams` used by the mount script here `./scripts/mount.py` or 
-                        //  when not set the defaults of `azurefiles` and `AUTOCREATE` are used to create an AzureFile share and mount it. 
-                        // 
-                        // Ideally this would be moved to a top level variable as it is reused but these don't support the required `reference` function
-                        // so this chunk is repeated for all elements which mount the shared filesystem 
-                        "value": "[
-                            if(variables('createAzureFilesShare'), 
-                                concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),
-                                concat(parameters('fileSystemType'), ' ', parameters('fileSystemParams'))
-                              )
-                            ]"
+                        "value": "[if(variables('createAzureFilesShare'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value), concat(parameters('fileSystemType'), ' ', parameters('fileSystemParams')))]"
                     },
                     "maxNodeCount": {
                         "value": "[variables('selectedSize').batch.maxNodeCount]"
@@ -559,7 +549,7 @@
                         "value": "[parameters('initContainerImage')]"
                     },
                     "mountArgs": {
-                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value,',',reference('azurefiles').outputs.accountKey.value),concat('nfs ', parameters('nfsCsvServerList')))]"
+                        "value": "[if(variables('createAzureFilesShare'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value), concat(parameters('fileSystemType'), ' ', parameters('fileSystemParams')))]"
                     },
                     "opencgaFQDN": {
                         "value": "[reference('appgw').outputs.fqdn.value]"
@@ -752,7 +742,7 @@
                         "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
                     },
                     "mountArgs": {
-                        "value": "[if(variables('selectedSize').azureFilesEnabled, concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value),concat('nfs ', parameters('nfsCsvServerList')))]"
+                        "value": "[if(variables('createAzureFilesShare'), concat('azurefiles ', reference('azurefiles').outputs.accountName.value, ',', reference('azurefiles').outputs.shareName.value, ',' , reference('azurefiles').outputs.accountKey.value), concat(parameters('fileSystemType'), ' ', parameters('fileSystemParams')))]"                        
                     },
                     "SSHKeyData": {
                         "value": "[parameters('sshAdminKeyData')]"
