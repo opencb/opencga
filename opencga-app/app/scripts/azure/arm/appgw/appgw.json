@@ -453,6 +453,10 @@
 		"fqdn": {
 			"type":"string",
 			"value": "[reference(resourceId('Microsoft.Network/publicIPAddresses/', variables('applicationGatewayPublicIpName'))).dnsSettings.fqdn]"
-		}
-}
+		},
+		"appGwName": {
+            "type": "string",
+            "value": "[variables('applicationGatewayName')]"
+        }
+	}
 }

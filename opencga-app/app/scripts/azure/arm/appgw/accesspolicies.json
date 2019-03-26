@@ -16,6 +16,9 @@
             "metadata": {
               "description": "Specifies the object ID of a user, service principal or security group in the Azure Active Directory tenant for the vault. The object ID must be unique for the list of access policies. Get it by using Get-AzADUser or Get-AzADServicePrincipal cmdlets."
             }
+        },
+        "appGwName": {
+            "type": "string"
         }
     },
     "variables": {
@@ -92,7 +95,7 @@
                             "command": [
                                 "/bin/sh",
                                 "-c",
-                                "[concat('sleep 45; az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '; appName=', parameters('functionAppName'), '; resourceGroup=', resourceGroup().name, '; functionName=', variables('functionName'), '; subscriptionId=$(az account show -o tsv --query id); accessToken=$(az account get-access-token -o tsv --query accessToken); echo $accessToken; functionToken=$(curl -H \"portal-token: ${accessToken}\" https://functions.azure.com/api/runtimetoken/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${appName}); echo $functionToken; functionToken=$(echo -n $functionToken | tail -c +2 | head -c -1); echo $functionToken; while [ -z \"$functionKey\" ]; do functionKey=$(curl -H \"Authorization: Bearer ${functionToken}\" https://${appName}.azurewebsites.net/admin/functions/${functionName}/keys | jq ', variables('singleQuote'), '.keys[0].value', variables('singleQuote'), ' -r); sleep 30; done; echo $functionKey; az functionapp config appsettings set -g ${resourceGroup} -n ${appName} --settings reqFnKey=\"${functionKey}\"; curl https://${appName}.azurewebsites.net/api/${functionName}?code=${functionKey}')]"
+                                "[concat('sleep 45; az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '; appName=', parameters('functionAppName'), '; resourceGroup=', resourceGroup().name, '; appGwName=', parameters('appGwName'), '; functionName=', variables('functionName'), '; subscriptionId=$(az account show -o tsv --query id); accessToken=$(az account get-access-token -o tsv --query accessToken); echo $accessToken; functionToken=$(curl -H \"portal-token: ${accessToken}\" https://functions.azure.com/api/runtimetoken/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${appName}); echo $functionToken; functionToken=$(echo -n $functionToken | tail -c +2 | head -c -1); echo $functionToken; while [ -z \"$functionKey\" ]; do functionKey=$(curl -H \"Authorization: Bearer ${functionToken}\" https://${appName}.azurewebsites.net/admin/functions/${functionName}/keys | jq ', variables('singleQuote'), '.keys[0].value', variables('singleQuote'), ' -r); sleep 30; done; echo $functionKey; az functionapp config appsettings set -g ${resourceGroup} -n ${appName} --settings reqFnKey=\"${functionKey}\"; while [ \"$status\" != \"Updating\" ]; do curl https://${appName}.azurewebsites.net/api/${functionName}?code=${functionKey}; sleep 120; status=$(az network application-gateway show -g ${resourceGroup} -n ${appGwName} --query provisioningState -o tsv); done')]"
                             ],
                             "environmentVariables": [],
                             "resources": {
@@ -104,7 +107,7 @@
                         }
                     }
                 ],
-                "restartPolicy": "Never",
+                "restartPolicy": "OnFailure",
                 "osType": "Linux"
             }
         }

@@ -146,6 +146,9 @@
                     },
                     "objectId": {
                         "value": "[reference('functions').outputs.principalId.value]"
+                    },
+                    "appGwName": {
+                        "value": "[reference('appgw').outputs.appGwName.value]"
                     }
                 }
             }
