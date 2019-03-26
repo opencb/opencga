@@ -19,6 +19,35 @@ Click the following link the ensure you fill in the parameters according to thei
    > Note: `_artifactsLocation` should be set to the correct `raw.github.com` address for the branch you want to deploy. For example, use `https://raw.githubusercontent.com/opencb/opencga/azure/opencga-app/app/scripts/azure/arm/` to deploy the `azure` branch or `https://raw.githubusercontent.com/opencb/opencga/dev/opencga-app/app/scripts/azure/arm/` to deploy the `dev` branch.
 3. Run `az deployment create --location northeurope --template-file azuredeploy.json --parameters @azuredeploy.parameters.json --name MyDeploymentNameHere --parameters`
 
+## Deploying with external NFS server
+
+The template support deploying with an external NFS by setting the following. 
+
+1. Deploy the `VNET` template without the `OpenCGA` application. Replace `<rgPrefix>` and `<deploymentLocation>` with the value you will use for the resource group name and it's location.
+
+```
+cd ./opencga-app/app/scripts/azure/arm/
+az group create --name <rgPrefix> --location <deploymentLocation>
+az group deployment create -g <rgPrefix> --template-file ./vnet/azuredeploy.json
+```
+
+2. Use [peering](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview) to connect it to your existing NFS server on another `VNET`. Ensure the `VNET`s IP ranges don't overlap - OpenCGA uses `10.0.0.0/16`.
+3. Deploy the full template as normal using the steps above specifying the parameters in `azuredeploy.parameters.json`
+
+```json
+        "rgPrefix": {
+            "value": "<rgPrefix>"
+        },
+        "fileSystemType": {
+            "value": "nfs"
+        },
+        "fileSystemParams": {
+            "value": "<serverFqdnOrIP>:/<nfsSharedFolder>"
+        },
+        "rgLocation": {
+            "value": "<deploymentLocation>"
+        },
+```
 
 ## Deployment Sizing
 
