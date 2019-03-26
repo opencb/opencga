@@ -79,7 +79,6 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -934,11 +933,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
-        HBaseCredentials dbCredentials = getDbCredentials();
-        Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(), dbCredentials);
-        return new VariantStorageMetadataManager(
-                new HBaseVariantStorageMetadataDBAdaptorFactory(
-                        getHBaseManager(configuration), getTableNameGenerator().getMetaTableName(), configuration));
+        return getDBAdaptor().getMetadataManager();
     }
 
     @Override
