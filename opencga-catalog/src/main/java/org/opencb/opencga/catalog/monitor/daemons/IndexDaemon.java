@@ -266,7 +266,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 
         // TODO: This command line could be created outside this class
         // Build the command line.
-        StringBuilder commandLine = new StringBuilder(binHome).append(job.getExecutable());
+        StringBuilder commandLine = new StringBuilder(binHome).append("opencga-analysis.sh");
 
         // we assume job.output equals params.outdir
         job.getParams().put("outdir", path.toString());
@@ -295,8 +295,6 @@ public class IndexDaemon extends MonitorParentDaemon {
                     commandLine.append(" ").append(param.getValue());
                 }
             }
-
-            commandLine.append(" -s ").append(job.getAttributes().get(Job.OPENCGA_STUDY));
         }
 
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
