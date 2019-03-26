@@ -974,5 +974,10 @@
             }
         }
     ],
-    "outputs": {}
+    "outputs": {
+		"fqdn": {
+			"type":"string",
+            "value": "[reference('appgw-ssl').outputs.fqdn.value]"
+        }
+    }
 }
