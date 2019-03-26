@@ -8,6 +8,8 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
+import org.opencb.biodata.models.clinical.pedigree.Member;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -404,6 +406,40 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             logger.error(e.getMessage(), e);
         }
     }
+
+    protected void removeMembersWithoutSamples(Pedigree pedigree, Family family) {
+        Set<String> membersWithoutSamples = new HashSet<>();
+        for (Individual member : family.getMembers()) {
+            if (ListUtils.isEmpty(member.getSamples())) {
+                membersWithoutSamples.add(member.getId());
+            }
+        }
+
+        Iterator<Member> iterator = pedigree.getMembers().iterator();
+        while (iterator.hasNext()) {
+            Member member = iterator.next();
+            if (membersWithoutSamples.contains(member.getId())) {
+                iterator.remove();
+            } else {
+                if (member.getFather() != null && membersWithoutSamples.contains(member.getFather().getId())) {
+                    member.setFather(null);
+                }
+                if (member.getMother() != null && membersWithoutSamples.contains(member.getMother().getId())) {
+                    member.setMother(null);
+                }
+            }
+        }
+
+        if (pedigree.getProband().getFather() != null && membersWithoutSamples.contains(pedigree.getProband().getFather().getId())) {
+            pedigree.getProband().setFather(null);
+        }
+        if (pedigree.getProband().getMother() != null && membersWithoutSamples.contains(pedigree.getProband().getMother().getId())) {
+            pedigree.getProband().setMother(null);
+        }
+
+        logger.debug("Pedigree: {}", pedigree);
+    }
+
 
     protected void cleanQuery(Query query) {
         if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
