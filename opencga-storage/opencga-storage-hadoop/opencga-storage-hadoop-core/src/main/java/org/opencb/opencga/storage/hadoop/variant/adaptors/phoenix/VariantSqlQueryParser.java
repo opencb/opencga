@@ -1154,8 +1154,9 @@ public class VariantSqlQueryParser {
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
                     if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[2] IS NULL";
+                        return " OR \"" + column.column() + "\"[2] IS NULL";
                     }
                     return "";
                 }, filters, 2);
@@ -1168,8 +1169,9 @@ public class VariantSqlQueryParser {
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
-                    if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[1] IS NULL";
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
+                    if (keyOpValue[1].startsWith(">")) {
+                        return " OR \"" + column.column() + "\"[1] IS NULL";
                     }
                     return "";
                 }, filters, 1);

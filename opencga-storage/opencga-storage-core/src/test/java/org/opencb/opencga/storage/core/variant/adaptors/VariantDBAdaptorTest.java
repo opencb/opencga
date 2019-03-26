@@ -361,7 +361,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_populationFrequencyRef() {
-        final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
         Query query;
         query = new Query()
                 .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.05001");
@@ -371,7 +370,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_populationFrequency() {
-        final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
         Query query;
 
         query = new Query()
