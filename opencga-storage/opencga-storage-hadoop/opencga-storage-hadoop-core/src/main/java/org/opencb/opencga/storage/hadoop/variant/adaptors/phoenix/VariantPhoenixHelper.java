@@ -202,6 +202,7 @@ public class VariantPhoenixHelper {
 
     private static final Map<String, String> MAPPING_POPULATION_SUDIES;
     private static final List<Column> HUMAN_POPULATION_FREQUENCIES_COLUMNS;
+    public static final Set<Column> DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
 
     static {
         HashMap<String, String> mappingPopulationStudies = new HashMap<>(2);
@@ -261,8 +262,12 @@ public class VariantPhoenixHelper {
 
             getPopulationFrequencyColumn("GONL", "ALL"),
 
-            getPopulationFrequencyColumn("UK10K_ALSPAC", "ALL"),
-            getPopulationFrequencyColumn("UK10K_TWINSUK", "ALL"),
+            getPopulationFrequencyColumn("UK10K", "ALL"),
+            getPopulationFrequencyColumn("UK10K", "ALSPAC"),
+            getPopulationFrequencyColumn("UK10K", "TWINSUK"),
+            getPopulationFrequencyColumn("UK10K", "TWINSUK_NODUP"),
+//            getPopulationFrequencyColumn("UK10K_ALSPAC", "ALL"),
+//            getPopulationFrequencyColumn("UK10K_TWINSUK", "ALL"),
 
             getPopulationFrequencyColumn("GNOMAD_GENOMES", "ALL"),
             getPopulationFrequencyColumn("GNOMAD_GENOMES", "AFR"),
@@ -286,6 +291,33 @@ public class VariantPhoenixHelper {
             getPopulationFrequencyColumn("GNOMAD_EXOMES", "MALE"),
             getPopulationFrequencyColumn("GNOMAD_EXOMES", "FEMALE")
         ));
+
+        DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            getPopulationFrequencyColumn("1kG_phase3", "ALL"),
+            getPopulationFrequencyColumn("1kG_phase3", "AFR"),
+            getPopulationFrequencyColumn("1kG_phase3", "AMR"),
+            getPopulationFrequencyColumn("1kG_phase3", "EAS"),
+            getPopulationFrequencyColumn("1kG_phase3", "EUR"),
+            getPopulationFrequencyColumn("1kG_phase3", "SAS"),
+
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "ALL"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "AFR"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "AMR"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "ASJ"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "EAS"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "FIN"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "NFE"),
+            getPopulationFrequencyColumn("GNOMAD_GENOMES", "OTH"),
+//            getPopulationFrequencyColumn("GNOMAD_GENOMES", "MALE"),
+//            getPopulationFrequencyColumn("GNOMAD_GENOMES", "FEMALE"),
+
+            getPopulationFrequencyColumn("GNOMAD_EXOMES", "ALL"),
+            getPopulationFrequencyColumn("ESP6500", "ALL"),
+            getPopulationFrequencyColumn("EXAC", "ALL"),
+            getPopulationFrequencyColumn("GONL", "ALL"),
+            getPopulationFrequencyColumn("UK10K", "ALL")
+
+        )));
     }
 
 
