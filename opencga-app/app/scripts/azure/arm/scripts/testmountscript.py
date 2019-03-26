@@ -39,7 +39,7 @@ server:/opencga /media/secondarynfs2 nfs hard,nointr,proto=tcp,mountproto=tcp,re
         with open(file, "w") as fw:
             fw.write(example_fstab_content)
         
-        mount_nfs(file_path, "server, server, server", "/media/primarynfs", 777)
+        mount_nfs(file_path, "server:/opencga, server:/opencga , server:/opencga", "/media/primarynfs", 777)
         with open(file_path, 'r') as fr:
             content = fr.read()
             self.assertMultiLineEqual(content, expected_fstab_content)

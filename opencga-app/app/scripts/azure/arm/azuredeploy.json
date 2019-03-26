@@ -214,7 +214,7 @@
             "type": "securestring",
             "defaultValue": "AUTOCREATE",
             "metadata": {
-                "description": "When `fileSystemType` is set to `nfs` this should be a list of NFS server IPs or FQDNS accessible from the OpenCGA VNET. When `fileSystemType` is set to AzureFiles this parameter can be set to `<storage-account-name>,<share-name>,<storage-account-key>` to use an existing storage account."
+                "description": "When `fileSystemType` is set to `nfs` this should be a list of NFS server IPs or FQDNS accessible from the OpenCGA VNET along with NFS directory. For example: '10.20.0.1:/folder1/nfsfolder2,10.20.0.1:/folder1/nfsfolder2'. When `fileSystemType` is set to AzureFiles this parameter can be set to `<storage-account-name>,<share-name>,<storage-account-key>` to use an existing storage account."
             }
         }
     },

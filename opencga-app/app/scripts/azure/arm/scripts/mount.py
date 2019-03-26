@@ -39,7 +39,7 @@ def remove_lines_containing(file, contains):
 
 
 def print_help():
-    print("For example 'sudo python mount.py nfs 10.0.1.1,10.0.1.2'")
+    print("For example 'sudo python mount.py nfs '10.20.0.1:/folder1/nfsfolder2,10.20.0.1:/folder1/nfsfolder2'")
     print(
         "or 'sudo python mount.py azurefiles <storage-account-name>,<share-name>,<storage-account-key>'"
     )
@@ -77,7 +77,9 @@ def mount_share(mount_type, mount_data):
 
     if mount_data == "":
         print(
-            "Expected second arg to be the mounting data. For NFS, this should be a CSV of IPs/FQDNS for the NFS servers. For azure files this should be the azure files connection details."
+            """Expected second arg to be the mounting data. For NFS, this should be a CSV of IPs/FQDNS for the NFS servers with NFSExported dirs. 
+                For example, '10.20.0.1:/folder1/nfsfolder2,10.20.0.1:/folder1/nfsfolder2'
+            For azure files this should be the azure files connection details."""
         )
         print_help()
         exit(2)
@@ -180,7 +182,7 @@ def mount_nfs(fstab_file_path, mount_data, primary_mount_folder, mount_point_per
 
         print("Mounting primary")
         file.write(
-            "\n{}:/opencga {} {}".format(
+            "\n{} {} {}".format(
                 primary.strip(), primary_mount_folder, default_mount_options_nfs
             )
         )
@@ -195,7 +197,7 @@ def mount_nfs(fstab_file_path, mount_data, primary_mount_folder, mount_point_per
                 os.chmod(folder, mount_point_permissions)
 
             file.write(
-                "\n{}:/opencga {} {}".format(ip.strip(), folder, default_mount_options_nfs)
+                "\n{} {} {}".format(ip.strip(), folder, default_mount_options_nfs)
             )
 
 
