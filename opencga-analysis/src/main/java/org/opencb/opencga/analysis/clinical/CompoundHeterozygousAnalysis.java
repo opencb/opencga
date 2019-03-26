@@ -63,6 +63,9 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
         // Get pedigree
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
 
+        // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
+        removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
+
         // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
         // samples easily)
         Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);

@@ -122,8 +122,10 @@ public class AnnotationConverter {
         boolean flattened = options.getBoolean(Constants.FLATTENED_ANNOTATIONS, false);
 
         // Store the include y exclude in HashSet to search efficiently
-        Set<String> includeSet = new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE, ","));
-        Set<String> excludeSet = new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE, ","));
+        Set<String> includeSet = parseProjection(new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE, ",")),
+                variableSetUidIdMap);
+        Set<String> excludeSet = parseProjection(new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE, ",")),
+                variableSetUidIdMap);
 
         Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
 
@@ -265,6 +267,24 @@ public class AnnotationConverter {
         }
 
         return annotationSetMap.entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList());
+    }
+
+    private Set<String> parseProjection(HashSet<String> projectionSet, Document variableSetUidIdMap) {
+        Map<String, String> reversedVariableSetUidMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : variableSetUidIdMap.entrySet()) {
+            reversedVariableSetUidMap.put(Constants.VARIABLE_SET + "." + entry.getValue(), entry.getKey());
+        }
+
+        Set<String> finalProjectionSet = new HashSet<>();
+        for (String projection : projectionSet) {
+            if (reversedVariableSetUidMap.containsKey(projection)) {
+                finalProjectionSet.add(Constants.VARIABLE_SET + "." + reversedVariableSetUidMap.get(projection));
+            } else {
+                finalProjectionSet.add(projection);
+            }
+        }
+
+        return finalProjectionSet;
     }
 
     private Document createAnnotationDocument(VariableLevel variableLevel, Map<String, Object> annotations) {
