@@ -27,3 +27,7 @@ function migrateCollectionDifferentCollection(inputCollection, outputCollection,
 function migrateCollection(collection, query, projection, migrateFunc) {
     migrateCollectionDifferentCollection(collection, collection, query, projection, migrateFunc);
 }
+
+function isNotUndefinedOrNull(obj) {
+    return typeof obj !== 'undefined' && obj !== null;
+}
