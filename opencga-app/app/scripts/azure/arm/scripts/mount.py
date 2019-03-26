@@ -104,10 +104,10 @@ def mount_share(mount_type, mount_data):
         remove_lines_containing(fstab_file_path, seconday_mount_folder_prefix)
 
         if mount_type.lower() == "azurefiles":
-            mount_azurefiles(mount_data, primary_mount_folder)
+            mount_azurefiles(fstab_file_path, mount_data, primary_mount_folder)
 
         if mount_type.lower() == "nfs":
-            mount_nfs(mount_data, primary_mount_folder, mount_point_permissions)
+            mount_nfs(fstab_file_path, mount_data, primary_mount_folder, mount_point_permissions)
 
     except IOError as e:
         print("I/O error({0})".format(e))
@@ -150,10 +150,10 @@ def retryFunc(desc, funcToRetry, maxRetries):
 def mount_nfs(fstab_file_path, mount_data, primary_mount_folder, mount_point_permissions):
     # # Other apt instances on the machine may be doing an install 
     # # this means ours will fail so we retry to ensure success
-    # def install_nfs():
-    #     install_apt_package("nfs-common")
+    def install_nfs():
+        install_apt_package("nfs-common")
 
-    # retryFunc("install nfs-common", install_nfs, 20)
+    retryFunc("install nfs-common", install_nfs, 20)
 
     ips = mount_data.split(",")
     print("Found ips:{}".format(",".join(ips)))
