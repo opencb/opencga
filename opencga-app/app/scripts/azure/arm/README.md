@@ -31,7 +31,11 @@ az group create --name <rgPrefix> --location <deploymentLocation>
 az group deployment create -g <rgPrefix> --template-file ./vnet/azuredeploy.json
 ```
 
-2. Use [peering](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview) to connect it to your existing NFS server on another `VNET`. Ensure the `VNET`s IP ranges don't overlap - OpenCGA uses `10.0.0.0/16`.
+2. 
+     - Option 1: Use [peering](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview) to connect it to your existing NFS server on another `VNET`. Ensure the `VNET`s IP ranges don't overlap - OpenCGA uses `10.0.0.0/16`.
+    
+     - Option 2: Deploy your NFS servers into the now created VNET. In the resource group created by Step 1 there is a `vnet` resource and it contains a subnet for `nfsservers` in which you can deploy and configure your storage servers. For example, you may deploy an [Avere VFXT](https://docs.microsoft.com/en-gb/azure/avere-vfxt/avere-vfxt-deploy) cluster into this subnet. 
+
 3. Deploy the full template as normal using the steps above specifying the parameters in `azuredeploy.parameters.json`
 
 ```json
