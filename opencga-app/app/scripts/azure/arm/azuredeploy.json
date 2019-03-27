@@ -187,6 +187,28 @@
             "metadata": {
                 "description": "Define an object for a custom tshirt size of the deployment. WARNING: Intended for experimenting or debugging use with care."
             }
+        },
+        "cellbaseRestUrls": {
+            "type": "string",
+            "defaultValue": "http://bioinfo.hpc.cam.ac.uk/cellbase/",
+            "metadata": {
+                "description": "A CSV list of cellbase REST service hosts"
+            }
+        },
+        "cellbaseMongoDbHosts": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "A CSV list of mongo DB hosts with the cellbase database"
+            }
+        },
+        "cellbaseMongoDbUser": {
+            "type": "string",
+            "defaultValue": ""
+        },
+        "cellbaseMongoDbPassword": {
+            "type": "securestring",
+            "defaultValue": ""
         }
     },
     "variables": {
@@ -208,7 +230,7 @@
                 },
                 "mongo": {
                     "nodeCount": 1,
-                    "nodeSize": "Standard_D4_v2",
+                    "nodeSize": "Standard_D4s_v3",
                     "diskType": "E10"
                 },
                 "hdInsight": {
@@ -241,7 +263,7 @@
                 },
                 "azureFilesEnabled": false,
                 "solr": {
-                    "ha": true,                    
+                    "ha": true,
                     "nodeSize": "Standard_E8_v3",
                     "nodeCount": 2
                 },
@@ -251,7 +273,7 @@
                 },
                 "mongo": {
                     "nodeCount": 3,
-                    "nodeSize": "Standard_E8_v3",
+                    "nodeSize": "Standard_E8s_v3",
                     "diskType": "P20"
                 },
                 "hdInsight": {
@@ -284,7 +306,7 @@
                 },
                 "azureFilesEnabled": false,
                 "solr": {
-                    "ha": true,                    
+                    "ha": true,
                     "nodeSize": "Standard_E16_v3",
                     "nodeCount": 2
                 },
@@ -294,7 +316,7 @@
                 },
                 "mongo": {
                     "nodeCount": 5,
-                    "nodeSize": "Standard_E16_v3",
+                    "nodeSize": "Standard_E16s_v3",
                     "diskType": "P20"
                 },
                 "hdInsight": {
@@ -374,11 +396,11 @@
                     "uri": "[concat(parameters('_artifactsLocation'), '/appgw/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
-                "parameters":{  
+                "parameters": {
                     "applicationGatewaySubnetId": {
                         "value": "[reference('vnet').outputs.appgwSubnetId.value]"
                     },
-                    "dnsNamePrefix":{
+                    "dnsNamePrefix": {
                         "value": "[variables('dnsNamePrefix')]"
                     },
                     "LogAnalyticsWorkspaceResourceID": {
@@ -442,19 +464,17 @@
                         "value": "[variables('selectedSize').batch.nodeSize]"
                     },
                     "dockerImagesToCache": {
-                        "value": [
-                            "[parameters('daemonContainerImage')]"
-                        ]
+                        "value": []
                     },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
                     },
-                    "appInsightsAppId":{
+                    "appInsightsAppId": {
                         "value": "[reference('appinsights').outputs.appId.value]"
-                   }, 
-                   "appInsightsInstrumentationKey":{
+                    },
+                    "appInsightsInstrumentationKey": {
                         "value": "[reference('appinsights').outputs.instrumentationKey.value]"
-                   } 
+                    }
                 }
             }
         },
@@ -501,7 +521,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/daemonvm/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/daemonvm/azuredeploy.jsonc', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -562,6 +582,18 @@
                     "mongoDbPassword": {
                         "value": "[reference('mongodb').outputs.mongoDBPassword.value]"
                     },
+                    "cellbaseRestUrls": {
+                        "value": "[parameters('cellbaseRestUrls')]"
+                    },
+                    "cellbaseMongoDbHosts": {
+                        "value": "[parameters('cellbaseMongoDbHosts')]"
+                    },
+                    "cellbaseMongoDbUser": {
+                        "value": "[parameters('cellbaseMongoDbUser')]"
+                    },
+                    "cellbaseMongoDbPassword": {
+                        "value": "[string(parameters('cellbaseMongoDbPassword'))]"
+                    },
                     "catalogSecretKey": {
                         "value": "[parameters('catalogSecretKey')]"
                     },
@@ -594,10 +626,10 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                   },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } 
+                    }
                 }
             }
         },
@@ -671,7 +703,7 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                    } 
+                    }
                 }
             }
         },
@@ -804,10 +836,10 @@
                     },
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-                   },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   }               
+                    }
                 }
             }
         },
@@ -875,10 +907,9 @@
                     "LogAnalyticsWorkspaceKey": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
                     },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   } 
-          
+                    }
                 }
             }
         },
@@ -932,15 +963,15 @@
                     "mongoDBPassword": {
                         "value": "[parameters('mongoDBPassword')]"
                     },
-                   "LogAnalyticsWorkspaceResourceID":{
+                    "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceResourceID.value]"
-                   },
-                   "LogAnalyticsWorkspaceID": {
-                    "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
-                },
-                "LogAnalyticsWorkspaceKey": {
-                    "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
-               }
+                    },
+                    "LogAnalyticsWorkspaceID": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceID.value]"
+                    },
+                    "LogAnalyticsWorkspaceKey": {
+                        "value": "[reference('loganalytics').outputs.LogAnalyticsWorkspaceKey.value]"
+                    }
                 }
             }
         },
@@ -959,9 +990,7 @@
                     "uri": "[concat(parameters('_artifactsLocation'), '/appinsights/azuredeploy.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
-                "parameters": {
-                   
-                }
+                "parameters": {}
             }
         }
     ],

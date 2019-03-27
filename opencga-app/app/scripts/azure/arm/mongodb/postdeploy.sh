@@ -20,6 +20,7 @@ configureTCPTimeout() {
 }
 
 installDeps () {
+    echo "installing deps"
     apt-mark hold walinuxagent
     apt-get update
     apt-get upgrade -y
@@ -76,6 +77,7 @@ formatAndMountDisk() {
 }
 
 generateCertificate() {
+    echo "generating certs"
     sed -i -e 's/# server_names_hash_bucket_size 64/server_names_hash_bucket_size 128/g' /etc/nginx/nginx.conf
     certbot --nginx -d ${APP_DNS_NAME} -m ${CERT_EMAIL} --agree-tos -q
     nginx -t && nginx -s reload
@@ -92,6 +94,7 @@ generateCertificate() {
 }
 
 configureMongoDB() {
+    echo "configuring mongo"
     mongo admin --eval 'db.createUser({user: "'${MONGODB_USERNAME}'",pwd: "'${MONGODB_PASSWORD}'",roles: ["root"]})'
     sed -i '/#security/csecurity:\n  authorization: "enabled"\n' /etc/mongod.conf
     sed -i -e '/bindIp/ s/: .*/: ::,0.0.0.0\n  ssl:\n    mode: allowSSL\n    PEMKeyFile: \/etc\/ssl\/mongo.pem\n    CAFile: \/etc\/ssl\/ca.pem\n    allowConnectionsWithoutCertificates: true /' /etc/mongod.conf
@@ -103,6 +106,7 @@ configureMongoDB() {
 }
 
 configureMongoReplication() {
+    echo "configure replication"
     sed -i '/authorization: "enabled"/!b;n;c\  keyFile: \/opt\/mongodb.key\n' /etc/mongod.conf
     sed -i '/#replication/creplication:\n  replSetName: rs0\n' /etc/mongod.conf
 
@@ -160,24 +164,64 @@ createReplicaSet() {
     rm /var/www/html/mongodb.key.gpg
 }
 
+restoreMongoDBDump() {
+    echo "restoring mongoDB dump"
+    systemctl stop mongod
+    
+    cd /datadrive
+
+    echo "Get azcopy to speed up download"
+    wget -O azcopy.tar https://azcopyvnext.azureedge.net/release20190301/azcopy_linux_amd64_10.0.8.tar.gz
+    tar -xf azcopy.tar --strip-components=1
+
+    echo "Restoring MongoDB data dump"
+    echo "Downloading dump file"
+    ./azcopy copy --recursive $MONGODB_DUMP_URL /datadrive/
+
+    echo "Set file ownership to mongo"
+    chown -R mongodb /datadrive/mongodb/**
+    chmod -R 777 /datadrive/mongodb/** #Todo: maybe not needed
+
+    echo "Restarting mongo"
+    systemctl start mongod
+    sleep 120 # To ensure time for mongo to start up again
+
+    echo "Mongo Logs:"
+    tail /var/log/mongodb/mongod.log
+}
+
 #install flow
 configureTCPTimeout
 installDeps
 scanForNewDisks
 generateCertificate
+
+# Generate a key for use by the cluster. We want to do this before the restore so the slave nodes can be configured correctly
+if [ "$VM_INDEX" -eq 0 ] && [ "$CLUSTER_SIZE" -gt 1 ]
+then
+    generateMongoKeyFile
+fi
+
+# restore a mongodb dump is one has been specificed, and this is the primary node in the cluster
+if [ -n "$MONGODB_DUMP_URL" ] && [ "$VM_INDEX" -eq 0 ]
+then
+    restoreMongoDBDump
+fi
+
 configureMongoDB
 
+# configure mongo replication if the cluster size is greater than 1, and this is the primary node in the cluster
 if [ "$CLUSTER_SIZE" -gt 1 ]
 then
     configureMongoReplication
 
     if [ "$VM_INDEX" -eq 0 ]
     then
-        generateMongoKeyFile
         sleep 120
         createReplicaSet
     else
         configureSlaveNodes
     fi
 fi
+
 

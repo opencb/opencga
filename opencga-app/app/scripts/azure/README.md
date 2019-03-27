@@ -237,3 +237,20 @@ Perform query on successfully indexed file
 ```
 sudo /opt/opencga/bin/opencga-analysis.sh variant query --sample HG00096 --limit 100
 ```
+
+### Testing with Platinum Data set
+
+```
+for i in $( seq 77 93 )
+do
+        wget http://bioinfo.hpc.cam.ac.uk/downloads/datasets/vcf/platinum_genomes/gz/platinum-genomes-vcf-NA128"$i"_S1.genome.vcf.gz
+done
+
+for i in $( seq 77 93 )
+do
+        /opt/opencga/bin/opencga.sh files link -i platinum-genomes-vcf-NA128"$i"_S1.genome.vcf.gz -s 1kG_phase3 &&
+        /opt/opencga/bin//opencga.sh variant index --file platinum-genomes-vcf-NA128"$i"_S1.genome.vcf.gz --calculate-stats --annotate -o tmplsls -s 1kG_phase3 --index-search
+done
+```
+
+

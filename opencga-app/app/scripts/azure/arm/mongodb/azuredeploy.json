@@ -32,7 +32,14 @@
         "clusterSize": {
             "type": "int",
             "defaultValue": 3,
-            "allowedValues": [1, 3, 5, 7, 9, 11],
+            "allowedValues": [
+                1,
+                3,
+                5,
+                7,
+                9,
+                11
+            ],
             "metadata": {
                 "description": "Amount of VMs to deploy for the mongodb replica set"
             }
@@ -74,7 +81,7 @@
                 "description": "Log Analytics Workspace ID"
             }
         },
-        "logAnalyticsWorkSpaceKey":{
+        "logAnalyticsWorkSpaceKey": {
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Key"
@@ -84,6 +91,13 @@
             "type": "string",
             "metadata": {
                 "description": "Log Analytics Workspace Resource ID"
+            }
+        },
+        "mongoDbDumpUrl": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "The URL pointing to a tar.gz zip of the a mongo dump"
             }
         }
     },
@@ -99,12 +113,16 @@
                 "name": "dnsNames",
                 "count": "[parameters('clusterSize')]",
                 "input": {
-                   "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames'),'.',parameters('location'),'.cloudapp.azure.com')]"
+                    "fqdn": "[concat(variables('dnsPrefix'),copyIndex('dnsNames'),'.',parameters('location'),'.cloudapp.azure.com')]"
                 }
             }
         ],
         "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
         "fqdn": "[concat(variables('dnsPrefix'),'#VM_INDEX#','.',parameters('location'),'.cloudapp.azure.com')]",
+        "postDeployShEncoded": "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",
+        "renewMongoCertShEncoded": "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",
+        "_comment": "we need a single quote around the url to avoid & breaking out of the script https://stackoverflow.com/questions/33986180/how-to-escape-single-quote-in-arm-template",
+        "singleQuote": "'",
         "cloudInit": [
             "#cloud-config",
             "",
@@ -116,11 +134,11 @@
             "  path: /opt/installmongodb.sh",
             "  permissions: \"0744\"",
             "  content: !!binary |",
-            "    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",
+            "[concat('    ', variables('postDeployShEncoded'))]",
             "",
             "- encoding: gzip",
             "  content: !!binary |",
-            "    H4sIAJrHalwAA71YYVMbORL97l/RO1CxSZgZmwBJTEidwc4VtYFQGHavDjiXPCN7tB5LE0lj4yX+79uSxmNjnGRzdXWA8VhqtdTdr1+3vPVL2Gc87BOVVCpbOmEKVCRZpgGfppJkGY2BcS1AJxTGgg9F3AdNx1lKNMUZwKX0cL+y9UeuNCRUUhgICZIO8JFHtFJRVIOP71tAo0TAduvyste+6PYuWuedcvD888U/P7dPejfdztXGictWt/v756t2OXHaubrudc5bZ5/Kod/Oe2cX7c6/ljKfbrrXnate9+zfnUolEnzAhrmk16eX12xMRa5rO/BYAfzZgk9iSiXgFIwozVI2MdZpKickLSS8j2jYuXFB+2QXZiKHKUtTSAiK9qlGWTRb5alGzzGdgEqENINGH7EKMyqZiNUuCG79KWSM82IAjb06KIoHjBXU9FTAmPFcU7UTeMXmXUqbkGidqWYYxiJSQRGMIBLjcEx4TtJwQL6EMSNDLpRmkQq3YkGVr6PML8/ga7TcJ4MBjbRfqPBjNFjMxpRrZbdTMxXpFPwpcKoDlk32A1TSK5X0jJJjPHRlXqkwrjRJ0zbN8OwLf5IMtRM5gkSkMUxxFc8fyBB3KKeHiIs8ixFGa0NDSWIK/uzJcLELKDHQUyKpn0mB7tQMDUQPoCWrK0Z0BiSegG+eFAYR3ZyMMnRd+TnI+znXuXFf820dJSWNJrD37nW91W513p62Ph7UD951Om9en5zsnxy8fdPYa+3tvWt8bO232gd2JwsyL6Z9uAUio+SYjOPD/V0ix4f7cF9GS9JMlNESchjiCUO3OzxQzjBwi0CY2dfBIYwRRehnqagHXzHdKIRUR3ahErmMqApSpnQQr670caUd/pGLF770Z7CyfBF5TG4TfMpJP12kfGB8xqJCTRz7RpWxSzEt5Mxoyrk78HdEsow0I4xZX+iweP+Jo/Ih4w9QrINsphPB/eKjbycrLlemhKEurllarEEqIxPCUmOQszJFJEPjwMC3oiLCMbMv6LTN1Eg9oQQxUpbOcp4RxJpmgiMfxkbOyrQ7v3WPa9u1gRkCP4W9D2FMJyHP8cxfgQ7RAeALqNbs8O1/mvcvd5rVp1NutLqz485v9kO9hlu97Uezw+0/7ufekZ2MhX0zP0xdrpzJSs4LGU5tYq4KlGZ9vrm+vLk+3q4Zix7AV7i0MceDv2jsWAE2gNtb3NoJenB8DC+9AboPd8E6ICmJofQGaONU7yXc3x8ZSuPl8bbQkJzHG1xXiqClY6JbPD5HSW28X1g8d6w3YMaM51LLEJWqFWSSIeHMwDLNygHxj9PpcmObtFU9y+jx29cmEsoFz3jBCoxHAwW+Bvqg9+1ooxiOmYQQEUpiiVB3g+ZIJookSp3susRA9fKcxejvfjpisZHFipJT4/ibm7O2W7Wzwidm9Hj7sVg4x/GlSiNkjoVBpgNiSs0uFyY2u+YAAA187Xnw4YPjiwEmT9/4EImXSsytU8OYAxbhY+lEhWHxGZZoqGLFAMeOPU7GVPUS7At6/TwaUd1T7E8Kh/vh9wUae2/DYdVtb7PP/Q9M8bXbLRLYdzkLvsHuak8wB3+MQ8v6jgM+wXTB2iUwMl+smmKxhhcvFs8KsZkKErttiHaHSKlW2IjIGXKnqV3h2m4hAmeCVSHI6PhvrjAmWPHCzUoVDG4Gf3L3KCGMO2Ur2iJiVTmQl33Lsv8SkCu6igtDGgp5FkvsRrQu6kQRcT0wePGvjKvzZjHXlNOHby8pQRLG/UuikxBU2ITgJf67Wy66W6yCsABBUUBs/NdKDHZLGvO0MGuVmW1jUdpd9FwlYq081hhskhAaFPMJqqYRQmrS9AbxWXtE98gmeNXtx/XOcl71drNp/HRy0V2aSSlSqppw60khtHc/36mueqAabmGjlkumZ2G0eGrecSxZOVYkyf4khnZQvSugsXfHN3hi3afYhMdn2YpPm83demB/jW7EhN3D2B5jI4glUUy73U9u7LJz/iudfUSGNrHAre4MiO6WmHRi2NI8E3FAc/NW6angHFtDQ6m/YxOLPfIKZ6BbtETu+mZst7DwQyQF/0P0XbEw3BstNbjsQAEkJlMvv8KjSZajgvvqUEcOe4m/ocCMsct7dpeeTTqVrJOFdwRz1FKq/AHGnsHqyvT6kY3ZOiNWw2+FNPylf8SPojvA3r70Ox64RH+A4z+KOyJJLjcPo5UPNtbmc5fqC+TZJkhV36jv5zKqrAPW9AIzpdkuBIUI40Nj3AAFTAldVFeO8HPFGbtvjhACSbDI++4WCG/2G4YUTexWPGHlh9kQk3VGkcFRWkcJvmdEqSyRuPZ4Qy6CH21WFWXPxgOjPpwQGU6n0zDR43R91q1MMH/gsF7/huJETHnJshtF/hayuineCS/QVctu0oXhsO7SxLS2U9ovbia5TM0lcOFj2/PyotnGOy1iHdsHixoKngrLe+5dENbxNfTg/fv3Ty/WRS/pQro4l4mpMkezYVTeUmTbbVMkcSpEBtrcbReuMPepZ130NDHgMIRwtNKWTo1t/jV215iqTu38WaT8z5sjiMW8jyw+Wvax/y12Nqn/f0DA1qCCVDB715KLcWxKXXIV6Y612Hte1HLYULjAz2BjmhQlUKqg0E9rjz1mShzShrc7puM+3sywpLnR+m4ilG6a+veESqvNvTf1xhtvbmveU/JwwDBdxgQPGNMHeNUobyu1GkTHjSOI3j/5xgUHXr2CnZ31i4ulPRIZJ9QD91VJI9iFvQCQ3UqpDcA3YN+Ovo/4/5krsZLVjIsKCC+cU3QDS+ccrGEVrRuLCV1NHUOidk6Of8BRiKCtxZV3gNV403dWq1+4rF9eNzX6z/oovBniFQ+vWqvB8sAfaqy995XyFvfNQlkp74moZEFGqIB+wfJ9byefXAU3VZ01L5rvkhYj6znk8idVyzUbiHZxYcS/yl/6IDFY1RQAAA==",
+            "[concat('    ', variables('renewMongoCertShEncoded'))]",
             "  path: /opt/renew_mongo_cert.sh",
             "  permissions: \"0744\"",
             "",
@@ -129,7 +147,7 @@
             "- curl -fsSL https://get.docker.com/ | sh",
             "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- ', variables('logAnalyticsAgent'))]",
-            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
+            "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' MONGODB_DUMP_URL=', variables('singleQuote'), parameters('mongoDbDumpUrl'), variables('singleQuote'), ' CERT_EMAIL=', parameters('certificateEmail'),' MONGODB_USERNAME=', parameters('mongoDBUsername'),' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
         ]
     },
     "resources": [
@@ -170,23 +188,21 @@
                     ],
                     "apiVersion": "2017-05-01-preview",
                     "properties": {
-                      "name": "[concat(variables('nicName'), copyIndex())]",
-                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
-                      "logs": [
-
-                      ],
-                      "metrics": [
-                        {
-                          "category": "AllMetrics",
-                          "enabled": true,
-                          "retentionPolicy": {
-                            "enabled": false,
-                            "days": 0
-                          }
-                        }
-                      ]
+                        "name": "[concat(variables('nicName'), copyIndex())]",
+                        "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                        "logs": [],
+                        "metrics": [
+                            {
+                                "category": "AllMetrics",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": false,
+                                    "days": 0
+                                }
+                            }
+                        ]
                     }
-                  }
+                }
             ]
         },
         {
@@ -226,16 +242,16 @@
                         "osType": "Linux",
                         "createOption": "FromImage",
                         "managedDisk": {
-                            "storageAccountType": "StandardSSD_LRS"
+                            "storageAccountType": "Premium_LRS"
                         }
                     },
                     "dataDisks": [
                         {
-                            "diskSizeGB": 1023,
+                            "diskSizeGB": 2049,
                             "lun": 0,
                             "createOption": "Empty",
                             "managedDisk": {
-                                "storageAccountType": "StandardSSD_LRS"
+                                "storageAccountType": "Premium_LRS"
                             }
                         }
                     ],
