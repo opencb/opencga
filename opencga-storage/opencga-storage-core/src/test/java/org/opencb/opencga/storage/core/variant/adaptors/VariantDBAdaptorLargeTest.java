@@ -36,6 +36,8 @@ import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 
 import java.net.URI;
 import java.util.*;
@@ -789,6 +791,39 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             }
         }
         return false;
+    }
+
+    @Test
+    public void testSampleData() throws Exception {
+        Set<String> validGts = new HashSet<>(Arrays.asList("0/1", "0|1", "1|0", "1/1", "1|1"));
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.STUDY.key(), studyMetadata1.getName()), null);
+        for (int i = 0; i < 20; i++) {
+            Variant variant = iterator.next();
+            int expectedNumSamples = (int) variant.getStudies().get(0).getSamplesData().stream().filter(data -> validGts.contains(data.get(0))).count();
+            int actualNumSamples = 0;
+            Set<String> sampleNames = new HashSet<>(); // look for repeated samples
+            int queries = 0;
+            for (int skip = 0; skip < 1000; skip++) {
+                QueryResult<VariantSampleData> queryResult = variantStorageEngine.getSampleData(variant.toString(), studyMetadata1.getName(),
+                        new QueryOptions(QueryOptions.LIMIT, 10)
+                                .append(QueryOptions.SKIP, skip * 10)
+                );
+                queries++;
+
+                VariantSampleData sampleData = queryResult.first();
+                int numSamples = sampleData.getSamples().values().stream().mapToInt(List::size).sum();
+                if (numSamples == 0) {
+                    break;
+                }
+                sampleData.getSamples().values().stream().flatMap(List::stream).forEach(sample -> sampleNames.add(sample.getId()));
+                actualNumSamples += numSamples;
+//                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult));
+            }
+            assertEquals(variant.toString(), expectedNumSamples, actualNumSamples);
+            assertEquals(variant.toString(), expectedNumSamples, sampleNames.size());
+            System.out.println("variant = " + variant + ", samples: " + actualNumSamples + ", queries: " + queries);
+
+        }
     }
 
 }

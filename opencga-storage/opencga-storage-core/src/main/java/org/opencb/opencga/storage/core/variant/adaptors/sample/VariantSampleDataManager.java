@@ -56,8 +56,9 @@ public class VariantSampleDataManager {
         return getSampleData(variant, study, options, includeSamples, genotypes, merge, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options,
-                                                        List<String> includeSamples, Set<String> genotypes, boolean merge, int sampleLimit) {
+    public QueryResult<VariantSampleData> getSampleData(
+            String variant, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
+            boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         int studyId = metadataManager.getStudyId(study);
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
@@ -147,7 +148,8 @@ public class VariantSampleDataManager {
             }
         }
 
-        return new QueryResult<>(variant, dbTime, 1, 1, "Queries : " + queries + " , readSamples : " + readSamples, null,
+//        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
+        return new QueryResult<>(variant, dbTime, 1, 1, null, null,
                 Collections.singletonList(new VariantSampleData(variant, study, gtMap, files)));
     }
 
