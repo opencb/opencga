@@ -113,13 +113,6 @@
                 "description": "Email address used for mongoDB letsencrypt certificates"
             }
         },
-        "nfsCsvServerList": {
-            "type": "string",
-            "metadata": {
-                "description": "A list of NFS servers to use for storage throughout OpenCGA. Nodes will be evenly distributed between servers to spread load if multiple servers are provided. NOTE> This parameter is required for deployment sizes > 1"
-            },
-            "defaultValue": ""
-        },
         "adminUsername": {
             "type": "string",
             "defaultValue": "opencgaadmin",
