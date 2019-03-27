@@ -513,11 +513,14 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Pair<Integer, Integer> pair = Pair.of(studyMetadata.getId(), fillMissingColumnValue);
         return missingUpdatedSamplesMap.computeIfAbsent(pair, key -> {
             // If not found, no sample has been processed
-            if (fillMissingColumnValue <= 0) {
-                return Collections.emptyList();
-            }
             Set<Integer> sampleIds = getReturnedSampleIds(studyMetadata);
             List<Boolean> missingUpdatedList = Arrays.asList(new Boolean[sampleIds.size()]);
+            if (fillMissingColumnValue <= 0) {
+                for (int i = 0; i < sampleIds.size(); i++) {
+                    missingUpdatedList.set(i, false);
+                }
+                return missingUpdatedList;
+            }
             // If fillMissingColumnValue has an invalid value, the variant is new, so gaps must be returned as ?/? for every sample
             LinkedHashSet<Integer> indexedFiles = getIndexedFiles(studyMetadata.getId());
             if (indexedFiles.contains(fillMissingColumnValue)) {

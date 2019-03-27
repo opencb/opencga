@@ -1135,9 +1135,12 @@ public class VariantSqlQueryParser {
                     double value = Double.parseDouble(keyOpValue[2]);
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
                     if (op.startsWith("<")) {
-                        // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
-                        return " OR \"" + column.column() + "\"[2] " + op + " " + value
-                                + " OR \"" + column.column() + "\"[2] IS NULL";
+                        String f = " OR \"" + column.column() + "\"[2] " + op + " " + value;
+                        if (!DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS.contains(column)) {
+                            // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
+                            f += " OR \"" + column.column() + "\"[2] IS NULL";
+                        }
+                        return f;
                     } else if (op.startsWith(">")) {
                         return " AND \"" + column.column() + "\"[2] " + op + " " + value;
                     } else {
@@ -1154,8 +1157,9 @@ public class VariantSqlQueryParser {
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
-                    if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[2] IS NULL";
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
+                    if (keyOpValue[1].startsWith("<") && !DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS.contains(column)) {
+                        return " OR \"" + column.column() + "\"[2] IS NULL";
                     }
                     return "";
                 }, filters, 2);
@@ -1168,8 +1172,9 @@ public class VariantSqlQueryParser {
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
-                    if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[1] IS NULL";
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
+                    if (keyOpValue[1].startsWith(">") && !DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS.contains(column)) {
+                        return " OR \"" + column.column() + "\"[1] IS NULL";
                     }
                     return "";
                 }, filters, 1);

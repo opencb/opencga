@@ -19,7 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant.converters;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -134,6 +136,11 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public HBaseToVariantConverter<T> setIncludeFields(Set<VariantField> fields) {
         annotationConverter.setIncludeFields(fields);
+        return this;
+    }
+
+    public HBaseToVariantConverter<T> setIncludeIndexStatus(boolean includeIndexStatus) {
+        annotationConverter.setIncludeIndexStatus(includeIndexStatus);
         return this;
     }
 
@@ -291,6 +298,12 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(Result result) {
             Variant variant = extractVariantFromVariantRowKey(result.getRow());
             try {
+                Cell cell = result.getColumnLatestCell(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+                if (cell != null && cell.getValueLength() > 0) {
+                    String string = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                    variant.setType(VariantType.valueOf(string));
+                }
+
                 VariantAnnotation annotation = annotationConverter.convert(result);
                 Map<Integer, StudyEntry> studies;
                 if (selectVariantElements != null && selectVariantElements.getStudies().isEmpty()) {

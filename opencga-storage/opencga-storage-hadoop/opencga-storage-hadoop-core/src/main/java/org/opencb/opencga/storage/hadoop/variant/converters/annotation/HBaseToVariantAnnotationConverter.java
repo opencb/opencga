@@ -74,6 +74,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     private String annotationColumnStr = Bytes.toString(annotationColumn);
     private String defaultAnnotationId = null;
     private Map<Integer, String> annotationIds;
+    private boolean includeIndexStatus;
 
     public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper, long ts) {
         super(genomeHelper.getColumnFamily());
@@ -141,6 +142,10 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         return this;
     }
 
+    public void setIncludeIndexStatus(boolean includeIndexStatus) {
+        this.includeIndexStatus = includeIndexStatus;
+    }
+
     @Override
     public VariantAnnotation convert(Result result) {
         VariantAnnotation variantAnnotation = null;
@@ -201,8 +206,12 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_NOT_SYNC.bytes()))
         boolean unknown = unknownCell != null && unknownCell.getTimestamp() > ts;
         // Arrays.equals(PBoolean.TRUE_BYTES, result.getFamilyMap(columnFamily).get(VariantColumn.INDEX_UNKNOWN.bytes()))
-        VariantStorageEngine.SyncStatus syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(notSync, unknown, studies);
-
+        VariantStorageEngine.SyncStatus syncStatus;
+        if (includeIndexStatus) {
+            syncStatus = HadoopVariantSearchIndexUtils.getSyncStatus(notSync, unknown, studies);
+        } else {
+            syncStatus = null;
+        }
         return post(variantAnnotation, releases, syncStatus, studies, annotationId);
     }
 
@@ -252,7 +261,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
                 }
             }
 
-            if (hasIndex) {
+            if (includeIndexStatus && hasIndex) {
                 Array studiesValue = resultSet.getArray(VariantColumn.INDEX_STUDIES.column());
                 if (studiesValue != null) {
                     studies = toList((PhoenixArray) studiesValue);
