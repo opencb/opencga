@@ -1,30 +1,5 @@
 FROM opencga
 
-ENV HBASE_SSH_DNS=""
-ENV HBASE_SSH_PASS=""
-ENV HBASE_SSH_USER=""
-ENV SEARCH_HOSTS=""
-ENV CLINICAL_HOSTS=""
-ENV CELLBASE_HOSTS=""
-ENV CATALOG_DATABASE_HOSTS=""
-ENV CATALOG_DATABASE_USER=""
-ENV CATALOG_DATABASE_PASSWORD=""
-ENV CATALOG_SEARCH_HOSTS=""
-ENV CATALOG_SEARCH_USER=""
-ENV CATALOG_SEARCH_PASSWORD=""
-ENV REST_HOST=""
-ENV GRPC_HOST=""
-ENV OPENCGA_PASS=""
-ENV BATCH_EXEC_MODE=""
-ENV BATCH_ACCOUNT_NAME=""
-ENV BATCH_ACCOUNT_KEY=""
-ENV BATCH_ENDPOINT=""
-ENV BATCH_POOL_ID=""
-ENV BATCH_DOCKER_ARGS=""
-ENV BATCH_DOCKER_IMAGE=""
-ENV BATCH_MAX_CONCURRENT_JOBS=""
-ENV HEALTH_CHECK_INTERVAL=""
-
 # Minimum compatible IVA release is v1.0.0-rc1, please only use this or later releases.
 ARG IVA_TAG="v1.0.0-rc1"
 
@@ -45,9 +20,15 @@ RUN git clone "https://github.com/opencb/iva.git" && \
 # Mount volume to copy config into
 VOLUME /opt/volume
 
-RUN pip3 install oyaml
-COPY ./opencga-app/app/scripts/docker/opencga-init /tmp/
+COPY opencga-app/app/scripts/docker/opencga-init/ /tmp/
+# Install python requirements
+RUN pip3 install -r /tmp/requirements.txt
 RUN chmod +x /tmp/setup.sh
+
+# Run tests on config script
+# If this line fails then a configuration change has a bug
+# review override-yaml.py or override-js.py
+RUN echo ">Running init container configuration tests" && cd /tmp/test && python3 test-override-yaml.py -v && python3 test-override-js.py -v && rm -r /tmp/test
 
 # It is the responsibility of the setup.sh
 # script to initialise the volume correctly

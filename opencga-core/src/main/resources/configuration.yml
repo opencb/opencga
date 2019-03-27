@@ -110,6 +110,10 @@ authentication:
 #                # or cc and tokenField2 = aa or bb or cc. If any of the filters don't succeed, even if the user is properly authenticated
 #                # in AAD, the user will not be able to generate a token and login in OpenCGA.
 
+healthCheck:
+  # The interval at which the healthchecks run
+  interval: 30
+
 server:
   rest:
     port: ${OPENCGA.SERVER.REST.PORT}

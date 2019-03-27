@@ -89,6 +89,24 @@
         "mongoDbPassword": {
             "type": "securestring"
         },
+        "cellbaseRestUrls": {
+            "type": "string",
+            "metadata": {
+                "description": "A CSV list of cellbase REST service hosts"
+            }
+        },
+        "cellbaseMongoDbHosts": {
+            "type": "string",
+            "metadata": {
+                "description": "A CSV list of mongo DB hosts with the cellbase database"
+            }
+        },
+        "cellbaseMongoDbUser": {
+            "type": "string"
+        },
+        "cellbaseMongoDbPassword": {
+            "type": "securestring"
+        },
         "catalogSecretKey": {
             "type": "securestring"
         },
@@ -150,9 +168,53 @@
         "singleQuote": "'",
         "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/avere/mount.py -O /tmp/mount.py')]",
         "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
-        "initCmd": "[concat('docker run  --name=opencga-init --mount type=bind,src=/media/primarynfs,dst=/opt/volume -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' -e HEALTH_CHECK_INTERVAL=',parameters('healthCheckInterval'),' -e HBASE_SSH_DNS=',parameters('hdInsightSshDns'),' -e HBASE_SSH_USER=',parameters('hdInsightSshUsername'),' -e HBASE_SSH_PASS=',parameters('hdInsightSshPassword'),' -e SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CELLBASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CLINICAL_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'),' -e CATALOG_DATABASE_USER=',parameters('mongoDbUser'),' -e CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'),' -e CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'),' -e CATALOG_SEARCH_USER=',parameters('solrUser'),' -e CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'),' -e REST_HOST=\"',variables('restHost'),'\" -e GRPC_HOST=\"',variables('grpcHost'),'\" -e BATCH_EXEC_MODE=AZURE ',' -e BATCH_ACCOUNT_NAME=',parameters('batchAccountName'),' -e BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'),' -e BATCH_ENDPOINT=',parameters('batchEndpoint'),' -e BATCH_POOL_ID=',parameters('batchPoolId'),' -e BATCH_DOCKER_ARGS=',variables('singleQuote'),parameters('batchDockerArgs'),variables('singleQuote'),' -e BATCH_DOCKER_IMAGE=',parameters('batchContainerImage'),' -e BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')),' ',parameters('initContainerImage'),' ',parameters('catalogSecretKey'))]",
-        "daemonCmd": "[concat('docker run --name=opencga-daemon -d --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',parameters('daemonContainerImage'))]",
-        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+        // This build the command used to setup the configuration file for OpenCGA
+        // it takes in inputs from the larger ARM template to configure Mongo, SOLR, Storage and other settings
+        // the script used can be found here /opencga-app/app/scripts/docker/opencga-init/*.py
+        // NOTE> Editors will show this line as invalid JSON but as the `[]` denote the ARM language 
+        //       this functions correctly. 
+        "initCmd": "[concat('docker run  --name=opencga-init --mount type=bind,src=/media/primarynfs,dst=/opt/volume', 
+            ' -e INIT_OPENCGA_PASS=',parameters('openCgaAdminPassword'), 
+            ' -e INIT_HEALTH_CHECK_INTERVAL=',parameters('healthCheckInterval'), 
+            ' -e INIT_HBASE_SSH_DNS=',parameters('hdInsightSshDns'), 
+            ' -e INIT_HBASE_SSH_USER=',parameters('hdInsightSshUsername'), 
+            ' -e INIT_HBASE_SSH_PASS=',parameters('hdInsightSshPassword'), 
+            ' -e INIT_SEARCH_HOSTS=',variables('solrHostsCSV'), 
+            ' -e INIT_CELLBASE_MONGO_HOSTS=',variables('mongoDbHostsCSV'), 
+            ' -e INIT_CLINICAL_HOSTS=',variables('solrHostsCSV'), 
+            ' -e INIT_CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'), 
+            ' -e INIT_CATALOG_DATABASE_USER=',parameters('mongoDbUser'), 
+            ' -e INIT_CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'), 
+            ' -e INIT_CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'), 
+            ' -e INIT_CATALOG_SEARCH_USER=',parameters('solrUser'), 
+            ' -e INIT_CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'), 
+            ' -e INIT_REST_HOST=', variables('singleQuote'),variables('restHost'), variables('singleQuote'),
+            ' -e INIT_GRPC_HOST=', variables('singleQuote'), variables('grpcHost'), variables('singleQuote'),
+            ' -e INIT_BATCH_EXECUTION_MODE=AZURE ', 
+            ' -e INIT_BATCH_ACCOUNT_NAME=',parameters('batchAccountName'), 
+            ' -e INIT_BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'), 
+            ' -e INIT_BATCH_ENDPOINT=',parameters('batchEndpoint'), 
+            ' -e INIT_BATCH_POOL_ID=',parameters('batchPoolId'), 
+            ' -e INIT_BATCH_DOCKER_ARGS=',variables('singleQuote'), parameters('batchDockerArgs'),variables('singleQuote'), 
+            ' -e INIT_BATCH_DOCKER_IMAGE=',parameters('batchContainerImage'), 
+            ' -e INIT_BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')), 
+            ' -e INIT_CELLBASE_MONGO_HOSTS=',string(parameters('cellbaseMongoDbHosts')),  
+            ' -e INIT_CELLBASE_MONGO_HOSTS_USER=',string(parameters('cellbaseMongoDbUser')), 
+            ' -e INIT_CELLBASE_MONGO_HOSTS_PASSWORD=',string(parameters('cellbaseMongoDbPassword')),  
+            ' -e INIT_CELLBASE_REST_URLS=',string(parameters('cellbaseRestUrls')),  
+            ' ', parameters('initContainerImage'), 
+            ' ', parameters('catalogSecretKey'))]",
+        // This command is used by cloud init to start the daemon service which monitors work and 
+        // queues jobs to run on AzureBatch when submitted
+        "daemonCmd": "[concat('docker run --name=opencga-daemon -d --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly',
+            ' --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions',
+            ' --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants',
+            ' -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',parameters('daemonContainerImage'))]",
+        // This command is used to start the Azure Monitoring agent and allow it to collect container logs
+        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock',
+            ' -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers',
+            ' -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),
+            ' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
         "cloud-init": [
             "#cloud-config",
             "",
@@ -168,7 +230,6 @@
             "[concat(' - ', variables('mountCmd'))]",
             "[concat(' - ', variables('initCmd'))]",
             "[concat(' - ', variables('daemonCmd'))]",
-            " - 'systemctl start --no-block opencga'",
             ""
         ],
         "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
