@@ -56,6 +56,8 @@ import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -948,6 +950,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throw new VariantQueryException("Invalid timeout '" + timeout + "'. Timeout must be positive");
         }
         options.put(QueryOptions.TIMEOUT, timeout);
+    }
+
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
+        return new VariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {

@@ -57,6 +57,7 @@ import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
@@ -482,6 +483,15 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, sessionId);
     }
 
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        Query query = new Query(VariantQueryParam.STUDY.key(), study);
+        return secure(query, options, sessionId, engine -> {
+            String studyFqn = query.getString(STUDY.key());
+            return engine.getSampleData(variant, studyFqn, options);
+        });
+    }
+
     public SampleMetadata getSampleMetadata(String study, String sample, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(STUDY.key(), study)
@@ -652,7 +662,7 @@ public class VariantStorageManager extends StorageManager {
                 List<String> returnedSamples = new LinkedList<>();
                 for (Study study : studies) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
-                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()),
+                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true),
                             sessionId);
                     samplesQueryResult.getResult().sort(Comparator.comparing(Sample::getId));
                     samplesMap.put(study.getFqn(), samplesQueryResult.getResult());
