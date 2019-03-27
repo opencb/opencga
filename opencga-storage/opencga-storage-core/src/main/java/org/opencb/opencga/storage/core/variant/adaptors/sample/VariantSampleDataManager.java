@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +24,14 @@ public class VariantSampleDataManager {
     public static final int SAMPLE_BATCH_SIZE_DEFAULT = 1000;
 
     private final VariantDBAdaptor dbAdaptor;
-    private static Logger logger = LoggerFactory.getLogger(VariantSampleDataManager.class);
-    private Map<String, String> normalizeGt = new HashMap<>();
+    private final VariantStorageMetadataManager metadataManager;
+    private final Map<String, String> normalizeGt = new HashMap<>();
+    private final Logger logger = LoggerFactory.getLogger(VariantSampleDataManager.class);
 
     public VariantSampleDataManager(VariantDBAdaptor dbAdaptor) {
         this.dbAdaptor = dbAdaptor;
+        this.metadataManager = dbAdaptor.getMetadataManager();
+
     }
 
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
@@ -52,10 +56,11 @@ public class VariantSampleDataManager {
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options,
                                                         Set<String> genotypes, boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
+        int studyId = metadataManager.getStudyId(study);
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
-
         int dbTime = 0;
+
         Map<String, Integer> gtCountMap = new HashMap<>();
         Map<String, List<SampleData>> gtMap = new HashMap<>();
         Map<String, FileEntry> files = new HashMap<>();
@@ -104,7 +109,20 @@ public class VariantSampleDataManager {
                     List<SampleData> gtList = gtMap.get(gt);
                     if (gtCountMap.merge(gt, 1, Integer::sum) > skip) {
                         if (gtList.size() < limit) {
-                            FileEntry fileEntry = studyEntry.getFiles().get(0);
+                            Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                            FileEntry fileEntry = null;
+                            for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
+                                String fileName = metadataManager.getFileName(studyId, fileId);
+                                fileEntry = studyEntry.getFile(fileName);
+                                break;
+                            }
+                            if (fileEntry == null) {
+                                List<String> fileNames = new LinkedList<>();
+                                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
+                                    fileNames.add(metadataManager.getFileName(studyId, fileId));
+                                }
+                                throw new VariantQueryException("No file found for sample '" + sample + "', expected any of " + fileNames);
+                            }
                             SampleData sampleData = new SampleData(sample, sampleDataAsMap, fileEntry.getFileId());
                             files.put(fileEntry.getFileId(), fileEntry);
                             gtList.add(sampleData);
