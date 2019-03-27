@@ -19,6 +19,9 @@ import java.util.*;
  */
 public class VariantSampleDataManager {
 
+    public static final String SAMPLE_BATCH_SIZE = "sampleBatchSize";
+    public static final int SAMPLE_BATCH_SIZE_DEFAULT = 1000;
+
     private final VariantDBAdaptor dbAdaptor;
     private static Logger logger = LoggerFactory.getLogger(VariantSampleDataManager.class);
     private Map<String, String> normalizeGt = new HashMap<>();
@@ -29,7 +32,7 @@ public class VariantSampleDataManager {
 
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
-        int sampleLimit = options.getInt("sampleLimit", 100);
+        int sampleLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
         return getSampleData(variant, study, options, sampleLimit);
     }
 

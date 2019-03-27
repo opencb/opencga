@@ -485,8 +485,10 @@ public class VariantStorageManager extends StorageManager {
 
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
-        return secure(new Query(VariantQueryParam.STUDY.key(), study), options, sessionId, engine -> {
-            return engine.getSampleData(variant, study, options);
+        Query query = new Query(VariantQueryParam.STUDY.key(), study);
+        return secure(query, options, sessionId, engine -> {
+            String studyFqn = query.getString(STUDY.key());
+            return engine.getSampleData(variant, studyFqn, options);
         });
     }
 

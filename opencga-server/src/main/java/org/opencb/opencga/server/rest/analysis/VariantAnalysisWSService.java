@@ -653,6 +653,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Do not group by genotype. Return all genotypes merged.") @QueryParam("merge") @DefaultValue("false") boolean merge
     ) {
         try {
+            queryOptions.putAll(query);
             QueryResult<VariantSampleData> sampleData = variantManager.getSampleData(variant, studyStr, queryOptions, sessionId);
             return createOkResponse(sampleData);
         } catch (Exception e) {
