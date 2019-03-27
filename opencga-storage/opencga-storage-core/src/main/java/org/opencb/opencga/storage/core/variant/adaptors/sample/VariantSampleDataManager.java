@@ -21,7 +21,8 @@ import java.util.*;
 public class VariantSampleDataManager {
 
     public static final String SAMPLE_BATCH_SIZE = "sampleBatchSize";
-    public static final int SAMPLE_BATCH_SIZE_DEFAULT = 1000;
+    public static final int SAMPLE_BATCH_SIZE_DEFAULT = 10000;
+    public static final String MERGE = "merge";
 
     private final VariantDBAdaptor dbAdaptor;
     private final VariantStorageMetadataManager metadataManager;
@@ -48,13 +49,15 @@ public class VariantSampleDataManager {
             genotypes.add("0/1");
             genotypes.add("1/1");
         }
-        boolean merge = options.getBoolean("merge", false);
+        List<String> includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
 
-        return getSampleData(variant, study, options, genotypes, merge, sampleLimit);
+        boolean merge = options.getBoolean(MERGE, false);
+
+        return getSampleData(variant, study, options, includeSamples, genotypes, merge, sampleLimit);
     }
 
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options,
-                                                        Set<String> genotypes, boolean merge, int sampleLimit) {
+                                                        List<String> includeSamples, Set<String> genotypes, boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         int studyId = metadataManager.getStudyId(study);
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
@@ -76,6 +79,7 @@ public class VariantSampleDataManager {
         while (true) {
             Query query = new Query(VariantQueryParam.ID.key(), variant)
                     .append(VariantQueryParam.STUDY.key(), study)
+                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples) // if empty, will return all
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
                     .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
             sampleSkip += sampleLimit;

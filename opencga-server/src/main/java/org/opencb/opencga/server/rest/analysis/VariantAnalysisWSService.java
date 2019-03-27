@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -647,10 +648,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
     })
     public Response sampleData(
-            @ApiParam(value = "Variant.") @PathParam("variant") String variant,
+            @ApiParam(value = "Variant") @PathParam("variant") String variant,
             @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String studyStr,
             @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr,
-            @ApiParam(value = "Do not group by genotype. Return all genotypes merged.") @QueryParam("merge") @DefaultValue("false") boolean merge
+            @ApiParam(value = "Do not group by genotype. Return all genotypes merged.") @QueryParam(VariantSampleDataManager.MERGE) @DefaultValue("false") boolean merge
     ) {
         try {
             queryOptions.putAll(query);
