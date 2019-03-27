@@ -59,7 +59,7 @@
         "mongoDBPassword": {
             "value": "SECUREPASSWORD"
         },
-        "mongoCertificateEmail": {
+        "sslCertificateEmail": {
             "value": "EMAILHERE"
         },
         "catalogSecretKey": {
