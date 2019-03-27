@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -59,6 +60,8 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
             logger.info("Regenerate annotations for region " + region);
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
+        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, variantTable, scan, getMapperClass());
         VariantMapReduceUtil.setNoneReduce(job);
