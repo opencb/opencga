@@ -952,8 +952,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         options.put(QueryOptions.TIMEOUT, timeout);
     }
 
-    public QueryResult<VariantSampleData> sampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
-        return new VariantSampleDataManager(getDBAdaptor()).sampleData(variant, study, options);
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
+        return new VariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {

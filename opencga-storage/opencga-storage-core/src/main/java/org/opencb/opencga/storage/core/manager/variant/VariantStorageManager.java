@@ -57,6 +57,7 @@ import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
@@ -480,6 +481,13 @@ public class VariantStorageManager extends StorageManager {
         Query intersectQuery = new Query(query);
         intersectQuery.put(VariantQueryParam.STUDY.key(), String.join(VariantQueryUtils.AND, studyIds));
         return get(intersectQuery, queryOptions, sessionId);
+    }
+
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        return secure(new Query(VariantQueryParam.STUDY.key(), study), options, sessionId, engine -> {
+            return engine.getSampleData(variant, study, options);
+        });
     }
 
     public SampleMetadata getSampleMetadata(String study, String sample, String sessionId)

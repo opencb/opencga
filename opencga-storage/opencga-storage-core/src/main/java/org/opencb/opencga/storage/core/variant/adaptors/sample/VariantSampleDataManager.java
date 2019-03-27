@@ -27,13 +27,13 @@ public class VariantSampleDataManager {
         this.dbAdaptor = dbAdaptor;
     }
 
-    public QueryResult<VariantSampleData> sampleData(String variant, String study, QueryOptions options) {
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
         int sampleLimit = options.getInt("sampleLimit", 100);
-        return sampleData(variant, study, options, sampleLimit);
+        return getSampleData(variant, study, options, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> sampleData(String variant, String study, QueryOptions options, int sampleLimit) {
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
 
         Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
@@ -43,11 +43,11 @@ public class VariantSampleDataManager {
         }
         boolean merge = options.getBoolean("merge", false);
 
-        return sampleData(variant, study, options, genotypes, merge, sampleLimit);
+        return getSampleData(variant, study, options, genotypes, merge, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> sampleData(String variant, String study, QueryOptions options,
-                                                     Set<String> genotypes, boolean merge, int sampleLimit) {
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options,
+                                                        Set<String> genotypes, boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
@@ -63,6 +63,8 @@ public class VariantSampleDataManager {
         }
 
         int sampleSkip = 0;
+        int readSamples = 0;
+        int queries = 0;
         while (true) {
             Query query = new Query(VariantQueryParam.ID.key(), variant)
                     .append(VariantQueryParam.STUDY.key(), study)
@@ -77,11 +79,13 @@ public class VariantSampleDataManager {
                 throw VariantQueryException.variantNotFound(variant);
             }
             dbTime += result.getDbTime();
+            queries++;
             Variant v = result.first();
 
             StudyEntry studyEntry = v.getStudies().get(0);
 
             List<String> samples = studyEntry.getOrderedSamplesName();
+            readSamples += samples.size();
             for (String sample : samples) {
                 Map<String, String> sampleDataAsMap = studyEntry.getSampleDataAsMap(sample);
 
@@ -118,7 +122,7 @@ public class VariantSampleDataManager {
             }
         }
 
-        return new QueryResult<>(variant, dbTime, 1, 1, null, null,
+        return new QueryResult<>(variant, dbTime, 1, 1, "Queries : " + queries + " , readSamples : " + readSamples, null,
                 Collections.singletonList(new VariantSampleData(variant, study, gtMap, files)));
     }
 

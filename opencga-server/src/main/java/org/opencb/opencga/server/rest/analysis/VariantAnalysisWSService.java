@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -631,6 +632,29 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyStr, sampleQuery, queryOptions,
                     sessionId);
             return createOkResponse(allSamples);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{variant}/sampleData")
+    @ApiOperation(value = "Get sample data of a given variant", position = 15, response = VariantSampleData.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
+    })
+    public Response sampleData(
+            @ApiParam(value = "Variant.") @PathParam("variant") String variant,
+            @ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr,
+            @ApiParam(value = "Do not group by genotype. Return all genotypes merged.") @QueryParam("merge") @DefaultValue("false") boolean merge
+    ) {
+        try {
+            QueryResult<VariantSampleData> sampleData = variantManager.getSampleData(variant, studyStr, queryOptions, sessionId);
+            return createOkResponse(sampleData);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
