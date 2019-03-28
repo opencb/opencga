@@ -9,7 +9,6 @@ from pyopencga.rest_clients.family_client import Families
 from pyopencga.rest_clients.job_client import Jobs
 from pyopencga.rest_clients.individual_client import Individuals
 from pyopencga.rest_clients.clinical_client import Clinical
-from pyopencga.rest_clients.variableset_client import VariableSets
 from pyopencga.rest_clients.alignment_client import Alignment
 from pyopencga.rest_clients.variant_client import Variant
 from pyopencga.rest_clients.ga4gh_client import GA4GH
@@ -64,7 +63,6 @@ class OpenCGAClient(object):
         self.jobs = None
         self.individuals = None
         self.clinical = None
-        self.variablesets = None
         self.alignment = None
         self.variant = None
         self.ga4gh = None
@@ -81,7 +79,6 @@ class OpenCGAClient(object):
         self.jobs = Jobs(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.individuals = Individuals(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.clinical = Clinical(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
-        self.variablesets = VariableSets(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.alignment = Alignment(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.variant = Variant(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.ga4gh = GA4GH(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
@@ -92,7 +89,7 @@ class OpenCGAClient(object):
 
         self.clients = [self.users, self.projects, self.studies, self.files,
                         self.samples, self.cohorts, self.families, self.jobs,
-                        self.individuals, self.variablesets, self.clinical,
+                        self.individuals, self.clinical,
                         self.alignment, self.variant, self.ga4gh, self.meta, 
                         self.admin, self.panels, self.tool]
 
