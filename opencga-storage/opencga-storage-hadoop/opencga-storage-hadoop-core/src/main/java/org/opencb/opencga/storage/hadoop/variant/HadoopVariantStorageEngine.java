@@ -58,6 +58,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
@@ -977,7 +978,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         Query query = new Query(inputQuery);
         SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
 
-        VariantDBIterator variants = sampleIndexDBAdaptor.iterator(sampleIndexQuery);
+        VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(sampleIndexDBAdaptor.iterator(sampleIndexQuery));
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
         MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(variants, query, options, batchSize);
@@ -1004,16 +1005,31 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                 } else if (variants.hasNext()) {
                     long totalCount;
                     if (CollectionUtils.isEmpty(sampleIndexQuery.getRegions())) {
-                        // TODO: Count chr1 from the variants iterator instead of executing a new query.
+                        int chr1Count;
                         StopWatch stopWatch = StopWatch.createStarted();
-                        query.put(REGION.key(), "1");
-                        SampleIndexQuery sampleIndexQueryChr1 = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
-                        int count = Iterators.size(sampleIndexDBAdaptor.iterator(sampleIndexQueryChr1));
-                        logger.info("Count variants from chr1 in sample index table : " + TimeUtils.durationToString(stopWatch));
+                        if (variants.getChromosomeCount("1") != null) {
+                            // Iterate until the chr1 is exhausted
+                            int i = 0;
+                            while ("1".equals(variants.getCurrentChromosome()) && variants.hasNext()) {
+                                variants.next();
+                                i++;
+                            }
+                            chr1Count = variants.getChromosomeCount("1");
+                            if (i != 0) {
+                                logger.info("Count variants from chr1 using the same iterator over the Sample Index Table : "
+                                        + "Read " + i + " extra variants in " + TimeUtils.durationToString(stopWatch));
+                            }
+                        } else {
+                            query.put(REGION.key(), "1");
+                            SampleIndexQuery sampleIndexQueryChr1 =
+                                    SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
+                            chr1Count = Iterators.size(sampleIndexDBAdaptor.iterator(sampleIndexQueryChr1));
+                            logger.info("Count variants from chr1 in Sample Index Table : " + TimeUtils.durationToString(stopWatch));
+                        }
                         float magicNumber = 12.5F; // Magic number! Proportion of variants from chr1 and the whole genome
 
-                        logger.info("chr1 count = " + count);
-                        totalCount = (int) (count * magicNumber);
+                        logger.info("chr1 count = " + chr1Count);
+                        totalCount = (int) (chr1Count * magicNumber);
                     } else if (sampleIndexDBAdaptor.isFastCount(sampleIndexQuery) && sampleIndexQuery.getSamplesMap().size() == 1) {
                         StopWatch stopWatch = StopWatch.createStarted();
                         Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
