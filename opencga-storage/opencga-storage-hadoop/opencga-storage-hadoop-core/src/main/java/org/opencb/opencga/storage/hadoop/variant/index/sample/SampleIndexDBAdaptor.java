@@ -170,6 +170,10 @@ public class SampleIndexDBAdaptor {
         });
     }
 
+    public boolean isFastCount(SampleIndexQuery query) {
+        return query.getSamplesMap().size() == 1 && query.emptyAnnotationIndex() && query.emptyFileIndex();
+    }
+
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
         return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null), sample);
     }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -55,6 +56,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
@@ -978,35 +980,62 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         VariantDBIterator variants = sampleIndexDBAdaptor.iterator(sampleIndexQuery);
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
+        MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(variants, query, options, batchSize);
         if (iterator) {
-            VariantDBIterator variantDBIterator = dbAdaptor.iterator(variants, query, options, batchSize);
             variantDBIterator.addCloseable(variants);
             return variantDBIterator;
         } else {
-            VariantQueryResult<Variant> result = dbAdaptor.get(variants, query, options);
+            VariantQueryResult<Variant> result =
+                    addSamplesMetadataIfRequested(variantDBIterator.toQueryResult(), query, options, getMetadataManager());
             // TODO: Allow exact count with "approximateCount=false"
             if (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false)) {
                 int sampling = variants.getCount();
                 int limit = options.getInt(QueryOptions.LIMIT, 0);
+                int skip = options.getInt(QueryOptions.SKIP, 0);
                 if (limit > 0 && limit > result.getNumResults()) {
-                    // Less results than limit. Count is not approximated
-                    result.setApproximateCount(false);
-                    result.setNumTotalResults(result.getNumResults());
+                    if (skip > 0 && result.getNumResults() == 0) {
+                        // Skip could be greater than numTotalResults. Approximate count
+                        result.setApproximateCount(true);
+                    } else {
+                        // Less results than limit. Count is not approximated
+                        result.setApproximateCount(false);
+                    }
+                    result.setNumTotalResults(result.getNumResults() + skip);
                 } else if (variants.hasNext()) {
                     long totalCount;
-                    if (sampleIndexQuery.getSamplesMap().size() == 1) {
+                    if (CollectionUtils.isEmpty(sampleIndexQuery.getRegions())) {
+                        // TODO: Count chr1 from the variants iterator instead of executing a new query.
+                        StopWatch stopWatch = StopWatch.createStarted();
+                        query.put(REGION.key(), "1");
+                        SampleIndexQuery sampleIndexQueryChr1 = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
+                        int count = Iterators.size(sampleIndexDBAdaptor.iterator(sampleIndexQueryChr1));
+                        logger.info("Count variants from chr1 in sample index table : " + TimeUtils.durationToString(stopWatch));
+                        float magicNumber = 12.5F; // Magic number! Proportion of variants from chr1 and the whole genome
+
+                        logger.info("chr1 count = " + count);
+                        totalCount = (int) (count * magicNumber);
+                    } else if (sampleIndexDBAdaptor.isFastCount(sampleIndexQuery) && sampleIndexQuery.getSamplesMap().size() == 1) {
+                        StopWatch stopWatch = StopWatch.createStarted();
                         Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
                         totalCount = sampleIndexDBAdaptor.count(sampleIndexQuery, entry.getKey());
+                        logger.info("Count variants from sample index table : " + TimeUtils.durationToString(stopWatch));
                     } else {
                         StopWatch stopWatch = StopWatch.createStarted();
                         Iterators.getLast(variants);
                         totalCount = variants.getCount();
-                        logger.info("Drain variants from sample index table in " + TimeUtils.durationToString(stopWatch));
+                        logger.info("Drain variants from sample index table : " + TimeUtils.durationToString(stopWatch));
                     }
-                    long approxCount = totalCount / sampling * result.getNumResults();
+                    long approxCount;
                     logger.info("totalCount = " + totalCount);
-                    logger.info("sampling = " + sampling);
                     logger.info("result.getNumResults() = " + result.getNumResults());
+                    logger.info("numQueries = " + variantDBIterator.getNumQueries());
+                    if (variantDBIterator.getNumQueries() == 1) {
+                        // Just one query with limit, index was accurate enough
+                        approxCount = totalCount;
+                    } else {
+                        approxCount = totalCount / sampling * result.getNumResults();
+                        logger.info("sampling = " + sampling);
+                    }
                     logger.info("approxCount = " + approxCount);
                     result.setApproximateCount(true);
                     result.setNumTotalResults(approxCount);
