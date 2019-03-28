@@ -981,11 +981,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(sampleIndexDBAdaptor.iterator(sampleIndexQuery));
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
-        MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(variants, query, options, batchSize);
         if (iterator) {
-            variantDBIterator.addCloseable(variants);
-            return variantDBIterator;
+            // SampleIndex iterator will be closed when closing the variants iterator
+            return dbAdaptor.iterator(variants, query, options, batchSize);
         } else {
+            MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(
+                    new org.opencb.opencga.storage.core.variant.adaptors.iterators.DelegatedVariantDBIterator(variants) {
+                        @Override
+                        public void close() throws Exception {
+                            // Do not close this iterator! We'll need to keep iterating to get the approximate count
+                        }
+                    }, query, options, batchSize);
             VariantQueryResult<Variant> result =
                     addSamplesMetadataIfRequested(variantDBIterator.toQueryResult(), query, options, getMetadataManager());
             // TODO: Allow exact count with "approximateCount=false"
@@ -1049,7 +1055,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                         // Just one query with limit, index was accurate enough
                         approxCount = totalCount;
                     } else {
-                        approxCount = totalCount / sampling * result.getNumResults();
+                        // Multiply first to avoid loss of precision
+                        approxCount = totalCount * result.getNumResults() / sampling;
                         logger.info("sampling = " + sampling);
                     }
                     logger.info("approxCount = " + approxCount);
