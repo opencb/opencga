@@ -334,7 +334,6 @@ public class VariantStorageManager extends StorageManager {
         List<List<String>> trios = new LinkedList<>();
 
         VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
-        int studyId = metadataManager.getStudyId(study.getFqn());
 
         if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
             DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(studyStr, new Query(), new QueryOptions(), sessionId);
