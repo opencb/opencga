@@ -25,7 +25,8 @@ public class Interpretation extends PrivateStudyUid {
                           List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
                           List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
         this(null, new org.opencb.biodata.models.clinical.interpretation.Interpretation(id, description, clinicalAnalysisId,
-                panels, Status.READY, software, analyst, dependencies, filters, creationDate, primaryFindinds, secondaryFindings,
+                panels, org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED, software, analyst,
+                dependencies, filters, creationDate, primaryFindinds, secondaryFindings,
                 reportedLowCoverages,
                 comments, attributes, 1));
     }
