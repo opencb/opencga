@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats.me;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
@@ -33,8 +34,7 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,6 +48,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(MendelianErrorDriver.class);
 
     public static final String TRIOS = "trios";
+    public static final String TRIOS_FILE = "triosFile";
     public static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
     private List<Integer> sampleIds;
     private boolean partial;
@@ -72,7 +73,16 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        String trios = getParam(TRIOS);
+
+        String triosFile = getParam(TRIOS_FILE);
+        String trios;
+        if (StringUtils.isNotEmpty(triosFile)) {
+            trios = FileUtils.readFileToString(new File(triosFile));
+            trios = trios.replaceAll("\n", ";");
+        } else {
+            trios = getParam(TRIOS);
+        }
+
         if (StringUtils.isNotEmpty(trios)) {
             sampleIds = new LinkedList<>();
             List<Integer> trioList = new ArrayList<>(3);
@@ -86,8 +96,8 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                         if (sampleId == null) {
                             throw new IllegalArgumentException("Sample '" + sample + "' not found.");
                         }
-                        trioList.add(sampleId);
                     }
+                    trioList.add(sampleId);
                     sampleIds.add(sampleId);
                 }
                 if (trioList.size() != 3) {
