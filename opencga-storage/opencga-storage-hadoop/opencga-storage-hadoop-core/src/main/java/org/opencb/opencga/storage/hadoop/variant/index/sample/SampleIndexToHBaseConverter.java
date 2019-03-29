@@ -115,7 +115,7 @@ public class SampleIndexToHBaseConverter {
         return b;
     }
 
-    public void serializeMendelianError(ByteArrayOutputStream stream, Variant variant, String gt, int gtIdx)
+    public void serializeMendelianError(ByteArrayOutputStream stream, Variant variant, String gt, int gtIdx, int errorCode)
             throws IOException {
         if (stream.size() != 0) {
             stream.write(HBaseToSampleIndexConverter.SEPARATOR);
@@ -125,5 +125,7 @@ public class SampleIndexToHBaseConverter {
         stream.write(Bytes.toBytes(gt));
         stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
         stream.write(Bytes.toBytes(Integer.toString(gtIdx)));
+        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_CODE_SEPARATOR);
+        stream.write(Bytes.toBytes(Integer.toString(errorCode)));
     }
 }

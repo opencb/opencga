@@ -246,7 +246,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                     context.getCounter(COUNTER_GROUP_NAME, "me_" + me).increment(1);
                     if (me > 0) {
                         ByteArrayOutputStream stream = mendelianErrorsMap.get(child);
-                        converter.serializeMendelianError(stream, variant, childGtStr, idx);
+                        converter.serializeMendelianError(stream, variant, childGtStr, idx, me);
                     }
                 }
             }
