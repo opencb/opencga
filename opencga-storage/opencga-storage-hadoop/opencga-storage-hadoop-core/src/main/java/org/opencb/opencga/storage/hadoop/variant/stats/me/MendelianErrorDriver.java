@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.stats.me;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
@@ -17,6 +19,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.MendelianError;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -27,13 +30,16 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,7 +53,11 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(MendelianErrorDriver.class);
 
     public static final String TRIOS = "trios";
-    public static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
+    public static final String TRIOS_FILE = "triosFile";
+    public static final String TRIOS_FILE_DELETE = "triosFileDelete";
+    public static final String OVERWRITE = "overwrite";
+
+    private static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
     private List<Integer> sampleIds;
     private boolean partial;
     private String region;
@@ -62,6 +72,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
         Map<String, String> params = new HashMap<>();
         params.put("--" + TRIOS, "(father,mother,child;)**");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
+        params.put("--" + OVERWRITE, "<true|false>");
         return params;
     }
 
@@ -69,25 +80,48 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
 
-
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        String trios = getParam(TRIOS);
-        if (StringUtils.isNotEmpty(trios)) {
+
+        String triosFile = getParam(TRIOS_FILE);
+        boolean triosFileDelete = Boolean.valueOf(getParam(TRIOS_FILE_DELETE));
+        boolean overwrite = Boolean.valueOf(getParam(OVERWRITE));
+        List<String> trios;
+        if (StringUtils.isNotEmpty(triosFile)) {
+            File file = new File(triosFile);
+            trios = FileUtils.readLines(file);
+            if (triosFileDelete) {
+                Files.delete(file.toPath());
+            }
+        } else {
+            trios = Arrays.asList(getParam(TRIOS).split(";"));
+        }
+
+        if (CollectionUtils.isNotEmpty(trios)) {
             sampleIds = new LinkedList<>();
             List<Integer> trioList = new ArrayList<>(3);
-            for (String trio : trios.split(";")) {
+            for (String trio : trios) {
                 for (String sample : trio.split(",")) {
-                    Integer sampleId = metadataManager.getSampleId(getStudyId(), sample);
-                    if (sampleId == null) {
-                        throw new IllegalArgumentException("Sample '" + sample + "' not found.");
+                    Integer sampleId;
+                    if (sample.equals("-")) {
+                        sampleId = -1;
+                    } else {
+                        sampleId = metadataManager.getSampleId(getStudyId(), sample);
+                        if (sampleId == null) {
+                            throw new IllegalArgumentException("Sample '" + sample + "' not found.");
+                        }
                     }
                     trioList.add(sampleId);
-                    sampleIds.add(sampleId);
                 }
                 if (trioList.size() != 3) {
                     throw new IllegalArgumentException("Found trio with " + trioList.size() + " members, instead of 3: " + trioList);
                 }
-                LOGGER.info("Trio: " + trio + " -> " + trioList);
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), trioList.get(2));
+                if (!overwrite && sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
+                    LOGGER.info("Skip sample " + sampleMetadata.getName() + ". Already precomputed!");
+                } else {
+                    sampleIds.addAll(trioList);
+                    LOGGER.info("Trio: " + trio + " -> " + trioList);
+                }
                 trioList.clear();
             }
         } else {
@@ -167,10 +201,12 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
         private Map<Integer, Map<String, Integer>> genotypeCount = new HashMap<>();
         private List<List<Integer>> trios;
         private byte[] family;
+        private SampleIndexToHBaseConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            converter = new SampleIndexToHBaseConverter(family);
 
             int[] sampleIds = context.getConfiguration().getInts(TRIOS_LIST);
             trios = new ArrayList<>(sampleIds.length / 3);
@@ -192,8 +228,6 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-
-
             Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
             String chromosome = variant.getChromosome();
 
@@ -214,26 +248,33 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
 
             for (List<Integer> trio : trios) {
+                Integer father = trio.get(0);
+                Integer mother = trio.get(1);
                 Integer child = trio.get(2);
 
-                String fatherGt = gtMap.get(trio.get(0));
-                String motherGt = gtMap.get(trio.get(1));
-                String childGt = gtMap.get(child);
+                String fatherGtStr = gtMap.get(father);
+                String motherGtStr = gtMap.get(mother);
+                String childGtStr = gtMap.get(child);
 
-                int idx = genotypeCount.get(child).merge(childGt, 1, Integer::sum) - 1;
-                if (fatherGt != null && motherGt != null && childGt != null) {
-                    Integer me = MendelianError.compute(new Genotype(fatherGt), new Genotype(motherGt), new Genotype(childGt), chromosome);
+                int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
+                if ((fatherGtStr != null || father == -1) && (motherGtStr != null || mother == -1) && childGtStr != null) {
+                    Genotype fatherGt;
+                    Genotype motherGt;
+                    Genotype childGt;
+                    try {
+                        fatherGt = fatherGtStr == null ? null : new Genotype(fatherGtStr);
+                        motherGt = motherGtStr == null ? null : new Genotype(motherGtStr);
+                        childGt = new Genotype(childGtStr);
+                    } catch (IllegalArgumentException e) {
+                        // Skip malformed GT
+                        context.getCounter(COUNTER_GROUP_NAME, "wrong_gt").increment(1);
+                        continue;
+                    }
+                    Integer me = MendelianError.compute(fatherGt, motherGt, childGt, chromosome);
                     context.getCounter(COUNTER_GROUP_NAME, "me_" + me).increment(1);
                     if (me > 0) {
                         ByteArrayOutputStream stream = mendelianErrorsMap.get(child);
-                        if (stream.size() != 0) {
-                            stream.write(HBaseToSampleIndexConverter.SEPARATOR);
-                        }
-                        stream.write(Bytes.toBytes(variant.toString()));
-                        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
-                        stream.write(Bytes.toBytes(childGt));
-                        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
-                        stream.write(Bytes.toBytes(Integer.toString(idx)));
+                        converter.serializeMendelianError(stream, variant, childGtStr, idx, me);
                     }
                 }
             }

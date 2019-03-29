@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.parseConsequenceType;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
@@ -49,6 +50,18 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         implements Converter<VariantAnnotation, Map<PhoenixHelper.Column, ?>> {
 
     public static final int COMPRESS_THRESHOLD = (int) (0.8 * 1024 * 1024); // 0.8MB
+    private static final Map<PhoenixHelper.Column, Object> DEFAULT_POP_FREQ;
+
+    static {
+        HashMap<PhoenixHelper.Column, Object> map = new HashMap<>(DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS.size());
+
+        List<Float> value = Arrays.asList(1F, 0F);
+        for (PhoenixHelper.Column column : DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS) {
+            map.put(column, value);
+        }
+        DEFAULT_POP_FREQ = Collections.unmodifiableMap(map);
+    }
+
     private VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
 
     private int annotationId;
@@ -87,7 +100,9 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         } else {
             map.put(FULL_ANNOTATION, json);
         }
-        map.put(ANNOTATION_ID, annotationId);
+        if (annotationId >= 0) {
+            map.put(ANNOTATION_ID, annotationId);
+        }
 
         Set<String> genes = new HashSet<>();
         Set<String> gnSo = new HashSet<>();
@@ -241,6 +256,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             }
         }
 
+        map.putAll(DEFAULT_POP_FREQ);
         if (variantAnnotation.getPopulationFrequencies() != null) {
             for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
                 PhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());

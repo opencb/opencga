@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
@@ -32,14 +33,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.DataStore;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -57,6 +56,7 @@ import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
@@ -64,6 +64,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
@@ -316,6 +317,41 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
+    public void calculateMendelianErrors(String studyStr, List<String> familiesStr, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        DataStore dataStore = getDataStore(study.getFqn(), sessionId);
+        VariantStorageEngine engine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        if (CollectionUtils.isEmpty(familiesStr)) {
+            throw new IllegalArgumentException("Empty list of families");
+        }
+
+        List<List<String>> trios = new LinkedList<>();
+
+        VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+
+        if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
+            DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(studyStr, new Query(), new QueryOptions(), sessionId);
+            while (iterator.hasNext()) {
+                Family family = iterator.next();
+                trios.addAll(catalogUtils.getTriosFromFamily(study.getFqn(), family, metadataManager, true, sessionId));
+            }
+        } else {
+            boolean skipIncompleteFamily = config.getBoolean("skipIncompleteFamily", false);
+            for (String familyId : familiesStr) {
+                Family family = catalogManager.getFamilyManager().get(studyStr, familyId, null, sessionId).first();
+                trios.addAll(catalogUtils.getTriosFromFamily(study.getFqn(), family, metadataManager, skipIncompleteFamily, sessionId));
+            }
+        }
+
+        engine.calculateMendelianErrors(study.getFqn(), trios, config);
+    }
+
     public void fillGaps(String studyStr, List<String> samples, ObjectMap config, String sessionId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
 
@@ -481,6 +517,15 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, sessionId);
     }
 
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        Query query = new Query(VariantQueryParam.STUDY.key(), study);
+        return secure(query, options, sessionId, engine -> {
+            String studyFqn = query.getString(STUDY.key());
+            return engine.getSampleData(variant, studyFqn, options);
+        });
+    }
+
     public SampleMetadata getSampleMetadata(String study, String sample, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(STUDY.key(), study)
@@ -544,35 +589,53 @@ public class VariantStorageManager extends StorageManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         String dbName = null;
         Exception exception = null;
+        StopWatch totalStopWatch = StopWatch.createStarted();
+        StopWatch storageStopWatch = null;
         try {
             String study = catalogUtils.getAnyStudy(query, sessionId);
 
+            StopWatch stopWatch = StopWatch.createStarted();
             catalogUtils.parseQuery(query, sessionId);
+            auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
             DataStore dataStore = getDataStore(study, sessionId);
             dbName = dataStore.getDbName();
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
+            stopWatch.reset();
             checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
+            auditAttributes.append("checkPermissionsTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
+
+            storageStopWatch = StopWatch.createStarted();
             result = supplier.apply(variantStorageEngine);
             return result;
         } catch (Exception e) {
             exception = e;
             throw e;
         } finally {
+            auditAttributes.append("storageTimeMillis", storageStopWatch == null
+                    ? -1
+                    : storageStopWatch.getTime(TimeUnit.MILLISECONDS));
+            if (result != null) {
+                auditAttributes.append("dbTime", result.getDbTime());
+                auditAttributes.append("numResults", result.getResult().size());
+            }
+            auditAttributes.append("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS));
             auditAttributes.append("error", result == null);
             if (exception != null) {
                 auditAttributes.append("errorType", exception.getClass());
                 auditAttributes.append("errorMessage", exception.getMessage());
             }
-            if (result != null) {
-                auditAttributes.append("numResults", result.getResult().size());
-            }
+            logger.debug("catalogParseQueryTimeMillis = " + auditAttributes.getInt("catalogParseQueryTimeMillis"));
+            logger.debug("checkPermissionsTimeMillis = " + auditAttributes.getInt("checkPermissionsTimeMillis"));
+            logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
+            logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
+            logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
             catalogManager.getAuditManager().recordAction(
                     AuditRecord.Resource.variant,
                     AuditRecord.Action.view,
                     AuditRecord.Magnitude.low,
                     dbName,
-                    userId, null, null, "Get variants", auditAttributes);
+                    userId, null, null, auditAction, auditAttributes);
         }
     }
 
@@ -633,7 +696,7 @@ public class VariantStorageManager extends StorageManager {
                 List<String> returnedSamples = new LinkedList<>();
                 for (Study study : studies) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
-                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()),
+                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true),
                             sessionId);
                     samplesQueryResult.getResult().sort(Comparator.comparing(Sample::getId));
                     samplesMap.put(study.getFqn(), samplesQueryResult.getResult());

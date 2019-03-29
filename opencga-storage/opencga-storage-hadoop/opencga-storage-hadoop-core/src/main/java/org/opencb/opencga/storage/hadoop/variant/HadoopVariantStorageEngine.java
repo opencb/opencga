@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -55,7 +57,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
@@ -78,7 +82,6 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -87,8 +90,10 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -387,7 +392,28 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        options.put(MendelianErrorDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+        if (trios.size() < 1000) {
+            options.put(MendelianErrorDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+        } else {
+            File mendelianErrorsFile = null;
+            try {
+                mendelianErrorsFile = File.createTempFile("mendelian_errors.", ".tmp");
+                try (OutputStream os = FileUtils.openOutputStream(mendelianErrorsFile)) {
+                    for (List<String> trio : trios) {
+                        os.write(String.join(",", trio).getBytes());
+                        os.write('\n');
+                    }
+                }
+            } catch (IOException e) {
+                if (mendelianErrorsFile == null) {
+                    throw new StorageEngineException("Error generating temporary file.", e);
+                } else {
+                    throw new StorageEngineException("Error writing temporary file " + mendelianErrorsFile, e);
+                }
+            }
+            options.put(MendelianErrorDriver.TRIOS_FILE, mendelianErrorsFile.toPath().toAbsolutePath().toString());
+            options.put(MendelianErrorDriver.TRIOS_FILE_DELETE, true);
+        }
 
         int studyId = getMetadataManager().getStudyId(study);
         getMRExecutor().run(MendelianErrorDriver.class, MendelianErrorDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
@@ -934,11 +960,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
-        HBaseCredentials dbCredentials = getDbCredentials();
-        Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(), dbCredentials);
-        return new VariantStorageMetadataManager(
-                new HBaseVariantStorageMetadataDBAdaptorFactory(
-                        getHBaseManager(configuration), getTableNameGenerator().getMetaTableName(), configuration));
+        return getDBAdaptor().getMetadataManager();
     }
 
     @Override
@@ -980,38 +1002,87 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         Query query = new Query(inputQuery);
         SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
 
-        VariantDBIterator variants = sampleIndexDBAdaptor.iterator(sampleIndexQuery);
+        VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(sampleIndexDBAdaptor.iterator(sampleIndexQuery));
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
         if (iterator) {
-            VariantDBIterator variantDBIterator = dbAdaptor.iterator(variants, query, options, batchSize);
-            variantDBIterator.addCloseable(variants);
-            return variantDBIterator;
+            // SampleIndex iterator will be closed when closing the variants iterator
+            return dbAdaptor.iterator(variants, query, options, batchSize);
         } else {
-            VariantQueryResult<Variant> result = dbAdaptor.get(variants, query, options);
+            MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(
+                    new org.opencb.opencga.storage.core.variant.adaptors.iterators.DelegatedVariantDBIterator(variants) {
+                        @Override
+                        public void close() throws Exception {
+                            // Do not close this iterator! We'll need to keep iterating to get the approximate count
+                        }
+                    }, query, options, batchSize);
+            VariantQueryResult<Variant> result =
+                    addSamplesMetadataIfRequested(variantDBIterator.toQueryResult(), query, options, getMetadataManager());
             // TODO: Allow exact count with "approximateCount=false"
             if (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false)) {
                 int sampling = variants.getCount();
                 int limit = options.getInt(QueryOptions.LIMIT, 0);
+                int skip = options.getInt(QueryOptions.SKIP, 0);
                 if (limit > 0 && limit > result.getNumResults()) {
-                    // Less results than limit. Count is not approximated
-                    result.setApproximateCount(false);
-                    result.setNumTotalResults(result.getNumResults());
+                    if (skip > 0 && result.getNumResults() == 0) {
+                        // Skip could be greater than numTotalResults. Approximate count
+                        result.setApproximateCount(true);
+                    } else {
+                        // Less results than limit. Count is not approximated
+                        result.setApproximateCount(false);
+                    }
+                    result.setNumTotalResults(result.getNumResults() + skip);
                 } else if (variants.hasNext()) {
                     long totalCount;
-                    if (sampleIndexQuery.getSamplesMap().size() == 1) {
+                    if (CollectionUtils.isEmpty(sampleIndexQuery.getRegions())) {
+                        int chr1Count;
+                        StopWatch stopWatch = StopWatch.createStarted();
+                        if (variants.getChromosomeCount("1") != null) {
+                            // Iterate until the chr1 is exhausted
+                            int i = 0;
+                            while ("1".equals(variants.getCurrentChromosome()) && variants.hasNext()) {
+                                variants.next();
+                                i++;
+                            }
+                            chr1Count = variants.getChromosomeCount("1");
+                            if (i != 0) {
+                                logger.info("Count variants from chr1 using the same iterator over the Sample Index Table : "
+                                        + "Read " + i + " extra variants in " + TimeUtils.durationToString(stopWatch));
+                            }
+                        } else {
+                            query.put(REGION.key(), "1");
+                            SampleIndexQuery sampleIndexQueryChr1 =
+                                    SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
+                            chr1Count = Iterators.size(sampleIndexDBAdaptor.iterator(sampleIndexQueryChr1));
+                            logger.info("Count variants from chr1 in Sample Index Table : " + TimeUtils.durationToString(stopWatch));
+                        }
+                        float magicNumber = 12.5F; // Magic number! Proportion of variants from chr1 and the whole genome
+
+                        logger.info("chr1 count = " + chr1Count);
+                        totalCount = (int) (chr1Count * magicNumber);
+                    } else if (sampleIndexDBAdaptor.isFastCount(sampleIndexQuery) && sampleIndexQuery.getSamplesMap().size() == 1) {
+                        StopWatch stopWatch = StopWatch.createStarted();
                         Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
                         totalCount = sampleIndexDBAdaptor.count(sampleIndexQuery, entry.getKey());
+                        logger.info("Count variants from sample index table : " + TimeUtils.durationToString(stopWatch));
                     } else {
                         StopWatch stopWatch = StopWatch.createStarted();
                         Iterators.getLast(variants);
                         totalCount = variants.getCount();
-                        logger.info("Drain variants from sample index table in " + TimeUtils.durationToString(stopWatch));
+                        logger.info("Drain variants from sample index table : " + TimeUtils.durationToString(stopWatch));
                     }
-                    long approxCount = totalCount / sampling * result.getNumResults();
+                    long approxCount;
                     logger.info("totalCount = " + totalCount);
-                    logger.info("sampling = " + sampling);
                     logger.info("result.getNumResults() = " + result.getNumResults());
+                    logger.info("numQueries = " + variantDBIterator.getNumQueries());
+                    if (variantDBIterator.getNumQueries() == 1) {
+                        // Just one query with limit, index was accurate enough
+                        approxCount = totalCount;
+                    } else {
+                        // Multiply first to avoid loss of precision
+                        approxCount = totalCount * result.getNumResults() / sampling;
+                        logger.info("sampling = " + sampling);
+                    }
                     logger.info("approxCount = " + approxCount);
                     result.setApproximateCount(true);
                     result.setNumTotalResults(approxCount);

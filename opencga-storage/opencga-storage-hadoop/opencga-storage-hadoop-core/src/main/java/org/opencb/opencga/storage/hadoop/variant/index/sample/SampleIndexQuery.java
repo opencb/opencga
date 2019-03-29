@@ -94,6 +94,16 @@ public class SampleIndexQuery {
         return new SingleSampleIndexQuery(this, sample, gts);
     }
 
+    /**
+     * Create a SingleSampleIndexQuery.
+     *
+     * @param sample Sample to query
+     * @return SingleSampleIndexQuery
+     */
+    SingleSampleIndexQuery forSample(String sample) {
+        return new SingleSampleIndexQuery(this, sample);
+    }
+
     public static class SingleSampleIndexQuery extends SampleIndexQuery {
 
         private final String sample;

@@ -89,8 +89,9 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
     }
 
     public TieringAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                           Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
+                           Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
+                           String opencgaHome, String token) {
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
     }
 
     @Override
@@ -107,6 +108,9 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
 
         // Get pedigree
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
+
+        // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
+        removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
         // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
         // samples easily)
@@ -161,7 +165,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         List<ReportedVariant> primaryFindings;
         List<DiseasePanel> biodataDiseasePanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
         TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasePanelList, roleInCancer, actionableVariants,
-                clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
+                clinicalAnalysis.getDisorder(), null, penetrance);
         try {
             primaryFindings = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException e) {
@@ -260,30 +264,30 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         switch (moi) {
             case MONOALLELIC:
                 query = new Query(dominantQuery);
-                genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
+                genotypes = ModeOfInheritance.dominant(pedigree, disorder, penetrance);
                 break;
             case YLINKED:
                 query = new Query(dominantQuery)
                         .append(VariantQueryParam.REGION.key(), "Y");
-                genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+                genotypes = ModeOfInheritance.yLinked(pedigree, disorder, penetrance);
                 break;
             case XLINKED_MONOALLELIC:
                 query = new Query(dominantQuery)
                         .append(VariantQueryParam.REGION.key(), "X");
-                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, penetrance);
                 break;
             case BIALLELIC:
                 query = new Query(recessiveQuery);
-                genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
+                genotypes = ModeOfInheritance.recessive(pedigree, disorder, penetrance);
                 break;
             case XLINKED_BIALLELIC:
                 query = new Query(recessiveQuery)
                         .append(VariantQueryParam.REGION.key(), "X");
-                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, penetrance);
                 break;
             case MITOCHONDRIAL:
                 query = new Query(mitochondrialQuery);
-                genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder);
+                genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, penetrance);
                 filterOutHealthyGenotypes(genotypes);
                 break;
             default:

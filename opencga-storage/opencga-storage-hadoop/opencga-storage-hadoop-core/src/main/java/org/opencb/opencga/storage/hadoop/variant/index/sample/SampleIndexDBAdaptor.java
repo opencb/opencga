@@ -49,10 +49,10 @@ public class SampleIndexDBAdaptor {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexDBAdaptor.class);
 
     public SampleIndexDBAdaptor(GenomeHelper helper, HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
-                                VariantStorageMetadataManager scm) {
+                                VariantStorageMetadataManager metadataManager) {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
-        this.metadataManager = scm;
+        this.metadataManager = metadataManager;
         family = helper.getColumnFamily();
     }
 
@@ -168,6 +168,10 @@ public class SampleIndexDBAdaptor {
                 throw VariantQueryException.internalException(e);
             }
         });
+    }
+
+    public boolean isFastCount(SampleIndexQuery query) {
+        return query.getSamplesMap().size() == 1 && query.emptyAnnotationIndex() && query.emptyFileIndex();
     }
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
@@ -315,7 +319,8 @@ public class SampleIndexDBAdaptor {
             scan.setStopRow(HBaseToSampleIndexConverter.toRowKey(sampleId, region.getChromosome(),
                     region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexDBLoader.BATCH_SIZE)));
         } else {
-            scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sampleId));
+            scan.setStartRow(HBaseToSampleIndexConverter.toRowKey(sampleId));
+            scan.setStopRow(HBaseToSampleIndexConverter.toRowKey(sampleId + 1));
         }
         // If genotypes are not defined, return ALL columns
         for (String gt : query.getGenotypes()) {

@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -24,10 +26,7 @@ import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -35,7 +34,9 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -372,32 +373,32 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         case "MONOALLELIC":
                         case "monoallelic":
                         case "dominant":
-                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "MONOALLELIC_INCOMPLETE_PENETRANCE":
                         case "monoallelicIncompletePenetrance":
-                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
                             break;
                         case "BIALLELIC":
                         case "biallelic":
                         case "recesive":
-                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "BIALLELIC_INCOMPLETE_PENETRANCE":
                         case "biallelicIncompletePenetrance":
-                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
                             break;
                         case "XLINKED_MONOALLELIC":
                         case "XlinkedMonoallelic":
-                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "XLINKED_BIALLELIC":
                         case "XlinkedBiallelic":
-                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "YLINKED":
                         case "Ylinked":
-                            genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+                            genotypes = ModeOfInheritance.yLinked(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         default:
                             throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString);
@@ -555,6 +556,78 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             release = null;
         }
         return release;
+    }
+
+    public List<List<String>> getTriosFromFamily(
+            String studyFqn, Family family, VariantStorageMetadataManager metadataManager, boolean skipIncompleteFamily, String sessionId)
+            throws StorageEngineException, CatalogException {
+        int studyId = metadataManager.getStudyId(studyFqn);
+        List<List<String>> trios = new LinkedList<>();
+        Map<Long, Individual> members = family.getMembers().stream().collect(Collectors.toMap(Individual::getUid, i -> i));
+        for (Individual individual : family.getMembers()) {
+            String fatherSample = null;
+            String motherSample = null;
+            String childSample = null;
+
+            if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                for (Sample sample : individual.getSamples()) {
+                    sample = catalogManager.getSampleManager().get(studyFqn,
+                            new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
+                            new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
+                    Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
+                    if (sampleId != null) {
+                        childSample = sample.getId();
+                        break;
+                    }
+                }
+            }
+            if (individual.getFather() != null && members.containsKey(individual.getFather().getUid())) {
+                Individual father = members.get(individual.getFather().getUid());
+                if (CollectionUtils.isNotEmpty(father.getSamples())) {
+                    for (Sample sample : father.getSamples()) {
+                        sample = catalogManager.getSampleManager().get(studyFqn,
+                                new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
+                                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
+                        Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
+                        if (sampleId != null) {
+                            fatherSample = sample.getId();
+                            break;
+                        }
+                    }
+                }
+            }
+            if (individual.getMother() != null && members.containsKey(individual.getMother().getUid())) {
+                Individual mother = members.get(individual.getMother().getUid());
+                if (CollectionUtils.isNotEmpty(mother.getSamples())) {
+                    for (Sample sample : mother.getSamples()) {
+                        sample = catalogManager.getSampleManager().get(studyFqn,
+                                new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
+                                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
+                        Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
+                        if (sampleId != null) {
+                            motherSample = sample.getId();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Allow one missing parent
+            if (childSample != null && (fatherSample != null || motherSample != null)) {
+                trios.add(Arrays.asList(
+                        fatherSample == null ? "-" : fatherSample,
+                        motherSample == null ? "-" : motherSample,
+                        childSample));
+            }
+        }
+        if (trios.size() == 0) {
+            if (skipIncompleteFamily) {
+                logger.debug("Skip family '" + family.getId() + "'. ");
+            } else {
+                throw new StorageEngineException("Can not calculate mendelian errors on family '" + family.getId() + "'");
+            }
+        }
+        return trios;
     }
 
     public abstract class FilterValidator {

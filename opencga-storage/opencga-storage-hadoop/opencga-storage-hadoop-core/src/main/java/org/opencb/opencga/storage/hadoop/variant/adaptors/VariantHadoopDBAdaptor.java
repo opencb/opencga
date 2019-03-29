@@ -445,7 +445,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }).iterator();
 
                 VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
-                        resScans, genomeHelper, studyConfigurationManager.get(), options, unknownGenotype, formats, selectElements);
+                        resScans, genomeHelper, studyConfigurationManager.get(), query, options, unknownGenotype, formats, selectElements);
 
                 // Client side skip!
                 int skip = options.getInt(QueryOptions.SKIP, -1);
@@ -488,7 +488,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 //                VariantPhoenixCursorIterator iterator = new VariantPhoenixCursorIterator(phoenixQuery, getJdbcConnection(), converter);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
                         resultSet, genomeHelper, metadataManager, phoenixQuery.getSelect(),
-                        formats, unknownGenotype, options);
+                        formats, unknownGenotype, query, options);
 
                 if (clientSideSkip) {
                     // Client side skip!
