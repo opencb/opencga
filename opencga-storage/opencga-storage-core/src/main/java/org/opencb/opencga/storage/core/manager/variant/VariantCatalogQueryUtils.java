@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -372,32 +373,32 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         case "MONOALLELIC":
                         case "monoallelic":
                         case "dominant":
-                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "MONOALLELIC_INCOMPLETE_PENETRANCE":
                         case "monoallelicIncompletePenetrance":
-                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
                             break;
                         case "BIALLELIC":
                         case "biallelic":
                         case "recesive":
-                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "BIALLELIC_INCOMPLETE_PENETRANCE":
                         case "biallelicIncompletePenetrance":
-                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
                             break;
                         case "XLINKED_MONOALLELIC":
                         case "XlinkedMonoallelic":
-                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "XLINKED_BIALLELIC":
                         case "XlinkedBiallelic":
-                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "YLINKED":
                         case "Ylinked":
-                            genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+                            genotypes = ModeOfInheritance.yLinked(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         default:
                             throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString);

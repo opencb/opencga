@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
@@ -48,7 +49,7 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         //query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         CustomAnalysis customAnalysis = new CustomAnalysis(clinicalTest.clinicalAnalysis.getId(), null, clinicalTest.studyFqn, null,
-                null, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
+                null, ClinicalProperty.Penetrance.COMPLETE, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         InterpretationResult execute = customAnalysis.execute();
         for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
             System.out.println("variant = " + variant.toStringSimple());
@@ -84,7 +85,7 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         query.put(VariantQueryParam.SAMPLE.key(), samples);
 
         CustomAnalysis customAnalysis = new CustomAnalysis(null, query, clinicalTest.studyFqn, null,
-                null, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
+                null, ClinicalProperty.Penetrance.COMPLETE, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         InterpretationResult execute = customAnalysis.execute();
         for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
             System.out.println("variant = " + variant.toStringSimple());

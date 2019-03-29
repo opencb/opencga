@@ -54,7 +54,7 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
                           Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                           Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome,
                           String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, config, studyStr, opencgaHome, token);
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, null, config, studyStr, opencgaHome, token);
         this.query = new Query(defaultQuery);
         this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.STUDY.key(), studyStr)
@@ -132,12 +132,27 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
             }
             query.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
             samples.add(sampleMap.get(proband.getId()));
-            samples.add(sampleMap.get(proband.getMother().getId()));
-            samples.add(sampleMap.get(proband.getFather().getId()));
+
+            int motherSampleIdx = 1;
+            int fatherSampleIdx = 2;
+
+            if (proband.getMother() != null && StringUtils.isNotEmpty(proband.getMother().getId())
+                    && sampleMap.containsKey(proband.getMother().getId())) {
+                samples.add(sampleMap.get(proband.getMother().getId()));
+            } else {
+                motherSampleIdx = -1;
+                fatherSampleIdx = 1;
+            }
+            if (proband.getFather() != null && StringUtils.isNotEmpty(proband.getFather().getId())
+                    && sampleMap.containsKey(proband.getFather().getId())) {
+                samples.add(sampleMap.get(proband.getFather().getId()));
+            } else {
+                fatherSampleIdx = -1;
+            }
+
             query.put(INCLUDE_SAMPLE.key(), samples);
             cleanQuery(query);
-            logger.debug("De novo query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
-            VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
+
             logger.debug("De novo Clinical Analysis: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(clinicalAnalysis));
             logger.debug("De novo Pedigree: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(pedigree));
             logger.debug("De novo Pedigree proband: {}", JacksonUtils.getDefaultObjectMapper().writer()
@@ -146,7 +161,10 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
             logger.debug("De novo Proband: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(proband));
             logger.debug("De novo Sample map: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(sampleMap));
             logger.debug("De novo samples: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(samples));
-            variants = ModeOfInheritance.deNovo(iterator, 0, 1, 2);
+            logger.debug("De novo query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
+
+            VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
+            variants = ModeOfInheritance.deNovo(iterator, 0, motherSampleIdx, fatherSampleIdx);
         }
         logger.debug("Variants obtained: {}", variants.size());
         logger.debug("De novo time: {}", watcher.getTime());
