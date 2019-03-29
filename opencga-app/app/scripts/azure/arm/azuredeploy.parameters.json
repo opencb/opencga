@@ -50,9 +50,6 @@
         "avereServicePrincipalPassword": {
             "value": ""
         },
-        "mongoDbDumpUrl": {
-            "value": ""
-        },
         "openCgaAdminPassword": {
             "value": "SECUREPASSWORD"
         },
@@ -62,7 +59,7 @@
         "mongoDBPassword": {
             "value": "SECUREPASSWORD"
         },
-        "mongoCertificateEmail": {
+        "sslCertificateEmail": {
             "value": "EMAILHERE"
         },
         "catalogSecretKey": {

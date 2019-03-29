@@ -163,7 +163,7 @@
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
         "solrHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('solrHosts')), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', ''),'\"')]",
         "mongoDbHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('mongoDbHosts')), ' ', ''), '[{\"fqdn\":\"', ''), '\"},{\"fqdn\":\"', ','), '\"}]', ''),'\"')]",
-        "restHost": "[concat('http://',parameters('opencgaFQDN'), '/opencga')]",
+        "restHost": "[concat('https://',parameters('opencgaFQDN'), '/opencga')]",
         "grpcHost": "[concat('http://',parameters('opencgaFQDN'), ':9999')]",
         "singleQuote": "'",
         "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/scripts/mount.py -O /tmp/mount.py')]",
