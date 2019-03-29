@@ -1,4 +1,3 @@
-
 # Setup OpenCGA on Azure
 The following guide shows how to successfully configure OpenCGA on Azure using different storage engines. It sets up a single virtual machine with OpenCGA, Tomcat, MongoDB, Solr and Redis Cache. Optionally it also sets up an HDInsight HBase cluster with either Azure Storage or Azure DataLake.
 
