@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
@@ -32,14 +33,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.DataStore;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -316,6 +315,42 @@ public class VariantStorageManager extends StorageManager {
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
+    }
+
+    public void calculateMendelianErrors(String studyStr, List<String> familiesStr, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        DataStore dataStore = getDataStore(study.getFqn(), sessionId);
+        VariantStorageEngine engine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        if (CollectionUtils.isEmpty(familiesStr)) {
+            throw new IllegalArgumentException("Empty list of families");
+        }
+
+        List<List<String>> trios = new LinkedList<>();
+
+        VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+        int studyId = metadataManager.getStudyId(study.getFqn());
+
+        if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
+            DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(studyStr, new Query(), new QueryOptions(), sessionId);
+            while (iterator.hasNext()) {
+                Family family = iterator.next();
+                trios.addAll(catalogUtils.getTriosFromFamily(study.getFqn(), family, metadataManager, true, sessionId));
+            }
+        } else {
+            boolean skipIncompleteFamily = config.getBoolean("skipIncompleteFamily", false);
+            for (String familyId : familiesStr) {
+                Family family = catalogManager.getFamilyManager().get(studyStr, familyId, null, sessionId).first();
+                trios.addAll(catalogUtils.getTriosFromFamily(study.getFqn(), family, metadataManager, skipIncompleteFamily, sessionId));
+            }
+        }
+
+        engine.calculateMendelianErrors(study.getFqn(), trios, config);
     }
 
     public void fillGaps(String studyStr, List<String> samples, ObjectMap config, String sessionId)
