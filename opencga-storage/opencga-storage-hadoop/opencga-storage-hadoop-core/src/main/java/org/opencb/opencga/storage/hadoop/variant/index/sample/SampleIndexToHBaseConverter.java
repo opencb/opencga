@@ -9,6 +9,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
@@ -113,4 +115,15 @@ public class SampleIndexToHBaseConverter {
         return b;
     }
 
+    public void serializeMendelianError(ByteArrayOutputStream stream, Variant variant, String gt, int gtIdx)
+            throws IOException {
+        if (stream.size() != 0) {
+            stream.write(HBaseToSampleIndexConverter.SEPARATOR);
+        }
+        stream.write(Bytes.toBytes(variant.toString()));
+        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
+        stream.write(Bytes.toBytes(gt));
+        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
+        stream.write(Bytes.toBytes(Integer.toString(gtIdx)));
+    }
 }

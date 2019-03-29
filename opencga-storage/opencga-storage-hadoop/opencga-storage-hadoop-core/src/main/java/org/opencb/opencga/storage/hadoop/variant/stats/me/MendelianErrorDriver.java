@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -77,11 +78,16 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
             List<Integer> trioList = new ArrayList<>(3);
             for (String trio : trios.split(";")) {
                 for (String sample : trio.split(",")) {
-                    Integer sampleId = metadataManager.getSampleId(getStudyId(), sample);
-                    if (sampleId == null) {
-                        throw new IllegalArgumentException("Sample '" + sample + "' not found.");
+                    Integer sampleId;
+                    if (sample.equals("-")) {
+                        sampleId = -1;
+                    } else {
+                        sampleId = metadataManager.getSampleId(getStudyId(), sample);
+                        if (sampleId == null) {
+                            throw new IllegalArgumentException("Sample '" + sample + "' not found.");
+                        }
+                        trioList.add(sampleId);
                     }
-                    trioList.add(sampleId);
                     sampleIds.add(sampleId);
                 }
                 if (trioList.size() != 3) {
@@ -167,10 +173,12 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
         private Map<Integer, Map<String, Integer>> genotypeCount = new HashMap<>();
         private List<List<Integer>> trios;
         private byte[] family;
+        private SampleIndexToHBaseConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            converter = new SampleIndexToHBaseConverter(family);
 
             int[] sampleIds = context.getConfiguration().getInts(TRIOS_LIST);
             trios = new ArrayList<>(sampleIds.length / 3);
@@ -192,8 +200,6 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-
-
             Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(value.getRow());
             String chromosome = variant.getChromosome();
 
@@ -214,26 +220,33 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
 
             for (List<Integer> trio : trios) {
+                Integer father = trio.get(0);
+                Integer mother = trio.get(1);
                 Integer child = trio.get(2);
 
-                String fatherGt = gtMap.get(trio.get(0));
-                String motherGt = gtMap.get(trio.get(1));
-                String childGt = gtMap.get(child);
+                String fatherGtStr = gtMap.get(father);
+                String motherGtStr = gtMap.get(mother);
+                String childGtStr = gtMap.get(child);
 
-                int idx = genotypeCount.get(child).merge(childGt, 1, Integer::sum) - 1;
-                if (fatherGt != null && motherGt != null && childGt != null) {
-                    Integer me = MendelianError.compute(new Genotype(fatherGt), new Genotype(motherGt), new Genotype(childGt), chromosome);
+                int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
+                if ((fatherGtStr != null || father == -1) && (motherGtStr != null || mother == -1) && childGtStr != null) {
+                    Genotype fatherGt;
+                    Genotype motherGt;
+                    Genotype childGt;
+                    try {
+                        fatherGt = fatherGtStr == null ? null : new Genotype(fatherGtStr);
+                        motherGt = motherGtStr == null ? null : new Genotype(motherGtStr);
+                        childGt = new Genotype(childGtStr);
+                    } catch (IllegalArgumentException e) {
+                        // Skip malformed GT
+                        context.getCounter(COUNTER_GROUP_NAME, "wrong_gt").increment(1);
+                        continue;
+                    }
+                    Integer me = MendelianError.compute(fatherGt, motherGt, childGt, chromosome);
                     context.getCounter(COUNTER_GROUP_NAME, "me_" + me).increment(1);
                     if (me > 0) {
                         ByteArrayOutputStream stream = mendelianErrorsMap.get(child);
-                        if (stream.size() != 0) {
-                            stream.write(HBaseToSampleIndexConverter.SEPARATOR);
-                        }
-                        stream.write(Bytes.toBytes(variant.toString()));
-                        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
-                        stream.write(Bytes.toBytes(childGt));
-                        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
-                        stream.write(Bytes.toBytes(Integer.toString(idx)));
+                        converter.serializeMendelianError(stream, variant, childGtStr, idx);
                     }
                 }
             }
