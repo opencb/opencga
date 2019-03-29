@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
@@ -49,6 +50,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
     protected Map<String, RoleInCancer> roleInCancer;
     protected Map<String, List<String>> actionableVariants;
 
+    protected ClinicalProperty.Penetrance penetrance;
+
     protected ObjectMap config;
     @Deprecated
     protected int maxCoverage;
@@ -77,7 +80,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 //    }
 
     public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome, String token) {
+                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap config,
+                          String studyStr, String opencgaHome, String token) {
         super(opencgaHome, studyStr, token);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
@@ -85,6 +89,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
         this.actionableVariants = actionableVariants;
         this.roleInCancer = roleInCancer;
+
+        this.penetrance = penetrance;
 
         this.config = config != null ? config : new ObjectMap();
         this.maxCoverage = 20;

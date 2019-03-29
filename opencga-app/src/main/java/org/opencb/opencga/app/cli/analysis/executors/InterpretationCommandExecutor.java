@@ -208,7 +208,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
         // Run interpretation
         TieringAnalysis tieringAnalysis = new TieringAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
-                actionableVariantsByAssembly.get(assembly), tieringAnalysisOptions, opencgaHome, token);
+                actionableVariantsByAssembly.get(assembly), options.penetrance, tieringAnalysisOptions, opencgaHome, token);
 
         InterpretationResult interpretationResult = tieringAnalysis.execute();
 

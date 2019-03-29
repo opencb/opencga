@@ -46,8 +46,9 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
     private final static String CUSTOM_ANALYSIS_NAME = "Custom";
 
     public CustomAnalysis(String clinicalAnalysisId, Query query, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
-        super(clinicalAnalysisId, null, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
+                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
+                          String opencgaHome, String token) {
+        super(clinicalAnalysisId, null, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
 
         this.query = query;
 

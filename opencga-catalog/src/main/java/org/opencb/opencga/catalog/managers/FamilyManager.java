@@ -66,6 +66,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.*;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -588,7 +589,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,
                                                               ClinicalProperty.ModeOfInheritance moi, String disorderId,
-                                                              boolean incompletePenetrance, String token) throws CatalogException {
+                                                              Penetrance penetrance, String token) throws CatalogException {
         Pedigree pedigree;
         Disorder disorder = null;
 
@@ -629,17 +630,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         switch (moi) {
             case MONOALLELIC:
-                return ModeOfInheritance.dominant(pedigree, disorder, incompletePenetrance);
+                return ModeOfInheritance.dominant(pedigree, disorder, penetrance);
             case BIALLELIC:
-                return ModeOfInheritance.recessive(pedigree, disorder, incompletePenetrance);
+                return ModeOfInheritance.recessive(pedigree, disorder, penetrance);
             case XLINKED_BIALLELIC:
-                return ModeOfInheritance.xLinked(pedigree, disorder, false);
+                return ModeOfInheritance.xLinked(pedigree, disorder, false, penetrance);
             case XLINKED_MONOALLELIC:
-                return ModeOfInheritance.xLinked(pedigree, disorder, true);
+                return ModeOfInheritance.xLinked(pedigree, disorder, true, penetrance);
             case YLINKED:
-                return ModeOfInheritance.yLinked(pedigree, disorder);
+                return ModeOfInheritance.yLinked(pedigree, disorder, penetrance);
             case MITOCHONDRIAL:
-                return ModeOfInheritance.mitochondrial(pedigree, disorder);
+                return ModeOfInheritance.mitochondrial(pedigree, disorder, penetrance);
             case DE_NOVO:
                 return ModeOfInheritance.deNovo(pedigree);
             case COMPOUND_HETEROZYGOUS:

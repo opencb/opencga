@@ -55,7 +55,7 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
 
     public TeamAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, ModeOfInheritance moi, String studyStr, Map<String, RoleInCancer> roleInCancer,
                         Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, Penetrance.COMPLETE, options, studyStr, opencgaHome, token);
         this.moi = moi;
     }
 

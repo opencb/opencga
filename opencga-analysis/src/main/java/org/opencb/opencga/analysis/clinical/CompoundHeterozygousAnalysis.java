@@ -11,6 +11,7 @@ import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -40,7 +41,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
                                         Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                                         Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome,
                                         String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, config, studyStr, opencgaHome, token);
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, null, config, studyStr, opencgaHome, token);
         this.query = new Query(defaultQuery);
         this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.STUDY.key(), studyStr)
@@ -89,8 +90,14 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
         }
 
         int probandSampleIdx = samples.indexOf(proband.getSamples().get(0).getId());
-        int fatherSampleIdx = samples.indexOf(proband.getFather().getSamples().get(0).getId());
-        int motherSampleIdx = samples.indexOf(proband.getMother().getSamples().get(0).getId());
+        int fatherSampleIdx = -1;
+        int motherSampleIdx = -1;
+        if (proband.getFather() != null && ListUtils.isNotEmpty(proband.getFather().getSamples())) {
+            fatherSampleIdx = samples.indexOf(proband.getFather().getSamples().get(0).getId());
+        }
+        if (proband.getMother() != null && ListUtils.isNotEmpty(proband.getMother().getSamples())) {
+            motherSampleIdx = samples.indexOf(proband.getMother().getSamples().get(0).getId());
+        }
 
         if (genotypeList.isEmpty()) {
             logger.error("No genotypes found");
@@ -99,6 +106,9 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
         query.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
 
         cleanQuery(query);
+
+        logger.debug("CH Samples: {}", StringUtils.join(samples, ","));
+        logger.debug("CH Proband idx: {}, mother idx: {}, father idx: {}", probandSampleIdx, motherSampleIdx, fatherSampleIdx);
         logger.debug("CH Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
         Map<String, List<Variant>> variantMap =

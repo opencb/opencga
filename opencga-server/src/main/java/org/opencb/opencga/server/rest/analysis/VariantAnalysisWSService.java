@@ -55,8 +55,8 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.manager.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -553,11 +553,15 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Clinical analysis id") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
             @ApiParam(value = "Mode of inheritance", required = true, defaultValue = "MONOALLELIC")
                 @QueryParam("modeOfInheritance") ClinicalProperty.ModeOfInheritance moi,
-            @ApiParam(value = "Complete penetrance", defaultValue = "true") @QueryParam("completePenetrance") boolean completePenetrance,
+            @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance,
             @ApiParam(value = "Disorder id") @QueryParam("disorder") String disorder) {
         try {
+            if (penetrance == null) {
+                penetrance = ClinicalProperty.Penetrance.COMPLETE;
+            }
+
             return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
-                    disorder, !completePenetrance, sessionId));
+                    disorder, penetrance, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
