@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import com.google.common.collect.Iterators;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -89,8 +90,10 @@ import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGene
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -389,7 +392,28 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        options.put(MendelianErrorDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+        if (trios.size() < 1000) {
+            options.put(MendelianErrorDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+        } else {
+            File mendelianErrorsFile = null;
+            try {
+                mendelianErrorsFile = File.createTempFile("mendelian_errors.", ".tmp");
+                try (OutputStream os = FileUtils.openOutputStream(mendelianErrorsFile)) {
+                    for (List<String> trio : trios) {
+                        os.write(String.join(",", trio).getBytes());
+                        os.write('\n');
+                    }
+                }
+            } catch (IOException e) {
+                if (mendelianErrorsFile == null) {
+                    throw new StorageEngineException("Error generating temporary file.", e);
+                } else {
+                    throw new StorageEngineException("Error writing temporary file " + mendelianErrorsFile, e);
+                }
+            }
+            options.put(MendelianErrorDriver.TRIOS_FILE, mendelianErrorsFile.toPath().toAbsolutePath().toString());
+            options.put(MendelianErrorDriver.TRIOS_FILE_DELETE, true);
+        }
 
         int studyId = getMetadataManager().getStudyId(study);
         getMRExecutor().run(MendelianErrorDriver.class, MendelianErrorDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),

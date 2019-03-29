@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats.me;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.Cell;
@@ -18,6 +19,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.MendelianError;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -34,7 +36,10 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +54,10 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
     public static final String TRIOS = "trios";
     public static final String TRIOS_FILE = "triosFile";
-    public static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
+    public static final String TRIOS_FILE_DELETE = "triosFileDelete";
+    public static final String OVERWRITE = "overwrite";
+
+    private static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
     private List<Integer> sampleIds;
     private boolean partial;
     private String region;
@@ -64,6 +72,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
         Map<String, String> params = new HashMap<>();
         params.put("--" + TRIOS, "(father,mother,child;)**");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
+        params.put("--" + OVERWRITE, "<true|false>");
         return params;
     }
 
@@ -71,22 +80,26 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
 
-
         VariantStorageMetadataManager metadataManager = getMetadataManager();
 
         String triosFile = getParam(TRIOS_FILE);
-        String trios;
+        boolean triosFileDelete = Boolean.valueOf(getParam(TRIOS_FILE_DELETE));
+        boolean overwrite = Boolean.valueOf(getParam(OVERWRITE));
+        List<String> trios;
         if (StringUtils.isNotEmpty(triosFile)) {
-            trios = FileUtils.readFileToString(new File(triosFile));
-            trios = trios.replaceAll("\n", ";");
+            File file = new File(triosFile);
+            trios = FileUtils.readLines(file);
+            if (triosFileDelete) {
+                Files.delete(file.toPath());
+            }
         } else {
-            trios = getParam(TRIOS);
+            trios = Arrays.asList(getParam(TRIOS).split(";"));
         }
 
-        if (StringUtils.isNotEmpty(trios)) {
+        if (CollectionUtils.isNotEmpty(trios)) {
             sampleIds = new LinkedList<>();
             List<Integer> trioList = new ArrayList<>(3);
-            for (String trio : trios.split(";")) {
+            for (String trio : trios) {
                 for (String sample : trio.split(",")) {
                     Integer sampleId;
                     if (sample.equals("-")) {
@@ -98,12 +111,17 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                         }
                     }
                     trioList.add(sampleId);
-                    sampleIds.add(sampleId);
                 }
                 if (trioList.size() != 3) {
                     throw new IllegalArgumentException("Found trio with " + trioList.size() + " members, instead of 3: " + trioList);
                 }
-                LOGGER.info("Trio: " + trio + " -> " + trioList);
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), trioList.get(2));
+                if (!overwrite && sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
+                    LOGGER.info("Skip sample " + sampleMetadata.getName() + ". Already precomputed!");
+                } else {
+                    sampleIds.addAll(trioList);
+                    LOGGER.info("Trio: " + trio + " -> " + trioList);
+                }
                 trioList.clear();
             }
         } else {
