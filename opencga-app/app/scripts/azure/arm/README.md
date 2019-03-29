@@ -145,7 +145,7 @@ Q. How do I connect to the web servers hosting the `tomcat` app.
 A. You can use the `daemonvm` as a jumpbox. Retreive the `daemonvm`'s public IP from the portal and use `ssh -J opencgaadmin@DAEMONVM_PUBLIC_IP_HERE opencgaadmin@opencga000001` to connect to the instances. You can change increment `opencga000001` to connect to other instances of the web servers.
 
 Q. What is the expected state of the `daemonvm` after deployment?
-A. `cloud-init` should return a status of `done` and `sudo docker ps -a` should return 
+A. `cloud-init status` should return a status of `done` and `sudo docker ps -a` should return 
 
 ```
 CONTAINER ID        IMAGE                                 COMMAND                  CREATED             STATUS                             PORTS                                                    NAMES
@@ -155,6 +155,9 @@ a37fce3165dd        lawrencegripper/opencga-init:nfs1     "/bin/bash /tmp/setuâ€
 
 ```
 If the `opencga-init` container has an exit code other than `0` of the `opencga-daemon` `status` is `Restarting` then use `sudo docker logs opencga-init` or `sudo docker logs opencga-daemon` to review the logs.
+
+Q. `cloud-init status` returns an error how do I find out what went wrong?
+A. [Check out this guide to find out what happened and get logs](https://blog.gripdev.xyz/2019/02/19/debugging-cloud-init-on-ubuntu-in-azure-or-anywhere/)
 
 Q. How do I check that an External NFS server mounting worked correctly? 
 A. After the deployment has completed `ssh` into the `daemonvm` and check the `cloud-init` status. If this returns an error then the mounting has likely failed. Use `sudo docker logs opencga-init` to see the output of the setup and get information what may have happened. 
@@ -292,11 +295,16 @@ Additionally you can deploy a custom size by specifying the `customDeploymentSiz
         }
 ```
 
-## Additional Notes
+## Developing 
 
-### Avere - First Run
+In many of the templates scripts are embedded in the ARM as `base64` `gzip`'d strings. 
 
-To run Avere you must first accept the legal terms of the license using the following command `az vm image accept-terms --urn microsoft-avere:vfxt:avere-vfxt-controller:latest`
+When making changes to the scripts present on disk the [following steps need to be taken](mongodb/README.MD) to ensure the update script is set in the ARM. 
 
-See [the Avere docs for more details](https://docs.microsoft.com/en-us/azure/avere-vfxt/avere-vfxt-prereqs#accept-software-terms-in-advance)
+You can also use some additional tricks to get more information about such as the following command. 
 
+```
+az deployment create --location westeurope --template-file azuredeploy.json --parameters @azuredeploy.parameters.private.json --name $RANDOM --parameters _artifactsLocationSasToken=?$RANDOM --verbose; notify-send -u critical "Deploy finished with exit code: $?"
+```
+
+The `verbose` setting will give you detailed information on failures. `$RANDOM` is used to ensure that deployment names don't clash. `notify-send` will push a notification to `ubuntu` when a deployment has either failed or succeeded so you don't miss it. `_artifactsLocationSasToken=?$RANDOM` ensures that `github` hosted scripts aren't cached incorrectly when working. 
