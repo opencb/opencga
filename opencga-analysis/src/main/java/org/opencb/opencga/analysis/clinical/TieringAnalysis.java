@@ -200,7 +200,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 .setSoftware(new Software().setName("Tiering"))
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
-                .setReportedLowCoverages(reportedLowCoverages);
+                .setLowCoverageRegions(reportedLowCoverages);
 
         // Return interpretation result
         int numResults = CollectionUtils.isEmpty(primaryFindings) ? 0 : primaryFindings.size();

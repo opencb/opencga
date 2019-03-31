@@ -53,8 +53,8 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         InterpretationResult execute = customAnalysis.execute();
         for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
             System.out.println("variant = " + variant.toStringSimple());
-            System.out.println("\tnum. reported events = " + variant.getReportedEvents().size());
-            for (ReportedEvent reportedEvent : variant.getReportedEvents()) {
+            System.out.println("\tnum. reported events = " + variant.getEvidences().size());
+            for (ReportedEvent reportedEvent : variant.getEvidences()) {
                 if (CollectionUtils.isEmpty(reportedEvent.getConsequenceTypes())) {
                     System.out.println("\tnum. ct = EMPTY");
                 } else {
@@ -89,8 +89,8 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         InterpretationResult execute = customAnalysis.execute();
         for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
             System.out.println("variant = " + variant.toStringSimple());
-            System.out.println("\tnum. reported events = " + variant.getReportedEvents().size());
-            for (ReportedEvent reportedEvent : variant.getReportedEvents()) {
+            System.out.println("\tnum. reported events = " + variant.getEvidences().size());
+            for (ReportedEvent reportedEvent : variant.getEvidences()) {
                 if (CollectionUtils.isEmpty(reportedEvent.getConsequenceTypes())) {
                     System.out.println("\tnum. ct = EMPTY");
                 } else {

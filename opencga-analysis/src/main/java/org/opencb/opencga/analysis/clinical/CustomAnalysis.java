@@ -298,7 +298,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
                 .setId(CUSTOM_ANALYSIS_NAME + SEPARATOR + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
-                .setReportedLowCoverages(reportedLowCoverages)
+                .setLowCoverageRegions(reportedLowCoverages)
                 .setAnalyst(new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization()))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
