@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -45,10 +46,11 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
     private static final String FILE_PREFIX = META_PREFIX + "F_";
     private static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
 
-    public static final String SEPARATOR_STR = ",";
-    public static final byte SEPARATOR = ',';
-    public static final byte[] MENDELIAN_ERROR_COLUMN = Bytes.toBytes("ME");
-    public static final byte MENDELIAN_ERROR_SEPARATOR = '_';
+    protected static final String SEPARATOR_STR = ",";
+    protected static final byte SEPARATOR = ',';
+    protected static final byte[] MENDELIAN_ERROR_COLUMN = Bytes.toBytes("ME");
+    protected static final byte MENDELIAN_ERROR_SEPARATOR = '_';
+    protected static final byte MENDELIAN_ERROR_CODE_SEPARATOR = ':'; // optional
 
     // Region filter
     private final Region regionFilter;
@@ -223,7 +225,11 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
                 int idx1 = s.lastIndexOf(MENDELIAN_ERROR_SEPARATOR, idx2 - 1);
                 String variantStr = s.substring(0, idx1);
                 String gt = s.substring(idx1 + 1, idx2);
-                int variantIdx = Integer.valueOf(s.substring(idx2 + 1));
+                String idxCode = s.substring(idx2 + 1);
+                int i = idxCode.lastIndexOf(MENDELIAN_ERROR_CODE_SEPARATOR);
+                int variantIdx = i == StringUtils.INDEX_NOT_FOUND
+                        ? Integer.valueOf(idxCode)
+                        : Integer.valueOf(idxCode.substring(0, i));
                 if (genotypes.isEmpty() || genotypes.contains(gt)) {
                     byte[] fileIndexGt = fileIndexGtMap.get(gt);
                     byte[] annotationIndexGt = annotationIndexGtMap.get(gt);

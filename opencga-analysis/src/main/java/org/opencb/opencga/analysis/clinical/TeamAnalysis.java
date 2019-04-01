@@ -55,7 +55,7 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
 
     public TeamAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, ModeOfInheritance moi, String studyStr, Map<String, RoleInCancer> roleInCancer,
                         Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, options, studyStr, opencgaHome, token);
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, Penetrance.COMPLETE, options, studyStr, opencgaHome, token);
         this.moi = moi;
     }
 
@@ -170,7 +170,7 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
                 .setSoftware(new Software().setName("TEAM"))
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
-                .setReportedLowCoverages(reportedLowCoverages);
+                .setLowCoverageRegions(reportedLowCoverages);
 
         // Return interpretation result
         int numResults = CollectionUtils.isEmpty(primaryFindings) ? 0 : primaryFindings.size();

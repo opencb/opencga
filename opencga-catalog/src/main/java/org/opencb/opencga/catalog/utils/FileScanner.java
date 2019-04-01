@@ -20,6 +20,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -246,11 +248,15 @@ public class FileScanner {
                 logger.info("File already existing in target \"" + filePath + "\". FileScannerPolicy = " + policy);
                 switch (policy) {
                     case DELETE:
-                        logger.info("Deleting file { id:" + existingFile.getUid() + ", path:\"" + existingFile.getPath() + "\" }");
+                        logger.info("Deleting file { uid:" + existingFile.getUid() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.getFileManager().delete(study.getFqn(),
+                        WriteResult result = catalogManager.getFileManager().delete(study.getFqn(),
                                 new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid()),
                                 new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+                        if (ListUtils.isNotEmpty(result.getFailed())) {
+                            throw new CatalogException(result.getFailed().get(0).getMessage());
+                        }
+
                         overwrite = false;
                         break;
                     case REPLACE:

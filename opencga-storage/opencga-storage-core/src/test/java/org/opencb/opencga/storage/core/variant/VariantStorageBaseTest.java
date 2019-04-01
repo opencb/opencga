@@ -27,7 +27,6 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -314,6 +313,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
         StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);
 
+        if (studyMetadata != null) {
+            int studyId = variantStorageManager.getMetadataManager().getStudyId(studyMetadata.getName());
+            studyMetadata.setId(studyId);
+        }
 //        try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor()) {
 //            StudyMetadata newStudyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getStudyName(), null).first();
 //            if (newStudyMetadata != null) {
@@ -352,11 +355,6 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         if (uri != null && ( uri.getScheme() == null || Objects.equals(uri.getScheme(), "file") )) {
             Assert.assertTrue("Intermediary file " + uri + " does not exist", Paths.get(uri).toFile().exists());
         }
-    }
-
-    @Deprecated
-    protected static StudyConfiguration newStudyConfiguration() {
-        return new StudyConfiguration(STUDY_ID, STUDY_NAME);
     }
 
     protected static StudyMetadata newStudyMetadata() {

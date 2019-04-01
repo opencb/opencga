@@ -19,7 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant.converters;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -29,7 +31,6 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -37,12 +38,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,11 +115,6 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         return format;
     }
 
-    @Deprecated
-    public static List<String> getFixedAttributes(StudyConfiguration studyConfiguration) {
-        return getFixedAttributes(studyConfiguration.getVariantHeader());
-    }
-
     public static List<String> getFixedAttributes(StudyMetadata studyMetadata) {
         return getFixedAttributes(studyMetadata.getVariantHeader());
     }
@@ -134,6 +130,11 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
 
     public HBaseToVariantConverter<T> setIncludeFields(Set<VariantField> fields) {
         annotationConverter.setIncludeFields(fields);
+        return this;
+    }
+
+    public HBaseToVariantConverter<T> setIncludeIndexStatus(boolean includeIndexStatus) {
+        annotationConverter.setIncludeIndexStatus(includeIndexStatus);
         return this;
     }
 
@@ -291,6 +292,12 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(Result result) {
             Variant variant = extractVariantFromVariantRowKey(result.getRow());
             try {
+                Cell cell = result.getColumnLatestCell(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+                if (cell != null && cell.getValueLength() > 0) {
+                    String string = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                    variant.setType(VariantType.valueOf(string));
+                }
+
                 VariantAnnotation annotation = annotationConverter.convert(result);
                 Map<Integer, StudyEntry> studies;
                 if (selectVariantElements != null && selectVariantElements.getStudies().isEmpty()) {

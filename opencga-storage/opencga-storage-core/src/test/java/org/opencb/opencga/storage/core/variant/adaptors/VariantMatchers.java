@@ -253,7 +253,8 @@ public class VariantMatchers {
                         }
                     }
                 }
-                return 0F;
+                // Default popfreq is 1
+                return 1F;
             }
         };
     }

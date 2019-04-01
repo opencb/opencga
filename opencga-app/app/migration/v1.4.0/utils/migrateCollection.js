@@ -27,3 +27,43 @@ function migrateCollectionDifferentCollection(inputCollection, outputCollection,
 function migrateCollection(collection, query, projection, migrateFunc) {
     migrateCollectionDifferentCollection(collection, collection, query, projection, migrateFunc);
 }
+
+function isNotUndefinedOrNull(obj) {
+    return typeof obj !== 'undefined' && obj !== null;
+}
+
+function isUndefinedOrNull(obj) {
+    return typeof obj === 'undefined' || obj === null;
+}
+
+function isEmpty(obj) {
+    if (typeof obj === "undefined" || obj === null) {
+        return true;
+    }
+
+    // obj is an actual Object
+    if (typeof obj === "object") {
+        for(let key in obj) {
+            if(obj.hasOwnProperty(key))
+                return false;
+        }
+        return true;
+    } else {
+        // obj is a String
+        if (typeof obj === "string") {
+            return obj === "";
+        }
+    }
+}
+
+function isNotEmpty(obj) {
+    return !this.isEmpty(obj);
+}
+
+function isEmptyArray(arr) {
+    return typeof arr !== 'undefined' && arr !== null && arr.length === 0;
+}
+
+function isNotEmptyArray(arr) {
+    return typeof arr !== 'undefined' && arr !== null && arr.length > 0;
+}

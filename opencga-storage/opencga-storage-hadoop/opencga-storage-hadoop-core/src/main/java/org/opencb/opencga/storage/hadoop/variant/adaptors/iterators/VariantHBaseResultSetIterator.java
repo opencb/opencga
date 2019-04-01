@@ -17,9 +17,11 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -51,7 +53,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     public VariantHBaseResultSetIterator(
             Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, VariantStorageMetadataManager scm,
             VariantQueryFields select, List<String> formats,
-            String unknownGenotype, QueryOptions options)
+            String unknownGenotype, Query query, QueryOptions options)
             throws SQLException {
         this.statement = statement;
         this.resultSet = resultSet;
@@ -66,6 +68,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
                 .setStudyNameAsStudyId(options.getBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, true))
                 .setUnknownGenotype(unknownGenotype)
                 .setSimpleGenotypes(options.getBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, true))
+                .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
                 .setFormats(formats);
         hasNext = fetch(resultSet::next);
     }

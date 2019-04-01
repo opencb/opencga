@@ -22,9 +22,9 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -33,7 +33,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -66,7 +67,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     public static VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     protected VariantDBAdaptor dbAdaptor;
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
     private static VariantQueryResult<Variant> allVariants;
     private VariantFileMetadata fileMetadata;
     protected static boolean loaded = false;
@@ -89,7 +90,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     }
 
     public void loadFile() throws Exception {
-        studyConfiguration = newStudyConfiguration();
+        studyMetadata = newStudyMetadata();
 
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
@@ -98,9 +99,12 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
 
-        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
-        fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
-        Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+        VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata, params);
+        fileMetadata = this.variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
+
+        Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
         //Calculate stats
         if (params.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
@@ -108,29 +112,25 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                     .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                     .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                     .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
-            Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
+            Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();
 
             /** Create cohorts **/
-            HashSet<Integer> cohort1 = new HashSet<>();
-            cohort1.add(iterator.next());
-            cohort1.add(iterator.next());
+            HashSet<String> cohort1 = new HashSet<>();
+            cohort1.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
+            cohort1.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
 
-            HashSet<Integer> cohort2 = new HashSet<>();
-            cohort2.add(iterator.next());
-            cohort2.add(iterator.next());
+            HashSet<String> cohort2 = new HashSet<>();
+            cohort2.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
+            cohort2.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
 
-            Map<String, Integer> cohortIds = new HashMap<>();
-            cohortIds.put("cohort1", 10);
-            cohortIds.put("cohort2", 11);
+            Map<String, Set<String>> cohorts = new HashMap<>();
+            cohorts.put("cohort1", cohort1);
+            cohorts.put("cohort2", cohort2);
+            metadataManager.registerCohorts(studyMetadata.getName(), cohorts);
 
-            studyConfiguration.getCohortIds().putAll(cohortIds);
-            studyConfiguration.getCohorts().put(10, cohort1);
-            studyConfiguration.getCohorts().put(11, cohort2);
 
-            dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
-
-            variantStorageEngine.calculateStats(studyConfiguration.getName(),
-                    new ArrayList<>(cohortIds.keySet()), options);
+            this.variantStorageEngine.calculateStats(studyMetadata.getName(),
+                    new ArrayList<>(cohorts.keySet()), options);
 
         }
         if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
@@ -160,8 +160,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
             allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
         }
 
-        solr.configure(variantStorageEngine);
-        variantStorageEngine.searchIndex();
+        solr.configure(this.variantStorageEngine);
+        this.variantStorageEngine.searchIndex();
     }
 
     @Test

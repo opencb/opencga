@@ -138,7 +138,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         biodataInterpretation.setCreationDate(TimeUtils.getTime());
         biodataInterpretation.setDescription(ParamUtils.defaultString(biodataInterpretation.getDescription(), ""));
-        biodataInterpretation.setStatus(Status.READY);
+        biodataInterpretation.setStatus(org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED);
         biodataInterpretation.setAttributes(ParamUtils.defaultObject(biodataInterpretation.getAttributes(), Collections.emptyMap()));
 
         Interpretation interpretation = new Interpretation(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION),
