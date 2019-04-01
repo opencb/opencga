@@ -21,9 +21,9 @@ Click the following link the ensure you fill in the parameters according to thei
 
 ## Deploying with external NFS server
 
-The template support deploying with an external NFS by setting the following. 
+The template supports deploying with an external NFS by setting the following. 
 
-1. Deploy the `VNET` template without the `OpenCGA` application. Replace `<rgPrefix>` and `<deploymentLocation>` with the value you will use for the resource group name and it's location.
+1. Deploy the `VNET` template without the `OpenCGA` application. Replace `<rgPrefix>` and `<deploymentLocation>` with the value you will use for the resource group name and its location.
 
 ```
 cd ./opencga-app/app/scripts/azure/arm/
@@ -34,7 +34,7 @@ az group deployment create -g <rgPrefix> --template-file ./vnet/azuredeploy.json
 2. 
      - Option 1: Use [peering](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview) to connect it to your existing NFS server on another `VNET`. Ensure the `VNET`s IP ranges don't overlap - OpenCGA uses `10.0.0.0/16`.
     
-     - Option 2: Deploy your NFS servers into the now created VNET. In the resource group created by Step 1 there is a `vnet` resource and it contains a subnet for `nfsservers` in which you can deploy and configure your storage servers. For example, you may deploy an [Avere VFXT](https://docs.microsoft.com/en-gb/azure/avere-vfxt/avere-vfxt-deploy) cluster into this subnet. 
+     - Option 2: Deploy your NFS servers into the newly created VNET. In the resource group created by Step 1 there is a `vnet` resource and it contains a subnet for `nfsservers` in which you can deploy and configure your storage servers. For example, you may deploy an [Avere VFXT](https://docs.microsoft.com/en-gb/azure/avere-vfxt/avere-vfxt-deploy) cluster into this subnet. 
 
 3. Deploy the full template as normal using the steps above specifying the parameters in `azuredeploy.parameters.json`
 
@@ -55,11 +55,11 @@ az group deployment create -g <rgPrefix> --template-file ./vnet/azuredeploy.json
 
 ## How do I now use it?
 
-Head to the Azure Portal and the Resource Group you deployed. Under the main group locate the `daemonvm-ip` resource and from it get the `ip` of the `deamonvm` you can then use `ssh opencgaadmin@DAEMONVM_PUBLIC_IP_HERE` to connect to it and then [follow the Testing guide here to](../README.md) run a test on your new instance. 
+Head to the Azure Portal and the Resource Group you deployed. Under the main group locate the `daemonvm-ip` resource and get the `ip` of the `deamonvm` from it. You can then use `ssh opencgaadmin@DAEMONVM_PUBLIC_IP_HERE` to connect to it and then [follow the Testing guide here to](../README.md) run a test on your new instance. 
 
 ## What is deployed
 
-The automated OpenCGA uses [docker images built here](../../docker/README.md) to setup and run Opencga in Azure. 
+The automated OpenCGA deployment uses [docker images built here](../../docker/README.md) to setup and run Opencga in Azure. 
 
 In a deployment the following components are deployed and configured
 
@@ -67,21 +67,21 @@ In a deployment the following components are deployed and configured
 
 This contains
  - VNET: This provides the virtual network on which the solution runs. It consists of multiple `subnets` on which different parts of the solution sit to allow simple management and configuration. 
- - OpencgaVMSS: A group of web servers running docker images for IVA and the OpenCGA API's in Tomcat
+ - OpencgaVMSS: A group of web servers running docker images for IVA and the OpenCGA `APIs` in Tomcat
  - App Gateway: This provides the load balancing and Layer 7 routing over the VMSS instances to allow external connections to IVA and OpenCGA API's
- - Azure Monitor and Solutions: A group of logging solutions to collect and aggregate logs from accross the deployment
+ - Azure Monitor and Solutions: A group of logging solutions to collect and aggregate logs from across the deployment
  - DaemonVM: This VM is responsible for doing the initial configuration of OpenCGA in Azure and then handles allocating Jobs to Azure Batch for processing
- - Azure Batch: This is elastic autoscaling pool of VMs which handle OpenCGA jobs such as the transform and load pipelines
+ - Azure Batch: This is an elastic autoscaling pool of VMs which handle OpenCGA jobs such as the transform and load pipelines
  - [Optional] Azure Files/Storage: Hosts the storage used for `variants`, `storage` and `conf` folders shared between AzureBatch instances, Web Servers and the Daemon VM. 
 
 ### Resource Group: `opencga-hdinsights`
 
-This resource group contains the `HDInsights` cluster (Hosted `HBASE` on Horton works). This differs from a traditional `HBASE` cluster in that the data storage is detacted from the nodes and stored 
+This resource group contains the `HDInsights` cluster (Hosted `HBASE` on Hortonworks). This differs from a traditional `HBASE` cluster in that the data storage is detached from the nodes and stored 
 in `Azure Data Lake` via `WebHDFS`. 
 
 ### Resource Group: `opencga-mongodb`
 
-This resource group contains an HA mongo cluster which consists of several nodes joined into a replica set and issues with an SSL certificate from LetsEncrypt for use via SSL
+This resource group contains an HA mongo cluster which consists of several nodes joined into a replica set and issued with an SSL certificate from LetsEncrypt for use via SSL
 
 ### Resource Group: `opencga-solr`
 
@@ -94,7 +94,7 @@ Some failure cases will result in the CLI returning a failed deployment but othe
 
 ### Log Analytics Checks
 
-Under the main resource group for the deployment several `solutions` are deployed for `loganalytics`. One of particualar use [is the Container Monitoring Solution])https://docs.microsoft.com/en-us/azure/azure-monitor/insights/containers) which gives an overview of the logs, usage and status of the containers deployed in the solution.
+Under the main resource group for the deployment several `solutions` are deployed for `loganalytics`. One of particular use [is the Container Monitoring Solution])https://docs.microsoft.com/en-us/azure/azure-monitor/insights/containers) which gives an overview of the logs, usage and status of the containers deployed in the solution.
 
 ![container monitoring solution](docs/containersolution.jpg)
 
@@ -142,7 +142,7 @@ In this example we see a failure occur around `10:20UTC` and the various web ser
 ### Daemon VM checks and FAQ
 
 Q. How do I connect to the web servers hosting the `tomcat` app. 
-A. You can use the `daemonvm` as a jumpbox. Retreive the `daemonvm`'s public IP from the portal and use `ssh -J opencgaadmin@DAEMONVM_PUBLIC_IP_HERE opencgaadmin@opencga000001` to connect to the instances. You can change increment `opencga000001` to connect to other instances of the web servers.
+A. You can use the `daemonvm` as a jumpbox. Retrieve the `daemonvm`'s public IP from the portal and use `ssh -J opencgaadmin@DAEMONVM_PUBLIC_IP_HERE opencgaadmin@opencga000001` to connect to the instances. You can change increment `opencga000001` to connect to other instances of the web servers.
 
 Q. What is the expected state of the `daemonvm` after deployment?
 A. `cloud-init status` should return a status of `done` and `sudo docker ps -a` should return 
@@ -154,7 +154,7 @@ a37fce3165dd        lawrencegripper/opencga-init:nfs1     "/bin/bash /tmp/setuâ€
 2d00c901c3e9        microsoft/oms                         "/opt/main.sh"           23 minutes ago      Up 22 minutes                      127.0.0.1:25224->25224/udp, 127.0.0.1:25225->25225/tcp   omsagent
 
 ```
-If the `opencga-init` container has an exit code other than `0` of the `opencga-daemon` `status` is `Restarting` then use `sudo docker logs opencga-init` or `sudo docker logs opencga-daemon` to review the logs.
+If the `opencga-init` container has an exit code other than `0` or the `opencga-daemon` `status` is `Restarting` then use `sudo docker logs opencga-init` or `sudo docker logs opencga-daemon` to review the logs.
 
 Q. `cloud-init status` returns an error how do I find out what went wrong?
 A. [Check out this guide to find out what happened and get logs](https://blog.gripdev.xyz/2019/02/19/debugging-cloud-init-on-ubuntu-in-azure-or-anywhere/)
@@ -189,7 +189,7 @@ Having submitted a job such as:
 
 You can look at Azure Batch to observe the task execution and review the log outputs. The recommended way to do this [is to install Azure Batch Explorer](https://azure.github.io/BatchExplorer/). 
 
-Once installed and logged in navigate to the `Jobs` and select the current job then under `Tasks` you will see each execution and can drill down to retrieve the logs and follow it's execution.  
+Once installed and logged in navigate to the `Jobs` and select the current job, then under `Tasks` you will see each execution and can drill down to retrieve the logs and follow its execution.  
 
 ## Deployment Sizing
 
@@ -297,14 +297,14 @@ Additionally you can deploy a custom size by specifying the `customDeploymentSiz
 
 ## Developing 
 
-In many of the templates scripts are embedded in the ARM as `base64` `gzip`'d strings. 
+In many of the templates scripts are embedded in the ARM template as `base64` `gzip`'d strings. 
 
 When making changes to the scripts present on disk the [following steps need to be taken](mongodb/README.MD) to ensure the update script is set in the ARM. 
 
-You can also use some additional tricks to get more information about such as the following command. 
+You can also use some additional tricks to get more information about the deployment using the following command: 
 
 ```
 az deployment create --location westeurope --template-file azuredeploy.json --parameters @azuredeploy.parameters.private.json --name $RANDOM --parameters _artifactsLocationSasToken=?$RANDOM --verbose; notify-send -u critical "Deploy finished with exit code: $?"
 ```
 
-The `verbose` setting will give you detailed information on failures. `$RANDOM` is used to ensure that deployment names don't clash. `notify-send` will push a notification to `ubuntu` when a deployment has either failed or succeeded so you don't miss it. `_artifactsLocationSasToken=?$RANDOM` ensures that `github` hosted scripts aren't cached incorrectly when working. 
+The `verbose` setting will give you detailed information on failures. `$RANDOM` is used to ensure that deployment names don't clash. `notify-send` will push a notification to `ubuntu` when a deployment has either failed or succeeded so you don't miss it. `_artifactsLocationSasToken=?$RANDOM` ensures that `github` hosted scripts aren't cached incorrectly when working with different versions. 

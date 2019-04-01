@@ -200,7 +200,7 @@
                 "nfs"
             ],
             "metadata": {
-                "description": "Defines the file system type the sytem will use when deployed in Azure. When using `NFS` the servers must have a mountable folder `opencga` available for mouting by the USER: `opencga` UID: `1001`"
+                "description": "Defines the file system type the sytem will use when deployed in Azure. When using `NFS` the servers must have a mountable folder `opencga` available for mounting by the USER: `opencga` UID: `1001`"
             }
         },
         "fileSystemParams": {
