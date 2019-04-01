@@ -18,7 +18,7 @@ public class BenchmarkRunnerTest extends VariantStorageBaseTest implements Mongo
 
     @Before
     public void setup() throws Exception {
-        runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyConfiguration());
+        runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyMetadata());
 
         Map<String, String> params = new HashMap<>();
         params.put(FixedQueryGenerator.DATA_DIR, "src/test/resources/hsapiens");

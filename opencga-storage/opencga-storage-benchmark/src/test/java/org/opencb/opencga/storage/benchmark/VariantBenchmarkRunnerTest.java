@@ -5,7 +5,6 @@ import org.grep4j.core.model.Profile;
 import org.grep4j.core.model.ProfileBuilder;
 import org.grep4j.core.result.GrepResults;
 import org.junit.Before;
-import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.variant.VariantBenchmarkRunner;
 import org.opencb.opencga.storage.benchmark.variant.generators.FixedQueryGenerator;
@@ -46,7 +45,7 @@ public class VariantBenchmarkRunnerTest extends VariantStorageBaseTest implement
     }
 
     private void loadFile() throws Exception {
-        runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyConfiguration());
+        runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyMetadata());
 
         Map<String, String> params = new HashMap<>();
         params.put(FixedQueryGenerator.DATA_DIR, "src/test/resources/hsapiens");

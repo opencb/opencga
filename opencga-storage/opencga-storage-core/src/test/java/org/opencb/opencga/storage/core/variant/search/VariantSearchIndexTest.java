@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -54,16 +54,15 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         int release = 1;
         List<URI> inputFiles = new ArrayList<>();
         List<String> fileNames = new ArrayList<>();
-        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
+        StudyMetadata studyMetadata = new StudyMetadata(studyId, "S_" + studyId);
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             URI inputFile = getResourceUri("platinum/" + fileName);
             fileNames.add(fileName);
             inputFiles.add(inputFile);
-            studyConfiguration.getFileIds().put(fileName, fileId);
-            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
+            metadataManager.registerFile(studyMetadata.getId(), fileName, Arrays.asList("NA" + fileId));
             if (inputFiles.size() == 4) {
-                dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, null);
+                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
                 options.put(VariantStorageEngine.Options.STUDY.key(), studyId);
                 storageEngine.getOptions().putAll(options);
                 storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
@@ -100,7 +99,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                         .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "stats");
-                storageEngine.calculateStats(studyConfiguration.getName(), Collections.singletonList("ALL"), statsOptions);
+                storageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList("ALL"), statsOptions);
 
                 query = new Query(VariantQueryParam.STUDY.key(), studyId);
                 expected = dbAdaptor.count(query).first();
@@ -124,7 +123,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
                 /////////// NEW STUDY ///////////
                 studyId++;
-                studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
+                studyMetadata = new StudyMetadata(studyId, "S_" + studyId);
                 inputFiles.clear();
                 fileNames.clear();
                 if (studyId > maxStudies) {
@@ -159,25 +158,24 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         VariantStorageEngine storageEngine = getVariantStorageEngine();
         QueryOptions options = new QueryOptions();
 
-        int studyId = 1;
         List<URI> inputFiles = new ArrayList<>();
         List<String> fileNames = new ArrayList<>();
-        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, "S_" + studyId);
+        StudyMetadata studyMetadata = metadataManager.createStudy("S_1");
+        int studyId = studyMetadata.getId();
         for (int fileId = 12877; fileId <= 12877 + 4; fileId++) {
             String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             URI inputFile = getResourceUri("platinum/" + fileName);
             fileNames.add(fileName);
             inputFiles.add(inputFile);
-            studyConfiguration.getFileIds().put(fileName, fileId);
-            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
+
         }
 
-        dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, null);
+//        dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
         options.put(VariantStorageEngine.Options.STUDY.key(), studyId);
         storageEngine.getOptions().putAll(options);
         storageEngine.index(inputFiles, outputUri, true, true, true);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), "S_" + studyId);
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getId());
         long expected;
         if (searchIndexBeforeRemove) {
             expected = dbAdaptor.count(query).first();
@@ -186,12 +184,12 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             checkLoadResult(expected, loadResult);
 
             //////////////////////
-            storageEngine.removeFiles(studyConfiguration.getName(), Collections.singletonList(fileNames.get(0)));
+            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)));
             expected = 0;
 
         } else {
             //////////////////////
-            storageEngine.removeFiles(studyConfiguration.getName(), Collections.singletonList(fileNames.get(0)));
+            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)));
             expected = dbAdaptor.count(query).first();
         }
 
