@@ -240,8 +240,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throw VariantQueryException.malformedParam(FAMILY_MEMBERS, familyMembers.toString(), "Only one member provided");
             }
 
+            // Use search instead of get to avoid smartResolutor to fetch all samples
             Set<Long> indexedSampleUids = catalogManager.getCohortManager()
-                    .get(defaultStudyStr, StudyEntry.DEFAULT_COHORT,
+                    .search(defaultStudyStr, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
                             new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId)
                     .first()
                     .getSamples()
