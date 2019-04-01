@@ -138,28 +138,28 @@ migrateCollection("clinical", {"uuid": {$exists: false}}, {attributes: 0, annota
     unsetChanges["_studyId"] = "";
 
     // Check germline file
-    if (typeof doc.germline !== "undefined" && typeof doc.germline.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.germline) && isNotUndefinedOrNull(doc.germline.id)) {
         setChanges["germline"] = {
             "uid": doc.germline.id
         };
     }
 
     // Check somatic file
-    if (typeof doc.somatic !== "undefined" && typeof doc.somatic.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.somatic) && isNotUndefinedOrNull(doc.somatic.id)) {
         setChanges["somatic"] = {
             "uid": doc.somatic.id
         };
     }
 
     // Check family
-    if (typeof doc.family !== "undefined" && typeof doc.family.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.family) && isNotUndefinedOrNull(doc.family.id)) {
         setChanges["family"] = {
             "uid": doc.family.id
         };
     }
 
     // Check subjects
-    if (typeof doc.subjects !== "undefined" && doc.subjects.length > 0) {
+    if (isNotUndefinedOrNull(doc.subjects) && doc.subjects.length > 0) {
         for (var i in doc.subjects) {
             var member = doc.subjects[i];
 
@@ -171,10 +171,10 @@ migrateCollection("clinical", {"uuid": {$exists: false}}, {attributes: 0, annota
     }
 
     // Check clinical interpretations
-    if (typeof doc.interpretations !== "undefined" && doc.interpretations.length > 0) {
+    if (isNotUndefinedOrNull(doc.interpretations) && doc.interpretations.length > 0) {
         for (var i in doc.interpretations) {
             var interpretation = doc.interpretations[i];
-            if (typeof interpretation.file !== "undefined" && typeof interpretation.file.id !== "undefined") {
+            if (isNotUndefinedOrNull(interpretation.file) && isNotUndefinedOrNull(interpretation.file.id)) {
                 interpretation["file"] = {
                     "uid": interpretation.file.id
                 };
@@ -207,7 +207,7 @@ migrateCollection("cohort", {"uuid": {$exists: false}}, {attributes: 0, annotati
     unsetChanges["_studyId"] = "";
 
     // Check samples
-    if (typeof doc.samples !== "undefined" && doc.samples.length > 0) {
+    if (isNotUndefinedOrNull(doc.samples) && doc.samples.length > 0) {
         for (var i in doc.samples) {
             var sample = doc.samples[i];
 
@@ -231,6 +231,8 @@ migrateCollection("family", {"uuid": {$exists: false}}, {attributes: 0, annotati
     var setChanges = {
         "expectedSize": -1 // #823
     };
+    var unsetChanges = {};
+
     addPermissionRules(doc, setChanges);
     addPrivateCreationDateAndModificationDate(doc, setChanges);
 
@@ -244,7 +246,7 @@ migrateCollection("family", {"uuid": {$exists: false}}, {attributes: 0, annotati
     unsetChanges["_studyId"] = "";
 
     // Check members
-    if (typeof doc.members !== "undefined" && doc.members.length > 0) {
+    if (isNotUndefinedOrNull(doc.members) && doc.members.length > 0) {
         for (var i in doc.members) {
             var member = doc.members[i];
 
@@ -294,7 +296,7 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     unsetChanges["_studyId"] = "";
 
     // Check samples
-    if (typeof doc.samples !== "undefined" && doc.samples.length > 0) {
+    if (isNotUndefinedOrNull(doc.samples) && doc.samples.length > 0) {
         for (var i in doc.samples) {
             var sample = doc.samples[i];
 
@@ -306,14 +308,14 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     }
 
     // Check job
-    if (typeof doc.job !== "undefined" && typeof doc.job.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.job) && isNotUndefinedOrNull(doc.job.id)) {
         setChanges["job"] = {
             "uid": doc.job.id
         };
     }
 
     // Check experiment
-    if (typeof doc.experiment !== "undefined" && typeof doc.experiment.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.experiment) && isNotUndefinedOrNull(doc.experiment.id)) {
         setChanges["experiment"] = {
             "uid": doc.experiment.id
         };
@@ -354,21 +356,21 @@ migrateCollection("individual", {"uuid": {$exists: false}}, {attributes: 0, anno
     unsetChanges["_studyId"] = "";
 
     // Check father
-    if (typeof doc.father !== "undefined" && typeof doc.father.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.father) && isNotUndefinedOrNull(doc.father.id)) {
         setChanges["father"] = {
             "uid": doc.father.id
         }
     }
 
     // Check mother
-    if (typeof doc.mother !== "undefined" && typeof doc.mother.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.mother) && isNotUndefinedOrNull(doc.mother.id)) {
         setChanges["mother"] = {
             "uid": doc.mother.id
         }
     }
 
     // Check samples
-    if (typeof doc.samples !== "undefined" && doc.samples.length > 0) {
+    if (isNotUndefinedOrNull(doc.samples) && doc.samples.length > 0) {
         for (var i in doc.samples) {
             var sample = doc.samples[i];
 
@@ -406,7 +408,7 @@ migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(b
     unsetChanges["_studyId"] = "";
 
     // Check input
-    if (typeof doc.input !== "undefined" && doc.input.length > 0) {
+    if (isNotUndefinedOrNull(doc.input) && doc.input.length > 0) {
         for (var i in doc.input) {
             var input = doc.input[i];
 
@@ -418,7 +420,7 @@ migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(b
     }
 
     // Check output
-    if (typeof doc.output !== "undefined" && doc.output.length > 0) {
+    if (isNotUndefinedOrNull(doc.output) && doc.output.length > 0) {
         for (var i in doc.output) {
             var output = doc.output[i];
 
@@ -430,21 +432,21 @@ migrateCollection("job", {"uuid": {$exists: false}}, {attributes: 0}, function(b
     }
 
     // Check outDir
-    if (typeof doc.outDir !== "undefined" && typeof doc.outDir.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.outDir) && isNotUndefinedOrNull(doc.outDir.id)) {
         setChanges["outDir"] = {
             "uid": doc.outDir.id
         }
     }
 
     // Check stdOutput
-    if (typeof doc.stdOutput !== "undefined" && typeof doc.stdOutput.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.stdOutput) && isNotUndefinedOrNull(doc.stdOutput.id)) {
         setChanges["stdOutput"] = {
             "uid": doc.stdOutput.id
         }
     }
 
     // Check stdError
-    if (typeof doc.stdError !== "undefined" && typeof doc.stdError.id !== "undefined") {
+    if (isNotUndefinedOrNull(doc.stdError) && isNotUndefinedOrNull(doc.stdError.id)) {
         setChanges["stdError"] = {
             "uid": doc.stdError.id
         }
@@ -490,7 +492,7 @@ var projectUidFqnMap = {};
 
 print("\nMigrating user");
 migrateCollection("user", {"uuid": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
-    if (typeof doc.projects !== "undefined" && doc.projects.length > 0) {
+    if (isNotUndefinedOrNull(doc.projects) && doc.projects.length > 0) {
         var changes = {};
 
         var projects = [];
@@ -544,7 +546,7 @@ migrateCollection("study", {"uuid": {$exists: false}}, {attributes: 0}, function
     unsetChanges["acl"] = "";
 
     // Check variableSets
-    if (typeof doc.variableSets !== "undefined" && doc.variableSets.length > 0) {
+    if (isNotUndefinedOrNull(doc.variableSets) && doc.variableSets.length > 0) {
         for (var i in doc.variableSets) {
             var variableSet = doc.variableSets[i];
             variableSet["uid"] = variableSet["id"];
@@ -707,7 +709,7 @@ db.panel.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, 
 function addPermissionRules(doc, changes) {
     changes["_permissionRulesApplied"] = [];
 
-    if (typeof doc._acl !== "undefined" && doc._acl.length > 0) {
+    if (isNotUndefinedOrNull(doc._acl) && doc._acl.length > 0) {
         changes["_userAcls"] = doc._acl;
     } else {
         changes["_userAcls"] = [];
@@ -733,11 +735,11 @@ function changeVariableIds(variables) {
         var variable = variables[i];
 
         variable["id"] = variable["name"];
-        variable["name"] = typeof variable["title"] !== "undefined" ? variable["title"] : null;
+        variable["name"] = isNotUndefinedOrNull(variable["title"]) ? variable["title"] : null;
 
         delete variable["title"];
 
-        if (typeof variable.variableSet !== "undefined" && variable.variableSet !== null && variable.variableSet.length > 0) {
+        if (isNotUndefinedOrNull(variable.variableSet) && variable.variableSet.length > 0) {
             changeVariableIds(variable.variableSet);
         }
     }

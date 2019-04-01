@@ -28,10 +28,13 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.MendelianErrorPrecomputeCommandOptions.MENDELIAN_ERRORS_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.MendelianErrorPrecomputeCommandOptions.MENDELIAN_ERRORS_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
@@ -63,6 +66,7 @@ public class VariantCommandOptions {
 //    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
+    public final MendelianErrorPrecomputeCommandOptions mendelianErrorCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
     public final AnnotationSaveCommandOptions annotationSaveSnapshotCommandOptions;
     public final AnnotationDeleteCommandOptions annotationDeleteCommandOptions;
@@ -95,6 +99,7 @@ public class VariantCommandOptions {
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
+        this.mendelianErrorCommandOptions = new MendelianErrorPrecomputeCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
         this.annotationSaveSnapshotCommandOptions = new AnnotationSaveCommandOptions();
         this.annotationDeleteCommandOptions = new AnnotationDeleteCommandOptions();
@@ -494,6 +499,22 @@ public class VariantCommandOptions {
         @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
                 + "transformed files will not be registered in catalog.", arity = 1)
         public String catalogPath = null;
+    }
+
+    @Parameters(commandNames = {MENDELIAN_ERRORS_COMMAND}, commandDescription = MENDELIAN_ERRORS_COMMAND_DESCRIPTION)
+    public class MendelianErrorPrecomputeCommandOptions extends GeneralCliOptions.StudyOption {
+        public static final String MENDELIAN_ERRORS_COMMAND = "mendelian-errors";
+        public static final String MENDELIAN_ERRORS_COMMAND_DESCRIPTION = "Precompute mendelian errors for a given set of families.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--family"}, required = true, description = "Families to precompute the mendelian errors. " +
+                "Use \"" + VariantQueryUtils.ALL + "\" to calculate mendelian errors for all families in the study.")
+        public String family;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
+        public boolean overwrite = false;
     }
 
     public class StatsVariantStatsCommandOptionsOld { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {

@@ -28,7 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -52,7 +52,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
 
     private VariantDBAdaptor dbAdaptor;
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
     private int numVariants;
 
     @Before
@@ -70,7 +70,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
     public void before() throws Exception {
 
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        studyConfiguration = newStudyConfiguration();
+        studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
@@ -86,11 +86,11 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 //        }
 //        FORMAT.addAll(params.getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
 
-        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata, params);
         VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
         numVariants = getExpectedNumLoadedVariants(fileMetadata);
 
-        Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
+        Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
 
         //Calculate stats
@@ -98,29 +98,24 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
                 .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                 .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
-        Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
+        Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();
 
         /** Create cohorts **/
-        HashSet<Integer> cohort1 = new HashSet<>();
-        cohort1.add(iterator.next());
-        cohort1.add(iterator.next());
+        HashSet<String> cohort1 = new HashSet<>();
+        cohort1.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
+        cohort1.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
 
-        HashSet<Integer> cohort2 = new HashSet<>();
-        cohort2.add(iterator.next());
-        cohort2.add(iterator.next());
+        HashSet<String> cohort2 = new HashSet<>();
+        cohort2.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
+        cohort2.add(metadataManager.getSampleName(studyMetadata.getId(), iterator.next()));
 
-        Map<String, Integer> cohortIds = new HashMap<>();
-        cohortIds.put("cohort1", 10);
-        cohortIds.put("cohort2", 11);
+        Map<String, Set<String>> cohorts = new HashMap<>();
+        cohorts.put("cohort1", cohort1);
+        cohorts.put("cohort2", cohort2);
+        metadataManager.registerCohorts(studyMetadata.getName(), cohorts);
 
-        studyConfiguration.getCohortIds().putAll(cohortIds);
-        studyConfiguration.getCohorts().put(10, cohort1);
-        studyConfiguration.getCohorts().put(11, cohort2);
-
-        dbAdaptor.getMetadataManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
-
-        variantStorageEngine.calculateStats(studyConfiguration.getName(),
-                new ArrayList<>(cohortIds.keySet()), options);
+        variantStorageEngine.calculateStats(studyMetadata.getName(),
+                new ArrayList<>(cohorts.keySet()), options);
 
     }
 
@@ -131,10 +126,10 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
     @Test
     public void removeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getName(), System.currentTimeMillis(), new QueryOptions("purge", false));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyMetadata.getName(), System.currentTimeMillis(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
-                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getId() + ""));
+                assertFalse(entry.getValue().getStudyId().equals(studyMetadata.getId() + ""));
             }
         }
         QueryResult<Long> allVariants = dbAdaptor.count(new Query());
@@ -143,10 +138,10 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
     @Test
     public void removeAndPurgeStudyTest() throws Exception {
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyConfiguration.getName(), System.currentTimeMillis(), new QueryOptions("purge", true));
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStudy(studyMetadata.getName(), System.currentTimeMillis(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
-                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getId() + ""));
+                assertFalse(entry.getValue().getStudyId().equals(studyMetadata.getId() + ""));
             }
         }
         QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions());
@@ -156,7 +151,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
     @Test
     public void removeStatsTest() throws Exception {
         String deletedCohort = "cohort2";
-        ((VariantMongoDBAdaptor) dbAdaptor).removeStats(studyConfiguration.getName(), deletedCohort, new QueryOptions());
+        ((VariantMongoDBAdaptor) dbAdaptor).removeStats(studyMetadata.getName(), deletedCohort, new QueryOptions());
 
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
@@ -171,18 +166,18 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
     @Test
     public void removeAnnotationTest() throws Exception {
         Query query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), true);
-        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getId());
+        query.put(VariantQueryParam.STUDY.key(), studyMetadata.getId());
         long numAnnotatedVariants = dbAdaptor.count(query).first();
 
         assertEquals("All variants should be annotated", numVariants, numAnnotatedVariants);
 
         query = new Query(VariantQueryParam.REGION.key(), "1");
-        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getId());
+        query.put(VariantQueryParam.STUDY.key(), studyMetadata.getId());
         long numVariantsChr1 = dbAdaptor.count(query).first();
         ((VariantMongoDBAdaptor) dbAdaptor).removeAnnotation("", new Query(VariantQueryParam.REGION.key(), "1"), new QueryOptions());
 
         query = new Query(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
-        query.put(VariantQueryParam.STUDY.key(), studyConfiguration.getId());
+        query.put(VariantQueryParam.STUDY.key(), studyMetadata.getId());
         long numVariantsNoAnnotation = dbAdaptor.count(query).first();
 
         assertNotEquals(numVariantsChr1, numVariants);

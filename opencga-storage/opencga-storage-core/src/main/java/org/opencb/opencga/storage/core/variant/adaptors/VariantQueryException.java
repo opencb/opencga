@@ -94,6 +94,10 @@ public class VariantQueryException extends IllegalArgumentException {
         return VariantQueryException.malformedParam(GENE, gene, "Gene not found!");
     }
 
+    public static VariantQueryException variantNotFound(String variant) {
+        return new VariantQueryException("Variant \"" + variant + "\" not found!");
+    }
+
     public static VariantQueryException studyNotFound(String study) {
         return studyNotFound(study, Collections.emptyList());
     }

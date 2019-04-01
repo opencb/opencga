@@ -412,7 +412,7 @@ public class VariantMongoDBQueryParser {
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
                         DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, value, builder,
-                        ANNOT_POPULATION_ALTERNATE_FREQUENCY); // Same
+                        ANNOT_POPULATION_ALTERNATE_FREQUENCY, true); // Same
                 // method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field
                 // (reference/alternate) where to check the frequency
             }
@@ -422,7 +422,7 @@ public class VariantMongoDBQueryParser {
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
                         DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, value, builder,
-                        ANNOT_POPULATION_REFERENCE_FREQUENCY); // Same
+                        ANNOT_POPULATION_REFERENCE_FREQUENCY, false); // Same
                 // method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field
                 // (reference/alternate) where to check the frequency
             }
@@ -431,7 +431,7 @@ public class VariantMongoDBQueryParser {
                 String value = query.getString(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD + "."
                                 + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
-                        value, builder, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
+                        value, builder, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, true,
                         (v, queryBuilder) -> {
                             String[] split = splitOperator(v);
                             String op = split[1];
@@ -1514,8 +1514,9 @@ public class VariantMongoDBQueryParser {
      * @return QueryBuilder
      */
     private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, String value, QueryBuilder builder,
-                                            VariantQueryParam queryParam) {
-        return addFrequencyFilter(key, value, builder, queryParam, (v, qb) -> addCompQueryFilter(alleleFrequencyField, v, qb, false));
+                                            VariantQueryParam queryParam, boolean alternate) {
+        return addFrequencyFilter(key, value, builder, queryParam, alternate,
+                (v, qb) -> addCompQueryFilter(alleleFrequencyField, v, qb, false));
     }
 
     /**
@@ -1529,7 +1530,7 @@ public class VariantMongoDBQueryParser {
      * @return QueryBuilder
      */
     private QueryBuilder addFrequencyFilter(String key, String value, QueryBuilder builder, VariantQueryParam queryParam,
-                                            BiConsumer<String, QueryBuilder> addFilter) {
+                                            boolean alternate, BiConsumer<String, QueryBuilder> addFilter) {
         final List<String> list;
         QueryOperation operation = checkOperator(value);
         list = splitValue(value, operation);
@@ -1561,7 +1562,7 @@ public class VariantMongoDBQueryParser {
             Document studyPopFilter = new Document(frequencyBuilder.get().toMap());
             addFilter.accept(operator + numValue, frequencyBuilder);
             BasicDBObject elemMatch = new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get()));
-            if (operator.startsWith("<")) {
+            if (alternate && operator.startsWith("<") || !alternate && operator.startsWith(">")) {
                 BasicDBObject orNotExistsAnyPopulation = new BasicDBObject(key, new BasicDBObject("$exists", false));
                 BasicDBObject orNotExistsPopulation =
                         new BasicDBObject(key, new BasicDBObject("$not", new BasicDBObject("$elemMatch", studyPopFilter)));

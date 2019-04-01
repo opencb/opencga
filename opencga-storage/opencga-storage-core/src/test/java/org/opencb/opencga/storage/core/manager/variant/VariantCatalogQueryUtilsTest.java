@@ -14,16 +14,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -351,6 +353,30 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Multiple projects");
         queryUtils.getAnyStudy(new Query(), sessionId);
+    }
+
+    @Test
+    public void getTriosFromFamily() throws Exception {
+
+        Family f1 = catalog.getFamilyManager().get("s1", "f1", null, sessionId).first();
+        VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        StudyMetadata s1 = metadataManager.createStudy("s1");
+        List<Integer> sampleIds = metadataManager.registerSamples(s1.getId(), Arrays.asList(
+                "sample1",
+                "sample2",
+                "sample3",
+                "sample4"
+        ));
+
+        for (Integer sampleId : sampleIds) {
+            metadataManager.updateSampleMetadata(s1.getId(), sampleId,
+                    sampleMetadata -> sampleMetadata.setIndexStatus(TaskMetadata.Status.READY));
+        }
+
+        List<List<String>> trios = queryUtils.getTriosFromFamily("s1", f1, metadataManager, true, sessionId);
+//        System.out.println("trios = " + trios);
+        assertEquals(Arrays.asList(Arrays.asList("sample1", "sample2", "sample3"), Arrays.asList("sample1", "sample2", "sample4")), trios);
+
     }
 
     protected String parseValue(VariantQueryParam param, String value) throws CatalogException {

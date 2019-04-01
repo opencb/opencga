@@ -19,7 +19,6 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -57,8 +56,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         List<Variant> variants = getVariants(limit);
         List<Variant> annotatedVariants = annotatedVariants(variants);
 
-        StudyConfiguration sc = new StudyConfiguration(1, "s1");
-        scm.updateStudyConfiguration(sc, new QueryOptions());
+        metadataManager.createStudy("s1");
 
         String collection = solr.coreName;
         variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);

@@ -47,7 +47,7 @@ public interface VariantIterable extends Iterable<Variant> {
         return iterator(variants, query, options, 100);
     }
 
-    default VariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options, int batchSize) {
+    default MultiVariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options, int batchSize) {
         return new MultiVariantDBIterator(variants, batchSize, query, options, this::iterator);
     }
 

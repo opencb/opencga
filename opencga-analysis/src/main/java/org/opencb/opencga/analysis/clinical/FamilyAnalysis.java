@@ -3,11 +3,14 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
+import org.opencb.biodata.models.clinical.pedigree.Member;
+import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -47,6 +50,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
     protected Map<String, RoleInCancer> roleInCancer;
     protected Map<String, List<String>> actionableVariants;
 
+    protected ClinicalProperty.Penetrance penetrance;
+
     protected ObjectMap config;
     @Deprecated
     protected int maxCoverage;
@@ -75,7 +80,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 //    }
 
     public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome, String token) {
+                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap config,
+                          String studyStr, String opencgaHome, String token) {
         super(opencgaHome, studyStr, token);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
@@ -83,6 +89,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
         this.actionableVariants = actionableVariants;
         this.roleInCancer = roleInCancer;
+
+        this.penetrance = penetrance;
 
         this.config = config != null ? config : new ObjectMap();
         this.maxCoverage = 20;
@@ -404,6 +412,40 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             logger.error(e.getMessage(), e);
         }
     }
+
+    protected void removeMembersWithoutSamples(Pedigree pedigree, Family family) {
+        Set<String> membersWithoutSamples = new HashSet<>();
+        for (Individual member : family.getMembers()) {
+            if (ListUtils.isEmpty(member.getSamples())) {
+                membersWithoutSamples.add(member.getId());
+            }
+        }
+
+        Iterator<Member> iterator = pedigree.getMembers().iterator();
+        while (iterator.hasNext()) {
+            Member member = iterator.next();
+            if (membersWithoutSamples.contains(member.getId())) {
+                iterator.remove();
+            } else {
+                if (member.getFather() != null && membersWithoutSamples.contains(member.getFather().getId())) {
+                    member.setFather(null);
+                }
+                if (member.getMother() != null && membersWithoutSamples.contains(member.getMother().getId())) {
+                    member.setMother(null);
+                }
+            }
+        }
+
+        if (pedigree.getProband().getFather() != null && membersWithoutSamples.contains(pedigree.getProband().getFather().getId())) {
+            pedigree.getProband().setFather(null);
+        }
+        if (pedigree.getProband().getMother() != null && membersWithoutSamples.contains(pedigree.getProband().getMother().getId())) {
+            pedigree.getProband().setMother(null);
+        }
+
+        logger.debug("Pedigree: {}", pedigree);
+    }
+
 
     protected void cleanQuery(Query query) {
         if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {

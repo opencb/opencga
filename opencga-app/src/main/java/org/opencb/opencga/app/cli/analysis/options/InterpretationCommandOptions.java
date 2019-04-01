@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 
@@ -101,6 +102,8 @@ public class InterpretationCommandOptions {
         @Parameter(names = {"--panel-ids"}, description = "Comma separated list of disease panel IDs", arity = 1)
         public String panelIds;
 
+        @Parameter(names = {"--penetrance"}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
+        public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
 
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", required = true, arity = 1)
         public String study;

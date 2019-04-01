@@ -108,7 +108,7 @@ public class MongoVariantImporter extends VariantImporter {
         VariantToDocumentConverter(List<StudyConfiguration> studies, VariantMetadata metadata, ProgressLogger progressLogger) {
             DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(studies);
             DocumentToStudyVariantEntryConverter studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
-            DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(studies);
+            DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter();
             variantConverter = new DocumentToVariantConverter(studyConverter, statsConverter);
             this.studiesIdRemap = new HashMap<>();
             this.fileIdRemap = new HashMap<>();
