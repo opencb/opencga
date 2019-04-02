@@ -22,13 +22,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -36,6 +40,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
@@ -338,5 +343,27 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         return indexQuery;
     }
 
+
+    @Test
+    public void testSampleIndexSkipIntersect() throws StorageEngineException {
+        Query query = new Query(VariantQueryParam.SAMPLE.key(), sampleNames.get(0)).append(VariantQueryParam.STUDY.key(), studyMetadata.getName());
+        VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
+        assertEquals("sample_index_table", result.getSource());
+
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(AnnotationIndexConverter.LOF_SET)));
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
+        assertEquals("sample_index_table", result.getSource());
+
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(AnnotationIndexConverter.LOF_SET_MISSENSE))).append(TYPE.key(), VariantType.INDEL);
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
+        assertEquals("sample_index_table", result.getSource());
+
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), new ArrayList<>(AnnotationIndexConverter.LOF_SET_MISSENSE)
+                .subList(2, 4)
+                .stream()
+                .collect(Collectors.joining(",")));
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
+        assertNotEquals("sample_index_table", result.getSource());
+    }
 
 }

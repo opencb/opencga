@@ -3,10 +3,14 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import java.util.ArrayList;
+
+import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseAnnotationMask;
@@ -185,6 +189,44 @@ public class SampleIndexQueryParserTest {
                 + "1kG_phase3:EAS<0.01;"
                 + "1kG_phase3:EUR<0.01;"
                 + "1kG_phase3:SAS<0.01")));
+
+    }
+
+    @Test
+    public void testCoveredQuery() {
+        Query query;
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, AnnotationIndexConverter.LOF_SET));
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, AnnotationIndexConverter.LOF_SET_MISSENSE));
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.LOF_SET_MISSENSE).subList(2, 4)));
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ALL_01_FILTERS)));
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ALL_01_FILTERS)));
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)));
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)));
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
 
     }
 }

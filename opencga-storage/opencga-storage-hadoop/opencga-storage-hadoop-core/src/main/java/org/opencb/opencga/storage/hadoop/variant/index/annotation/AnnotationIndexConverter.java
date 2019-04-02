@@ -39,7 +39,9 @@ public class AnnotationIndexConverter {
     public static final Set<String> LOF_SET_MISSENSE = new HashSet<>();
     public static final Set<String> PROTEIN_CODING_BIOTYPE_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ANY_001_SET = new HashSet<>();
+    public static final Set<String> POP_FREQ_ANY_001_FILTERS = new HashSet<>();
     public static final Set<String> POP_FREQ_ALL_01_SET = new HashSet<>();
+    public static final Set<String> POP_FREQ_ALL_01_FILTERS = new HashSet<>();
 
     public static final byte PROTEIN_CODING_MASK      = (byte) (1 << 0);
     public static final byte POP_FREQ_ANY_001_MASK    = (byte) (1 << 1);
@@ -100,6 +102,13 @@ public class AnnotationIndexConverter {
 
         POP_FREQ_ANY_001_SET.add("1kG_phase3:ALL");
         POP_FREQ_ANY_001_SET.add("GNOMAD_GENOMES:ALL");
+
+        for (String s : POP_FREQ_ALL_01_SET) {
+            POP_FREQ_ALL_01_FILTERS.add(s + "<" + POP_FREQ_THRESHOLD_01);
+        }
+        for (String s : POP_FREQ_ANY_001_SET) {
+            POP_FREQ_ANY_001_FILTERS.add(s + "<" + POP_FREQ_THRESHOLD_001);
+        }
 
     }
 
@@ -169,7 +178,7 @@ public class AnnotationIndexConverter {
                         kgenomesFreq = populationFrequency.getAltAlleleFreq();
                     }
                 }
-                if (populationFrequency.getAltAlleleFreq() > POP_FREQ_THRESHOLD_01) {
+                if (populationFrequency.getAltAlleleFreq() >= POP_FREQ_THRESHOLD_01) {
                     if (POP_FREQ_ALL_01_SET.contains(populationFrequency.getStudy() + ':' + populationFrequency.getPopulation())) {
                         popFreqAllLessThan01 = false;
                     }
