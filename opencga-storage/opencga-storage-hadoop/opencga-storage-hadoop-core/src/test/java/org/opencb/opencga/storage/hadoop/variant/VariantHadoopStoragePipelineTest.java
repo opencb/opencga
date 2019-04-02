@@ -32,7 +32,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -41,8 +40,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -59,7 +58,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private VariantHadoopDBAdaptor dbAdaptor;
-    private static StudyConfiguration studyConfiguration;
+    private static StudyMetadata studyMetadata;
     private static VariantFileMetadata fileMetadata;
     private static StoragePipelineResult etlResult = null;
 
@@ -78,8 +77,8 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
 //            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
         try {
-            studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-            etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+            studyMetadata = VariantStorageBaseTest.newStudyMetadata();
+            etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyMetadata,
                     new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
                             .append(Options.ANNOTATE.key(), true)
                             .append(Options.CALCULATE_STATS.key(), false)
@@ -123,7 +122,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     public void queryVariantTable() {
         System.out.println("Query from Variant table");
         VariantDBIterator iterator = dbAdaptor.iterator(
-                new Query(VariantQueryParam.STUDY.key(), studyConfiguration.getId()),
+                new Query(VariantQueryParam.STUDY.key(), studyMetadata.getId()),
                 new QueryOptions());
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -190,7 +189,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
                 new Query()
-                        .append(VariantQueryParam.STUDY.key(), studyConfiguration.getId())
+                        .append(VariantQueryParam.STUDY.key(), studyMetadata.getId())
                         .append(VariantQueryParam.FILE.key(), FILE_ID),
                 new QueryOptions("archive", true)).forEachRemaining(variant -> {
             System.out.println("Variant from archive = " + variant.toJson());
@@ -233,7 +232,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
-        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getId(), FILE_ID);
+        ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyMetadata.getId(), FILE_ID);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata().toVariantStudyMetadata(STUDY_NAME));
         hm.act(tableName, table -> {
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
@@ -286,7 +285,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     public void printVariants() throws Exception {
         URI outDir = newOutputUri();
         System.out.println("print variants at = " + outDir);
-        VariantHbaseTestUtils.printVariants(studyConfiguration, dbAdaptor, outDir);
+        VariantHbaseTestUtils.printVariants(studyMetadata, dbAdaptor, outDir);
     }
 
 }
