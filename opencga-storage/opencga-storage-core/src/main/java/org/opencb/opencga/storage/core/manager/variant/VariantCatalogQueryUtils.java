@@ -297,6 +297,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                     SampleDBAdaptor.QueryParams.UID.key())), sessionId)
                     .getResult();
 
+            // By default, include all samples from the family
+            if (!isValidParam(query, INCLUDE_SAMPLE)) {
+                query.append(INCLUDE_SAMPLE.key(), samples.stream().map(Sample::getId).collect(Collectors.toList()));
+            }
+
             // If filter FAMILY is among with MODE_OF_INHERITANCE, fill the list of genotypes.
             // Otherwise, add the samples from the family to the SAMPLES query param.
             if (isValidParam(query, FAMILY_SEGREGATION)) {
