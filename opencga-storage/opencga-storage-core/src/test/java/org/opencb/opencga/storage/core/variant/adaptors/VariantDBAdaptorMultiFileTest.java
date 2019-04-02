@@ -10,7 +10,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -103,17 +102,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
-        query = preProcessQuery(query, options);
+        query = variantStorageEngine.preProcessQuery(query, options);
         return dbAdaptor.get(query, options);
-    }
-
-    protected Query preProcessQuery(Query query, QueryOptions options) {
-        try {
-            query = variantStorageEngine.preProcessQuery(query, options);
-        } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
-        }
-        return query;
     }
 
     protected ObjectMap getOptions() {
