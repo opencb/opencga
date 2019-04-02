@@ -33,7 +33,7 @@
                         "type": "Microsoft.Network/virtualNetworks/subnets"
                     },
                     {
-                        "name": "averecluster",
+                        "name": "nfsservers",
                         "properties": {
                             "addressPrefix": "10.0.1.0/24",
                             "ipConfigurations": [],

@@ -180,7 +180,7 @@
                     "nodeFillType": "Spread"
                 },
                 "startTask": {
-                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/avere/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '  && echo $BATCH_INSIGHTS_DOWNLOAD_URL &&  wget  -O - https://raw.githubusercontent.com/Azure/batch-insights/master/scripts/run-linux.sh | bash \"')]",
+                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/scripts/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '  && echo $BATCH_INSIGHTS_DOWNLOAD_URL &&  wget  -O - https://raw.githubusercontent.com/Azure/batch-insights/master/scripts/run-linux.sh | bash \"')]",
                     "userIdentity": {
                         "autoUser": {
                             "elevationLevel": "Admin",
