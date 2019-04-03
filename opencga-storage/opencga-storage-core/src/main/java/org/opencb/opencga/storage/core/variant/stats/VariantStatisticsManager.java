@@ -90,8 +90,7 @@ public abstract class VariantStatisticsManager {
             boolean overwrite, boolean updateStats, ObjectMap options) throws StorageEngineException {
 
         Collection<Integer> cohortIds = metadataManager.registerCohorts(studyMetadata.getName(), cohorts).values();
-        checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, updateStats,
-                getAggregation(studyMetadata.getAggregation(), options));
+        checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, updateStats, getAggregation(studyMetadata, options));
 
         metadataManager.updateStudyMetadata(studyMetadata.getName(), sm -> {
             for (Integer cohortId : cohortIds) {
@@ -261,7 +260,7 @@ public abstract class VariantStatisticsManager {
         }
 
         readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
-        if (study.isAggregated() || sampleIds.isEmpty()) {
+        if (isAggregated(study, options) || sampleIds.isEmpty()) {
             readerQuery.put(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL);
         }
         readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
@@ -278,8 +277,13 @@ public abstract class VariantStatisticsManager {
         return options.get(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class, null);
     }
 
-    protected static Aggregation getAggregation(Aggregation aggregation, ObjectMap options) {
-        return AggregationUtils.valueOf(options.getString(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), aggregation.toString()));
+    protected static Aggregation getAggregation(StudyMetadata studyMetadata, ObjectMap options) {
+        return AggregationUtils.valueOf(options.getString(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                studyMetadata.getAggregation().toString()));
+    }
+
+    protected static boolean isAggregated(StudyMetadata studyMetadata, ObjectMap options) {
+        return AggregationUtils.isAggregated(getAggregation(studyMetadata, options));
     }
 
 }
