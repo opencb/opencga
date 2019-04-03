@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -236,6 +237,10 @@ public class SolrQueryParser {
 
         // now we continue with the other AND conditions...
         // Study (study)
+        StudyMetadata defaultStudy = VariantQueryUtils.getDefaultStudy(query, queryOptions, variantStorageMetadataManager);
+        String defaultStudyName = defaultStudy == null
+                ? null
+                : VariantSearchToVariantConverter.studyIdToSearchModel(defaultStudy.getName());
         String key = VariantQueryParam.STUDY.key();
         if (isValidParam(query, VariantQueryParam.STUDY)) {
             String value = query.getString(key);
@@ -293,28 +298,31 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1kG_phase3__CEU":0.0053191,popFreq__1kG_phase3__CLM">0.0125319"
         key = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue("popFreq", query.getString(key), "ALT"));
+            filterList.add(parsePopFreqValue(
+                    VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null));
         }
 
         // MAF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue("popFreq", query.getString(key), "MAF"));
+            filterList.add(parsePopFreqValue(
+                    VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null));
         }
 
         // REF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue("popFreq", query.getString(key), "REF"));
+            filterList.add(parsePopFreqValue(
+                    VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null));
         }
 
         // stats maf
         // in the model: "stats__1kg_phase3__ALL"=0.02
         key = VariantQueryParam.STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue("stats", query.getString(key), "MAF"));
+            filterList.add(parsePopFreqValue(VariantQueryParam.STATS_MAF, "stats", query.getString(key), "MAF", defaultStudyName));
         }
 
         // GO
@@ -863,11 +871,14 @@ public class SolrQueryParser {
      *     "," to apply a "OR condition"
      *     ";" to apply a "AND condition"
      *
+     *
+     * @param param        Param name
      * @param name         Paramenter type: propFreq or stats
      * @param value        Paramenter value
+     * @param defaultStudy Default study. To be used only if the study is not present.
      * @return             The string with the boolean conditions
      */
-    private String parsePopFreqValue(String name, String value, String type) {
+    private String parsePopFreqValue(VariantQueryParam param, String name, String value, String type, String defaultStudy) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -877,40 +888,49 @@ public class SolrQueryParser {
             value = value.replace("<<", "<");
             value = value.replace("<", "<<");
 
-            QueryOperation queryOperation = parseOrAndFilter(name, value);
+            QueryOperation queryOperation = parseOrAndFilter(param, value);
             String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
 
-            Matcher matcher;
-            String[] values = value.split("[,;]");
-            if (values.length == 1) {
-                matcher = STUDY_PATTERN.matcher(value);
-                if (matcher.find()) {
-                    // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
-                    String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
+//            Matcher matcher;
+            List<String> values = VariantQueryUtils.splitValue(value, queryOperation);
 
-                    // concat expression, e.g.: value:[0 TO 12]
-                    sb.append(getRange(name + VariantSearchUtils.FIELD_SEPARATOR + matcher.group(1)
-                            + VariantSearchUtils.FIELD_SEPARATOR, matcher.group(2), freqValue[0], freqValue[1]));
+            List<String> list = new ArrayList<>(values.size());
+            for (String v : values) {
+
+                String[] keyOpValue = VariantQueryUtils.splitOperator(v);
+
+                String studyPop = keyOpValue[0];
+                String op = keyOpValue[1];
+                String numValue = keyOpValue[2];
+                if (studyPop == null) {
+                    throw VariantQueryException.malformedParam(param, value);
+                }
+
+                // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
+                String[] freqValue = getMafOrRefFrequency(type, op, numValue);
+
+                String[] studyPopSplit = VariantQueryUtils.splitStudyResource(studyPop);
+                String study;
+                String pop;
+                if (studyPopSplit.length == 2) {
+                    study = VariantSearchToVariantConverter.studyIdToSearchModel(studyPopSplit[0]);
+                    pop = studyPopSplit[1];
                 } else {
-                    // error
-                    throw new IllegalArgumentException("Invalid expression " +  value);
-                }
-            } else {
-                List<String> list = new ArrayList<>(values.length);
-                for (String v : values) {
-                    matcher = STUDY_PATTERN.matcher(v);
-                    if (matcher.find()) {
-                        // Solr only stores ALT frequency, we need to calculate the MAF or REF before querying
-                        String[] freqValue = getMafOrRefFrequency(type, matcher.group(3), matcher.group(4));
-
-                        // concat expression, e.g.: value:[0 TO 12]
-                        list.add(getRange(name + VariantSearchUtils.FIELD_SEPARATOR + matcher.group(1)
-                                + VariantSearchUtils.FIELD_SEPARATOR, matcher.group(2), freqValue[0], freqValue[1]));
-                    } else {
-                        throw new IllegalArgumentException("Invalid expression " +  value);
+                    if (StringUtils.isEmpty(defaultStudy)) {
+                        throw VariantQueryException.malformedParam(param, value, "Missing study");
                     }
+                    study = defaultStudy;
+                    pop = studyPop;
                 }
-                sb.append("(").append(StringUtils.join(list, logicalComparator)).append(")");
+
+                // concat expression, e.g.: value:[0 TO 12]
+                list.add(getRange(name + VariantSearchUtils.FIELD_SEPARATOR + study
+                        + VariantSearchUtils.FIELD_SEPARATOR, pop, freqValue[0], freqValue[1]));
+            }
+            if (list.size() == 1) {
+                sb.append(list.get(0));
+            } else {
+                sb.append('(').append(StringUtils.join(list, logicalComparator)).append(')');
             }
         }
         return sb.toString();
@@ -1433,7 +1453,11 @@ public class SolrQueryParser {
     }
 
     private QueryOperation parseOrAndFilter(String param, String value) {
-        QueryOperation queryOperation = VariantQueryUtils.checkOperator(value, VariantQueryParam.valueOf(param));
+        return parseOrAndFilter(VariantQueryParam.valueOf(param), value);
+    }
+
+    private QueryOperation parseOrAndFilter(VariantQueryParam param, String value) {
+        QueryOperation queryOperation = VariantQueryUtils.checkOperator(value, param);
         if (queryOperation == null) {
             // return AND by default
             return QueryOperation.AND;
