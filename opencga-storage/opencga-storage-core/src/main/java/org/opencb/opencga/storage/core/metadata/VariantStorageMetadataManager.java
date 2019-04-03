@@ -892,7 +892,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     }
                     cohort.setSamples(newSamples);
 
-                    if (!oldSamples.equals(sampleIds)) {
+                    if (!oldSamples.equals(sampleIdsList)) {
                         // Cohort has been modified! Invalidate if needed.
                         if (cohort.isStatsReady()) {
                             cohort.setStatsStatus(TaskMetadata.Status.ERROR);
