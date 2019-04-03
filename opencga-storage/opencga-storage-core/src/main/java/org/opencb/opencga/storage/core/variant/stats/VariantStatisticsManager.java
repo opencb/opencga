@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -260,6 +261,9 @@ public abstract class VariantStatisticsManager {
         }
 
         readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+        if (study.isAggregated() || sampleIds.isEmpty()) {
+            readerQuery.put(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL);
+        }
         readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
         readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(),
                 getUnknownGenotype(options));
