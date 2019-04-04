@@ -25,10 +25,8 @@ public class Interpretation extends PrivateStudyUid {
                           List<ReportedVariant> primaryFindinds, List<ReportedVariant> secondaryFindings,
                           List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments, Map<String, Object> attributes) {
         this(null, new org.opencb.biodata.models.clinical.interpretation.Interpretation(id, description, clinicalAnalysisId,
-                panels, org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED, software, analyst,
-                dependencies, filters, creationDate, primaryFindinds, secondaryFindings,
-                reportedLowCoverages,
-                comments, attributes, 1));
+                software, analyst, dependencies, filters, panels, primaryFindinds, secondaryFindings, reportedLowCoverages,
+                comments, org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED, creationDate, 1, attributes));
     }
 
     public Interpretation(String uuid, org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
@@ -43,16 +41,18 @@ public class Interpretation extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(interpretation.getDescription()).append('\'');
         sb.append(", clinicalAnalysisId='").append(interpretation.getClinicalAnalysisId()).append('\'');
-        sb.append(", panels=").append(interpretation.getPanels());
         sb.append(", software=").append(interpretation.getSoftware());
         sb.append(", analyst=").append(interpretation.getAnalyst());
         sb.append(", dependencies=").append(interpretation.getDependencies());
         sb.append(", filters=").append(interpretation.getFilters());
-        sb.append(", creationDate='").append(interpretation.getCreationDate()).append('\'');
+        sb.append(", panels=").append(interpretation.getPanels());
         sb.append(", primaryFindings=").append(interpretation.getPrimaryFindings());
         sb.append(", secondaryFindings=").append(interpretation.getSecondaryFindings());
-        sb.append(", reportedLowCoverages=").append(interpretation.getReportedLowCoverages());
+        sb.append(", lowCoverageRegions=").append(interpretation.getLowCoverageRegions());
         sb.append(", comments=").append(interpretation.getComments());
+        sb.append(", status=").append(interpretation.getStatus());
+        sb.append(", creationDate='").append(interpretation.getCreationDate()).append('\'');
+        sb.append(", version=").append(interpretation.getVersion());
         sb.append(", attributes=").append(interpretation.getAttributes());
         sb.append('}');
         return sb.toString();

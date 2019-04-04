@@ -27,10 +27,7 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.models.*;
@@ -240,8 +237,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throw VariantQueryException.malformedParam(FAMILY_MEMBERS, familyMembers.toString(), "Only one member provided");
             }
 
+            // Use search instead of get to avoid smartResolutor to fetch all samples
             Set<Long> indexedSampleUids = catalogManager.getCohortManager()
-                    .get(defaultStudyStr, StudyEntry.DEFAULT_COHORT,
+                    .search(defaultStudyStr, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
                             new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId)
                     .first()
                     .getSamples()
@@ -295,6 +293,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                     SampleDBAdaptor.QueryParams.ID.key(),
                                     SampleDBAdaptor.QueryParams.UID.key())), sessionId)
                     .getResult();
+
+            // By default, include all samples from the family
+            if (!isValidParam(query, INCLUDE_SAMPLE)) {
+                query.append(INCLUDE_SAMPLE.key(), samples.stream().map(Sample::getId).collect(Collectors.toList()));
+            }
 
             // If filter FAMILY is among with MODE_OF_INHERITANCE, fill the list of genotypes.
             // Otherwise, add the samples from the family to the SAMPLES query param.
@@ -830,8 +833,30 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                         String sessionId)
                 throws CatalogException {
             if (release == null) {
-                AbstractManager.MyResources<Cohort> uids = catalogManager.getCohortManager().getUids(values, defaultStudyStr, sessionId);
-                return uids.getResourceList().stream().map(Cohort::getId).collect(Collectors.toList());
+                // Query cohort by cohort if
+                if (StringUtils.isEmpty(defaultStudyStr) || values.stream().anyMatch(value -> value.contains(":"))) {
+                    List<String> validated = new ArrayList<>(values.size());
+                    for (String value : values) {
+                        String[] split = VariantQueryUtils.splitStudyResource(value);
+                        String study = defaultStudyStr;
+                        if (split.length == 2) {
+                            study = split[0];
+                            value = split[1];
+                        }
+                        AbstractManager.MyResources<Cohort> resource = catalogManager.getCohortManager().getUids(value, study, sessionId);
+                        Cohort cohort = resource.getResourceList().get(0);
+                        if (resource.getStudy().getFqn().equals(defaultStudyStr)) {
+                            validated.add(cohort.getId());
+                        } else {
+                            validated.add(resource.getStudy().getFqn() + ":" + cohort.getId());
+                        }
+                    }
+                    return validated;
+                } else {
+                    AbstractManager.MyResources<Cohort> uids = catalogManager.getCohortManager()
+                            .getUids(values, defaultStudyStr, sessionId);
+                    return uids.getResourceList().stream().map(Cohort::getId).collect(Collectors.toList());
+                }
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getCohortManager(),
                         Cohort::getId, Cohort::getRelease, null, sessionId);

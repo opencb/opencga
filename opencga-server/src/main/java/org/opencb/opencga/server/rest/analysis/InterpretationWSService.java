@@ -1037,9 +1037,9 @@ public class InterpretationWSService extends AnalysisWSService {
         public Map<String, Object> attributes;
 
         public org.opencb.biodata.models.clinical.interpretation.Interpretation  toClinicalInterpretation() {
-            return new org.opencb.biodata.models.clinical.interpretation.Interpretation (id, description, clinicalAnalysisId, panels, null,
-                    software, analyst, dependencies, filters, creationDate, primaryFindings, secondaryFindings, reportedLowCoverages,
-                    comments, attributes, -1);
+            return new org.opencb.biodata.models.clinical.interpretation.Interpretation (id, description, clinicalAnalysisId, software,
+                    analyst, dependencies, filters, panels, primaryFindings, secondaryFindings, reportedLowCoverages, comments,
+                    org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED, creationDate, -1, attributes);
         }
 
         public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {

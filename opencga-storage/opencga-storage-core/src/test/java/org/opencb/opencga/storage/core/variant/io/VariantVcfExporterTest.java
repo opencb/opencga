@@ -32,26 +32,21 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.junit.Assert.assertEquals;
@@ -80,7 +75,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     private VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
-    protected static StudyConfiguration studyConfiguration;
+    protected static StudyMetadata studyMetadata;
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -95,13 +90,13 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     @Override
     @Before
     public void before() throws Exception {
-        if (studyConfiguration == null) {
+        if (studyMetadata == null) {
             clearDB(DB_NAME);
-            studyConfiguration = newStudyConfiguration();
+            studyMetadata = newStudyMetadata();
         }
         for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
             if (etlResult[i] == null) {
-                etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageEngine(), studyConfiguration,
+                etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageEngine(), studyMetadata,
                         new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
                                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
             }
@@ -172,18 +167,6 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         return 0;
     }
 
-    @Ignore
-    @Test
-    public void testVcfExport() throws Exception {
-
-        QueryOptions queryOptions = new QueryOptions();
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
-        queryOptions.add("include", include);
-        VariantVcfDataWriter.vcfExport(dbAdaptor, studyConfiguration, new URI(EXPORTED_FILE_NAME), new Query(), queryOptions);
-
-        // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
-    }
-
     public int checkExportedVCF(Path originalVcf, Path exportedVcf, Region region) throws IOException {
         return checkExportedVCF(originalVcf, null, exportedVcf, region, null);
     }
@@ -233,7 +216,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             StudyEntry exportedStudyEntry = exportedVariant.getStudy(STUDY_NAME);
             for (String sampleName : originalStudyEntry.getSamplesName()) {
                 assertWithConflicts(exportedVariant, () -> assertEquals("For sample '" + sampleName + "', id "
-                                + studyConfiguration.getSampleIds().get(sampleName)
+                                + metadataManager.getSampleId(studyMetadata.getId(), sampleName)
                                 + ", in " + originalVariant,
                         originalStudyEntry.getSampleData(sampleName, "GT"),
                         exportedStudyEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0")));

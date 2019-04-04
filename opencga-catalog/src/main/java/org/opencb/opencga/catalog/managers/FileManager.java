@@ -1824,8 +1824,8 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = resource.getUser();
 
         // Define the output directory where the indexes will be put
-        String outDirPath = ParamUtils.defaultString(params.get("outdir"), "/");
-        if (outDirPath != null && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
+        String outDirPath = ParamUtils.defaultString(params.get("outdir"), "/").replace(":", "/");
+        if (outDirPath.contains("/") && !outDirPath.endsWith("/")) {
             outDirPath = outDirPath + "/";
         }
 
@@ -1923,7 +1923,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
             }
 
-            params.put("outdir", outDir.getId());
             params.put("sid", sessionId);
 
         } else if (type.equals("BAM")) {
@@ -1973,7 +1972,8 @@ public class FileManager extends AnnotationSetManager<File> {
             params.put("study", resource.getStudy().getFqn());
         }
 
-        String fileIds = fileIdList.stream().map(File::getId).collect(Collectors.joining(","));
+        params.put("outdir", outDir.getPath());
+        String fileIds = fileIdList.stream().map(File::getPath).collect(Collectors.joining(","));
         params.put("file", fileIds);
         List<File> outputList = outDir.getUid() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
         ObjectMap attributes = new ObjectMap();

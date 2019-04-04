@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.mongodb.variant.stats;
 
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -44,13 +46,14 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts,
                            Map<String, Integer> cohortIdsMap, StudyMetadata studyMetadata, QueryOptions options)
             throws IOException, StorageEngineException {
-
-        // This direct stats calculator does not work for aggregated studies.
-        if (studyMetadata.isAggregated()) {
-            return super.createStats(variantDBAdaptor, output, cohorts, cohortIdsMap, studyMetadata, options);
-        }
         if (options == null) {
             options = new QueryOptions();
+        }
+        Aggregation aggregation = getAggregation(studyMetadata, options);
+
+        // This direct stats calculator does not work for aggregated studies.
+        if (AggregationUtils.isAggregated(aggregation)) {
+            return super.createStats(variantDBAdaptor, output, cohorts, cohortIdsMap, studyMetadata, options);
         }
 
         //Parse query options
