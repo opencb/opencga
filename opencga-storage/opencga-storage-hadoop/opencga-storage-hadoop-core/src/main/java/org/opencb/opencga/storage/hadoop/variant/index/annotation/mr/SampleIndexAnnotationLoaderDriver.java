@@ -75,9 +75,6 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         } else {
             LOGGER.info("Study without genotypes, : " + HBaseToVariantConverter.getFixedFormat(attributes));
         }
-        hasGenotype = false;
-
-
     }
 
     @Override

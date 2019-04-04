@@ -65,8 +65,13 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
                             cell.getValueOffset(),
                             cell.getValueLength());
                     PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                    gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-                    validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                    if (ptr.getLength() == 0) {
+                        gt = GenotypeClass.NA_GT_VALUE;
+                        validGt = true;
+                    } else {
+                        gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+                        validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                    }
                 } else {
                     gt = GenotypeClass.NA_GT_VALUE;
                     validGt = true;
