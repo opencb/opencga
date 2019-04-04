@@ -177,6 +177,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
         }
 
         int dbTime = -1;
+        long numTotalResult = -1;
 
         if (StringUtils.isNotEmpty(segregation) && (segregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.DE_NOVO.toString())
                 || segregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS.toString()))) {
@@ -198,11 +199,13 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
                     moi = null;
                 }
             }
+
             // Execute query
             VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, token);
             dbTime = variantQueryResult.getDbTime();
+            numTotalResult = variantQueryResult.getNumTotalResults();
 
-            if (CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
+        if (CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
                 variants.addAll(variantQueryResult.getResult());
             }
 
@@ -266,6 +269,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
         int numberOfResults = primaryFindings != null ? primaryFindings.size() : 0;
 
+
         // Return interpretation result
         return new InterpretationResult(
                 interpretation,
@@ -273,7 +277,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
                 new HashMap<>(),
                 dbTime,
                 numberOfResults,
-                numberOfResults,
+                numTotalResult,
                 "",
                 "");
     }

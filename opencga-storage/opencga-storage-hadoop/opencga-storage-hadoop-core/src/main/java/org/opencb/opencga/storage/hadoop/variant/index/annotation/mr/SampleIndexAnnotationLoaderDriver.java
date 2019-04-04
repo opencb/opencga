@@ -9,6 +9,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -54,7 +55,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         String samples = getParam(SAMPLES);
-        if (StringUtils.isNotEmpty(samples)) {
+        if (StringUtils.isNotEmpty(samples) && !samples.equals(VariantQueryUtils.ALL)) {
             sampleIds = new LinkedList<>();
             for (String sample : samples.split(",")) {
                 Integer sampleId = metadataManager.getSampleId(getStudyId(), sample);
@@ -67,17 +68,20 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
             sampleIds = metadataManager.getIndexedSamples(getStudyId());
         }
 
+        if (sampleIds.isEmpty()) {
+            throw new IllegalArgumentException("No samples to update!");
+        } else {
+            LOGGER.info("Update sample index annotation to " + sampleIds.size() + " samples");
+        }
+
         ObjectMap attributes = metadataManager.getStudyMetadata(getStudyId()).getAttributes();
         hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
 
         if (hasGenotype) {
-            LOGGER.info("Study with genotypes, : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study with genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
         } else {
-            LOGGER.info("Study without genotypes, : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study without genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
         }
-        hasGenotype = false;
-
-
     }
 
     @Override
