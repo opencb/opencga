@@ -143,7 +143,7 @@ public class CatalogStorageMetadataSynchronizerTest {
                     Collections.emptyMap());
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add(file.getName());
-            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
+            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), true, null, sessionId);
         }
@@ -183,7 +183,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         StudyMetadata sc = studyConfigurationFactory.getStudyMetadata(studyId);
 
-        List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId)
+        List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId)
                 .getResult()
                 .stream()
                 .map(Sample::getId)

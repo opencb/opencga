@@ -247,7 +247,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
     }
 
 
-    protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<Panel> diseasePanels)
+    protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels)
             throws AnalysisException {
         String clinicalAnalysisId = clinicalAnalysis.getId();
 
@@ -285,8 +285,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
 
         if (bamFileId != null) {
-            for (Panel diseasePanel : diseasePanels) {
-                for (DiseasePanel.GenePanel genePanel : diseasePanel.getDiseasePanel().getGenes()) {
+            for (DiseasePanel diseasePanel : diseasePanels) {
+                for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
                     String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
                         reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
@@ -325,13 +325,13 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         return reportedLowCoverages;
     }
 
-    protected List<Panel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
-        List<Panel> diseasePanels = new ArrayList<>();
+    protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
+        List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
             List<QueryResult<Panel>> queryResults;
             try {
                 queryResults = catalogManager.getPanelManager()
-                        .get(studyStr, diseasePanelIds, new Query(), QueryOptions.empty(), token);
+                        .get(studyStr, diseasePanelIds, QueryOptions.empty(), token);
             } catch (CatalogException e) {
                 throw new AnalysisException(e.getMessage(), e);
             }

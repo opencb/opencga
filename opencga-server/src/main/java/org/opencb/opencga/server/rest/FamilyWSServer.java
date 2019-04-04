@@ -40,8 +40,8 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -88,7 +88,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, sessionId);
+            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, queryOptions, silent, sessionId);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -324,11 +324,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResource<Family> resource = familyManager.getUid(familyStr, studyStr, sessionId);
-
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(FamilyDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
+            Family family = familyManager.get(studyStr, familyStr, FamilyManager.INCLUDE_FAMILY_IDS, sessionId).first();
+            Query query = new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid());
 
             if (StringUtils.isEmpty(annotation)) {
                 if (StringUtils.isNotEmpty(variableSet)) {
@@ -378,12 +375,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResources<Family> resource = familyManager.getUids(familiesStr, studyStr, sessionId);
+            List<QueryResult<Family>> queryResults = familyManager.get(studyStr, getIdList(familiesStr), null, sessionId);
 
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(FamilyDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Family::getUid)
-                            .collect(Collectors.toList()));
+            Query query = new Query(FamilyDBAdaptor.QueryParams.UID.key(),
+                    queryResults.stream().map(QueryResult::first).map(Family::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

@@ -109,7 +109,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             }
 
             List<String> idList = getIdList(panelStr);
-            List<QueryResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
+            List<QueryResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, queryOptions, silent, sessionId);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -300,20 +300,20 @@ public class PanelWSServer extends OpenCGAWSServer {
 
         public ObjectMap toObjectMap() throws JsonProcessingException {
             Panel panel = new Panel();
-            panel.getDiseasePanel().setId(id);
-            panel.getDiseasePanel().setId(id);
-            panel.getDiseasePanel().setName(name);
+            panel.setId(id);
+            panel.setId(id);
+            panel.setName(name);
             panel.setAuthor(author);
-            panel.getDiseasePanel().setSource(source);
-            panel.getDiseasePanel().setDescription(description);
-            panel.getDiseasePanel().setCategories(categories);
-            panel.getDiseasePanel().setTags(tags);
-            panel.getDiseasePanel().setPhenotypes(phenotypes);
-            panel.getDiseasePanel().setVariants(variants);
-            panel.getDiseasePanel().setGenes(genes);
-            panel.getDiseasePanel().setRegions(regions);
-            panel.getDiseasePanel().setStats(stats);
-            panel.getDiseasePanel().setAttributes(attributes);
+            panel.setSource(source);
+            panel.setDescription(description);
+            panel.setCategories(categories);
+            panel.setTags(tags);
+            panel.setPhenotypes(phenotypes);
+            panel.setVariants(variants);
+            panel.setGenes(genes);
+            panel.setRegions(regions);
+            panel.setStats(stats);
+            panel.setAttributes(attributes);
 
             return new ObjectMap(getUpdateObjectMapper().writeValueAsString(panel));
         }

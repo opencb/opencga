@@ -33,8 +33,8 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 
@@ -620,7 +620,7 @@ public class FileManagerTest extends AbstractManagerTest {
         byte[] bytes = new byte[100];
         byte[] bytesOrig = new byte[100];
         DataInputStream fis = new DataInputStream(new FileInputStream(fileTest));
-        DataInputStream dis = catalogManager.getFileManager().download(studyFqn, file.getPath(), -1, -1, null, sessionIdUser);
+        DataInputStream dis = catalogManager.getFileManager().download(studyFqn, file.getPath(), -1, -1, sessionIdUser);
         fis.read(bytesOrig, 0, 100);
         dis.read(bytes, 0, 100);
         fis.close();
@@ -630,7 +630,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         int offset = 5;
         int limit = 30;
-        dis = catalogManager.getFileManager().download(studyFqn, file.getPath(), offset, limit, null, sessionIdUser);
+        dis = catalogManager.getFileManager().download(studyFqn, file.getPath(), offset, limit, sessionIdUser);
         fis = new DataInputStream(new FileInputStream(fileTest));
         for (int i = 0; i < offset; i++) {
             fis.readLine();
@@ -664,7 +664,7 @@ public class FileManagerTest extends AbstractManagerTest {
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(bytesOrig), queryResult.first(), sessionIdUser, false, false, true);
         File file = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, sessionIdUser).first();
 
-        DataInputStream dis = catalogManager.getFileManager().download(studyFqn, file.getPath(), -1, -1, null, sessionIdUser);
+        DataInputStream dis = catalogManager.getFileManager().download(studyFqn, file.getPath(), -1, -1, sessionIdUser);
 
         byte[] bytes = new byte[fileSize];
         dis.read(bytes, 0, fileSize);
@@ -732,13 +732,13 @@ public class FileManagerTest extends AbstractManagerTest {
         File file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
                 "data/test/folder/file.txt", null, "My description", null, 0, -1, null, (long) -1, null, null, true, null, null,
                 sessionIdUser2).first();
-        long fileId = catalogManager.getFileManager().getUid(file.getPath(), studyFqn, sessionIdUser).getResource().getUid();
+        long fileId = catalogManager.getFileManager().get(studyFqn, file.getPath(), FileManager.INCLUDE_FILE_IDS, sessionIdUser).first().getUid();
         assertEquals(file.getUid(), fileId);
 
-        fileId = catalogManager.getFileManager().getUid(file.getPath(), studyFqn, sessionIdUser).getResource().getUid();
+        fileId = catalogManager.getFileManager().get(studyFqn, file.getPath(), FileManager.INCLUDE_FILE_IDS, sessionIdUser).first().getUid();
         assertEquals(file.getUid(), fileId);
 
-        fileId = catalogManager.getFileManager().getUid("/", studyFqn, sessionIdUser).getResource().getUid();
+        fileId = catalogManager.getFileManager().get(studyFqn, "/", FileManager.INCLUDE_FILE_IDS, sessionIdUser).first().getUid();
         System.out.println(fileId);
     }
 
@@ -1017,7 +1017,7 @@ public class FileManagerTest extends AbstractManagerTest {
         long fileId;
         QueryResult<File> fileParents;
 
-        fileId = catalogManager.getFileManager().getUid("data/test/folder/", studyFqn, sessionIdUser).getResource().getUid();
+        fileId = catalogManager.getFileManager().get(studyFqn, "data/test/folder/", FileManager.INCLUDE_FILE_IDS, sessionIdUser).first().getUid();
         fileParents = catalogManager.getFileManager().getParents(fileId, null, sessionIdUser);
 
         assertEquals(4, fileParents.getNumResults());
@@ -1032,8 +1032,8 @@ public class FileManagerTest extends AbstractManagerTest {
         long fileId;
         QueryResult<File> fileParents;
 
-        fileId = catalogManager.getFileManager().getUid("data/test/folder/test_1K.txt.gz", studyFqn, sessionIdUser)
-                .getResource().getUid();
+        fileId = catalogManager.getFileManager().get(studyFqn, "data/test/folder/test_1K.txt.gz", FileManager.INCLUDE_FILE_IDS, sessionIdUser)
+            .first().getUid();
         fileParents = catalogManager.getFileManager().getParents(fileId, null, sessionIdUser);
 
         assertEquals(5, fileParents.getNumResults());
@@ -1049,7 +1049,7 @@ public class FileManagerTest extends AbstractManagerTest {
         long fileId;
         QueryResult<File> fileParents;
 
-        fileId = catalogManager.getFileManager().getUid("data/test/", studyFqn, sessionIdUser).getResource().getUid();
+        fileId = catalogManager.getFileManager().get(studyFqn, "data/test/", FileManager.INCLUDE_FILE_IDS, sessionIdUser).first().getUid();
         fileParents = catalogManager.getFileManager().getParents(fileId, new QueryOptions("include", "projects.studies.files.path," +
                 "projects.studies.files.id"), sessionIdUser);
 

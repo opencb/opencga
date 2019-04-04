@@ -28,11 +28,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
-
-public class Panel extends PrivateStudyUid {
-
-    private DiseasePanel diseasePanel;
+public class Panel extends DiseasePanel implements PrivateStudyUidI {
 
     private String uuid;
     private int release;
@@ -45,12 +41,15 @@ public class Panel extends PrivateStudyUid {
     private String author;
     private Status status;
 
+    // Private fields
+    private long studyUid;
+    private long uid;
+
     public Panel() {
-        this.diseasePanel = new DiseasePanel();
     }
 
     public Panel(String id, String name, int version) {
-        this.diseasePanel = new DiseasePanel(id, name);
+        super(id, name);
         this.version = version;
     }
 
@@ -58,15 +57,15 @@ public class Panel extends PrivateStudyUid {
                  List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
                  Map<String, Integer> stats, int release, int version, String author, SourcePanel source, Status status,
                  String description, Map<String, Object> attributes) {
-        this.diseasePanel = new DiseasePanel(id, name, categories, phenotypes, tags,
-                variants, genes, regions, stats, source, TimeUtils.getTime(), TimeUtils.getTime(), description, attributes);
+        super(id, name, categories, phenotypes, tags, variants, genes, regions, stats, source, TimeUtils.getTime(), TimeUtils.getTime(),
+                description, attributes);
         this.release = release;
         this.version = version;
         this.author = author;
         this.status = status;
 
         if (StringUtils.isNotEmpty(author) && source != null && StringUtils.isEmpty(source.getAuthor())) {
-            diseasePanel.getSource().setAuthor(author);
+            this.getSource().setAuthor(author);
         }
     }
 
@@ -78,42 +77,36 @@ public class Panel extends PrivateStudyUid {
      */
     public static Panel load(InputStream diseasePanelInputStream) throws IOException {
         ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
-        return objectMapper.readValue(diseasePanelInputStream, Panel.class);
+        Panel panel = objectMapper.readValue(diseasePanelInputStream, Panel.class);
+//        // By default, the id will be loaded within the Panel and not the DiseasePanel class
+//        panel.getDiseasePanel().setId(panel.getId());
+        return panel;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("DiseasePanel{");
-        sb.append("id='").append(diseasePanel.getId()).append('\'');
-        sb.append(", name='").append(diseasePanel.getName()).append('\'');
+        sb.append("id='").append(getId()).append('\'');
+        sb.append(", name='").append(getName()).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
-        sb.append(", categories=").append(diseasePanel.getCategories());
-        sb.append(", phenotypes=").append(diseasePanel.getPhenotypes());
-        sb.append(", tags=").append(diseasePanel.getTags());
-        sb.append(", variants=").append(diseasePanel.getVariants());
-        sb.append(", genes=").append(diseasePanel.getGenes());
-        sb.append(", regions=").append(diseasePanel.getRegions());
-        sb.append(", stats=").append(diseasePanel.getStats());
+        sb.append(", categories=").append(getCategories());
+        sb.append(", phenotypes=").append(getPhenotypes());
+        sb.append(", tags=").append(getTags());
+        sb.append(", variants=").append(getVariants());
+        sb.append(", genes=").append(getGenes());
+        sb.append(", regions=").append(getRegions());
+        sb.append(", stats=").append(getStats());
         sb.append(", release=").append(release);
         sb.append(", version=").append(version);
         sb.append(", author='").append(author).append('\'');
-        sb.append(", source=").append(diseasePanel.getSource());
+        sb.append(", source=").append(getSource());
         sb.append(", status=").append(status);
-        sb.append(", creationDate='").append(diseasePanel.getCreationDate()).append('\'');
-        sb.append(", modificationDate='").append(diseasePanel.getModificationDate()).append('\'');
-        sb.append(", description='").append(diseasePanel.getDescription()).append('\'');
-        sb.append(", attributes=").append(diseasePanel.getAttributes());
+        sb.append(", creationDate='").append(getCreationDate()).append('\'');
+        sb.append(", modificationDate='").append(getModificationDate()).append('\'');
+        sb.append(", description='").append(getDescription()).append('\'');
+        sb.append(", attributes=").append(getAttributes());
         sb.append('}');
         return sb.toString();
-    }
-
-    public DiseasePanel getDiseasePanel() {
-        return diseasePanel;
-    }
-
-    public Panel setDiseasePanel(DiseasePanel diseasePanel) {
-        this.diseasePanel = diseasePanel;
-        return this;
     }
 
     public String getUuid() {
@@ -163,4 +156,25 @@ public class Panel extends PrivateStudyUid {
         return this;
     }
 
+    @Override
+    public long getStudyUid() {
+        return studyUid;
+    }
+
+    @Override
+    public Panel setStudyUid(long studyUid) {
+        this.studyUid = studyUid;
+        return this;
+    }
+
+    @Override
+    public long getUid() {
+        return uid;
+    }
+
+    @Override
+    public Panel setUid(long uid) {
+        this.uid = uid;
+        return this;
+    }
 }

@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CohortManager;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
@@ -70,8 +71,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             if (StringUtils.isNotEmpty(sampleIdsStr)) {
                 List<String> idList = getIdList(sampleIdsStr, false);
-                AbstractManager.MyResources<Sample> resource = catalogManager.getSampleManager().getUids(idList, studyStr, sessionId);
-                List<Sample> sampleList = resource.getResourceList();
+                List<QueryResult<Sample>> queryResults = catalogManager.getSampleManager().get(studyStr, idList, null, sessionId);
+                List<Sample> sampleList = queryResults.stream().map(QueryResult::first).collect(Collectors.toList());
                 Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null)
                         .setName(cohortName);
                 QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, sessionId);
@@ -175,7 +176,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.remove("study");
 
             List<String> cohortList = getIdList(cohortsStr);
-            List<QueryResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, query, queryOptions, silent, sessionId);
+            List<QueryResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, queryOptions, silent, sessionId);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -245,7 +246,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr) {
         try {
-            return createOkResponse(cohortManager.getSamples(studyStr, cohortStr, queryOptions, sessionId));
+            return createOkResponse(cohortManager.getSamples(studyStr, cohortStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -348,11 +349,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResource<Cohort> resource = cohortManager.getUid(cohortStr, studyStr, sessionId);
+            Cohort cohort = cohortManager.get(studyStr, cohortStr, CohortManager.INCLUDE_COHORT_IDS, sessionId).first();
 
-            Query query = new Query()
-                    .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(CohortDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
+            Query query = new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid());
 
             if (StringUtils.isEmpty(annotation)) {
                 if (StringUtils.isNotEmpty(variableSet)) {
@@ -402,12 +401,10 @@ public class CohortWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResources<Cohort> resource = cohortManager.getUids(cohortsStr, studyStr, sessionId);
+            List<QueryResult<Cohort>> queryResults = cohortManager.get(studyStr, getIdList(cohortsStr), null, sessionId);
 
-            Query query = new Query()
-                    .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(CohortDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Cohort::getUid)
-                            .collect(Collectors.toList()));
+            Query query = new Query(CohortDBAdaptor.QueryParams.UID.key(),
+                    queryResults.stream().map(QueryResult::first).map(Cohort::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

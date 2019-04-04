@@ -12,84 +12,30 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.PrivateStudyUidI;
 import org.opencb.opencga.core.models.Study;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 07/08/17.
  */
-public abstract class ResourceManager<R extends PrivateStudyUid> extends AbstractManager {
+public abstract class ResourceManager<R extends PrivateStudyUidI> extends AbstractManager {
 
     ResourceManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                     DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
-    /**
-     * Obtains the resource java bean containing the requested entries.
-     *
-     * @param entryStr  Entry id in string format.
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
-     * @return the resource java bean containing the requested entries.
-     * @throws CatalogException when more than one entry is found.
-     */
-    public AbstractManager.MyResource<R> getUid(String entryStr, @Nullable String studyStr, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(entryStr, "id");
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+    abstract QueryResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException;
 
-        if (entryStr.contains(",")) {
-            throw new CatalogException("More than one entry found");
-        }
-
-        R entry = smartResolutor(study.getUid(), entryStr, userId);
-        return new MyResource<>(userId, study, entry);
-    }
-
-    /**
-     * Obtains the resource java beans containing the requested entries.
-     *
-     * @param entryStr  Entry id in string format.
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
-     * @return the resource java beans containing the requested entries.
-     * @throws CatalogException when more than one entry is found.
-     */
-    public AbstractManager.MyResources<R> getUids(String entryStr, @Nullable String studyStr, String sessionId) throws CatalogException {
-        return getUids(Arrays.asList(entryStr.split(",")), studyStr, sessionId);
-    }
-
-    /**
-     * Obtains the resource java beans containing the requested entries.
-     *
-     * @param entryList  List of entry ids in string format.
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sessionId Session id of the user logged.
-     * @return the resource java beans containing the requested entries.
-     * @throws CatalogException when more than one entry is found.
-     */
-    public AbstractManager.MyResources<R> getUids(List<String> entryList, @Nullable String studyStr, String sessionId)
-            throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        List<R> finalEntryList = new ArrayList<>(entryList.size());
-        for (String entryStr : entryList) {
-            R entry = smartResolutor(study.getUid(), entryStr, userId);
-            finalEntryList.add(entry);
-        }
-        return new MyResources<>(userId, study, finalEntryList);
-    }
-
-    abstract R smartResolutor(long studyUid, String entry, String user) throws CatalogException;
+    abstract QueryResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+            throws CatalogException;
 
     /**
      * Create an entry in catalog.
@@ -97,11 +43,11 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param entry     entry that needs to be added in Catalog.
      * @param options   QueryOptions object.
-     * @param sessionId Session id of the user logged in.
+     * @param token Session id of the user logged in.
      * @return A QueryResult of the object created.
      * @throws CatalogException if any parameter from the entry is incorrect, the user does not have permissions...
      */
-    public abstract QueryResult<R> create(String studyStr, R entry, QueryOptions options, String sessionId) throws CatalogException;
+    public abstract QueryResult<R> create(String studyStr, R entry, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Update an entry from catalog.
@@ -110,12 +56,12 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      * @param entryStr   Entry id in string format. Could be either the id or name generally.
      * @param parameters Map with parameters and values from the entry to be updated.
      * @param options    QueryOptions object.
-     * @param sessionId  Session id of the user logged in.
+     * @param token  Session id of the user logged in.
      * @return A QueryResult with the object updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public abstract QueryResult<R> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
+    public abstract QueryResult<R> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException;
 
     /**
@@ -124,15 +70,14 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param entryStr  Entry id to be fetched.
      * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param sessionId sessionId
+     * @param token sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public QueryResult<R> get(String studyStr, String entryStr, QueryOptions options, String sessionId) throws CatalogException {
-        Query query = new Query();
-        MyResource resources = getUid(entryStr, studyStr, sessionId);
-        query.put("uid", resources.getResource().getUid());
-        return get(studyStr, query, options, sessionId);
+    public QueryResult<R> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        return internalGet(study.getUid(), entryStr, options, userId);
     }
 
     /**
@@ -140,52 +85,27 @@ public abstract class ResourceManager<R extends PrivateStudyUid> extends Abstrac
      *
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param entryList Comma separated list of entries to be fetched.
-     * @param query     Query object.
      * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param sessionId sessionId
+     * @param token sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public List<QueryResult<R>> get(String studyStr, List<String> entryList, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
-        List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
-        query = ParamUtils.defaultObject(query, Query::new);
-
-        MyResources<R> resource = getUids(entryList, studyStr, sessionId);
-        List<Long> resourceIds = resource.getResourceList().stream().map(R::getUid).collect(Collectors.toList());
-        for (int i = 0; i < resourceIds.size(); i++) {
-            Long entityId = resourceIds.get(i);
-            Query queryCopy = new Query(query);
-            queryCopy.put("uid", entityId);
-            QueryResult<R> rQueryResult = get(studyStr, queryCopy, options, sessionId);
-            rQueryResult.setId(entryList.get(i));
-            resultList.add(rQueryResult);
-        }
-
-        return resultList;
+    public List<QueryResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
+        return get(studyStr, entryList, options, false, token);
     }
 
-    public List<QueryResult<R>> get(String studyStr, List<String> entryList, Query query, QueryOptions options, boolean silent,
-                                    String sessionId)
+    public List<QueryResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
             throws CatalogException {
         List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
-        query = ParamUtils.defaultObject(query, Query::new);
 
-        for (String entry : entryList) {
-            Query queryCopy = new Query(query);
-            try {
-                MyResource<R> resource = getUid(entry, studyStr, sessionId);
-                queryCopy.put("uid", resource.getResource().getUid());
-                QueryResult<R> rQueryResult = get(resource.getStudy().getFqn(), queryCopy, options, sessionId);
-                rQueryResult.setId(entry);
-                resultList.add(rQueryResult);
-            } catch (CatalogException e) {
-                if (silent) {
-                    resultList.add(new QueryResult<>(entry, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
-                } else {
-                    throw e;
-                }
-            }
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        QueryResult<R> responseResult = internalGet(study.getUid(), entryList, options, userId, silent);
+        for (R response : responseResult.getResult()) {
+            resultList.add(new QueryResult<>(response.getId(), responseResult.getDbTime(), 1, 1, "", "",
+                    Collections.singletonList(response)));
+
         }
         return resultList;
     }

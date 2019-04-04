@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models;
 
-abstract public class PrivateFields {
+abstract public class PrivateFields implements PrivateFieldsI {
 
     private long uid;
 
@@ -11,10 +11,12 @@ abstract public class PrivateFields {
         this.uid = uid;
     }
 
+    @Override
     public long getUid() {
         return uid;
     }
 
+    @Override
     public PrivateFields setUid(long uid) {
         this.uid = uid;
         return this;

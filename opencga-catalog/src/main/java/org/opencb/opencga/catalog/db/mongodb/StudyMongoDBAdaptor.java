@@ -190,7 +190,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         for (Panel panel : panels) {
             String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(study.getUid(), panel, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += panel.getDiseasePanel().getName() + ":" + fileErrorMsg + ", ";
+                errorMsg += panel.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 

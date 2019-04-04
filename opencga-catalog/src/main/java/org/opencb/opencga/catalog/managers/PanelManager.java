@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -58,6 +59,10 @@ public class PanelManager extends ResourceManager<Panel> {
     // Reserved word to query over installation panels instead of the ones belonging to a study.
     public static final String INSTALLATION_PANELS = "__INSTALLATION__";
 
+    public static final QueryOptions INCLUDE_PANEL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            PanelDBAdaptor.QueryParams.ID.key(), PanelDBAdaptor.QueryParams.UID.key(), PanelDBAdaptor.QueryParams.UUID.key(),
+            PanelDBAdaptor.QueryParams.VERSION.key()));
+
     PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                  DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                  Configuration configuration) {
@@ -68,17 +73,18 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    Panel smartResolutor(long studyUid, String entry, String user) throws CatalogException {
+    QueryResult<Panel> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
         Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
             query.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             query.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
         }
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, QueryOptions.empty(), user);
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, queryOptions, user);
         if (panelQueryResult.getNumResults() == 0) {
-            panelQueryResult = panelDBAdaptor.get(query, QueryOptions.empty());
+            panelQueryResult = panelDBAdaptor.get(query, queryOptions);
             if (panelQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Panel " + entry + " not found");
             } else {
@@ -87,7 +93,46 @@ public class PanelManager extends ResourceManager<Panel> {
         } else if (panelQueryResult.getNumResults() > 1) {
             throw new CatalogException("More than one panel found based on " + entry);
         } else {
-            return panelQueryResult.first();
+            return panelQueryResult;
+        }
+    }
+
+    @Override
+    QueryResult<Panel> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+            throws CatalogException {
+        if (ListUtils.isEmpty(entryList)) {
+            throw new CatalogException("Missing panel entries.");
+        }
+        List<String> uniqueList = ListUtils.unique(entryList);
+
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        PanelDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : uniqueList) {
+            PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.ID;
+            if (UUIDUtils.isOpenCGAUUID(entry)) {
+                param = PanelDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        query.put(idQueryParam.key(), uniqueList);
+
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, queryOptions, user);
+        if (silent || panelQueryResult.getNumResults() == uniqueList.size()) {
+            return panelQueryResult;
+        }
+        // Query without adding the user check
+        QueryResult<Panel> resultsNoCheck = panelDBAdaptor.get(query, queryOptions);
+
+        if (resultsNoCheck.getNumResults() == panelQueryResult.getNumResults()) {
+            throw new CatalogException("Missing panels. Some of the panels could not be found.");
+        } else {
+            throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the panels.");
         }
     }
 
@@ -111,31 +156,31 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String sessionId)
+    public QueryResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String token)
             throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
+        String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         // 1. We check everything can be done
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
         // Check all the panel fields
-        ParamUtils.checkAlias(panel.getDiseasePanel().getId(), "id");
-        panel.getDiseasePanel().setName(ParamUtils.defaultString(panel.getDiseasePanel().getName(), panel.getDiseasePanel().getId()));
+        ParamUtils.checkAlias(panel.getId(), "id");
+        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
         panel.setRelease(studyManager.getCurrentRelease(study, userId));
         panel.setVersion(1);
         panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
-        panel.getDiseasePanel().setCreationDate(TimeUtils.getTime());
-        panel.getDiseasePanel().setModificationDate(TimeUtils.getTime());
+        panel.setCreationDate(TimeUtils.getTime());
+        panel.setModificationDate(TimeUtils.getTime());
         panel.setStatus(new Status());
-        panel.getDiseasePanel().setCategories(ParamUtils.defaultObject(panel.getDiseasePanel().getCategories(), Collections.emptyList()));
-        panel.getDiseasePanel().setTags(ParamUtils.defaultObject(panel.getDiseasePanel().getTags(), Collections.emptyList()));
-        panel.getDiseasePanel().setDescription(ParamUtils.defaultString(panel.getDiseasePanel().getDescription(), ""));
-        panel.getDiseasePanel().setPhenotypes(ParamUtils.defaultObject(panel.getDiseasePanel().getPhenotypes(), Collections.emptyList()));
-        panel.getDiseasePanel().setVariants(ParamUtils.defaultObject(panel.getDiseasePanel().getVariants(), Collections.emptyList()));
-        panel.getDiseasePanel().setRegions(ParamUtils.defaultObject(panel.getDiseasePanel().getRegions(), Collections.emptyList()));
-        panel.getDiseasePanel().setGenes(ParamUtils.defaultObject(panel.getDiseasePanel().getGenes(), Collections.emptyList()));
-        panel.getDiseasePanel().setAttributes(ParamUtils.defaultObject(panel.getDiseasePanel().getAttributes(), Collections.emptyMap()));
+        panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
+        panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
+        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
+        panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
+        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
+        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
+        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
+        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
         panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
 
         fillDefaultStats(panel);
@@ -196,7 +241,7 @@ public class PanelManager extends ResourceManager<Panel> {
     private QueryResult<Panel> importGlobalPanel(Study study, Panel diseasePanel, QueryOptions options, String userId)
             throws CatalogException {
         diseasePanel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
-        diseasePanel.getDiseasePanel().setCreationDate(TimeUtils.getTime());
+        diseasePanel.setCreationDate(TimeUtils.getTime());
         diseasePanel.setRelease(studyManager.getCurrentRelease(study, userId));
         diseasePanel.setVersion(1);
 
@@ -303,7 +348,7 @@ public class PanelManager extends ResourceManager<Panel> {
                     attributes.put("PanelAppInfo", panel);
 
                     Panel diseasePanel = new Panel();
-                    diseasePanel.getDiseasePanel().setId(String.valueOf(panelInfo.get("name"))
+                    diseasePanel.setId(String.valueOf(panelInfo.get("name"))
                             .replace(" - ", "-")
                             .replace("/", "-")
                             .replace(" (", "-")
@@ -313,22 +358,22 @@ public class PanelManager extends ResourceManager<Panel> {
                             .replace(" & ", "_and_")
                             .replace(", ", "-")
                             .replace(" ", "_") + "-PanelAppId-" + panelInfo.get("id"));
-                    diseasePanel.getDiseasePanel().setName(String.valueOf(panelInfo.get("name")));
-                    diseasePanel.getDiseasePanel().setCategories(categories);
-                    diseasePanel.getDiseasePanel().setPhenotypes(phenotypes);
-                    diseasePanel.getDiseasePanel().setGenes(genes);
-                    diseasePanel.getDiseasePanel().setSource(new SourcePanel()
+                    diseasePanel.setName(String.valueOf(panelInfo.get("name")));
+                    diseasePanel.setCategories(categories);
+                    diseasePanel.setPhenotypes(phenotypes);
+                    diseasePanel.setGenes(genes);
+                    diseasePanel.setSource(new SourcePanel()
                             .setId(String.valueOf(panelInfo.get("id")))
                             .setName(String.valueOf(panelInfo.get("name")))
                             .setVersion(String.valueOf(panelInfo.get("version")))
                             .setProject("PanelApp (GEL)")
                     );
-                    diseasePanel.getDiseasePanel().setDescription(panelInfo.get("disease_sub_group")
+                    diseasePanel.setDescription(panelInfo.get("disease_sub_group")
                             + " (" + panelInfo.get("disease_group") + ")");
-                    diseasePanel.getDiseasePanel().setAttributes(attributes);
+                    diseasePanel.setAttributes(attributes);
 
                     if ("Cancer Programme".equals(String.valueOf(panelInfo.get("disease_group")))) {
-                        diseasePanel.getDiseasePanel().setTags(Collections.singletonList("cancer"));
+                        diseasePanel.setTags(Collections.singletonList("cancer"));
                     }
 
                     create(diseasePanel, overwrite, token);
@@ -340,17 +385,18 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> update(String studyStr, String panelId, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<Panel> update(String studyStr, String panelId, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
         parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResource<Panel> resource = getUid(panelId, studyStr, sessionId);
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+        Panel panel = internalGet(study.getUid(), panelId, INCLUDE_PANEL_IDS, userId).first();
 
         // Check update permissions
-        authorizationManager.checkPanelPermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
-                PanelAclEntry.PanelPermissions.UPDATE);
+        authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.UPDATE);
 
         try {
             ParamUtils.checkAllParametersExist(parameters.keySet().iterator(),
@@ -365,21 +411,21 @@ public class PanelManager extends ResourceManager<Panel> {
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudy(), resource.getUser()));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
         }
 
-        QueryResult<Panel> queryResult = panelDBAdaptor.update(resource.getResource().getUid(), parameters, options);
-        auditManager.recordUpdate(AuditRecord.Resource.panel, resource.getResource().getUid(), resource.getUser(), parameters, null, null);
+        QueryResult<Panel> queryResult = panelDBAdaptor.update(panel.getUid(), parameters, options);
+        auditManager.recordUpdate(AuditRecord.Resource.panel, panel.getUid(), userId, parameters, null, null);
         return queryResult;
     }
 
     @Override
-    public QueryResult<Panel> get(String studyStr, String entryStr, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Panel> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
         if (StringUtils.isNotEmpty(studyStr) && INSTALLATION_PANELS.equals(studyStr)) {
             Panel installationPanel = getInstallationPanel(entryStr);
             return new QueryResult<>(entryStr, -1, 1, 1, "", "", Collections.singletonList(installationPanel));
         } else {
-            return super.get(studyStr, entryStr, options, sessionId);
+            return super.get(studyStr, entryStr, options, token);
         }
     }
 
@@ -526,17 +572,17 @@ public class PanelManager extends ResourceManager<Panel> {
                         .append(Constants.ALL_VERSIONS, true);
                 ObjectMap updateParams = new ObjectMap()
                         .append(PanelDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(PanelDBAdaptor.QueryParams.ID.key(), panel.getDiseasePanel().getName() + suffixName);
+                        .append(PanelDBAdaptor.QueryParams.ID.key(), panel.getName() + suffixName);
                 QueryResult<Long> update = panelDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.panel, panel.getUid(), userId, null, updateParams, null, null);
                 } else {
-                    failedList.add(new WriteResult.Fail(panel.getDiseasePanel().getId(), "Unknown reason"));
+                    failedList.add(new WriteResult.Fail(panel.getId(), "Unknown reason"));
                 }
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(panel.getDiseasePanel().getId(), e.getMessage()));
-                logger.debug("Cannot delete panel {}: {}", panel.getDiseasePanel().getId(), e.getMessage(), e);
+                failedList.add(new WriteResult.Fail(panel.getId(), e.getMessage()));
+                logger.debug("Cannot delete panel {}: {}", panel.getId(), e.getMessage(), e);
             }
         }
 
@@ -599,26 +645,24 @@ public class PanelManager extends ResourceManager<Panel> {
     public List<QueryResult<PanelAclEntry>> getAcls(String studyStr, List<String> panelList, String member, boolean silent,
                                                     String sessionId) throws CatalogException {
         List<QueryResult<PanelAclEntry>> panelAclList = new ArrayList<>(panelList.size());
+        String user = userManager.getUserId(sessionId);
+        Study study = studyManager.resolveId(studyStr, user);
 
-        for (String panel : panelList) {
+        QueryResult<Panel> panelQueryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, silent);
+
+        for (Panel panel : panelQueryResult.getResult()) {
             try {
-                MyResource<Panel> resource = getUid(panel, studyStr, sessionId);
-
                 QueryResult<PanelAclEntry> allPanelAcls;
                 if (StringUtils.isNotEmpty(member)) {
                     allPanelAcls =
-                            authorizationManager.getPanelAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
-                                    resource.getUser(), member);
+                            authorizationManager.getPanelAcl(study.getUid(), panel.getUid(), user, member);
                 } else {
-                    allPanelAcls = authorizationManager.getAllPanelAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
-                            resource.getUser());
+                    allPanelAcls = authorizationManager.getAllPanelAcls(study.getUid(), panel.getUid(), user);
                 }
-                allPanelAcls.setId(panel);
+                allPanelAcls.setId(panel.getId());
                 panelAclList.add(allPanelAcls);
             } catch (CatalogException e) {
-                if (silent) {
-                    panelAclList.add(new QueryResult<>(panel, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
-                } else {
+                if (!silent) {
                     throw e;
                 }
             }
@@ -642,8 +686,11 @@ public class PanelManager extends ResourceManager<Panel> {
             checkPermissions(permissions, PanelAclEntry.PanelPermissions::valueOf);
         }
 
-        MyResources<Panel> resource = getUids(panelList, studyStr, sessionId);
-        authorizationManager.checkCanAssignOrSeePermissions(resource.getStudy().getUid(), resource.getUser());
+        String user = userManager.getUserId(sessionId);
+        Study study = studyManager.resolveId(studyStr, user);
+
+        QueryResult<Panel> panelQueryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, false);
+        authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -653,7 +700,7 @@ public class PanelManager extends ResourceManager<Panel> {
             members = Collections.emptyList();
         }
         authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-        checkMembers(resource.getStudy().getUid(), members);
+        checkMembers(study.getUid(), members);
 
         switch (panelAclParams.getAction()) {
             case SET:
@@ -661,19 +708,19 @@ public class PanelManager extends ResourceManager<Panel> {
                         .stream()
                         .map(String::valueOf)
                         .collect(Collectors.toList());
-                return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
+                return authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream()
                                 .map(Panel::getUid)
                                 .collect(Collectors.toList()), members, permissions,
                         allPanelPermissions, Entity.PANEL);
             case ADD:
-                return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream()
+                return authorizationManager.addAcls(study.getUid(), panelQueryResult.getResult().stream()
                         .map(Panel::getUid)
                         .collect(Collectors.toList()), members, permissions, Entity.PANEL);
             case REMOVE:
-                return authorizationManager.removeAcls(resource.getResourceList().stream().map(Panel::getUid)
+                return authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
                         .collect(Collectors.toList()), members, permissions, Entity.PANEL);
             case RESET:
-                return authorizationManager.removeAcls(resource.getResourceList().stream().map(Panel::getUid)
+                return authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
                         .collect(Collectors.toList()), members, null, Entity.PANEL);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
@@ -698,22 +745,22 @@ public class PanelManager extends ResourceManager<Panel> {
         }
 
         // Check all the panel fields
-        ParamUtils.checkAlias(panel.getDiseasePanel().getId(), "id");
-        panel.getDiseasePanel().setName(ParamUtils.defaultString(panel.getDiseasePanel().getName(), panel.getDiseasePanel().getId()));
+        ParamUtils.checkAlias(panel.getId(), "id");
+        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
         panel.setRelease(-1);
         panel.setVersion(1);
         panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
-        panel.getDiseasePanel().setCreationDate(TimeUtils.getTime());
-        panel.getDiseasePanel().setModificationDate(TimeUtils.getTime());
+        panel.setCreationDate(TimeUtils.getTime());
+        panel.setModificationDate(TimeUtils.getTime());
         panel.setStatus(new Status());
-        panel.getDiseasePanel().setCategories(ParamUtils.defaultObject(panel.getDiseasePanel().getCategories(), Collections.emptyList()));
-        panel.getDiseasePanel().setTags(ParamUtils.defaultObject(panel.getDiseasePanel().getTags(), Collections.emptyList()));
-        panel.getDiseasePanel().setDescription(ParamUtils.defaultString(panel.getDiseasePanel().getDescription(), ""));
-        panel.getDiseasePanel().setPhenotypes(ParamUtils.defaultObject(panel.getDiseasePanel().getPhenotypes(), Collections.emptyList()));
-        panel.getDiseasePanel().setVariants(ParamUtils.defaultObject(panel.getDiseasePanel().getVariants(), Collections.emptyList()));
-        panel.getDiseasePanel().setRegions(ParamUtils.defaultObject(panel.getDiseasePanel().getRegions(), Collections.emptyList()));
-        panel.getDiseasePanel().setGenes(ParamUtils.defaultObject(panel.getDiseasePanel().getGenes(), Collections.emptyList()));
-        panel.getDiseasePanel().setAttributes(ParamUtils.defaultObject(panel.getDiseasePanel().getAttributes(), Collections.emptyMap()));
+        panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
+        panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
+        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
+        panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
+        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
+        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
+        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
+        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
         panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
 
         fillDefaultStats(panel);
@@ -722,13 +769,13 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     void fillDefaultStats(Panel panel) {
-        if (panel.getDiseasePanel().getStats() == null || panel.getDiseasePanel().getStats().isEmpty()) {
+        if (panel.getStats() == null || panel.getStats().isEmpty()) {
             Map<String, Integer> stats = new HashMap<>();
-            stats.put("numberOfVariants", panel.getDiseasePanel().getVariants().size());
-            stats.put("numberOfGenes", panel.getDiseasePanel().getGenes().size());
-            stats.put("numberOfRegions", panel.getDiseasePanel().getRegions().size());
+            stats.put("numberOfVariants", panel.getVariants().size());
+            stats.put("numberOfGenes", panel.getGenes().size());
+            stats.put("numberOfRegions", panel.getRegions().size());
 
-            panel.getDiseasePanel().setStats(stats);
+            panel.setStats(stats);
         }
     }
 

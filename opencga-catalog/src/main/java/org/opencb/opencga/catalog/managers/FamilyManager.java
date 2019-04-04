@@ -66,7 +66,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.*;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -81,6 +81,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;expectedSize;numMembers[0..20]:2";
 
+    public static final QueryOptions INCLUDE_FAMILY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
+            FamilyDBAdaptor.QueryParams.VERSION.key()));
+
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
@@ -90,19 +94,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    Family smartResolutor(long studyUid, String entry, String user) throws CatalogException {
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+    QueryResult<Family> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
             query.put(FamilyDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             query.put(FamilyDBAdaptor.QueryParams.ID.key(), entry);
         }
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                FamilyDBAdaptor.QueryParams.UUID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
-                FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
-                FamilyDBAdaptor.QueryParams.STATUS.key()));
+//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+//               FamilyDBAdaptor.QueryParams.UUID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+//               FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
+//                FamilyDBAdaptor.QueryParams.STATUS.key()));
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, user);
         if (familyQueryResult.getNumResults() == 0) {
             familyQueryResult = familyDBAdaptor.get(query, options);
@@ -114,7 +117,48 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } else if (familyQueryResult.getNumResults() > 1) {
             throw new CatalogException("More than one family found based on " + entry);
         } else {
-            return familyQueryResult.first();
+            return familyQueryResult;
+        }
+    }
+
+    @Override
+    QueryResult<Family> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+            throws CatalogException {
+        if (ListUtils.isEmpty(entryList)) {
+            throw new CatalogException("Missing family entries.");
+        }
+        List<String> uniqueList = ListUtils.unique(entryList);
+
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+
+        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        FamilyDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : uniqueList) {
+            FamilyDBAdaptor.QueryParams param = FamilyDBAdaptor.QueryParams.ID;
+            if (UUIDUtils.isOpenCGAUUID(entry)) {
+                param = FamilyDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        query.put(idQueryParam.key(), uniqueList);
+
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, user);
+
+        if (silent || familyQueryResult.getNumResults() == uniqueList.size()) {
+            return familyQueryResult;
+        }
+        // Query without adding the user check
+        QueryResult<Family> resultsNoCheck = familyDBAdaptor.get(query, queryOptions);
+
+        if (resultsNoCheck.getNumResults() == familyQueryResult.getNumResults()) {
+            throw new CatalogException("Missing families. Some of the families could not be found.");
+        } else {
+            throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the families.");
         }
     }
 
@@ -137,8 +181,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return null;
     }
 
-    public QueryResult<Family> create(String studyStr, Family family, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+    public QueryResult<Family> create(String studyStr, Family family, QueryOptions options, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
@@ -158,12 +202,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(study.getUid(), family.getAnnotationSets());
 
-        autoCompleteFamilyMembers(family, study, sessionId);
+        autoCompleteFamilyMembers(family, study, token);
         validateFamily(family);
         validateMultiples(family);
         validatePhenotypes(family);
         validateDisorders(family);
-        createMissingMembers(family, study, sessionId);
+        createMissingMembers(family, study, token);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         family.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FAMILY));
@@ -234,12 +278,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // We change the MEMBERS parameters for MEMBER_UID which is what the DBAdaptor understands
         if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBERS.key()))) {
-            try {
-                MyResources<Individual> resource = catalogManager.getIndividualManager().getUids(
-                        query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBERS.key()), study.getFqn(), sessionId);
-                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), resource.getResourceList().stream().map(Individual::getUid)
+            String userId = userManager.getUserId(sessionId);
+
+            List<Individual> memberList = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                    query.getAsStringList(FamilyDBAdaptor.QueryParams.MEMBERS.key()), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId,
+                    true).getResult();
+            if (ListUtils.isNotEmpty(memberList)) {
+                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), memberList.stream().map(Individual::getUid)
                         .collect(Collectors.toList()));
-            } catch (CatalogException e) {
+            } else {
                 // Add -1 to query so no results are obtained
                 query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), -1);
             }
@@ -477,34 +524,27 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public QueryResult<Family> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<Family> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Missing parameters");
         parameters = new ObjectMap(parameters);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResource resource = getUid(entryStr, studyStr, sessionId);
-        long familyId = resource.getResource().getUid();
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+        Family storedFamily = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
         if (parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
-            authorizationManager.checkFamilyPermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
+            authorizationManager.checkFamilyPermission(study.getUid(), storedFamily.getUid(), userId,
                     FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
         if ((parameters.size() == 1 && !parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
-            authorizationManager.checkFamilyPermission(resource.getStudy().getUid(), resource.getResource().getUid(), resource.getUser(),
+            authorizationManager.checkFamilyPermission(study.getUid(), storedFamily.getUid(), userId,
                     FamilyAclEntry.FamilyPermissions.UPDATE);
-        }
-
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid());
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, new QueryOptions());
-        if (familyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Family " + familyId + " not found");
         }
 
         try {
@@ -539,16 +579,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             // MEMBERS or PHENOTYPES have been passed. We will complete the family object with the stored parameters that are not expected
             // to be updated
             if (family.getMembers() == null || family.getMembers().isEmpty()) {
-                family.setMembers(familyQueryResult.first().getMembers());
+                family.setMembers(storedFamily.getMembers());
             } else {
                 // We will need to complete the individual information provided
-                autoCompleteFamilyMembers(family, resource.getStudy(), sessionId);
+                autoCompleteFamilyMembers(family, study, token);
             }
             if (family.getPhenotypes() == null || family.getMembers().isEmpty()) {
-                family.setPhenotypes(familyQueryResult.first().getPhenotypes());
+                family.setPhenotypes(storedFamily.getPhenotypes());
             }
             if (ListUtils.isEmpty(family.getDisorders())) {
-                family.setDisorders(familyQueryResult.first().getDisorders());
+                family.setDisorders(storedFamily.getDisorders());
             }
 
             validateFamily(family);
@@ -573,16 +613,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(resource, parameters, options,
-                VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor);
+        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(study, storedFamily, parameters, options,
+                VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor, userId);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(resource.getStudy(), resource.getUser()));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
         }
 
-        QueryResult<Family> queryResult = familyDBAdaptor.update(familyId, parameters, variableSetList, options);
-        auditManager.recordUpdate(AuditRecord.Resource.family, familyId, resource.getUser(), parameters, null, null);
+        QueryResult<Family> queryResult = familyDBAdaptor.update(storedFamily.getUid(), parameters, variableSetList, options);
+        auditManager.recordUpdate(AuditRecord.Resource.family, storedFamily.getUid(), userId, parameters, null, null);
 
         return queryResult;
     }
@@ -654,25 +694,25 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public List<QueryResult<FamilyAclEntry>> getAcls(String studyStr, List<String> familyList, String member, boolean silent,
                                                      String sessionId) throws CatalogException {
         List<QueryResult<FamilyAclEntry>> familyAclList = new ArrayList<>(familyList.size());
-        for (String family : familyList) {
-            try {
-                MyResource<Family> resource = getUid(family, studyStr, sessionId);
+        String user = userManager.getUserId(sessionId);
+        Study study = studyManager.resolveId(studyStr, user);
 
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.UID.key(),
+                FamilyDBAdaptor.QueryParams.ID.key()));
+        QueryResult<Family> familyQueryResult = internalGet(study.getUid(), familyList, queryOptions, user, silent);
+
+        for (Family family : familyQueryResult.getResult()) {
+            try {
                 QueryResult<FamilyAclEntry> allFamilyAcls;
                 if (StringUtils.isNotEmpty(member)) {
-                    allFamilyAcls = authorizationManager.getFamilyAcl(resource.getStudy().getUid(), resource.getResource().getUid(),
-                            resource.getUser(),
-                            member);
+                    allFamilyAcls = authorizationManager.getFamilyAcl(study.getUid(), family.getUid(), user, member);
                 } else {
-                    allFamilyAcls = authorizationManager.getAllFamilyAcls(resource.getStudy().getUid(), resource.getResource().getUid(),
-                            resource.getUser());
+                    allFamilyAcls = authorizationManager.getAllFamilyAcls(study.getUid(), family.getUid(), user);
                 }
-                allFamilyAcls.setId(family);
+                allFamilyAcls.setId(family.getId());
                 familyAclList.add(allFamilyAcls);
             } catch (CatalogException e) {
-                if (silent) {
-                    familyAclList.add(new QueryResult<>(family, 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
-                } else {
+                if (!silent) {
                     throw e;
                 }
             }
@@ -680,9 +720,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyAclList;
     }
 
-    public List<QueryResult<FamilyAclEntry>> updateAcl(String studyStr, List<String> familyList, String memberIds,
+    public List<QueryResult<FamilyAclEntry>> updateAcl(String studyStr, List<String> familyStringList, String memberIds,
                                                        AclParams familyAclParams, String sessionId) throws CatalogException {
-        if (familyList == null || familyList.isEmpty()) {
+        if (familyStringList == null || familyStringList.isEmpty()) {
             throw new CatalogException("Update ACL: Missing family parameter");
         }
 
@@ -696,8 +736,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             checkPermissions(permissions, FamilyAclEntry.FamilyPermissions::valueOf);
         }
 
-        MyResources<Family> resource = getUids(familyList, studyStr, sessionId);
-        authorizationManager.checkCanAssignOrSeePermissions(resource.getStudy().getUid(), resource.getUser());
+        String user = userManager.getUserId(sessionId);
+        Study study = studyManager.resolveId(studyStr, user);
+        List<Family> familyList = internalGet(study.getUid(), familyStringList, INCLUDE_FAMILY_IDS, user, false).getResult();
+
+        authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
 
         // Validate that the members are actually valid members
         List<String> members;
@@ -707,7 +750,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             members = Collections.emptyList();
         }
         authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-        checkMembers(resource.getStudy().getUid(), members);
+        checkMembers(study.getUid(), members);
 //        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
         switch (familyAclParams.getAction()) {
@@ -717,17 +760,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         .stream()
                         .map(String::valueOf)
                         .collect(Collectors.toList());
-                return authorizationManager.setAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(Family::getUid)
+                return authorizationManager.setAcls(study.getUid(), familyList.stream().map(Family::getUid)
                                 .collect(Collectors.toList()), members, permissions,
                         allFamilyPermissions, Entity.FAMILY);
             case ADD:
-                return authorizationManager.addAcls(resource.getStudy().getUid(), resource.getResourceList().stream().map(Family::getUid)
+                return authorizationManager.addAcls(study.getUid(), familyList.stream().map(Family::getUid)
                         .collect(Collectors.toList()), members, permissions, Entity.FAMILY);
             case REMOVE:
-                return authorizationManager.removeAcls(resource.getResourceList().stream().map(Family::getUid).collect(Collectors.toList()),
+                return authorizationManager.removeAcls(familyList.stream().map(Family::getUid).collect(Collectors.toList()),
                         members, permissions, Entity.FAMILY);
             case RESET:
-                return authorizationManager.removeAcls(resource.getResourceList().stream().map(Family::getUid).collect(Collectors.toList()),
+                return authorizationManager.removeAcls(familyList.stream().map(Family::getUid).collect(Collectors.toList()),
                         members, null, Entity.FAMILY);
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");

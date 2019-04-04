@@ -27,8 +27,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.PrivateStudyUid;
-import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,90 +176,6 @@ public abstract class AbstractManager {
             }
         } else {
             userDBAdaptor.checkId(member);
-        }
-    }
-
-    public static class MyResource<T extends PrivateStudyUid> {
-        private String user;
-        private Study study;
-        private T resource;
-
-        public MyResource() {
-        }
-
-        public MyResource(String user, Study study, T resource) {
-            this.user = user;
-            this.study = study;
-            this.resource = resource;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public MyResource setUser(String user) {
-            this.user = user;
-            return this;
-        }
-
-        public Study getStudy() {
-            return study;
-        }
-
-        public MyResource setStudy(Study study) {
-            this.study = study;
-            return this;
-        }
-
-        public T getResource() {
-            return resource;
-        }
-
-        public MyResource setResource(T resource) {
-            this.resource = resource;
-            return this;
-        }
-    }
-
-    public static class MyResources<T> {
-        private String user;
-        private Study study;
-        private List<T> resourceList;
-
-        public MyResources() {
-        }
-
-        public MyResources(String user, Study study, List<T> resourceList) {
-            this.user = user;
-            this.study = study;
-            this.resourceList = resourceList;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public MyResources setUser(String user) {
-            this.user = user;
-            return this;
-        }
-
-        public Study getStudy() {
-            return study;
-        }
-
-        public MyResources setStudy(Study study) {
-            this.study = study;
-            return this;
-        }
-
-        public List<T> getResourceList() {
-            return resourceList;
-        }
-
-        public MyResources setResourceList(List<T> resourceList) {
-            this.resourceList = resourceList;
-            return this;
         }
     }
 
