@@ -23,10 +23,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Interpretation;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import javax.ws.rs.NotSupportedException;
 import java.util.*;
+import java.util.function.Function;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
@@ -105,13 +103,15 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-
         Query query = new Query(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        Function<Interpretation, String> interpretationStringFunction = Interpretation::getId;
         InterpretationDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             InterpretationDBAdaptor.QueryParams param = InterpretationDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = InterpretationDBAdaptor.QueryParams.UUID;
+                interpretationStringFunction = Interpretation::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -122,10 +122,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(query, queryOptions, user);
 
         if (interpretationQueryResult.getNumResults() != uniqueList.size() && !silent) {
-            throw new CatalogException("Missing interpretations. Some of the interpretations could not be found.");
+            throw CatalogException.notFound("interpretations",
+                    getMissingFields(uniqueList, interpretationQueryResult.getResult(), interpretationStringFunction));
         }
 
         ArrayList<Interpretation> interpretationList = new ArrayList<>(interpretationQueryResult.getResult());
@@ -151,7 +155,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretationQueryResult.setNumResults(interpretationList.size());
         interpretationQueryResult.setNumTotalResults(interpretationList.size());
 
-        return interpretationQueryResult;
+        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationQueryResult, silent);
     }
 
     public QueryResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,

@@ -65,6 +65,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -128,56 +129,6 @@ public class FileManager extends AnnotationSetManager<File> {
         this.userManager = catalogManager.getUserManager();
         this.studyManager = catalogManager.getStudyManager();
     }
-
-//    @Override
-//    QueryResult<File> internalGet(long studyUid, String fileName, QueryOptions options, String user) throws CatalogException {
-//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-//
-//        if (UUIDUtils.isOpenCGAUUID(fileName)) {
-//            // We search as uuid
-//            Query query = new Query()
-//                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-//                    .append(FileDBAdaptor.QueryParams.UUID.key(), fileName);
-//            QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, queryOptions, user);
-//            if (pathQueryResult.getNumResults() > 1) {
-//                throw new CatalogException("Error: More than one file id found based on " + fileName);
-//            } else if (pathQueryResult.getNumResults() == 1) {
-//                return pathQueryResult;
-//            }
-//        }
-//
-//        fileName = fileName.replace(":", "/");
-//
-//        if (fileName.startsWith("/")) {
-//            fileName = fileName.substring(1);
-//        }
-//
-//        // We search as a path
-//        Query query = new Query()
-//                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-//                .append(FileDBAdaptor.QueryParams.PATH.key(), fileName);
-//        QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, queryOptions, user);
-//        if (pathQueryResult.getNumResults() > 1) {
-//            throw new CatalogException("Error: More than one file id found based on " + fileName);
-//        } else if (pathQueryResult.getNumResults() == 1) {
-//            return pathQueryResult;
-//        }
-//
-//        if (!fileName.contains("/")) {
-//            // We search as a fileName as well
-//            query = new Query()
-//                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-//                    .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
-//            QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, queryOptions, user);
-//            if (nameQueryResult.getNumResults() > 1) {
-//                throw new CatalogException("Error: More than one file id found based on " + fileName);
-//            } else if (nameQueryResult.getNumResults() == 1) {
-//                return nameQueryResult;
-//            }
-//        }
-//
-//        throw new CatalogException("File " + fileName + " not found");
-//    }
 
     @Override
     QueryResult<File> internalGet(long studyUid, String fileName, QueryOptions options, String user) throws CatalogException {
@@ -248,6 +199,7 @@ public class FileManager extends AnnotationSetManager<File> {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
+        Function<File, String> fileStringFunction = File::getPath;
         boolean canBeSearchedAsName = true;
         List<String> correctedFileList = new ArrayList<>(uniqueList.size());
         FileDBAdaptor.QueryParams idQueryParam = null;
@@ -256,6 +208,7 @@ public class FileManager extends AnnotationSetManager<File> {
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 correctedFileList.add(entry);
                 param = FileDBAdaptor.QueryParams.UUID;
+                fileStringFunction = File::getUuid;
             } else {
                 String fileName = entry.replace(":", "/");
                 if (fileName.startsWith("/")) {
@@ -277,24 +230,30 @@ public class FileManager extends AnnotationSetManager<File> {
         }
         query.put(idQueryParam.key(), correctedFileList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions, user);
         if (fileQueryResult.getNumResults() != correctedFileList.size() && idQueryParam == FileDBAdaptor.QueryParams.PATH
                 && canBeSearchedAsName) {
             // We also search by name
             query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(FileDBAdaptor.QueryParams.NAME.key(), correctedFileList);
+
+            // Ensure the field by which we are querying for will be kept in the results
+            queryOptions = keepFieldInQueryOptions(queryOptions, FileDBAdaptor.QueryParams.NAME.key());
+
             QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, queryOptions, user);
             if (nameQueryResult.getNumResults() > fileQueryResult.getNumResults()) {
                 fileQueryResult = nameQueryResult;
+                fileStringFunction = File::getName;
             }
         }
 
-        if (fileQueryResult.getNumResults() == correctedFileList.size()) {
-            return fileQueryResult;
-        } else if (fileQueryResult.getNumResults() > correctedFileList.size()) {
+        if (fileQueryResult.getNumResults() > correctedFileList.size()) {
             throw new CatalogException("Error: More than one file found for at least one of the files introduced");
-        } else if (silent) {
-            return fileQueryResult;
+        } else if (silent || fileQueryResult.getNumResults() == correctedFileList.size()) {
+            return keepOriginalOrder(correctedFileList, fileStringFunction, fileQueryResult, silent);
         } else {
             // The file could not be found or the user does not have permissions to see it
             // Check if the file can be found without adding the user restriction
@@ -313,7 +272,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
 
-            throw new CatalogException("Missing files. Some of the files could not be found");
+            throw CatalogException.notFound("files", getMissingFields(uniqueList, fileQueryResult.getResult(), fileStringFunction));
         }
     }
 

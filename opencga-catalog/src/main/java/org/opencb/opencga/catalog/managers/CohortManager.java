@@ -55,6 +55,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -121,14 +122,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
-        Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Function<Cohort, String> cohortStringFunction = Cohort::getId;
         CohortDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             CohortDBAdaptor.QueryParams param = CohortDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = CohortDBAdaptor.QueryParams.UUID;
+                cohortStringFunction = Cohort::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -139,16 +141,20 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions, user);
 
         if (silent || cohortQueryResult.getNumResults() == uniqueList.size()) {
-            return cohortQueryResult;
+            return keepOriginalOrder(uniqueList, cohortStringFunction, cohortQueryResult, silent);
         }
         // Query without adding the user check
         QueryResult<Cohort> resultsNoCheck = cohortDBAdaptor.get(query, queryOptions);
 
         if (resultsNoCheck.getNumResults() == cohortQueryResult.getNumResults()) {
-            throw new CatalogException("Missing cohorts. Some of the cohorts could not be found.");
+            throw CatalogException.notFound("cohorts",
+                    getMissingFields(uniqueList, cohortQueryResult.getResult(), cohortStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the cohorts.");
         }

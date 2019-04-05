@@ -64,6 +64,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance;
@@ -130,13 +131,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
         Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        Function<Family, String> familyStringFunction = Family::getId;
         FamilyDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             FamilyDBAdaptor.QueryParams param = FamilyDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = FamilyDBAdaptor.QueryParams.UUID;
+                familyStringFunction = Family::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -147,16 +150,20 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, user);
 
         if (silent || familyQueryResult.getNumResults() == uniqueList.size()) {
-            return familyQueryResult;
+            return keepOriginalOrder(uniqueList, familyStringFunction, familyQueryResult, silent);
         }
         // Query without adding the user check
         QueryResult<Family> resultsNoCheck = familyDBAdaptor.get(query, queryOptions);
 
         if (resultsNoCheck.getNumResults() == familyQueryResult.getNumResults()) {
-            throw new CatalogException("Missing families. Some of the families could not be found.");
+            throw CatalogException.notFound("families",
+                    getMissingFields(uniqueList, familyQueryResult.getResult(), familyStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the families.");
         }

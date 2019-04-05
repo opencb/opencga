@@ -145,6 +145,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions, user);
 
         if (silent || sampleQueryResult.getNumResults() == uniqueList.size()) {
@@ -154,7 +157,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         QueryResult<Sample> resultsNoCheck = sampleDBAdaptor.get(query, queryOptions);
 
         if (resultsNoCheck.getNumResults() == sampleQueryResult.getNumResults()) {
-            throw new CatalogException("Missing samples. Some of the samples could not be found.");
+            throw CatalogException.notFound("samples", getMissingFields(uniqueList, sampleQueryResult.getResult(), sampleStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the samples.");
         }
