@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models;
 
-abstract public class PrivateFields implements PrivateFieldsI {
+abstract public class PrivateFields implements IPrivateFields {
 
     private long uid;
 

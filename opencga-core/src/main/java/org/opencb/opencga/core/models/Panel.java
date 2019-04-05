@@ -28,7 +28,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-public class Panel extends DiseasePanel implements PrivateStudyUidI {
+public class Panel extends DiseasePanel implements IPrivateStudyUid {
 
     private String uuid;
     private int release;

@@ -13,7 +13,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.PrivateStudyUidI;
+import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.Study;
 
 import javax.annotation.Nullable;
@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Created by pfurio on 07/08/17.
  */
-public abstract class ResourceManager<R extends PrivateStudyUidI> extends AbstractManager {
+public abstract class ResourceManager<R extends IPrivateStudyUid> extends AbstractManager {
 
     ResourceManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                     DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {

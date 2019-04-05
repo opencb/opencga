@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models;
 
-abstract public class PrivateStudyUid extends PrivateFields implements PrivateStudyUidI {
+abstract public class PrivateStudyUid extends PrivateFields implements IPrivateStudyUid {
 
     private String id;
     private long studyUid;
