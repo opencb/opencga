@@ -25,6 +25,8 @@ import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.tools.alignment.BamUtils;
+import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
@@ -163,8 +165,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
                                 @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
                                 @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
-                                @ApiParam(value = "Number of reads under which a region will be reported (this parameter is ignored if it is equal to zero)") @QueryParam("maxCoverage") int maxCoverage,
-                                @ApiParam(value = "Window size (if max. coverage is greater than zero, window size is set to 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+                                @ApiParam(value = "Range of coverage values to be reported, e.g.: 20-40") @QueryParam("threshold") String threshold,
+                                @ApiParam(value = "Window size (if a threshold is provided, window size must be 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
             isSingleId(fileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
@@ -183,20 +185,52 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
-                if (maxCoverage > 0) {
-                    // Report only regions with low coverage
+                if (StringUtils.isEmpty(threshold)) {
                     for (Region region : regionList) {
-                        QueryResult<RegionCoverage> lowCoverageRegions = alignmentStorageManager.getLowCoverageRegions(studyStr, fileIdStr, region, maxCoverage, sessionId);
-                        if (lowCoverageRegions.getResult().size() > 0) {
-                            queryResultList.add(lowCoverageRegions);
+                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, sessionId);
+                        if (coverage.getResult().size() > 0) {
+                            queryResultList.add(coverage);
                         }
                     }
                 } else {
-                    // Report all regions with low coverage
+                    // Report regions for a given coverage range
+                    String[] split = threshold.split("-");
+                    int minCoverage;
+                    int maxCoverage;
+                    try {
+                        if (split.length == 1) {
+                            minCoverage = 0;
+                            maxCoverage = Integer.parseInt(split[0]);
+                        } else if (split.length == 2) {
+                            minCoverage = Integer.parseInt(split[0]);
+                            maxCoverage = Integer.parseInt(split[1]);
+                        } else {
+                            return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                                    + ". Valid ranges include minimum and maximum values, e.g.: 20-60"));
+                        }
+                    } catch (NumberFormatException e) {
+                        return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                                + ". Valid ranges include minimum and maximum values, e.g.: 20-60"));
+                    }
+                    if (minCoverage > maxCoverage) {
+                        return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                                + ". Maximum value must be greater that minimum value, e.g.: 20-60"));
+                    }
+
+                    if (windowSize != 1) {
+                        return createErrorResponse(new AlignmentCoverageException("Invalid window size: " + windowSize
+                                + ". Window size must be 1 when retrieving coverage with a given threshold"));
+                    }
+
                     for (Region region : regionList) {
-                        queryResultList.add(alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, sessionId));
+                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, minCoverage,
+                                maxCoverage, sessionId);
+                        if (coverage.getResult().size() > 0) {
+                            queryResultList.add(coverage);
+                        }
                     }
                 }
+
                 return createOkResponse(queryResultList);
             } else {
                 return createErrorResponse("coverage", "Missing region, no region provides");
