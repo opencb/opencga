@@ -23,15 +23,17 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 
 /**
  * Created by hpccoll1 on 12/05/15.
@@ -135,6 +137,33 @@ public abstract class AbstractManager {
             }
         }
         return null;
+    }
+
+    <T extends IPrivateStudyUid> QueryResult<T>  keepOriginalOrder(List<String> entries, Function<T, String> getId,
+                                                                   QueryResult<T> queryResult, boolean silent) throws CatalogException {
+        Map<String, T> resultMap = new HashMap<>();
+
+        for (T entry : queryResult.getResult()) {
+            String id = getId.apply(entry);
+            if (resultMap.containsKey(id) && !silent) {
+                throw new CatalogException("Duplicated entry " + id + " found");
+            }
+            resultMap.put(id, entry);
+        }
+
+        List<T> orderedEntryList = new ArrayList<>(queryResult.getNumResults());
+        for (String entry : entries) {
+            if (resultMap.containsKey(entry)) {
+                orderedEntryList.add(resultMap.get(entry));
+            } else {
+                if (!silent) {
+                    throw new CatalogException("Entry " + entry + " not found in QueryResult");
+                }
+            }
+        }
+
+        queryResult.setResult(orderedEntryList);
+        return queryResult;
     }
 
     /**

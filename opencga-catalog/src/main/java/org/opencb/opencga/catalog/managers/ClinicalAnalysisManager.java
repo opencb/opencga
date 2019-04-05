@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -116,11 +117,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Function<ClinicalAnalysis, String> clinicalStringFunction = ClinicalAnalysis::getId;
         ClinicalAnalysisDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             ClinicalAnalysisDBAdaptor.QueryParams param = ClinicalAnalysisDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = ClinicalAnalysisDBAdaptor.QueryParams.UUID;
+                clinicalStringFunction = ClinicalAnalysis::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -134,7 +137,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalDBAdaptor.get(query, queryOptions, user);
 
         if (silent || analysisQueryResult.getNumResults() == uniqueList.size()) {
-            return analysisQueryResult;
+            return keepOriginalOrder(uniqueList, clinicalStringFunction, analysisQueryResult, silent);
         }
         // Query without adding the user check
         QueryResult<ClinicalAnalysis> resultsNoCheck = clinicalDBAdaptor.get(query, queryOptions);

@@ -58,6 +58,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -127,11 +128,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
 
         Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Function<Sample, String> sampleStringFunction = Sample::getId;
         SampleDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = SampleDBAdaptor.QueryParams.UUID;
+                sampleStringFunction = Sample::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -145,7 +148,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions, user);
 
         if (silent || sampleQueryResult.getNumResults() == uniqueList.size()) {
-            return sampleQueryResult;
+            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleQueryResult, silent);
         }
         // Query without adding the user check
         QueryResult<Sample> resultsNoCheck = sampleDBAdaptor.get(query, queryOptions);

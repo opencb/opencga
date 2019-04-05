@@ -250,6 +250,7 @@ public class VariantCatalogQueryUtilsTest {
 
         assertEquals("sample1:HOM_ALT;sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT;sample2:HET_REF"));
         assertEquals("sample1:HOM_ALT,sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT,sample2:HET_REF"));
+        assertEquals("sample2:HOM_ALT,sample1:HET_REF", parseValue("s1", GENOTYPE, "sample2:HOM_ALT,sample1:HET_REF"));
 
 
         assertEquals("c1;c2", parseValue("s1", COHORT, "c1;c2"));
