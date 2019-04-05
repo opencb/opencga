@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.GenotypeCodec;
 
 /**
  * Created on 01/02/19.
@@ -47,6 +48,19 @@ public class IndexUtils {
             } else {
                 sb.append('*');
             }
+        }
+        return sb.toString();
+    }
+
+    public static boolean testParentsGenotypeCode(byte parentsCode, boolean[] fatherFilter, boolean[] motherFilter) {
+        byte[] split = GenotypeCodec.split(parentsCode);
+        return fatherFilter[split[0]] && motherFilter[split[1]];
+    }
+
+    public static String parentFilterToString(boolean[] filter) {
+        StringBuilder sb = new StringBuilder();
+        for (boolean b : filter) {
+            sb.append(b ? "1" : "0");
         }
         return sb.toString();
     }

@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
@@ -180,13 +181,21 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
         if (succeed && !partial) {
             VariantStorageMetadataManager metadataManager = getMetadataManager();
             for (int i = 0; i < sampleIds.size(); i += 3) {
+                Integer father = sampleIds.get(i);
+                Integer mother = sampleIds.get(i + 1);
                 Integer child = sampleIds.get(i + 2);
                 metadataManager.updateSampleMetadata(getStudyId(), child, sampleMetadata -> {
                     sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.READY);
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                    if (father > 0) {
+                        sampleMetadata.setFather(father);
+                    }
+                    if (mother > 0) {
+                        sampleMetadata.setMother(mother);
+                    }
                     return sampleMetadata;
                 });
             }
-
         }
     }
 
@@ -198,6 +207,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
     public static class MendelianErrorMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
 
         private Map<Integer, ByteArrayOutputStream> mendelianErrorsMap = new HashMap<>();
+        private Map<Integer, Map<String, ByteArrayOutputStream>> parentsGTMap = new HashMap<>();
         private Map<Integer, Map<String, Integer>> genotypeCount = new HashMap<>();
         private List<List<Integer>> trios;
         private byte[] family;
@@ -221,6 +231,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
             for (List<Integer> trio : trios) {
                 Integer child = trio.get(2);
                 mendelianErrorsMap.put(child, new ByteArrayOutputStream());
+                parentsGTMap.put(child, new HashMap<>());
                 genotypeCount.put(child, new HashMap<>());
             }
 
@@ -246,7 +257,6 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                 }
             }
 
-
             for (List<Integer> trio : trios) {
                 Integer father = trio.get(0);
                 Integer mother = trio.get(1);
@@ -257,6 +267,13 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                 String childGtStr = gtMap.get(child);
 
                 int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
+
+                if (SampleIndexDBLoader.validGenotype(childGtStr)) {
+                    parentsGTMap.get(child)
+                            .computeIfAbsent(childGtStr, gt -> new ByteArrayOutputStream())
+                            .write(GenotypeCodec.encode(fatherGtStr, motherGtStr));
+                }
+
                 if ((fatherGtStr != null || father == -1) && (motherGtStr != null || mother == -1) && childGtStr != null) {
                     Genotype fatherGt;
                     Genotype motherGt;
@@ -286,18 +303,32 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
             for (Map.Entry<Integer, ByteArrayOutputStream> entry : mendelianErrorsMap.entrySet()) {
                 Integer sampleId = entry.getKey();
-                ByteArrayOutputStream value = entry.getValue();
-
+                ByteArrayOutputStream meValue = entry.getValue();
 
                 byte[] row = HBaseToSampleIndexConverter.toRowKey(sampleId, chromosome, position);
+                Put put = new Put(row);
 
-                if (value.size() > 0) {
-                    Put put = new Put(row);
+                for (Map.Entry<String, ByteArrayOutputStream> gtEntry : parentsGTMap.get(sampleId).entrySet()) {
+                    String gt = gtEntry.getKey();
+                    ByteArrayOutputStream gtValue = gtEntry.getValue();
+
+                    if (gtValue.size() > 0) {
+                        // Copy value, as the ByteArrayOutputStream is erased
+                        byte[] value = gtValue.toByteArray();
+                        put.addColumn(family, HBaseToSampleIndexConverter.toParentsGTColumn(gt), value);
+                        gtValue.reset();
+                    }
+                }
+
+                if (meValue.size() > 0) {
                     // Copy value, as the ByteArrayOutputStream is erased
-                    put.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn(), value.toByteArray());
+                    byte[] value = meValue.toByteArray();
+                    put.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn(), value);
+                    meValue.reset();
+                }
 
+                if (!put.isEmpty()) {
                     context.write(new ImmutableBytesWritable(row), put);
-                    value.reset();
                 }
             }
 

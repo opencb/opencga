@@ -444,7 +444,7 @@ public class VariantHbaseTestUtils {
                             byte[] value = CellUtil.cloneValue(cell);
                             if (s.startsWith("_C_")) {
                                 map.put(s, String.valueOf(Bytes.toInt(value)));
-                            } else if (s.startsWith("_A_") || s.startsWith("_F_")) {
+                            } else if (s.startsWith("_A_") || s.startsWith("_F_") || s.startsWith("_P_")) {
                                 StringBuilder sb = new StringBuilder();
                                 for (byte b : value) {
                                     sb.append(IndexUtils.byteToString(b));

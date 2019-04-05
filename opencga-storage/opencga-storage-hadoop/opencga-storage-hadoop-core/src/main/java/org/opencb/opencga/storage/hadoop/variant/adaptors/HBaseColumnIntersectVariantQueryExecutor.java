@@ -42,25 +42,20 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
 
     @Override
     public boolean canUseThisExecutor(Query query, QueryOptions options) {
-        System.out.println("COLUMN_INTERSECT: query = " + query.toJson());
-        System.out.println("COLUMN_INTERSECT: options = " + options.toJson());
 
         if (!options.getBoolean(HBASE_COLUMN_INTERSECT, ACTIVE_BY_DEFAULT)) {
             // HBase column intersect not active
-            logger.info("HERE! 1");
             return false;
         }
 
         if (options.getBoolean(QueryOptions.COUNT, false)) {
             // Do not use for count
-            logger.info("HERE! 2");
             return false;
         }
 
         if (isValidParam(query, SAMPLE) && isSupportedQueryParam(query, SAMPLE)) {
             if (VariantQueryUtils.checkOperator(query.getString(SAMPLE.key())) != QueryOperation.OR) {
                 // Valid sample filter
-                logger.info("HERE! 3");
                 return true;
             }
         }
@@ -68,17 +63,14 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
             QueryOperation queryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), new HashMap<>());
             if (queryOperation != QueryOperation.OR) {
                 // Valid genotype filter
-                logger.info("HERE! 4");
                 return true;
             }
         }
         if (isValidParam(query, FILE) && isSupportedQueryParam(query, FILE)) {
             // Valid file filter
-            logger.info("HERE! 5");
             return true;
         }
 
-        logger.info("HERE! 6");
         return false;
     }
 
