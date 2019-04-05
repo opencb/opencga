@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterato
 import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -166,6 +167,34 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
+    public QueryResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception {
+        FileUtils.checkFile(path);
+
+        StopWatch watch = StopWatch.createStarted();
+        RegionCoverage regionCoverage;
+        if (path.toFile().getName().endsWith(".bam")) {
+            BamManager bamManager = new BamManager(path);
+            regionCoverage = bamManager.coverage(region, 1);
+            bamManager.close();
+        } else {
+            regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
+        }
+        List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, minCoverage, maxCoverage);
+
+        // Remove empty regions
+        List<RegionCoverage> selectedRegions = new ArrayList<>();
+        for (RegionCoverage coverage : regionCoverages) {
+            if (coverage.getValues() != null && coverage.getValues().length > 0) {
+                selectedRegions.add(coverage);
+            }
+        }
+
+        watch.stop();
+        return new QueryResult<>(region.toString(), ((int) watch.getTime()), selectedRegions.size(), selectedRegions.size(),
+                null, null, selectedRegions);
+    }
+
+    @Override
     public QueryResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int maxCoverage) throws Exception {
         FileUtils.checkFile(path);
 
@@ -178,7 +207,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         } else {
             regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
         }
-        List<RegionCoverage> regionCoverages = BamUtils.getUncoveredRegions(regionCoverage, maxCoverage);
+        List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, 0, maxCoverage);
 
         watch.stop();
         return new QueryResult<>(region.toString(), ((int) watch.getTime()), regionCoverages.size(), regionCoverages.size(),

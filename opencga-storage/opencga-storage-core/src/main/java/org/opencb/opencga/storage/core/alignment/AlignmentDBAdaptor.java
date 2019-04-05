@@ -119,6 +119,8 @@ public interface AlignmentDBAdaptor {
 
     QueryResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
 
+    QueryResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception;
+
     QueryResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception;
 
 //    QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
