@@ -92,11 +92,13 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
         catalog.getCohortManager().create("s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
 
+        catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
+
         catalog.getProjectManager().create("p2", "p2", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
 
         Panel panel = new Panel("MyPanel", "MyPanel", 1);
-        panel.getDiseasePanel().setGenes(
+        panel.setGenes(
                 Arrays.asList(
                         new GenePanel().setName("BRCA2"),
                         new GenePanel().setName("CADM1"),
@@ -149,7 +151,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void sampleNotFound() throws Exception {
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not be found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLE.key(), "sample_not_exists")
                 .append(VariantQueryParam.STUDY.key(), "s1")
@@ -178,7 +180,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void fileNotFound() throws Exception {
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not be found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1")
@@ -196,7 +198,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void fileWrongNameWithRelease() throws Exception {
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not be found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1"), sessionId).toJson();
@@ -250,6 +252,17 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals("sample1:HOM_ALT,sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT,sample2:HET_REF"));
 
 
+        assertEquals("c1;c2", parseValue("s1", COHORT, "c1;c2"));
+        assertEquals("c1>0.1;c2>0.1", parseValue("s1", STATS_MAF, "c1>0.1;c2>0.1"));
+
+        assertEquals("c1", parseValue("s1", COHORT, "s1:c1"));
+        assertEquals("c1>0.1", parseValue("s1", STATS_MAF, "s1:c1>0.1"));
+
+        assertEquals("c1", parseValue("s1", COHORT, "user@p1:s1:c1"));
+        assertEquals("c1>0.1", parseValue("s1", STATS_MAF, "user@p1:s1:c1>0.1"));
+
+        assertEquals("user@p1:s1:ALL;user@p1:s2:ALL", parseValue("s1,s2", COHORT, "s1:ALL;s2:ALL"));
+        assertEquals("user@p1:s1:ALL>0.1;user@p1:s2:ALL>0.1", parseValue("s1,s2", STATS_MAF, "s1:ALL>0.1;s2:ALL>0.1"));
     }
 
     @Test

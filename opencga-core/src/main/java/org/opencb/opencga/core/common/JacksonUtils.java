@@ -26,7 +26,7 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-        objectMapper.addMixIn(Panel.class, PanelUnwrapMixin.class);
+//        objectMapper.addMixIn(Panel.class, PanelUnwrapMixin.class);
         return objectMapper;
     }
 

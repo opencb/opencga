@@ -28,20 +28,22 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Location;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -115,7 +117,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove("individuals");
 
             List<String> individualList = getIdList(individualStr);
-            List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
+            List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, queryOptions,
                     silent, sessionId);
             return createOkResponse(individualQueryResult);
         } catch (Exception e) {
@@ -221,11 +223,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)", required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResource resource = individualManager.getUid(individualStr, studyStr, sessionId);
-
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
+            Individual individual = individualManager.get(studyStr, individualStr, IndividualManager.INCLUDE_INDIVIDUAL_IDS, sessionId).first();
+            Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), individual.getUid());
 
             if (StringUtils.isEmpty(annotation)) {
                 if (StringUtils.isNotEmpty(variableSet)) {
@@ -275,12 +274,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResources<Individual> resource = individualManager.getUids(individualsStr, studyStr, sessionId);
+            List<QueryResult<Individual>> queryResults = individualManager.get(studyStr, getIdList(individualsStr), null, sessionId);
 
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(IndividualDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Individual::getUid)
-                            .collect(Collectors.toList()));
+            Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(),
+                    queryResults.stream().map(QueryResult::first).map(Individual::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

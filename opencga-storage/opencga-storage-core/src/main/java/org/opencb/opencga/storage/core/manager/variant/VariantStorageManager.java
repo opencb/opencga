@@ -670,7 +670,7 @@ public class VariantStorageManager extends StorageManager {
                 String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
                     List<QueryResult<Sample>> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
-                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId);
+                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId);
                     if (samplesQueryResult.size() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");

@@ -40,7 +40,6 @@ import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -104,7 +103,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         Individual proband = getProband(clinicalAnalysis);
 
         // Get disease panels from IDs
-        List<Panel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
+        List<DiseasePanel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
 
         // Get pedigree
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
@@ -163,8 +162,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
 
         // Primary findings,
         List<ReportedVariant> primaryFindings;
-        List<DiseasePanel> biodataDiseasePanelList = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
-        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(biodataDiseasePanelList, roleInCancer, actionableVariants,
+        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(diseasePanels, roleInCancer, actionableVariants,
                 clinicalAnalysis.getDisorder(), null, penetrance);
         try {
             primaryFindings = creator.create(variantList, variantMoIMap);
@@ -195,7 +193,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 .setAnalyst(getAnalyst(token))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
-                .setPanels(biodataDiseasePanelList)
+                .setPanels(diseasePanels)
                 .setFilters(null) //TODO
                 .setSoftware(new Software().setName("Tiering"))
                 .setPrimaryFindings(primaryFindings)

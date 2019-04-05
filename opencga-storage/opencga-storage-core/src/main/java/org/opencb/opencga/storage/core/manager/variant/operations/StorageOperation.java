@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.*;
@@ -102,8 +103,8 @@ public abstract class StorageOperation {
         String catalogOutDirId;
         if (isCatalogPathDefined(options)) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
-            catalogOutDirId = catalogManager.getFileManager()
-                    .getUid(catalogOutDirIdStr, studyStr, sessionId).getResource().getId();
+            catalogOutDirId = catalogManager.getFileManager().get(studyStr, catalogOutDirIdStr, FileManager.INCLUDE_FILE_IDS, sessionId)
+                    .first().getId();
         } else {
             catalogOutDirId = null;
         }

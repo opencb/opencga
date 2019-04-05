@@ -23,12 +23,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
-import org.opencb.opencga.catalog.managers.SampleManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -38,8 +36,8 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -88,7 +86,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
+            List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, queryOptions, silent, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -421,11 +419,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            AbstractManager.MyResource resource = sampleManager.getUid(sampleStr, studyStr, sessionId);
-
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResource().getUid());
+            Sample sample = sampleManager.get(studyStr, sampleStr, SampleManager.INCLUDE_SAMPLE_IDS, sessionId).first();
+            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid());
 
             if (StringUtils.isEmpty(annotation)) {
                 if (StringUtils.isNotEmpty(variableSet)) {
@@ -474,12 +469,10 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
             @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            AbstractManager.MyResources<Sample> resource = sampleManager.getUids(samplesStr, studyStr, sessionId);
+            List<QueryResult<Sample>> queryResults = sampleManager.get(studyStr, getIdList(samplesStr), null, sessionId);
 
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), resource.getStudy().getUid())
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), resource.getResourceList().stream().map(Sample::getUid)
-                            .collect(Collectors.toList()));
+            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
+                    queryResults.stream().map(QueryResult::first).map(Sample::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

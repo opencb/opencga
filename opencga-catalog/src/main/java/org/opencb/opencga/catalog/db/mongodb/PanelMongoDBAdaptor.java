@@ -88,8 +88,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         panelDocument.put(LAST_OF_VERSION, true);
         panelDocument.put(LAST_OF_RELEASE, true);
 
-        if (StringUtils.isNotEmpty(panel.getDiseasePanel().getCreationDate())) {
-            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getDiseasePanel().getCreationDate()));
+        if (StringUtils.isNotEmpty(panel.getCreationDate())) {
+            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
         } else {
             panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
@@ -102,17 +102,17 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 // Delete the current document
                 Query query = new Query()
                         .append(QueryParams.STUDY_UID.key(), -1)
-                        .append(QueryParams.ID.key(), panel.getDiseasePanel().getId());
+                        .append(QueryParams.ID.key(), panel.getId());
                 try {
                     delete(query);
                 } catch (CatalogDBException e1) {
-                    throw new CatalogDBException("Could not overwrite disease panel " + panel.getDiseasePanel().getId(), e1);
+                    throw new CatalogDBException("Could not overwrite disease panel " + panel.getId(), e1);
                 }
 
                 // Insert again
                 panelCollection.insert(panelDocument, null);
             } else {
-                throw CatalogDBException.alreadyExists("Panel", "id", panel.getDiseasePanel().getId());
+                throw CatalogDBException.alreadyExists("Panel", "id", panel.getId());
             }
         }
     }
@@ -123,7 +123,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.ID.key(), panel.getDiseasePanel().getId()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), panel.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
@@ -131,7 +131,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         QueryResult<Long> count = panelCollection.count(bson);
 
         if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Panel { id: '" + panel.getDiseasePanel().getId() + "'} already exists.");
+            throw new CatalogDBException("Panel { id: '" + panel.getId() + "'} already exists.");
         }
 
         //new Panel Id
@@ -148,8 +148,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         panelDocument.put(LAST_OF_VERSION, true);
         panelDocument.put(LAST_OF_RELEASE, true);
 
-        if (StringUtils.isNotEmpty(panel.getDiseasePanel().getCreationDate())) {
-            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getDiseasePanel().getCreationDate()));
+        if (StringUtils.isNotEmpty(panel.getCreationDate())) {
+            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
         } else {
             panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
@@ -158,7 +158,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         try {
             panelCollection.insert(panelDocument, null);
         } catch (DuplicateKeyException e) {
-            throw CatalogDBException.alreadyExists("Panel", studyId, "id", panel.getDiseasePanel().getId());
+            throw CatalogDBException.alreadyExists("Panel", studyId, "id", panel.getId());
         }
 
         return endQuery("Create disease panel", startTime, get(newPanelId, options));
