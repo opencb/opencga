@@ -98,7 +98,7 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
 
         Panel panel = new Panel("MyPanel", "MyPanel", 1);
-        panel.getDiseasePanel().setGenes(
+        panel.setGenes(
                 Arrays.asList(
                         new GenePanel().setName("BRCA2"),
                         new GenePanel().setName("CADM1"),
@@ -151,7 +151,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void sampleNotFound() throws Exception {
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not be found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLE.key(), "sample_not_exists")
                 .append(VariantQueryParam.STUDY.key(), "s1")
@@ -180,7 +180,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void fileNotFound() throws Exception {
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not be found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1")
@@ -198,7 +198,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void fileWrongNameWithRelease() throws Exception {
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not be found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1"), sessionId).toJson();

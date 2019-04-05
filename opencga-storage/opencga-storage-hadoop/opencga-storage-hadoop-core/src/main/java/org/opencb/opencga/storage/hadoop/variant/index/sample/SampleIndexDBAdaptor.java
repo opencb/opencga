@@ -75,6 +75,7 @@ public class SampleIndexDBAdaptor {
                 // If empty, should find none. Return empty iterator
                 return VariantDBIterator.emptyIterator();
             } else {
+                logger.info("Single sample indexes iterator");
                 return internalIterator(query.forSample(sample, filteredGts));
             }
         }
@@ -338,9 +339,14 @@ public class SampleIndexDBAdaptor {
                 if (query.getFileIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, HBaseToSampleIndexConverter.toFileIndexColumn(gt));
                 }
+                if (query.hasFatherFilter() || query.hasMotherFilter()) {
+                    scan.addColumn(family, HBaseToSampleIndexConverter.toParentsGTColumn(gt));
+                }
             }
         }
-
+        if (query.getMendelianError()) {
+            scan.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn());
+        }
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()) + " == "
                 + HBaseToSampleIndexConverter.rowKeyToString(scan.getStartRow()));
@@ -354,6 +360,12 @@ public class SampleIndexDBAdaptor {
 //        logger.info("Caching = " + scan.getCaching());
         logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), (byte) 0xFF));
         logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), query.getFileIndex()));
+        if (query.hasFatherFilter()) {
+            logger.info("FatherFilter       = " + IndexUtils.parentFilterToString(query.getFatherFilter()));
+        }
+        if (query.hasMotherFilter()) {
+            logger.info("MotherFilter       = " + IndexUtils.parentFilterToString(query.getMotherFilter()));
+        }
 
 //        try {
 //            System.out.println("scan = " + scan.toJSON() + " " + rowKeyToString(scan.getStartRow()) + " -> + "

@@ -266,6 +266,11 @@ public class SampleIndexAnnotationLoader {
     }
 
     private void postAnnotationLoad(int studyId, List<Integer> samples) throws StorageEngineException {
+        postAnnotationLoad(studyId, samples, metadataManager);
+    }
+
+    public static void postAnnotationLoad(int studyId, List<Integer> samples, VariantStorageMetadataManager metadataManager)
+            throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                 sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, TaskMetadata.Status.READY);

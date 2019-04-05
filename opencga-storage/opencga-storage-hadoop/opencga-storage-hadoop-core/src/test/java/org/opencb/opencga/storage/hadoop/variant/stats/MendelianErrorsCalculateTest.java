@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
-import org.junit.After;
-import org.junit.Rule;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.feature.Genotype;
@@ -11,6 +11,7 @@ import org.opencb.biodata.tools.pedigree.MendelianError;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -20,13 +21,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
 import java.net.URI;
 import java.util.*;
 
-import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.gt;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 
 /**
  * Created on 12/03/19.
@@ -35,37 +38,46 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.g
  */
 public class MendelianErrorsCalculateTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
-    @Rule
-    public ExternalResource externalResource = new HadoopExternalResource();
 
-    @After
-    public void tearDown() throws Exception {
-        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    private static boolean loaded = false;
+    private static String study = "study";
+    private static String father = "NA12877";
+    private static String mother = "NA12878";
+    private static String child = "NA12879";  // Maybe this is not accurate, but works file for the example
+
+    @ClassRule
+    public static ExternalResource externalResource = new HadoopExternalResource();
+
+    @Before
+    public void before() throws Exception {
+        if (!loaded) {
+            loaded = true;
+            HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
+            URI outputUri = newOutputUri();
+
+            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                    .append(VariantStorageEngine.Options.STUDY.key(), study);
+            runETL(variantStorageEngine, getPlatinumFile(12877), outputUri, params, true, true, true);
+            runETL(variantStorageEngine, getPlatinumFile(12878), outputUri, params, true, true, true);
+            runETL(variantStorageEngine, getPlatinumFile(12879), outputUri, params, true, true, true);
+
+
+
+
+            List<String> family = Arrays.asList(father, mother, child);
+
+            variantStorageEngine.fillGaps(study, family, new ObjectMap());
+
+            variantStorageEngine.calculateMendelianErrors(study, Collections.singletonList(family), new ObjectMap());
+
+
+            VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        }
     }
-
 
     @Test
     public void testMendelianErrors() throws Exception {
-        HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        URI outputUri = newOutputUri();
-
-        String study = "study";
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                .append(VariantStorageEngine.Options.STUDY.key(), study);
-        runETL(variantStorageEngine, getPlatinumFile(12877), outputUri, params, true, true, true);
-        runETL(variantStorageEngine, getPlatinumFile(12878), outputUri, params, true, true, true);
-        runETL(variantStorageEngine, getPlatinumFile(12879), outputUri, params, true, true, true);
-
-        String father = "NA12877";
-        String mother = "NA12878";
-        String child = "NA12879";  // Maybe this is not accurate, but works file for the example
-        List<String> family = Arrays.asList(father, mother, child);
-
-        variantStorageEngine.fillGaps(study, family, new ObjectMap());
-
-        variantStorageEngine.calculateMendelianErrors(study, Collections.singletonList(family), new ObjectMap());
-
         Set<String> mendelianErrorVariants = new HashSet<>();
         Set<String> deNovoVariants = new HashSet<>();
         for (Variant variant : variantStorageEngine) {
@@ -121,4 +133,58 @@ public class MendelianErrorsCalculateTest extends VariantStorageBaseTest impleme
         assertNotEquals(0, result.getNumResults());
     }
 
+    @Test
+    public void testParentGtCode() {
+        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query(VariantQueryParam.INCLUDE_GENOTYPE.key(), true), new QueryOptions());
+
+        Query query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
+                        + ";" + mother + ":0/0")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
+                /*.append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .append(VariantQueryParam.QUAL.key(), ">30")*/;
+
+
+        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
+        assertEquals(1, sampleIndexQuery.getSamplesMap().size());
+        assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
+        assertNull(sampleIndexQuery.getFatherFilterMap().get(child));
+
+        QueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+        }
+        assertThat(result, everyResult(all, withStudy(study, allOf(
+                withSampleData(child, "GT", is("0/1")),
+                withSampleData(mother, "GT", is("0/0"))))));
+
+
+        query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
+                        + ";" + father + ":0/0"
+                        + ";" + mother + ":0/0")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
+                /*.append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .append(VariantQueryParam.QUAL.key(), ">30")*/;
+
+        sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
+        assertEquals(1, sampleIndexQuery.getSamplesMap().size());
+        assertNotNull(sampleIndexQuery.getFatherFilterMap().get(child));
+        assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
+
+
+        result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+        }
+        assertThat(result, everyResult(all, withStudy(study, allOf(
+                withSampleData(child, "GT", is("0/1")),
+                withSampleData(father, "GT", is("0/0")),
+                withSampleData(mother, "GT", is("0/0"))))));
+
+
+    }
 }

@@ -223,12 +223,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     protected Query preProcessQuery(Query query, QueryOptions options) {
-        try {
-            query = variantStorageEngine.preProcessQuery(query, options);
-        } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
-        }
-        return query;
+        return variantStorageEngine.preProcessQuery(query, options);
     }
 
     public Long count(Query query) {

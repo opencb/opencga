@@ -71,10 +71,7 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
 
         // Disease panels management
         List<DiseasePanel> biodataDiseasePanels = null;
-        List<Panel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
-        if (CollectionUtils.isNotEmpty(diseasePanels)) {
-            biodataDiseasePanels = diseasePanels.stream().map(Panel::getDiseasePanel).collect(Collectors.toList());
-        }
+        List<DiseasePanel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
 
         // Get sample names and update proband information (to be able to navigate to the parents and their samples easily)
         List<String> sampleList = getSampleNames(clinicalAnalysis, proband);
@@ -86,9 +83,9 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
         // Step 1 - diagnostic variants
         // Get diagnostic variants from panels
         List<VariantPanel> diagnosticVariants = new ArrayList<>();
-        for (Panel diseasePanel : diseasePanels) {
-            if (diseasePanel.getDiseasePanel() != null && CollectionUtils.isNotEmpty(diseasePanel.getDiseasePanel().getVariants())) {
-                diagnosticVariants.addAll(diseasePanel.getDiseasePanel().getVariants());
+        for (DiseasePanel diseasePanel : diseasePanels) {
+            if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getVariants())) {
+                diagnosticVariants.addAll(diseasePanel.getVariants());
             }
         }
 
@@ -203,12 +200,12 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
         return reportedVariants;
     }
 
-    private List<String> getGeneIdsFromDiseasePanels(List<Panel> diseasePanels) {
+    private List<String> getGeneIdsFromDiseasePanels(List<DiseasePanel> diseasePanels) {
         List<String> geneIds = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(diseasePanels)) {
-            for (Panel diseasePanel : diseasePanels) {
-                if (diseasePanel.getDiseasePanel() != null && CollectionUtils.isNotEmpty(diseasePanel.getDiseasePanel().getGenes())) {
-                    for (GenePanel gene : diseasePanel.getDiseasePanel().getGenes()) {
+            for (DiseasePanel diseasePanel : diseasePanels) {
+                if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getGenes())) {
+                    for (GenePanel gene : diseasePanel.getGenes()) {
                         geneIds.add(gene.getId());
                     }
                 }

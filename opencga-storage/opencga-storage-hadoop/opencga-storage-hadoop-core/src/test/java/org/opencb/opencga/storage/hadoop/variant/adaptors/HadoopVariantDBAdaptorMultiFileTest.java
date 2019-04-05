@@ -15,14 +15,18 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorMultiFileTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertEquals;
@@ -69,7 +73,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetBySampleNameSampleIndexIntersect() throws Exception {
         testGetBySampleName(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetBySampleName(String expectedSource, QueryOptions options) throws Exception {
@@ -95,7 +99,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetBySamplesNameSampleIndexIntersect() throws Exception {
         testGetBySamplesName(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetBySamplesName(String expectedSource, QueryOptions options) throws Exception {
@@ -128,7 +132,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetByGenotypesSampleIndexIntersect() throws Exception {
         testGetByGenotypes(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetByGenotypes(String expectedSource, QueryOptions options) throws Exception {
@@ -169,7 +173,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetByGenotypesWithRefSampleIndexIntersect() throws Exception {
         testGetByGenotypesWithRef(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetByGenotypesWithRef(String expectedSource, QueryOptions options) throws Exception {
@@ -196,7 +200,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetByGenotypesWithRefMixSampleIndexIntersect() throws Exception {
         testGetByGenotypesWithRefMix(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetByGenotypesWithRefMix(String expectedSource, QueryOptions options) throws Exception {
@@ -233,7 +237,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetBySampleNameMultiRegionSampleIndexIntersect() throws Exception {
         testGetBySampleNameMultiRegion(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetBySampleNameMultiRegion(String expectedSource, QueryOptions options) throws Exception {
@@ -260,7 +264,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetByGenotypeMultiRegionSampleIndexIntersect() throws Exception {
         testGetByGenotypeMultiRegion(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetByGenotypeMultiRegion(String expectedSource, QueryOptions options) throws Exception {
@@ -287,7 +291,7 @@ public class HadoopVariantDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFi
     @Test
     public void testGetByFileNameSampleIndexIntersect() throws Exception {
         testGetByFileName(variantStorageEngine.getStorageEngineId() + " + " + "sample_index_table",
-                options.append("hbase_column_intersect", false).append("sample_index_intersect", true));
+                options.append("sample_index_intersect", true));
     }
 
     public void testGetByFileName(String expectedSource, QueryOptions options) throws Exception {

@@ -97,11 +97,11 @@ public class CatalogManager implements AutoCloseable {
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
-        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
-        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, this.configuration);
