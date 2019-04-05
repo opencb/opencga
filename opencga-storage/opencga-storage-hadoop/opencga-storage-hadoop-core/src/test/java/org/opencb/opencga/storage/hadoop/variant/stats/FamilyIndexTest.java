@@ -36,7 +36,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MendelianErrorsCalculateTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
 
     private static boolean loaded = false;
