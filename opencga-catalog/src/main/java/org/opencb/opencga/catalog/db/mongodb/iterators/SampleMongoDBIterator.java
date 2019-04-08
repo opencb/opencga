@@ -151,7 +151,7 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                                 sample.put(SampleDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
                             }
                             // We add the individual to the attributes field
-                            attributes.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individual);
+                            attributes.put("OPENCGA_INDIVIDUAL", individual);
                         }
                     });
                 }

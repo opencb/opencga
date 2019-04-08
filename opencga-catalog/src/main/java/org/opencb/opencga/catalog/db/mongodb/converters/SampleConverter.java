@@ -51,11 +51,11 @@ public class SampleConverter extends AnnotableConverter<Sample> {
     @Override
     public Sample convertToDataModelType(Document document, QueryOptions options) {
         Sample sample = super.convertToDataModelType(document, options);
-        if (sample.getAttributes() != null && sample.getAttributes().containsKey("individual")) {
-            Object individual = sample.getAttributes().get("individual");
+        if (sample.getAttributes() != null && sample.getAttributes().containsKey("OPENCGA_INDIVIDUAL")) {
+            Object individual = sample.getAttributes().get("OPENCGA_INDIVIDUAL");
             if (individual instanceof Map) {
-                sample.getAttributes().put("individual", individualConverter.convertToDataModelType(
-                        (Document) ((Document) document.get(SampleDBAdaptor.QueryParams.ATTRIBUTES.key())).get("individual")
+                sample.getAttributes().put("OPENCGA_INDIVIDUAL", individualConverter.convertToDataModelType(
+                        (Document) ((Document) document.get(SampleDBAdaptor.QueryParams.ATTRIBUTES.key())).get("OPENCGA_INDIVIDUAL")
                 ));
             }
         }
