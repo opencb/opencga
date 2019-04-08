@@ -1235,10 +1235,16 @@ public class VariantSqlQueryParser {
     }
 
     protected void addStatsFilters(Query query, StudyMetadata defaultStudyMetadata, List<String> filters) {
-        addQueryFilter(query, STATS_MAF, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getMafColumn),
+        addQueryFilter(query, STATS_REF, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getStatsFreqColumn),
+                null, null, null, filters, 1);
+
+        addQueryFilter(query, STATS_ALT, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getStatsFreqColumn),
+                null, null, null, filters, 2);
+
+        addQueryFilter(query, STATS_MAF, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getStatsMafColumn),
                 null, filters);
 
-        addQueryFilter(query, STATS_MGF, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getMgfColumn),
+        addQueryFilter(query, STATS_MGF, getStatsColumnParser(defaultStudyMetadata, VariantPhoenixHelper::getStatsMgfColumn),
                 null, filters);
 
         unsupportedFilter(query, MISSING_ALLELES);

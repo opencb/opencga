@@ -173,17 +173,17 @@ public class VariantHbaseTestUtils {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", "
                                 + column.getPDataType().toObject(entry.getValue())
                          + ", ts:" + result.getColumnLatestCell(family, column.bytes()).getTimestamp());
-                    } else if (key.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
 //                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
-                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
+                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX) || key.endsWith(VariantPhoenixHelper.COHORT_STATS_FREQ_SUFFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixHelper.FILE_SUFIX)) {
                         os.println("\t" + key + " = " + result.getColumnLatestCell(genomeHelper.getColumnFamily(), entry.getKey()).getTimestamp()+", " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.MAF_SUFIX)
-                            || key.endsWith(VariantPhoenixHelper.MGF_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_MAF_SUFFIX)
+                            || key.endsWith(VariantPhoenixHelper.COHORT_STATS_MGF_SUFFIX)) {
                         os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
                     } else if (key.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
                         os.println("\t" + key + " = " + PBoolean.INSTANCE.toObject(entry.getValue()));
