@@ -36,7 +36,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -82,6 +83,8 @@ public class VariantQueryCommandUtils {
         /*
          * Stats parameters
          */
+        addParam(query, STATS_ALT, options.rf);
+        addParam(query, STATS_REF, options.af);
         addParam(query, STATS_MAF, options.maf);
 
         return query;
@@ -98,7 +101,8 @@ public class VariantQueryCommandUtils {
     public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
             throws Exception {
         VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, null);
-        return parseGenericVariantQuery(queryVariantsOptions, queryVariantsOptions.study, studyNames, queryVariantsOptions.commonQueryOptions.count, of);
+        return parseGenericVariantQuery(
+                queryVariantsOptions, queryVariantsOptions.study, studyNames, queryVariantsOptions.commonQueryOptions.count, of);
     }
 
     protected static Query parseGenericVariantQuery(StorageVariantCommandOptions.GenericVariantQueryOptions queryVariantsOptions,
@@ -145,7 +149,6 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_XREF, queryVariantsOptions.xref);
         addParam(query, ANNOT_CLINICAL_SIGNIFICANCE, queryVariantsOptions.clinicalSignificance);
 
-        addParam(query, STATS_MAF, queryVariantsOptions.maf);
         addParam(query, STATS_MGF, queryVariantsOptions.mgf);
         addParam(query, MISSING_ALLELES, queryVariantsOptions.missingAlleleCount);
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);

@@ -252,8 +252,15 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--pf", "--population-frequency-alt"}, description = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
         public String populationFreqAlt;
 
-        @Parameter(names = {"--maf", "--stats-maf"}, description = STATS_MAF_DESCR)
+        @Parameter(names = {"--cohort-stats-ref"}, description = STATS_REF_DESCR)
+        public String rf;
+
+        @Parameter(names = {"--cohort-stats-alt"}, description = STATS_ALT_DESCR)
+        public String af;
+
+        @Parameter(names = {"--maf", "--cohort-stats-maf"}, description = STATS_MAF_DESCR)
         public String maf;
+
     }
 
     /**
@@ -346,7 +353,7 @@ public class StorageVariantCommandOptions {
 
         public String trait;
 
-        @Parameter(names = {"--mgf", "--stats-mgf"}, description = STATS_MGF_DESCR)
+        @Parameter(names = {"--mgf", "--cohort-stats-mgf"}, description = STATS_MGF_DESCR)
         public String mgf;
 
         @Parameter(names = {"--stats-missing-allele"}, description = MISSING_ALLELES_DESCR)
