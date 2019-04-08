@@ -57,6 +57,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -144,13 +145,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
         Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        Function<Individual, String> individualStringFunction = Individual::getId;
         IndividualDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             IndividualDBAdaptor.QueryParams param = IndividualDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = IndividualDBAdaptor.QueryParams.UUID;
+                individualStringFunction = Individual::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -161,16 +164,20 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions, user);
 
         if (silent || individualQueryResult.getNumResults() == uniqueList.size()) {
-            return individualQueryResult;
+            return keepOriginalOrder(uniqueList, individualStringFunction, individualQueryResult, silent);
         }
         // Query without adding the user check
         QueryResult<Individual> resultsNoCheck = individualDBAdaptor.get(query, queryOptions);
 
         if (resultsNoCheck.getNumResults() == individualQueryResult.getNumResults()) {
-            throw new CatalogException("Missing individuals. Some of the individuals could not be found.");
+            throw CatalogException.notFound("individuals",
+                    getMissingFields(uniqueList, individualQueryResult.getResult(), individualStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the"
                     + " individuals.");

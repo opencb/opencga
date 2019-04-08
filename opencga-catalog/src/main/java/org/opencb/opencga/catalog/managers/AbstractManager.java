@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by hpccoll1 on 12/05/15.
@@ -139,13 +141,24 @@ public abstract class AbstractManager {
         return null;
     }
 
+    /**
+     * Return the results in the QueryResult object in the same order they were queried by the list of entries.
+     *
+     * @param entries Original list used to perform the query.
+     * @param getId   Generic function that will fetch the id that will be used to compare with the list of entries.
+     * @param queryResult QueryResult object.
+     * @param silent  Boolean indicating whether we will fail in case of an inconsistency or not.
+     * @param <T>     Generic entry (Sample, File, Cohort...)
+     * @return the QueryResult with the proper order of results.
+     * @throws CatalogException In case of inconsistencies found.
+     */
     <T extends IPrivateStudyUid> QueryResult<T>  keepOriginalOrder(List<String> entries, Function<T, String> getId,
                                                                    QueryResult<T> queryResult, boolean silent) throws CatalogException {
         Map<String, T> resultMap = new HashMap<>();
 
         for (T entry : queryResult.getResult()) {
             String id = getId.apply(entry);
-            if (resultMap.containsKey(id) && !silent) {
+            if (resultMap.containsKey(id)) {
                 throw new CatalogException("Duplicated entry " + id + " found");
             }
             resultMap.put(id, entry);
@@ -167,17 +180,76 @@ public abstract class AbstractManager {
     }
 
     /**
-     * Checks if the list of members are all valid.
+     * This method will make sure that 'field' is included in case there is a INCLUDE or never excluded in case there is a EXCLUDE list.
      *
-     * The "members" can be:
-     *  - '*' referring to all the users.
-     *  - 'anonymous' referring to the anonymous user.
-     *  - '@{groupId}' referring to a {@link Group}.
-     *  - '{userId}' referring to a specific user.
-     * @param studyId studyId
-     * @param members List of members
-     * @throws CatalogDBException CatalogDBException
+     * @param options QueryOptions object.
+     * @param field field that needs to remain.
+     * @return a new QueryOptions with the necessary modifications.
      */
+    QueryOptions keepFieldInQueryOptions(QueryOptions options, String field) {
+        if (options.isEmpty()) {
+            // Everything will be included, so we don't need to do anything
+            return options;
+        }
+
+        QueryOptions queryOptions = new QueryOptions(options);
+
+        List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+        if (!includeList.isEmpty() && !includeList.contains(field)) {
+            // We need to add the field
+            List<String> includeListCopy = new ArrayList<>(includeList);
+            includeListCopy.add(field);
+            queryOptions.put(QueryOptions.INCLUDE, includeListCopy);
+        }
+
+        List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+        if (!excludeList.isEmpty() && excludeList.contains(field)) {
+            // We need to remove the field from the exclusion list
+            List<String> excludeListCopy = excludeList.stream().filter(x -> !x.equals(field)).collect(Collectors.toList());
+            queryOptions.put(QueryOptions.EXCLUDE, excludeListCopy);
+        }
+
+        return queryOptions;
+    }
+
+    /**
+     * Obtains a list containing the entries that are in {@code originalEntries} that are not in {@code finalEntries}.
+     *
+     * @param originalEntries Original list that will be used to compare against.
+     * @param finalEntries    List of {@code T} that will be compared against the {@code originalEntries}.
+     * @param getId           Generic function to get the string used to make the comparison.
+     * @param <T>             Generic entry (Sample, File, Cohort...)
+     * @return a list containing the entries that are in {@code originalEntries} that are not in {@code finalEntries}.
+     */
+    <T extends IPrivateStudyUid> List<String>  getMissingFields(List<String> originalEntries, List<T> finalEntries,
+                                                                Function<T, String> getId) {
+        Set<String> entrySet = new HashSet<>();
+        for (T finalEntry : finalEntries) {
+            entrySet.add(getId.apply(finalEntry));
+        }
+
+        List<String> differences = new ArrayList<>();
+        for (String originalEntry : originalEntries) {
+            if (!entrySet.contains(originalEntry)) {
+                differences.add(originalEntry);
+            }
+        }
+
+        return differences;
+    }
+
+        /**
+         * Checks if the list of members are all valid.
+         *
+         * The "members" can be:
+         *  - '*' referring to all the users.
+         *  - 'anonymous' referring to the anonymous user.
+         *  - '@{groupId}' referring to a {@link Group}.
+         *  - '{userId}' referring to a specific user.
+         * @param studyId studyId
+         * @param members List of members
+         * @throws CatalogDBException CatalogDBException
+         */
     protected void checkMembers(long studyId, List<String> members) throws CatalogDBException {
         for (String member : members) {
             checkMember(studyId, member);

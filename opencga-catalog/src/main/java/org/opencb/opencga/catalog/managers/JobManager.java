@@ -57,6 +57,7 @@ import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -118,13 +119,15 @@ public class JobManager extends ResourceManager<Job> {
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-
         Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        Function<Job, String> jobStringFunction = Job::getId;
         JobDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             JobDBAdaptor.QueryParams param = JobDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = JobDBAdaptor.QueryParams.UUID;
+                jobStringFunction = Job::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -135,15 +138,18 @@ public class JobManager extends ResourceManager<Job> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, user);
         if (silent || jobQueryResult.getNumResults() == uniqueList.size()) {
-            return jobQueryResult;
+            return keepOriginalOrder(uniqueList, jobStringFunction, jobQueryResult, silent);
         }
         // Query without adding the user check
         QueryResult<Job> resultsNoCheck = jobDBAdaptor.get(query, queryOptions);
 
         if (resultsNoCheck.getNumResults() == jobQueryResult.getNumResults()) {
-            throw new CatalogException("Missing jobs. Some of the jobs could not be found.");
+            throw CatalogException.notFound("jobs", getMissingFields(uniqueList, jobQueryResult.getResult(), jobStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the jobs.");
         }

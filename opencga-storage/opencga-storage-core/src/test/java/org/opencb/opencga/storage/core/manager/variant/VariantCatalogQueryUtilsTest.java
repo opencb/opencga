@@ -151,7 +151,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void sampleNotFound() throws Exception {
-        thrown.expectMessage("not be found");
+        thrown.expectMessage("not found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLE.key(), "sample_not_exists")
                 .append(VariantQueryParam.STUDY.key(), "s1")
@@ -180,7 +180,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void fileNotFound() throws Exception {
-        thrown.expectMessage("not be found");
+        thrown.expectMessage("not found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1")
@@ -198,7 +198,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void fileWrongNameWithRelease() throws Exception {
-        thrown.expectMessage("not be found");
+        thrown.expectMessage("not found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1"), sessionId).toJson();

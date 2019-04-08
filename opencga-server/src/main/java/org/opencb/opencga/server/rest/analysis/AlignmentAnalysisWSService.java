@@ -165,7 +165,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
                                 @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
                                 @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
-                                @ApiParam(value = "Range of coverage values to be reported, e.g.: 20-40") @QueryParam("threshold") String threshold,
+                                @ApiParam(value = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values greater or equal to that value.") @QueryParam("threshold") String threshold,
                                 @ApiParam(value = "Window size (if a threshold is provided, window size must be 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
             isSingleId(fileIdStr);
@@ -199,8 +199,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     int maxCoverage;
                     try {
                         if (split.length == 1) {
-                            minCoverage = 0;
-                            maxCoverage = Integer.parseInt(split[0]);
+                            minCoverage = Integer.parseInt(split[0]);
+                            maxCoverage = Integer.MAX_VALUE;
                         } else if (split.length == 2) {
                             minCoverage = Integer.parseInt(split[0]);
                             maxCoverage = Integer.parseInt(split[1]);
@@ -214,7 +214,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     }
                     if (minCoverage > maxCoverage) {
                         return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
-                                + ". Maximum value must be greater that minimum value, e.g.: 20-60"));
+                                + ". The maximum value must be greater or equal to the minimum value, e.g.: 20-60"));
                     }
 
                     if (windowSize != 1) {

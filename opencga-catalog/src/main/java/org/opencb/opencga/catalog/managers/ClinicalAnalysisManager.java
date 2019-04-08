@@ -134,6 +134,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalDBAdaptor.get(query, queryOptions, user);
 
         if (silent || analysisQueryResult.getNumResults() == uniqueList.size()) {
@@ -143,7 +146,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         QueryResult<ClinicalAnalysis> resultsNoCheck = clinicalDBAdaptor.get(query, queryOptions);
 
         if (resultsNoCheck.getNumResults() == analysisQueryResult.getNumResults()) {
-            throw new CatalogException("Missing clinical analyses. Some of the clinical analyses could not be found.");
+            throw CatalogException.notFound("clinical analyses",
+                    getMissingFields(uniqueList, analysisQueryResult.getResult(), clinicalStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the clinical "
                     + "analyses.");

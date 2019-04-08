@@ -45,6 +45,7 @@ import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
@@ -107,11 +108,14 @@ public class PanelManager extends ResourceManager<Panel> {
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        Function<Panel, String> panelStringFunction = Panel::getId;
         PanelDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.ID;
             if (UUIDUtils.isOpenCGAUUID(entry)) {
                 param = PanelDBAdaptor.QueryParams.UUID;
+                panelStringFunction = Panel::getUuid;
             }
             if (idQueryParam == null) {
                 idQueryParam = param;
@@ -122,15 +126,18 @@ public class PanelManager extends ResourceManager<Panel> {
         }
         query.put(idQueryParam.key(), uniqueList);
 
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
         QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, queryOptions, user);
         if (silent || panelQueryResult.getNumResults() == uniqueList.size()) {
-            return panelQueryResult;
+            return keepOriginalOrder(uniqueList, panelStringFunction, panelQueryResult, silent);
         }
         // Query without adding the user check
         QueryResult<Panel> resultsNoCheck = panelDBAdaptor.get(query, queryOptions);
 
         if (resultsNoCheck.getNumResults() == panelQueryResult.getNumResults()) {
-            throw new CatalogException("Missing panels. Some of the panels could not be found.");
+            throw CatalogException.notFound("panels", getMissingFields(uniqueList, panelQueryResult.getResult(), panelStringFunction));
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the panels.");
         }
