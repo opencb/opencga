@@ -161,11 +161,11 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String STATS_MAF_DESCR
             = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
-    public static final VariantQueryParam STATS_MAF = new VariantQueryParam("maf", TEXT_ARRAY, STATS_MAF_DESCR);
+    public static final VariantQueryParam STATS_MAF = new VariantQueryParam("cohortStatsMaf", TEXT_ARRAY, STATS_MAF_DESCR);
 
     public static final String STATS_MGF_DESCR
             = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
-    public static final VariantQueryParam STATS_MGF = new VariantQueryParam("mgf", TEXT_ARRAY, STATS_MGF_DESCR);
+    public static final VariantQueryParam STATS_MGF = new VariantQueryParam("cohortStatsMgf", TEXT_ARRAY, STATS_MGF_DESCR);
 
     public static final String MISSING_ALLELES_DESCR
             = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}";
