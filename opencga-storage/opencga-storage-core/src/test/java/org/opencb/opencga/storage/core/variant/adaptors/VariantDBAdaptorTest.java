@@ -32,6 +32,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -1784,6 +1785,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             Long variantQueryResult = count(new Query(ANNOT_CONSEQUENCE_TYPE.key(), map.get("id")));
             assertEquals((variantQueryResult).intValue(), ((Number) map.get("count")).intValue());
         }
+    }
+
+    @Test
+    public void testGetAllVariants_Freqs() throws Exception {
+//        STATS_REF
+//        STATS_ALT
+
+        QueryResult<Variant> queryResult;
+        long numResults = 0;
+        long expectedNumResults = 0;
+
+
+        queryResult = query(new Query(STATS_ALT.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + "<0.3"), null);
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats(StudyEntry.DEFAULT_COHORT, with("af",
+                VariantStats::getAltAlleleFreq, lt(0.3))))));
+
+        numResults += queryResult.getNumResults();
+        numResults += query(new Query(STATS_REF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + "<0.3"), null).getNumResults();
+        expectedNumResults = query(new Query(STATS_MAF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + "<0.3"), null).getNumResults();
+        assertEquals(expectedNumResults, numResults);
+
     }
 
     @Test

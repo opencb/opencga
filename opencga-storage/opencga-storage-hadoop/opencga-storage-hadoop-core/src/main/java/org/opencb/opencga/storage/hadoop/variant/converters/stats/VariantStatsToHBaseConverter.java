@@ -24,12 +24,13 @@ import org.opencb.biodata.tools.Converter;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
@@ -67,13 +68,15 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
         Put put = new Put(row);
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
             Integer cohortId = cohortIds.get(entry.getKey());
-            Column mafColumn = VariantPhoenixHelper.getMafColumn(studyId, cohortId);
-            Column mgfColumn = VariantPhoenixHelper.getMgfColumn(studyId, cohortId);
+            Column mafColumn = VariantPhoenixHelper.getStatsMafColumn(studyId, cohortId);
+            Column mgfColumn = VariantPhoenixHelper.getStatsMgfColumn(studyId, cohortId);
+            Column cohortColumn = VariantPhoenixHelper.getStatsFreqColumn(studyId, cohortId);
             Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
 
             VariantStats stats = entry.getValue();
             add(put, mafColumn, stats.getMaf());
             add(put, mgfColumn, stats.getMgf());
+            add(put, cohortColumn, Arrays.asList(stats.getRefAlleleFreq(), stats.getAltAlleleFreq()));
 
             VariantProto.VariantStats.Builder builder = VariantProto.VariantStats.newBuilder()
                     .setAltAlleleFreq(stats.getAltAlleleFreq())

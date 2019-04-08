@@ -1024,6 +1024,16 @@ public class VariantMongoDBQueryParser {
                         });
             }
 
+            if (query.get(STATS_REF.key()) != null && !query.getString(STATS_REF.key()).isEmpty()) {
+                addStatsFilterList(DocumentToVariantStatsConverter.REF_FREQ_FIELD, query.getString(STATS_REF.key()),
+                        builder, defaultStudy);
+            }
+
+            if (query.get(STATS_ALT.key()) != null && !query.getString(STATS_ALT.key()).isEmpty()) {
+                addStatsFilterList(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, query.getString(STATS_ALT.key()),
+                        builder, defaultStudy);
+            }
+
             if (query.get(STATS_MAF.key()) != null && !query.getString(STATS_MAF.key()).isEmpty()) {
                 addStatsFilterList(DocumentToVariantStatsConverter.MAF_FIELD, query.getString(STATS_MAF.key()),
                         builder, defaultStudy);
