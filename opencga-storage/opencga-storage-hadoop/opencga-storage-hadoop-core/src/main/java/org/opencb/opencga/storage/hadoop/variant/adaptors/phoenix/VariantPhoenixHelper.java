@@ -603,7 +603,7 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getStatsColumn(int studyId, int cohortId) {
-        return Column.build(studyId + COLUMN_KEY_SEPARATOR + cohortId + COHORT_STATS_PROTOBUF_SUFFIX, PVarbinary.INSTANCE);
+        return Column.build(studyId + COLUMN_KEY_SEPARATOR_STR + cohortId + COHORT_STATS_PROTOBUF_SUFFIX, PVarbinary.INSTANCE);
     }
 
     public static Column getStudyColumn(int studyId) {
