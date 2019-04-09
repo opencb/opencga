@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 
 /**
@@ -73,7 +74,7 @@ public class VariantMetadataConverterTest {
 
     @Test
     public void toVariantMetadataTest() throws IOException {
-        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryFields(studyMetadata, null, null));
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryFields(studyMetadata, Collections.emptyList(), Collections.emptyList()));
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

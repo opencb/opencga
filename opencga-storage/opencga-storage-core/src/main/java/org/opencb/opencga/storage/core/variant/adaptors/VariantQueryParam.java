@@ -151,13 +151,21 @@ public final class VariantQueryParam implements QueryParam {
             = "Select variants with calculated stats for the selected cohorts";
     public static final VariantQueryParam COHORT = new VariantQueryParam("cohort", TEXT_ARRAY, COHORT_DESCR);
 
+    public static final String STATS_REF_DESCR
+            = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
+    public static final VariantQueryParam STATS_REF = new VariantQueryParam("cohortStatsRef", TEXT_ARRAY, STATS_REF_DESCR);
+
+    public static final String STATS_ALT_DESCR
+            = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
+    public static final VariantQueryParam STATS_ALT = new VariantQueryParam("cohortStatsAlt", TEXT_ARRAY, STATS_ALT_DESCR);
+
     public static final String STATS_MAF_DESCR
             = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
-    public static final VariantQueryParam STATS_MAF = new VariantQueryParam("maf", TEXT_ARRAY, STATS_MAF_DESCR);
+    public static final VariantQueryParam STATS_MAF = new VariantQueryParam("cohortStatsMaf", TEXT_ARRAY, STATS_MAF_DESCR);
 
     public static final String STATS_MGF_DESCR
             = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
-    public static final VariantQueryParam STATS_MGF = new VariantQueryParam("mgf", TEXT_ARRAY, STATS_MGF_DESCR);
+    public static final VariantQueryParam STATS_MGF = new VariantQueryParam("cohortStatsMgf", TEXT_ARRAY, STATS_MGF_DESCR);
 
     public static final String MISSING_ALLELES_DESCR
             = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}";
@@ -317,7 +325,9 @@ public final class VariantQueryParam implements QueryParam {
         this.description = description;
 
         VALUES.add(this);
-        VALUES_MAP.put(key, this);
+        if (VALUES_MAP.put(key, this) != null) {
+            throw new IllegalStateException("Found two VariantQueryParams with same key '" + key + "'.");
+        }
     }
 
     @Override

@@ -84,7 +84,7 @@ import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
-import org.opencb.opencga.storage.hadoop.variant.stats.me.MendelianErrorDriver;
+import org.opencb.opencga.storage.hadoop.variant.stats.me.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -390,7 +390,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
         if (trios.size() < 1000) {
-            options.put(MendelianErrorDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+            options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
         } else {
             File mendelianErrorsFile = null;
             try {
@@ -408,12 +408,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     throw new StorageEngineException("Error writing temporary file " + mendelianErrorsFile, e);
                 }
             }
-            options.put(MendelianErrorDriver.TRIOS_FILE, mendelianErrorsFile.toPath().toAbsolutePath().toString());
-            options.put(MendelianErrorDriver.TRIOS_FILE_DELETE, true);
+            options.put(FamilyIndexDriver.TRIOS_FILE, mendelianErrorsFile.toPath().toAbsolutePath().toString());
+            options.put(FamilyIndexDriver.TRIOS_FILE_DELETE, true);
         }
 
         int studyId = getMetadataManager().getStudyId(study);
-        getMRExecutor().run(MendelianErrorDriver.class, MendelianErrorDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
+        getMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
                 studyId, null, options), options,
                 "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
     }

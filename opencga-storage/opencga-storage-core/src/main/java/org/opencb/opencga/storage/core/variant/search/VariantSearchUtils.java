@@ -24,10 +24,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -292,7 +289,14 @@ public class VariantSearchUtils {
                 } else {
                     sampleIds = samples.stream()
                             .map(sample -> isNegated(sample) ? removeNegation(sample) : sample)
-                            .map(sample -> metadataManager.getSampleId(studyId, sample)).collect(Collectors.toList());
+                            .map(sample -> {
+                                Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                                if (sampleId == null) {
+                                    throw VariantQueryException.sampleNotFound(sample,
+                                            selectVariantElements.getStudyMetadatas().get(studyId).getName());
+                                }
+                                return sampleId;
+                            }).collect(Collectors.toList());
                 }
 
                 Integer sampleSet = null;

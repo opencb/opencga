@@ -129,11 +129,11 @@ public class SampleIndexQueryParser {
             // Get samples with non negated genotypes
 
             Map<Object, List<String>> map = new HashMap<>();
-            Map<String, List<String>> gtMap = new HashMap<>();
-            Map<String, List<String>> parentsMap = new HashMap<>();
             queryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
             // Extract parents from each sample
+            Map<String, List<String>> gtMap = new HashMap<>();
+            Map<String, List<String>> parentsMap = new HashMap<>();
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
                 Object sample = entry.getKey();
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);

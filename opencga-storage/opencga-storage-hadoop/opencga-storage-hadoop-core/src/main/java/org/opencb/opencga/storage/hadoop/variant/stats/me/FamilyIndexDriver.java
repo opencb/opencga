@@ -49,23 +49,23 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MendelianErrorDriver extends AbstractVariantsTableDriver {
+public class FamilyIndexDriver extends AbstractVariantsTableDriver {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MendelianErrorDriver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FamilyIndexDriver.class);
 
     public static final String TRIOS = "trios";
     public static final String TRIOS_FILE = "triosFile";
     public static final String TRIOS_FILE_DELETE = "triosFileDelete";
     public static final String OVERWRITE = "overwrite";
 
-    private static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
+    private static final String TRIOS_LIST = "FamilyIndexDriver.trios_list";
     private List<Integer> sampleIds;
     private boolean partial;
     private String region;
 
     @Override
-    protected Class<MendelianErrorMapper> getMapperClass() {
-        return MendelianErrorMapper.class;
+    protected Class<FamilyIndexMapper> getMapperClass() {
+        return FamilyIndexMapper.class;
     }
 
     @Override
@@ -201,10 +201,10 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return "calculate_mendelian_errors";
+        return "generate_family_index";
     }
 
-    public static class MendelianErrorMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
+    public static class FamilyIndexMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
 
         private Map<Integer, ByteArrayOutputStream> mendelianErrorsMap = new HashMap<>();
         private Map<Integer, Map<String, ByteArrayOutputStream>> parentsGTMap = new HashMap<>();
@@ -338,9 +338,9 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(new MendelianErrorDriver().privateMain(args, null));
+            System.exit(new FamilyIndexDriver().privateMain(args, null));
         } catch (Exception e) {
-            LOGGER.error("Error executing " + MendelianErrorDriver.class, e);
+            LOGGER.error("Error executing " + FamilyIndexDriver.class, e);
             System.exit(1);
         }
     }
