@@ -78,6 +78,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final String FAMILY_DISORDER_DESC = "Specify the disorder to use for the family segregation";
     public static final QueryParam FAMILY_DISORDER =
             QueryParam.create("familyDisorder", FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
+    public static final String FAMILY_PROBAND_DESC = "Specify the proband child to use for the family segregation";
+    public static final QueryParam FAMILY_PROBAND =
+            QueryParam.create("familyProband", FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by mode of inheritance from a given family. Accepted values: "
             + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
             + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
@@ -323,15 +326,30 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, null);
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
+                String proband = query.getString(FAMILY_PROBAND.key());
                 String moiString = query.getString(FAMILY_SEGREGATION.key());
                 if (moiString.equalsIgnoreCase("mendelianError") || moiString.equalsIgnoreCase("deNovo")) {
-                    List<Member> children = pedigreeManager.getWithoutChildren();
+                    List<Member> children;
+                    if (StringUtils.isNotEmpty(proband)) {
+                        Member probandMember = pedigree.getMembers()
+                                .stream()
+                                .filter(member -> member.getId().equals(proband))
+                                .findFirst()
+                                .orElse(null);
+                        if (probandMember == null) {
+                            throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
+                                    "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                        }
+                        children = Collections.singletonList(probandMember);
+                    } else {
+                        children = pedigreeManager.getWithoutChildren();
+                    }
                     List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
                     List<String> childrenSampleIds = new ArrayList<>(childrenIds.size());
 
                     for (String childrenId : childrenIds) {
                         Long sampleUid = individualToSampleUid.get(childrenId);
-                        Sample sample = samples.stream().filter(s -> s.getUid() == sampleUid).findFirst().orElse(null);
+                        Sample sample = sampleMap.get(sampleUid);
                         if (sample == null) {
                             throw new VariantQueryException("Sample not found for individual \"" + childrenId + '"');
                         }
@@ -344,9 +362,27 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                     }
                 } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
-                    List<Member> children = pedigreeManager.getWithoutChildren();
-                    if (children.size() > 1) {
-                        throw new VariantQueryException("Unsupported compoundHeterozygous method with families with more than one child.");
+                    List<Member> children;
+                    if (StringUtils.isNotEmpty(proband)) {
+                        Member probandMember = pedigree.getMembers()
+                                .stream()
+                                .filter(member -> member.getId().equals(proband))
+                                .findFirst()
+                                .orElse(null);
+                        if (probandMember == null) {
+                            throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
+                                    "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                        }
+                        children = Collections.singletonList(probandMember);
+                    } else {
+                        children = pedigreeManager.getWithoutChildren();
+                        if (children.size() > 1) {
+                            String childrenStr = children.stream().map(Member::getId).collect(Collectors.joining("', '", "[ '", "' ]"));
+                            throw new VariantQueryException(
+                                    "Unsupported compoundHeterozygous method with families with more than one child."
+                                    + " Specify proband with parameter '" + FAMILY_PROBAND.key() + "'."
+                                    + " Available children: " + childrenStr);
+                        }
                     }
 
                     Member child = children.get(0);
@@ -508,6 +544,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         } else if (isValidParam(query, FAMILY_MEMBERS)) {
             throw VariantQueryException.malformedParam(FAMILY_MEMBERS, query.getString(FAMILY_MEMBERS.key()),
                     "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_MEMBERS.toString() + "\".");
+        } else if (isValidParam(query, FAMILY_PROBAND)) {
+            throw VariantQueryException.malformedParam(FAMILY_PROBAND, query.getString(FAMILY_PROBAND.key()),
+                    "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_PROBAND.toString() + "\".");
         } else if (isValidParam(query, FAMILY_SEGREGATION)) {
             throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()),
                     "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_SEGREGATION.toString() + "\".");
