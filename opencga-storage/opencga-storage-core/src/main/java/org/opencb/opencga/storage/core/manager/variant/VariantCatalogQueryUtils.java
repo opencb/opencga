@@ -79,7 +79,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             QueryParam.create("familyDisorder", FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by mode of inheritance from a given family. Accepted values: "
             + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, DeNovo ]";
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
+            + "DeNovo, CompoundHeterozygous ]";
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
@@ -296,6 +297,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                     SampleDBAdaptor.QueryParams.ID.key(),
                                     SampleDBAdaptor.QueryParams.UID.key())), sessionId)
                     .getResult();
+            Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, s -> s));
 
             // By default, include all samples from the family
             if (!isValidParam(query, INCLUDE_SAMPLE)) {
@@ -341,7 +343,41 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                     }
                 } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
-                    throw new VariantQueryException("Unsupported CompoundHeterozygous");
+                    List<Member> children = pedigreeManager.getWithoutChildren();
+                    if (children.size() > 1) {
+                        throw new VariantQueryException("Unsupported compoundHeterozygous method with families with more than one child.");
+                    }
+
+                    Member child = children.get(0);
+
+                    String childId = sampleMap.get(individualToSampleUid.get(child.getId())).getId();
+                    String fatherId = "-";
+                    String motherId = "-";
+                    if (child.getFather() != null && child.getFather().getId() != null) {
+                        Sample fatherSample = sampleMap.get(individualToSampleUid.get(child.getFather().getId()));
+                        if (fatherSample != null) {
+                            fatherId = fatherSample.getId();
+                        }
+                    }
+
+                    if (child.getMother() != null && child.getMother().getId() != null) {
+                        Sample motherSample = sampleMap.get(individualToSampleUid.get(child.getMother().getId()));
+                        if (motherSample != null) {
+                            motherId = motherSample.getId();
+                        }
+                    }
+
+                    // TODO: Accept CompoundHeterozygous with a missing parent
+                    if (fatherId.equals("-") || motherId.equals("-")) {
+                        throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
+                                "Require both parents to get compound heterozygous");
+                    }
+//                    if (fatherId.equals("-") && motherId.equals("-")) {
+//                        throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
+//                                "Require at least one parent to get compound heterozygous");
+//                    }
+
+                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), childId + "," + fatherId + "," + motherId);
                 } else {
                     if (family.getDisorders().isEmpty()) {
                         throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have disorders");

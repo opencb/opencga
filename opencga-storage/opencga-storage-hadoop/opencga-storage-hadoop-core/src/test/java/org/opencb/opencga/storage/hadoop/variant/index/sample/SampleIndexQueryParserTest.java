@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 
 import java.util.ArrayList;
@@ -200,15 +201,15 @@ public class SampleIndexQueryParserTest {
         parseAnnotationMask(query, true);
         assertFalse(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, AnnotationIndexConverter.LOF_SET));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_SET));
         parseAnnotationMask(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, AnnotationIndexConverter.LOF_SET_MISSENSE));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET));
         parseAnnotationMask(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.LOF_SET_MISSENSE).subList(2, 4)));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)));
         parseAnnotationMask(query, true);
         assertFalse(query.isEmpty());
 
