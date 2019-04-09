@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQuery.MISSING_SAMPLE;
 
 /**
  * Created on 28/02/17.
@@ -351,8 +352,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     Member child = children.get(0);
 
                     String childId = sampleMap.get(individualToSampleUid.get(child.getId())).getId();
-                    String fatherId = "-";
-                    String motherId = "-";
+                    String fatherId = MISSING_SAMPLE;
+                    String motherId = MISSING_SAMPLE;
                     if (child.getFather() != null && child.getFather().getId() != null) {
                         Sample fatherSample = sampleMap.get(individualToSampleUid.get(child.getFather().getId()));
                         if (fatherSample != null) {
@@ -367,17 +368,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         }
                     }
 
-                    // TODO: Accept CompoundHeterozygous with a missing parent
-                    if (fatherId.equals("-") || motherId.equals("-")) {
+                    if (fatherId.equals(MISSING_SAMPLE) && motherId.equals(MISSING_SAMPLE)) {
                         throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
-                                "Require both parents to get compound heterozygous");
+                                "Require at least one parent to get compound heterozygous");
                     }
-//                    if (fatherId.equals("-") && motherId.equals("-")) {
-//                        throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
-//                                "Require at least one parent to get compound heterozygous");
-//                    }
 
-                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), childId + "," + fatherId + "," + motherId);
+                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(childId, fatherId, motherId));
                 } else {
                     if (family.getDisorders().isEmpty()) {
                         throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have disorders");
