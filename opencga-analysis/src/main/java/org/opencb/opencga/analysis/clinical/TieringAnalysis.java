@@ -297,7 +297,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
-        if (MapUtils.isEmpty(genotypes)) {
+        if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
             logger.warn("Map of genotypes is empty for {}", moi);
             return false;
         }
