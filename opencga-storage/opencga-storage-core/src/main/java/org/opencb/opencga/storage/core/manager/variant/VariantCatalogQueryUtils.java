@@ -409,7 +409,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         default:
                             throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString);
                     }
-                    if (genotypes == null) {
+                    if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
                         throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
                                 "Invalid segregation mode for the family '" + family.getId() + "'");
                     }

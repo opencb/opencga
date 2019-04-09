@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
@@ -401,11 +402,14 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
 
     protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
-        query.put(VariantQueryParam.GENOTYPE.key(),
-                StringUtils.join(genotypes.entrySet().stream()
-                        .filter(entry -> sampleMap.containsKey(entry.getKey()))
-                        .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
-                        .collect(Collectors.toList()), ";"));
+        String genotypeString = StringUtils.join(genotypes.entrySet().stream()
+                .filter(entry -> sampleMap.containsKey(entry.getKey()))
+                .filter(entry -> ListUtils.isNotEmpty(entry.getValue()))
+                .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
+                .collect(Collectors.toList()), ";");
+        if (StringUtils.isNotEmpty(genotypeString)) {
+            query.put(VariantQueryParam.GENOTYPE.key(), genotypeString);
+        }
         try {
             logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         } catch (Exception e) {

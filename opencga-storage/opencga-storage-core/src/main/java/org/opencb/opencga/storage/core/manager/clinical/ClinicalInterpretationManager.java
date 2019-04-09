@@ -93,9 +93,9 @@ public class ClinicalInterpretationManager extends StorageManager {
         while (clinicalAnalysisDBIterator.hasNext()) {
             ClinicalAnalysis clinicalAnalysis = clinicalAnalysisDBIterator.next();
             for (Interpretation interpretation : clinicalAnalysis.getInterpretations()) {
-                interpretation.getInterpretation().getAttributes().put("OPENCGA_CLINICAL_ANALYSIS", clinicalAnalysis);
+                interpretation.getAttributes().put("OPENCGA_CLINICAL_ANALYSIS", clinicalAnalysis);
 
-                this.clinicalVariantEngine.insert(interpretation.getInterpretation(), database);
+                this.clinicalVariantEngine.insert(interpretation, database);
             }
         }
         return null;
