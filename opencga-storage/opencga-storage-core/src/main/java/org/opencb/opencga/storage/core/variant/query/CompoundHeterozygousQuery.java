@@ -54,11 +54,6 @@ public class CompoundHeterozygousQuery {
 
     private Object getOrIterator(String study, String proband, String father, String mother, Query query, QueryOptions options,
                                  boolean iterator) {
-
-        if (father.equals(MISSING_SAMPLE) && mother.equals(MISSING_SAMPLE)) {
-            throw new VariantQueryException("Require at least one parent to get compound heterozygous");
-        }
-
         // Prepare query and options
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT));
@@ -110,12 +105,14 @@ public class CompoundHeterozygousQuery {
         }
     }
 
-    private QueryOptions buildQueryOptions(QueryOptions options) {
+    protected QueryOptions buildQueryOptions(QueryOptions options) {
         options = new QueryOptions(options); // copy options
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
         includeFields.add(VariantField.ANNOTATION);
         includeFields.add(VariantField.ANNOTATION_CONSEQUENCE_TYPES);
         includeFields.add(VariantField.STUDIES_SAMPLES_DATA);
+
+        VariantField.prune(includeFields);
 
         options.put(QueryOptions.INCLUDE, includeFields.stream().map(VariantField::fieldName).collect(Collectors.joining(",")));
         options.remove(QueryOptions.EXCLUDE);
@@ -129,7 +126,11 @@ public class CompoundHeterozygousQuery {
         return options;
     }
 
-    private List<String> getAndCheckIncludeSample(Query query, String proband, String father, String mother) {
+    protected List<String> getAndCheckIncludeSample(Query query, String proband, String father, String mother) {
+        if (father.equals(MISSING_SAMPLE) && mother.equals(MISSING_SAMPLE)) {
+            throw new VariantQueryException("Require at least one parent to get compound heterozygous");
+        }
+
         List<String> includeSamples;
         if (isValidParam(query, VariantQueryParam.INCLUDE_SAMPLE)
                 && !query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(VariantQueryUtils.ALL)) {
@@ -160,7 +161,7 @@ public class CompoundHeterozygousQuery {
         return includeSamples;
     }
 
-    private Iterator<Variant> getRawIterator(String proband, String father, String mother, Query query, QueryOptions options) {
+    protected Iterator<Variant> getRawIterator(String proband, String father, String mother, Query query, QueryOptions options) {
         if (father.equals(MISSING_SAMPLE) || mother.equals(MISSING_SAMPLE)) {
             // Single parent iterator
             String parent = father.equals(MISSING_SAMPLE) ? mother : father;
