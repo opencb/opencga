@@ -154,7 +154,7 @@ public class InterpretationWSService extends AnalysisWSService {
             }
 
             if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
-                org.opencb.biodata.models.clinical.interpretation.Interpretation  interpretation = params.toClinicalInterpretation();
+                Interpretation interpretation = params.toClinicalInterpretation();
                 interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
                 return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, sessionId));
             } else {
@@ -403,7 +403,6 @@ public class InterpretationWSService extends AnalysisWSService {
                     interpretations != null
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation)
-                            .map(i -> new Interpretation(null, i))
                             .collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
@@ -1036,10 +1035,9 @@ public class InterpretationWSService extends AnalysisWSService {
         public List<Comment> comments;
         public Map<String, Object> attributes;
 
-        public org.opencb.biodata.models.clinical.interpretation.Interpretation  toClinicalInterpretation() {
-            return new org.opencb.biodata.models.clinical.interpretation.Interpretation (id, description, clinicalAnalysisId, software,
-                    analyst, dependencies, filters, panels, primaryFindings, secondaryFindings, reportedLowCoverages, comments,
-                    org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED, creationDate, -1, attributes);
+        public Interpretation  toClinicalInterpretation() {
+            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
+                    primaryFindings, secondaryFindings, reportedLowCoverages, comments, attributes);
         }
 
         public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
