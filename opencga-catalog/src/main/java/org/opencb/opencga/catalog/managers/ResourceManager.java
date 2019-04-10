@@ -12,15 +12,15 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.Study;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 07/08/17.
@@ -34,7 +34,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
 
     abstract QueryResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException;
 
-    abstract QueryResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    abstract InternalGetQueryResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
             throws CatalogException;
 
     /**
@@ -101,11 +101,25 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        QueryResult<R> responseResult = internalGet(study.getUid(), entryList, options, userId, silent);
-        for (R response : responseResult.getResult()) {
-            resultList.add(new QueryResult<>(response.getId(), responseResult.getDbTime(), 1, 1, "", "",
-                    Collections.singletonList(response)));
+        InternalGetQueryResult<R> responseResult = internalGet(study.getUid(), entryList, options, userId, silent);
 
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (responseResult.getMissing() != null) {
+            missingMap = responseResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String entry : entryList) {
+            if (missingMap.containsKey(entry)) {
+                // We add a QueryResult entry with the missing field
+                resultList.add(new QueryResult<>(entry, responseResult.getDbTime(), 0, 0, "", missingMap.get(entry).getErrorMsg(),
+                        Collections.emptyList()));
+            } else {
+                R response = responseResult.getResult().get(counter);
+                resultList.add(new QueryResult<>(response.getId(), responseResult.getDbTime(), 1, 1, "", "",
+                        Collections.singletonList(response)));
+                counter += 1;
+            }
         }
         return resultList;
     }

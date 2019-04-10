@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
@@ -111,7 +112,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    QueryResult<Job> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    InternalGetQueryResult<Job> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
             throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing job entries.");
@@ -579,22 +580,39 @@ public class JobManager extends ResourceManager<Job> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryResult<Job> jobQueryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, silent);
+        InternalGetQueryResult<Job> queryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, silent);
 
-        for (Job job : jobQueryResult.getResult()) {
-            try {
-                QueryResult<JobAclEntry> allJobAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allJobAcls = authorizationManager.getJobAcl(study.getUid(), job.getUid(), user, member);
-                } else {
-                    allJobAcls = authorizationManager.getAllJobAcls(study.getUid(), job.getUid(), user);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (queryResult.getMissing() != null) {
+            missingMap = queryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String jobId : jobList) {
+            if (!missingMap.containsKey(jobId)) {
+                try {
+                    QueryResult<JobAclEntry> allJobAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allJobAcls = authorizationManager.getJobAcl(study.getUid(), queryResult.getResult().get(counter).getUid(), user,
+                                member);
+                    } else {
+                        allJobAcls = authorizationManager.getAllJobAcls(study.getUid(), queryResult.getResult().get(counter).getUid(),
+                                user);
+                    }
+                    allJobAcls.setId(jobId);
+                    jobAclList.add(allJobAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        jobAclList.add(new QueryResult<>(jobId, queryResult.getDbTime(), 0, 0, "", missingMap.get(jobId).getErrorMsg(),
+                                Collections.emptyList()));
+                    }
                 }
-                allJobAcls.setId(job.getUuid());
-                jobAclList.add(allJobAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                jobAclList.add(new QueryResult<>(jobId, queryResult.getDbTime(), 0, 0, "", missingMap.get(jobId).getErrorMsg(),
+                        Collections.emptyList()));
             }
         }
         return jobAclList;

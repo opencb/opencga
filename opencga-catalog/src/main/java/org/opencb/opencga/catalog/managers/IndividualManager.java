@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -137,7 +138,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    QueryResult<Individual> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    InternalGetQueryResult<Individual> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
             throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing individual entries.");
@@ -897,24 +898,39 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UID.key(),
-                IndividualDBAdaptor.QueryParams.ID.key()));
-        QueryResult<Individual> individualQueryResult = internalGet(study.getUid(), individualList, queryOptions, user, silent);
+        InternalGetQueryResult<Individual> queryResult = internalGet(study.getUid(), individualList, INCLUDE_INDIVIDUAL_IDS, user, silent);
 
-        for (Individual individual : individualQueryResult.getResult()) {
-            try {
-                QueryResult<IndividualAclEntry> allIndividualAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allIndividualAcls = authorizationManager.getIndividualAcl(study.getUid(), individual.getUid(), user, member);
-                } else {
-                    allIndividualAcls = authorizationManager.getAllIndividualAcls(study.getUid(), individual.getUid(), user);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (queryResult.getMissing() != null) {
+            missingMap = queryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String individualId : individualList) {
+            if (!missingMap.containsKey(individualId)) {
+                try {
+                    QueryResult<IndividualAclEntry> allIndividualAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allIndividualAcls = authorizationManager.getIndividualAcl(study.getUid(),
+                                queryResult.getResult().get(counter).getUid(), user, member);
+                    } else {
+                        allIndividualAcls = authorizationManager.getAllIndividualAcls(study.getUid(),
+                                queryResult.getResult().get(counter).getUid(), user);
+                    }
+                    allIndividualAcls.setId(individualId);
+                    individualAclList.add(allIndividualAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        individualAclList.add(new QueryResult<>(individualId, queryResult.getDbTime(), 0, 0, "",
+                                missingMap.get(individualId).getErrorMsg(), Collections.emptyList()));
+                    }
                 }
-                allIndividualAcls.setId(individual.getId());
-                individualAclList.add(allIndividualAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                individualAclList.add(new QueryResult<>(individualId, queryResult.getDbTime(), 0, 0, "",
+                        missingMap.get(individualId).getErrorMsg(), Collections.emptyList()));
             }
         }
         return individualAclList;

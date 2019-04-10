@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
@@ -152,11 +153,14 @@ public abstract class AbstractManager {
      * @return the QueryResult with the proper order of results.
      * @throws CatalogException In case of inconsistencies found.
      */
-    <T extends IPrivateStudyUid> QueryResult<T>  keepOriginalOrder(List<String> entries, Function<T, String> getId,
-                                                                   QueryResult<T> queryResult, boolean silent) throws CatalogException {
+    <T extends IPrivateStudyUid> InternalGetQueryResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId,
+                                                                             QueryResult<T> queryResult, boolean silent)
+            throws CatalogException {
+        InternalGetQueryResult<T> internalGetQueryResult = new InternalGetQueryResult<>(queryResult);
+
         Map<String, T> resultMap = new HashMap<>();
 
-        for (T entry : queryResult.getResult()) {
+        for (T entry : internalGetQueryResult.getResult()) {
             String id = getId.apply(entry);
             if (resultMap.containsKey(id)) {
                 throw new CatalogException("Duplicated entry " + id + " found");
@@ -164,7 +168,7 @@ public abstract class AbstractManager {
             resultMap.put(id, entry);
         }
 
-        List<T> orderedEntryList = new ArrayList<>(queryResult.getNumResults());
+        List<T> orderedEntryList = new ArrayList<>(internalGetQueryResult.getNumResults());
         for (String entry : entries) {
             if (resultMap.containsKey(entry)) {
                 orderedEntryList.add(resultMap.get(entry));
@@ -172,11 +176,12 @@ public abstract class AbstractManager {
                 if (!silent) {
                     throw new CatalogException("Entry " + entry + " not found in QueryResult");
                 }
+                internalGetQueryResult.addMissing(entry, "Not found or user does not have permissions.");
             }
         }
 
-        queryResult.setResult(orderedEntryList);
-        return queryResult;
+        internalGetQueryResult.setResult(orderedEntryList);
+        return internalGetQueryResult;
     }
 
     /**
