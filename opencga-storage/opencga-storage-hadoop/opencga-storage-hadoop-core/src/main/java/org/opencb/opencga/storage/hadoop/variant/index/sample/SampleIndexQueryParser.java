@@ -507,8 +507,8 @@ public class SampleIndexQueryParser {
                 if (transcriptFlagBasic) {
                     b |= LOF_MISSENSE_BASIC_MASK;
                 }
-                // If all present, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_SET.size() == cts.size()) {
+                // If all present, and not filtering by gene, remove consequenceType filter
+                if (allSamplesAnnotated && LOF_SET.size() == cts.size() && !isValidParam(query, GENE)) {
                     query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                 }
             }
@@ -517,8 +517,8 @@ public class SampleIndexQueryParser {
                 if (transcriptFlagBasic) {
                     b |= LOF_MISSENSE_BASIC_MASK;
                 }
-                // If all present, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == cts.size()) {
+                // If all present, and not filtering by gene, remove consequenceType filter
+                if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == cts.size() && !isValidParam(query, GENE)) {
                     query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                 }
             }
