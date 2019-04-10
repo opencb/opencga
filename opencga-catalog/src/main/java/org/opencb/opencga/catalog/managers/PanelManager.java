@@ -656,23 +656,40 @@ public class PanelManager extends ResourceManager<Panel> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryResult<Panel> panelQueryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, silent);
+        InternalGetQueryResult<Panel> queryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, silent);
 
-        for (Panel panel : panelQueryResult.getResult()) {
-            try {
-                QueryResult<PanelAclEntry> allPanelAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allPanelAcls =
-                            authorizationManager.getPanelAcl(study.getUid(), panel.getUid(), user, member);
-                } else {
-                    allPanelAcls = authorizationManager.getAllPanelAcls(study.getUid(), panel.getUid(), user);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (queryResult.getMissing() != null) {
+            missingMap = queryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String panelId : panelList) {
+            if (!missingMap.containsKey(panelId)) {
+                try {
+                    QueryResult<PanelAclEntry> allPanelAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allPanelAcls =
+                                authorizationManager.getPanelAcl(study.getUid(), queryResult.getResult().get(counter).getUid(), user,
+                                        member);
+                    } else {
+                        allPanelAcls = authorizationManager.getAllPanelAcls(study.getUid(), queryResult.getResult().get(counter).getUid(),
+                                user);
+                    }
+                    allPanelAcls.setId(panelId);
+                    panelAclList.add(allPanelAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        panelAclList.add(new QueryResult<>(panelId, queryResult.getDbTime(), 0, 0, "",
+                                missingMap.get(panelId).getErrorMsg(), Collections.emptyList()));
+                    }
                 }
-                allPanelAcls.setId(panel.getId());
-                panelAclList.add(allPanelAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                panelAclList.add(new QueryResult<>(panelId, queryResult.getDbTime(), 0, 0, "", missingMap.get(panelId).getErrorMsg(),
+                        Collections.emptyList()));
             }
         }
         return panelAclList;

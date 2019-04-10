@@ -914,25 +914,40 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UID.key(),
-                SampleDBAdaptor.QueryParams.ID.key()));
-        QueryResult<Sample> sampleQueryResult = internalGet(study.getUid(), sampleList, queryOptions, user, silent);
+        InternalGetQueryResult<Sample> queryResult = internalGet(study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, user, silent);
 
-        for (Sample sample : sampleQueryResult.getResult()) {
-            try {
-                QueryResult<SampleAclEntry> allSampleAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allSampleAcls =
-                            authorizationManager.getSampleAcl(study.getUid(), sample.getUid(), user, member);
-                } else {
-                    allSampleAcls = authorizationManager.getAllSampleAcls(study.getUid(), sample.getUid(), user);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (queryResult.getMissing() != null) {
+            missingMap = queryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String sampleId : sampleList) {
+            if (!missingMap.containsKey(sampleId)) {
+                try {
+                    QueryResult<SampleAclEntry> allSampleAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allSampleAcls =
+                                authorizationManager.getSampleAcl(study.getUid(), queryResult.getResult().get(counter).getUid(), user,
+                                        member);
+                    } else {
+                        allSampleAcls = authorizationManager.getAllSampleAcls(study.getUid(), queryResult.getResult().get(counter).getUid(),
+                                user);
+                    }
+                    allSampleAcls.setId(sampleId);
+                    sampleAclList.add(allSampleAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        sampleAclList.add(new QueryResult<>(sampleId, queryResult.getDbTime(), 0, 0, "",
+                                missingMap.get(sampleId).getErrorMsg(), Collections.emptyList()));
+                    }
                 }
-                allSampleAcls.setId(sample.getId());
-                sampleAclList.add(allSampleAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                sampleAclList.add(new QueryResult<>(sampleId, queryResult.getDbTime(), 0, 0, "", missingMap.get(sampleId).getErrorMsg(),
+                        Collections.emptyList()));
             }
         }
         return sampleAclList;

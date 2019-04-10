@@ -2207,24 +2207,39 @@ public class FileManager extends AnnotationSetManager<File> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.UID.key(),
-                FileDBAdaptor.QueryParams.ID.key()));
-        QueryResult<File> fileQueryResult = internalGet(study.getUid(), fileList, queryOptions, user, silent);
+        InternalGetQueryResult<File> fileQueryResult = internalGet(study.getUid(), fileList, INCLUDE_FILE_IDS, user, silent);
 
-        for (File file : fileQueryResult.getResult()) {
-            try {
-                QueryResult<FileAclEntry> allFileAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allFileAcls = authorizationManager.getFileAcl(study.getUid(), file.getUid(), user, member);
-                } else {
-                    allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), file.getUid(), user, true);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (fileQueryResult.getMissing() != null) {
+            missingMap = fileQueryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String file : fileList) {
+            if (!missingMap.containsKey(file)) {
+                try {
+                    QueryResult<FileAclEntry> allFileAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allFileAcls = authorizationManager.getFileAcl(study.getUid(), fileQueryResult.getResult().get(counter).getUid(),
+                                user, member);
+                    } else {
+                        allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), fileQueryResult.getResult().get(counter).getUid(),
+                                user, true);
+                    }
+                    allFileAcls.setId(file);
+                    fileAclList.add(allFileAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        fileAclList.add(new QueryResult<>(file, fileQueryResult.getDbTime(), 0, 0, "", missingMap.get(file).getErrorMsg(),
+                                Collections.emptyList()));
+                    }
                 }
-                allFileAcls.setId(file.getId());
-                fileAclList.add(allFileAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                fileAclList.add(new QueryResult<>(file, fileQueryResult.getDbTime(), 0, 0, "", missingMap.get(file).getErrorMsg(),
+                        Collections.emptyList()));
             }
         }
         return fileAclList;

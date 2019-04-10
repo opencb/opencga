@@ -702,24 +702,40 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
-                ClinicalAnalysisDBAdaptor.QueryParams.ID.key()));
-        QueryResult<ClinicalAnalysis> queryResult = internalGet(study.getUid(), clinicalList, queryOptions, user, silent);
+        InternalGetQueryResult<ClinicalAnalysis> queryResult = internalGet(study.getUid(), clinicalList, INCLUDE_CLINICAL_IDS, user,
+                silent);
 
-        for (ClinicalAnalysis clinicalAnalysis : queryResult.getResult()) {
-            try {
-                QueryResult<ClinicalAnalysisAclEntry> allClinicalAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allClinicalAcls = authorizationManager.getClinicalAnalysisAcl(study.getUid(), clinicalAnalysis.getUid(), user, member);
-                } else {
-                    allClinicalAcls = authorizationManager.getAllClinicalAnalysisAcls(study.getUid(), clinicalAnalysis.getUid(), user);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (queryResult.getMissing() != null) {
+            missingMap = queryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String clinicalAnalysis : clinicalList) {
+            if (!missingMap.containsKey(clinicalAnalysis)) {
+                try {
+                    QueryResult<ClinicalAnalysisAclEntry> allClinicalAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allClinicalAcls = authorizationManager.getClinicalAnalysisAcl(study.getUid(),
+                                queryResult.getResult().get(counter).getUid(), user, member);
+                    } else {
+                        allClinicalAcls = authorizationManager.getAllClinicalAnalysisAcls(study.getUid(),
+                                queryResult.getResult().get(counter).getUid(), user);
+                    }
+                    allClinicalAcls.setId(clinicalAnalysis);
+                    clinicalAclList.add(allClinicalAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        clinicalAclList.add(new QueryResult<>(clinicalAnalysis, queryResult.getDbTime(), 0, 0, "",
+                                missingMap.get(clinicalAnalysis).getErrorMsg(), Collections.emptyList()));
+                    }
                 }
-                allClinicalAcls.setId(clinicalAnalysis.getId());
-                clinicalAclList.add(allClinicalAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                clinicalAclList.add(new QueryResult<>(clinicalAnalysis, queryResult.getDbTime(), 0, 0, "",
+                        missingMap.get(clinicalAnalysis).getErrorMsg(), Collections.emptyList()));
             }
         }
         return clinicalAclList;

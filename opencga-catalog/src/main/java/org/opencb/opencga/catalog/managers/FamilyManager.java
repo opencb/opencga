@@ -705,24 +705,39 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.UID.key(),
-                FamilyDBAdaptor.QueryParams.ID.key()));
-        QueryResult<Family> familyQueryResult = internalGet(study.getUid(), familyList, queryOptions, user, silent);
+        InternalGetQueryResult<Family> familyQueryResult = internalGet(study.getUid(), familyList, INCLUDE_FAMILY_IDS, user, silent);
 
-        for (Family family : familyQueryResult.getResult()) {
-            try {
-                QueryResult<FamilyAclEntry> allFamilyAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allFamilyAcls = authorizationManager.getFamilyAcl(study.getUid(), family.getUid(), user, member);
-                } else {
-                    allFamilyAcls = authorizationManager.getAllFamilyAcls(study.getUid(), family.getUid(), user);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (familyQueryResult.getMissing() != null) {
+            missingMap = familyQueryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String familyId : familyList) {
+            if (!missingMap.containsKey(familyId)) {
+                try {
+                    QueryResult<FamilyAclEntry> allFamilyAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allFamilyAcls = authorizationManager.getFamilyAcl(study.getUid(),
+                                familyQueryResult.getResult().get(counter).getUid(), user, member);
+                    } else {
+                        allFamilyAcls = authorizationManager.getAllFamilyAcls(study.getUid(),
+                                familyQueryResult.getResult().get(counter).getUid(), user);
+                    }
+                    allFamilyAcls.setId(familyId);
+                    familyAclList.add(allFamilyAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        familyAclList.add(new QueryResult<>(familyId, familyQueryResult.getDbTime(), 0, 0, "",
+                                missingMap.get(familyId).getErrorMsg(), Collections.emptyList()));
+                    }
                 }
-                allFamilyAcls.setId(family.getId());
-                familyAclList.add(allFamilyAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                familyAclList.add(new QueryResult<>(familyId, familyQueryResult.getDbTime(), 0, 0, "",
+                        missingMap.get(familyId).getErrorMsg(), Collections.emptyList()));
             }
         }
         return familyAclList;

@@ -674,24 +674,39 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.UID.key(),
-                CohortDBAdaptor.QueryParams.ID.key()));
-        QueryResult<Cohort> cohortQueryResult = internalGet(study.getUid(), cohortList, queryOptions, user, silent);
+        InternalGetQueryResult<Cohort> cohortQueryResult = internalGet(study.getUid(), cohortList, INCLUDE_COHORT_IDS, user, silent);
 
-        for (Cohort cohort : cohortQueryResult.getResult()) {
-            try {
-                QueryResult<CohortAclEntry> allCohortAcls;
-                if (StringUtils.isNotEmpty(member)) {
-                    allCohortAcls = authorizationManager.getCohortAcl(study.getUid(), cohort.getUid(), user, member);
-                } else {
-                    allCohortAcls = authorizationManager.getAllCohortAcls(study.getUid(), cohort.getUid(), user);
+        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+        if (cohortQueryResult.getMissing() != null) {
+            missingMap = cohortQueryResult.getMissing().stream()
+                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+        }
+        int counter = 0;
+        for (String cohortId : cohortList) {
+            if (!missingMap.containsKey(cohortId)) {
+                try {
+                    QueryResult<CohortAclEntry> allCohortAcls;
+                    if (StringUtils.isNotEmpty(member)) {
+                        allCohortAcls = authorizationManager.getCohortAcl(study.getUid(),
+                                cohortQueryResult.getResult().get(counter).getUid(), user, member);
+                    } else {
+                        allCohortAcls = authorizationManager.getAllCohortAcls(study.getUid(),
+                                cohortQueryResult.getResult().get(counter).getUid(), user);
+                    }
+                    allCohortAcls.setId(cohortId);
+                    cohortAclList.add(allCohortAcls);
+                } catch (CatalogException e) {
+                    if (!silent) {
+                        throw e;
+                    } else {
+                        cohortAclList.add(new QueryResult<>(cohortId, cohortQueryResult.getDbTime(), 0, 0, "",
+                                missingMap.get(cohortId).getErrorMsg(), Collections.emptyList()));
+                    }
                 }
-                allCohortAcls.setId(cohort.getId());
-                cohortAclList.add(allCohortAcls);
-            } catch (CatalogException e) {
-                if (!silent) {
-                    throw e;
-                }
+                counter += 1;
+            } else {
+                cohortAclList.add(new QueryResult<>(cohortId, cohortQueryResult.getDbTime(), 0, 0, "",
+                        missingMap.get(cohortId).getErrorMsg(), Collections.emptyList()));
             }
         }
         return cohortAclList;
