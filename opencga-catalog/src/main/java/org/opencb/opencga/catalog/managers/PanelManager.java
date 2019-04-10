@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -99,7 +100,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    QueryResult<Panel> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    InternalGetQueryResult<Panel> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
             throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing panel entries.");

@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -137,7 +138,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    QueryResult<Individual> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    InternalGetQueryResult<Individual> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
             throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing individual entries.");

@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
@@ -107,8 +108,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    QueryResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user,
+                                                         boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing clinical analysis entries.");
         }

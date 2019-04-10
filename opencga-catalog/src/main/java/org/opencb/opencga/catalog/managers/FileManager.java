@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
@@ -189,7 +190,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    QueryResult<File> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    InternalGetQueryResult<File> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
             throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing file entries.");
