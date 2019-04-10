@@ -502,13 +502,13 @@ public class SampleIndexQueryParser {
                     query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                 }
             }
-            if (LOF_SET_MISSENSE.containsAll(cts)) {
+            if (LOF_EXTENDED_SET.containsAll(cts)) {
                 b |= LOF_MISSENSE_MASK;
                 if (transcriptFlagBasic) {
                     b |= LOF_MISSENSE_BASIC_MASK;
                 }
                 // If all present, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_SET_MISSENSE.size() == cts.size()) {
+                if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == cts.size()) {
                     query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                 }
             }

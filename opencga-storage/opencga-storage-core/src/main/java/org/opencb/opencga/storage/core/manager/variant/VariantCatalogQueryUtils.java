@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQuery.MISSING_SAMPLE;
 
 /**
  * Created on 28/02/17.
@@ -77,9 +78,13 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final String FAMILY_DISORDER_DESC = "Specify the disorder to use for the family segregation";
     public static final QueryParam FAMILY_DISORDER =
             QueryParam.create("familyDisorder", FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
+    public static final String FAMILY_PROBAND_DESC = "Specify the proband child to use for the family segregation";
+    public static final QueryParam FAMILY_PROBAND =
+            QueryParam.create("familyProband", FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by mode of inheritance from a given family. Accepted values: "
             + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, DeNovo ]";
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
+            + "DeNovo, CompoundHeterozygous ]";
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
@@ -296,6 +301,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                     SampleDBAdaptor.QueryParams.ID.key(),
                                     SampleDBAdaptor.QueryParams.UID.key())), sessionId)
                     .getResult();
+            Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, s -> s));
 
             // By default, include all samples from the family
             if (!isValidParam(query, INCLUDE_SAMPLE)) {
@@ -320,15 +326,30 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, null);
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
+                String proband = query.getString(FAMILY_PROBAND.key());
                 String moiString = query.getString(FAMILY_SEGREGATION.key());
                 if (moiString.equalsIgnoreCase("mendelianError") || moiString.equalsIgnoreCase("deNovo")) {
-                    List<Member> children = pedigreeManager.getWithoutChildren();
+                    List<Member> children;
+                    if (StringUtils.isNotEmpty(proband)) {
+                        Member probandMember = pedigree.getMembers()
+                                .stream()
+                                .filter(member -> member.getId().equals(proband))
+                                .findFirst()
+                                .orElse(null);
+                        if (probandMember == null) {
+                            throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
+                                    "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                        }
+                        children = Collections.singletonList(probandMember);
+                    } else {
+                        children = pedigreeManager.getWithoutChildren();
+                    }
                     List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
                     List<String> childrenSampleIds = new ArrayList<>(childrenIds.size());
 
                     for (String childrenId : childrenIds) {
                         Long sampleUid = individualToSampleUid.get(childrenId);
-                        Sample sample = samples.stream().filter(s -> s.getUid() == sampleUid).findFirst().orElse(null);
+                        Sample sample = sampleMap.get(sampleUid);
                         if (sample == null) {
                             throw new VariantQueryException("Sample not found for individual \"" + childrenId + '"');
                         }
@@ -341,7 +362,54 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                     }
                 } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
-                    throw new VariantQueryException("Unsupported CompoundHeterozygous");
+                    List<Member> children;
+                    if (StringUtils.isNotEmpty(proband)) {
+                        Member probandMember = pedigree.getMembers()
+                                .stream()
+                                .filter(member -> member.getId().equals(proband))
+                                .findFirst()
+                                .orElse(null);
+                        if (probandMember == null) {
+                            throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
+                                    "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                        }
+                        children = Collections.singletonList(probandMember);
+                    } else {
+                        children = pedigreeManager.getWithoutChildren();
+                        if (children.size() > 1) {
+                            String childrenStr = children.stream().map(Member::getId).collect(Collectors.joining("', '", "[ '", "' ]"));
+                            throw new VariantQueryException(
+                                    "Unsupported compoundHeterozygous method with families with more than one child."
+                                    + " Specify proband with parameter '" + FAMILY_PROBAND.key() + "'."
+                                    + " Available children: " + childrenStr);
+                        }
+                    }
+
+                    Member child = children.get(0);
+
+                    String childId = sampleMap.get(individualToSampleUid.get(child.getId())).getId();
+                    String fatherId = MISSING_SAMPLE;
+                    String motherId = MISSING_SAMPLE;
+                    if (child.getFather() != null && child.getFather().getId() != null) {
+                        Sample fatherSample = sampleMap.get(individualToSampleUid.get(child.getFather().getId()));
+                        if (fatherSample != null) {
+                            fatherId = fatherSample.getId();
+                        }
+                    }
+
+                    if (child.getMother() != null && child.getMother().getId() != null) {
+                        Sample motherSample = sampleMap.get(individualToSampleUid.get(child.getMother().getId()));
+                        if (motherSample != null) {
+                            motherId = motherSample.getId();
+                        }
+                    }
+
+                    if (fatherId.equals(MISSING_SAMPLE) && motherId.equals(MISSING_SAMPLE)) {
+                        throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
+                                "Require at least one parent to get compound heterozygous");
+                    }
+
+                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(childId, fatherId, motherId));
                 } else {
                     if (family.getDisorders().isEmpty()) {
                         throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have disorders");
@@ -476,6 +544,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         } else if (isValidParam(query, FAMILY_MEMBERS)) {
             throw VariantQueryException.malformedParam(FAMILY_MEMBERS, query.getString(FAMILY_MEMBERS.key()),
                     "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_MEMBERS.toString() + "\".");
+        } else if (isValidParam(query, FAMILY_PROBAND)) {
+            throw VariantQueryException.malformedParam(FAMILY_PROBAND, query.getString(FAMILY_PROBAND.key()),
+                    "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_PROBAND.toString() + "\".");
         } else if (isValidParam(query, FAMILY_SEGREGATION)) {
             throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()),
                     "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_SEGREGATION.toString() + "\".");

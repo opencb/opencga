@@ -25,7 +25,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -77,8 +79,31 @@ public final class VariantQueryUtils {
             "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam SAMPLE_DE_NOVO = QueryParam.create("sampleDeNovo",
             "Get the precomputed mendelian errors non HOM_REF for the given samples", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam SAMPLE_COMPOUND_HETEROZYGOUS = QueryParam.create("sampleCompountHeterozygous",
+            "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
+
+    // LOF does not include missense_variant
+    public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            VariantAnnotationUtils.FRAMESHIFT_VARIANT,
+            VariantAnnotationUtils.INFRAME_DELETION,
+            VariantAnnotationUtils.INFRAME_INSERTION,
+            VariantAnnotationUtils.START_LOST,
+            VariantAnnotationUtils.STOP_GAINED,
+            VariantAnnotationUtils.STOP_LOST,
+            VariantAnnotationUtils.SPLICE_ACCEPTOR_VARIANT,
+            VariantAnnotationUtils.SPLICE_DONOR_VARIANT,
+            VariantAnnotationUtils.TRANSCRIPT_ABLATION,
+            VariantAnnotationUtils.TRANSCRIPT_AMPLIFICATION,
+            VariantAnnotationUtils.INITIATOR_CODON_VARIANT,
+            VariantAnnotationUtils.SPLICE_REGION_VARIANT,
+            VariantAnnotationUtils.INCOMPLETE_TERMINAL_CODON_VARIANT
+    )));
+    public static final Set<String> LOF_EXTENDED_SET = Collections.unmodifiableSet(new HashSet<>(
+            ListUtils.concat(
+                    new ArrayList<>(LOF_SET),
+                    Arrays.asList(VariantAnnotationUtils.MISSENSE_VARIANT))));
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
