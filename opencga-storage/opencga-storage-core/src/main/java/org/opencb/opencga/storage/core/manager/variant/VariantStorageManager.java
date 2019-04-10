@@ -460,10 +460,6 @@ public class VariantStorageManager extends StorageManager {
                 engine -> engine.distinct(query, field));
     }
 
-    public void facet() {
-        throw new UnsupportedOperationException();
-    }
-
     public VariantQueryResult<Variant> getPhased(Variant variant, String study, String sample, String sessionId, QueryOptions options)
             throws CatalogException, IOException, StorageEngineException {
         return secure(new Query(VariantQueryParam.STUDY.key(), study), options, sessionId,
@@ -579,7 +575,7 @@ public class VariantStorageManager extends StorageManager {
         return supplier.apply(variantStorageEngine);
     }
 
-    private <R extends QueryResult> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
+    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
                                              VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
         ObjectMap auditAttributes = new ObjectMap()
@@ -615,9 +611,9 @@ public class VariantStorageManager extends StorageManager {
             auditAttributes.append("storageTimeMillis", storageStopWatch == null
                     ? -1
                     : storageStopWatch.getTime(TimeUnit.MILLISECONDS));
-            if (result != null) {
-                auditAttributes.append("dbTime", result.getDbTime());
-                auditAttributes.append("numResults", result.getResult().size());
+            if (result instanceof QueryResult) {
+                auditAttributes.append("dbTime", ((QueryResult) result).getDbTime());
+                auditAttributes.append("numResults", ((QueryResult) result).getResult().size());
             }
             auditAttributes.append("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS));
             auditAttributes.append("error", result == null);
@@ -637,12 +633,6 @@ public class VariantStorageManager extends StorageManager {
                     dbName,
                     userId, null, null, auditAction, auditAttributes);
         }
-    }
-
-    private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
-                         String sessionId, VariantReadOperation<R> supplier)
-            throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, supplier);
     }
 
     private Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
@@ -770,7 +760,7 @@ public class VariantStorageManager extends StorageManager {
 
     public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, engine -> {
+        return secure(query, queryOptions, sessionId, "facet", engine -> {
             addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
             FacetQueryResult result = engine.facet(query, queryOptions);
