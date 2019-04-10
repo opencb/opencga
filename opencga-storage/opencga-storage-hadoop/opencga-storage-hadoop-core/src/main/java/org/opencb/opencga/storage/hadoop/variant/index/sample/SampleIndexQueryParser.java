@@ -49,7 +49,7 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, GENOTYPE)) {
             HashMap<Object, List<String>> gtMap = new HashMap<>();
-            VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
+            QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
             for (List<String> gts : gtMap.values()) {
                 boolean valid = true;
                 for (String gt : gts) {
@@ -58,11 +58,19 @@ public class SampleIndexQueryParser {
                     valid &= SampleIndexDBLoader.validGenotype(gt);
                     valid &= !isNegated(gt);
                 }
-                if (valid) {
-                    // If any sample is valid, go for it
-                    return true;
+                if (queryOperation == QueryOperation.AND) {
+                    // Intersect sample filters. If any sample filter is valid, the SampleIndex can be used.
+                    if (valid) {
+                        return true;
+                    }
+                } else {
+                    // Union of all sample filters. All sample filters must be valid to use the SampleIndex.
+                    if (!valid) {
+                        return false;
+                    }
                 }
             }
+            return true;
         }
         if (isValidParam(query, SAMPLE, true)) {
             return true;
@@ -167,15 +175,17 @@ public class SampleIndexQueryParser {
             boolean covered = true;
             for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
                 String sampleName = entry.getKey();
-                if (parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
+                if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
                     // We can skip parents, as their genotype filter will be tested in the child
                     // Discard parents that are not children of another sample
+                    // Parents filter can only be used when intersecting (AND) with child
                     logger.debug("Discard parent {}", sampleName);
                     continue;
                 }
                 if (hasNegatedGenotypeFilter(queryOperation, entry.getValue())) {
                     samplesMap.put(sampleName, entry.getValue());
                     if (queryOperation != QueryOperation.OR && childrenSet.contains(sampleName)) {
+                        // Parents filter can only be used when intersecting (AND) with child
                         List<String> parents = parentsMap.get(sampleName);
                         String father = parents.get(0);
                         String mother = parents.get(1);
