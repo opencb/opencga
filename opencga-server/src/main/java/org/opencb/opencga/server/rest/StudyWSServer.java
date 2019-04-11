@@ -459,11 +459,11 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         params = ObjectUtils.defaultIfNull(params, new GroupCreateParams());
 
-        if (StringUtils.isNotEmpty(params.name)) {
+        if (StringUtils.isEmpty(params.name)) {
             params.name = params.id;
         }
 
-        if (StringUtils.isNotEmpty(params.id)) {
+        if (StringUtils.isEmpty(params.id)) {
             params.id = params.name;
         }
         if (StringUtils.isEmpty(params.id)) {
