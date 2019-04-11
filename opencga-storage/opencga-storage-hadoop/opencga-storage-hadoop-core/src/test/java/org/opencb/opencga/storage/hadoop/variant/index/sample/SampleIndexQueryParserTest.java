@@ -209,6 +209,15 @@ public class SampleIndexQueryParserTest {
         parseAnnotationMask(query, true);
         assertTrue(query.isEmpty());
 
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET));
+        parseAnnotationMask(query, false);
+        assertFalse(query.isEmpty()); // Not all samples annotated
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(GENE.key(), "BRCA2");
+        parseAnnotationMask(query, true);
+        assertEquals(2, query.size()); // Filtering by gene
+
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)));
         parseAnnotationMask(query, true);
         assertFalse(query.isEmpty());

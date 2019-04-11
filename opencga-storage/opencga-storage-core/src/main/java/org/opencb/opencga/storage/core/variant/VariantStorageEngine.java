@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.storage.core.variant;
 
-import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -61,12 +59,9 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQuery;
-import org.opencb.opencga.storage.core.variant.query.DBAdaptorVariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -1056,21 +1051,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return               A FacetedQueryResult with the result of the query
      */
     public FacetQueryResult facet(Query query, QueryOptions options) {
-        if (query == null) {
-            query = new Query();
-        }
-        if (options == null) {
-            options = new QueryOptions();
-        }
-
-        FacetQueryResult facetedQueryResult;
         try {
-            facetedQueryResult = getVariantSearchManager().facetedQuery(dbName, query, options);
-        } catch (IOException | SolrException | StorageEngineException | VariantSearchException e) {
-            throw Throwables.propagate(e);
+            return new VariantAggregationQueryExecutor(getVariantSearchManager(), dbName, this, getMetadataManager()).facet(query, options);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
         }
-
-        return facetedQueryResult;
     }
 
     @Override
