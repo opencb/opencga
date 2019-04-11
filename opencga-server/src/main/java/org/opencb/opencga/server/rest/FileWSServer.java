@@ -46,6 +46,7 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -826,12 +827,9 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response updatePOST(
             @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD")
-            @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             ObjectMap params = updateParams.toFileObjectMap();
@@ -1315,7 +1313,7 @@ public class FileWSServer extends OpenCGAWSServer {
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
 
-        public ObjectMap toFileObjectMap() throws JsonProcessingException {
+        public ObjectMap toFileObjectMap() throws JsonProcessingException, WebServiceException {
             File file = new File()
                     .setName(name)
                     .setDescription(description)
@@ -1327,7 +1325,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setAttributes(attributes);
 
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(file));
-            params.putIfNotNull("samples", samples);
+            params.putIfNotNull(FileDBAdaptor.QueryParams.SAMPLES.key(), OpenCGAWSServer.checkUniqueList(samples, "sample"));
             params.putIfNotNull(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSets);
 
             return params;
