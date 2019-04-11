@@ -892,12 +892,12 @@ public class UserManager extends AbstractManager {
                 if (validToken) {
                     return;
                 } else {
-                    throw new CatalogException("Invalid token for user: " + userId);
+                    throw new CatalogException("Invalid authentication token for user: " + userId);
                 }
             }
         }
 
-        throw new CatalogException("Invalid token");
+        throw new CatalogException("Invalid authentication token for user: " + userId);
     }
 
     private void checkUserExists(String userId) throws CatalogException {
