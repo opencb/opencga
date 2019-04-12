@@ -137,7 +137,7 @@ public class SampleIndexDBAdaptor {
         String tableName = tableNameGenerator.getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
-            Get get = new Get(HBaseToSampleIndexConverter.toRowKey(sample, chromosome, position));
+            Get get = new Get(SampleIndexSchema.toRowKey(sample, chromosome, position));
             HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
             try {
                 Result result = table.get(get);
@@ -158,7 +158,7 @@ public class SampleIndexDBAdaptor {
         return hBaseManager.act(tableName, table -> {
 
             Scan scan = new Scan();
-            scan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sample));
+            scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
             HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
             try {
                 ResultScanner scanner = table.getScanner(scan);
@@ -277,10 +277,10 @@ public class SampleIndexDBAdaptor {
      */
     protected static List<Region> splitRegion(Region region) {
         List<Region> regions;
-        if (region.getEnd() - region.getStart() < SampleIndexDBLoader.BATCH_SIZE) {
+        if (region.getEnd() - region.getStart() < SampleIndexSchema.BATCH_SIZE) {
             // Less than one batch. Do not split region
             regions = Collections.singletonList(region);
-        } else if (region.getStart() / SampleIndexDBLoader.BATCH_SIZE + 1 == region.getEnd() / SampleIndexDBLoader.BATCH_SIZE
+        } else if (region.getStart() / SampleIndexSchema.BATCH_SIZE + 1 == region.getEnd() / SampleIndexSchema.BATCH_SIZE
                 && !startsAtBatch(region)
                 && !endsAtBatch(region)) {
             // Consecutive partial batches. Do not split region
@@ -288,13 +288,13 @@ public class SampleIndexDBAdaptor {
         } else {
             regions = new ArrayList<>(3);
             if (!startsAtBatch(region)) {
-                int splitPoint = region.getStart() - region.getStart() % SampleIndexDBLoader.BATCH_SIZE + SampleIndexDBLoader.BATCH_SIZE;
+                int splitPoint = region.getStart() - region.getStart() % SampleIndexSchema.BATCH_SIZE + SampleIndexSchema.BATCH_SIZE;
                 regions.add(new Region(region.getChromosome(), region.getStart(), splitPoint - 1));
                 region.setStart(splitPoint);
             }
             regions.add(region);
             if (!endsAtBatch(region)) {
-                int splitPoint = region.getEnd() - region.getEnd() % SampleIndexDBLoader.BATCH_SIZE;
+                int splitPoint = region.getEnd() - region.getEnd() % SampleIndexSchema.BATCH_SIZE;
                 regions.add(new Region(region.getChromosome(), splitPoint, region.getEnd()));
                 region.setEnd(splitPoint - 1);
             }
@@ -303,11 +303,11 @@ public class SampleIndexDBAdaptor {
     }
 
     protected static boolean startsAtBatch(Region region) {
-        return region.getStart() % SampleIndexDBLoader.BATCH_SIZE == 0;
+        return region.getStart() % SampleIndexSchema.BATCH_SIZE == 0;
     }
 
     protected static boolean endsAtBatch(Region region) {
-        return region.getEnd() + 1 % SampleIndexDBLoader.BATCH_SIZE == 0;
+        return region.getEnd() + 1 % SampleIndexSchema.BATCH_SIZE == 0;
     }
 
     public Scan parse(SingleSampleIndexQuery query, Region region, boolean count) {
@@ -316,42 +316,42 @@ public class SampleIndexDBAdaptor {
         int studyId = toStudyId(query.getStudy());
         int sampleId = toSampleId(studyId, query.getSample());
         if (region != null) {
-            scan.setStartRow(HBaseToSampleIndexConverter.toRowKey(sampleId, region.getChromosome(), region.getStart()));
-            scan.setStopRow(HBaseToSampleIndexConverter.toRowKey(sampleId, region.getChromosome(),
-                    region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexDBLoader.BATCH_SIZE)));
+            scan.setStartRow(SampleIndexSchema.toRowKey(sampleId, region.getChromosome(), region.getStart()));
+            scan.setStopRow(SampleIndexSchema.toRowKey(sampleId, region.getChromosome(),
+                    region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexSchema.BATCH_SIZE)));
         } else {
-            scan.setStartRow(HBaseToSampleIndexConverter.toRowKey(sampleId));
-            scan.setStopRow(HBaseToSampleIndexConverter.toRowKey(sampleId + 1));
+            scan.setStartRow(SampleIndexSchema.toRowKey(sampleId));
+            scan.setStopRow(SampleIndexSchema.toRowKey(sampleId + 1));
         }
         // If genotypes are not defined, return ALL columns
         for (String gt : query.getGenotypes()) {
             if (count) {
-                scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt));
+                scan.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt));
             } else {
                 if (query.getMendelianError()) {
-                    scan.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn());
+                    scan.addColumn(family, SampleIndexSchema.toMendelianErrorColumn());
                 } else {
-                    scan.addColumn(family, HBaseToSampleIndexConverter.toGenotypeColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt));
                 }
                 if (query.getAnnotationIndexMask() != EMPTY_MASK) {
-                    scan.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                 }
                 if (query.getFileIndexMask() != EMPTY_MASK) {
-                    scan.addColumn(family, HBaseToSampleIndexConverter.toFileIndexColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
                 if (query.hasFatherFilter() || query.hasMotherFilter()) {
-                    scan.addColumn(family, HBaseToSampleIndexConverter.toParentsGTColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
                 }
             }
         }
         if (query.getMendelianError()) {
-            scan.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn());
+            scan.addColumn(family, SampleIndexSchema.toMendelianErrorColumn());
         }
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()) + " == "
-                + HBaseToSampleIndexConverter.rowKeyToString(scan.getStartRow()));
+                + SampleIndexSchema.rowKeyToString(scan.getStartRow()));
         logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()) + " == "
-                + HBaseToSampleIndexConverter.rowKeyToString(scan.getStopRow()));
+                + SampleIndexSchema.rowKeyToString(scan.getStopRow()));
         logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
                 .stream().map(Bytes::toString).collect(Collectors.joining(",")));
         logger.info("MaxResultSize = " + scan.getMaxResultSize());

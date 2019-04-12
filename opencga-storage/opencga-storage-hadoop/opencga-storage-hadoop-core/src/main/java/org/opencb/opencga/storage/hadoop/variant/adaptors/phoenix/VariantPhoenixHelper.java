@@ -655,6 +655,14 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public static Integer extractFileId(byte[] columnValue, int offset, int length) {
+        if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, FILE_SUFIX_BYTES)) {
+            return extractId(Bytes.toString(columnValue, offset, length), false, "file");
+        } else {
+            return null;
+        }
+    }
+
     private static Integer extractId(String columnKey, boolean failOnMissing, String idType) {
         int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
         int endIndex = columnKey.lastIndexOf(COLUMN_KEY_SEPARATOR);

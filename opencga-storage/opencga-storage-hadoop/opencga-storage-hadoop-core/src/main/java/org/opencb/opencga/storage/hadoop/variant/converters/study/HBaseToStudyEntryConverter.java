@@ -425,6 +425,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             return;
         }
 
+        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        HashMap<String, String> attributes = convertFileAttributes(fileColumn, fixedAttributes);
+        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
+        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
+    }
+
+    public static HashMap<String, String> convertFileAttributes(PhoenixArray fileColumn, List<String> fixedAttributes) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
         String qual = (String) (fileColumn.getElement(FILE_QUAL_IDX));
         if (qual != null) {
@@ -435,7 +442,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             attributes.put(StudyEntry.FILTER, filter);
         }
 
-        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
         int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
             if (i >= fileColumn.getDimensions()) {
@@ -447,8 +453,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
-        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
-        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
+        return attributes;
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyMetadata studyMetadata, int fillMissingColumnValue) {

@@ -107,8 +107,8 @@ public class SampleIndexAnnotationLoader {
                             annotationMasks.add(nextPair);
                             Variant firstVariant = nextPair.getKey();
                             chromosome = firstVariant.getChromosome();
-                            start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexDBLoader.BATCH_SIZE);
-                            end = start + SampleIndexDBLoader.BATCH_SIZE;
+                            start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE);
+                            end = start + SampleIndexSchema.BATCH_SIZE;
                             nextPair = null;
                         }
                         while (iterator.hasNext()) {
@@ -131,12 +131,12 @@ public class SampleIndexAnnotationLoader {
                 annotationMasks -> {
                     // Ensure is sorted as expected
                     annotationMasks.sort(Comparator.comparing(Pair::getKey,
-                            HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+                            SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
 
                     Variant firstVariant = annotationMasks.get(0).getKey();
                     String chromosome = firstVariant.getChromosome();
-                    int start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexDBLoader.BATCH_SIZE);
-                    int end = start + SampleIndexDBLoader.BATCH_SIZE;
+                    int start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE);
+                    int end = start + SampleIndexSchema.BATCH_SIZE;
 
                     progressLogger.increment(annotationMasks.size(), () -> "Up to batch " + chromosome + ":" + start + "-" + end);
                     List<Put> puts = new ArrayList<>(samples.size());
@@ -192,8 +192,8 @@ public class SampleIndexAnnotationLoader {
                             || firstVariant.getStart() < start
                             || firstVariant.getStart() > end) {
                         chromosome = firstVariant.getChromosome();
-                        start = firstVariant.getStart() - firstVariant.getStart() % SampleIndexDBLoader.BATCH_SIZE;
-                        end = start + SampleIndexDBLoader.BATCH_SIZE;
+                        start = firstVariant.getStart() - firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE;
+                        end = start + SampleIndexSchema.BATCH_SIZE;
                         annotationMasks = annotationIndexDBAdaptor.get(chromosome, start, end);
                     }
 
@@ -213,7 +213,7 @@ public class SampleIndexAnnotationLoader {
 
     private Put annotate(String chromosome, int start, Integer sampleId,
                         Map<String, List<Variant>> sampleIndex, List<Pair<Variant, Byte>> annotationMasks) {
-        byte[] rk = HBaseToSampleIndexConverter.toRowKey(sampleId, chromosome, start);
+        byte[] rk = SampleIndexSchema.toRowKey(sampleId, chromosome, start);
         Put put = new Put(rk);
 
         for (Map.Entry<String, List<Variant>> entry : sampleIndex.entrySet()) {
@@ -260,7 +260,7 @@ public class SampleIndexAnnotationLoader {
 //                            throw new IllegalStateException(msg);
             }
 
-            put.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt), annotations);
+            put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotations);
         }
         return put;
     }

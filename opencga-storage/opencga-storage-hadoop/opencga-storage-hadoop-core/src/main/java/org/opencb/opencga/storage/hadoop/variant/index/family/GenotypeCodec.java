@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample;
+package org.opencb.opencga.storage.hadoop.variant.index.family;
 
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -124,7 +124,7 @@ public class GenotypeCodec {
         }
     }
 
-    protected static boolean isAmbiguousCode(int i) {
+    public static boolean isAmbiguousCode(int i) {
         return AMBIGUOUS_GT_CODE[i];
     }
 }

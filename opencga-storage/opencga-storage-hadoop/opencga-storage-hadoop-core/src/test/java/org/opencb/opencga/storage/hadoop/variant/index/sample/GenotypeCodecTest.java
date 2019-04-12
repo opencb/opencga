@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.GenotypeCodec.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec.*;
 
 /**
  * Created on 04/04/19.

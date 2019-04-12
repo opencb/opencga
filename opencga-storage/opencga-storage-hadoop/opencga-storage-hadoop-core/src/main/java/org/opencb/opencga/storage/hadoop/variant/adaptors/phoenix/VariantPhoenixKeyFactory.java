@@ -142,7 +142,7 @@ public class VariantPhoenixKeyFactory {
     }
 
     // visible for test
-    static String buildSVAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
+    public static String buildSVAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
         // FIXME: Only symbolic variants shold include the extended SV alternate!
         // All variants with reference or alternate large than SV_THRESHOLD, must have the extended SV version, even if it's empty
         if (sv == null
@@ -250,7 +250,7 @@ public class VariantPhoenixKeyFactory {
         }
     }
 
-    private static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type) {
+    public static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type) {
 
         Integer end = null;
         int ciStartL = 0;
