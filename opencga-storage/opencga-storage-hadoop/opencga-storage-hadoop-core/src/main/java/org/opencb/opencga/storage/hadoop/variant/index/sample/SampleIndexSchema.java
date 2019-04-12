@@ -6,6 +6,8 @@ import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 
+import java.util.Comparator;
+
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 
 /**
@@ -18,11 +20,19 @@ import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 public final class SampleIndexSchema {
 
     public static final int BATCH_SIZE = 1_000_000;
+    public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR = Comparator.comparing(Variant::getStart)
+            .thenComparing(Variant::getEnd)
+            .thenComparing(Variant::getReference)
+            .thenComparing(Variant::getAlternate)
+            .thenComparing(Variant::toString);
     static final byte[] MENDELIAN_ERROR_COLUMN = Bytes.toBytes("ME");
     static final char META_PREFIX = '_';
     static final String PARENTS_PREFIX = META_PREFIX + "P_";
+    static final byte[] PARENTS_PREFIX_BYTES = Bytes.toBytes(PARENTS_PREFIX);
     static final String FILE_PREFIX = META_PREFIX + "F_";
+    static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
     static final String ANNOTATION_PREFIX = META_PREFIX + "A_";
+    static final byte[] ANNOTATION_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
     static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);

@@ -6,7 +6,6 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Pair;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
@@ -51,7 +50,7 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
                         buffer.sort((o1, o2) -> {
                             Variant v1 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o1.getSecond().getRow());
                             Variant v2 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o2.getSecond().getRow());
-                            return HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(v1, v2);
+                            return SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(v1, v2);
                         });
                     }
 

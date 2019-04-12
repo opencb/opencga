@@ -63,6 +63,24 @@ public class SampleIndexToHBaseConverter {
         return put;
     }
 
+    public Put convert(byte[] rk, Map<String, SortedSet<Variant>> gtsMap, Map<String, byte[]> fileMaskMap) {
+        Put put = new Put(rk);
+
+        for (Map.Entry<String, SortedSet<Variant>> gtsEntry : gtsMap.entrySet()) {
+            SortedSet<Variant> variants = gtsEntry.getValue();
+            String gt = gtsEntry.getKey();
+
+            byte[] variantsBytes = variantConverter.toBytes(variants);
+            byte[] fileMask = fileMaskMap.get(gt);
+
+            put.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt), variantsBytes);
+            put.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
+            put.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt), fileMask);
+        }
+
+        return put;
+    }
+
     public byte createFileIndexValue(int sampleIdx, Variant variant) {
         byte b = 0;
 

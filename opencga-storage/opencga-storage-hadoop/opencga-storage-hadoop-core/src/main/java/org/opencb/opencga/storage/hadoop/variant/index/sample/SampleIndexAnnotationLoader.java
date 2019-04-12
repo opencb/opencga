@@ -131,7 +131,7 @@ public class SampleIndexAnnotationLoader {
                 annotationMasks -> {
                     // Ensure is sorted as expected
                     annotationMasks.sort(Comparator.comparing(Pair::getKey,
-                            HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+                            SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
 
                     Variant firstVariant = annotationMasks.get(0).getKey();
                     String chromosome = firstVariant.getChromosome();

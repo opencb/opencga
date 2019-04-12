@@ -12,12 +12,14 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableReducer;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.ArrayWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.phoenix.schema.types.PArrayDataType;
+import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -37,6 +39,7 @@ import java.util.*;
 
 import static org.apache.hadoop.hbase.filter.CompareFilter.CompareOp.NOT_EQUAL;
 import static org.apache.phoenix.query.QueryConstants.SEPARATOR_BYTE;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
 /**
  * Created on 15/05/18.
@@ -201,20 +204,30 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     public static class GtVariantsWritable extends ArrayWritable {
 
         public GtVariantsWritable() {
-            super(Text.class);
+            super(BytesWritable.class);
         }
 
-        public GtVariantsWritable(String gt, String variants) {
+        public GtVariantsWritable(String gt, byte[] variants) {
+            this(gt, variants, variants.length);
+        }
+
+        public GtVariantsWritable(String gt, byte[] variants, int length) {
             this();
-            super.set(new Writable[]{new Text(gt), new Text(variants)});
+            super.set(new Writable[]{new BytesWritable(Bytes.toBytes(gt)), new BytesWritable(variants, length)});
         }
 
         public String getGt() {
-            return get()[0].toString();
+            BytesWritable bytesWritable = (BytesWritable) get()[0];
+            return Bytes.toString(bytesWritable.getBytes(), 0, bytesWritable.getLength());
         }
 
-        public String getVariants() {
-            return get()[1].toString();
+        public byte[] getVariants() {
+            BytesWritable bytesWritable = (BytesWritable) get()[1];
+            if (bytesWritable.getLength() == bytesWritable.getCapacity()) {
+                return bytesWritable.getBytes();
+            } else {
+                return bytesWritable.copyBytes();
+            }
         }
 
     }
@@ -222,6 +235,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     public static class SampleIndexerMapper extends TableMapper<ImmutableBytesWritable, GtVariantsWritable> {
 
         private Set<Integer> samplesToCount;
+        private SampleIndexVariantBiConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -230,6 +244,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             for (int i = 0; i < Math.min(samples.length, 5); i++) {
                 samplesToCount.add(samples[i]);
             }
+            converter = new SampleIndexVariantBiConverter();
         }
 
         @Override
@@ -237,33 +252,24 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
 
             for (Cell cell : result.rawCells()) {
-                String column = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                int sampleId = Integer.valueOf(column.split("_")[1]);
+                Integer sampleId = VariantPhoenixHelper
+                        .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                if (sampleId != null) {
+                    ImmutableBytesWritable ptr = new ImmutableBytesWritable(
+                            cell.getValueArray(),
+                            cell.getValueOffset(),
+                            cell.getValueLength());
+                    PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                    String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
 
-//                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(
-//                        cell.getValueArray(),
-//                        cell.getValueOffset(),
-//                        cell.getValueLength());
-//
-//                String gt = array.getElement(0).toString();
-
-                byte[] valueArray = cell.getValueArray();
-                int gtLength = 0;
-                for (int i = cell.getValueOffset(); i < valueArray.length; i++) {
-                    if (valueArray[i] == SEPARATOR_BYTE) {
-                        break;
-                    }
-                    gtLength++;
-                }
-                String gt = Bytes.toString(valueArray, cell.getValueOffset(), gtLength);
-
-                if (SampleIndexDBLoader.validGenotype(gt)) {
-                    ImmutableBytesWritable key = new ImmutableBytesWritable(
-                            SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
-                    GtVariantsWritable value = new GtVariantsWritable(gt, variant.toString());
-                    context.write(key, value);
-                    if (samplesToCount.contains(sampleId)) {
-                        context.getCounter("SAMPLE_INDEX", "SAMPLE_" + sampleId + '_' + gt).increment(1);
+                    if (SampleIndexDBLoader.validGenotype(gt)) {
+                        ImmutableBytesWritable key = new ImmutableBytesWritable(
+                                SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
+                        GtVariantsWritable value = new GtVariantsWritable(gt, converter.toBytes(variant));
+                        context.write(key, value);
+                        if (samplesToCount.contains(sampleId)) {
+                            context.getCounter("SAMPLE_INDEX", "SAMPLE_" + sampleId + '_' + gt).increment(1);
+                        }
                     }
                 }
             }
@@ -276,22 +282,18 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         @Override
         protected void reduce(ImmutableBytesWritable key, Iterable<GtVariantsWritable> values, Context context)
                 throws IOException, InterruptedException {
-            Map<String, StringBuilder> gtsMap = new HashMap<>();
+            Map<String, ByteArrayOutputStream> gtsMap = new HashMap<>();
             for (GtVariantsWritable value : values) {
                 String gt = value.getGt();
-                String variant = value.getVariants();
-                gtsMap.compute(gt, (k, sb) -> {
-                    if (sb == null) {
-                        sb = new StringBuilder(variant);
-                    } else {
-                        sb.append(',').append(variant);
-                    }
-                    return sb;
-                });
+                ByteArrayOutputStream stream = gtsMap.computeIfAbsent(gt, g -> new ByteArrayOutputStream(1024));
+                if (stream.size() > 0) {
+                    stream.write(0);
+                }
+                stream.write(value.getVariants());
             }
 
-            for (Map.Entry<String, StringBuilder> entry : gtsMap.entrySet()) {
-                context.write(key, new GtVariantsWritable(entry.getKey(), entry.getValue().toString()));
+            for (Map.Entry<String, ByteArrayOutputStream> entry : gtsMap.entrySet()) {
+                context.write(key, new GtVariantsWritable(entry.getKey(), entry.getValue().toByteArray()));
             }
         }
     }
@@ -299,30 +301,29 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     public static class SampleIndexerReducer extends TableReducer<ImmutableBytesWritable, GtVariantsWritable, ImmutableBytesWritable> {
 
         private byte[] family;
-        private SampleIndexVariantBiConverter converter;
+        private SampleIndexToHBaseConverter putConverter;
+        private SampleIndexVariantBiConverter variantsConverter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
-            converter = new SampleIndexVariantBiConverter();
+            putConverter = new SampleIndexToHBaseConverter(family);
+            variantsConverter = new SampleIndexVariantBiConverter();
         }
 
         @Override
         protected void reduce(ImmutableBytesWritable key, Iterable<GtVariantsWritable> values, Context context)
                 throws IOException, InterruptedException {
-            Map<String, ByteArrayOutputStream> gtsMap = new HashMap<>();
+            Map<String, SortedSet<Variant>> gtsMap = new HashMap<>();
             for (GtVariantsWritable value : values) {
-                String gt = value.getGt();
-                ByteArrayOutputStream stream = gtsMap.computeIfAbsent(gt, g -> new ByteArrayOutputStream(1024));
-                for (String variant : value.getVariants().split(",")) {
-                    converter.toBytes(new Variant(variant), stream);
-                }
+                SortedSet<Variant> set = gtsMap.computeIfAbsent(value.getGt(), g -> new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+
+                String chromosome = SampleIndexSchema.chromosomeFromRowKey(key.get());
+                int batchStart = SampleIndexSchema.batchStartFromRowKey(key.get());
+                set.addAll(variantsConverter.toVariants(chromosome, batchStart, value.getVariants(), 0, value.getVariants().length));
             }
-            Put put = new Put(key.get());
+            Put put = putConverter.convert(key.get(), gtsMap, Collections.emptyMap());
             put.setDurability(Durability.SKIP_WAL);
-            for (Map.Entry<String, ByteArrayOutputStream> entry : gtsMap.entrySet()) {
-                put.addColumn(family, Bytes.toBytes(entry.getKey()), entry.getValue().toByteArray());
-            }
             context.getCounter("SAMPLE_INDEX", "PUT").increment(1);
 
             context.write(key, put);

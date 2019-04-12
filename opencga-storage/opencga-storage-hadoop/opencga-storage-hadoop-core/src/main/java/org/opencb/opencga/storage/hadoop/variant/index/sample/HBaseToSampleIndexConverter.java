@@ -32,18 +32,6 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
  */
 public class HBaseToSampleIndexConverter implements Converter<Result, Collection<Variant>> {
 
-    public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR = Comparator.comparing(Variant::getStart)
-            .thenComparing(Variant::getEnd)
-            .thenComparing(Variant::getReference)
-            .thenComparing(Variant::getAlternate)
-            .thenComparing(Variant::toString);
-
-    private static final byte[] ANNOTATION_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_PREFIX);
-    private static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
-    private static final byte[] PARENTS_PREFIX_BYTES = Bytes.toBytes(PARENTS_PREFIX);
-
-    protected static final String SEPARATOR_STR = ",";
-
     private final SampleIndexVariantBiConverter converter;
 
     // Region filter

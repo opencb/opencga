@@ -110,7 +110,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
                                 return list;
                             })
                             .get(sampleIdx)
-                            .computeIfAbsent(gt, k -> new TreeSet<>(HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+                            .computeIfAbsent(gt, k -> new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR));
                     variantsList.add(variant);
                 }
                 sampleIdx++;

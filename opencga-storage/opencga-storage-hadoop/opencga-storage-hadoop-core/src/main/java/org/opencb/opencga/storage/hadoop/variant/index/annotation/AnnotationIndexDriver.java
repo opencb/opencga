@@ -16,9 +16,8 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -38,7 +37,7 @@ import java.io.IOException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AnnotationIndexDriver extends AbstractVariantsTableDriver {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexDriver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AnnotationIndexDriver.class);
     private Region region;
     private String annotationIndexTable;
 
