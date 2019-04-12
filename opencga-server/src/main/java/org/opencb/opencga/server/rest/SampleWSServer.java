@@ -675,8 +675,44 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/stats")
-    @ApiOperation(value = "Fetch catalog sample stats", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch catalog sample stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "Source") @QueryParam("source") String source,
+            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
+            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
+            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
+            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Type") @QueryParam("type") String type,
+            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Release") @QueryParam("release") String release,
+            @ApiParam(value = "Version") @QueryParam("version") String version,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+
+            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
+
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+        try {
+            query.remove("study");
+            query.remove("field");
+
+            queryOptions.put(QueryOptions.FACET, facet);
+
+            FacetQueryResult queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
+                    sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Fetch catalog sample stats", position = 15, response = QueryResponse.class)
+    public Response getAggregationStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Source") @QueryParam("source") String source,
