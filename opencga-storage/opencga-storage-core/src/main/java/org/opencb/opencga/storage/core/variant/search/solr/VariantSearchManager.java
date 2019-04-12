@@ -265,7 +265,7 @@ public class VariantSearchManager {
             return true;
         }, ParallelTaskRunner.Config.builder()
                 .setBatchSize(insertBatchSize)
-                .setCapacity(3)
+                .setCapacity(2)
                 .setNumTasks(1)
                 .build());
 

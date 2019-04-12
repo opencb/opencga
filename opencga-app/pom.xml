@@ -193,7 +193,7 @@
                             </platforms>
                             <jvmSettings>
                                 <initialMemorySize>256m</initialMemorySize>
-                                <maxMemorySize>8192m</maxMemorySize>
+                                <maxMemorySize>12288m</maxMemorySize>
                                 <systemProperties>
                                     <systemProperty>file.encoding=UTF-8</systemProperty>
                                 </systemProperties>
