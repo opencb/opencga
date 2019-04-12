@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
 import java.util.*;
 

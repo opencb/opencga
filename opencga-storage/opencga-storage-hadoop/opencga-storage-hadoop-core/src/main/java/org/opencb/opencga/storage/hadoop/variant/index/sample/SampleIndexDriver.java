@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -258,7 +259,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
                 if (SampleIndexDBLoader.validGenotype(gt)) {
                     ImmutableBytesWritable key = new ImmutableBytesWritable(
-                            HBaseToSampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
+                            SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
                     GtVariantsWritable value = new GtVariantsWritable(gt, variant.toString());
                     context.write(key, value);
                     if (samplesToCount.contains(sampleId)) {
@@ -298,32 +299,29 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     public static class SampleIndexerReducer extends TableReducer<ImmutableBytesWritable, GtVariantsWritable, ImmutableBytesWritable> {
 
         private byte[] family;
+        private SampleIndexVariantBiConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            converter = new SampleIndexVariantBiConverter();
         }
 
         @Override
         protected void reduce(ImmutableBytesWritable key, Iterable<GtVariantsWritable> values, Context context)
                 throws IOException, InterruptedException {
-            Map<String, StringBuilder> gtsMap = new HashMap<>();
+            Map<String, ByteArrayOutputStream> gtsMap = new HashMap<>();
             for (GtVariantsWritable value : values) {
                 String gt = value.getGt();
-                String variant = value.getVariants();
-                gtsMap.compute(gt, (k, sb) -> {
-                    if (sb == null) {
-                        sb = new StringBuilder(variant);
-                    } else {
-                        sb.append(',').append(variant);
-                    }
-                    return sb;
-                });
+                ByteArrayOutputStream stream = gtsMap.computeIfAbsent(gt, g -> new ByteArrayOutputStream(1024));
+                for (String variant : value.getVariants().split(",")) {
+                    converter.toBytes(new Variant(variant), stream);
+                }
             }
             Put put = new Put(key.get());
             put.setDurability(Durability.SKIP_WAL);
-            for (Map.Entry<String, StringBuilder> entry : gtsMap.entrySet()) {
-                put.addColumn(family, Bytes.toBytes(entry.getKey()), Bytes.toBytes(entry.getValue().toString()));
+            for (Map.Entry<String, ByteArrayOutputStream> entry : gtsMap.entrySet()) {
+                put.addColumn(family, Bytes.toBytes(entry.getKey()), entry.getValue().toByteArray());
             }
             context.getCounter("SAMPLE_INDEX", "PUT").increment(1);
 

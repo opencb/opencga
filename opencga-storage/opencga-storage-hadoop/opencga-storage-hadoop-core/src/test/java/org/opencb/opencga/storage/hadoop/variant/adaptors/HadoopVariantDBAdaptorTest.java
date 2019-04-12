@@ -286,24 +286,30 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     public SampleIndexQuery testQueryIndex(Query annotationQuery, Query query) throws Exception {
-        //        System.out.println("----------------------------------------------------------");
+//        System.out.println("----------------------------------------------------------");
 //        queryResult = query(query, new QueryOptions());
 //        int numResultsSample = queryResult.getNumResults();
 //        System.out.println("Sample query: " + numResultsSample);
 
         // Query DBAdaptor
+        System.out.println("Query DBAdaptor");
         query.putAll(annotationQuery);
-        queryResult = query(query, new QueryOptions());
+        queryResult = query(new Query(query), new QueryOptions());
         int onlyDBAdaptor = queryResult.getNumResults();
 
         // Query SampleIndex
-        SampleIndexQuery indexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, variantStorageEngine.getMetadataManager());
-        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
-                .count(indexQuery, "NA19600");
+        System.out.println("Query SampleIndex");
+        SampleIndexQuery indexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), variantStorageEngine.getMetadataManager());
+//        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+//                .count(indexQuery, "NA19600");
+        int onlyIndex = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                .iterator(indexQuery).toQueryResult().getNumResults();
 
         // Query SampleIndex+DBAdaptor
-        queryResult = variantStorageEngine.get(query, new QueryOptions());
+        System.out.println("Query SampleIndex+DBAdaptor");
+        VariantQueryResult<Variant> queryResult = variantStorageEngine.get(query, new QueryOptions());
         int indexAndDBAdaptor = queryResult.getNumResults();
+        System.out.println("queryResult.source = " + queryResult.getSource());
 
         System.out.println("----------------------------------------------------------");
         System.out.println("query = " + annotationQuery.toJson());

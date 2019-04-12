@@ -9,13 +9,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.stream.Collectors;
-
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter.*;
 
 /**
  * Created on 31/01/19.
@@ -37,9 +32,11 @@ public class SampleIndexToHBaseConverter {
     public static final byte UNUSED_5_MASK     = (byte) (1 << 5);
     public static final byte UNUSED_6_MASK     = (byte) (1 << 6);
     public static final byte UNUSED_7_MASK     = (byte) (1 << 7);
+    private final SampleIndexVariantBiConverter variantConverter;
 
     public SampleIndexToHBaseConverter(byte[] family) {
         this.family = family;
+        variantConverter = new SampleIndexVariantBiConverter();
     }
 
     public Put convert(byte[] rk, Map<String, SortedSet<Variant>> gtsMap, int sampleIdx) {
@@ -49,8 +46,7 @@ public class SampleIndexToHBaseConverter {
             SortedSet<Variant> variants = gtsEntry.getValue();
             String gt = gtsEntry.getKey();
 
-            String variantsStr = variants.stream().map(Variant::toString).collect(Collectors.joining(","));
-
+            byte[] variantsBytes = variantConverter.toBytes(variants);
             byte[] fileMask = new byte[variants.size()];
             int i = 0;
             for (Variant variant : variants) {
@@ -58,9 +54,9 @@ public class SampleIndexToHBaseConverter {
                 i++;
             }
 
-            put.addColumn(family, toGenotypeColumn(gt), Bytes.toBytes(variantsStr));
-            put.addColumn(family, toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
-            put.addColumn(family, toFileIndexColumn(gt), fileMask);
+            put.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt), variantsBytes);
+            put.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
+            put.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt), fileMask);
         }
 
 
@@ -115,17 +111,4 @@ public class SampleIndexToHBaseConverter {
         return b;
     }
 
-    public void serializeMendelianError(ByteArrayOutputStream stream, Variant variant, String gt, int gtIdx, int errorCode)
-            throws IOException {
-        if (stream.size() != 0) {
-            stream.write(HBaseToSampleIndexConverter.SEPARATOR);
-        }
-        stream.write(Bytes.toBytes(variant.toString()));
-        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
-        stream.write(Bytes.toBytes(gt));
-        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_SEPARATOR);
-        stream.write(Bytes.toBytes(Integer.toString(gtIdx)));
-        stream.write(HBaseToSampleIndexConverter.MENDELIAN_ERROR_CODE_SEPARATOR);
-        stream.write(Bytes.toBytes(Integer.toString(errorCode)));
-    }
 }

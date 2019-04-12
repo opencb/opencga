@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.stats.me;
+package org.opencb.opencga.storage.hadoop.variant.index.family;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -28,10 +28,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.GenotypeCodec;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -167,7 +164,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         VariantMapReduceUtil.initTableMapperJob(job, variantTable,
                 scan, getMapperClass(), VariantAlignedInputFormat.class);
         VariantAlignedInputFormat.setDelegatedInputFormat(job, TableInputFormat.class);
-        VariantAlignedInputFormat.setBatchSize(job, SampleIndexDBLoader.BATCH_SIZE);
+        VariantAlignedInputFormat.setBatchSize(job, SampleIndexSchema.BATCH_SIZE);
 
         VariantMapReduceUtil.setOutputHBaseTable(job, getTableNameGenerator().getSampleIndexTableName(getStudyId()));
 
@@ -291,7 +288,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                     context.getCounter(COUNTER_GROUP_NAME, "me_" + me).increment(1);
                     if (me > 0) {
                         ByteArrayOutputStream stream = mendelianErrorsMap.get(child);
-                        converter.serializeMendelianError(stream, variant, childGtStr, idx, me);
+                        MendelianErrorSampleIndexConverter.toBytes(stream, variant, childGtStr, idx, me);
                     }
                 }
             }
@@ -305,7 +302,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 Integer sampleId = entry.getKey();
                 ByteArrayOutputStream meValue = entry.getValue();
 
-                byte[] row = HBaseToSampleIndexConverter.toRowKey(sampleId, chromosome, position);
+                byte[] row = SampleIndexSchema.toRowKey(sampleId, chromosome, position);
                 Put put = new Put(row);
 
                 for (Map.Entry<String, ByteArrayOutputStream> gtEntry : parentsGTMap.get(sampleId).entrySet()) {
@@ -315,7 +312,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                     if (gtValue.size() > 0) {
                         // Copy value, as the ByteArrayOutputStream is erased
                         byte[] value = gtValue.toByteArray();
-                        put.addColumn(family, HBaseToSampleIndexConverter.toParentsGTColumn(gt), value);
+                        put.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt), value);
                         gtValue.reset();
                     }
                 }
@@ -323,7 +320,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 if (meValue.size() > 0) {
                     // Copy value, as the ByteArrayOutputStream is erased
                     byte[] value = meValue.toByteArray();
-                    put.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn(), value);
+                    put.addColumn(family, SampleIndexSchema.toMendelianErrorColumn(), value);
                     meValue.reset();
                 }
 
