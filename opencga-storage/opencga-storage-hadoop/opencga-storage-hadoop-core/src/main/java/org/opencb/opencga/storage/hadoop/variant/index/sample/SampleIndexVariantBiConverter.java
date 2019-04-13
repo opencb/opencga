@@ -128,10 +128,18 @@ public class SampleIndexVariantBiConverter {
     }
 
     public SampleIndexVariantIterator toVariantsIterator(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
-        if (Bytes.startsWith(bytes, Bytes.toBytes(chromosome + ':'))) {
-            return new StringSampleIndexVariantIterator(bytes, offset, length);
+        if (length <= 0) {
+            return EmptySampleIndexVariantIterator.emptyIterator();
         } else {
-            return new ByteSampleIndexVariantIterator(chromosome, batchStart, bytes, offset, length);
+            // Compare only the first letters to run a "startsWith"
+            byte[] startsWith = Bytes.toBytes(chromosome + ':');
+            int compareLength = startsWith.length;
+            if (length > compareLength
+                    && Bytes.compareTo(bytes, offset, compareLength, startsWith, 0, compareLength) == 0) {
+                return new StringSampleIndexVariantIterator(bytes, offset, length);
+            } else {
+                return new ByteSampleIndexVariantIterator(chromosome, batchStart, bytes, offset, length);
+            }
         }
     }
 
@@ -156,6 +164,37 @@ public class SampleIndexVariantBiConverter {
          * @return next variant
          */
         Variant next();
+    }
+
+    private static final class EmptySampleIndexVariantIterator implements SampleIndexVariantIterator {
+
+        private EmptySampleIndexVariantIterator() {
+        }
+
+        private static final EmptySampleIndexVariantIterator EMPTY_ITERATOR = new EmptySampleIndexVariantIterator();
+
+        public static SampleIndexVariantIterator emptyIterator() {
+            return EMPTY_ITERATOR;
+        }
+
+        @Override
+        public int nextIndex() {
+            return 0;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public void skip() {
+        }
+
+        @Override
+        public Variant next() {
+            throw new NoSuchElementException("Empty iterator");
+        }
     }
 
     private class StringSampleIndexVariantIterator implements SampleIndexVariantIterator {

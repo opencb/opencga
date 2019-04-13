@@ -91,46 +91,35 @@ public class SampleIndexVariantBiConverterTest {
         }
 
         byte[] bytes = converter.toBytes(variants);
-        byte[] bytes2 = Bytes.toBytes(variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
+        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytes, 0, bytes.length));
 
-        int offset = bytes.length + 10;
-        byte[] bytes3 = new byte[bytes.length + offset];
-        int length = converter.toBytes(variants, bytes3, offset);
+        int bytes3offset = bytes.length + 10;
+        byte[] bytes3 = new byte[bytes.length + bytes3offset];
+        int length = converter.toBytes(variants, bytes3, bytes3offset);
+        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytes3, bytes3offset, length));
 
-        SampleIndexVariantBiConverter.SampleIndexVariantIterator iterator =
-                converter.toVariantsIterator("1", batchStart, bytes, 0, bytes.length);
-        SampleIndexVariantBiConverter.SampleIndexVariantIterator iterator2 =
-                converter.toVariantsIterator("1", batchStart, bytes2, 0, bytes2.length);
-        SampleIndexVariantBiConverter.SampleIndexVariantIterator iterator3 =
-                converter.toVariantsIterator("1", batchStart, bytes3, offset, length);
 
+        byte[] bytesOld = converter.toBytesSimpleString(variants);
+        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytesOld, 0, bytesOld.length));
+
+        byte[] bytesOldOffset = new byte[bytesOld.length + 10];
+        System.arraycopy(bytesOld, 0, bytesOldOffset, 10, bytesOld.length);
+        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytesOldOffset, 10, bytesOld.length));
+    }
+
+    private void checkIterator(int numVariants, List<Variant> variants, SampleIndexVariantBiConverter.SampleIndexVariantIterator iterator) {
         int i = 0;
         while (iterator.hasNext()) {
-//            assertTrue(iterator.hasNext());
-            assertTrue(iterator2.hasNext());
-            assertTrue(iterator3.hasNext());
-
             assertEquals(i, iterator.nextIndex());
-            assertEquals(i, iterator2.nextIndex());
-            assertEquals(i, iterator3.nextIndex());
             if (i % 2 == 0) {
                 iterator.skip();
-                iterator2.skip();
-                iterator3.skip();
             } else {
                 assertEquals(variants.get(i), iterator.next());
-                assertEquals(variants.get(i), iterator2.next());
-                assertEquals(variants.get(i), iterator3.next());
             }
             i++;
         }
-
         assertFalse(iterator.hasNext());
-        assertFalse(iterator2.hasNext());
-        assertFalse(iterator3.hasNext());
-
         assertEquals(numVariants, i);
-
     }
 
     @Test
