@@ -136,10 +136,43 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projects}/stats")
-    @ApiOperation(value = "Fetch catalog project stats", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch catalog project stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Comma separated list of projects [user@]project up to a maximum of 100", required = true)
                 @PathParam("projects") String projects,
+            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
+        try {
+            if (defaultStats == null) {
+                defaultStats = true;
+            }
+            List<String> idList = getIdList(projects);
+            Map<String, Object> result = new HashMap<>();
+            for (String project : idList) {
+                result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
+                        cohortFields, familyFields, defaultStats, sessionId));
+            }
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{projects}/aggregationStats")
+    @ApiOperation(value = "Fetch catalog project stats", position = 15, response = QueryResponse.class)
+    public Response getAggregationStats(
+            @ApiParam(value = "Comma separated list of projects [user@]project up to a maximum of 100", required = true)
+            @PathParam("projects") String projects,
             @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
             @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
                     + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
