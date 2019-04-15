@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class ClinicalAnalysisManagerTest extends GenericTest {
 
@@ -144,6 +143,30 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
                 .first().getUid(), dummyEnvironment.first().getProband().getSamples().get(0).getUid());
+    }
+
+    @Test
+    public void checkFamilyMembersOrder() throws CatalogException {
+        QueryResult<Family> dummyFamily = createDummyFamily();
+
+        // Remove all samples from the dummy family to avoid errors
+        for (Individual member : dummyFamily.first().getMembers()) {
+            member.setSamples(null);
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setProband(new Individual().setId("child1"));
+        clinicalAnalysis.setFamily(dummyFamily.first());
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
+                clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        assertEquals("child1", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(0).getId());
+        assertEquals("father", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(1).getId());
+        assertEquals("mother", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(2).getId());
+        assertEquals("child2", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(3).getId());
+        assertEquals("child3", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(4).getId());
     }
 
     @Test
