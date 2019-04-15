@@ -683,6 +683,27 @@ db.panel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "b
 db.panel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
 db.panel.createIndex({"studyUid": 1}, {"background": true});
 
+db.clinical.createIndex({"uuid": 1}, {"background": true});
+db.clinical.createIndex({"uid": 1}, {"background": true});
+db.clinical.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.clinical.createIndex({"type": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"dueDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"priority": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"flags": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"studyUid": 1}, {"background": true});
+
+db.interpretation.createIndex({"uuid": 1}, {"background": true});
+db.interpretation.createIndex({"uid": 1}, {"background": true});
+db.interpretation.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.interpretation.createIndex({"status": 1, "studyUid": 1}, {"background": true});
+db.interpretation.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.interpretation.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.interpretation.createIndex({"studyUid": 1}, {"background": true});
+
 // #912
 db.job.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
 db.job.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
