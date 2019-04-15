@@ -833,9 +833,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                         geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soIdInt + "_" + transcriptFlag);
+                                        // This is useful when no gene or transcript is used, for example 'LoF' in 'basic' transcripts
+                                        geneToSOAccessions.add(soIdInt + "_" + transcriptFlag);
                                     }
-                                    // This is useful when no gene or transcript is used, for example we want 'LoF' in 'basic' transcripts
-                                    geneToSOAccessions.add(soIdInt + "_" + transcriptFlag);
                                 }
                             }
                         }
@@ -941,24 +941,21 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
 
             // Set Populations frequencies
+            Map<String, Float> populationFrequencies = new HashMap<>();
             if (variantAnnotation.getPopulationFrequencies() != null) {
-                Map<String, Float> populationFrequencies = new HashMap<>();
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                    populationFrequencies.put("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getStudy()
+                    populationFrequencies.put("popFreq"
+                                    + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getStudy()
                                     + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getPopulation(),
                             populationFrequency.getAltAlleleFreq());
                 }
-                // Add 0.0 frequency for common populations, this will allow to skip a NON EXIST query and improve performance
-                populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "1kG_phase3__ALL", 0.0f);
-                populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "GNOMAD_EXOMES__ALL", 0.0f);
-                populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "GNOMAD_GENOMES__ALL", 0.0f);
-                populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "ESP6500__ALL", 0.0f);
-                populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "UK10K__ALL", 0.0f);
-                populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "GONL__ALL", 0.0f);
-                if (!populationFrequencies.isEmpty()) {
-                    variantSearchModel.setPopFreq(populationFrequencies);
-                }
             }
+            // Add 0.0 for mot commonly used populations, this will allow to skip a NON EXIST query and improve performance
+            populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "1kG_phase3__ALL", 0.0f);
+            populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "GNOMAD_EXOMES__ALL", 0.0f);
+            populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "GNOMAD_GENOMES__ALL", 0.0f);
+            // Set population frequencies into the model
+            variantSearchModel.setPopFreq(populationFrequencies);
 
             // Set Conservation scores
             if (variantAnnotation.getConservation() != null) {
