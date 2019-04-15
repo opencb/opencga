@@ -389,7 +389,7 @@ public class VariantSqlQueryParser {
                 for (String gene : genes) {
                     for (String so : soList) {
                         int soNumber = parseConsequenceType(so);
-                        gnSoSet.add(VariantAnnotationToPhoenixConverter.buildGeneSO(gene, soNumber));
+                        gnSoSet.add(VariantAnnotationToPhoenixConverter.combine(gene, soNumber));
                     }
                 }
                 for (String gnSo : gnSoSet) {
