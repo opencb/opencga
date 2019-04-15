@@ -51,6 +51,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter(helper, 0);
 
         byte index = new AnnotationIndexConverter().convert(annotationConverter.convert(result));
+                // TODO Get stats given index values
 
         for (Cell cell : result.rawCells()) {
             if (VariantPhoenixHelper.isSampleCell(cell)) {

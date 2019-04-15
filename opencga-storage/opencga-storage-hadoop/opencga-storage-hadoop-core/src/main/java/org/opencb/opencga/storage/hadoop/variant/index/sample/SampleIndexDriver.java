@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
 import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.QualifierFilter;
 import org.apache.hadoop.hbase.filter.ValueFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.hadoop.hbase.filter.CompareFilter.CompareOp.EQUAL;
 import static org.apache.hadoop.hbase.filter.CompareFilter.CompareOp.NOT_EQUAL;
 import static org.apache.phoenix.query.QueryConstants.SEPARATOR_BYTE;
 
@@ -83,6 +85,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private String region;
     private double partialScanSize;
     private List<String> fixedAttributes;
+    private boolean multiScan = false;
 
     @Override
     protected String getJobOperationName() {
@@ -164,6 +167,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String table) throws IOException {
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                new QualifierFilter(EQUAL, new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixHelper.buildStudyColumnsPrefix(study)))),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '|', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '/', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'.', '/', '.', SEPARATOR_BYTE})),
@@ -178,34 +182,56 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             filter.addFilter(new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'1', SEPARATOR_BYTE})));
         }
 
-        double numScans = Math.ceil(sampleIds.size() / partialScanSize);
-        int samplesPerScan = (int) Math.ceil(sampleIds.size() / numScans);
-        List<Scan> scans = new ArrayList<>((int) numScans);
-        Scan scan = null;
-        int samplesCount = 0;
-        for (int sample : sampleIds) {
-            if (samplesCount % samplesPerScan == 0) {
-                samplesCount = 0;
-                scan = new Scan();
-                if (StringUtils.isNotEmpty(region)) {
-                    VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
+        List<Scan> scans;
+        if (multiScan) {
+            // FIXME: This will fail for large number of samples. Has to be fixed to use filters instead of explicit columns
+            double numScans = Math.ceil(sampleIds.size() / partialScanSize);
+            int samplesPerScan = (int) Math.ceil(sampleIds.size() / numScans);
+            scans = new ArrayList<>((int) numScans);
+            Scan scan = null;
+            int samplesCount = 0;
+            for (int sample : sampleIds) {
+                if (samplesCount % samplesPerScan == 0) {
+                    samplesCount = 0;
+                    scan = new Scan();
+                    if (StringUtils.isNotEmpty(region)) {
+                        VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
+                    }
+                    scan.setFilter(filter);
+                    scans.add(scan);
                 }
-                scans.add(scan);
+                byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
+                    byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                    scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                }
+                samplesCount++;
             }
-            byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
-            scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
-            for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
-                byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
-                scan.addColumn(getHelper().getColumnFamily(), fileColumn);
-            }
-            scan.setFilter(filter);
-            samplesCount++;
-        }
-        // TODO: PartialResults may be an interesting feature, but is not available in v1.1.2. See [HBASE-14696] for more information
+            // TODO: PartialResults may be an interesting feature, but is not available in v1.1.2. See [HBASE-14696] for more information
 //        scan.setAllowPartialResults(true);
 
-        if (scans.size() != numScans) {
-            throw new IllegalArgumentException("Wrong number of scans. Expected " + numScans + " got " + scans.size());
+            if (scans.size() != numScans) {
+                throw new IllegalArgumentException("Wrong number of scans. Expected " + numScans + " got " + scans.size());
+            }
+        } else {
+            Scan scan = new Scan();
+            if (StringUtils.isNotEmpty(region)) {
+                VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
+            }
+            scan.setFilter(filter);
+
+            if (sampleIds.size() < 6000) {
+                for (Integer sample : sampleIds) {
+                    byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                    scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                    for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
+                        byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                        scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                    }
+                }
+            }
+            scans = Collections.singletonList(scan);
         }
         VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
 
@@ -223,7 +249,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-
 
         VariantMapReduceUtil.setOutputHBaseTable(job, outputTable);
         VariantMapReduceUtil.setNoneReduce(job);
@@ -272,6 +297,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
         public static final int SAMPLES_TO_COUNT = 2;
         private byte[] family;
+        private Set<Integer> samplesSet;
         private Set<Integer> samplesToCount;
         private SampleIndexVariantBiConverter variantsConverter;
         private SampleIndexToHBaseConverter putConverter;
@@ -287,9 +313,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
 
             int[] samples = context.getConfiguration().getInts(SAMPLES);
+            samplesSet = new HashSet<>(samples.length);
             samplesToCount = new HashSet<>(SAMPLES_TO_COUNT);
             for (int i = 0; i < Math.min(samples.length, SAMPLES_TO_COUNT); i++) {
                 samplesToCount.add(samples[i]);
+                samplesSet.add(samples[i]);
             }
             byte[] family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
             putConverter = new SampleIndexToHBaseConverter(family);
@@ -336,7 +364,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             for (Cell cell : result.rawCells()) {
                 Integer sampleId = VariantPhoenixHelper
                         .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                if (sampleId != null) {
+                if (sampleId != null && samplesSet.contains(sampleId)) {
                     ImmutableBytesWritable ptr = new ImmutableBytesWritable(
                             cell.getValueArray(),
                             cell.getValueOffset(),
@@ -362,7 +390,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             }
                         }
                         if (fileIndex == null) {
-                            throw new IllegalStateException("File " + sampleIdToFileIdMap.get(sampleId) + " found for sample " + sampleId);
+                            throw new IllegalStateException("File " + sampleIdToFileIdMap.get(sampleId) + " not found for sample "
+                                    + sampleId + " in variant " + variant);
                         }
                         sampleFileIndexMap
                                 .computeIfAbsent(sampleId, k -> new HashMap<>())
