@@ -43,7 +43,7 @@ public class VariantQueryParser {
         this.metadataManager = metadataManager;
     }
 
-    //    public VarinatQuery parseQuery(Query query, QueryOptions options) throws StorageEngineException {};
+    //    public VariantQuery parseQuery(Query query, QueryOptions options) throws StorageEngineException {};
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
         // Copy input query! Do not modify original query!
@@ -51,6 +51,18 @@ public class VariantQueryParser {
 
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
+
+        VariantQueryXref xrefs = parseXrefs(query);
+        List<String> allIds = new ArrayList<>(xrefs.getIds().size() + xrefs.getVariants().size());
+        allIds.addAll(xrefs.getIds());
+        for (Variant variant : xrefs.getVariants()) {
+            allIds.add(variant.toString());
+        }
+        query.put(ID.key(), allIds);
+        query.put(GENE.key(), xrefs.getGenes());
+        query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
+        query.remove(ANNOT_CLINVAR.key());
+        query.remove(ANNOT_COSMIC.key());
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
             Set<String> types = new HashSet<>();
@@ -413,5 +425,97 @@ public class VariantQueryParser {
         return query;
     }
 
+    /**
+     * Parses XREFS related filters, and sorts in different lists.
+     *
+     * - {@link VariantQueryParam#ID}
+     * - {@link VariantQueryParam#GENE}
+     * - {@link VariantQueryParam#ANNOT_XREF}
+     * - {@link VariantQueryParam#ANNOT_CLINVAR}
+     * - {@link VariantQueryParam#ANNOT_COSMIC}
+     *
+     * @param query Query to parse
+     * @return VariantQueryXref with all VariantIds, ids, genes and xrefs
+     */
+    public static VariantQueryXref parseXrefs(Query query) {
+        VariantQueryXref xrefs = new VariantQueryXref();
+        if (query == null) {
+            return xrefs;
+        }
+        xrefs.getGenes().addAll(query.getAsStringList(GENE.key(), OR));
 
+        if (isValidParam(query, ID)) {
+            List<String> idsList = query.getAsStringList(ID.key(), OR);
+
+            for (String value : idsList) {
+                Variant variant = toVariant(value);
+                if (variant != null) {
+                    xrefs.getVariants().add(variant);
+                } else {
+                    xrefs.getIds().add(value);
+                }
+            }
+        }
+
+        if (isValidParam(query, ANNOT_XREF)) {
+            List<String> xrefsList = query.getAsStringList(ANNOT_XREF.key(), OR);
+            for (String value : xrefsList) {
+                Variant variant = toVariant(value);
+                if (variant != null) {
+                    xrefs.getVariants().add(variant);
+                } else {
+                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
+                        xrefs.getOtherXrefs().add(value);
+                    } else {
+                        xrefs.getGenes().add(value);
+                    }
+                }
+            }
+
+        }
+//        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_HPO.key(), OR));
+        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_COSMIC.key(), OR));
+        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
+
+        return xrefs;
+    }
+
+    public static class VariantQueryXref {
+        private final List<String> genes = new LinkedList<>();
+        private final List<Variant> variants = new LinkedList<>();
+        private final List<String> ids = new LinkedList<>();
+        private final List<String> otherXrefs = new LinkedList<>();
+
+        /**
+         * @return List of genes found at {@link VariantQueryParam#GENE} and {@link VariantQueryParam#ANNOT_XREF}
+         */
+        public List<String> getGenes() {
+            return genes;
+        }
+
+        /**
+         * @return List of variants found at {@link VariantQueryParam#ANNOT_XREF} and {@link VariantQueryParam#ID}
+         */
+        public List<Variant> getVariants() {
+            return variants;
+        }
+
+        /**
+         * @return List of ids found at {@link VariantQueryParam#ID}
+         */
+        public List<String> getIds() {
+            return ids;
+        }
+
+        /**
+         * @return List of other xrefs found at
+         * {@link VariantQueryParam#ANNOT_XREF},
+         * {@link VariantQueryParam#ID},
+         * {@link VariantQueryParam#ANNOT_CLINVAR},
+         * {@link VariantQueryParam#ANNOT_COSMIC}
+         */
+        public List<String> getOtherXrefs() {
+            return otherXrefs;
+        }
+    }
 }

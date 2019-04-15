@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -169,7 +170,7 @@ public class VariantHBaseQueryParser {
     }
 
     public List<Scan> parseQueryMultiRegion(VariantQueryFields selectElements, Query query, QueryOptions options) {
-        VariantQueryXref xrefs = VariantQueryUtils.parseXrefs(query);
+        VariantQueryParser.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
         if (!xrefs.getOtherXrefs().isEmpty()) {
             throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_XREF,
                     HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "Only variant ids are supported with HBase native query");

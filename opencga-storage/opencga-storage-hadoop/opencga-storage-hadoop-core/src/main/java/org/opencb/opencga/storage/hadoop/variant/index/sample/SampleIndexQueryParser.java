@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ public class SampleIndexQueryParser {
      * @return      if the query is valid
      */
     public static boolean validSampleIndexQuery(Query query) {
-        VariantQueryUtils.VariantQueryXref xref = VariantQueryUtils.parseXrefs(query);
+        VariantQueryParser.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
         if (!xref.getIds().isEmpty() || !xref.getVariants().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
             // Can not be used for specific variant IDs. Only regions and genes
             return false;
@@ -101,12 +102,12 @@ public class SampleIndexQueryParser {
         // Extract regions
         List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
+            regions.addAll(Region.parseRegions(query.getString(REGION.key())));
             query.remove(REGION.key());
         }
 
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-            regions = Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()));
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key())));
             query.remove(ANNOT_GENE_REGIONS.key());
             query.remove(GENE.key());
         }
