@@ -2,17 +2,20 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.GenotypeCodec;
+import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
 /**
  * Created on 01/02/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class IndexUtils {
+public final class IndexUtils {
 
     public static final byte EMPTY_MASK = 0;
     private static final double DELTA = 0.000001;
+
+    private IndexUtils() {
+    }
 
     public static String byteToString(byte b) {
         String str = Integer.toBinaryString(b);

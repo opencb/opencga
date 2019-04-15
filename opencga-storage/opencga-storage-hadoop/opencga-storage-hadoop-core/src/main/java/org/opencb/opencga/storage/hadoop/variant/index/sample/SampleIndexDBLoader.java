@@ -15,6 +15,7 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
 /**
  * Created on 14/05/18.
@@ -23,7 +24,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  */
 public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
 
-    public static final int BATCH_SIZE = 1_000_000;
     private final List<Integer> sampleIds;
     private final byte[] family;
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, StringBuilder>
@@ -79,7 +79,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
             int splits = files / preSplitSize;
             ArrayList<byte[]> preSplits = new ArrayList<>(splits);
             for (int i = 0; i < splits; i++) {
-                preSplits.add(HBaseToSampleIndexConverter.toRowKey(i * preSplitSize));
+                preSplits.add(toRowKey(i * preSplitSize));
             }
 
             hBaseManager.createTableIfNeeded(tableName, family, preSplits, Compression.getCompressionAlgorithmByName(
@@ -110,7 +110,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
                                 return list;
                             })
                             .get(sampleIdx)
-                            .computeIfAbsent(gt, k -> new TreeSet<>(HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+                            .computeIfAbsent(gt, k -> new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR));
                     variantsList.add(variant);
                 }
                 sampleIdx++;
@@ -179,7 +179,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
                 int sampleIdx = sampleIterator.nextIndex();
                 Integer sampleId = sampleIterator.next();
 
-                byte[] rk = HBaseToSampleIndexConverter.toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
+                byte[] rk = toRowKey(sampleId, indexChunk.chromosome, indexChunk.position);
                 Put put = converter.convert(rk, gtsMap, sampleIdx);
                 if (!put.isEmpty()) {
                     puts.add(put);

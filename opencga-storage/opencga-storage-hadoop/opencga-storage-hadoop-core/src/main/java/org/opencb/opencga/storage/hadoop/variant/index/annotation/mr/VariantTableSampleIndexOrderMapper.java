@@ -6,8 +6,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Pair;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
@@ -51,7 +50,7 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
                         buffer.sort((o1, o2) -> {
                             Variant v1 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o1.getSecond().getRow());
                             Variant v2 = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(o2.getSecond().getRow());
-                            return HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(v1, v2);
+                            return SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(v1, v2);
                         });
                     }
 
@@ -67,7 +66,7 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
 
                         // In event of new chromosome, or new batch, write indices
                         if (!newChromosome.equals(chromosome)
-                                || (position / SampleIndexDBLoader.BATCH_SIZE) != (newPosition / SampleIndexDBLoader.BATCH_SIZE)) {
+                                || (position / SampleIndexSchema.BATCH_SIZE) != (newPosition / SampleIndexSchema.BATCH_SIZE)) {
 //                            System.err.println("Write indices from chr " + chromosome + ":" + (position / SampleIndexDBLoader.BATCH_SIZE)
 //                                    +". New pair is " + newChromosome + ":" + (newPosition / SampleIndexDBLoader.BATCH_SIZE));
                             flush(context, chromosome, position);

@@ -20,8 +20,8 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -324,9 +324,9 @@ public class FillGapsTask {
 
     private Put buildSampleIndexPut(Variant variant, Put put, Integer sampleId, String gt) {
         Put sampleIndexPut = new Put(
-                HBaseToSampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
+                SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
                 put.getTimeStamp());
-        sampleIndexPut.addColumn(helper.getColumnFamily(), HBaseToSampleIndexConverter.toPendingColumn(variant, gt), null);
+        sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexSchema.toPendingColumn(variant, gt), null);
         return sampleIndexPut;
     }
 
