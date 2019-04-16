@@ -238,10 +238,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY
             = new VariantQueryParam("populationFrequencyMaf", TEXT_ARRAY, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR);
 
-    public static final String ANNOT_TRANSCRIPTION_FLAG_DESCR
+    public static final String ANNOT_TRANSCRIPT_FLAG_DESCR
             = "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno";
-    public static final VariantQueryParam ANNOT_TRANSCRIPTION_FLAG
-            = new VariantQueryParam("transcriptionFlag", TEXT_ARRAY, ANNOT_TRANSCRIPTION_FLAG_DESCR);
+    public static final VariantQueryParam ANNOT_TRANSCRIPT_FLAG
+            = new VariantQueryParam("transcriptFlag", TEXT_ARRAY, ANNOT_TRANSCRIPT_FLAG_DESCR);
 
     public static final String ANNOT_GENE_TRAIT_ID_DESCR
             = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"";

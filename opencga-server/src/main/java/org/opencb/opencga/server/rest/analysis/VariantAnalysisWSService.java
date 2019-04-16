@@ -95,7 +95,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         map.put("alternate_frequency", ANNOT_POPULATION_ALTERNATE_FREQUENCY);
         map.put("reference_frequency", ANNOT_POPULATION_REFERENCE_FREQUENCY);
         map.put("annot-population-maf", ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
-        map.put("annot-transcription-flags", ANNOT_TRANSCRIPTION_FLAG);
+        map.put("annot-transcription-flags", ANNOT_TRANSCRIPT_FLAG);
+        map.put("transcriptionFlag", ANNOT_TRANSCRIPT_FLAG);
         map.put("annot-gene-trait-id", ANNOT_GENE_TRAIT_ID);
         map.put("annot-gene-trait-name", ANNOT_GENE_TRAIT_NAME);
         map.put("annot-hpo", ANNOT_HPO);
@@ -278,7 +279,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptionFlag", value = ANNOT_TRANSCRIPTION_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
@@ -322,7 +323,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //            @ApiImplicitParam(name = "alternate_frequency", value = DEPRECATED + "Use 'populationFrequencyAlt' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "reference_frequency", value = DEPRECATED + "Use 'populationFrequencyRef' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-population-maf", value = DEPRECATED + "Use 'populationFrequencyMaf' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-transcription-flags", value = DEPRECATED + "Use 'transcriptionFlags' instead", dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "annot-transcription-flags", value = DEPRECATED + "Use 'transcriptFlags' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-gene-trait-id", value = DEPRECATED + "Use 'geneTraitId' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-gene-trait-name", value = DEPRECATED + "Use 'geneTraitName' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-hpo", value = DEPRECATED + "Use 'hpo' instead", dataType = "string", paramType = "query"),
@@ -418,7 +419,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String populationFrequencyMaf;
         public String populationFrequencyAlt;
         public String populationFrequencyRef;
-        public String transcriptionFlag;
+        public String transcriptFlag;
         public String geneTraitId;
         public String geneTraitName;
         public String trait;
@@ -458,7 +459,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         @Deprecated @JsonProperty("annot-population-maf") public String annot_populationMaf;
         @Deprecated public String alternate_frequency;
         @Deprecated public String reference_frequency;
-        @Deprecated @JsonProperty("annot-transcription-flags") public String transcriptionFlags;
+        @Deprecated @JsonProperty("annot-transcription-flags") public String transcriptFlags;
         @Deprecated @JsonProperty("annot-gene-trait-id") public String annot_geneTraitId;
         @Deprecated @JsonProperty("annot-gene-trait-name") public String annot_geneTraitName;
         @Deprecated @JsonProperty("annot-hpo") public String annot_hpo;
@@ -770,7 +771,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptionFlag", value = ANNOT_TRANSCRIPTION_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),

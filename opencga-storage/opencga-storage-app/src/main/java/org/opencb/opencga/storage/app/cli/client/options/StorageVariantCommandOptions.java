@@ -312,7 +312,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--population-frequency-ref"}, description = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
         public String populationFreqRef;
 
-        @Parameter(names = {"--transcript-flag"}, description = ANNOT_TRANSCRIPTION_FLAG_DESCR)
+        @Parameter(names = {"--transcript-flag"}, description = ANNOT_TRANSCRIPT_FLAG_DESCR)
         public String flags;
 
         @Parameter(names = {"--gene-trait-id"}, description = ANNOT_GENE_TRAIT_ID_DESCR)

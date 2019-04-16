@@ -278,7 +278,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.put(POLYPHEN_DESC, polyphenDesc);
         map.put(SIFT, sortProteinSubstitutionScores(sift));
         map.put(SIFT_DESC, siftDesc);
-        map.put(TRANSCRIPTION_FLAGS, flags);
+        map.put(TRANSCRIPT_FLAGS, flags);
         map.put(GENE_TRAITS_ID, geneTraitId);
         map.put(PROTEIN_KEYWORDS, proteinKeywords);
         map.put(GENE_TRAITS_NAME, geneTraitName);

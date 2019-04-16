@@ -495,8 +495,8 @@ public class SampleIndexQueryParser {
         byte b = 0;
 
         boolean transcriptFlagBasic = false;
-        if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAG)) {
-            transcriptFlagBasic = query.getString(ANNOT_TRANSCRIPTION_FLAG.key()).equals(TRANSCRIPT_FLAG_BASIC);
+        if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+            transcriptFlagBasic = query.getString(ANNOT_TRANSCRIPT_FLAG.key()).equals(TRANSCRIPT_FLAG_BASIC);
         }
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
