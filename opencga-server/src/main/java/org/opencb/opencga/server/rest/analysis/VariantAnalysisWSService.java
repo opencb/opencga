@@ -717,14 +717,23 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/facet")
-    @ApiOperation(value = "This method has been renamed, use endpoint /stats instead" + DEPRECATED, position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "This method has been renamed, use endpoint /aggregationStats instead" + DEPRECATED, position = 15, hidden = true, response = QueryResponse.class)
     public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
                               @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
-        return getStats(facet);
+        return getAggregationStats(facet);
+    }
+
+    @Deprecated
+    @GET
+    @Path("/stats")
+    @ApiOperation(value = "This method has been renamed, use endpoint /aggregationStats instead" + DEPRECATED, position = 15, hidden = true, response = QueryResponse.class)
+    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
+        return getAggregationStats(facet);
     }
 
     @GET
-    @Path("/stats")
+    @Path("/aggregationStats")
     @ApiOperation(value = "Calculate and fetch aggregation stats", position = 15, response = QueryResponse.class)
     @ApiImplicitParams({
             // Variant filters
@@ -784,7 +793,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
     })
-    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
+    public Response getAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
