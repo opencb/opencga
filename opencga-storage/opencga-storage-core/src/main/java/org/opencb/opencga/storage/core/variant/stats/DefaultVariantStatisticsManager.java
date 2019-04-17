@@ -220,7 +220,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
-        VariantDBReader reader = new VariantDBReader(studyMetadata, variantDBAdaptor, readerQuery, readerOptions);
+        VariantDBReader reader = new VariantDBReader(variantDBAdaptor, readerQuery, readerOptions);
         List<Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         ProgressLogger progressLogger = buildCreateStatsProgressLogger(dbAdaptor, readerQuery, readerOptions);
         for (int i = 0; i < numTasks; i++) {
