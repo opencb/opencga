@@ -43,6 +43,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.apache.hadoop.hbase.filter.CompareFilter.CompareOp.EQUAL;
 import static org.apache.hadoop.hbase.filter.CompareFilter.CompareOp.NOT_EQUAL;
@@ -101,7 +102,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("--" + SAMPLES, "<samples>*");
-        params.put("--" + OUTPUT, "<output-table>*");
+        params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + SECONDARY_ONLY, "<true|false>");
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
@@ -115,7 +116,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         outputTable = getParam(OUTPUT);
         study = getStudyId();
         if (outputTable == null || outputTable.isEmpty()) {
-            throw new IllegalArgumentException("Missing output table!");
+            outputTable = getTableNameGenerator().getSampleIndexTableName(getStudyId());
         }
 
         secondaryOnly = Boolean.valueOf(getParam(SECONDARY_ONLY, "false"));
@@ -267,8 +268,12 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             sb.append(',');
         }
         job.getConfiguration().set(SAMPLE_ID_TO_FILE_ID_MAP, sb.toString());
-        job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
         job.getConfiguration().set(FIXED_ATTRIBUTES, String.join(",", fixedAttributes));
+        if (allSamples) {
+            job.getConfiguration().unset(SAMPLES);
+        } else {
+            job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+        }
 
         // TODO: Can we use HFileOutputFormat2 here?
 
@@ -313,11 +318,20 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
 
             int[] samples = context.getConfiguration().getInts(SAMPLES);
-            samplesSet = new HashSet<>(samples.length);
-            samplesToCount = new HashSet<>(SAMPLES_TO_COUNT);
-            for (int i = 0; i < Math.min(samples.length, SAMPLES_TO_COUNT); i++) {
-                samplesToCount.add(samples[i]);
-                samplesSet.add(samples[i]);
+            if (samples == null || samples.length == 0) {
+                samplesSet = null;
+                samplesToCount = new HashSet<>(SAMPLES_TO_COUNT);
+                for (int i = 0; i < SAMPLES_TO_COUNT; i++) {
+                    samplesToCount.add(i + 1);
+                }
+            } else {
+                samplesSet = new HashSet<>(samples.length);
+                IntStream.of(samples).forEach(samplesSet::add);
+
+                samplesToCount = new HashSet<>(SAMPLES_TO_COUNT);
+                for (int i = 0; i < Math.min(samples.length, SAMPLES_TO_COUNT); i++) {
+                    samplesToCount.add(samples[i]);
+                }
             }
             byte[] family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
             putConverter = new SampleIndexToHBaseConverter(family);
@@ -364,7 +378,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             for (Cell cell : result.rawCells()) {
                 Integer sampleId = VariantPhoenixHelper
                         .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                if (sampleId != null && samplesSet.contains(sampleId)) {
+                if (sampleId != null && (samplesSet == null || samplesSet.contains(sampleId))) {
                     ImmutableBytesWritable ptr = new ImmutableBytesWritable(
                             cell.getValueArray(),
                             cell.getValueOffset(),
