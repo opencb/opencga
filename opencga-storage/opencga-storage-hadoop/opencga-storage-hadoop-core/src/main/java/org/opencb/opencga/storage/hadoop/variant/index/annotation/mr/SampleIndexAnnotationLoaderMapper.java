@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -105,7 +106,10 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
                 ByteArrayOutputStream value = e.getValue();
                 if (value.size() > 0) {
                     // Copy byte array, as the ByteArrayOutputStream will be reset and reused!
-                    put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), value.toByteArray());
+                    byte[] annotationIndex = value.toByteArray();
+                    put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotationIndex);
+                    put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
+                            IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotationIndex)));
                 }
             }
 

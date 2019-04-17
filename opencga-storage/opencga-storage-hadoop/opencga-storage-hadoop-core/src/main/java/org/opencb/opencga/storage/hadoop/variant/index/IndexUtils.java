@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
@@ -137,5 +139,39 @@ public final class IndexUtils {
             default:
                 throw new VariantQueryException("Unknown query operator" + op);
         }
+    }
+
+    public static byte[] countPerBitToBytes(int[] counts) {
+        byte[] bytes = new byte[8 * Bytes.SIZEOF_INT];
+        int offset = 0;
+        for (int count : counts) {
+            offset += PUnsignedInt.INSTANCE.getCodec().encodeInt(count, bytes, offset);
+        }
+        return bytes;
+    }
+
+    public static int[] countPerBitToObject(byte[] bytes) {
+        int[] counts = new int[8];
+        int offset = 0;
+        for (int i = 0; i < counts.length; i++) {
+            counts[i] = Bytes.toInt(bytes, offset);
+            offset += Bytes.SIZEOF_INT;
+        }
+        return counts;
+    }
+
+    public static int[] countPerBit(byte[] bytes) {
+        int[] counts = new int[8];
+        for (byte b : bytes) {
+            counts[0] += (b >>> 0) & 1;
+            counts[1] += (b >>> 1) & 1;
+            counts[2] += (b >>> 2) & 1;
+            counts[3] += (b >>> 3) & 1;
+            counts[4] += (b >>> 4) & 1;
+            counts[5] += (b >>> 5) & 1;
+            counts[6] += (b >>> 6) & 1;
+            counts[7] += (b >>> 7) & 1;
+        }
+        return counts;
     }
 }

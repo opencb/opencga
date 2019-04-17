@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -261,6 +262,8 @@ public class SampleIndexAnnotationLoader {
             }
 
             put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotations);
+            put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
+                    IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotations)));
         }
         return put;
     }

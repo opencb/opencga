@@ -335,6 +335,7 @@ public class SampleIndexDBAdaptor {
                 }
                 if (query.getAnnotationIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
                 }
                 if (query.getFileIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));

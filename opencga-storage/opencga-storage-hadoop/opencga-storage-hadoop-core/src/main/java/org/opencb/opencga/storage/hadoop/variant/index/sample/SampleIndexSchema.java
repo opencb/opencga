@@ -32,6 +32,7 @@ public final class SampleIndexSchema {
     static final String FILE_PREFIX = META_PREFIX + "F_";
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
     static final String ANNOTATION_PREFIX = META_PREFIX + "A_";
+    static final String ANNOTATION_COUNT_PREFIX = META_PREFIX + "AC_";
     static final byte[] ANNOTATION_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
@@ -117,6 +118,10 @@ public final class SampleIndexSchema {
 
     public static byte[] toAnnotationIndexColumn(String genotype) {
         return Bytes.toBytes(ANNOTATION_PREFIX + genotype);
+    }
+
+    public static byte[] toAnnotationIndexCountColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_COUNT_PREFIX + genotype);
     }
 
     public static byte[] toFileIndexColumn(String genotype) {
