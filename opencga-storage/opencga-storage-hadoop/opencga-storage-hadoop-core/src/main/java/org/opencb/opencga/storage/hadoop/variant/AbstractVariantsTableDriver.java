@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,6 +66,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     private List<Integer> fileIds;
     protected HBaseVariantTableNameGenerator generator;
     private HBaseManager hBaseManager;
+    private Integer studyId;
 
     public AbstractVariantsTableDriver() {
         super(HBaseConfiguration.create());
@@ -225,10 +227,23 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
                     .collect(Collectors.toList());
     }
 
+    protected void setStudyId(int studyId) {
+        this.studyId = studyId;
+        getConf().setInt(STUDY_ID, studyId);
+    }
+
     protected int getStudyId() {
-        int studyId = getConf().getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
-        if (studyId < 0) {
-            studyId = getConf().getInt("--" + HadoopVariantStorageEngine.STUDY_ID, -1);
+        if (studyId == null) {
+            int studyId = Integer.valueOf(getParam(STUDY_ID, "-1"));
+            if (studyId < 0) {
+                String study = getParam(Options.STUDY.key());
+                try {
+                    studyId = getMetadataManager().getStudyId(study);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+            this.studyId = studyId;
         }
         return studyId;
     }

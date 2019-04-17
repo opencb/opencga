@@ -1,8 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import com.google.common.collect.BiMap;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -16,7 +16,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.util.ToolRunner;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.apache.phoenix.schema.types.PVarcharArray;
@@ -27,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -107,6 +107,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("--" + SAMPLES, "<samples>*");
+        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>");
         params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + SECONDARY_ONLY, "<true|false>");
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");
@@ -120,8 +121,17 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         super.parseAndValidateParameters();
         outputTable = getParam(OUTPUT);
         study = getStudyId();
+        if (study < 0) {
+            BiMap<String, Integer> map = getMetadataManager().getStudies();
+            if (map.size() == 1) {
+                study = map.values().iterator().next();
+                setStudyId(study);
+            } else {
+                throw new IllegalArgumentException("Select one study from " + map.keySet());
+            }
+        }
         if (outputTable == null || outputTable.isEmpty()) {
-            outputTable = getTableNameGenerator().getSampleIndexTableName(getStudyId());
+            outputTable = getTableNameGenerator().getSampleIndexTableName(study);
         }
 
         secondaryOnly = Boolean.valueOf(getParam(SECONDARY_ONLY, "false"));
@@ -302,15 +312,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             System.exit(1);
         }
     }
-
-    public int privateMain(String[] args, Configuration conf) throws Exception {
-        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf != null) {
-            setConf(conf);
-        }
-        return ToolRunner.run(this, args);
-    }
-
 
     public static class SampleIndexerMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
 
