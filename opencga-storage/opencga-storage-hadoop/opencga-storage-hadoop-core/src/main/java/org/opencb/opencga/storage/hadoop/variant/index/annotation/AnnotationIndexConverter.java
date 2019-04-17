@@ -33,17 +33,17 @@ public class AnnotationIndexConverter {
     public static final String K_GENOMES = "1kG_phase3";
 
     public static final double POP_FREQ_THRESHOLD_001 = 0.001;
-    public static final Set<String> PROTEIN_CODING_BIOTYPE_SET = new HashSet<>();
+    public static final Set<String> BIOTYPE_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ANY_001_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ANY_001_FILTERS = new HashSet<>();
 
-    public static final byte PROTEIN_CODING_MASK      = (byte) (1 << 0);
+    public static final byte BIOTYPE_MASK             = (byte) (1 << 0);
     public static final byte POP_FREQ_ANY_001_MASK    = (byte) (1 << 1);
-    public static final byte UNUSED_2_MASK            = (byte) (1 << 2);
-    public static final byte LOF_MISSENSE_MASK        = (byte) (1 << 3);
+    public static final byte LOFE_PROTEIN_CODING_MASK = (byte) (1 << 2);
+    public static final byte LOF_EXTENDED_MASK        = (byte) (1 << 3);
     public static final byte LOF_MASK                 = (byte) (1 << 4);
     public static final byte CLINICAL_MASK            = (byte) (1 << 5);
-    public static final byte LOF_MISSENSE_BASIC_MASK  = (byte) (1 << 6);
+    public static final byte LOF_EXTENDED_BASIC_MASK  = (byte) (1 << 6);
     public static final byte UNUSED_7_MASK            = (byte) (1 << 7);
 
     public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
@@ -53,17 +53,17 @@ public class AnnotationIndexConverter {
 
     static {
 
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.IG_C_GENE);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.IG_D_GENE);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.IG_J_GENE);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.IG_V_GENE);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.PROTEIN_CODING);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.NONSENSE_MEDIATED_DECAY);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.NON_STOP_DECAY);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.TR_C_GENE);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.TR_D_GENE);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.TR_J_GENE);
-        PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.TR_V_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.IG_C_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.IG_D_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.IG_J_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.IG_V_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.PROTEIN_CODING);
+        BIOTYPE_SET.add(VariantAnnotationUtils.NONSENSE_MEDIATED_DECAY);
+        BIOTYPE_SET.add(VariantAnnotationUtils.NON_STOP_DECAY);
+        BIOTYPE_SET.add(VariantAnnotationUtils.TR_C_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.TR_D_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.TR_J_GENE);
+        BIOTYPE_SET.add(VariantAnnotationUtils.TR_V_GENE);
 
         POP_FREQ_ANY_001_SET.add("1kG_phase3:ALL");
         POP_FREQ_ANY_001_SET.add("GNOMAD_GENOMES:ALL");
@@ -98,23 +98,30 @@ public class AnnotationIndexConverter {
 
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
-                if (PROTEIN_CODING_BIOTYPE_SET.contains(ct.getBiotype())) {
-                    b |= PROTEIN_CODING_MASK;
+                if (BIOTYPE_SET.contains(ct.getBiotype())) {
+                    b |= BIOTYPE_MASK;
                 }
+                boolean proteinCoding = VariantAnnotationUtils.PROTEIN_CODING.equals(ct.getBiotype());
                 boolean basic = ct.getTranscriptAnnotationFlags() != null && ct.getTranscriptAnnotationFlags()
                         .contains(TRANSCRIPT_FLAG_BASIC);
                 for (SequenceOntologyTerm sequenceOntologyTerm : ct.getSequenceOntologyTerms()) {
                     String soName = sequenceOntologyTerm.getName();
                     if (VariantQueryUtils.LOF_SET.contains(soName)) {
                         b |= LOF_MASK;
-                        b |= LOF_MISSENSE_MASK;
+                        b |= LOF_EXTENDED_MASK;
                         if (basic) {
-                            b |= LOF_MISSENSE_BASIC_MASK;
+                            b |= LOF_EXTENDED_BASIC_MASK;
+                        }
+                        if (proteinCoding) {
+                            b |= LOFE_PROTEIN_CODING_MASK;
                         }
                     } else if (VariantAnnotationUtils.MISSENSE_VARIANT.equals(soName)) {
-                        b |= LOF_MISSENSE_MASK;
+                        b |= LOF_EXTENDED_MASK;
                         if (basic) {
-                            b |= LOF_MISSENSE_BASIC_MASK;
+                            b |= LOF_EXTENDED_BASIC_MASK;
+                        }
+                        if (proteinCoding) {
+                            b |= LOFE_PROTEIN_CODING_MASK;
                         }
                     }
                 }

@@ -507,7 +507,7 @@ public class SampleIndexQueryParser {
             if (LOF_SET.containsAll(cts)) {
                 b |= LOF_MASK;
                 if (transcriptFlagBasic) {
-                    b |= LOF_MISSENSE_BASIC_MASK;
+                    b |= LOF_EXTENDED_BASIC_MASK;
                 }
                 // If all present, and not filtering by gene, remove consequenceType filter
                 if (allSamplesAnnotated && LOF_SET.size() == cts.size() && !isValidParam(query, GENE)) {
@@ -515,9 +515,9 @@ public class SampleIndexQueryParser {
                 }
             }
             if (LOF_EXTENDED_SET.containsAll(cts)) {
-                b |= LOF_MISSENSE_MASK;
+                b |= LOF_EXTENDED_MASK;
                 if (transcriptFlagBasic) {
-                    b |= LOF_MISSENSE_BASIC_MASK;
+                    b |= LOF_EXTENDED_BASIC_MASK;
                 }
                 // If all present, and not filtering by gene, remove consequenceType filter
                 if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == cts.size() && !isValidParam(query, GENE)) {
@@ -528,10 +528,10 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, ANNOT_BIOTYPE)) {
             List<String> biotypes = query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
-            if (PROTEIN_CODING_BIOTYPE_SET.containsAll(biotypes)) {
-                b |= PROTEIN_CODING_MASK;
+            if (BIOTYPE_SET.containsAll(biotypes)) {
+                b |= BIOTYPE_MASK;
                 // If all present, remove biotype filter
-                if (allSamplesAnnotated && PROTEIN_CODING_BIOTYPE_SET.size() == biotypes.size()) {
+                if (allSamplesAnnotated && BIOTYPE_SET.size() == biotypes.size()) {
                     query.remove(ANNOT_BIOTYPE.key());
                 }
             }
