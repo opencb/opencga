@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
@@ -22,8 +23,11 @@ import org.apache.phoenix.schema.types.PVarcharArray;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -81,6 +85,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private boolean allSamples;
     private boolean secondaryOnly;
     private boolean mainOnly;
+    private boolean hasGenotype;
     private TreeSet<Integer> sampleIds;
     private Map<Integer, Set<Integer>> sampleIdToFileIdMap;
     private String region;
@@ -162,7 +167,17 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             sampleIdToFileIdMap.put(sampleMetadata.getId(), sampleMetadata.getFiles());
         }
 
-        fixedAttributes = HBaseToVariantConverter.getFixedAttributes(metadataManager.getStudyMetadata(study));
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+
+        ObjectMap attributes = studyMetadata.getAttributes();
+        hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
+
+        if (hasGenotype) {
+            LOGGER.info("Study with genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+        } else {
+            LOGGER.info("Study without genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+        }
     }
 
     @Override
@@ -267,6 +282,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             }
             sb.append(',');
         }
+        job.getConfiguration().setBoolean(SampleIndexerMapper.HAS_GENOTYPE, hasGenotype);
         job.getConfiguration().set(SAMPLE_ID_TO_FILE_ID_MAP, sb.toString());
         job.getConfiguration().set(FIXED_ATTRIBUTES, String.join(",", fixedAttributes));
         if (allSamples) {
@@ -274,8 +290,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         } else {
             job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
         }
-
-        // TODO: Can we use HFileOutputFormat2 here?
 
         return job;
     }
@@ -300,6 +314,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
     public static class SampleIndexerMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
 
+        private static final String HAS_GENOTYPE = "SampleIndexerMapper.hasGenotype";
         public static final int SAMPLES_TO_COUNT = 2;
         private byte[] family;
         private Set<Integer> samplesSet;
@@ -308,6 +323,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private SampleIndexToHBaseConverter putConverter;
         private List<String> fixedAttributes;
         private Map<Integer, List<Integer>> sampleIdToFileIdMap;
+        private boolean hasGenotype;
 
         private Map<Integer, Map<String, ByteArrayOutputStream>> sampleGtMap = new HashMap<>();
         private Map<Integer, Map<String, Integer>> sampleGtCountMap = new HashMap<>();
@@ -316,6 +332,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
 
             int[] samples = context.getConfiguration().getInts(SAMPLES);
             if (samples == null || samples.length == 0) {
@@ -379,14 +396,26 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 Integer sampleId = VariantPhoenixHelper
                         .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                 if (sampleId != null && (samplesSet == null || samplesSet.contains(sampleId))) {
-                    ImmutableBytesWritable ptr = new ImmutableBytesWritable(
-                            cell.getValueArray(),
-                            cell.getValueOffset(),
-                            cell.getValueLength());
-                    PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                    String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-
-                    if (SampleIndexDBLoader.validGenotype(gt)) {
+                    String gt;
+                    boolean validGt;
+                    if (hasGenotype) {
+                        ImmutableBytesWritable ptr = new ImmutableBytesWritable(
+                                cell.getValueArray(),
+                                cell.getValueOffset(),
+                                cell.getValueLength());
+                        PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                        if (ptr.getLength() == 0) {
+                            gt = GenotypeClass.NA_GT_VALUE;
+                            validGt = true;
+                        } else {
+                            gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+                            validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                        }
+                    } else {
+                        gt = GenotypeClass.NA_GT_VALUE;
+                        validGt = true;
+                    }
+                    if (validGt) {
                         ByteArrayOutputStream stream = sampleGtMap
                                 .computeIfAbsent(sampleId, k -> new HashMap<>())
                                 .computeIfAbsent(gt, k -> new ByteArrayOutputStream(2000));
