@@ -551,7 +551,6 @@ public class SampleIndexQueryParser {
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(value);
             QueryOperation op = pair.getKey();
 
-            Set<String> popFreqLessThan01 = new HashSet<>();
             Set<String> popFreqLessThan001 = new HashSet<>();
 
             for (String popFreq : pair.getValue()) {
@@ -559,18 +558,8 @@ public class SampleIndexQueryParser {
                 String studyPop = keyOpValue[0];
                 Double freqFilter = Double.valueOf(keyOpValue[2]);
                 if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<<")) {
-                    if (freqFilter <= POP_FREQ_THRESHOLD_01) {
-                        popFreqLessThan01.add(studyPop);
-                    }
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
                         popFreqLessThan001.add(studyPop);
-                    }
-                }
-
-                if (QueryOperation.AND.equals(op)) {
-                    // Use this filter if filtering by popFreq with, at least, all the
-                    if (popFreqLessThan01.containsAll(POP_FREQ_ALL_01_SET)) {
-                        b |= POP_FREQ_ALL_01_MASK;
                     }
                 }
 
@@ -595,13 +584,6 @@ public class SampleIndexQueryParser {
                     && POP_FREQ_ANY_001_FILTERS.containsAll(pair.getValue())) {
                 query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
             }
-            if (allSamplesAnnotated
-                    && pair.getKey() == QueryOperation.AND
-                    && POP_FREQ_ALL_01_FILTERS.size() == pair.getValue().size()
-                    && POP_FREQ_ALL_01_FILTERS.containsAll(pair.getValue())) {
-                query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
-            }
-
         }
 
         return b;

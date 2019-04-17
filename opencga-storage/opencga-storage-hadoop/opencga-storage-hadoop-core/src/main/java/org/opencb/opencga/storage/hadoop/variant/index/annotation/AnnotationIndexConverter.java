@@ -33,18 +33,13 @@ public class AnnotationIndexConverter {
     public static final String K_GENOMES = "1kG_phase3";
 
     public static final double POP_FREQ_THRESHOLD_001 = 0.001;
-    public static final double POP_FREQ_THRESHOLD_01 = 0.01;
-    // 0.01 con all_of las no ALL
-//    public static final double POP_FREQ_THRESHOLD_005 = 0.005;
     public static final Set<String> PROTEIN_CODING_BIOTYPE_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ANY_001_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ANY_001_FILTERS = new HashSet<>();
-    public static final Set<String> POP_FREQ_ALL_01_SET = new HashSet<>();
-    public static final Set<String> POP_FREQ_ALL_01_FILTERS = new HashSet<>();
 
     public static final byte PROTEIN_CODING_MASK      = (byte) (1 << 0);
     public static final byte POP_FREQ_ANY_001_MASK    = (byte) (1 << 1);
-    public static final byte POP_FREQ_ALL_01_MASK     = (byte) (1 << 2);
+    public static final byte UNUSED_2_MASK            = (byte) (1 << 2);
     public static final byte LOF_MISSENSE_MASK        = (byte) (1 << 3);
     public static final byte LOF_MASK                 = (byte) (1 << 4);
     public static final byte CLINICAL_MASK            = (byte) (1 << 5);
@@ -70,25 +65,9 @@ public class AnnotationIndexConverter {
         PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.TR_J_GENE);
         PROTEIN_CODING_BIOTYPE_SET.add(VariantAnnotationUtils.TR_V_GENE);
 
-        POP_FREQ_ALL_01_SET.add("GNOMAD_EXOMES:AFR");
-        POP_FREQ_ALL_01_SET.add("GNOMAD_EXOMES:AMR");
-        POP_FREQ_ALL_01_SET.add("GNOMAD_EXOMES:EAS");
-        POP_FREQ_ALL_01_SET.add("GNOMAD_EXOMES:FIN");
-        POP_FREQ_ALL_01_SET.add("GNOMAD_EXOMES:NFE");
-        POP_FREQ_ALL_01_SET.add("GNOMAD_EXOMES:ASJ");
-        POP_FREQ_ALL_01_SET.add("GNOMAD_EXOMES:OTH");
-        POP_FREQ_ALL_01_SET.add("1kG_phase3:AFR");
-        POP_FREQ_ALL_01_SET.add("1kG_phase3:AMR");
-        POP_FREQ_ALL_01_SET.add("1kG_phase3:EAS");
-        POP_FREQ_ALL_01_SET.add("1kG_phase3:EUR");
-        POP_FREQ_ALL_01_SET.add("1kG_phase3:SAS");
-
         POP_FREQ_ANY_001_SET.add("1kG_phase3:ALL");
         POP_FREQ_ANY_001_SET.add("GNOMAD_GENOMES:ALL");
 
-        for (String s : POP_FREQ_ALL_01_SET) {
-            POP_FREQ_ALL_01_FILTERS.add(s + "<" + POP_FREQ_THRESHOLD_01);
-        }
         for (String s : POP_FREQ_ANY_001_SET) {
             POP_FREQ_ANY_001_FILTERS.add(s + "<" + POP_FREQ_THRESHOLD_001);
         }
@@ -117,11 +96,6 @@ public class AnnotationIndexConverter {
     public byte convert(VariantAnnotation variantAnnotation) {
         byte b = 0;
 
-//        VariantType type = VariantBuilder.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
-//        if (!type.equals(VariantType.SNV) && !type.equals(VariantType.SNP)) {
-//            b |= UNUSED_6_MASK;
-//        }
-
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
                 if (PROTEIN_CODING_BIOTYPE_SET.contains(ct.getBiotype())) {
@@ -149,7 +123,6 @@ public class AnnotationIndexConverter {
 
         // By default, population frequency is 0.
         double minFreq = 0;
-        boolean popFreqAllLessThan01 = true;
         if (variantAnnotation.getPopulationFrequencies() != null) {
             double gnomadFreq = 0;
             double kgenomesFreq = 0;
@@ -161,19 +134,11 @@ public class AnnotationIndexConverter {
                         kgenomesFreq = populationFrequency.getAltAlleleFreq();
                     }
                 }
-                if (populationFrequency.getAltAlleleFreq() >= POP_FREQ_THRESHOLD_01) {
-                    if (POP_FREQ_ALL_01_SET.contains(populationFrequency.getStudy() + ':' + populationFrequency.getPopulation())) {
-                        popFreqAllLessThan01 = false;
-                    }
-                }
             }
             minFreq = Math.min(gnomadFreq, kgenomesFreq);
         }
         if (minFreq < POP_FREQ_THRESHOLD_001) {
             b |= POP_FREQ_ANY_001_MASK;
-        }
-        if (popFreqAllLessThan01) {
-            b |= POP_FREQ_ALL_01_MASK;
         }
 
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
