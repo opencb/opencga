@@ -20,6 +20,8 @@ setup(
     long_description_content_type='text/x-rst',
     packages=['pyopencga', 'pyopencga.Utils', 'pyopencga.rest_clients'],
     license='Apache Software License',
+    author='David Gomez-Peregrina',
+    author_email='david.gomez@mgviz.org',
     keywords='opencb opencga bioinformatics genomic database',
     install_requires=[
         'pip >= 7.1.2',
