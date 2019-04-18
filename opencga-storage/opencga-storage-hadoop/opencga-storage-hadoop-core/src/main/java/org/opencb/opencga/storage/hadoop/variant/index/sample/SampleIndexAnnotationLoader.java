@@ -143,7 +143,7 @@ public class SampleIndexAnnotationLoader {
                     List<Put> puts = new ArrayList<>(samples.size());
 
                     for (Integer sampleId : samples) {
-                        Map<String, List<Variant>> map = sampleDBAdaptor.rawQuery(studyId, sampleId, chromosome, start);
+                        Map<String, List<Variant>> map = sampleDBAdaptor.queryByGt(studyId, sampleId, chromosome, start);
                         Put put = annotate(chromosome, start, sampleId, map, annotationMasks);
                         if (!put.isEmpty()) {
                             puts.add(put);
@@ -171,7 +171,7 @@ public class SampleIndexAnnotationLoader {
         Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
 
         for (Integer sample : samples) {
-            sampleIterators.put(sample, sampleDBAdaptor.rawIterator(studyId, sample));
+            sampleIterators.put(sample, sampleDBAdaptor.iteratorByGt(studyId, sample));
         }
 
         BufferedMutator mutator = hBaseManager.getConnection().getBufferedMutator(TableName.valueOf(sampleIndexTableName));

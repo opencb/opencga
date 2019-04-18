@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.MENDELIAN_ERROR_COLUMN;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.MENDELIAN_ERROR_COLUMN_BYTES;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.META_PREFIX;
 
 /**
@@ -110,7 +110,7 @@ public class SampleIndexVariantBiConverter {
     public List<Variant> toVariants(Cell cell) {
         List<Variant> variants;
         byte[] column = CellUtil.cloneQualifier(cell);
-        if (column[0] != META_PREFIX && column[0] != MENDELIAN_ERROR_COLUMN[0]) {
+        if (column[0] != META_PREFIX && column[0] != MENDELIAN_ERROR_COLUMN_BYTES[0]) {
             byte[] row = CellUtil.cloneRow(cell);
             String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
             int batchStart = SampleIndexSchema.batchStartFromRowKey(row);
@@ -129,7 +129,7 @@ public class SampleIndexVariantBiConverter {
 
     public SampleIndexVariantIterator toVariantsIterator(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
         if (length <= 0) {
-            return EmptySampleIndexVariantIterator.emptyIterator();
+            return SampleIndexVariantIterator.emptyIterator();
         } else {
             // Compare only the first letters to run a "startsWith"
             byte[] startsWith = Bytes.toBytes(chromosome + ':');
@@ -164,6 +164,11 @@ public class SampleIndexVariantBiConverter {
          * @return next variant
          */
         Variant next();
+
+
+        static SampleIndexVariantIterator emptyIterator() {
+            return EmptySampleIndexVariantIterator.EMPTY_ITERATOR;
+        }
     }
 
     private static final class EmptySampleIndexVariantIterator implements SampleIndexVariantIterator {
@@ -173,9 +178,6 @@ public class SampleIndexVariantBiConverter {
 
         private static final EmptySampleIndexVariantIterator EMPTY_ITERATOR = new EmptySampleIndexVariantIterator();
 
-        public static SampleIndexVariantIterator emptyIterator() {
-            return EMPTY_ITERATOR;
-        }
 
         @Override
         public int nextIndex() {

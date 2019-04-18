@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -236,11 +237,13 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         if (studyId == null) {
             int studyId = Integer.valueOf(getParam(STUDY_ID, "-1"));
             if (studyId < 0) {
-                String study = getParam(Options.STUDY.key());
-                try {
-                    studyId = getMetadataManager().getStudyId(study);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                String study = getParam(VariantStorageEngine.Options.STUDY.key());
+                if (StringUtils.isNotEmpty(study)) {
+                    try {
+                        studyId = getMetadataManager().getStudyId(study);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
                 }
             }
             this.studyId = studyId;

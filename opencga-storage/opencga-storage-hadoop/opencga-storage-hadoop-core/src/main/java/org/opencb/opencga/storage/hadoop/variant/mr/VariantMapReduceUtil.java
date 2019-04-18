@@ -178,6 +178,9 @@ public class VariantMapReduceUtil {
     }
 
     public static void setNoneReduce(Job job) throws IOException {
+        if (job.getNumReduceTasks() > 0) {
+            LOGGER.info("Set none reduce task");
+        }
         job.setNumReduceTasks(0);
     }
 
@@ -198,6 +201,7 @@ public class VariantMapReduceUtil {
 
     public static void setMultiTableOutput(Job job) throws IOException {
         job.setOutputFormatClass(MultiTableOutputFormat.class);
+        LOGGER.info("Use multi-table as output");
 
         boolean addDependencyJars = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
 

@@ -5,76 +5,34 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter.MendelianErrorSampleIndexVariantIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter.SampleIndexVariantIterator;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testIndex;
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testParentsGenotypeCode;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
 /**
- * Converts Results to collection of variants.
- * Applies some filtering based on region and annotation.
+ * Converts Results to SampleIndexEntry.
  * <p>
  * Created on 18/05/18.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseToSampleIndexConverter implements Converter<Result, Collection<Variant>> {
+public class HBaseToSampleIndexConverter implements Converter<Result, SampleIndexEntry> {
 
     private final SampleIndexVariantBiConverter converter;
 
-    // Region filter
-    private final Region regionFilter;
-    private final Set<VariantType> typesFilter;
-    // Parents filter
-    private final boolean[] fatherFilter;
-    private final boolean[] motherFilter;
-    // Annotation mask filter
-    private final byte annotationIndexMask;
-    // File mask filter
-    private final byte fileIndexMask;
-    private final byte fileIndex;
-    private final boolean mendelianErrors;
-    private final byte[] family;
-    private final Set<String> genotypes;
-
-    public HBaseToSampleIndexConverter(byte[] family) {
+    public HBaseToSampleIndexConverter() {
         converter = new SampleIndexVariantBiConverter();
-        this.regionFilter = null;
-        this.typesFilter = null;
-        this.fatherFilter = SampleIndexQuery.EMPTY_PARENT_FILTER;
-        this.motherFilter = SampleIndexQuery.EMPTY_PARENT_FILTER;
-        this.annotationIndexMask = IndexUtils.EMPTY_MASK;
-        this.fileIndexMask = IndexUtils.EMPTY_MASK;
-        this.fileIndex = IndexUtils.EMPTY_MASK;
-        this.mendelianErrors = false;
-        this.genotypes = Collections.emptySet();
-        this.family = family;
-    }
-
-    public HBaseToSampleIndexConverter(SingleSampleIndexQuery query, Region region, byte[] family) {
-        converter = new SampleIndexVariantBiConverter();
-        this.regionFilter = region;
-        this.typesFilter = query.getVariantTypes();
-        this.fatherFilter = query.getFatherFilter();
-        this.motherFilter = query.getMotherFilter();
-        this.annotationIndexMask = query.getAnnotationIndexMask();
-        this.fileIndexMask = query.getFileIndexMask();
-        this.fileIndex = query.getFileIndex();
-        this.mendelianErrors = query.getMendelianError();
-        genotypes = new HashSet<>(query.getGenotypes());
-        this.family = family;
     }
 
     public static Pair<String, String> parsePendingColumn(byte[] column) {
@@ -94,127 +52,45 @@ public class HBaseToSampleIndexConverter implements Converter<Result, Collection
     }
 
     @Override
-    public Collection<Variant> convert(Result result) {
-        final Map<String, byte[]> annotationIndexGtMap;
-        final Map<String, byte[]> fileIndexGtMap;
-        final Map<String, byte[]> parentsGtMap;
-        if (annotationIndexMask != IndexUtils.EMPTY_MASK
-                || fileIndexMask != IndexUtils.EMPTY_MASK
-                || fatherFilter != SampleIndexQuery.EMPTY_PARENT_FILTER
-                || motherFilter != SampleIndexQuery.EMPTY_PARENT_FILTER) {
-            annotationIndexGtMap = new HashMap<>();
-            fileIndexGtMap = new HashMap<>();
-            parentsGtMap = new HashMap<>();
-            for (Cell cell : result.rawCells()) {
-                if (columnStartsWith(cell, ANNOTATION_PREFIX_BYTES)) {
-                    String gt = getGt(cell, ANNOTATION_PREFIX_BYTES);
-                    annotationIndexGtMap.put(gt, CellUtil.cloneValue(cell));
-                } else if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
-                    String gt = getGt(cell, FILE_PREFIX_BYTES);
-                    fileIndexGtMap.put(gt, CellUtil.cloneValue(cell));
-                } else if (columnStartsWith(cell, PARENTS_PREFIX_BYTES)) {
-                    String gt = getGt(cell, PARENTS_PREFIX_BYTES);
-                    parentsGtMap.put(gt, CellUtil.cloneValue(cell));
-                }
-            }
-        } else {
-            annotationIndexGtMap = Collections.emptyMap();
-            fileIndexGtMap = Collections.emptyMap();
-            parentsGtMap = Collections.emptyMap();
-        }
+    public SampleIndexEntry convert(Result result) {
+        final Map<String, SampleIndexGtEntry> gts = new HashMap<>();
+        MendelianErrorSampleIndexVariantIterator mendelianIterator = null;
 
-        if (mendelianErrors) {
-            return convertFromMendelianErrors(result, annotationIndexGtMap, fileIndexGtMap);
-        } else {
-            return convertFromGT(result, annotationIndexGtMap, fileIndexGtMap, parentsGtMap);
-        }
-    }
-
-    private Set<Variant> convertFromMendelianErrors(Result result,
-                                                    Map<String, byte[]> annotationIndexGtMap, Map<String, byte[]> fileIndexGtMap) {
-        Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
-        Cell cell = result.getColumnLatestCell(family, MENDELIAN_ERROR_COLUMN);
-        if (cell != null && cell.getValueLength() != 0) {
-            MendelianErrorSampleIndexVariantIterator iterator =
-                    MendelianErrorSampleIndexConverter.toVariants(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
-            while (iterator.hasNext()) {
-                String gt = iterator.nextGenotype();
-                if (genotypes.isEmpty() || genotypes.contains(gt)) {
-                    byte[] fileIndexGt = fileIndexGtMap.get(gt);
-                    byte[] annotationIndexGt = annotationIndexGtMap.get(gt);
-                    Variant variant = filterAndConvert(iterator, fileIndexGt, annotationIndexGt, null);
-                    if (variant != null) {
-                        variants.add(variant);
-                    }
-                } else {
-                    iterator.skip();
-                }
-            }
-        }
-        return variants;
-    }
-
-    protected Set<Variant> convertFromGT(Result result, Map<String, byte[]> annotationIndexGtMap, Map<String, byte[]> fileIndexGtMap,
-                                         Map<String, byte[]> parentsGtMap) {
         byte[] row = result.getRow();
         String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
         int batchStart = SampleIndexSchema.batchStartFromRowKey(row);
-        Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+
         for (Cell cell : result.rawCells()) {
-            if (cell.getQualifierArray()[cell.getQualifierOffset()] != META_PREFIX) {
-                String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                byte[] fileIndexGt = fileIndexGtMap.get(gt);
-                byte[] annotationIndexGt = annotationIndexGtMap.get(gt);
-                byte[] parentsGt = parentsGtMap.get(gt);
+            if (columnStartsWith(cell, META_PREFIX_BYTES)) {
+                if (columnStartsWith(cell, ANNOTATION_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, ANNOTATION_PREFIX_BYTES), SampleIndexGtEntry::new)
+                            .setAnnotationIndexGt(CellUtil.cloneValue(cell));
+                } else if (columnStartsWith(cell, ANNOTATION_COUNT_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, ANNOTATION_COUNT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                            .setAnnotationCounts(IndexUtils.countPerBitToObject(CellUtil.cloneValue(cell)));
+                } else if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, FILE_PREFIX_BYTES), SampleIndexGtEntry::new)
+                            .setFileIndexGt(CellUtil.cloneValue(cell));
+                } else if (columnStartsWith(cell, PARENTS_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, PARENTS_PREFIX_BYTES), SampleIndexGtEntry::new)
+                            .setParentsGt(CellUtil.cloneValue(cell));
+                }
+            } else {
+                if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
+                    mendelianIterator = MendelianErrorSampleIndexConverter.toVariants(
+                            cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else {
+                    String gt = Bytes.toString(CellUtil.cloneQualifier(cell));
+                    SampleIndexGtEntry gtEntry = gts.computeIfAbsent(gt, SampleIndexGtEntry::new);
 
-                SampleIndexVariantIterator iterator = converter.toVariantsIterator(chromosome, batchStart,
-                        cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
-                while (iterator.hasNext()) {
-                    Variant variant = filterAndConvert(iterator, fileIndexGt, annotationIndexGt, parentsGt);
-                    if (variant != null) {
-                        variants.add(variant);
-                    }
+                    SampleIndexVariantIterator variants = converter.toVariantsIterator(chromosome, batchStart,
+                            cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                    gtEntry.setVariants(variants);
                 }
             }
         }
-        return variants;
-    }
 
-    private Variant filterAndConvert(SampleIndexVariantIterator iterator, byte[] fileIndexGt, byte[] annotationIndexGt, byte[] parentsGt) {
-        int idx = iterator.nextIndex();
-        // Either call to next() or to skip(), but no both
-
-        // Test file index (if any)
-        if (fileIndexGt == null || testIndex(fileIndexGt[idx], fileIndexMask, fileIndex)) {
-
-            // Test annotation index (if any)
-            if (annotationIndexGt == null || testIndex(annotationIndexGt[idx], annotationIndexMask, annotationIndexMask)) {
-
-                // Test parents filter (if any)
-                if (parentsGt == null || testParentsGenotypeCode(parentsGt[idx], fatherFilter, motherFilter)) {
-
-                    // Only at this point, get the variant.
-                    Variant variant = iterator.next();
-
-                    // Apply rest of filters
-                    return filter(variant);
-                }
-            }
-        }
-        iterator.skip();
-        return null;
-    }
-
-    private Variant filter(Variant variant) {
-        //Test region filter (if any)
-        if (regionFilter == null || regionFilter.contains(variant.getChromosome(), variant.getStart())) {
-
-            // Test type filter (if any)
-            if (typesFilter == null || typesFilter.contains(variant.getType())) {
-                return variant;
-            }
-        }
-        return null;
+        return new SampleIndexEntry(chromosome, batchStart, gts, mendelianIterator);
     }
 
     public static boolean columnStartsWith(Cell cell, byte[] prefix) {
