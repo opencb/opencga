@@ -315,8 +315,8 @@ public class SampleIndexVariantBiConverter {
         return variant.getStart() % SampleIndexSchema.BATCH_SIZE;
     }
 
-    protected String getAlternate(Variant variant) {
-        return VariantPhoenixKeyFactory.buildSVAlternate(variant.getReference(), variant.getAlternate(), variant.getEnd(), variant.getSv());
+    protected String getAlternate(Variant v) {
+        return VariantPhoenixKeyFactory.buildSymbolicAlternate(v.getReference(), v.getAlternate(), v.getEnd(), v.getSv());
     }
 
     /**
