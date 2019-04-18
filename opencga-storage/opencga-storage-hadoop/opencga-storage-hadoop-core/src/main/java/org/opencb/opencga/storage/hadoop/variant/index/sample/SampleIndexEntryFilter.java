@@ -1,15 +1,14 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testIndex;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testParentsGenotypeCode;
@@ -28,6 +27,8 @@ public class SampleIndexEntryFilter {
     private SingleSampleIndexQuery query;
     private Region regionFilter;
 
+    private final List<Integer> annotationIndexPositions;
+
     public SampleIndexEntryFilter(SingleSampleIndexQuery query) {
         this(query, null);
     }
@@ -35,9 +36,18 @@ public class SampleIndexEntryFilter {
     public SampleIndexEntryFilter(SingleSampleIndexQuery query, Region regionFilter) {
         this.query = query;
         this.regionFilter = regionFilter;
+
+        int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndexMask()});
+
+        annotationIndexPositions = new ArrayList<>(8);
+        for (int i = 0; i < countsPerBit.length; i++) {
+            if (countsPerBit[i] == 1) {
+                annotationIndexPositions.add(i);
+            }
+        }
     }
 
-    protected Collection<Variant> filter(SampleIndexEntry sampleIndexEntry) {
+    public Collection<Variant> filter(SampleIndexEntry sampleIndexEntry) {
         if (query.getMendelianError()) {
             return filterMendelian(sampleIndexEntry.getGts(), sampleIndexEntry.getMendelianVariants());
         } else {
@@ -54,7 +64,7 @@ public class SampleIndexEntryFilter {
                 String gt = iterator.nextGenotype();
                 if (query.getGenotypes().isEmpty() || query.getGenotypes().contains(gt)) {
                     SampleIndexGtEntry gtEntry = gts.computeIfAbsent(gt, SampleIndexGtEntry::new);
-                    Variant variant = filterAndConvert(gtEntry, iterator);
+                    Variant variant = filter(gtEntry, iterator);
                     if (variant != null) {
                         variants.add(variant);
                     }
@@ -66,11 +76,13 @@ public class SampleIndexEntryFilter {
         return variants;
     }
 
-    protected Set<Variant> filter(Map<String, SampleIndexGtEntry> gts) {
+    private Set<Variant> filter(Map<String, SampleIndexGtEntry> gts) {
         Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
-        for (SampleIndexGtEntry entry : gts.values()) {
-            while (entry.getVariants().hasNext()) {
-                Variant variant = filterAndConvert(entry);
+        for (SampleIndexGtEntry gtEntry : gts.values()) {
+            MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
+
+            while (expectedResultsFromAnnotation.intValue() > 0 && gtEntry.getVariants().hasNext()) {
+                Variant variant = filter(gtEntry, expectedResultsFromAnnotation);
                 if (variant != null) {
                     variants.add(variant);
                 }
@@ -79,17 +91,33 @@ public class SampleIndexEntryFilter {
         return variants;
     }
 
-    private Variant filterAndConvert(SampleIndexGtEntry gtEntry) {
-        return filterAndConvert(gtEntry, gtEntry.getVariants());
+    private int getExpectedResultsFromAnnotation(SampleIndexGtEntry gtEntry) {
+        int expectedResultsFromAnnotation = Integer.MAX_VALUE;
+        if (gtEntry.getAnnotationCounts() != null) {
+            for (Integer idx : annotationIndexPositions) {
+                expectedResultsFromAnnotation = Math.min(expectedResultsFromAnnotation, gtEntry.getAnnotationCounts()[idx]);
+            }
+        }
+        return expectedResultsFromAnnotation;
     }
 
-    private Variant filterAndConvert(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
+    private Variant filter(SampleIndexGtEntry gtEntry, MutableInt expectedResultsFromAnnotation) {
+        return filter(gtEntry, gtEntry.getVariants(), expectedResultsFromAnnotation);
+    }
+
+    private Variant filter(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
+        return filter(gtEntry, variants, new MutableInt(Integer.MAX_VALUE));
+    }
+
+    private Variant filter(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants,
+                           MutableInt expectedResultsFromAnnotation) {
         int idx = variants.nextIndex();
         // Either call to next() or to skip(), but no both
 
         // Test annotation index (if any)
         if (gtEntry.getAnnotationIndexGt() == null
                 || testIndex(gtEntry.getAnnotationIndexGt()[idx], query.getAnnotationIndexMask(), query.getAnnotationIndexMask())) {
+            expectedResultsFromAnnotation.decrement();
 
             // Test file index (if any)
             if (gtEntry.getFileIndexGt() == null
