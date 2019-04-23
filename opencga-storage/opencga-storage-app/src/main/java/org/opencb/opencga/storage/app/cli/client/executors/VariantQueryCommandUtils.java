@@ -138,7 +138,7 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.geneBiotype);
         addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationFreqMaf);
         addParam(query, ANNOT_POPULATION_REFERENCE_FREQUENCY, queryVariantsOptions.populationFreqRef);
-        addParam(query, ANNOT_TRANSCRIPTION_FLAG, queryVariantsOptions.flags);
+        addParam(query, ANNOT_TRANSCRIPT_FLAG, queryVariantsOptions.flags);
 //        addParam(query, ANNOT_GENE_TRAITS, queryVariantsOptions.geneTrait);
         addParam(query, ANNOT_GENE_TRAIT_ID, queryVariantsOptions.geneTraitId);
         addParam(query, ANNOT_GENE_TRAIT_NAME, queryVariantsOptions.geneTraitName);

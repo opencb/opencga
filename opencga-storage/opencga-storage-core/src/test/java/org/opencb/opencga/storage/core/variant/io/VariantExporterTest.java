@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -26,15 +27,18 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.junit.Assert.*;
 
 /**
  * Created on 06/12/16.
@@ -45,7 +49,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
 
     @Before
     public void setUp() throws Exception {
-        runDefaultETL(inputUri, variantStorageEngine, newStudyMetadata(),
+        runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new QueryOptions()
 //                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), false));
@@ -58,7 +62,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
 
     @Test
     public void exportStudyTest() throws Exception {
-        variantStorageEngine.exportData(null, VariantOutputFormat.VCF, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(null, VariantOutputFormat.VCF, null, new Query(), new QueryOptions());
         // It may happen that the VcfExporter closes the StandardOutput.
         // Check System.out is not closed
         System.out.println(getClass().getSimpleName() + ": System out not closed!");
@@ -67,7 +71,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
     @Test
     public void exportStudyJsonTest() throws Exception {
         URI output = newOutputUri().resolve("variant.json.gz");
-        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_GZ, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(output, VariantOutputFormat.JSON_GZ, null, new Query(), new QueryOptions());
 
         System.out.println("output = " + output);
         assertTrue(Paths.get(output).toFile().exists());
@@ -84,6 +88,37 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
                 System.out.println("[" + i++ + "]: " + line);
             }
         }
+    }
+
+    @Test
+    public void exportJsonGivenVariantsFileTest() throws Exception {
+        URI outputDir = newOutputUri();
+        URI outputFile = outputDir.resolve("subset.variants.json.gz");
+        URI variantsFile = outputDir.resolve("variants.tsv");
+        List<String> expectedVariants = new ArrayList<>();
+        try (PrintStream out = new PrintStream(new FileOutputStream(variantsFile.getPath()))) {
+            int i = 0;
+            out.println("#CHROM\tPOS\tID\tREF\tALT");
+            for (Variant v : variantStorageEngine) {
+                if (i++ % 5 == 0) {
+                    expectedVariants.add(v.toString());
+                    out.println(v.getChromosome() + "\t"+v.getStart()+"\t.\t"+v.getReference()+"\t"+v.getAlternate()+"");
+                }
+            }
+        }
+
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.JSON_GZ, variantsFile, new Query(), new QueryOptions(), null);
+
+        assertTrue(Paths.get(outputFile).toFile().exists());
+        assertTrue(Paths.get(outputFile.getPath() + VariantExporter.METADATA_FILE_EXTENSION).toFile().exists());
+
+        // Check gzip format
+        int numVariants = 0;
+        for (Variant variant : new VariantJsonReader(Collections.emptyMap(), outputFile.getPath())) {
+            assertThat(expectedVariants, hasItem(variant.toString()));
+            numVariants++;
+        }
+        assertEquals(expectedVariants.size(), numVariants);
     }
 
 }

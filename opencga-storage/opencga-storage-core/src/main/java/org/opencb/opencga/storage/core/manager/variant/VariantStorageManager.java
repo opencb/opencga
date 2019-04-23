@@ -129,13 +129,14 @@ public class VariantStorageManager extends StorageManager {
             throws StorageEngineException, CatalogException, IOException {
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), study)
                 .append(VariantQueryParam.STUDY.key(), study);
-        return exportData(outputFile, outputFormat, query, new QueryOptions(), sessionId);
+        return exportData(outputFile, outputFormat, null, query, new QueryOptions(), sessionId);
     }
 
     /**
      * Exports the result of the given query and the associated metadata.
      * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
      * @param outputFormat  Variant Output format.
+     * @param variantsFile  Optional variants file.
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
      * @param sessionId     User's session id
@@ -144,8 +145,8 @@ public class VariantStorageManager extends StorageManager {
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
-    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions,
-                                String sessionId)
+    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
+                                Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         if (query == null) {
             query = new Query();
@@ -162,7 +163,7 @@ public class VariantStorageManager extends StorageManager {
             studyInfos.add(getStudyInfo(study, Collections.emptyList(), sessionId));
         }
 
-        return op.exportData(studyInfos, query, outputFormat, outputFile, sessionId, queryOptions);
+        return op.exportData(studyInfos, query, outputFormat, outputFile, variantsFile, sessionId, queryOptions);
     }
 
     // --------------------------//

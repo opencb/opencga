@@ -18,8 +18,11 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -41,6 +44,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
@@ -76,12 +81,14 @@ public class VariantExporter {
      * Exports the result of the given query and the associated metadata.
      * @param outputFileUri Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
      * @param outputFormat  Variant Output format.
+     * @param variantsFile  Optional variants file.
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
-    public void export(@Nullable URI outputFileUri, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
+    public void export(@Nullable URI outputFileUri, VariantOutputFormat outputFormat, URI variantsFile,
+                       Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
 
         String outputFile = null;
@@ -92,7 +99,7 @@ public class VariantExporter {
 
         try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat)) {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
-            exportData(os, outputFormat, query, queryOptions, logProgress);
+            exportData(os, outputFormat, variantsFile, query, queryOptions, logProgress);
         }
         if (metadataFactory != null && !VariantWriterFactory.isStandardOutput(outputFile)) {
             VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
@@ -100,8 +107,8 @@ public class VariantExporter {
         }
     }
 
-    protected void exportData(OutputStream outputStream, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions,
-                              boolean logProgress)
+    protected void exportData(OutputStream outputStream, VariantOutputFormat outputFormat, URI variantsFile,
+                              Query query, QueryOptions queryOptions, boolean logProgress)
             throws StorageEngineException, IOException {
         if (query == null) {
             query = new Query();
@@ -111,7 +118,13 @@ public class VariantExporter {
         }
 
         // DataReader
-        VariantDBReader variantDBReader = new VariantDBReader(engine, query, queryOptions);
+        VariantDBReader variantDBReader;
+        if (variantsFile != null) {
+            Iterator<Variant> variants = toVariantsIterator(variantsFile);
+            variantDBReader = new VariantDBReader(engine.iterator(variants, query, queryOptions));
+        } else {
+            variantDBReader = new VariantDBReader(engine, query, queryOptions);
+        }
 
         // TaskMetadata<Variant, Variant>
         Task<Variant, Variant> progressTask;
@@ -119,7 +132,7 @@ public class VariantExporter {
             final Query finalQuery = query;
             final QueryOptions finalQueryOptions = queryOptions;
             ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
-                if (finalQueryOptions.getBoolean(QueryOptions.SKIP_COUNT)) {
+                if (finalQueryOptions.getBoolean(QueryOptions.SKIP_COUNT) || variantsFile != null) {
                     return 0L;
                 }
                 Long count = engine.count(finalQuery).first();
@@ -159,6 +172,18 @@ public class VariantExporter {
         try (OutputStream os = new GZIPOutputStream(new FileOutputStream(file))) {
             objectMapper.writeValue(os, metadata);
         }
+    }
+
+    private Iterator<Variant> toVariantsIterator(URI variantsFile) {
+        VariantStudyMetadata metadata = new VariantFileMetadata("", variantsFile.getPath()).toVariantStudyMetadata("");
+        return new VariantVcfReader(metadata, variantsFile.getPath(),
+                (variantStudyMetadata, s) -> {
+                    String[] split = s.split("\t");
+                    if (split.length < 5) {
+                        throw new IllegalArgumentException("Not enough fields provided (min 5)");
+                    }
+                    return Collections.singletonList(new Variant(split[0], Integer.valueOf(split[1]), split[3], split[4]));
+                }).iterator();
     }
 
 }

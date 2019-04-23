@@ -19,7 +19,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
-import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,8 +52,7 @@ public class AnnotationIndexDriver extends AbstractVariantsTableDriver {
             region = null;
         }
 
-        String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(getVariantsTable());
-        annotationIndexTable = new HBaseVariantTableNameGenerator(dbName, getConf()).getAnnotationIndexTableName();
+        annotationIndexTable = getTableNameGenerator().getAnnotationIndexTableName();
     }
 
     @Override

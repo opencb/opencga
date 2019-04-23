@@ -66,7 +66,7 @@ public class VariantExportStorageOperation extends StorageOperation {
     }
 
     public List<URI> exportData(List<StudyInfo> studyInfos, Query query, VariantOutputFormat outputFormat, String outputStr,
-                                String sessionId, ObjectMap options)
+                                String variantsFile, String sessionId, ObjectMap options)
             throws IOException, StorageEngineException, CatalogException {
         if (options == null) {
             options = new ObjectMap();
@@ -145,7 +145,8 @@ public class VariantExportStorageOperation extends StorageOperation {
             VariantMetadataFactory metadataExporter =
                     new CatalogVariantMetadataFactory(catalogManager, variantStorageEngine.getDBAdaptor(), sessionId);
 
-            variantStorageEngine.exportData(outputFile, outputFormat, metadataExporter, query, new QueryOptions(options));
+            URI variantsFileUri = StringUtils.isEmpty(variantsFile) ? null : UriUtils.createUri(variantsFile);
+            variantStorageEngine.exportData(outputFile, outputFormat, variantsFileUri, query, new QueryOptions(options), metadataExporter);
 
             if (catalogOutDirId != null && outdir != null) {
                 copyResults(outdir, studyFqn, catalogOutDirId, sessionId);

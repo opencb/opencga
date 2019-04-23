@@ -240,7 +240,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             }
             VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory
                     .toOutputFormat(cliOptions.commonOptions.outputFormat, cliOptions.output);
-            variantManager.exportData(cliOptions.output, outputFormat, query, queryOptions, sessionId);
+            variantManager.exportData(cliOptions.output, outputFormat, cliOptions.variantsFile, query, queryOptions, sessionId);
         }
     }
 

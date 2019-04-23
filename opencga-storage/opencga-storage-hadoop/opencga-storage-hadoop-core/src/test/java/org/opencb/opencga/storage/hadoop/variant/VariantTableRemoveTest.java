@@ -257,7 +257,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(getVariantStorageEngine().getDBAdaptor().getGenomeHelper(), dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
         for (Integer sampleId : sampleIds) {
-            assertFalse(sampleIndexDBAdaptor.rawIterator(studyMetadata.getId(), sampleId).hasNext());
+            assertFalse(sampleIndexDBAdaptor.iteratorByGt(studyMetadata.getId(), sampleId).hasNext());
         }
     }
 

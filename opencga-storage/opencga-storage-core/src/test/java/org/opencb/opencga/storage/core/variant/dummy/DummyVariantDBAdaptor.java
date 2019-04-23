@@ -33,16 +33,14 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created on 28/11/16.
@@ -73,9 +71,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
-        logger.info("Query " + query.toJson());
-        logger.info("QueryOptions " + options.toJson());
-        logger.info("dbName " + dbName);
 
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
@@ -111,9 +106,20 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+        logger.info("Query " + query.toJson());
+        logger.info("QueryOptions " + options.toJson());
+        logger.info("dbName " + dbName);
+
         List<Variant> variants = new ArrayList<>(TEMPLATES.size());
+        HashSet<String> variantIds = new HashSet<>(query.getAsStringList(VariantQueryParam.ID.key()));
         for (String template : TEMPLATES) {
+            if (!variantIds.isEmpty() && !variantIds.contains(template)) {
+                // Skip this variant
+                continue;
+            }
+
             Variant variant = new Variant(template);
+
 
             Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(query, options);
             returnedSamples.forEach((study, samples) -> {

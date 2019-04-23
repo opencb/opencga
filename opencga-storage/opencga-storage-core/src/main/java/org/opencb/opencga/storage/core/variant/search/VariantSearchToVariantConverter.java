@@ -394,7 +394,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (variantSearchModel.getGeneToSoAcc() != null) {
             for (String geneToSoAcc : variantSearchModel.getGeneToSoAcc()) {
                 String[] fields = geneToSoAcc.split("_");
-                if (consequenceTypeMap.containsKey(fields[0])) {
+                if (fields.length == 2 && StringUtils.isNumeric(fields[1]) && consequenceTypeMap.containsKey(fields[0])) {
                     int soAcc = Integer.parseInt(fields[1]);
                     geneRelatedSoTerms.add(soAcc);  // we memorise the SO term for next block
 
@@ -405,11 +405,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
                     }
                     consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms().add(sequenceOntologyTerm);
-
-//                    // only set protein for that conseq. type if annotated protein and SO acc is 1583 (missense_variant)
-//                    if (soAcc == 1583) {
-//                        consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
-//                    }
                 }
             }
         }
@@ -439,7 +434,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // and update the variant annotation with the consequence types
         variantAnnotation.setConsequenceTypes(consequenceTypes);
 
-        // set populations
+        // set population frequencies
         List<PopulationFrequency> populationFrequencies = new ArrayList<>();
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {
             for (String key : variantSearchModel.getPopFreq().keySet()) {

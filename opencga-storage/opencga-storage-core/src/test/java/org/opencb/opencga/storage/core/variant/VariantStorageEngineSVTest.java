@@ -126,7 +126,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     @Test
     public void exportVcf() throws Exception {
-        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true));
+        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, null, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true));
     }
 
     protected Map<String, Variant> readVariants(URI input) throws StorageEngineException, NonStandardCompliantSampleField {

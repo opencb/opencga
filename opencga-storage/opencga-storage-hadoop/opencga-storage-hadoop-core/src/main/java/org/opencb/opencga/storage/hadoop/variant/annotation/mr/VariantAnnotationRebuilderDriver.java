@@ -10,6 +10,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -22,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,6 +55,11 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
     }
 
     @Override
+    protected String getJobOperationName() {
+        return "regenerate variant annotation columns";
+    }
+
+    @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
 
         Scan scan = new Scan();
@@ -70,8 +77,16 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
     }
 
     @Override
-    protected String getJobOperationName() {
-        return "regenerate variant annotation columns";
+    protected void preExecution(String variantTable) throws IOException, StorageEngineException {
+        super.preExecution(variantTable);
+
+        // Update missing columns, if any
+        try {
+            VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(getHelper());
+            variantPhoenixHelper.updateAnnotationColumns(variantPhoenixHelper.newJdbcConnection(), variantTable);
+        } catch (ClassNotFoundException | SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static class VariantAnnotationRebuilderMapper extends TableMapper<ImmutableBytesWritable, Put> {
