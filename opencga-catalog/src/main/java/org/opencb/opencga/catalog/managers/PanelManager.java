@@ -76,6 +76,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
     @Override
     QueryResult<Panel> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 

@@ -222,7 +222,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             QueryResult queryResult = catalogManager.getFileManager().get(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -300,7 +300,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
@@ -363,7 +363,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response resyncFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
@@ -492,7 +492,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new GroupParams());
 
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, groupId, params, sessionId));
         } catch (Exception e) {
@@ -510,7 +510,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new MemberParams());
 
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@members", params.toGroupParams(), sessionId));
         } catch (Exception e) {
@@ -529,7 +529,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new MemberParams());
 
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@admins", params.toGroupParams(), sessionId));
         } catch (Exception e) {
@@ -545,7 +545,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @PathParam("study") String studyStr,
             @ApiParam(value = "Group name", required = true) @PathParam("group") String groupId) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().deleteGroup(studyStr, groupId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -561,7 +561,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity") Study.Entity
                     entity) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -688,8 +688,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) MemberAclUpdateOld params) {
         try {
-            isSingleId(studyStr);
-            isSingleId(memberId);
+            ParamUtils.checkIsSingleID(studyStr);
+            ParamUtils.checkIsSingleID(memberId);
             Study.StudyAclParams aclParams = getAclParams(params.add, params.remove, params.set, null);
             List<String> idList = getIdList(studyStr);
             return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, sessionId));

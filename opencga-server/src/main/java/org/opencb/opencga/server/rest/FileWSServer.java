@@ -332,7 +332,7 @@ public class FileWSServer extends OpenCGAWSServer {
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                              @QueryParam("study") String studyStr) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId);
             return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
         } catch (Exception e) {
@@ -349,7 +349,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             File file = fileManager.get(studyStr, fileIdStr, FileManager.INCLUDE_FILE_IDS, sessionId).first();
@@ -375,7 +375,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     Boolean ignoreCase,
             @ApiParam(value = "Return multiple matches", required = false) @DefaultValue("true") @QueryParam("multi") Boolean multi) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             File file = fileManager.get(studyStr, fileIdStr, FileManager.INCLUDE_FILE_IDS, sessionId).first();
@@ -404,7 +404,7 @@ public class FileWSServer extends OpenCGAWSServer {
         QueryResult<File> fileQueryResult;
         InputStream streamBody = null;
         try {
-            isSingleId(fileStr);
+            ParamUtils.checkIsSingleID(fileStr);
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             File file = fileManager.get(studyStr, fileStr, FileManager.INCLUDE_FILE_URI, sessionId).first();
@@ -561,7 +561,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                          @QueryParam("study") String studyStr) {
         try {
-            isSingleId(folder);
+            ParamUtils.checkIsSingleID(folder);
             QueryResult<File> result = catalogManager.getFileManager().getFilesFromFolder(folder, studyStr, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -675,7 +675,7 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove("folder");
             query.remove("maxDepth");
 
-            isSingleId(folderId);
+            ParamUtils.checkIsSingleID(folderId);
             query.remove("maxDepth");
             QueryResult result = fileManager
                     .getTree(folderId.replace(":", "/"), studyStr, query, queryOptions, maxDepth, sessionId);
@@ -987,7 +987,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             File file = fileManager.get(studyStr, fileIdStr, null, sessionId).first();
 
             List<File> files;
@@ -1236,7 +1236,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false")
                                  boolean calculateChecksum) {
         try {
-            isSingleId(folderIdStr);
+            ParamUtils.checkIsSingleID(folderIdStr);
             File file = fileManager.get(studyStr, folderIdStr, null, sessionId).first();
 
             List<File> scan = new FileScanner(catalogManager)

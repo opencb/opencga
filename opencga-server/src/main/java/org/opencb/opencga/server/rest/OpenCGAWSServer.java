@@ -36,8 +36,10 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -664,21 +666,9 @@ public class OpenCGAWSServer {
         return null;
     }
 
-    protected boolean isSingleId(String id) throws WebServiceException {
-        if (StringUtils.isNotEmpty(id)) {
-            if (id.contains(",")) {
-                throw new WebServiceException("More than one id is provided. Only one ID is allowed!");
-            } else {
-                return true;
-            }
-        } else {
-            throw new WebServiceException("ID is null or Empty");
-        }
-    }
-
-    protected void areSingleIds(String... ids) throws WebServiceException {
+    protected void areSingleIds(String... ids) throws CatalogParameterException {
         for (String id : ids) {
-            isSingleId(id);
+            ParamUtils.checkIsSingleID(id);
         }
     }
 

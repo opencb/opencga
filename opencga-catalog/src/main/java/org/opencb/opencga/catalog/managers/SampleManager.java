@@ -90,6 +90,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     QueryResult<Sample> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {

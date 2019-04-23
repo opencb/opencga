@@ -86,6 +86,7 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     QueryResult<Job> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {

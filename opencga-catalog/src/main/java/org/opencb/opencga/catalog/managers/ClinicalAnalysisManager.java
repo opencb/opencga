@@ -77,6 +77,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     @Override
     QueryResult<ClinicalAnalysis> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         if (UUIDUtils.isOpenCGAUUID(entry)) {

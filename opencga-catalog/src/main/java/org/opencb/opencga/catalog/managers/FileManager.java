@@ -133,6 +133,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
     @Override
     QueryResult<File> internalGet(long studyUid, String fileName, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(fileName);
+
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
         FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.PATH;

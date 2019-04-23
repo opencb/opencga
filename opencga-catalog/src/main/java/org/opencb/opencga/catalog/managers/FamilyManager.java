@@ -97,6 +97,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     @Override
     QueryResult<Family> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {

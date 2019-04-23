@@ -25,6 +25,8 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
@@ -206,9 +208,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response incrementRelease(
             @ApiParam(value = "Project id", required = true) @PathParam("project") String projectStr) {
         try {
-            isSingleId(projectStr);
+            ParamUtils.checkIsSingleID(projectStr);
             return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, sessionId));
-        } catch (CatalogException | WebServiceException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e);
         }
@@ -248,7 +250,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(updateParams, new ProjectUpdateParams());
 
-            isSingleId(projectStr);
+            ParamUtils.checkIsSingleID(projectStr);
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
             if (updateParams.organism != null) {
                 if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
