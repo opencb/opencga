@@ -33,14 +33,6 @@ public class CompoundHeterozygousQuery {
     private final VariantIterable iterable;
     private static Logger logger = LoggerFactory.getLogger(CompoundHeterozygousQuery.class);
 
-    protected static final Comparator<Variant> VARIANT_COMPARATOR = Comparator.comparing(Variant::getChromosome)
-            .thenComparing(Variant::getStart)
-            .thenComparing(Variant::getEnd)
-            .thenComparing(Variant::getReference)
-            .thenComparing(Variant::getAlternate)
-            .thenComparing(Variant::toString);
-
-
     public CompoundHeterozygousQuery(VariantIterable iterable) {
         this.iterable = iterable;
     }
@@ -94,23 +86,18 @@ public class CompoundHeterozygousQuery {
         Iterator<Variant> rawIterator = getRawIterator(proband, father, mother, query, options);
 
         // Filter compound heterozygous
-        Map<String, List<Variant>> compoundHeterozygous = ModeOfInheritance.compoundHeterozygous(rawIterator,
+        List<Variant> compoundHeterozygous = ModeOfInheritance.compoundHeterozygous(rawIterator,
                 includeSample.indexOf(proband),
                 includeSample.indexOf(mother),
                 includeSample.indexOf(father),
                 limit + skip);
 
-        // Flat map
-        TreeSet<Variant> treeSet = new TreeSet<>(VARIANT_COMPARATOR);
-        for (List<Variant> variants : compoundHeterozygous.values()) {
-            treeSet.addAll(variants);
-        }
-        logger.debug("Got " + compoundHeterozygous.size() + " compHet groups with "
-                + compoundHeterozygous.values().stream().mapToInt(List::size).sum() + " variants, "
-                + "of which " + treeSet.size() + " are unique variants");
+//        logger.debug("Got " + compoundHeterozygous.size() + " compHet groups with "
+//                + compoundHeterozygous.values().stream().mapToInt(List::size).sum() + " variants, "
+//                + "of which " + treeSet.size() + " are unique variants");
 
         // Skip
-        Iterator<Variant> variantIterator = treeSet.iterator();
+        Iterator<Variant> variantIterator = compoundHeterozygous.iterator();
         Iterators.advance(variantIterator, skip);
 
         // Return either an iterator or a query result
@@ -119,7 +106,9 @@ public class CompoundHeterozygousQuery {
         } else {
             VariantQueryResult<Variant> queryResult = VariantDBIterator.wrapper(variantIterator)
                     .toQueryResult(Collections.singletonMap(study, includeSample));
-            queryResult.setNumTotalResults(treeSet.size());
+            if (compoundHeterozygous.size() < (skip + limit)) {
+                queryResult.setNumTotalResults(compoundHeterozygous.size());
+            }
             return queryResult;
         }
     }
