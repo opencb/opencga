@@ -27,10 +27,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
@@ -1068,6 +1065,30 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Cohort.CohortStatus.READY);
         Cohort cohort = catalogManager.getCohortManager().get(studyId, query, null, sessionIdUser).first();
         assertEquals(Status.DELETED, cohort.getStatus().getName());
+    }
+
+    @Test
+    public void getSamplesFromCohort() throws CatalogException, IOException {
+        String studyId = "user@1000G:phase1";
+
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                sessionIdUser).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                sessionIdUser).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                sessionIdUser).first();
+
+        Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY)
+                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, sessionIdUser).first();
+
+        QueryResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(studyId, "MyCohort", sessionIdUser);
+        assertEquals(3, myCohort1.getNumResults());
+
+        thrown.expect(CatalogParameterException.class);
+        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,AnotherCohort", sessionIdUser);
+
+        thrown.expect(CatalogParameterException.class);
+        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,MyCohort", sessionIdUser);
     }
 
     /**

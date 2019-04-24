@@ -47,6 +47,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
@@ -278,33 +279,38 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Exports the result of the given query and the associated metadata.
      * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
      * @param outputFormat  Variant output format
+     * @param variantsFile  Optional variants file.
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
+    public void exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        exportData(outputFile, outputFormat, new VariantMetadataFactory(getMetadataManager()
-        ), query, queryOptions);
+        exportData(outputFile, outputFormat, variantsFile, query, queryOptions, null);
     }
 
     /**
      * Exports the result of the given query and the associated metadata.
+     *
      * @param outputFile       Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
      * @param outputFormat     Variant output format
-     * @param metadataFactory  Metadata factory. Metadata will only be generated if the outputFile is defined.
+     * @param variantsFile     Optional variants file.
      * @param query            Query with the variants to export
      * @param queryOptions     Query options
-     * @throws IOException  If there is any IO error
-     * @throws StorageEngineException  If there is any error exporting variants
+     * @param metadataFactory  Metadata factory. Metadata will only be generated if the outputFile is defined.
+     * @throws IOException            If there is any IO error
+     * @throws StorageEngineException If there is any error exporting variants
      */
-    public void exportData(URI outputFile, VariantOutputFormat outputFormat, VariantMetadataFactory metadataFactory,
-                           Query query, QueryOptions queryOptions)
+    public void exportData(URI outputFile, VariantOutputFormat outputFormat, URI variantsFile, Query query, QueryOptions queryOptions,
+                           VariantMetadataFactory metadataFactory)
             throws IOException, StorageEngineException {
+        if (metadataFactory == null) {
+            metadataFactory = new VariantMetadataFactory(getMetadataManager());
+        }
         VariantExporter exporter = newVariantExporter(metadataFactory);
         query = preProcessQuery(query, queryOptions);
-        exporter.export(outputFile, outputFormat, query, queryOptions);
+        exporter.export(outputFile, outputFormat, variantsFile, query, queryOptions);
     }
 
     /**
@@ -953,6 +959,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                     query, options);
         }
         return getVariantQueryExecutor(query, options).get(query, options);
+    }
+
+    @Override
+    public MultiVariantDBIterator iterator(Iterator<?> variants, Query query, QueryOptions options, int batchSize) {
+        query = preProcessQuery(query, options);
+        try {
+            return getDBAdaptor().iterator(variants, query, options, batchSize);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
+        }
     }
 
     @Override

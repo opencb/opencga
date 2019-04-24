@@ -312,7 +312,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--population-frequency-ref"}, description = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
         public String populationFreqRef;
 
-        @Parameter(names = {"--transcript-flag"}, description = ANNOT_TRANSCRIPTION_FLAG_DESCR)
+        @Parameter(names = {"--transcript-flag"}, description = ANNOT_TRANSCRIPT_FLAG_DESCR)
         public String flags;
 
         @Parameter(names = {"--gene-trait-id"}, description = ANNOT_GENE_TRAIT_ID_DESCR)
@@ -486,29 +486,11 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = STUDY_DESCR)
         public String study;
 
-//        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
-//        public String output;
-//
-//        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
-//        public String dbName;
-//
-//        @Parameter(names = {"-i", "--include"}, description = "", arity = 1)
-//        public String include;
-//
-//        @Parameter(names = {"-e", "--exclude"}, description = "", arity = 1)
-//        public String exclude;
-//
-//        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", arity = 1)
-//        public int skip;
-//
-//        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", arity = 1)
-//        public int limit;
-//
-//        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", arity = 0)
-//        public boolean count;
-
         @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", arity = 1)
         public String outputFormat = "vcf";
+
+        @Parameter(names = {"--variants-file"}, description = "GFF File with regions")
+        public String variantsFile;
 
     }
 

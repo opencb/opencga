@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public final class VariantQueryUtils {
             "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam SAMPLE_DE_NOVO = QueryParam.create("sampleDeNovo",
             "Get the precomputed mendelian errors non HOM_REF for the given samples", QueryParam.Type.TEXT_ARRAY);
-    public static final QueryParam SAMPLE_COMPOUND_HETEROZYGOUS = QueryParam.create("sampleCompountHeterozygous",
+    public static final QueryParam SAMPLE_COMPOUND_HETEROZYGOUS = QueryParam.create("sampleCompoundHeterozygous",
             "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
@@ -375,100 +376,6 @@ public final class VariantQueryUtils {
             }
         }
         return variant;
-    }
-
-    public static class VariantQueryXref {
-        private final List<String> genes = new LinkedList<>();
-        private final List<Variant> variants = new LinkedList<>();
-        private final List<String> ids = new LinkedList<>();
-        private final List<String> otherXrefs = new LinkedList<>();
-
-        /**
-         * @return List of genes found at {@link VariantQueryParam#GENE} and {@link VariantQueryParam#ANNOT_XREF}
-         */
-        public List<String> getGenes() {
-            return genes;
-        }
-
-        /**
-         * @return List of variants found at {@link VariantQueryParam#ANNOT_XREF} and {@link VariantQueryParam#ID}
-         */
-        public List<Variant> getVariants() {
-            return variants;
-        }
-
-        /**
-         * @return List of ids found at {@link VariantQueryParam#ID}
-         */
-        public List<String> getIds() {
-            return ids;
-        }
-
-        /**
-         * @return List of other xrefs found at
-         * {@link VariantQueryParam#ANNOT_XREF},
-         * {@link VariantQueryParam#ID},
-         * {@link VariantQueryParam#ANNOT_CLINVAR},
-         * {@link VariantQueryParam#ANNOT_COSMIC}
-         */
-        public List<String> getOtherXrefs() {
-            return otherXrefs;
-        }
-    }
-
-    /**
-     * Parses XREFS related filters, and sorts in different lists.
-     *
-     * - {@link VariantQueryParam#ID}
-     * - {@link VariantQueryParam#GENE}
-     * - {@link VariantQueryParam#ANNOT_XREF}
-     * - {@link VariantQueryParam#ANNOT_CLINVAR}
-     * - {@link VariantQueryParam#ANNOT_COSMIC}
-     *
-     * @param query Query to parse
-     * @return VariantQueryXref with all VariantIds, ids, genes and xrefs
-     */
-    public static VariantQueryXref parseXrefs(Query query) {
-        VariantQueryXref xrefs = new VariantQueryXref();
-        if (query == null) {
-            return xrefs;
-        }
-        xrefs.getGenes().addAll(query.getAsStringList(GENE.key(), OR));
-
-        if (isValidParam(query, ID)) {
-            List<String> idsList = query.getAsStringList(ID.key(), OR);
-
-            for (String value : idsList) {
-                Variant variant = toVariant(value);
-                if (variant != null) {
-                    xrefs.getVariants().add(variant);
-                } else {
-                    xrefs.getIds().add(value);
-                }
-            }
-        }
-
-        if (isValidParam(query, ANNOT_XREF)) {
-            List<String> xrefsList = query.getAsStringList(ANNOT_XREF.key(), OR);
-            for (String value : xrefsList) {
-                Variant variant = toVariant(value);
-                if (variant != null) {
-                    xrefs.getVariants().add(variant);
-                } else {
-                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
-                        xrefs.getOtherXrefs().add(value);
-                    } else {
-                        xrefs.getGenes().add(value);
-                    }
-                }
-            }
-
-        }
-//        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_HPO.key(), OR));
-        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_COSMIC.key(), OR));
-        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
-
-        return xrefs;
     }
 
     public static VariantQueryFields parseVariantQueryFields(
@@ -1579,7 +1486,7 @@ public final class VariantQueryUtils {
     }
 
     public static void convertGenesToRegionsQuery(Query query, CellBaseUtils cellBaseUtils) {
-        VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+        VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
         List<String> genes = variantQueryXref.getGenes();
         if (!genes.isEmpty()) {
 

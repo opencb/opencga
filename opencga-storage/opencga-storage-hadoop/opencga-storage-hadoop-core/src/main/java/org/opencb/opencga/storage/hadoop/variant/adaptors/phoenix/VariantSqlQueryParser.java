@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -356,7 +357,7 @@ public class VariantSqlQueryParser {
             }
         }
 
-        VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+        VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
         // TODO: This should filter by ID from the VCF
         for (String id : variantQueryXref.getIds()) {
@@ -388,7 +389,7 @@ public class VariantSqlQueryParser {
                 for (String gene : genes) {
                     for (String so : soList) {
                         int soNumber = parseConsequenceType(so);
-                        gnSoSet.add(VariantAnnotationToPhoenixConverter.buildGeneSO(gene, soNumber));
+                        gnSoSet.add(VariantAnnotationToPhoenixConverter.combine(gene, soNumber));
                     }
                 }
                 for (String gnSo : gnSoSet) {
@@ -494,7 +495,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_POPULATION_ALTERNATE_FREQUENCY}
      * {@link VariantQueryParam#ANNOT_POPULATION_REFERENCE_FREQUENCY}
 
-     * {@link VariantQueryParam#ANNOT_TRANSCRIPTION_FLAG}
+     * {@link VariantQueryParam#ANNOT_TRANSCRIPT_FLAG}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_ID}
      * {@link VariantQueryParam#ANNOT_GENE_TRAIT_NAME}
      * {@link VariantQueryParam#ANNOT_HPO}
@@ -1184,7 +1185,7 @@ public class VariantSqlQueryParser {
                     return "";
                 }, 1);
 
-        addQueryFilter(query, ANNOT_TRANSCRIPTION_FLAG, VariantColumn.TRANSCRIPTION_FLAGS, filters);
+        addQueryFilter(query, ANNOT_TRANSCRIPT_FLAG, VariantColumn.TRANSCRIPT_FLAGS, filters);
 
         addQueryFilter(query, ANNOT_GENE_TRAIT_ID, VariantColumn.XREFS, filters);
 

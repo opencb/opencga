@@ -107,6 +107,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     @Override
     QueryResult<Individual> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {

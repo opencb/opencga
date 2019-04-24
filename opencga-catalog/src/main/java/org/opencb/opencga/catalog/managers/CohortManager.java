@@ -87,6 +87,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     @Override
     QueryResult<Cohort> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         if (UUIDUtils.isOpenCGAUUID(entry)) {
@@ -95,10 +96,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             query.put(CohortDBAdaptor.QueryParams.ID.key(), entry);
         }
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//               CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.UID.key(), CohortDBAdaptor.QueryParams.STUDY_UID.key(),
-//               CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.SAMPLES.key(),
-//                CohortDBAdaptor.QueryParams.STATUS.key()));
+
         QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions, user);
         if (cohortQueryResult.getNumResults() == 0) {
             cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);

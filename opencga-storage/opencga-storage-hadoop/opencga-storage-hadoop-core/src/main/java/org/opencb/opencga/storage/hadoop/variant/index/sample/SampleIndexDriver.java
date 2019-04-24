@@ -1,45 +1,44 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import com.google.common.collect.BiMap;
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
 import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.QualifierFilter;
 import org.apache.hadoop.hbase.filter.ValueFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.hadoop.hbase.mapreduce.TableReducer;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.ArrayWritable;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.util.ToolRunner;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.apache.phoenix.schema.types.PVarcharArray;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import static org.apache.hadoop.hbase.filter.CompareFilter.CompareOp.EQUAL;
 import static org.apache.hadoop.hbase.filter.CompareFilter.CompareOp.NOT_EQUAL;
 import static org.apache.phoenix.query.QueryConstants.SEPARATOR_BYTE;
 
@@ -84,11 +85,13 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private boolean allSamples;
     private boolean secondaryOnly;
     private boolean mainOnly;
+    private boolean hasGenotype;
     private TreeSet<Integer> sampleIds;
     private Map<Integer, Set<Integer>> sampleIdToFileIdMap;
     private String region;
     private double partialScanSize;
     private List<String> fixedAttributes;
+    private boolean multiScan = false;
 
     @Override
     protected String getJobOperationName() {
@@ -96,11 +99,17 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     }
 
     @Override
+    protected Class<?> getMapperClass() {
+        return SampleIndexerMapper.class;
+    }
+
+    @Override
     protected Map<String, String> getParams() {
-        Map<String, String> params = new HashMap<>();
+        Map<String, String> params = new LinkedHashMap<>();
         params.put("--" + SAMPLES, "<samples>*");
-        params.put("--" + OUTPUT, "<output-table>*");
-        params.put("--" + SECONDARY_ONLY, "<secondary-alternates-only>");
+        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>");
+        params.put("--" + OUTPUT, "<output-table>");
+        params.put("--" + SECONDARY_ONLY, "<true|false>");
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         params.put("--" + PARTIAL_SCAN_SIZE, "<samples-per-scan>");
@@ -112,8 +121,17 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         super.parseAndValidateParameters();
         outputTable = getParam(OUTPUT);
         study = getStudyId();
+        if (study < 0) {
+            BiMap<String, Integer> map = getMetadataManager().getStudies();
+            if (map.size() == 1) {
+                study = map.values().iterator().next();
+                setStudyId(study);
+            } else {
+                throw new IllegalArgumentException("Select one study from " + map.keySet());
+            }
+        }
         if (outputTable == null || outputTable.isEmpty()) {
-            throw new IllegalArgumentException("Missing output table!");
+            outputTable = getTableNameGenerator().getSampleIndexTableName(study);
         }
 
         secondaryOnly = Boolean.valueOf(getParam(SECONDARY_ONLY, "false"));
@@ -159,20 +177,23 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             sampleIdToFileIdMap.put(sampleMetadata.getId(), sampleMetadata.getFiles());
         }
 
-        fixedAttributes = HBaseToVariantConverter.getFixedAttributes(metadataManager.getStudyMetadata(study));
-    }
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
 
-    @Override
-    protected Class<?> getMapperClass() {
-        return SampleIndexerMapper.class;
+        ObjectMap attributes = studyMetadata.getAttributes();
+        hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
+
+        if (hasGenotype) {
+            LOGGER.info("Study with genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+        } else {
+            LOGGER.info("Study without genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+        }
     }
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String table) throws IOException {
-        int caching = job.getConfiguration().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 100);
-        LOGGER.info("Scan set Caching to " + caching);
-
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
+                new QualifierFilter(EQUAL, new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixHelper.buildStudyColumnsPrefix(study)))),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '|', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '/', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'.', '/', '.', SEPARATOR_BYTE})),
@@ -187,54 +208,78 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             filter.addFilter(new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'1', SEPARATOR_BYTE})));
         }
 
-        double numScans = Math.ceil(sampleIds.size() / partialScanSize);
-        int samplesPerScan = (int) Math.ceil(sampleIds.size() / numScans);
-        List<Scan> scans = new ArrayList<>((int) numScans);
-        Scan scan = null;
-        int samplesCount = 0;
-        for (int sample : sampleIds) {
-            if (samplesCount % samplesPerScan == 0) {
-                samplesCount = 0;
-                scan = new Scan();
-                scan.setCaching(caching);        // 1 is the default in Scan
-                scan.setCacheBlocks(false);  // don't set to true for MR jobs
-                if (StringUtils.isNotEmpty(region)) {
-                    VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
+        List<Scan> scans;
+        if (multiScan) {
+            // FIXME: This will fail for large number of samples. Has to be fixed to use filters instead of explicit columns
+            double numScans = Math.ceil(sampleIds.size() / partialScanSize);
+            int samplesPerScan = (int) Math.ceil(sampleIds.size() / numScans);
+            scans = new ArrayList<>((int) numScans);
+            Scan scan = null;
+            int samplesCount = 0;
+            for (int sample : sampleIds) {
+                if (samplesCount % samplesPerScan == 0) {
+                    samplesCount = 0;
+                    scan = new Scan();
+                    if (StringUtils.isNotEmpty(region)) {
+                        VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
+                    }
+                    scan.setFilter(filter);
+                    scans.add(scan);
                 }
-                scans.add(scan);
+                byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
+                    byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                    scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                }
+                samplesCount++;
             }
-            byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
-            scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
-            for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
-                byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
-                scan.addColumn(getHelper().getColumnFamily(), fileColumn);
-            }
-            scan.setFilter(filter);
-            samplesCount++;
-        }
-        // TODO: PartialResults may be an interesting feature, but is not available in v1.1.2. See [HBASE-14696] for more information
+            // TODO: PartialResults may be an interesting feature, but is not available in v1.1.2. See [HBASE-14696] for more information
 //        scan.setAllowPartialResults(true);
 
-        if (scans.size() != numScans) {
-            throw new IllegalArgumentException("Wrong number of scans. Expected " + numScans + " got " + scans.size());
+            if (scans.size() != numScans) {
+                throw new IllegalArgumentException("Wrong number of scans. Expected " + numScans + " got " + scans.size());
+            }
+        } else {
+            Scan scan = new Scan();
+            if (StringUtils.isNotEmpty(region)) {
+                VariantHBaseQueryParser.addRegionFilter(scan, Region.parseRegion(region));
+            }
+            scan.setFilter(filter);
+
+            if (sampleIds.size() < 6000) {
+                for (Integer sample : sampleIds) {
+                    byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                    scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                    for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
+                        byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                        scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                    }
+                }
+            }
+            scans = Collections.singletonList(scan);
         }
+        VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
 
         for (int i = 0; i < scans.size(); i++) {
             Scan s = scans.get(i);
             LOGGER.info("scan[" + i + "]= " + s.toJSON());
         }
 
-        // set other scan attrs
-        VariantMapReduceUtil.initTableMapperJob(job, table, scans, SampleIndexerMapper.class);
-        VariantMapReduceUtil.setOutputHBaseTable(job, outputTable);
-        job.setMapOutputKeyClass(ImmutableBytesWritable.class);
-        job.setMapOutputValueClass(SampleIndexWritable.class);
-        job.setCombinerClass(SampleIndexerCombiner.class);
-        TableMapReduceUtil.initTableReducerJob(outputTable, SampleIndexerReducer.class, job);
-        job.setOutputKeyClass(ImmutableBytesWritable.class);
-        job.setOutputValueClass(Mutation.class);
+        try {
+            VariantMapReduceUtil.initTableMapperJob(job, table, scans, SampleIndexerMapper.class);
+            Class<? extends InputFormat<?, ?>> delegatedInputFormatClass = job.getInputFormatClass();
+            job.setInputFormatClass(VariantAlignedInputFormat.class);
+            VariantAlignedInputFormat.setDelegatedInputFormat(job, delegatedInputFormatClass);
+            VariantAlignedInputFormat.setBatchSize(job, SampleIndexSchema.BATCH_SIZE);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
-        job.setSpeculativeExecution(false);
+        VariantMapReduceUtil.setOutputHBaseTable(job, outputTable);
+        VariantMapReduceUtil.setNoneReduce(job);
+
+//        job.setSpeculativeExecution(false);
         job.getConfiguration().setInt(MRJobConfig.TASK_TIMEOUT, 20 * 60 * 1000);
 
         StringBuilder sb = new StringBuilder();
@@ -247,12 +292,14 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             }
             sb.append(',');
         }
-        System.out.println("sb = " + sb);
+        job.getConfiguration().setBoolean(SampleIndexerMapper.HAS_GENOTYPE, hasGenotype);
         job.getConfiguration().set(SAMPLE_ID_TO_FILE_ID_MAP, sb.toString());
-        job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
         job.getConfiguration().set(FIXED_ATTRIBUTES, String.join(",", fixedAttributes));
-
-        // TODO: Can we use HFileOutputFormat2 here?
+        if (allSamples) {
+            job.getConfiguration().unset(SAMPLES);
+        } else {
+            job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+        }
 
         return job;
     }
@@ -266,71 +313,43 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         }
     }
 
-    public int privateMain(String[] args, Configuration conf) throws Exception {
-        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf != null) {
-            setConf(conf);
-        }
-        return ToolRunner.run(this, args);
-    }
+    public static class SampleIndexerMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
 
-    public static class SampleIndexWritable extends ArrayWritable {
-
-        public SampleIndexWritable() {
-            super(BytesWritable.class);
-        }
-
-        public SampleIndexWritable(String gt, byte[] variants) {
-            this();
-            super.set(new Writable[]{
-                    new BytesWritable(Bytes.toBytes(gt)),
-                    null,
-                    new BytesWritable(variants)});
-        }
-
-        public SampleIndexWritable(String gt, byte[] variants, byte[] fileIndex) {
-            this(gt, variants);
-            setFileIndex(fileIndex);
-        }
-
-        public String getGt() {
-            BytesWritable bytesWritable = (BytesWritable) get()[0];
-            return Bytes.toString(bytesWritable.getBytes(), 0, bytesWritable.getLength());
-        }
-
-        public void setFileIndex(byte[] bytes) {
-            get()[1] = new BytesWritable(bytes);
-        }
-
-        public byte[] getFileIndex() {
-            BytesWritable bytesWritable = (BytesWritable) get()[1];
-            return bytesWritable.getBytes();
-        }
-
-        public byte[] getVariants() {
-            BytesWritable bytesWritable = (BytesWritable) get()[2];
-            if (bytesWritable.getLength() == bytesWritable.getCapacity()) {
-                return bytesWritable.getBytes();
-            } else {
-                return bytesWritable.copyBytes();
-            }
-        }
-    }
-
-    public static class SampleIndexerMapper extends TableMapper<ImmutableBytesWritable, SampleIndexWritable> {
-
+        private static final String HAS_GENOTYPE = "SampleIndexerMapper.hasGenotype";
+        public static final int SAMPLES_TO_COUNT = 2;
+        private byte[] family;
+        private Set<Integer> samplesSet;
         private Set<Integer> samplesToCount;
         private SampleIndexVariantBiConverter variantsConverter;
         private SampleIndexToHBaseConverter putConverter;
         private List<String> fixedAttributes;
         private Map<Integer, List<Integer>> sampleIdToFileIdMap;
+        private boolean hasGenotype;
+
+        private Map<Integer, Map<String, ByteArrayOutputStream>> sampleGtMap = new HashMap<>();
+        private Map<Integer, Map<String, Integer>> sampleGtCountMap = new HashMap<>();
+        private Map<Integer, Map<String, ByteArrayOutputStream>> sampleFileIndexMap = new HashMap<>();
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
+            family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
+
             int[] samples = context.getConfiguration().getInts(SAMPLES);
-            samplesToCount = new HashSet<>(5);
-            for (int i = 0; i < Math.min(samples.length, 5); i++) {
-                samplesToCount.add(samples[i]);
+            if (samples == null || samples.length == 0) {
+                samplesSet = null;
+                samplesToCount = new HashSet<>(SAMPLES_TO_COUNT);
+                for (int i = 0; i < SAMPLES_TO_COUNT; i++) {
+                    samplesToCount.add(i + 1);
+                }
+            } else {
+                samplesSet = new HashSet<>(samples.length);
+                IntStream.of(samples).forEach(samplesSet::add);
+
+                samplesToCount = new HashSet<>(SAMPLES_TO_COUNT);
+                for (int i = 0; i < Math.min(samples.length, SAMPLES_TO_COUNT); i++) {
+                    samplesToCount.add(samples[i]);
+                }
             }
             byte[] family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
             putConverter = new SampleIndexToHBaseConverter(family);
@@ -344,10 +363,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             }
             sampleIdToFileIdMap = new HashMap<>();
             String s = context.getConfiguration().get(SAMPLE_ID_TO_FILE_ID_MAP);
-            System.out.println("s = " + s);
             for (String sampleFiles : s.split(",")) {
                 if (!sampleFiles.isEmpty()) {
-                    System.out.println("sampleFiles = " + sampleFiles);
                     String[] sampleFilesSplit = sampleFiles.split(":");
                     Integer sampleId = Integer.valueOf(sampleFilesSplit[0]);
                     String[] files = sampleFilesSplit[1].split("_");
@@ -357,121 +374,123 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         }
 
         @Override
-        protected void map(ImmutableBytesWritable k, Result result, Context context) throws IOException, InterruptedException {
+        protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
             Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
 
-            Map<Integer, SampleIndexWritable> sampleIndexMap = new HashMap<>();
-            Map<Integer, byte[]> fileIndexMap = new HashMap<>();
+            // Get fileIndex for each file
+            Map<Integer, Byte> fileIndexMap = new HashMap<>();
+            for (Cell cell : result.rawCells()) {
+                Integer fileId = VariantPhoenixHelper
+                        .extractFileId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                if (fileId != null) {
+                    PhoenixArray fileColumn = (PhoenixArray)
+                            PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                    Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn, fixedAttributes);
+
+                    byte fileIndexValue = putConverter.createFileIndexValue(variant.getType(), fileAttributes, null);
+
+                    fileIndexMap.put(fileId, fileIndexValue);
+                }
+            }
+
             for (Cell cell : result.rawCells()) {
                 Integer sampleId = VariantPhoenixHelper
                         .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                if (sampleId != null) {
-                    ImmutableBytesWritable ptr = new ImmutableBytesWritable(
-                            cell.getValueArray(),
-                            cell.getValueOffset(),
-                            cell.getValueLength());
-                    PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                    String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-
-                    if (SampleIndexDBLoader.validGenotype(gt)) {
-                        sampleIndexMap.put(sampleId, new SampleIndexWritable(gt, variantsConverter.toBytes(variant)));
+                if (sampleId != null && (samplesSet == null || samplesSet.contains(sampleId))) {
+                    String gt;
+                    boolean validGt;
+                    if (hasGenotype) {
+                        ImmutableBytesWritable ptr = new ImmutableBytesWritable(
+                                cell.getValueArray(),
+                                cell.getValueOffset(),
+                                cell.getValueLength());
+                        PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                        if (ptr.getLength() == 0) {
+                            gt = GenotypeClass.NA_GT_VALUE;
+                            validGt = true;
+                        } else {
+                            gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+                            validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                        }
+                    } else {
+                        gt = GenotypeClass.NA_GT_VALUE;
+                        validGt = true;
                     }
-                } else {
-                    Integer fileId = VariantPhoenixHelper
-                            .extractFileId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                    if (fileId != null) {
-                        PhoenixArray fileColumn = (PhoenixArray)
-                                PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
-                        Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn, fixedAttributes);
+                    if (validGt) {
+                        ByteArrayOutputStream stream = sampleGtMap
+                                .computeIfAbsent(sampleId, k -> new HashMap<>())
+                                .computeIfAbsent(gt, k -> new ByteArrayOutputStream(2000));
+                        variantsConverter.toBytes(variant, stream);
 
-                        byte fileIndexValue = putConverter.createFileIndexValue(variant.getType(), fileAttributes, null);
-                        fileIndexMap.put(fileId, new byte[]{fileIndexValue});
+                        // Increase counters
+                        sampleGtCountMap.computeIfAbsent(sampleId, k -> new HashMap<>()).merge(gt, 1, Integer::sum);
+
+                        // Add fileIndex value for this genotype
+                        Byte fileIndex = null;
+                        for (Integer fileId : sampleIdToFileIdMap.get(sampleId)) {
+                            fileIndex = fileIndexMap.get(fileId);
+                            if (fileIndex != null) {
+                                break;
+                            }
+                        }
+                        if (fileIndex == null) {
+                            throw new IllegalStateException("File " + sampleIdToFileIdMap.get(sampleId) + " not found for sample "
+                                    + sampleId + " in variant " + variant);
+                        }
+                        sampleFileIndexMap
+                                .computeIfAbsent(sampleId, k -> new HashMap<>())
+                                .computeIfAbsent(gt, k -> new ByteArrayOutputStream(50)).write(fileIndex);
+
+
+                        if (samplesToCount.contains(sampleId)) {
+                            context.getCounter(COUNTER_GROUP_NAME, "SAMPLE_" + sampleId + '_' + gt).increment(1);
+                        }
                     }
                 }
             }
 
-            for (Map.Entry<Integer, SampleIndexWritable> entry : sampleIndexMap.entrySet()) {
+        }
+
+        @Override
+        public void flush(Context context, String chromosome, int position) throws IOException, InterruptedException {
+
+            for (Map.Entry<Integer, Map<String, ByteArrayOutputStream>> entry : sampleGtMap.entrySet()) {
                 Integer sampleId = entry.getKey();
-                SampleIndexWritable value = entry.getValue();
-                for (Integer fileId : sampleIdToFileIdMap.get(sampleId)) {
-                    byte[] fileIndex = fileIndexMap.get(fileId);
-                    if (fileIndex != null) {
-                        value.setFileIndex(fileIndex);
-                        break;
+                Map<String, ByteArrayOutputStream> gts = entry.getValue();
+                Map<String, Integer> gtsCount = sampleGtCountMap.get(sampleId);
+                Map<String, ByteArrayOutputStream> fileIndex = sampleFileIndexMap.get(sampleId);
+
+                Put put = new Put(SampleIndexSchema.toRowKey(sampleId, chromosome, position));
+
+                gts.forEach((gt,  stream) -> {
+                    if (stream.size() > 0) {
+                        // Copy byte array, as the ByteArrayOutputStream will be reset and reused!
+                        put.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt), stream.toByteArray());
+                        stream.reset();
                     }
-                }
+                });
 
-                ImmutableBytesWritable key = new ImmutableBytesWritable(
-                        SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()));
-                context.write(key, value);
-                if (samplesToCount.contains(sampleId)) {
-                    context.getCounter("SAMPLE_INDEX", "SAMPLE_" + sampleId + '_' + value.getGt()).increment(1);
-                }
-            }
-        }
-    }
+                gtsCount.forEach((gt, count) -> {
+                    if (count > 0) {
+                        put.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(count));
+                    }
+                });
+                gtsCount.clear();
 
-    public static class SampleIndexerCombiner extends Reducer<ImmutableBytesWritable, SampleIndexWritable,
-            ImmutableBytesWritable, SampleIndexWritable> {
+                fileIndex.forEach((gt, stream) -> {
+                    if (stream.size() > 0) {
+                        // Copy byte array, as the ByteArrayOutputStream will be reset and reused!
+                        put.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt), stream.toByteArray());
+                        stream.reset();
+                    }
+                });
 
-        @Override
-        protected void reduce(ImmutableBytesWritable key, Iterable<SampleIndexWritable> values, Context context)
-                throws IOException, InterruptedException {
-            Map<String, ByteArrayOutputStream> gtsMap = new HashMap<>();
-            Map<String, ByteArrayOutputStream> fileIndexMap = new HashMap<>();
-            for (SampleIndexWritable value : values) {
-                String gt = value.getGt();
-                ByteArrayOutputStream stream = gtsMap.computeIfAbsent(gt, g -> new ByteArrayOutputStream(1024));
-                ByteArrayOutputStream fileIndexstream = fileIndexMap.computeIfAbsent(gt, g -> new ByteArrayOutputStream(1024));
-                if (stream.size() > 0) {
-                    stream.write(0);
-                }
-                stream.write(value.getVariants());
-                fileIndexstream.write(value.getFileIndex());
-            }
-
-            for (Map.Entry<String, ByteArrayOutputStream> entry : gtsMap.entrySet()) {
-                String gt = entry.getKey();
-                context.write(key, new SampleIndexWritable(gt, entry.getValue().toByteArray(), fileIndexMap.get(gt).toByteArray()));
-            }
-        }
-    }
-
-    public static class SampleIndexerReducer extends TableReducer<ImmutableBytesWritable, SampleIndexWritable, ImmutableBytesWritable> {
-
-        private SampleIndexToHBaseConverter putConverter;
-        private SampleIndexVariantBiConverter variantsConverter;
-
-        @Override
-        protected void setup(Context context) throws IOException, InterruptedException {
-            byte[] family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
-            putConverter = new SampleIndexToHBaseConverter(family);
-            variantsConverter = new SampleIndexVariantBiConverter();
-        }
-
-        @Override
-        protected void reduce(ImmutableBytesWritable key, Iterable<SampleIndexWritable> values, Context context)
-                throws IOException, InterruptedException {
-            // Sort map
-            Map<String, SortedSet<SampleIndexToHBaseConverter.VariantFileIndex>> gtsMap = new HashMap<>();
-            for (SampleIndexWritable value : values) {
-                SortedSet<SampleIndexToHBaseConverter.VariantFileIndex> set = gtsMap.computeIfAbsent(value.getGt(), g -> new TreeSet<>());
-
-                String chromosome = SampleIndexSchema.chromosomeFromRowKey(key.get());
-                int batchStart = SampleIndexSchema.batchStartFromRowKey(key.get());
-                List<Variant> variants = variantsConverter
-                        .toVariants(chromosome, batchStart, value.getVariants(), 0, value.getVariants().length);
-                int i = 0;
-                for (Variant variant : variants) {
-                    set.add(new SampleIndexToHBaseConverter.VariantFileIndex(variant, value.getFileIndex()[i]));
-                    i++;
+                if (put.isEmpty()) {
+                    context.getCounter(COUNTER_GROUP_NAME, "empty_put").increment(1);
+                } else {
+                    context.write(new ImmutableBytesWritable(put.getRow()), put);
                 }
             }
-            Put put = putConverter.convert(key.get(), gtsMap);
-//            put.setDurability(Durability.SKIP_WAL);
-            context.getCounter("SAMPLE_INDEX", "PUT").increment(1);
-
-            context.write(key, put);
         }
     }
 

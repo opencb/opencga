@@ -25,14 +25,18 @@ public final class SampleIndexSchema {
             .thenComparing(Variant::getReference)
             .thenComparing(Variant::getAlternate)
             .thenComparing(Variant::toString);
-    static final byte[] MENDELIAN_ERROR_COLUMN = Bytes.toBytes("ME");
+    static final String MENDELIAN_ERROR_COLUMN = "ME";
+    static final byte[] MENDELIAN_ERROR_COLUMN_BYTES = Bytes.toBytes(MENDELIAN_ERROR_COLUMN);
     static final char META_PREFIX = '_';
+    static final byte[] META_PREFIX_BYTES = Bytes.toBytes("_");
     static final String PARENTS_PREFIX = META_PREFIX + "P_";
     static final byte[] PARENTS_PREFIX_BYTES = Bytes.toBytes(PARENTS_PREFIX);
     static final String FILE_PREFIX = META_PREFIX + "F_";
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
     static final String ANNOTATION_PREFIX = META_PREFIX + "A_";
     static final byte[] ANNOTATION_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_PREFIX);
+    static final String ANNOTATION_COUNT_PREFIX = META_PREFIX + "AC_";
+    static final byte[] ANNOTATION_COUNT_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_COUNT_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
     static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
     static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);
@@ -119,6 +123,10 @@ public final class SampleIndexSchema {
         return Bytes.toBytes(ANNOTATION_PREFIX + genotype);
     }
 
+    public static byte[] toAnnotationIndexCountColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_COUNT_PREFIX + genotype);
+    }
+
     public static byte[] toFileIndexColumn(String genotype) {
         return Bytes.toBytes(FILE_PREFIX + genotype);
     }
@@ -131,7 +139,7 @@ public final class SampleIndexSchema {
     }
 
     public static byte[] toMendelianErrorColumn() {
-        return MENDELIAN_ERROR_COLUMN;
+        return MENDELIAN_ERROR_COLUMN_BYTES;
     }
 
     public static byte[] toParentsGTColumn(String genotype) {

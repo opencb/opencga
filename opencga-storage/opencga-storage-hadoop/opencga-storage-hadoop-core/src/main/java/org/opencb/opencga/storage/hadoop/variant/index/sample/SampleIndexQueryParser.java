@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ public class SampleIndexQueryParser {
      * @return      if the query is valid
      */
     public static boolean validSampleIndexQuery(Query query) {
-        VariantQueryUtils.VariantQueryXref xref = VariantQueryUtils.parseXrefs(query);
+        VariantQueryParser.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
         if (!xref.getIds().isEmpty() || !xref.getVariants().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
             // Can not be used for specific variant IDs. Only regions and genes
             return false;
@@ -101,12 +102,12 @@ public class SampleIndexQueryParser {
         // Extract regions
         List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
+            regions.addAll(Region.parseRegions(query.getString(REGION.key())));
             query.remove(REGION.key());
         }
 
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-            regions = Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()));
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key())));
             query.remove(ANNOT_GENE_REGIONS.key());
             query.remove(GENE.key());
         }
@@ -494,8 +495,8 @@ public class SampleIndexQueryParser {
         byte b = 0;
 
         boolean transcriptFlagBasic = false;
-        if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAG)) {
-            transcriptFlagBasic = query.getString(ANNOT_TRANSCRIPTION_FLAG.key()).equals(TRANSCRIPT_FLAG_BASIC);
+        if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+            transcriptFlagBasic = query.getString(ANNOT_TRANSCRIPT_FLAG.key()).equals(TRANSCRIPT_FLAG_BASIC);
         }
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
@@ -506,7 +507,7 @@ public class SampleIndexQueryParser {
             if (LOF_SET.containsAll(cts)) {
                 b |= LOF_MASK;
                 if (transcriptFlagBasic) {
-                    b |= LOF_MISSENSE_BASIC_MASK;
+                    b |= LOF_EXTENDED_BASIC_MASK;
                 }
                 // If all present, and not filtering by gene, remove consequenceType filter
                 if (allSamplesAnnotated && LOF_SET.size() == cts.size() && !isValidParam(query, GENE)) {
@@ -514,9 +515,9 @@ public class SampleIndexQueryParser {
                 }
             }
             if (LOF_EXTENDED_SET.containsAll(cts)) {
-                b |= LOF_MISSENSE_MASK;
+                b |= LOF_EXTENDED_MASK;
                 if (transcriptFlagBasic) {
-                    b |= LOF_MISSENSE_BASIC_MASK;
+                    b |= LOF_EXTENDED_BASIC_MASK;
                 }
                 // If all present, and not filtering by gene, remove consequenceType filter
                 if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == cts.size() && !isValidParam(query, GENE)) {
@@ -527,10 +528,10 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, ANNOT_BIOTYPE)) {
             List<String> biotypes = query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
-            if (PROTEIN_CODING_BIOTYPE_SET.containsAll(biotypes)) {
-                b |= PROTEIN_CODING_MASK;
+            if (BIOTYPE_SET.containsAll(biotypes)) {
+                b |= BIOTYPE_MASK;
                 // If all present, remove biotype filter
-                if (allSamplesAnnotated && PROTEIN_CODING_BIOTYPE_SET.size() == biotypes.size()) {
+                if (allSamplesAnnotated && BIOTYPE_SET.size() == biotypes.size()) {
                     query.remove(ANNOT_BIOTYPE.key());
                 }
             }
@@ -550,7 +551,6 @@ public class SampleIndexQueryParser {
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(value);
             QueryOperation op = pair.getKey();
 
-            Set<String> popFreqLessThan01 = new HashSet<>();
             Set<String> popFreqLessThan001 = new HashSet<>();
 
             for (String popFreq : pair.getValue()) {
@@ -558,18 +558,8 @@ public class SampleIndexQueryParser {
                 String studyPop = keyOpValue[0];
                 Double freqFilter = Double.valueOf(keyOpValue[2]);
                 if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<<")) {
-                    if (freqFilter <= POP_FREQ_THRESHOLD_01) {
-                        popFreqLessThan01.add(studyPop);
-                    }
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
                         popFreqLessThan001.add(studyPop);
-                    }
-                }
-
-                if (QueryOperation.AND.equals(op)) {
-                    // Use this filter if filtering by popFreq with, at least, all the
-                    if (popFreqLessThan01.containsAll(POP_FREQ_ALL_01_SET)) {
-                        b |= POP_FREQ_ALL_01_MASK;
                     }
                 }
 
@@ -594,13 +584,6 @@ public class SampleIndexQueryParser {
                     && POP_FREQ_ANY_001_FILTERS.containsAll(pair.getValue())) {
                 query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
             }
-            if (allSamplesAnnotated
-                    && pair.getKey() == QueryOperation.AND
-                    && POP_FREQ_ALL_01_FILTERS.size() == pair.getValue().size()
-                    && POP_FREQ_ALL_01_FILTERS.containsAll(pair.getValue())) {
-                query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
-            }
-
         }
 
         return b;

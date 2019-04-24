@@ -26,7 +26,6 @@ import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.biodata.tools.feature.BigWigManager;
@@ -38,6 +37,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -121,7 +121,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                   @ApiParam(value = "Force SAM MD optional field to be set with the alignments") @DefaultValue("false") @QueryParam("mdField") Boolean mdField,
                                   @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels") @QueryParam("binQualities") @DefaultValue("false") Boolean binQualities) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_NM.key(), maxNM);
@@ -170,7 +170,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values greater or equal to that value.") @QueryParam("threshold") String threshold,
                                 @ApiParam(value = "Window size (if a threshold is provided, window size must be 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
             List<Region> regionList = new ArrayList<>();
@@ -328,7 +328,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
             @ApiParam(value = "Number of reads under which a region will will be considered low covered") @DefaultValue("20") @QueryParam("minCoverage") int minCoverage) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             List<Region> regionList = new ArrayList<>();
 

@@ -89,7 +89,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                     + "returned meaning that the client already has the most up to date user information.", hidden = true)
                             @QueryParam("lastModified") String lastModified) {
         try {
-            isSingleId(userId);
+            ParamUtils.checkIsSingleID(userId);
             QueryResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -179,7 +179,7 @@ public class UserWSServer extends OpenCGAWSServer {
     })
     public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            isSingleId(userId);
+            ParamUtils.checkIsSingleID(userId);
             query.remove("user");
             query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
             return createOkResponse(catalogManager.getProjectManager().get(query, queryOptions, sessionId));
@@ -243,7 +243,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Unique name (typically the name of the application).") @QueryParam("name") String name) {
         try {
-            isSingleId(userId);
+            ParamUtils.checkIsSingleID(userId);
             return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -305,7 +305,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User id", required = true) @PathParam("user") String userId,
             @ApiParam(value = "Filter name. If provided, it will only fetch the specified filter") @QueryParam("name") String name) {
         try {
-            isSingleId(userId);
+            ParamUtils.checkIsSingleID(userId);
             if (StringUtils.isNotEmpty(name)) {
                 return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, sessionId));
             } else {

@@ -58,6 +58,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     @Override
     QueryResult<Interpretation> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
         Query query = new Query(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         if (UUIDUtils.isOpenCGAUUID(entry)) {
             query.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);

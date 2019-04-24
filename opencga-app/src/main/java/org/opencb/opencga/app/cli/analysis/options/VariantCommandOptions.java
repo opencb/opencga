@@ -485,6 +485,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
 
+        // FIXME: This param should not be in the REST command line!
+        @Parameter(names = {"--variants-file"}, description = "GFF File with regions")
+        public String variantsFile;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")

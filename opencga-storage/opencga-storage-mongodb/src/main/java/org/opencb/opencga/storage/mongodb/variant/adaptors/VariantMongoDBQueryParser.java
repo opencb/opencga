@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
@@ -92,7 +93,7 @@ public class VariantMongoDBQueryParser {
             }
 
             // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
-            VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+            VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
             if (!variantQueryXref.getIds().isEmpty()) {
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
@@ -260,8 +261,8 @@ public class VariantMongoDBQueryParser {
                 addScoreFilter(value, builder, ANNOT_CONSERVATION, false);
             }
 
-            if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAG)) {
-                String value = query.getString(ANNOT_TRANSCRIPTION_FLAG.key());
+            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                String value = query.getString(ANNOT_TRANSCRIPT_FLAG.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, builder, QueryOperation.AND);

@@ -133,12 +133,12 @@ public class SampleIndexDBAdaptor {
         }
     }
 
-    protected Map<String, List<Variant>> rawQuery(int study, int sample, String chromosome, int position) throws IOException {
+    protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position) throws IOException {
         String tableName = tableNameGenerator.getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
             Get get = new Get(SampleIndexSchema.toRowKey(sample, chromosome, position));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
             try {
                 Result result = table.get(get);
                 if (result != null) {
@@ -152,19 +152,36 @@ public class SampleIndexDBAdaptor {
         });
     }
 
-    public Iterator<Map<String, List<Variant>>> rawIterator(int study, int sample) throws IOException {
+    public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample) throws IOException {
         String tableName = tableNameGenerator.getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
 
             Scan scan = new Scan();
             scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(family);
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
             try {
                 ResultScanner scanner = table.getScanner(scan);
                 Iterator<Result> resultIterator = scanner.iterator();
-                Iterator<Map<String, List<Variant>>> iterator = Iterators.transform(resultIterator, converter::convertToMap);
-                return iterator;
+                return Iterators.transform(resultIterator, converter::convertToMap);
+            } catch (IOException e) {
+                throw VariantQueryException.internalException(e);
+            }
+        });
+    }
+
+    public Iterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
+        String tableName = tableNameGenerator.getSampleIndexTableName(study);
+
+        return hBaseManager.act(tableName, table -> {
+
+            Scan scan = new Scan();
+            scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+            try {
+                ResultScanner scanner = table.getScanner(scan);
+                Iterator<Result> resultIterator = scanner.iterator();
+                return Iterators.transform(resultIterator, converter::convert);
             } catch (IOException e) {
                 throw VariantQueryException.internalException(e);
             }
@@ -207,7 +224,7 @@ public class SampleIndexDBAdaptor {
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
                         SingleSampleIndexQuery sampleIndexQuery = query.forSample(sample, finalGts);
-                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(sampleIndexQuery, subRegion, family);
+                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
                         if (query.emptyAnnotationIndex() && query.emptyFileIndex()
                                 && (query.getVariantTypes() == null || query.getVariantTypes().size() == VariantType.values().length)
                                 && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
@@ -223,12 +240,14 @@ public class SampleIndexDBAdaptor {
                                 throw VariantQueryException.internalException(e);
                             }
                         } else {
+                            SampleIndexEntryFilter filter = new SampleIndexEntryFilter(sampleIndexQuery, subRegion);
                             Scan scan = parse(sampleIndexQuery, subRegion, false);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
                                 while (result != null) {
-                                    count += converter.convert(result).size();
+                                    SampleIndexEntry sampleIndexEntry = converter.convert(result);
+                                    count += filter.filter(sampleIndexEntry).size();
                                     result = scanner.next();
                                 }
                             } catch (IOException e) {
@@ -335,6 +354,7 @@ public class SampleIndexDBAdaptor {
                 }
                 if (query.getAnnotationIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
                 }
                 if (query.getFileIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));

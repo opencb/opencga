@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -142,7 +143,7 @@ public class SampleIndexAnnotationLoader {
                     List<Put> puts = new ArrayList<>(samples.size());
 
                     for (Integer sampleId : samples) {
-                        Map<String, List<Variant>> map = sampleDBAdaptor.rawQuery(studyId, sampleId, chromosome, start);
+                        Map<String, List<Variant>> map = sampleDBAdaptor.queryByGt(studyId, sampleId, chromosome, start);
                         Put put = annotate(chromosome, start, sampleId, map, annotationMasks);
                         if (!put.isEmpty()) {
                             puts.add(put);
@@ -170,7 +171,7 @@ public class SampleIndexAnnotationLoader {
         Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
 
         for (Integer sample : samples) {
-            sampleIterators.put(sample, sampleDBAdaptor.rawIterator(studyId, sample));
+            sampleIterators.put(sample, sampleDBAdaptor.iteratorByGt(studyId, sample));
         }
 
         BufferedMutator mutator = hBaseManager.getConnection().getBufferedMutator(TableName.valueOf(sampleIndexTableName));
@@ -261,6 +262,8 @@ public class SampleIndexAnnotationLoader {
             }
 
             put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotations);
+            put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
+                    IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotations)));
         }
         return put;
     }

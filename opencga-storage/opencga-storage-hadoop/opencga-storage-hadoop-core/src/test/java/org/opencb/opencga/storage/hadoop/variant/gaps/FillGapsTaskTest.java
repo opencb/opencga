@@ -418,7 +418,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
                 for (int sampleId : metadataManager.getFileMetadata(sc.getId(), fileId).getSamples()) {
                     String message = "Sample '" + metadataManager.getSampleName(sc.getId(), sampleId) + "' : " + sampleId;
                     int countFromIndex = 0;
-                    Iterator<Map<String, List<Variant>>> iterator = sampleIndexDBAdaptor.rawIterator(sc.getId(), sampleId);
+                    Iterator<Map<String, List<Variant>>> iterator = sampleIndexDBAdaptor.iteratorByGt(sc.getId(), sampleId);
                     while (iterator.hasNext()) {
                         Map<String, List<Variant>> map = iterator.next();
                         for (Map.Entry<String, List<Variant>> entry : map.entrySet()) {

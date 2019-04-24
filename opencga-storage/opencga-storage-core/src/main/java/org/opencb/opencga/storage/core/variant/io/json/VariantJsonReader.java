@@ -38,7 +38,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
@@ -56,10 +58,15 @@ public class VariantJsonReader extends AbstractVariantReader {
 
     private String variantFilename;
 
-
-    //    public VariantJsonReader(String variantFilename, String globalFilename) {
     public VariantJsonReader(VariantStudyMetadata metadata, String variantFilename, String globalFilename) {
         super(Paths.get(globalFilename), metadata);
+        this.variantFilename = variantFilename;
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
+    }
+
+    public VariantJsonReader(Map<String, LinkedHashMap<String, Integer>> samplesPositions, String variantFilename) {
+        super(samplesPositions);
         this.variantFilename = variantFilename;
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);

@@ -535,7 +535,7 @@ public class FileManagerTest extends AbstractManagerTest {
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "s_1,s_1,s_2,s_1");
         QueryResult<File> file = fileManager.update(studyFqn, "test_1K.txt.gz", params, null, sessionIdUser);
         assertEquals(2, file.first().getSamples().size());
-        assertTrue(file.first().getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1,s_2")));
+        assertTrue(file.first().getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
     }
 
     @Test
