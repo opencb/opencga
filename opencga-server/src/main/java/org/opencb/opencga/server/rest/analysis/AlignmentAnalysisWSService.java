@@ -26,6 +26,7 @@ import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.biodata.tools.feature.BigWigManager;
@@ -255,8 +256,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                                        @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
                                                        @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
-            isSingleId(somaticFileIdStr);
-            isSingleId(germlineFileIdStr);
+            ParamUtils.checkIsSingleID(somaticFileIdStr);
+            ParamUtils.checkIsSingleID(germlineFileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
             List<Region> regionList = new ArrayList<>();
