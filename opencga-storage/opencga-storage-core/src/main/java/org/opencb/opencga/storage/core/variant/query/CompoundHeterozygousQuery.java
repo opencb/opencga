@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
@@ -9,13 +10,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
@@ -62,9 +63,31 @@ public class CompoundHeterozygousQuery {
         query = new Query(query);
         List<String> includeSample = getAndCheckIncludeSample(query, proband, father, mother);
 
-        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), VariantQueryUtils.LOF_EXTENDED_SET)
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING)
-                .append(VariantQueryParam.STUDY.key(), study)
+        if (isValidParam(query, VariantQueryParam.ANNOT_BIOTYPE)) {
+            String biotype = query.getString(VariantQueryParam.ANNOT_BIOTYPE.key());
+            if (!biotype.equals(VariantAnnotationUtils.PROTEIN_CODING)) {
+                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_BIOTYPE.key() + " filter \"" + biotype + "\""
+                        + " when filtering by Compound Heterozygous. The only valid value is " + VariantAnnotationUtils.PROTEIN_CODING);
+            }
+        } else {
+            query.append(VariantQueryParam.ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+        }
+
+        if (isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
+            Set<String> values = new HashSet<>();
+            for (String ct : query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
+                values.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
+            }
+            if (!LOF_EXTENDED_SET.containsAll(values)) {
+                values.removeAll(LOF_EXTENDED_SET);
+                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key() + " filter " + values
+                        + " when filtering by Compound Heterozygous. Only LOF+Missense accepted");
+            }
+        } else {
+            query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), VariantQueryUtils.LOF_EXTENDED_SET);
+        }
+
+        query.append(VariantQueryParam.STUDY.key(), study)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSample);
 
         // Execute query
@@ -74,7 +97,8 @@ public class CompoundHeterozygousQuery {
         Map<String, List<Variant>> compoundHeterozygous = ModeOfInheritance.compoundHeterozygous(rawIterator,
                 includeSample.indexOf(proband),
                 includeSample.indexOf(mother),
-                includeSample.indexOf(father));
+                includeSample.indexOf(father),
+                limit + skip);
 
         // Flat map
         TreeSet<Variant> treeSet = new TreeSet<>(VARIANT_COMPARATOR);
@@ -85,20 +109,15 @@ public class CompoundHeterozygousQuery {
                 + compoundHeterozygous.values().stream().mapToInt(List::size).sum() + " variants, "
                 + "of which " + treeSet.size() + " are unique variants");
 
-        // Skip - limit
-        Stream<Variant> stream = treeSet.stream();
-        if (skip > 0) {
-            stream = stream.skip(skip);
-        }
-        if (limit > 0) {
-            stream = stream.limit(limit);
-        }
+        // Skip
+        Iterator<Variant> variantIterator = treeSet.iterator();
+        Iterators.advance(variantIterator, skip);
 
         // Return either an iterator or a query result
         if (iterator) {
-            return VariantDBIterator.wrapper(stream.iterator());
+            return VariantDBIterator.wrapper(variantIterator);
         } else {
-            VariantQueryResult<Variant> queryResult = VariantDBIterator.wrapper(stream.iterator())
+            VariantQueryResult<Variant> queryResult = VariantDBIterator.wrapper(variantIterator)
                     .toQueryResult(Collections.singletonMap(study, includeSample));
             queryResult.setNumTotalResults(treeSet.size());
             return queryResult;
@@ -180,8 +199,8 @@ public class CompoundHeterozygousQuery {
             VariantDBIterator iterator1 = iterable.iterator(query1, options);
             VariantDBIterator iterator2 = iterable.iterator(query2, options);
 
-//        UnionMultiVariantKeyIterator unionIterator = new UnionMultiVariantKeyIterator(Arrays.asList(iterator1, iterator2));
-            return Iterators.concat(iterator1, iterator2);
+            return new UnionMultiVariantKeyIterator(Arrays.asList(iterator1, iterator2));
+//            return Iterators.concat(iterator1, iterator2);
         }
     }
 

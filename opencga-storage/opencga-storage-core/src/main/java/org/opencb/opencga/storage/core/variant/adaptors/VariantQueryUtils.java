@@ -80,7 +80,7 @@ public final class VariantQueryUtils {
             "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam SAMPLE_DE_NOVO = QueryParam.create("sampleDeNovo",
             "Get the precomputed mendelian errors non HOM_REF for the given samples", QueryParam.Type.TEXT_ARRAY);
-    public static final QueryParam SAMPLE_COMPOUND_HETEROZYGOUS = QueryParam.create("sampleCompountHeterozygous",
+    public static final QueryParam SAMPLE_COMPOUND_HETEROZYGOUS = QueryParam.create("sampleCompoundHeterozygous",
             "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
