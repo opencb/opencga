@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -25,12 +24,12 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public abstract class VariantQueryExecutor implements VariantIterable {
 
-    protected final VariantDBAdaptor dbAdaptor;
+    protected final VariantStorageMetadataManager metadataManager;
     protected final String storageEngineId;
-    protected final ObjectMap options;
+    private final ObjectMap options;
 
-    public VariantQueryExecutor(VariantDBAdaptor dbAdaptor, String storageEngineId, ObjectMap options) {
-        this.dbAdaptor = dbAdaptor;
+    public VariantQueryExecutor(VariantStorageMetadataManager metadataManager, String storageEngineId, ObjectMap options) {
+        this.metadataManager = metadataManager;
         this.storageEngineId = storageEngineId;
         this.options = options;
     }
@@ -83,18 +82,14 @@ public abstract class VariantQueryExecutor implements VariantIterable {
 
     public abstract QueryResult<Long> count(Query query);
 
-    public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) throws StorageEngineException {
+    public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) {
         return new VariantQueryResult<>(count(query), null);
     }
 
     protected abstract Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException;
 
-    protected VariantDBAdaptor getDBAdaptor() {
-        return dbAdaptor;
-    }
-
     protected VariantStorageMetadataManager getMetadataManager() {
-        return dbAdaptor.getMetadataManager();
+        return metadataManager;
     }
 
     protected String getStorageEngineId() {

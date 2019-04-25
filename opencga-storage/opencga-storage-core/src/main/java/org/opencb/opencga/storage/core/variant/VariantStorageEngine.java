@@ -941,7 +941,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantQueryResult<Variant> getCompoundHeterozygous(String study, String child, String father, String mother,
                                                                Query query, QueryOptions options) {
         VariantQueryExecutor.setDefaultTimeout(options, getOptions());
-        return new CompoundHeterozygousQuery(this).get(study, child, father, mother, query, options);
+        try {
+            return new CompoundHeterozygousQuery(getMetadataManager(), getStorageEngineId(), getOptions(), this)
+                    .get(study, child, father, mother, query, options);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e);
+        }
     }
 
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
@@ -957,8 +962,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
             return getCompoundHeterozygous(query.getString(VariantQueryParam.STUDY.key()), samples.get(0), samples.get(1), samples.get(2),
                     query, options);
+        } else {
+            return getVariantQueryExecutor(query, options).get(query, options);
         }
-        return getVariantQueryExecutor(query, options).get(query, options);
     }
 
     @Override

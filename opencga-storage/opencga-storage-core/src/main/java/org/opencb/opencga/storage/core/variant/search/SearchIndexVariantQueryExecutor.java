@@ -68,7 +68,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     }
 
     @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
         if (options == null) {
             options = QueryOptions.empty();
         }
@@ -152,7 +152,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         }
     }
 
-    public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) throws StorageEngineException {
+    public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) {
         long count;
         boolean approxCount = true;
         int sampling = 0;
@@ -203,9 +203,8 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
      * @param query     Query
      * @param options   QueryOptions
      * @return          true if should resolve only with SearchManager
-     * @throws StorageEngineException StorageEngineException
      */
-    public boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
+    public boolean doQuerySearchManager(Query query, QueryOptions options) {
         return !VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.NO) // YES or AUTO
                 && isQueryCovered(query)
                 && (options.getBoolean(QueryOptions.COUNT) || isIncludeCovered(options))
@@ -218,9 +217,8 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
      * @param query       Query
      * @param options     QueryOptions
      * @return            true if should intersect
-     * @throws StorageEngineException StorageEngineException
      */
-    public boolean doIntersectWithSearch(Query query, QueryOptions options) throws StorageEngineException {
+    public boolean doIntersectWithSearch(Query query, QueryOptions options) {
         VariantStorageEngine.UseSearchIndex useSearchIndex = VariantStorageEngine.UseSearchIndex.from(options);
 
         final boolean intersect;
@@ -258,12 +256,11 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         return intersect;
     }
 
-    protected Iterator<String> variantIdIteratorFromSearch(Query query) throws StorageEngineException {
+    protected Iterator<String> variantIdIteratorFromSearch(Query query) {
         return variantIdIteratorFromSearch(query, Integer.MAX_VALUE, 0, null);
     }
 
-    protected Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip, AtomicLong numTotalResults)
-            throws StorageEngineException {
+    protected Iterator<String> variantIdIteratorFromSearch(Query query, int limit, int skip, AtomicLong numTotalResults) {
         Iterator<String> variantsIterator;
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.LIMIT, limit)

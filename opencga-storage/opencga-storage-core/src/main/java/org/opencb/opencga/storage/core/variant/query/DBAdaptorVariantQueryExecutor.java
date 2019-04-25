@@ -4,7 +4,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 /**
@@ -17,12 +16,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
  */
 public class DBAdaptorVariantQueryExecutor extends VariantQueryExecutor {
 
+    private final VariantDBAdaptor dbAdaptor;
+
     public DBAdaptorVariantQueryExecutor(VariantDBAdaptor dbAdaptor, String storageEngineId, ObjectMap options) {
-        super(dbAdaptor, storageEngineId, options);
+        super(dbAdaptor.getMetadataManager(), storageEngineId, options);
+        this.dbAdaptor = dbAdaptor;
     }
 
     @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
         if (iterator) {
             return dbAdaptor.iterator(query, options);
         } else {

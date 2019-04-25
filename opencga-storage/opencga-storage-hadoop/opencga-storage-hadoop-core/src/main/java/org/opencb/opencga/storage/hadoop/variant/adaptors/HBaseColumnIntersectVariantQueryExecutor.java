@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
@@ -33,11 +32,13 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQue
 public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecutor {
     public static final String HBASE_COLUMN_INTERSECT = "hbase_column_intersect";
     private static final boolean ACTIVE_BY_DEFAULT = false;
+    private final VariantDBAdaptor dbAdaptor;
 
     private Logger logger = LoggerFactory.getLogger(HBaseColumnIntersectVariantQueryExecutor.class);
 
     public HBaseColumnIntersectVariantQueryExecutor(VariantDBAdaptor dbAdaptor, String storageEngineId, ObjectMap options) {
-        super(dbAdaptor, storageEngineId, options);
+        super(dbAdaptor.getMetadataManager(), storageEngineId, options);
+        this.dbAdaptor = dbAdaptor;
     }
 
     @Override
@@ -87,12 +88,9 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
      * @param options  Options
      * @param iterator Shall the resulting object be an iterator instead of a QueryResult
      * @return QueryResult or Iterator with the variants that matches the query
-     * @throws StorageEngineException StorageEngineException
      */
     @Override
-    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) throws StorageEngineException {
-        VariantDBAdaptor dbAdaptor = getDBAdaptor();
-
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
         logger.info("HBase column intersect");
 
         // Build the query with only one query filter -> Single HBase column filter

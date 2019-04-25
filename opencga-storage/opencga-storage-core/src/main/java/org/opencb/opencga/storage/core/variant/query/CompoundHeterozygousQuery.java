@@ -5,13 +5,18 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +30,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CompoundHeterozygousQuery {
+public class CompoundHeterozygousQuery extends AbstractTwoPhasedVariantQueryExecutor {
 
     public static final String HET = "0/1,0|1,1|0";
     public static final String REF = "0/0,0|0,0";
@@ -33,8 +38,41 @@ public class CompoundHeterozygousQuery {
     private final VariantIterable iterable;
     private static Logger logger = LoggerFactory.getLogger(CompoundHeterozygousQuery.class);
 
-    public CompoundHeterozygousQuery(VariantIterable iterable) {
+    public CompoundHeterozygousQuery(VariantStorageMetadataManager metadataManager, String storageEngineId, ObjectMap options,
+                                     VariantIterable iterable) {
+        super(metadataManager, storageEngineId, options, "Unfiltered variant storage");
         this.iterable = iterable;
+    }
+
+    @Override
+    public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
+        return !options.getBoolean(QueryOptions.COUNT, false) // count is not supported
+                && isValidParam(query, VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
+    }
+
+    @Override
+    public QueryResult<Long> count(Query query) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {
+        List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
+        if (samples.size() != 3) {
+            throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
+        }
+        return getOrIterator(query.getString(VariantQueryParam.STUDY.key()), samples.get(0), samples.get(1), samples.get(2),
+                query, options, iterator);
+    }
+
+    @Override
+    protected int primaryCount(Query query, QueryOptions options) {
+        List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
+        if (samples.size() != 3) {
+            throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
+        }
+        return Iterators.size(getRawIterator(samples.get(0), samples.get(1), samples.get(2), query, new QueryOptions()
+                .append(QueryOptions.INCLUDE, VariantField.ID.fieldName())));
     }
 
     public VariantQueryResult<Variant> get(String study, String proband, String father, String mother, Query query, QueryOptions options) {
@@ -45,12 +83,12 @@ public class CompoundHeterozygousQuery {
         return (VariantDBIterator) getOrIterator(study, proband, father, mother, query, options, true);
     }
 
-    private Object getOrIterator(String study, String proband, String father, String mother, Query query, QueryOptions options,
+    private Object getOrIterator(String study, String proband, String father, String mother, Query query, QueryOptions inputOptions,
                                  boolean iterator) {
         // Prepare query and options
-        int skip = Math.max(0, options.getInt(QueryOptions.SKIP));
-        int limit = Math.max(0, options.getInt(QueryOptions.LIMIT));
-        options = buildQueryOptions(options);
+        int skip = Math.max(0, inputOptions.getInt(QueryOptions.SKIP));
+        int limit = Math.max(0, inputOptions.getInt(QueryOptions.LIMIT));
+        QueryOptions options = buildQueryOptions(inputOptions);
 
         query = new Query(query);
         List<String> includeSample = getAndCheckIncludeSample(query, proband, father, mother);
@@ -66,13 +104,13 @@ public class CompoundHeterozygousQuery {
         }
 
         if (isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
-            Set<String> values = new HashSet<>();
+            Set<String> cts = new HashSet<>();
             for (String ct : query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
-                values.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
+                cts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
             }
-            if (!LOF_EXTENDED_SET.containsAll(values)) {
-                values.removeAll(LOF_EXTENDED_SET);
-                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key() + " filter " + values
+            if (!LOF_EXTENDED_SET.containsAll(cts)) {
+                cts.removeAll(LOF_EXTENDED_SET);
+                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key() + " filter " + cts
                         + " when filtering by Compound Heterozygous. Only LOF+Missense accepted");
             }
         } else {
@@ -83,10 +121,11 @@ public class CompoundHeterozygousQuery {
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSample);
 
         // Execute query
-        Iterator<Variant> rawIterator = getRawIterator(proband, father, mother, query, options);
+        VariantDBIteratorWithCounts unfilteredIterator
+                = new VariantDBIteratorWithCounts(getRawIterator(proband, father, mother, query, options));
 
         // Filter compound heterozygous
-        List<Variant> compoundHeterozygous = ModeOfInheritance.compoundHeterozygous(rawIterator,
+        List<Variant> compoundHeterozygous = ModeOfInheritance.compoundHeterozygous(unfilteredIterator,
                 includeSample.indexOf(proband),
                 includeSample.indexOf(mother),
                 includeSample.indexOf(father),
@@ -104,12 +143,10 @@ public class CompoundHeterozygousQuery {
         if (iterator) {
             return VariantDBIterator.wrapper(variantIterator);
         } else {
-            VariantQueryResult<Variant> queryResult = VariantDBIterator.wrapper(variantIterator)
+            VariantQueryResult<Variant> result = VariantDBIterator.wrapper(variantIterator)
                     .toQueryResult(Collections.singletonMap(study, includeSample));
-            if (compoundHeterozygous.size() < (skip + limit)) {
-                queryResult.setNumTotalResults(compoundHeterozygous.size());
-            }
-            return queryResult;
+            setNumTotalResults(unfilteredIterator, result, query, inputOptions);
+            return result;
         }
     }
 
@@ -169,7 +206,7 @@ public class CompoundHeterozygousQuery {
         return includeSamples;
     }
 
-    protected Iterator<Variant> getRawIterator(String proband, String father, String mother, Query query, QueryOptions options) {
+    protected VariantDBIterator getRawIterator(String proband, String father, String mother, Query query, QueryOptions options) {
         if (father.equals(MISSING_SAMPLE) || mother.equals(MISSING_SAMPLE)) {
             // Single parent iterator
             String parent = father.equals(MISSING_SAMPLE) ? mother : father;
@@ -185,13 +222,11 @@ public class CompoundHeterozygousQuery {
             Query query2 = new Query(query).append(VariantQueryParam.GENOTYPE.key(),
                     proband + IS + HET + AND + father + IS + REF + AND + mother + IS + HET);
 
-            VariantDBIterator iterator1 = iterable.iterator(query1, options);
-            VariantDBIterator iterator2 = iterable.iterator(query2, options);
+            VariantDBIterator iterator1 = iterable.iterator(query1, new QueryOptions(options).append(QueryOptions.SORT, true));
+            VariantDBIterator iterator2 = iterable.iterator(query2, new QueryOptions(options).append(QueryOptions.SORT, true));
 
             return new UnionMultiVariantKeyIterator(Arrays.asList(iterator1, iterator2));
 //            return Iterators.concat(iterator1, iterator2);
         }
     }
-
-
 }

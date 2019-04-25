@@ -5,12 +5,14 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -33,7 +35,7 @@ public class CompoundHeterozygousQueryTest {
         iterable = Mockito.mock(VariantIterable.class);
         Mockito.doAnswer(invocation -> VariantDBIterator.emptyIterator()).when(iterable).iterator(Mockito.any(), Mockito.any());
 
-        ch = new CompoundHeterozygousQuery(iterable);
+        ch = new CompoundHeterozygousQuery(null, null, null, iterable);
     }
 
     @Test

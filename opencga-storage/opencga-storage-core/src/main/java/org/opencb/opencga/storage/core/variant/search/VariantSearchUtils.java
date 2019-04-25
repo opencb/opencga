@@ -143,7 +143,7 @@ public class VariantSearchUtils {
         return searchEngineQuery;
     }
 
-    public static Query getEngineQuery(Query query, QueryOptions options, VariantStorageMetadataManager scm) throws StorageEngineException {
+    public static Query getEngineQuery(Query query, QueryOptions options, VariantStorageMetadataManager scm) {
         Collection<VariantQueryParam> uncoveredParams = uncoveredParams(query);
         Query engineQuery = new Query();
         for (VariantQueryParam uncoveredParam : uncoveredParams) {
