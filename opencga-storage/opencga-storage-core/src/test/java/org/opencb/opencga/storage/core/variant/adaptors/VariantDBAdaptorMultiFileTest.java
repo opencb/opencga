@@ -1068,5 +1068,8 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatches());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 
+        facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]:500>>type"));
+        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatches());
+//        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
     }
 }

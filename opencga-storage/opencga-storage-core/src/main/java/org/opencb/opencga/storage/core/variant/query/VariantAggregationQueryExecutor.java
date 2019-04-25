@@ -5,6 +5,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -24,10 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +45,8 @@ public class VariantAggregationQueryExecutor {
     private final VariantStorageMetadataManager metadataManager;
     private Logger logger = LoggerFactory.getLogger(VariantAggregationQueryExecutor.class);
     public static final Pattern CHROM_DENSITY_PATTERN = Pattern.compile("^" + CHROM_DENSITY + "\\[([a-zA-Z0-9:\\-,*]+)](:(\\d+))?$");
+    public static final String NESTED_FACET_SEPARATOR = ">>"; // FacetQueryParser.NESTED_FACET_SEPARATOR
+    private static final Set<String> ACCEPTED_CHROM_DENSITY_NESTED = new HashSet<>(Arrays.asList("type"));
 
     public VariantAggregationQueryExecutor(VariantSearchManager searchManager, String dbName,
                                            VariantIterable iterable,
@@ -87,13 +87,55 @@ public class VariantAggregationQueryExecutor {
         }
     }
 
+    protected boolean isPureChromDensityFacet(String facet) {
+        boolean isChromDensity = facet != null
+                && facet.startsWith(CHROM_DENSITY)
+                && !facet.contains(FacetQueryParser.FACET_SEPARATOR);
+        if (isChromDensity && facet.contains(NESTED_FACET_SEPARATOR)) {
+            String[] split = facet.split(NESTED_FACET_SEPARATOR);
+            if (split.length == 1) {
+                return true;
+            } else if (split.length == 2) {
+                // Check accepted nested fields
+                return ACCEPTED_CHROM_DENSITY_NESTED.contains(split[1]);
+            }
+            return false;
+        } else {
+            return isChromDensity;
+        }
+    }
+
+    private VariantQueryException invalidNestedField(String nestedFieldName) {
+        return new VariantQueryException("Unable to calculate " + CHROM_DENSITY + " with nested field " + nestedFieldName);
+    }
+
     protected FacetQueryResult chromDensityAggregation(Query query, QueryOptions options) {
         StopWatch stopWatch = StopWatch.createStarted();
         String facet = options.getString(QueryOptions.FACET);
 
+        String[] split = facet.split(NESTED_FACET_SEPARATOR);
+        String chromDensityFacet = split[0];
+        FieldVariantAccumulator nestedFieldAccumulator;
+        if (split.length == 2) {
+            String nestedFieldName;
+            nestedFieldName = split[1];
+            if (!ACCEPTED_CHROM_DENSITY_NESTED.contains(nestedFieldName)) {
+                throw invalidNestedField(nestedFieldName);
+            }
+            switch (nestedFieldName) {
+                case "type":
+                    nestedFieldAccumulator = new VariantTypeAccumulator();
+                    break;
+                default:
+                    throw invalidNestedField(nestedFieldName);
+            }
+        } else {
+            nestedFieldAccumulator = null;
+        }
+
         int step;
         List<Region> regions = new LinkedList<>();
-        Matcher matcher = CHROM_DENSITY_PATTERN.matcher(facet);
+        Matcher matcher = CHROM_DENSITY_PATTERN.matcher(chromDensityFacet);
         if (matcher.matches()) {
             String regionsStr = matcher.group(1);
             String stepStr = matcher.group(3);
@@ -108,7 +150,7 @@ public class VariantAggregationQueryExecutor {
                 regions.add(new Region(regionStr));
             }
         } else {
-            throw new VariantQueryException("Malformed aggregation stats query: " + facet);
+            throw new VariantQueryException("Malformed aggregation stats query: " + chromDensityFacet);
         }
 
         if (regions.isEmpty()) {
@@ -125,7 +167,76 @@ public class VariantAggregationQueryExecutor {
                             .append(QueryOptions.INCLUDE, VariantField.ID)
                             .append(QueryOptions.SORT, true));
 
+            ChromDensityAccumulator chromDensityAccumulator = new ChromDensityAccumulator(region, nestedFieldAccumulator, step);
+
             logger.info("Query : " + regionQuery.toJson());
+
+            FacetQueryResult.Field regionField = chromDensityAccumulator.createField();
+
+            int count = 0;
+            while (iterator.hasNext()) {
+                count++;
+                chromDensityAccumulator.accumulate(regionField, iterator.next());
+            }
+            numMatches += count;
+
+            chromDensityAccumulator.cleanEmptyBuckets(regionField);
+            regionBuckets.add(new FacetQueryResult.Bucket(region.getChromosome(), count, Collections.singletonList(regionField)));
+        }
+
+        FacetQueryResult.Field field = new FacetQueryResult.Field(
+                CHROM_DENSITY,
+                regionBuckets.size(),
+                regionBuckets);
+        return new FacetQueryResult("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), numMatches, Collections.emptyList(), null,
+                Collections.singletonList(field),
+                facet
+        );
+    }
+
+    private interface FieldVariantAccumulator {
+        /**
+         * Get field name.
+         * @return Field name
+         */
+        String getName();
+
+        /**
+         * Prepare (if required) the list of buckets for this field.
+         * @return predefined list of buckets.
+         */
+        default FacetQueryResult.Field createField() {
+            return new FacetQueryResult.Field(getName(), 0, prepareBuckets());
+        }
+
+        /**
+         * Prepare (if required) the list of buckets for this field.
+         * @return predefined list of buckets.
+         */
+        List<FacetQueryResult.Bucket> prepareBuckets();
+
+        default void cleanEmptyBuckets(FacetQueryResult.Field field) {
+            field.getBuckets().removeIf(bucket -> bucket.getCount() == 0);
+        }
+
+        /**
+         * Accumulate variant in the given field.
+         * @param field   Field
+         * @param variant Variant
+         */
+        void accumulate(FacetQueryResult.Field field, Variant variant);
+    }
+
+    private class ChromDensityAccumulator implements FieldVariantAccumulator {
+        private final Region region;
+        private final FieldVariantAccumulator nestedFieldAccumulator;
+        private final int step;
+        private final int numSteps;
+
+        private ChromDensityAccumulator(Region region, FieldVariantAccumulator nestedFieldAccumulator, int step) {
+            this.region = region;
+            this.nestedFieldAccumulator = nestedFieldAccumulator;
+            this.step = step;
 
             if (region.getEnd() == Integer.MAX_VALUE) {
                 for (Integer studyId : metadataManager.getStudyIds()) {
@@ -151,53 +262,85 @@ public class VariantAggregationQueryExecutor {
             if (regionLength != Integer.MAX_VALUE) {
                 regionLength++;
             }
-            int numSteps = regionLength / step + 1;
+            numSteps = regionLength / step + 1;
+        }
 
-            int[] values = new int[numSteps];
-            while (iterator.hasNext()) {
-                numMatches++;
-                Variant v = iterator.next();
-                int idx = (v.getStart() - region.getStart()) / step;
-                if (idx < values.length) {
-                    values[idx]++;
+        @Override
+        public String getName() {
+            return VariantField.START.fieldName();
+        }
+
+        @Override
+        public FacetQueryResult.Field createField() {
+            return new FacetQueryResult.Field(VariantField.START.fieldName(), 0,
+                    prepareBuckets())
+                    .setStart(region.getStart())
+                    .setEnd(region.getEnd())
+                    .setStep(step);
+        }
+
+        @Override
+        public List<FacetQueryResult.Bucket> prepareBuckets() {
+            List<FacetQueryResult.Bucket> valueBuckets = new ArrayList<>(numSteps);
+            for (int i = 0; i < numSteps; i++) {
+                FacetQueryResult.Bucket bucket = new FacetQueryResult.Bucket(String.valueOf(i * step + region.getStart()), 0, null);
+                if (nestedFieldAccumulator != null) {
+                    bucket.setFields(Collections.singletonList(nestedFieldAccumulator.createField()));
+                }
+                valueBuckets.add(bucket);
+            }
+            return valueBuckets;
+        }
+
+        @Override
+        public void accumulate(FacetQueryResult.Field field, Variant variant) {
+            int idx = (variant.getStart() - region.getStart()) / step;
+            if (idx < numSteps) {
+                field.addCount(1);
+                FacetQueryResult.Bucket bucket = field.getBuckets().get(idx);
+                bucket.addCount(1);
+                if (nestedFieldAccumulator != null) {
+                    nestedFieldAccumulator.accumulate(bucket.getFields().get(0), variant);
                 }
             }
-
-            regionBuckets.add(buildBucket(region, step, values));
-        }
-        FacetQueryResult.Field field = new FacetQueryResult.Field(
-                CHROM_DENSITY,
-                regionBuckets.size(),
-                regionBuckets);
-        return new FacetQueryResult("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), numMatches, Collections.emptyList(), null,
-                Collections.singletonList(field),
-                facet
-//                query.toJson()
-        );
-    }
-
-    protected boolean isPureChromDensityFacet(String facet) {
-        return facet != null
-                && facet.startsWith(CHROM_DENSITY)
-                && !facet.contains(FacetQueryParser.FACET_SEPARATOR)
-                && !facet.contains(">>");
-    }
-
-    private FacetQueryResult.Bucket buildBucket(Region region, int step, int[] values) {
-        List<FacetQueryResult.Bucket> valueBuckets = new ArrayList<>(values.length);
-        int count = 0;
-        for (int i = 0; i < values.length; i++) {
-            int value = values[i];
-            valueBuckets.add(new FacetQueryResult.Bucket(String.valueOf(i * step + region.getStart()), value, null));
-            count += value;
         }
 
-        FacetQueryResult.Field regionField = new FacetQueryResult.Field(VariantField.START.fieldName(), count, valueBuckets)
-                .setStart(region.getStart())
-                .setEnd(region.getEnd())
-                .setStep(step);
+        @Override
+        public void cleanEmptyBuckets(FacetQueryResult.Field field) {
+            field.getBuckets().removeIf(bucket -> bucket.getCount() == 0);
+            if (nestedFieldAccumulator != null) {
+                for (FacetQueryResult.Bucket bucket : field.getBuckets()) {
+                    nestedFieldAccumulator.cleanEmptyBuckets(bucket.getFields().get(0));
+                }
+            }
+        }
+    }
 
-        return new FacetQueryResult.Bucket(region.getChromosome(), count, Collections.singletonList(regionField));
+    private class VariantTypeAccumulator implements FieldVariantAccumulator {
+
+        private VariantTypeAccumulator() {
+            // TODO: Accept subset of variant type
+        }
+
+        @Override
+        public String getName() {
+            return "type";
+        }
+
+        @Override
+        public List<FacetQueryResult.Bucket> prepareBuckets() {
+            List<FacetQueryResult.Bucket> buckets = new ArrayList<>(VariantType.values().length);
+            for (VariantType variantType : VariantType.values()) {
+                buckets.add(new FacetQueryResult.Bucket(variantType.name(), 0, null));
+            }
+            return buckets;
+        }
+
+        @Override
+        public void accumulate(FacetQueryResult.Field field, Variant variant) {
+            field.addCount(1);
+            field.getBuckets().get(variant.getType().ordinal()).addCount(1);
+        }
     }
 
 }
