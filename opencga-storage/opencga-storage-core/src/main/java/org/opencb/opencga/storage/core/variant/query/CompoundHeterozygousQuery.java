@@ -103,19 +103,20 @@ public class CompoundHeterozygousQuery extends AbstractTwoPhasedVariantQueryExec
             query.append(VariantQueryParam.ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
         }
 
+        Set<String> cts = new HashSet<>();
         if (isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
-            Set<String> cts = new HashSet<>();
             for (String ct : query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
                 cts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
             }
-            if (!LOF_EXTENDED_SET.containsAll(cts)) {
-                cts.removeAll(LOF_EXTENDED_SET);
-                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key() + " filter " + cts
-                        + " when filtering by Compound Heterozygous. Only LOF+Missense accepted");
-            }
-        } else {
-            query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), VariantQueryUtils.LOF_EXTENDED_SET);
+//            if (!LOF_EXTENDED_SET.containsAll(cts)) {
+//                cts.removeAll(LOF_EXTENDED_SET);
+//                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key() + " filter " + cts
+//                        + " when filtering by Compound Heterozygous. Only LOF+Missense accepted");
+//            }
         }
+//        else {
+//            query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), VariantQueryUtils.LOF_EXTENDED_SET);
+//        }
 
         query.append(VariantQueryParam.STUDY.key(), study)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSample);
@@ -129,7 +130,7 @@ public class CompoundHeterozygousQuery extends AbstractTwoPhasedVariantQueryExec
                 includeSample.indexOf(proband),
                 includeSample.indexOf(mother),
                 includeSample.indexOf(father),
-                limit + skip);
+                limit + skip, cts);
 
 //        logger.debug("Got " + compoundHeterozygous.size() + " compHet groups with "
 //                + compoundHeterozygous.values().stream().mapToInt(List::size).sum() + " variants, "
