@@ -25,17 +25,17 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CompoundHeterozygousQueryTest {
+public class CompoundHeterozygousQueryExecutorTest {
 
     private VariantIterable iterable;
-    private CompoundHeterozygousQuery ch;
+    private CompoundHeterozygousQueryExecutor ch;
 
     @Before
     public void setUp() throws Exception {
         iterable = Mockito.mock(VariantIterable.class);
         Mockito.doAnswer(invocation -> VariantDBIterator.emptyIterator()).when(iterable).iterator(Mockito.any(), Mockito.any());
 
-        ch = new CompoundHeterozygousQuery(null, null, null, iterable);
+        ch = new CompoundHeterozygousQueryExecutor(null, null, null, iterable);
     }
 
     @Test

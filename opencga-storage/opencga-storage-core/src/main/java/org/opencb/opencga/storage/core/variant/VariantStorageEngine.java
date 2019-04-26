@@ -81,7 +81,6 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -940,13 +939,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantQueryResult<Variant> getCompoundHeterozygous(String study, String child, String father, String mother,
                                                                Query query, QueryOptions options) {
-        VariantQueryExecutor.setDefaultTimeout(options, getOptions());
-        try {
-            return new CompoundHeterozygousQuery(getMetadataManager(), getStorageEngineId(), getOptions(), this)
-                    .get(study, child, father, mother, query, options);
-        } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
-        }
+        father = StringUtils.isEmpty(father) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : father;
+        mother = StringUtils.isEmpty(mother) ? CompoundHeterozygousQueryExecutor.MISSING_SAMPLE : mother;
+        query = new Query(query)
+                .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(child, father, mother))
+                .append(VariantQueryParam.STUDY.key(), study);
+
+        return get(query, options);
     }
 
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
@@ -955,16 +954,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
         query = preProcessQuery(query, options);
-        if (isValidParam(query, VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS)) {
-            List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
-            if (samples.size() != 3) {
-                throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
-            }
-            return getCompoundHeterozygous(query.getString(VariantQueryParam.STUDY.key()), samples.get(0), samples.get(1), samples.get(2),
-                    query, options);
-        } else {
-            return getVariantQueryExecutor(query, options).get(query, options);
-        }
+        return getVariantQueryExecutor(query, options).get(query, options);
     }
 
     @Override
@@ -997,6 +987,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
         List<VariantQueryExecutor> executors = new ArrayList<>(3);
 
+        executors.add(new CompoundHeterozygousQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions(), this));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, configuration, getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(

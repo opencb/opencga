@@ -30,16 +30,16 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CompoundHeterozygousQuery extends AbstractTwoPhasedVariantQueryExecutor {
+public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQueryExecutor {
 
     public static final String HET = "0/1,0|1,1|0";
     public static final String REF = "0/0,0|0,0";
     public static final String MISSING_SAMPLE = "-";
     private final VariantIterable iterable;
-    private static Logger logger = LoggerFactory.getLogger(CompoundHeterozygousQuery.class);
+    private static Logger logger = LoggerFactory.getLogger(CompoundHeterozygousQueryExecutor.class);
 
-    public CompoundHeterozygousQuery(VariantStorageMetadataManager metadataManager, String storageEngineId, ObjectMap options,
-                                     VariantIterable iterable) {
+    public CompoundHeterozygousQueryExecutor(VariantStorageMetadataManager metadataManager, String storageEngineId, ObjectMap options,
+                                             VariantIterable iterable) {
         super(metadataManager, storageEngineId, options, "Unfiltered variant storage");
         this.iterable = iterable;
     }
@@ -66,7 +66,7 @@ public class CompoundHeterozygousQuery extends AbstractTwoPhasedVariantQueryExec
     }
 
     @Override
-    protected int primaryCount(Query query, QueryOptions options) {
+    protected long primaryCount(Query query, QueryOptions options) {
         List<String> samples = query.getAsStringList(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key());
         if (samples.size() != 3) {
             throw VariantQueryException.malformedParam(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS, String.valueOf(samples));
@@ -213,20 +213,28 @@ public class CompoundHeterozygousQuery extends AbstractTwoPhasedVariantQueryExec
     }
 
     protected VariantDBIterator getRawIterator(String proband, String father, String mother, Query query, QueryOptions options) {
+        return getRawIterator(proband, father, mother, query, options, iterable);
+    }
+
+    protected VariantDBIterator getRawIterator(String proband, String father, String mother, Query query, QueryOptions options,
+                                               VariantIterable iterable) {
         if (father.equals(MISSING_SAMPLE) || mother.equals(MISSING_SAMPLE)) {
             // Single parent iterator
             String parent = father.equals(MISSING_SAMPLE) ? mother : father;
 
-            query = new Query(query).append(VariantQueryParam.GENOTYPE.key(),
-                    proband + IS + HET + AND + parent + IS + REF + OR + HET);
+            query = new Query(query)
+                    .append(VariantQueryParam.GENOTYPE.key(), proband + IS + HET + AND + parent + IS + REF + OR + HET)
+                    .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), null); // Remove CH filter
 
             return iterable.iterator(query, options);
         } else {
             // Multi parent iterator
-            Query query1 = new Query(query).append(VariantQueryParam.GENOTYPE.key(),
-                    proband + IS + HET + AND + father + IS + HET + AND + mother + IS + REF);
-            Query query2 = new Query(query).append(VariantQueryParam.GENOTYPE.key(),
-                    proband + IS + HET + AND + father + IS + REF + AND + mother + IS + HET);
+            Query query1 = new Query(query)
+                    .append(VariantQueryParam.GENOTYPE.key(), proband + IS + HET + AND + father + IS + HET + AND + mother + IS + REF)
+                    .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), null); // Remove CH filter
+            Query query2 = new Query(query)
+                    .append(VariantQueryParam.GENOTYPE.key(), proband + IS + HET + AND + father + IS + REF + AND + mother + IS + HET)
+                    .append(VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS.key(), null); // Remove CH filter
 
             VariantDBIterator iterator1 = iterable.iterator(query1, new QueryOptions(options).append(QueryOptions.SORT, true));
             VariantDBIterator iterator2 = iterable.iterator(query2, new QueryOptions(options).append(QueryOptions.SORT, true));

@@ -11,9 +11,12 @@ import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation;
@@ -40,7 +43,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_M
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class SampleIndexDBAdaptor {
+public class SampleIndexDBAdaptor implements VariantIterable {
 
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
@@ -54,6 +57,11 @@ public class SampleIndexDBAdaptor {
         this.tableNameGenerator = tableNameGenerator;
         this.metadataManager = metadataManager;
         family = helper.getColumnFamily();
+    }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        return iterator(SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager));
     }
 
     public VariantDBIterator iterator(SampleIndexQuery query) {
@@ -194,6 +202,15 @@ public class SampleIndexDBAdaptor {
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
         return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null), sample);
+    }
+
+    public long count(SampleIndexQuery query) {
+        if (query.getSamplesMap().size() == 1) {
+            String sample = query.getSamplesMap().keySet().iterator().next();
+            return count(query, sample);
+        } else {
+            return Iterators.size(iterator(query));
+        }
     }
 
     public long count(SampleIndexQuery query, String sample) {

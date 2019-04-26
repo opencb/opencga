@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQuery.MISSING_SAMPLE;
+import static org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQueryExecutor.MISSING_SAMPLE;
 
 /**
  * Created on 28/02/17.

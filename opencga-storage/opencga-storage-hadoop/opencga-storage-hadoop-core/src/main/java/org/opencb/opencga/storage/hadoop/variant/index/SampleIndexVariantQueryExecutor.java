@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -66,9 +65,9 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     }
 
     @Override
-    protected int primaryCount(Query query, QueryOptions options) {
+    protected long primaryCount(Query query, QueryOptions options) {
         SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
-        return Iterators.size(sampleIndexDBAdaptor.iterator(sampleIndexQuery));
+        return sampleIndexDBAdaptor.count(sampleIndexQuery);
     }
 
     /**
