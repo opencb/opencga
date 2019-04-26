@@ -218,6 +218,12 @@ public class AlignmentStorageManager extends StorageManager {
         return alignmentStorageEngine.getDBAdaptor().getLowCoverageRegions(Paths.get(file.getUri()), region, minCoverage);
     }
 
+    public QueryResult<Long> getTotalCounts(String studyIdStr, String fileIdStr, String sessionId) throws Exception {
+        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
+        return alignmentStorageEngine.getDBAdaptor().getTotalCounts(Paths.get(file.getUri()));
+    }
+
+
     File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.URI.key(),
