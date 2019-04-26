@@ -147,6 +147,11 @@ public class CompoundHeterozygousQuery extends AbstractTwoPhasedVariantQueryExec
             VariantQueryResult<Variant> result = VariantDBIterator.wrapper(variantIterator)
                     .toQueryResult(Collections.singletonMap(study, includeSample));
             setNumTotalResults(unfilteredIterator, result, query, inputOptions);
+            try {
+                unfilteredIterator.close();
+            } catch (Exception e) {
+                throw VariantQueryException.internalException(e);
+            }
             return result;
         }
     }
