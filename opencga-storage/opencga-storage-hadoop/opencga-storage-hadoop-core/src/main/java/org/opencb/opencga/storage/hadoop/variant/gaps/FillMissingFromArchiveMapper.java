@@ -30,7 +30,9 @@ public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<Byt
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
-        task = new FillMissingFromArchiveTask(getStudyMetadata(), metadataManager, helper, overwrite);
+        boolean simplifiedNewMultiAllelicVariants = context.getConfiguration()
+                .getBoolean(FillGapsDriver.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS, false);
+        task = new FillMissingFromArchiveTask(getStudyMetadata(), metadataManager, helper, overwrite, simplifiedNewMultiAllelicVariants);
         task.setQuiet(true);
         task.pre();
     }

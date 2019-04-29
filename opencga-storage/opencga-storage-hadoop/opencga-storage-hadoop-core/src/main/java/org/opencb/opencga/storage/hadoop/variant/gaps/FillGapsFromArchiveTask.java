@@ -42,7 +42,7 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
                                    StudyMetadata studyMetadata,
                                    GenomeHelper helper,
                                    Collection<Integer> samples, VariantStorageMetadataManager metadataManager) {
-        super(studyMetadata, metadataManager, helper, samples, false);
+        super(studyMetadata, metadataManager, helper, samples, false, false);
         this.archiveTableName = archiveTableName;
         this.hBaseManager = hBaseManager;
 

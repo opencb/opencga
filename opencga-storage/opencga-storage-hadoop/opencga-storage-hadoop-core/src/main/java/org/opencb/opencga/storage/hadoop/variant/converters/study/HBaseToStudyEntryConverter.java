@@ -417,7 +417,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
         alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
-        if (!selectVariantElements.getFiles().get(studyMetadata.getId()).contains(fileId)) {
+        if (selectVariantElements != null && !selectVariantElements.getFiles().get(studyMetadata.getId()).contains(fileId)) {
             // TODO: Should we return the original CALL?
 //            if (call != null && !call.isEmpty()) {
 //                studyEntry.getFiles().add(new FileEntry(fileName, call, Collections.emptyMap()));

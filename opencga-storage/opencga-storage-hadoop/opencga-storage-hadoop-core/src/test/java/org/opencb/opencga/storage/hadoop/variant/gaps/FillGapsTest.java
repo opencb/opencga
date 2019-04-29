@@ -49,7 +49,7 @@ import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.re
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class FillGapsTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @Rule
     public ExternalResource externalResource = new HadoopExternalResource();
@@ -77,7 +77,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
 
     public void testFillGapsPlatinumFiles(ObjectMap options) throws Exception {
         StudyMetadata studyMetadata = loadPlatinum(options
-                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 4);
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 4);
 
         HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
 
@@ -218,7 +218,7 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 2);
 
-        // Load files 1277 , 1278
+        // Load files 12877 , 12878
         StudyMetadata studyMetadata = loadPlatinum(options, 12877, 12878);
         assertFalse(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
         HadoopVariantStorageEngine variantStorageEngine = ((HadoopVariantStorageEngine) this.variantStorageEngine);
@@ -385,10 +385,10 @@ public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVa
             for (int i = 0; i < samplesData.size(); i++) {
                 List<String> data = samplesData.get(i);
                 String sampleName = studyEntry.getOrderedSamplesName().get(i);
-                if (!newVariant && samplesSet.contains(sampleName)) {
-                    assertFalse((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=?/?", data.get(0).equals("?/?"));
+                if (newVariant || !samplesSet.contains(sampleName)) {
+                    assertNotEquals((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=0/0", "0/0", data.get(0));
                 } else {
-                    assertFalse((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=0/0", data.get(0).equals("0/0"));
+                    assertNotEquals(variant + " _ " + sampleName + " should not have GT=?/?", "?/?", data.get(0));
                 }
             }
         }
