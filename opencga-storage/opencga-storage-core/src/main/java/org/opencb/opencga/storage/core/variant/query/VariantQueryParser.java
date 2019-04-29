@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
@@ -49,6 +50,14 @@ public class VariantQueryParser {
         // Copy input query! Do not modify original query!
         Query query = originalQuery == null ? new Query() : new Query(originalQuery);
 
+        preProcessAnnotationParams(query);
+
+        preProcessStudyParams(options, query);
+
+        return query;
+    }
+
+    protected void preProcessAnnotationParams(Query query) {
         convertGoToGeneQuery(query, cellBaseUtils);
         convertExpressionToGeneQuery(query, cellBaseUtils);
 
@@ -97,7 +106,7 @@ public class VariantQueryParser {
 
         if (VariantQueryUtils.isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             String v = query.getString(ANNOT_CLINICAL_SIGNIFICANCE.key());
-            VariantQueryUtils.QueryOperation operator = VariantQueryUtils.checkOperator(v);
+            QueryOperation operator = VariantQueryUtils.checkOperator(v);
             List<String> values = VariantQueryUtils.splitValue(v, operator);
             List<String> clinicalSignificanceList = new ArrayList<>(values.size());
             for (String clinicalSignificance : values) {
@@ -138,7 +147,7 @@ public class VariantQueryParser {
             } else {
                 query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift" + split[1] + split[2]);
             }
-            query.remove(ANNOT_SIFT);
+            query.remove(ANNOT_SIFT.key());
         }
 
         if (isValidParam(query, ANNOT_POLYPHEN)) {
@@ -157,9 +166,24 @@ public class VariantQueryParser {
             } else {
                 query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), "polyphen" + split[1] + split[2]);
             }
-            query.remove(ANNOT_POLYPHEN);
+            query.remove(ANNOT_POLYPHEN.key());
         }
 
+        if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
+            List<String> cts = query.getAsStringList(ANNOT_CONSEQUENCE_TYPE.key());
+            List<String> parsedCts = new ArrayList<>(cts.size());
+            for (String ct : cts) {
+                if (ct.equalsIgnoreCase("lof")) {
+                    parsedCts.addAll(VariantQueryUtils.LOF_SET);
+                } else {
+                    parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
+                }
+            }
+            query.put(ANNOT_CONSEQUENCE_TYPE.key(), parsedCts);
+        }
+    }
+
+    protected void preProcessStudyParams(QueryOptions options, Query query) {
         StudyMetadata defaultStudy = getDefaultStudy(query, options, metadataManager);
         QueryOperation formatOperator = null;
         if (isValidParam(query, FORMAT)) {
@@ -421,8 +445,6 @@ public class VariantQueryParser {
             query.put(INCLUDE_FORMAT.key(), formats);
         }
         query.remove(INCLUDE_GENOTYPE.key(), formats);
-
-        return query;
     }
 
     /**
