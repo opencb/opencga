@@ -608,6 +608,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
         hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
+        for (String key : options.keySet()) {
+            hadoopConfiguration.set(key, options.getString(key));
+        }
 
         MergeMode mergeMode;
         if (connected) {

@@ -33,7 +33,7 @@ import static junit.framework.TestCase.assertTrue;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsTaskUtilsTest {
+public class FillGapsTaskTest {
 
     private VariantStorageMetadataManager metadataManager;
     private StudyMetadata studyMetadata;

@@ -77,7 +77,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
 
     public void testFillGapsPlatinumFiles(ObjectMap options) throws Exception {
         StudyMetadata studyMetadata = loadPlatinum(options
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 4);
+                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 12877, 12880);
 
         HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
 
@@ -314,28 +314,31 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
             inputFiles.add(getResourceUri(fileName));
         }
 
-        return load(extraParams, inputFiles);
+        return load(extraParams, inputFiles, newOutputUri(1));
     }
 
     private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles) throws Exception {
-        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
-        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
+        return load(extraParams, inputFiles, newOutputUri(1));
+    }
 
-        ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+    private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles, URI outputUri) throws Exception {
+        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
+        HadoopVariantStorageEngine engine = getVariantStorageEngine();
+        VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
+
+        ObjectMap options = engine.getOptions();
         options.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
         options.put(VariantStorageEngine.Options.GVCF.key(), true);
         options.put(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
         options.put(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 1);
         options.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         options.putAll(extraParams);
-        List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
+        List<StoragePipelineResult> index = engine.index(inputFiles, outputUri, true, true, true);
 
         for (StoragePipelineResult storagePipelineResult : index) {
             System.out.println(storagePipelineResult);
         }
 
-        URI outputUri = newOutputUri(1);
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, outputUri);
 
