@@ -37,20 +37,20 @@ import static org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParse
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantAggregationQueryExecutor {
+public class VariantAggregationExecutor {
 
     private final VariantSearchManager searchManager;
     private final String dbName;
     private final VariantIterable iterable;
     private final VariantStorageMetadataManager metadataManager;
-    private Logger logger = LoggerFactory.getLogger(VariantAggregationQueryExecutor.class);
+    private Logger logger = LoggerFactory.getLogger(VariantAggregationExecutor.class);
     public static final Pattern CHROM_DENSITY_PATTERN = Pattern.compile("^" + CHROM_DENSITY + "\\[([a-zA-Z0-9:\\-,*]+)](:(\\d+))?$");
     public static final String NESTED_FACET_SEPARATOR = ">>"; // FacetQueryParser.NESTED_FACET_SEPARATOR
     private static final Set<String> ACCEPTED_CHROM_DENSITY_NESTED = new HashSet<>(Arrays.asList("type"));
 
-    public VariantAggregationQueryExecutor(VariantSearchManager searchManager, String dbName,
-                                           VariantIterable iterable,
-                                           VariantStorageMetadataManager metadataManager) {
+    public VariantAggregationExecutor(VariantSearchManager searchManager, String dbName,
+                                      VariantIterable iterable,
+                                      VariantStorageMetadataManager metadataManager) {
         this.searchManager = searchManager;
         this.dbName = dbName;
         this.iterable = iterable;
@@ -227,7 +227,7 @@ public class VariantAggregationQueryExecutor {
         void accumulate(FacetQueryResult.Field field, Variant variant);
     }
 
-    private class ChromDensityAccumulator implements FieldVariantAccumulator {
+    private final class ChromDensityAccumulator implements FieldVariantAccumulator {
         private final Region region;
         private final FieldVariantAccumulator nestedFieldAccumulator;
         private final int step;
@@ -316,7 +316,7 @@ public class VariantAggregationQueryExecutor {
         }
     }
 
-    private class VariantTypeAccumulator implements FieldVariantAccumulator {
+    private final class VariantTypeAccumulator implements FieldVariantAccumulator {
 
         private VariantTypeAccumulator() {
             // TODO: Accept subset of variant type

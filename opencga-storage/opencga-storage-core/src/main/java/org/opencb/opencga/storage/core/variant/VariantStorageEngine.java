@@ -1066,7 +1066,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public FacetQueryResult facet(Query query, QueryOptions options) {
         try {
-            return new VariantAggregationQueryExecutor(getVariantSearchManager(), dbName, this, getMetadataManager()).facet(query, options);
+            return new VariantAggregationExecutor(getVariantSearchManager(), dbName, this, getMetadataManager()).facet(query, options);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e);
         }

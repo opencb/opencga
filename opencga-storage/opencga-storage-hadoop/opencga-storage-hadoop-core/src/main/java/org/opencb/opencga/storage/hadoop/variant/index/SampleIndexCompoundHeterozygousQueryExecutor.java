@@ -21,8 +21,9 @@ public class SampleIndexCompoundHeterozygousQueryExecutor extends CompoundHetero
 
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
 
-    public SampleIndexCompoundHeterozygousQueryExecutor(VariantStorageMetadataManager metadataManager, String storageEngineId, ObjectMap options,
-                                                        VariantIterable iterable, SampleIndexDBAdaptor sampleIndexDBAdaptor) {
+    public SampleIndexCompoundHeterozygousQueryExecutor(
+            VariantStorageMetadataManager metadataManager, String storageEngineId, ObjectMap options, VariantIterable iterable,
+            SampleIndexDBAdaptor sampleIndexDBAdaptor) {
         super(metadataManager, storageEngineId, options, iterable);
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
     }
