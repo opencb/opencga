@@ -4,12 +4,14 @@
     "parameters": {
         "_artifactsLocation": {
             "type": "string",
+	    "defaultValue": "https://raw.githubusercontent.com/opencb/opencga/azure/opencga-app/app/scripts/azure/arm",
             "metadata": {
                 "description": ""
             }
         },
         "_artifactsLocationSasToken": {
             "type": "string",
+	    "defaultValue": "",
             "metadata": {
                 "description": ""
             }
