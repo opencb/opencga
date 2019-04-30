@@ -700,11 +700,14 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 }
                 for (CohortMetadata cohort : cohorts.values()) {
                     try {
-                        assertTrue(entry.getValue().getStats().containsKey(cohort.getName()));
+                        VariantStats variantStats = entry.getValue().getStats().get(cohort.getName());
+                        assertNotNull(variantStats);
                         assertEquals(variant + " has incorrect stats for cohort \"" + cohort.getName() + "\":"+cohort.getId(),
                                 cohort.getSamples().size(),
-                                entry.getValue().getStats().get(cohort.getName()).getGenotypeCount().values().stream().reduce((a, b) -> a + b)
-                                        .orElse(0).intValue());
+                                variantStats.getGenotypeCount().values()
+                                        .stream()
+                                        .mapToInt(Integer::intValue)
+                                        .sum());
                     } catch (AssertionError error) {
                         System.out.println(variant + " = " + variant.toJson());
                         throw error;
