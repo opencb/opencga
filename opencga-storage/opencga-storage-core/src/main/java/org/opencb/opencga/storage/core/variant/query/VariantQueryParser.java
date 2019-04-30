@@ -170,7 +170,9 @@ public class VariantQueryParser {
         }
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-            List<String> cts = query.getAsStringList(ANNOT_CONSEQUENCE_TYPE.key());
+            Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(ANNOT_CONSEQUENCE_TYPE.key()));
+            QueryOperation op = pair.getLeft();
+            List<String> cts = pair.getRight();
             List<String> parsedCts = new ArrayList<>(cts.size());
             for (String ct : cts) {
                 if (ct.equalsIgnoreCase("lof")) {
@@ -179,7 +181,7 @@ public class VariantQueryParser {
                     parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
                 }
             }
-            query.put(ANNOT_CONSEQUENCE_TYPE.key(), parsedCts);
+            query.put(ANNOT_CONSEQUENCE_TYPE.key(), op == null ? parsedCts : String.join(op.separator(), cts));
         }
     }
 
