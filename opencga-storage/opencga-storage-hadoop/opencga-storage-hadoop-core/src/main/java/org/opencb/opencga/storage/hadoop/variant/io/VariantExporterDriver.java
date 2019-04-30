@@ -40,7 +40,6 @@ import java.util.logging.Level;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
 /**
  * Created on 14/06/18.
@@ -66,6 +65,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
+        setStudyId(-1);
         super.parseAndValidateParameters();
         outputFormat = VariantOutputFormat.valueOf(getConf().get(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
         outFile = getConf().get(OUTPUT_PARAM);
@@ -124,6 +124,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         }
 
         VariantMapReduceUtil.setNoneReduce(job);
+        setNoneTimestamp(job);
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
 

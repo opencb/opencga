@@ -59,6 +59,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
+    public static final String NONE_TIMESTAMP                      = "none";
     public static final String COUNTER_GROUP_NAME = VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
     private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
@@ -333,6 +334,10 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     protected String getParam(String key, String defaultValue) {
         return getConf().get(key, getConf().get("--" + key, defaultValue));
+    }
+
+    public static void setNoneTimestamp(Job job) {
+        job.getConfiguration().set(TIMESTAMP, NONE_TIMESTAMP);
     }
 
     public int privateMain(String[] args) throws Exception {
