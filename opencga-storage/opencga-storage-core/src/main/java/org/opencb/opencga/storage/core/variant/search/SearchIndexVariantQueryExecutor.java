@@ -180,8 +180,14 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 }
                 long numSearchResults = nativeResult.getNumTotalResults();
 
-                engineQuery.put(ID.key(), variantIds);
-                long numResults = dbAdaptor.count(engineQuery).first();
+                long numResults;
+                if (variantIds.isEmpty()) {
+                    // Do not count if empty. It will not apply the filter and count through the whole database.
+                    numResults = 0;
+                } else {
+                    engineQuery.put(ID.key(), variantIds);
+                    numResults = dbAdaptor.count(engineQuery).first();
+                }
                 logger.debug("NumResults: {}, NumSearchResults: {}, NumSamples: {}", numResults, numSearchResults, sampling);
                 if (approxCount) {
                     count = (long) ((numResults / (float) sampling) * numSearchResults);
