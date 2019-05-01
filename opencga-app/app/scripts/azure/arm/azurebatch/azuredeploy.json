@@ -207,8 +207,7 @@
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {
                         "containerConfiguration": {
-                            "containerImageNames": "[parameters('dockerImagesToCache')]",
-                            "type": "DockerCompatible"
+                                "type": "DockerCompatible"
                         },
                         "imageReference": {
                             "publisher": "microsoft-azure-batch",
