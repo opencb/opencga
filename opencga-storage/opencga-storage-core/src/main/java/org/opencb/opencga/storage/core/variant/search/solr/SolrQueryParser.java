@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.search.solr;
 
+import io.netty.util.internal.StringUtil;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -127,7 +128,7 @@ public class SolrQueryParser {
                 solrQuery.setStart(0);
                 solrQuery.setFields();
 
-                logger.info(">>>>>> Solr Facet: " + solrQuery.toString());
+                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
             } catch (Exception e) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
             }
@@ -176,63 +177,67 @@ public class SolrQueryParser {
         // OR conditions
         // create a list for xrefs (without genes), genes, regions and cts
         // the function classifyIds function differentiates xrefs from genes
-        List<String> xrefs = new ArrayList<>();
-        List<String> genes = new ArrayList<>();
-        List<Region> regions = new ArrayList<>();
-        List<String> consequenceTypes = new ArrayList<>();
+//        List<String> xrefs = new ArrayList<>();
+//        List<String> genes = new ArrayList<>();
+//        List<Region> regions = new ArrayList<>();
+//        List<String> consequenceTypes = new ArrayList<>();
 
         // xref
-        classifyIds(VariantQueryParam.ANNOT_XREF.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParam.ID.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParam.GENE.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParam.ANNOT_CLINVAR.key(), query, xrefs, genes);
-        classifyIds(VariantQueryParam.ANNOT_COSMIC.key(), query, xrefs, genes);
+//        classifyIds(VariantQueryParam.ANNOT_XREF.key(), query, xrefs, genes);
+//        classifyIds(VariantQueryParam.ID.key(), query, xrefs, genes);
+//        classifyIds(VariantQueryParam.GENE.key(), query, xrefs, genes);
+//        classifyIds(VariantQueryParam.ANNOT_CLINVAR.key(), query, xrefs, genes);
+//        classifyIds(VariantQueryParam.ANNOT_COSMIC.key(), query, xrefs, genes);
 //        classifyIds(VariantQueryParams.ANNOT_HPO.key(), query, xrefs, genes);
 
         // Convert region string to region objects
-        if (query.containsKey(VariantQueryParam.REGION.key())) {
-            regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
-        }
+//        if (query.containsKey(VariantQueryParam.REGION.key())) {
+//            regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
+//        }
 
-        // consequence types (cts)
-        String ctBoolOp = " OR ";
-        if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
-                && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
-            consequenceTypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
-            if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(";")) {
-                ctBoolOp = " AND ";
-                if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(",")) {
-                    ctBoolOp = " OR ";
-                    logger.info("Misuse of consquence type values by mixing ';' and ',': using ',' as default.");
-                }
-            }
-        }
-
-        // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
-        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
-            if (CollectionUtils.isNotEmpty(genes)) {
-                // consequence types and genes
-                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp);
-                if (xrefs.isEmpty() && regions.isEmpty()) {
-                    // no xrefs or regions: genes AND cts
-                    filterList.add(buildGeneAndConsequenceType(genes, consequenceTypes));
-                } else {
-                    // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-                    filterList.add("(" + or + ") OR (" + buildGeneAndConsequenceType(genes, consequenceTypes) + ")");
-                }
-            } else {
-                // consequence types but no genes: (xrefs OR regions) AND cts
-                // in this case, the resulting string will never be null, because there are some consequence types!!
-                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp));
-            }
-        } else {
-            // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
-            // no consequence types: (xrefs OR regions) but we must add "OR genMINes", i.e.: xrefs OR regions OR genes
-            // we must make an OR with xrefs, genes and regions and add it to the "AND" filter list
-            String orXrefs = buildXrefOrGeneOrRegion(xrefs, genes, regions);
-            if (!orXrefs.isEmpty()) {
-                filterList.add(orXrefs);
-            }
+//        // consequence types (cts)
+//        String ctBoolOp = " OR ";
+//        if (query.containsKey(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())
+//                && StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()))) {
+//            consequenceTypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+//            if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(";")) {
+//                ctBoolOp = " AND ";
+//                if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(",")) {
+//                    ctBoolOp = " OR ";
+//                    logger.info("Misuse of consquence type values by mixing ';' and ',': using ',' as default.");
+//                }
+//            }
+//        }
+//
+//        // goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
+//        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
+//            if (CollectionUtils.isNotEmpty(genes)) {
+//                // consequence types and genes
+//                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp);
+//                if (xrefs.isEmpty() && regions.isEmpty()) {
+//                    // no xrefs or regions: genes AND cts
+//                    filterList.add(buildGeneAndConsequenceType(genes, consequenceTypes));
+//                } else {
+//                    // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
+//                    filterList.add("(" + or + ") OR (" + buildGeneAndConsequenceType(genes, consequenceTypes) + ")");
+//                }
+//            } else {
+//                // consequence types but no genes: (xrefs OR regions) AND cts
+//                // in this case, the resulting string will never be null, because there are some consequence types!!
+//                filterList.add(buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctBoolOp));
+//            }
+//        } else {
+//            // no consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+//            // no consequence types: (xrefs OR regions) but we must add "OR genMINes", i.e.: xrefs OR regions OR genes
+//            // we must make an OR with xrefs, genes and regions and add it to the "AND" filter list
+//            String orXrefs = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+//            if (!orXrefs.isEmpty()) {
+//                filterList.add(orXrefs);
+//            }
+//        }
+        String geneFilter = parseGeneFilter(query);
+        if (StringUtils.isNotEmpty(geneFilter)) {
+            filterList.add(geneFilter);
         }
 
         // now we continue with the other AND conditions...
@@ -269,11 +274,12 @@ public class SolrQueryParser {
             filterList.add(parseCategoryTermValue("type", query.getString(key)));
         }
 
+        // FIXME
         // Gene biotype
-        key = VariantQueryParam.ANNOT_BIOTYPE.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseCategoryTermValue("biotypes", query.getString(key)));
-        }
+//        key = VariantQueryParam.ANNOT_BIOTYPE.key();
+//        if (StringUtils.isNotEmpty(query.getString(key))) {
+//            filterList.add(parseCategoryTermValue("biotypes", query.getString(key)));
+//        }
 
         // protein-substitution
         key = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key();
@@ -406,6 +412,158 @@ public class SolrQueryParser {
         logger.debug("query     : " + VariantQueryUtils.printQuery(query));
         logger.debug("solrQuery : " + solrQuery);
         return solrQuery;
+    }
+
+    private String parseGeneFilter(Query query) {
+        String filter = "";
+        String filter2 = "";
+
+        List<Region> regions = new ArrayList<>();
+        List<String> xrefs = new ArrayList<>();
+        List<String> genes = new ArrayList<>();
+        List<String> biotypes = new ArrayList<>();
+        List<String> consequenceTypes = new ArrayList<>();
+        List<String> flags = new ArrayList<>();
+
+        classifyIds(VariantQueryParam.ANNOT_XREF.key(), query, xrefs, genes);
+        classifyIds(VariantQueryParam.ID.key(), query, xrefs, genes);
+        classifyIds(VariantQueryParam.GENE.key(), query, xrefs, genes);
+
+        // Regions
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.REGION.key()))) {
+            regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
+        }
+
+        // Biotypes
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()))) {
+            biotypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key()).split("[,;]"));
+        }
+
+        // Consequence types (cts)
+        String ctLogicalOperator = " OR ";
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ""))) {
+            consequenceTypes = Arrays.asList(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).split("[,;]"));
+            if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(";")) {
+                ctLogicalOperator = " AND ";
+                // TODO This must be removed as soon as we have the Query procesing in use
+                if (query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()).contains(",")) {
+                    ctLogicalOperator = " OR ";
+                    logger.info("Misuse of consequence type values by mixing ';' and ',': using ',' as default.");
+                }
+            }
+        }
+
+        // Flags
+        if (StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAG.key()))) {
+            flags = Arrays.asList(query.getString(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAG.key()).split("[,;]"));
+        }
+
+        // Goal: [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
+        //       [((xrefs OR regions) AND cts) OR (genes AND biotypes)] AND ... AND ...
+        //       [((xrefs OR regions) AND cts) OR (biotypes AND cts)] AND ... AND ...
+
+        // First part of filter
+        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
+            // Consequence types: (xrefs OR regions) AND cts
+            // In this case, the resulting string will never be null, because there are some consequence types!!
+            filter = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
+        } else {
+            // No consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+            // We must make an OR with xrefs, genes and regions and add it to the "AND" filter list
+            filter = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+        }
+
+
+//        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
+//            if (CollectionUtils.isNotEmpty(genes)) {
+//                // consequence types and genes
+//                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
+//                if (xrefs.isEmpty() && regions.isEmpty()) {
+//                    // no xrefs or regions: genes AND cts
+//                    filter = buildGeneAndConsequenceType(genes, consequenceTypes);
+//                } else {
+//                    // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
+//                    filter = "(" + or + ") OR (" + buildGeneAndConsequenceType(genes, consequenceTypes) + ")";
+//                }
+//            } else {
+//                // consequence types but no genes: (xrefs OR regions) AND cts
+//                // in this case, the resulting string will never be null, because there are some consequence types!!
+//                filter = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
+//            }
+//        } else {
+//            // No consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+//            // We must make an OR with xrefs, genes and regions and add it to the "AND" filter list
+//            filter = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+//        }
+//
+        // Get the code for the second part of the filter
+        String filterCode = "";
+        filterCode += StringUtils.isNotEmpty(query.getString(VariantQueryParam.GENE.key(), "")) ? "G": "";
+        filterCode += StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_BIOTYPE.key(), "")) ? "B": "";
+        filterCode += StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "")) ? "C": "";
+        filterCode += StringUtils.isNotEmpty(query.getString(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAG.key(), "")) ? "F": "";
+
+//        String key;
+        List<String> defualtFilterList = new ArrayList<>();
+        switch (filterCode) {
+            case "GB":
+                filter2 = buildGeneAndBiotype(genes, biotypes);
+                break;
+            case "GC":
+                filter2 = buildGeneAndConsequenceType(genes, consequenceTypes);
+                break;
+            case "BC":
+                // We use the function buildGeneAndConsequenceType passing biotypes instead of genes
+                filter2 = buildGeneAndConsequenceType(biotypes, consequenceTypes);
+                break;
+            case "CF":
+
+                break;
+            case "GBC":
+                break;
+            case "GCF":
+                filter2 = buildGeneAndConsequenceTypeAndFlag(genes, consequenceTypes, flags);
+                break;
+            case "GBCF":
+                filter2 =  buildGeneAndBiotypeAndConsequenceTypeAndFlag(genes, biotypes, consequenceTypes, flags);
+                break;
+            default:
+                if (filterCode.contains("G")) {
+                    defualtFilterList.add(parseCategoryTermValue("xrefs", query.getString(VariantQueryParam.GENE.key())));
+                }
+
+                if (filterCode.contains("B")) {
+                    defualtFilterList.add(parseCategoryTermValue("biotypes", query.getString(VariantQueryParam.ANNOT_BIOTYPE.key())));
+                }
+
+                if (filterCode.contains("C")) {
+                    defualtFilterList.add(buildConsequenceTypeOrAnd(consequenceTypes, ctLogicalOperator));
+                }
+
+                if (filterCode.contains("F")) {
+                    defualtFilterList.add(parseCategoryTermValue("other",  "TRANS*" + query.getString(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAG.key())));
+                }
+                filter2 = StringUtils.join(defualtFilterList, " AND ");
+                break;
+        }
+
+        if (StringUtils.isNotEmpty(filter)) {
+            if (StringUtils.isNotEmpty(filter2)) {
+                if (defualtFilterList.size() == 0) {
+                    return filter + " OR " + filter2;
+                } else {
+                    return filter + " AND " + filter2;
+                }
+            } else {
+                return filter;
+            }
+        } else {
+            if (StringUtils.isNotEmpty(filter2)) {
+                return filter2;
+            }
+        }
+
+        return "";
     }
 
     private String parseFacet(String facetQuery) {
@@ -704,7 +862,7 @@ public class SolrQueryParser {
         if (query.containsKey(key)) {
             value = query.getString(key);
             if (StringUtils.isNotEmpty(value)) {
-                List<String> items = Arrays.asList(value.split("[,;]"));
+                String[] items = value.split("[,;]");
                 for (String item: items) {
                     if (isGene(item)) {
                         genes.add(item);
@@ -1208,23 +1366,77 @@ public class SolrQueryParser {
     }
 
     /**
-     * Build the condition: genes AND cts.
+     * Build the condition: gene (or biotypes) AND consequence types.
      *
-     * @param genes    List of genes
+     * @param genes    List of genes (or biotypes)
      * @param cts      List of consequence types
      * @return         OR/AND condition string
      */
     private String buildGeneAndConsequenceType(List<String> genes, List<String> cts) {
-        // in the VariantSearchModel the (gene AND ct) is modeled in the field: geneToSoAcc:gene_ct
+        // In the VariantSearchModel the (gene AND ct) is modeled in the field: geneToSoAcc:gene_ct
         // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
+        // The same for (biotype AND ct), it is modeled in geneToSoAcc:biotype_ct
         StringBuilder sb = new StringBuilder();
         for (String gene: genes) {
             for (String ct: cts) {
                 if (sb.length() > 0) {
                     sb.append(" OR ");
                 }
-                sb.append("geneToSoAcc:\"").append(gene).append("_").append(VariantQueryUtils.parseConsequenceType(ct))
-                        .append("\"");
+                sb.append("geneToSoAcc:\"").append(gene).append("_").append(VariantQueryUtils.parseConsequenceType(ct)).append("\"");
+            }
+        }
+        return sb.toString();
+    }
+
+    private String buildGeneAndBiotype(List<String> genes, List<String> biotypes) {
+        // In the VariantSearchModel the (gene AND biotype) is modeled in the field: geneToSoAcc:gene_biotype
+        // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
+        StringBuilder sb = new StringBuilder();
+        for (String gene: genes) {
+            for (String biotype: biotypes) {
+                if (sb.length() > 0) {
+                    sb.append(" OR ");
+                }
+                sb.append("geneToSoAcc:\"").append(gene).append("_").append(biotype).append("\"");
+            }
+        }
+        return sb.toString();
+    }
+
+    private String buildGeneAndConsequenceTypeAndFlag(List<String> genes, List<String> cts, List<String> flags) {
+        // In the VariantSearchModel the (gene AND ct AND flag) is modeled in the field: geneToSoAcc:gene_ct_flag
+        // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
+        StringBuilder sb = new StringBuilder();
+        for (String gene: genes) {
+            for (String ct: cts) {
+                for (String flag: flags) {
+                    if (sb.length() > 0) {
+                        sb.append(" OR ");
+                    }
+                    sb.append("geneToSoAcc:\"").append(gene).append("_").append(VariantQueryUtils.parseConsequenceType(ct)).append("_")
+                            .append(flag).append("\"");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private String buildGeneAndBiotypeAndConsequenceTypeAndFlag(List<String> genes, List<String> biotypes, List<String> cts,
+                                                                List<String> flags) {
+        // In the VariantSearchModel the (gene AND biotype AND ct AND flag) is modeled in the field: geneToSoAcc:gene_biotype_ct_flag
+        // and if there are multiple genes and consequence types, we have to build the combination of all of them in a OR expression
+        StringBuilder sb = new StringBuilder();
+        for (String gene: genes) {
+            for (String biotype: biotypes) {
+                for (String ct: cts) {
+                    for (String flag : flags) {
+                        if (sb.length() > 0) {
+                            sb.append(" OR ");
+                        }
+                        sb.append("geneToSoAcc:\"").append(gene).append("_").append(biotype).append("_")
+                                .append(VariantQueryUtils.parseConsequenceType(ct)).append("_").append(flag).append("\"");
+                    }
+                }
             }
         }
         return sb.toString();
