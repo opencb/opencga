@@ -1218,7 +1218,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
-                Account.GUEST, QueryOptions.empty(), null);
+                Account.Type.GUEST, QueryOptions.empty(), null);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("dummy",
                 GroupParams.Action.ADD), sessionIdUser);
 

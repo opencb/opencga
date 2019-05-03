@@ -198,7 +198,7 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogException("Internal error happened. Could not find user " + userId);
         }
 
-        if (Account.GUEST.equalsIgnoreCase(user.first().getAccount().getType())) {
+        if (Account.Type.GUEST == user.first().getAccount().getType()) {
             throw new CatalogException("User " + userId + " has a guest account and is not authorized to create new projects. If you "
                     + " think this might be an error, please contact with your administrator.");
         }
