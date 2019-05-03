@@ -117,12 +117,25 @@ public class UserManager extends AbstractManager {
     /**
      * Get the userId from the sessionId.
      *
-     * @param sessionId SessionId
+     * @param token Token
      * @return UserId owner of the sessionId. Empty string if SessionId does not match.
      * @throws CatalogException when the session id does not correspond to any user or the token has expired.
      */
-    public String getUserId(String sessionId) throws CatalogException {
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId);
+    public String getUserId(String token) throws CatalogException {
+        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+            AuthenticationManager authenticationManager = entry.getValue();
+            try {
+                String userId = authenticationManager.getUserId(token);
+                if (!userId.equals("admin")) {
+                    userDBAdaptor.checkId(userId);
+                }
+                return userId;
+            } catch (Exception e) {
+                logger.debug("Could not get user from token using {} authentication manager. {}", entry.getKey(), e.getMessage(), e);
+            }
+        }
+        // We make this call again to get the original exception
+        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
     }
 
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
@@ -162,26 +175,21 @@ public class UserManager extends AbstractManager {
                     .stream()
                     .map(AuthenticationOrigin::getId)
                     .collect(Collectors.toSet());
-            if (!authOrigins.contains(user.getAccount().getAuthOrigin())) {
-                throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthOrigin() + "'");
+            if (!authOrigins.contains(user.getAccount().getAuthentication().getId())) {
+                throw new CatalogException("Unknown authentication origin id '" + user.getAccount().getAuthentication() + "'");
             }
         } else {
             password = user.getPassword();
             user.setPassword("");
 
-            user.getAccount().setAuthOrigin(INTERNAL_AUTHORIZATION);
+            user.getAccount().setAuthentication(new Account.AuthenticationOrigin(INTERNAL_AUTHORIZATION, false));
         }
 
         checkUserExists(user.getId());
         user.setStatus(new User.UserStatus());
 
-        if (StringUtils.isNotEmpty(user.getAccount().getType())) {
-            if (!Account.FULL.equals(user.getAccount().getType()) && !Account.GUEST.equals(user.getAccount().getType())) {
-                throw new CatalogException("The account type specified does not correspond with any of the valid ones. Valid account types:"
-                        + Account.FULL + " and " + Account.GUEST);
-            }
-        } else {
-            user.getAccount().setType(Account.GUEST);
+        if (user.getAccount().getType() == null) {
+            user.getAccount().setType(Account.Type.GUEST);
         }
 
         if (user.getQuota() <= 0L) {
@@ -207,25 +215,25 @@ public class UserManager extends AbstractManager {
         }
     }
 
-        /**
-         * Create a new user.
-         *
-         * @param id           User id
-         * @param name         Name
-         * @param email        Email
-         * @param password     Encrypted Password
-         * @param organization Optional organization
-         * @param quota        Maximum user disk quota
-         * @param accountType  User account type. Full or guest.
-         * @param options      Optional options
-         * @param token        JWT token.
-         * @return The created user
-         * @throws CatalogException If user already exists, or unable to create a new user.
-         */
+    /**
+     * Create a new user.
+     *
+     * @param id           User id
+     * @param name         Name
+     * @param email        Email
+     * @param password     Encrypted Password
+     * @param organization Optional organization
+     * @param quota        Maximum user disk quota
+     * @param type  User account type. Full or guest.
+     * @param options      Optional options
+     * @param token        JWT token.
+     * @return The created user
+     * @throws CatalogException If user already exists, or unable to create a new user.
+     */
     public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
-                                    String accountType, QueryOptions options, String token) throws CatalogException {
+                                    Account.Type type, QueryOptions options, String token) throws CatalogException {
         User user = new User(id, name, email, password, organization, User.UserStatus.READY)
-                .setAccount(new Account(accountType, "", "", ""))
+                .setAccount(new Account(type, "", "", null))
                 .setQuota(quota != null ? quota : 0L);
 
         return create(user, token);
@@ -305,38 +313,44 @@ public class UserManager extends AbstractManager {
     }
 
     /**
-     * Register all the users belonging to a remote group. If internalGroup and study are not null, it will also associate the remote group
-     * to the internalGroup defined.
+     * Register all the ids. If internalGroup and study are not null, it will also associate the users to the internalGroup defined.
      *
      * @param authOrigin Authentication origin.
-     * @param userList List of users existing in the authentication origin.
+     * @param idList List of entity ids existing in the authentication origin.
+     * @param isApplication boolean indicating whether the id list belong to external applications or users.
      * @param internalGroup Group name in Catalog that will be associated to the remote group.
      * @param study Study where the internal group will be associated.
      * @param token JWT token. The token should belong to the root user.
      * @throws CatalogException If any of the parameters is wrong or there is any internal error.
      */
-    public void importRemoteUsers(String authOrigin, List<String> userList, @Nullable String internalGroup, @Nullable String study,
-                                         String token) throws CatalogException {
+    public void importRemoteEntities(String authOrigin, List<String> idList, boolean isApplication, @Nullable String internalGroup,
+                                     @Nullable String study, String token) throws CatalogException {
         if (!"admin".equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
         ParamUtils.checkParameter(authOrigin, "Authentication origin");
-        ParamUtils.checkObj(userList, "users");
+        ParamUtils.checkObj(idList, "ids");
 
         if (!authenticationManagerMap.containsKey(authOrigin)) {
             throw new CatalogException("Unknown authentication origin");
         }
 
-        logger.info("Fetching user information from authentication origin '{}'", authOrigin);
-
-        List<User> parsedUserList = authenticationManagerMap.get(authOrigin).getRemoteUserInformation(userList);
-        for (User user : parsedUserList) {
-            try {
+        if (!isApplication) {
+            logger.info("Fetching user information from authentication origin '{}'", authOrigin);
+            List<User> parsedUserList = authenticationManagerMap.get(authOrigin).getRemoteUserInformation(idList);
+            for (User user : parsedUserList) {
                 create(user, token);
                 logger.info("User '{}' successfully created", user.getId());
-            } catch (CatalogException e) {
-                logger.warn("{}", e.getMessage());
+            }
+        } else {
+            for (String applicationId : idList) {
+                User application = new User(applicationId, new Account()
+                        .setType(Account.Type.GUEST)
+                        .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
+                        .setEmail("mail@mail.co.uk");
+                create(application, token);
+                logger.info("User (application) '{}' successfully created", application.getId());
             }
         }
 
@@ -347,7 +361,7 @@ public class UserManager extends AbstractManager {
                 if (group.getNumResults() == 1) {
                     // We will add those users to the existing group
                     catalogManager.getStudyManager().updateGroup(study, internalGroup,
-                            new GroupParams(StringUtils.join(userList, ","), GroupParams.Action.ADD), token);
+                            new GroupParams(StringUtils.join(idList, ","), GroupParams.Action.ADD), token);
                     return;
                 }
             } catch (CatalogException e) {
@@ -357,7 +371,7 @@ public class UserManager extends AbstractManager {
             // Create new group associating it to the remote group
             try {
                 logger.info("Attempting to register group '{}' in study '{}'", internalGroup, study);
-                Group group = new Group(internalGroup, userList);
+                Group group = new Group(internalGroup, idList);
                 catalogManager.getStudyManager().createGroup(study, group, token);
             } catch (CatalogException e) {
                 logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage());
@@ -917,13 +931,17 @@ public class UserManager extends AbstractManager {
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");
         }
-        return user.first().getAccount().getAuthOrigin();
+        return user.first().getAccount().getAuthentication().getId();
     }
 
-    public QueryResult<User> importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String token)
+    public QueryResult<User> importFromExternalAuthOrigin(String authOrigin, Account.Type accountType, ObjectMap params, String token)
             throws CatalogException {
         if (!ROOT.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
             throw new CatalogException("Operation only valid for the OpenCGA root");
+        }
+
+        if (accountType == null) {
+            accountType = Account.Type.GUEST;
         }
 
         List<String> userList = params.getAsStringList("users");
@@ -939,14 +957,6 @@ public class UserManager extends AbstractManager {
         AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authOrigin);
         if (authenticationOrigin == null) {
             throw new CatalogException("The authentication origin id " + authOrigin + " does not correspond with any id in our database.");
-        }
-
-        // Check account type
-        if (accountType != null) {
-            if (!Account.FULL.equalsIgnoreCase(accountType) && !Account.GUEST.equalsIgnoreCase(accountType)) {
-                throw new CatalogException("The account type specified does not correspond with any of the valid ones. Valid account types:"
-                        + Account.FULL + " and " + Account.GUEST);
-            }
         }
 
         String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.GROUPS_SEARCH));
@@ -981,13 +991,6 @@ public class UserManager extends AbstractManager {
                 return new QueryResult<>("import", -1, 0, 0, "No users were found. Nothing to do.", "", Collections.emptyList());
             }
 
-            String type;
-            if (Account.GUEST.equalsIgnoreCase(accountType)) {
-                type = Account.GUEST;
-            } else {
-                type = Account.FULL;
-            }
-
             // Register users in catalog
             for (Attributes attrs : userAttrList) {
                 String displayname;
@@ -1014,7 +1017,8 @@ public class UserManager extends AbstractManager {
                 logger.debug("Registering {} in Catalog", uid);
 
                 // Create the user in catalog
-                Account account = new Account().setType(type).setAuthOrigin(authOrigin);
+                Account account = new Account().setType(accountType)
+                        .setAuthentication(new Account.AuthenticationOrigin(authOrigin, false));
 
                 // TODO: Parse expiration date
 //            if (params.get("expirationDate") != null) {

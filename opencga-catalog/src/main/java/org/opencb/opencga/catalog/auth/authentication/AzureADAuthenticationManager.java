@@ -308,7 +308,8 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
                     .append("AdditionalProperties", activeDirectoryUser.inner().additionalProperties());
             attributes.put("OPENCGA_REGISTRATION_TOKEN", azureADMap);
 
-            User user = new User(id, name, mail, "", "", new Account().setType(Account.GUEST).setAuthOrigin(originId),
+            User user = new User(id, name, mail, "", "", new Account().setType(Account.Type.GUEST).
+                    setAuthentication(new Account.AuthenticationOrigin(originId, false)),
                     User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(),
                     attributes);
 

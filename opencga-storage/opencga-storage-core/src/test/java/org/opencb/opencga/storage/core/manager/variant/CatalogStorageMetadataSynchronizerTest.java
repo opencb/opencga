@@ -79,7 +79,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new FileUtils(catalogManager);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null, null).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
