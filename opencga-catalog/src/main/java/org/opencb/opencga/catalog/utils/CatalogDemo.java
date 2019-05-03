@@ -17,14 +17,14 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -73,7 +73,7 @@ public final class CatalogDemo {
             String name = "User" + i;
             String password = id + "_pass";
             String email = id + "@gmail.com";
-            catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.FULL, null);
+            catalogManager.getUserManager().create(id, name, email, password, "organization", 2000L, Account.Type.FULL, null);
             userSessions.put(id, catalogManager.getUserManager().login(id, password));
         }
 

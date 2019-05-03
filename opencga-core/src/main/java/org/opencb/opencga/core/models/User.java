@@ -194,6 +194,11 @@ public class User {
     public User() {
     }
 
+    public User(String id, Account account) {
+        this(id, id, null, null, null, account, Status.READY, "", -1, -1, Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyMap(), Collections.emptyMap());
+    }
+
     public User(String id, String name, String email, String password, String organization, String status) {
         this(id, name, email, password, organization, null, status, "", -1, -1, new ArrayList<>(),
                 new ArrayList<>(0), new HashMap<>(), new HashMap<>());

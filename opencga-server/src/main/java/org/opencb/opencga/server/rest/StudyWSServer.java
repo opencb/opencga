@@ -391,11 +391,11 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
-        if (StringUtils.isNotEmpty(params.name)) {
+        if (StringUtils.isEmpty(params.name)) {
             params.name = params.id;
         }
 
-        if (StringUtils.isNotEmpty(params.id)) {
+        if (StringUtils.isEmpty(params.id)) {
             params.id = params.name;
         }
         if (StringUtils.isEmpty(params.id)) {

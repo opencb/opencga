@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.results;
 
+import org.opencb.opencga.core.models.Account;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -88,14 +90,14 @@ public class LdapImportResult {
         private String group;
         private String studyGroup;
         private String authOrigin;
-        private String type;
+        private Account.Type type;
         private String study;
 
         public Input() {
-            this(new LinkedList<>(), "", "", "", "", "");
+            this(new LinkedList<>(), "", "", "", null, "");
         }
 
-        public Input(List<String> users, String group, String studyGroup, String authOrigin, String type, String study) {
+        public Input(List<String> users, String group, String studyGroup, String authOrigin, Account.Type type, String study) {
             this.users = users;
             this.group = group;
             this.studyGroup = studyGroup;
@@ -153,11 +155,11 @@ public class LdapImportResult {
             return this;
         }
 
-        public String getType() {
+        public Account.Type getType() {
             return type;
         }
 
-        public Input setType(String type) {
+        public Input setType(Account.Type type) {
             this.type = type;
             return this;
         }
