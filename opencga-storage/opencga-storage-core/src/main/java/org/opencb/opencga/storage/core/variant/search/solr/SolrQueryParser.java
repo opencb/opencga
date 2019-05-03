@@ -415,7 +415,7 @@ public class SolrQueryParser {
     }
 
     private String parseGeneFilter(Query query) {
-        String filter;
+        String filter = "";
         String filter2 = "";
 
         List<Region> regions = new ArrayList<>();
@@ -459,10 +459,12 @@ public class SolrQueryParser {
         }
 
         // Goal:
+        //          PART 1                              --      PART 2
         //       [((xrefs OR regions) AND cts) OR (genes AND cts)] AND ... AND ...
+        //       [((xrefs OR regions) AND cts) OR (genes AND cts AND flags)] AND ... AND ...
         //       [((xrefs OR regions) AND cts) OR (genes AND biotypes)] AND ... AND ...
         //       [((xrefs OR regions) AND cts) OR (biotypes AND cts)] AND ... AND ...
-        //       ...
+        //       [((xrefs OR regions OR genes)) AND flags] AND ... AND ...
         //       ...
 
         // First part of filter
@@ -471,33 +473,19 @@ public class SolrQueryParser {
             // In this case, the resulting string will never be null, because there are some consequence types!!
             filter = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
         } else {
-            // No consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
-            // We must make an OR with xrefs, genes and regions and add it to the "AND" filter list
-            filter = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+            if (CollectionUtils.isNotEmpty(genes)) {
+                // Do not gene sin the Part 1
+                if (CollectionUtils.isNotEmpty(biotypes)) {
+//                    [((xrefs OR regions)) OR (genes AND biotypes)] AND ... AND ...
+
+                } else {
+                    // No consequence types: (xrefs OR regions OR genes) but we must add "OR genes", i.e.: xrefs OR regions OR genes
+                    // We must make an OR with xrefs, genes and regions and add it to the "AND" filter list
+                    filter = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+                }
+            }
         }
 
-//        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
-//            if (CollectionUtils.isNotEmpty(genes)) {
-//                // consequence types and genes
-//                String or = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
-//                if (xrefs.isEmpty() && regions.isEmpty()) {
-//                    // no xrefs or regions: genes AND cts
-//                    filter = buildGeneAndConsequenceType(genes, consequenceTypes);
-//                } else {
-//                    // otherwise: [((xrefs OR regions) AND cts) OR (genes AND cts)]
-//                    filter = "(" + or + ") OR (" + buildGeneAndConsequenceType(genes, consequenceTypes) + ")";
-//                }
-//            } else {
-//                // consequence types but no genes: (xrefs OR regions) AND cts
-//                // in this case, the resulting string will never be null, because there are some consequence types!!
-//                filter = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
-//            }
-//        } else {
-//            // No consequence types: (xrefs OR regions) but we must add "OR genes", i.e.: xrefs OR regions OR genes
-//            // We must make an OR with xrefs, genes and regions and add it to the "AND" filter list
-//            filter = buildXrefOrGeneOrRegion(xrefs, genes, regions);
-//        }
-//
         // Get the code for the second part of the filter
         String filterCode = "";
         filterCode += CollectionUtils.isNotEmpty(genes) ? "G": "";
@@ -505,7 +493,7 @@ public class SolrQueryParser {
         filterCode += StringUtils.isNotEmpty(query.getString(ANNOT_CONSEQUENCE_TYPE.key(), "")) ? "C": "";
         filterCode += StringUtils.isNotEmpty(query.getString(ANNOT_TRANSCRIPT_FLAG.key(), "")) ? "F": "";
 
-        List<String> defualtFilterList = new ArrayList<>();
+        List<String> defaultFilterList = new ArrayList<>();
         switch (filterCode) {
             case "GB":
                 filter2 = buildGeneAndBiotype(genes, biotypes);
@@ -531,31 +519,30 @@ public class SolrQueryParser {
                 break;
             default:
                 if (filterCode.contains("G")) {
-                    defualtFilterList.add(parseCategoryTermValue("xrefs", query.getString(GENE.key())));
+                    defaultFilterList.add(parseCategoryTermValue("xrefs", query.getString(GENE.key())));
                 }
 
                 if (filterCode.contains("B")) {
-                    defualtFilterList.add(parseCategoryTermValue("biotypes", query.getString(ANNOT_BIOTYPE.key())));
+                    defaultFilterList.add(parseCategoryTermValue("biotypes", query.getString(ANNOT_BIOTYPE.key())));
                 }
 
                 if (filterCode.contains("C")) {
-                    defualtFilterList.add(buildConsequenceTypeOrAnd(consequenceTypes, ctLogicalOperator));
+                    defaultFilterList.add(buildConsequenceTypeOrAnd(consequenceTypes, ctLogicalOperator));
                 }
 
                 if (filterCode.contains("F")) {
-                    defualtFilterList.add(parseCategoryTermValue("other",  "TRANS*"
-                            + query.getString(ANNOT_TRANSCRIPT_FLAG.key())));
+                    defaultFilterList.add(parseCategoryTermValue("other",  "TRANS*" + query.getString(ANNOT_TRANSCRIPT_FLAG.key())));
                 }
 
-                if (ListUtils.isNotEmpty(defualtFilterList)) {
-                    filter2 = StringUtils.join(defualtFilterList, " AND ");
+                if (ListUtils.isNotEmpty(defaultFilterList)) {
+                    filter2 = StringUtils.join(defaultFilterList, " AND ");
                 }
                 break;
         }
 
         if (StringUtils.isNotEmpty(filter)) {
             if (StringUtils.isNotEmpty(filter2)) {
-                if (defualtFilterList.size() == 0) {
+                if (defaultFilterList.size() == 0) {
                     return filter + " OR " + filter2;
                 } else {
                     return filter + " AND " + filter2;

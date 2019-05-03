@@ -480,8 +480,8 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
         query.put(ANNOT_XREF.key(), "RIPK2,NCF4");
+        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
