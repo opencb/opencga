@@ -492,9 +492,9 @@ var projectUidFqnMap = {};
 
 print("\nMigrating user");
 migrateCollection("user", {"uuid": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
-    if (isNotUndefinedOrNull(doc.projects) && doc.projects.length > 0) {
-        var changes = {};
+    var changes = {};
 
+    if (isNotUndefinedOrNull(doc.projects) && doc.projects.length > 0) {
         var projects = [];
         for (var i in doc.projects) {
             var project = doc.projects[i];
@@ -516,10 +516,19 @@ migrateCollection("user", {"uuid": {$exists: false}}, {attributes: 0}, function(
         if (projects.length > 0) {
             changes["projects"] = projects;
         }
+    }
 
-        if (Object.keys(changes).length > 0) {
-            bulk.find({"_id": doc._id}).updateOne({"$set": changes});
-        }
+    // #1268
+    var account = doc.account;
+    account["type"] = account.type.toUpperCase();
+    account["authentication"] = {
+        id: account.authOrigin,
+        application: false
+    };
+    changes['account'] = account;
+
+    if (Object.keys(changes).length > 0) {
+        bulk.find({"_id": doc._id}).updateOne({"$set": changes});
     }
 });
 
