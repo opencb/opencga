@@ -468,20 +468,25 @@ public class SolrQueryParser {
         //       ...
 
         // First part of filter
+        boolean ctAlreadyDone = false;
+        boolean geneAlreadyDone = false;
         if (CollectionUtils.isNotEmpty(consequenceTypes)) {
             // Consequence types: (xrefs OR regions) AND cts
             // In this case, the resulting string will never be null, because there are some consequence types!!
-            filter = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
+            if (CollectionUtils.isNotEmpty(xrefs) || CollectionUtils.isNotEmpty(regions)) {
+                filter = buildXrefOrRegionAndConsequenceType(xrefs, regions, consequenceTypes, ctLogicalOperator);
+                ctAlreadyDone = true;
+            }
         } else {
             if (CollectionUtils.isNotEmpty(genes)) {
-                // Do not gene sin the Part 1
+                // Do not include genes in the Part 1
                 if (CollectionUtils.isNotEmpty(biotypes)) {
-//                    [((xrefs OR regions)) OR (genes AND biotypes)] AND ... AND ...
-
+                    //  [((xrefs OR regions)) OR (genes AND biotypes)] AND ... AND ...
                 } else {
                     // No consequence types: (xrefs OR regions OR genes) but we must add "OR genes", i.e.: xrefs OR regions OR genes
                     // We must make an OR with xrefs, genes and regions and add it to the "AND" filter list
                     filter = buildXrefOrGeneOrRegion(xrefs, genes, regions);
+                    geneAlreadyDone = true;
                 }
             }
         }
@@ -518,7 +523,7 @@ public class SolrQueryParser {
                 filter2 =  buildGeneAndBiotypeAndConsequenceTypeAndFlag(genes, biotypes, consequenceTypes, flags);
                 break;
             default:
-                if (filterCode.contains("G")) {
+                if (filterCode.contains("G") && !geneAlreadyDone) {
                     defaultFilterList.add(parseCategoryTermValue("xrefs", query.getString(GENE.key())));
                 }
 
@@ -526,7 +531,7 @@ public class SolrQueryParser {
                     defaultFilterList.add(parseCategoryTermValue("biotypes", query.getString(ANNOT_BIOTYPE.key())));
                 }
 
-                if (filterCode.contains("C")) {
+                if (filterCode.contains("C") && !ctAlreadyDone) {
                     defaultFilterList.add(buildConsequenceTypeOrAnd(consequenceTypes, ctLogicalOperator));
                 }
 
@@ -556,7 +561,8 @@ public class SolrQueryParser {
             }
         }
 
-        return "";
+        // Just regions or xrefs query
+        return buildXrefOrGeneOrRegion(xrefs, null, regions);
     }
 
     private String parseFacet(String facetQuery) {
