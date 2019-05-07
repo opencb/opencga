@@ -162,6 +162,19 @@ public class SolrQueryParserTest {
     }
 
     @Test
+    public void parsePhylopAndBiotype() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_BIOTYPE.key(), "protein_coding");
+        query.put(ANNOT_CONSERVATION.key(), "phylop<-1.0");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=biotypes:\"protein_coding\"&fq=phylop:{-100.0+TO+-1.0}", solrQuery.toString());
+    }
+
+    @Test
     public void parsePhylopAndGeneAndPop() {
         QueryOptions queryOptions = new QueryOptions();
 
@@ -480,8 +493,8 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
         query.put(ANNOT_XREF.key(), "RIPK2,NCF4");
+        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
@@ -519,7 +532,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\"))+OR+(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\")", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\")+OR+geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\"", solrQuery.toString());
     }
 
     @Test
@@ -582,19 +595,6 @@ public class SolrQueryParserTest {
     }
 
     @Test
-    public void parseClinVars() {
-        QueryOptions queryOptions = new QueryOptions();
-
-        Query query = new Query();
-
-        query.put(ANNOT_CLINVAR.key(), "RCV000010071");
-
-        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-        display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"RCV000010071\"", solrQuery.toString());
-    }
-
-    @Test
     public void parseFormat() {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES + "," + VariantField.STUDIES_SAMPLES_DATA);
@@ -640,7 +640,7 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
 
-        String fl = ",sampleFormat__*__format,sampleFormat__platinum__sampleName,sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
+        String fl = ",sampleFormat__platinum__sampleName,sampleFormat__platinum__format,sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
         assertEquals(flBase + fl + "&q=*:*&fq=((gt__" + studyName + "__NA12878:\"1/1\")+OR+(gt__" + studyName + "__NA12877:\"1/0\"))", solrQuery.toString());
     }
 
