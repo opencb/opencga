@@ -108,6 +108,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, query, null, sessionIdUser);
         assertEquals(1, sampleQueryResult.getNumResults());
         assertEquals(1, sampleQueryResult.first().getVersion());
+
+        List<QueryResult<Sample>> testSample = catalogManager.getSampleManager()
+                .get(studyFqn, Collections.singletonList("testSample"), new Query(Constants.ALL_VERSIONS, true), null, false, sessionIdUser);
+        assertEquals(1, testSample.size());
+        assertEquals(4, testSample.get(0).getResult().size());
     }
 
     @Test

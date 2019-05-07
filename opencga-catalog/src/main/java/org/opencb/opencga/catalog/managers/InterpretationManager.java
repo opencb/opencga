@@ -57,13 +57,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    QueryResult<Interpretation> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
         }
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
@@ -72,9 +75,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
 //                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
 //                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
         if (interpretationQueryResult.getNumResults() == 0) {
-            interpretationQueryResult = interpretationDBAdaptor.get(query, queryOptions);
+            interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
             if (interpretationQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Interpretation " + entry + " not found");
             } else {
@@ -99,15 +102,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    InternalGetQueryResult<Interpretation> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user,
-                                                       boolean silent) throws CatalogException {
+    InternalGetQueryResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                                       String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing interpretation entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-        Query query = new Query(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Interpretation, String> interpretationStringFunction = Interpretation::getId;
         InterpretationDBAdaptor.QueryParams idQueryParam = null;
@@ -124,12 +128,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
 
         if (interpretationQueryResult.getNumResults() != uniqueList.size() && !silent) {
             throw CatalogException.notFound("interpretations",
@@ -159,7 +163,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretationQueryResult.setNumResults(interpretationList.size());
         interpretationQueryResult.setNumTotalResults(interpretationList.size());
 
-        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationQueryResult, silent);
+        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationQueryResult, silent, false);
     }
 
     public QueryResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,

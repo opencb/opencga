@@ -89,14 +89,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    QueryResult<Sample> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Sample> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
         }
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
@@ -104,15 +106,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //               SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
 //               SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
 //                SampleDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(queryCopy, queryOptions, user);
         if (sampleQueryResult.getNumResults() == 0) {
-            sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+            sampleQueryResult = sampleDBAdaptor.get(queryCopy, queryOptions);
             if (sampleQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Sample " + entry + " not found");
             } else {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the sample " + entry);
             }
-        } else if (sampleQueryResult.getNumResults() > 1) {
+        } else if (sampleQueryResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
             throw new CatalogException("More than one sample found based on " + entry);
         } else {
             return sampleQueryResult;
@@ -120,8 +122,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    InternalGetQueryResult<Sample> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<Sample> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                               String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing sample entries.");
         }
@@ -129,7 +131,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
 
-        Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
         Function<Sample, String> sampleStringFunction = Sample::getId;
         SampleDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
@@ -145,18 +149,19 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(queryCopy, queryOptions, user);
 
-        if (silent || sampleQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleQueryResult, silent);
+        if (silent || sampleQueryResult.getNumResults() >= uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleQueryResult, silent,
+                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
         }
         // Query without adding the user check
-        QueryResult<Sample> resultsNoCheck = sampleDBAdaptor.get(query, queryOptions);
+        QueryResult<Sample> resultsNoCheck = sampleDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == sampleQueryResult.getNumResults()) {
             throw CatalogException.notFound("samples", getMissingFields(uniqueList, sampleQueryResult.getResult(), sampleStringFunction));

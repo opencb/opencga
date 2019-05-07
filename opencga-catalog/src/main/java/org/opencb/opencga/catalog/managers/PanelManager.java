@@ -75,25 +75,27 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    QueryResult<Panel> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Panel> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
         }
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
         if (panelQueryResult.getNumResults() == 0) {
-            panelQueryResult = panelDBAdaptor.get(query, queryOptions);
+            panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions);
             if (panelQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Panel " + entry + " not found");
             } else {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the panel " + entry);
             }
-        } else if (panelQueryResult.getNumResults() > 1) {
+        } else if (panelQueryResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
             throw new CatalogException("More than one panel found based on " + entry);
         } else {
             return panelQueryResult;
@@ -101,15 +103,16 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    InternalGetQueryResult<Panel> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<Panel> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                              String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing panel entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Panel, String> panelStringFunction = Panel::getId;
         PanelDBAdaptor.QueryParams idQueryParam = null;
@@ -126,17 +129,18 @@ public class PanelManager extends ResourceManager<Panel> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, queryOptions, user);
-        if (silent || panelQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, panelStringFunction, panelQueryResult, silent);
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
+        if (silent || panelQueryResult.getNumResults() >= uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, panelStringFunction, panelQueryResult, silent,
+                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
         }
         // Query without adding the user check
-        QueryResult<Panel> resultsNoCheck = panelDBAdaptor.get(query, queryOptions);
+        QueryResult<Panel> resultsNoCheck = panelDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == panelQueryResult.getNumResults()) {
             throw CatalogException.notFound("panels", getMissingFields(uniqueList, panelQueryResult.getResult(), panelStringFunction));

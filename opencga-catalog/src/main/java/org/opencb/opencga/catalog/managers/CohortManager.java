@@ -86,20 +86,23 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    QueryResult<Cohort> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Cohort> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(CohortDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(CohortDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(CohortDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(CohortDBAdaptor.QueryParams.ID.key(), entry);
         }
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(queryCopy, queryOptions, user);
         if (cohortQueryResult.getNumResults() == 0) {
-            cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
+            cohortQueryResult = cohortDBAdaptor.get(queryCopy, queryOptions);
             if (cohortQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Cohort " + entry + " not found");
             } else {
@@ -113,15 +116,16 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    InternalGetQueryResult<Cohort> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<Cohort> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                               String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing cohort entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Cohort, String> cohortStringFunction = Cohort::getId;
         CohortDBAdaptor.QueryParams idQueryParam = null;
@@ -138,18 +142,18 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(queryCopy, queryOptions, user);
 
         if (silent || cohortQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, cohortStringFunction, cohortQueryResult, silent);
+            return keepOriginalOrder(uniqueList, cohortStringFunction, cohortQueryResult, silent, false);
         }
         // Query without adding the user check
-        QueryResult<Cohort> resultsNoCheck = cohortDBAdaptor.get(query, queryOptions);
+        QueryResult<Cohort> resultsNoCheck = cohortDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == cohortQueryResult.getNumResults()) {
             throw CatalogException.notFound("cohorts",

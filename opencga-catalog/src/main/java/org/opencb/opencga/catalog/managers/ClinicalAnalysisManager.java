@@ -76,14 +76,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    QueryResult<ClinicalAnalysis> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<ClinicalAnalysis> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
         }
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
@@ -92,9 +95,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 //                ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
 //                ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key(),
 //                ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalDBAdaptor.get(query, queryOptions, user);
+        QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalDBAdaptor.get(queryCopy, queryOptions, user);
         if (analysisQueryResult.getNumResults() == 0) {
-            analysisQueryResult = clinicalDBAdaptor.get(query, queryOptions);
+            analysisQueryResult = clinicalDBAdaptor.get(queryCopy, queryOptions);
             if (analysisQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Clinical analysis " + entry + " not found");
             } else {
@@ -109,8 +112,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    InternalGetQueryResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user,
-                                                         boolean silent) throws CatalogException {
+    InternalGetQueryResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, @Nullable Query query,
+                                                         QueryOptions options, String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing clinical analysis entries.");
         }
@@ -118,7 +121,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
-        Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
         Function<ClinicalAnalysis, String> clinicalStringFunction = ClinicalAnalysis::getId;
         ClinicalAnalysisDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
@@ -134,18 +139,18 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalDBAdaptor.get(query, queryOptions, user);
+        QueryResult<ClinicalAnalysis> analysisQueryResult = clinicalDBAdaptor.get(queryCopy, queryOptions, user);
 
         if (silent || analysisQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, clinicalStringFunction, analysisQueryResult, silent);
+            return keepOriginalOrder(uniqueList, clinicalStringFunction, analysisQueryResult, silent, false);
         }
         // Query without adding the user check
-        QueryResult<ClinicalAnalysis> resultsNoCheck = clinicalDBAdaptor.get(query, queryOptions);
+        QueryResult<ClinicalAnalysis> resultsNoCheck = clinicalDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == analysisQueryResult.getNumResults()) {
             throw CatalogException.notFound("clinical analyses",

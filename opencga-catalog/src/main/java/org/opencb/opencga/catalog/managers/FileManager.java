@@ -132,7 +132,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    QueryResult<File> internalGet(long studyUid, String fileName, QueryOptions options, String user) throws CatalogException {
+    QueryResult<File> internalGet(long studyUid, String fileName, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(fileName);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
@@ -148,10 +149,10 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         // We search the file
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(queryParam.key(), fileName);
-        QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, queryOptions, user);
+        QueryResult<File> pathQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
         if (pathQueryResult.getNumResults() > 1) {
             throw new CatalogException("Error: More than one file id found based on " + fileName);
         } else if (pathQueryResult.getNumResults() == 1) {
@@ -162,10 +163,10 @@ public class FileManager extends AnnotationSetManager<File> {
             queryParam = FileDBAdaptor.QueryParams.NAME;
 
             // We search as a fileName as well
-            query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+            queryCopy = query == null ? new Query() : new Query(query);
+            queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
-            QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, queryOptions, user);
+            QueryResult<File> nameQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
             if (nameQueryResult.getNumResults() > 1) {
                 throw new CatalogException("Error: More than one file id found based on " + fileName);
             } else if (nameQueryResult.getNumResults() == 1) {
@@ -175,14 +176,14 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // The file could not be found or the user does not have permissions to see it
         // Check if the file can be found without adding the user restriction
-        QueryResult<File> resultsNoCheck = fileDBAdaptor.get(query, queryOptions);
+        QueryResult<File> resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
         if (resultsNoCheck.getNumResults() == 1) {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the file " + fileName);
         }
         if (queryParam == FileDBAdaptor.QueryParams.NAME) {
             // The last search was performed by name but we can also search by path just in case
-            query.put(FileDBAdaptor.QueryParams.PATH.key(), fileName);
-            resultsNoCheck = fileDBAdaptor.get(query, queryOptions);
+            queryCopy.put(FileDBAdaptor.QueryParams.PATH.key(), fileName);
+            resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
             if (resultsNoCheck.getNumResults() == 1) {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the file " + fileName);
             }
@@ -192,15 +193,16 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    InternalGetQueryResult<File> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<File> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                             String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing file entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<File, String> fileStringFunction = File::getPath;
         boolean canBeSearchedAsName = true;
@@ -231,22 +233,23 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Found uuids and paths in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), correctedFileList);
+        queryCopy.put(idQueryParam.key(), correctedFileList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions, user);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
         if (fileQueryResult.getNumResults() != correctedFileList.size() && idQueryParam == FileDBAdaptor.QueryParams.PATH
                 && canBeSearchedAsName) {
             // We also search by name
-            query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+            queryCopy = query == null ? new Query() : new Query(query);
+            queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(FileDBAdaptor.QueryParams.NAME.key(), correctedFileList);
 
             // Ensure the field by which we are querying for will be kept in the results
             queryOptions = keepFieldInQueryOptions(queryOptions, FileDBAdaptor.QueryParams.NAME.key());
 
-            QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, queryOptions, user);
+            QueryResult<File> nameQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
             if (nameQueryResult.getNumResults() > fileQueryResult.getNumResults()) {
                 fileQueryResult = nameQueryResult;
                 fileStringFunction = File::getName;
@@ -256,19 +259,20 @@ public class FileManager extends AnnotationSetManager<File> {
         if (fileQueryResult.getNumResults() > correctedFileList.size()) {
             throw new CatalogException("Error: More than one file found for at least one of the files introduced");
         } else if (silent || fileQueryResult.getNumResults() == correctedFileList.size()) {
-            return keepOriginalOrder(correctedFileList, fileStringFunction, fileQueryResult, silent);
+            return keepOriginalOrder(correctedFileList, fileStringFunction, fileQueryResult, silent, false);
         } else {
             // The file could not be found or the user does not have permissions to see it
             // Check if the file can be found without adding the user restriction
-            QueryResult<File> resultsNoCheck = fileDBAdaptor.get(query, queryOptions);
+            QueryResult<File> resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
             if (resultsNoCheck.getNumResults() == correctedFileList.size()) {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the files.");
             }
             if (canBeSearchedAsName) {
                 // The last query was performed by name, so we now search by path
-                query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                queryCopy = query == null ? new Query() : new Query(query);
+                queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                         .append(FileDBAdaptor.QueryParams.PATH.key(), correctedFileList);
-                resultsNoCheck = fileDBAdaptor.get(query, queryOptions);
+                resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
                 if (resultsNoCheck.getNumResults() == correctedFileList.size()) {
                     throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the "
                             + "files.");
