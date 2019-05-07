@@ -55,10 +55,10 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
 
     public Panel(String id, String name, List<PanelCategory> categories, List<Phenotype> phenotypes, List<String> tags,
                  List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
-                 Map<String, Integer> stats, int release, int version, String author, SourcePanel source, Status status,
+                 List<STR> strs, Map<String, Integer> stats, int release, int version, String author, SourcePanel source, Status status,
                  String description, Map<String, Object> attributes) {
-        super(id, name, categories, phenotypes, tags, variants, genes, regions, stats, source, TimeUtils.getTime(), TimeUtils.getTime(),
-                description, attributes);
+        super(id, name, categories, phenotypes, tags, variants, genes, strs, regions, stats, source, TimeUtils.getTime(),
+                TimeUtils.getTime(), description, attributes);
         this.release = release;
         this.version = version;
         this.author = author;
