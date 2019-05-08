@@ -161,11 +161,36 @@ public enum GenotypeClass {
     }
 
     public static List<String> filter(List<String> gts, List<String> loadedGts, List<String> defaultGts) {
-        Set<String> filteredGts = new HashSet<>(gts.size());
+        Set<String> filteredGts = new LinkedHashSet<>(gts.size());
         for (String gt : gts) {
             GenotypeClass genotypeClass = GenotypeClass.from(gt);
             if (genotypeClass == null) {
-                filteredGts.add(gt);
+                Genotype genotype = new Genotype(gt);
+
+                // Normalize if needed
+                if (!genotype.isPhased()) {
+                    genotype.normalizeAllelesIdx();
+                }
+                filteredGts.add(genotype.toString());
+
+                // If unphased, add phased genotypes, if any
+                if (!genotype.isPhased()) {
+                    genotype.setPhased(true);
+                    String phased = genotype.toString();
+                    if (loadedGts.contains(phased)) {
+                        filteredGts.add(phased);
+                    }
+                    int[] allelesIdx = genotype.getAllelesIdx();
+                    if (allelesIdx.length == 2) {
+                        int allelesIdx0 = allelesIdx[0];
+                        allelesIdx[0] = allelesIdx[1];
+                        allelesIdx[1] = allelesIdx0;
+                        phased = genotype.toString();
+                        if (loadedGts.contains(phased)) {
+                            filteredGts.add(phased);
+                        }
+                    }
+                }
             } else {
                 filteredGts.addAll(genotypeClass.filter(loadedGts));
                 filteredGts.addAll(genotypeClass.filter(defaultGts));
