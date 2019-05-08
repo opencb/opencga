@@ -33,14 +33,17 @@ import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -96,6 +99,16 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
             StorageEngineException, IOException {
         StopWatch watcher = StopWatch.createStarted();
 
+        Query query = new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key());
+        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(query, options, token);
+
+        if (projectQueryResult.getNumResults() != 1) {
+            throw new CatalogException("Project not found for study " + studyStr + ". Found " + projectQueryResult.getNumResults()
+                    + " projects.");
+        }
+        String assembly = projectQueryResult.first().getOrganism().getAssembly();
+
         // Get and check clinical analysis and proband
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
         Individual proband = getProband(clinicalAnalysis);
@@ -136,7 +149,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chVariantMap))));
         futureList.add(threadPool.submit(getNamedThread(DE_NOVO.name(), () -> deNovo(resultMap))));
         futureList.add(threadPool.submit(getNamedThread("REGION", () -> region(diseasePanels, sampleMap.values(),
-                regionVariants))));
+                assembly, regionVariants))));
         threadPool.shutdown();
 
         threadPool.awaitTermination(2, TimeUnit.MINUTES);
@@ -267,7 +280,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         return true;
     }
 
-    private Boolean region(List<DiseasePanel> diseasePanelList, Collection<String> samples, List<Variant> result) {
+    private Boolean region(List<DiseasePanel> diseasePanelList, Collection<String> samples, String assembly, List<Variant> result) {
         List<Region> regions = new ArrayList<>();
         if (diseasePanelList == null || diseasePanelList.isEmpty()) {
             return true;
@@ -276,9 +289,18 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         for (DiseasePanel diseasePanel : diseasePanelList) {
             if (diseasePanel.getRegions() != null) {
                 for (DiseasePanel.RegionPanel region : diseasePanel.getRegions()) {
-                    regions.add(Region.parseRegion(region.getId()));
+                    for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
+                        if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
+                            regions.add(Region.parseRegion(coordinate.getLocation()));
+                        }
+                    }
                 }
             }
+        }
+
+        if (regions.isEmpty()) {
+            logger.debug("Panel doesn't have any regions. Skipping region query.");
+            return true;
         }
 
         Query query = new Query()

@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -291,24 +290,10 @@ public class ProjectManager extends AbstractManager {
 
         // If study is provided, we need to check if it will be study alias or id
         if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
-            List<String> studyList = query.getAsStringList(ProjectDBAdaptor.QueryParams.STUDY.key());
-            List<Long> idList = new ArrayList<>();
-            List<String> aliasList = new ArrayList<>();
-            for (String studyStr : studyList) {
-                if (StringUtils.isNumeric(studyStr) && Long.parseLong(studyStr) > configuration.getCatalog().getOffset()) {
-                    idList.add(Long.parseLong(studyStr));
-                } else {
-                    aliasList.add(studyStr);
-                }
-            }
-
+            List<Study> studies = catalogManager.getStudyManager()
+                    .resolveIds(query.getAsStringList(ProjectDBAdaptor.QueryParams.STUDY.key()), userId);
             query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
-            if (CollectionUtils.isNotEmpty(idList)) {
-                query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), StringUtils.join(idList, ","));
-            }
-            if (CollectionUtils.isNotEmpty(aliasList)) {
-                query.put(ProjectDBAdaptor.QueryParams.STUDY_ID.key(), StringUtils.join(aliasList, ","));
-            }
+            query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), studies.stream().map(Study::getUid).collect(Collectors.toList()));
         }
 
         return projectDBAdaptor.get(query, options, userId);
