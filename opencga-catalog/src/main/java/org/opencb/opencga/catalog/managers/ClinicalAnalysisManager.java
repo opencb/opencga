@@ -588,6 +588,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 case FAMILY:
                 case PROBAND:
                 case COMMENTS:
+                case ALERTS:
                 case FLAGS:
                 case ROLE_TO_PROBAND:
                     break;
