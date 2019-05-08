@@ -26,6 +26,7 @@ import org.opencb.biodata.models.clinical.interpretation.exceptions.Interpretati
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -44,10 +45,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -118,6 +116,8 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap = new HashMap<>();
         Map<String, List<Variant>> chVariantMap = new HashMap<>();
 
+        List<Variant> regionVariants = new ArrayList<>();
+
         ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
         List<Future<Boolean>> futureList = new ArrayList<>(8);
@@ -135,6 +135,8 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHONDRIAL, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chVariantMap))));
         futureList.add(threadPool.submit(getNamedThread(DE_NOVO.name(), () -> deNovo(resultMap))));
+        futureList.add(threadPool.submit(getNamedThread("REGION", () -> region(diseasePanels, sampleMap.values(),
+                regionVariants))));
         threadPool.shutdown();
 
         threadPool.awaitTermination(2, TimeUnit.MINUTES);
@@ -158,6 +160,16 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 }
                 variantMoIMap.get(variant.getId()).add(entry.getKey());
             }
+        }
+
+        // Add region variants to variantList and variantMoIMap
+        for (Variant variant : regionVariants) {
+            if (!variantMoIMap.containsKey(variant.getId())) {
+                variantMoIMap.put(variant.getId(), new ArrayList<>());
+                variantList.add(variant);
+            }
+            // We add these variants with the ModeOfInheritance UNKNOWN
+            variantMoIMap.get(variant.getId()).add(UNKNOWN);
         }
 
         // Primary findings,
@@ -247,6 +259,40 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
             if (ListUtils.isNotEmpty(execute.getResult())) {
                 resultMap.put(DE_NOVO, execute.getResult());
             }
+        } catch (Exception e) {
+            logger.error("{}", e.getMessage(), e);
+            return false;
+        }
+
+        return true;
+    }
+
+    private Boolean region(List<DiseasePanel> diseasePanelList, Collection<String> samples, List<Variant> result) {
+        List<Region> regions = new ArrayList<>();
+        if (diseasePanelList == null || diseasePanelList.isEmpty()) {
+            return true;
+        }
+
+        for (DiseasePanel diseasePanel : diseasePanelList) {
+            if (diseasePanel.getRegions() != null) {
+                for (DiseasePanel.RegionPanel region : diseasePanel.getRegions()) {
+                    regions.add(Region.parseRegion(region.getId()));
+                }
+            }
+        }
+
+        Query query = new Query()
+                .append(VariantQueryParam.REGION.key(), regions)
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
+                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
+                .append(VariantQueryParam.SAMPLE.key(), samples);
+
+        logger.debug("Region query: {}", query.safeToString());
+
+        try {
+            result.addAll(variantStorageManager.get(query, QueryOptions.empty(), token).getResult());
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
             return false;
