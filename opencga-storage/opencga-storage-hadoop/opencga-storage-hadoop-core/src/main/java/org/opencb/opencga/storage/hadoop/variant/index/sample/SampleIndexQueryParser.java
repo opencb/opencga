@@ -52,6 +52,8 @@ public class SampleIndexQueryParser {
         if (isValidParam(query, GENOTYPE)) {
             HashMap<Object, List<String>> gtMap = new HashMap<>();
             QueryOperation queryOperation = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), gtMap);
+            boolean allValid = true;
+            boolean anyValid = false;
             for (List<String> gts : gtMap.values()) {
                 boolean valid = true;
                 for (String gt : gts) {
@@ -60,19 +62,16 @@ public class SampleIndexQueryParser {
                     valid &= SampleIndexDBLoader.validGenotype(gt);
                     valid &= !isNegated(gt);
                 }
-                if (queryOperation == QueryOperation.AND) {
-                    // Intersect sample filters. If any sample filter is valid, the SampleIndex can be used.
-                    if (valid) {
-                        return true;
-                    }
-                } else {
-                    // Union of all sample filters. All sample filters must be valid to use the SampleIndex.
-                    if (!valid) {
-                        return false;
-                    }
-                }
+                anyValid |= valid;
+                allValid &= valid;
             }
-            return true;
+            if (queryOperation == QueryOperation.AND) {
+                // Intersect sample filters. If any sample filter is valid, the SampleIndex can be used.
+                return anyValid;
+            } else {
+                // Union of all sample filters. All sample filters must be valid to use the SampleIndex.
+                return allValid;
+            }
         }
         if (isValidParam(query, SAMPLE, true)) {
             return true;
