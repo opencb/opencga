@@ -982,8 +982,13 @@ public class SolrQueryParser {
             QueryOperation queryOperation = parseOrAndFilter(param, value);
             String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
 
-//            Matcher matcher;
+            boolean addOr = true;
+
             List<String> values = splitValue(value, queryOperation);
+            if (name.equals("stats")) {
+                addOr = (getNumberOfStudies(values, param, value, defaultStudy) > 1);
+            }
+
 
             List<String> list = new ArrayList<>(values.size());
             for (String v : values) {
@@ -1014,9 +1019,17 @@ public class SolrQueryParser {
                     pop = studyPop;
                 }
 
+                if (name.equals("popFreq")) {
+                    if (study.equals("GNOMAD_GENOMES") && pop.equals("ALL")) {
+                        addOr = false;
+                    } else {
+                        addOr = true;
+                    }
+                }
+
                 // concat expression, e.g.: value:[0 TO 12]
                 list.add(getRange(name + VariantSearchUtils.FIELD_SEPARATOR + study
-                        + VariantSearchUtils.FIELD_SEPARATOR, pop, freqValue[0], freqValue[1]));
+                        + VariantSearchUtils.FIELD_SEPARATOR, pop, freqValue[0], freqValue[1], addOr));
             }
             if (list.size() == 1) {
                 sb.append(list.get(0));
@@ -1025,6 +1038,33 @@ public class SolrQueryParser {
             }
         }
         return sb.toString();
+    }
+
+    private int getNumberOfStudies(List<String> values, VariantQueryParam paramName, String paramValue, String defaultStudy) {
+        Set<String> studies = new HashSet<>();
+
+        for (String v : values) {
+            String[] keyOpValue = splitOperator(v);
+
+            String studyPop = keyOpValue[0];
+            if (studyPop == null) {
+                throw VariantQueryException.malformedParam(paramName, paramValue);
+            }
+
+            String[] studyPopSplit = splitStudyResource(studyPop);
+            String study;
+            if (studyPopSplit.length == 2) {
+                study = VariantSearchToVariantConverter.studyIdToSearchModel(studyPopSplit[0]);
+            } else {
+                if (StringUtils.isEmpty(defaultStudy)) {
+                    throw VariantQueryException.malformedParam(paramName, paramValue, "Missing study");
+                }
+                study = defaultStudy;
+            }
+            studies.add(study);
+        }
+
+        return studies.size();
     }
 
     private String[] getMafOrRefFrequency(String type, String operator, String value) {
@@ -1094,6 +1134,10 @@ public class SolrQueryParser {
      * @return          Solr query range
      */
     public String getRange(String prefix, String name, String op, String value) {
+        return getRange(prefix, name, op, value, true);
+    }
+
+    public String getRange(String prefix, String name, String op, String value, boolean addOr) {
         StringBuilder sb = new StringBuilder();
         switch (op) {
             case "=":
@@ -1165,8 +1209,10 @@ public class SolrQueryParser {
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append("(");
                     sb.append(prefix).append(getSolrFieldName(name)).append(":[0 TO ").append(value).append(rightCloseOperator);
-                    sb.append(" OR ");
-                    sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
+                    if (addOr) {
+                        sb.append(" OR ");
+                        sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
+                    }
                     sb.append(")");
                 } else {
                     sb.append(prefix).append(getSolrFieldName(name)).append(":[")
@@ -1179,8 +1225,10 @@ public class SolrQueryParser {
                 sb.append("(");
                 if (StringUtils.isNotEmpty(prefix) && (prefix.startsWith("popFreq_") || prefix.startsWith("stats_"))) {
                     sb.append(prefix).append(getSolrFieldName(name)).append(":").append(leftCloseOperator).append(value).append(" TO *]");
-                    sb.append(" OR ");
-                    sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
+                    if (addOr) {
+                        sb.append(" OR ");
+                        sb.append("(* -").append(prefix).append(getSolrFieldName(name)).append(":*)");
+                    }
                 } else {
                     // attention: negative values must be escaped
                     sb.append(prefix).append(getSolrFieldName(name)).append(":").append(leftCloseOperator).append(value).append(" TO *]");
