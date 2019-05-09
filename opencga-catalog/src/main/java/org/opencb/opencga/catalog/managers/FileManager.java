@@ -298,7 +298,12 @@ public class FileManager extends AnnotationSetManager<File> {
 
     @Deprecated
     public URI getUri(long studyId, String filePath) throws CatalogException {
-        ParamUtils.checkObj(filePath, "filePath");
+        if (StringUtils.isEmpty(filePath)) {
+            URI studyUri = getStudyUri(studyId);
+            return filePath.isEmpty()
+                    ? studyUri
+                    : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
+        }
 
         List<File> parents = getParents(false, INCLUDE_FILE_URI_PATH, filePath, studyId).getResult();
 
