@@ -26,6 +26,30 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
 public class SampleIndexQueryParserTest {
 
     @Test
+    public void validSampleIndexQueryTest() {
+        // Single sample
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(SAMPLE.key(), "S1")));
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1")));
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./1")));
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,0/1")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:!1/1"))); // Negated
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:0/0")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./0")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./.")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.")));
+
+        // ALL samples (and)
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:0/1"))); // Any valid
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:./.")));
+
+        // ANY sample (or)
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,S2:0/1"))); // all must be valid
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:0/1")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:./.")));
+
+    }
+
+    @Test
     public void parseFileMaskTest() {
         assertArrayEquals(new byte[]{EMPTY_MASK, EMPTY_MASK}, parseFileMask(new Query(), "", null));
         assertArrayEquals(new byte[]{SNV_MASK, SNV_MASK}, parseFileMask(new Query(TYPE.key(), "SNV"), "", null));

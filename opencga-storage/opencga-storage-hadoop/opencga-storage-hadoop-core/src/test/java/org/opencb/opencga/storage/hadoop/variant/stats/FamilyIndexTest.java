@@ -159,9 +159,13 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertThat(result, everyResult(all, withStudy(study, allOf(
                 withSampleData(child, "GT", is("0/1")),
                 withSampleData(mother, "GT", is("0/0"))))));
+    }
 
+    @Test
+    public void testParentsGtCode() {
+        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query(VariantQueryParam.INCLUDE_GENOTYPE.key(), true), new QueryOptions());
 
-        query = new Query()
+        Query query = new Query()
                 .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
                         + ";" + father + ":0/0"
                         + ";" + mother + ":0/0")
@@ -170,13 +174,13 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 /*.append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
                 .append(VariantQueryParam.QUAL.key(), ">30")*/;
 
-        sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
+        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
         assertEquals(1, sampleIndexQuery.getSamplesMap().size());
         assertNotNull(sampleIndexQuery.getFatherFilterMap().get(child));
         assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
 
 
-        result = variantStorageEngine.get(query, new QueryOptions());
+        QueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
         for (Variant variant : result.getResult()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
         }
@@ -184,7 +188,49 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 withSampleData(child, "GT", is("0/1")),
                 withSampleData(father, "GT", is("0/0")),
                 withSampleData(mother, "GT", is("0/0"))))));
+    }
+
+    @Test
+    public void testParentsMissingGtCode() {
+        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query(VariantQueryParam.INCLUDE_GENOTYPE.key(), true), new QueryOptions());
+
+        Query query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
+                        + ";" + father + ":./."
+                        + ";" + mother + ":./.")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
+                /*.append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .append(VariantQueryParam.QUAL.key(), ">30")*/;
+
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(query)));
+        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
+        assertEquals(1, sampleIndexQuery.getSamplesMap().size());
+        assertNotNull(sampleIndexQuery.getFatherFilterMap().get(child));
+        assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
 
 
+        QueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
+        }
+        assertThat(result, everyResult(all, withStudy(study, allOf(
+                withSampleData(child, "GT", is("0/1")),
+                withSampleData(father, "GT", is("./.")),
+                withSampleData(mother, "GT", is("./."))))));
+    }
+
+    @Test
+    public void testParentsMissingAllGtCode() {
+        Query query = new Query()
+                .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1,./."
+                        + ";" + father + ":./."
+                        + ";" + mother + ":./.")
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
+                /*.append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
+                .append(VariantQueryParam.QUAL.key(), ">30")*/;
+
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(query)));
     }
 }

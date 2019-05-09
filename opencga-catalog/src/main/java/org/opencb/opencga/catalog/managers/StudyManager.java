@@ -691,7 +691,7 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<Group> createGroup(String studyStr, Group group, String sessionId) throws CatalogException {
         ParamUtils.checkObj(group, "group");
-        ParamUtils.checkParameter(group.getId(), "Group id");
+        ParamUtils.checkGroupId(group.getId());
 
         if (group.getSyncedFrom() != null) {
             ParamUtils.checkParameter(group.getSyncedFrom().getAuthOrigin(), "Authentication origin");
