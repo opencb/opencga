@@ -382,12 +382,17 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getGroups(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
-            @ApiParam(value = "Group name. If provided, it will only fetch information for the provided group.") @QueryParam("name") String groupId,
+            @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
+            @ApiParam(value = "[DEPRECATED] Replaced by id.") @QueryParam("name") String groupName,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studiesStr);
+
+            if (StringUtils.isNotEmpty(groupName)) {
+                groupId = groupName;
+            }
             return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
