@@ -188,7 +188,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         // Primary findings,
         List<ReportedVariant> primaryFindings;
         TieringReportedVariantCreator creator = new TieringReportedVariantCreator(diseasePanels, roleInCancer, actionableVariants,
-                clinicalAnalysis.getDisorder(), null, penetrance);
+                clinicalAnalysis.getDisorder(), null, penetrance, assembly);
         try {
             primaryFindings = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException e) {
