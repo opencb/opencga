@@ -38,7 +38,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/users/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a new user", response = User.class, notes = "Account type can only be one of 'guest' (default) or 'full'")
+    @ApiOperation(value = "Create a new user", response = User.class, notes = "Account type can only be one of 'GUEST' (default) or 'FULL'")
     public Response create(@ApiParam(value = "JSON containing the parameters", required = true) UserCreateParams user) {
         try {
             if (!user.checkValidParams()) {

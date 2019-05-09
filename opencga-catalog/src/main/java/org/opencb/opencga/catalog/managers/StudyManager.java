@@ -706,10 +706,6 @@ public class StudyManager extends AbstractManager {
             group.setId("@" + group.getId());
         }
 
-        if (group.getName().startsWith("@")) {
-            group.setName(group.getName().substring(1));
-        }
-
         authorizationManager.checkCreateDeleteGroupPermissions(study.getUid(), userId, group.getId());
 
         // Check group exists
