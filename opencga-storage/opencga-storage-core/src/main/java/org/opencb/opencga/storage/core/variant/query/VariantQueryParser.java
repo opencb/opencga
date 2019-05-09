@@ -6,7 +6,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
@@ -173,15 +172,8 @@ public class VariantQueryParser {
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(ANNOT_CONSEQUENCE_TYPE.key()));
             QueryOperation op = pair.getLeft();
             List<String> cts = pair.getRight();
-            List<String> parsedCts = new ArrayList<>(cts.size());
-            for (String ct : cts) {
-                if (ct.equalsIgnoreCase("lof")) {
-                    parsedCts.addAll(VariantQueryUtils.LOF_SET);
-                } else {
-                    parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
-                }
-            }
-            query.put(ANNOT_CONSEQUENCE_TYPE.key(), op == null ? parsedCts : String.join(op.separator(), cts));
+            List<String> parsedCts = parseConsequenceTypes(cts);
+            query.put(ANNOT_CONSEQUENCE_TYPE.key(), op == null ? parsedCts : String.join(op.separator(), parsedCts));
         }
     }
 
