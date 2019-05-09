@@ -120,6 +120,12 @@ public class ParamUtils {
         }
     }
 
+    public static void checkGroupId(String groupId) throws CatalogParameterException {
+        if (groupId == null || groupId.isEmpty() || !groupId.matches("^[@]?[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+            throw new CatalogParameterException("Error in identifier: Invalid group identifier format");
+        }
+    }
+
     public static void checkIsSingleID(String id) throws CatalogParameterException {
         if (StringUtils.isNotEmpty(id)) {
             if (id.contains(",")) {
