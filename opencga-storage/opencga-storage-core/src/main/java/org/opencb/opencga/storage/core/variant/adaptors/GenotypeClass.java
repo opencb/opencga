@@ -132,6 +132,10 @@ public enum GenotypeClass {
      * Indicate that the genotype value was not available in the input variant file.
      */
     public static final String NA_GT_VALUE = "NA";
+    /**
+     * Indicate that none genotype should match with this value.
+     */
+    public static final String NONE_GT_VALUE = "x/x";
 
     private final Predicate<String> predicate;
 
@@ -164,7 +168,9 @@ public enum GenotypeClass {
         Set<String> filteredGts = new LinkedHashSet<>(gts.size());
         for (String gt : gts) {
             GenotypeClass genotypeClass = GenotypeClass.from(gt);
-            if (genotypeClass == null) {
+            if (gt.equals(NONE_GT_VALUE) || gt.equals(NA_GT_VALUE) || gt.equals(UNKNOWN_GENOTYPE)) {
+                filteredGts.add(gt);
+            } else if (genotypeClass == null) {
                 Genotype genotype = new Genotype(gt);
 
                 // Normalize if needed

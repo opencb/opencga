@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -105,9 +104,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
 
         Set<String> cts = new HashSet<>();
         if (isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
-            for (String ct : query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())) {
-                cts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
-            }
+            cts.addAll(VariantQueryUtils.parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));
 //            if (!LOF_EXTENDED_SET.containsAll(cts)) {
 //                cts.removeAll(LOF_EXTENDED_SET);
 //                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key() + " filter " + cts

@@ -85,6 +85,7 @@ public final class VariantQueryUtils {
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
 
+    public static final String LOF = "lof";
     // LOF does not include missense_variant
     public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             VariantAnnotationUtils.FRAMESHIFT_VARIANT,
@@ -1190,6 +1191,18 @@ public final class VariantQueryUtils {
         }
 
         return pair.getKey();
+    }
+
+    public static List<String> parseConsequenceTypes(List<String> cts) {
+        List<String> parsedCts = new ArrayList<>(cts.size());
+        for (String ct : cts) {
+            if (ct.equalsIgnoreCase(LOF)) {
+                parsedCts.addAll(VariantQueryUtils.LOF_SET);
+            } else {
+                parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
+            }
+        }
+        return parsedCts;
     }
 
     public static int parseConsequenceType(String so) {
