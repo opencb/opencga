@@ -207,7 +207,7 @@
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {
                         "containerConfiguration": {
-                                "type": "DockerCompatible"
+                            "type": "DockerCompatible"
                         },
                         "imageReference": {
                             "publisher": "microsoft-azure-batch",
