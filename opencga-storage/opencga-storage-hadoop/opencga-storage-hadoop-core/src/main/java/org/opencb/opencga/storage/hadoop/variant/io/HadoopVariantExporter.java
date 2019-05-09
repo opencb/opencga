@@ -43,11 +43,13 @@ public class HadoopVariantExporter extends VariantExporter {
     }
 
     @Override
-    public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, Query query,
+    public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile, Query query,
                        QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        if (outputFileUri == null || StringUtils.isEmpty(outputFileUri.getScheme()) || outputFileUri.getScheme().equals("file")) {
-            super.export(outputFileUri, outputFormat, query, queryOptions);
+        if (outputFileUri == null
+                || variantsFile != null
+                || StringUtils.isEmpty(outputFileUri.getScheme()) || outputFileUri.getScheme().equals("file")) {
+            super.export(outputFileUri, outputFormat, variantsFile, query, queryOptions);
         } else if (outputFileUri.getScheme().equals("hdfs")) {
             VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
             FileSystem fileSystem = FileSystem.get(dbAdaptor.getConfiguration());

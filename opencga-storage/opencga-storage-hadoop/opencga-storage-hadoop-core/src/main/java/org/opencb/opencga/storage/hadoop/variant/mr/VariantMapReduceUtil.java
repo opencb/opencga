@@ -178,6 +178,9 @@ public class VariantMapReduceUtil {
     }
 
     public static void setNoneReduce(Job job) throws IOException {
+        if (job.getNumReduceTasks() > 0) {
+            LOGGER.info("Set none reduce task");
+        }
         job.setNumReduceTasks(0);
     }
 
@@ -198,6 +201,7 @@ public class VariantMapReduceUtil {
 
     public static void setMultiTableOutput(Job job) throws IOException {
         job.setOutputFormatClass(MultiTableOutputFormat.class);
+        LOGGER.info("Use multi-table as output");
 
         boolean addDependencyJars = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
 
@@ -277,13 +281,24 @@ public class VariantMapReduceUtil {
     }
 
     public static Scan configureMapReduceScan(Scan scan, Configuration conf, int defaultCacheSize) {
+        configureMapReduceScans(Collections.singletonList(scan), conf, defaultCacheSize);
+        return scan;
+    }
+
+    public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf) {
+        return configureMapReduceScans(scans, conf, 50);
+    }
+
+    public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf, int defaultCacheSize) {
         int caching = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, defaultCacheSize);
 
         LOGGER.info("Scan set Caching to " + caching);
-        scan.setCaching(caching);        // 1 is the default in Scan
-        scan.setCacheBlocks(false);  // don't set to true for MR jobs
+        for (Scan scan : scans) {
+            scan.setCaching(caching);        // 1 is the default in Scan
+            scan.setCacheBlocks(false);  // don't set to true for MR jobs
+        }
 
-        return scan;
+        return scans;
     }
 
 }

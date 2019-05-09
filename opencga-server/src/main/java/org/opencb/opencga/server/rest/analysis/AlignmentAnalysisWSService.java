@@ -19,11 +19,17 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.tools.alignment.BamUtils;
+import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
+import org.opencb.biodata.tools.feature.BigWigManager;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.Query;
@@ -31,7 +37,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -115,7 +122,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                   @ApiParam(value = "Force SAM MD optional field to be set with the alignments") @DefaultValue("false") @QueryParam("mdField") Boolean mdField,
                                   @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels") @QueryParam("binQualities") @DefaultValue("false") Boolean binQualities) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MAX_NM.key(), maxNM);
@@ -158,10 +165,13 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
                                 @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
                                 @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
-                                @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("300") @QueryParam("geneOffset") int geneOffset,
-                                @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+                                @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
+                                @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
+                                @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
+                                @ApiParam(value = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values greater or equal to that value.") @QueryParam("threshold") String threshold,
+                                @ApiParam(value = "Window size (if a threshold is provided, window size must be 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
             List<Region> regionList = new ArrayList<>();
@@ -171,35 +181,59 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 regionList.addAll(Region.parseRegions(regionStr));
             }
 
-            // Get regions from gene and geneOffest parameters
+            // Get regions from genes/exons parameters
             if (StringUtils.isNotEmpty(geneStr)) {
-                // Get species and assembly from catalog
-                QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
-                        new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
-                        new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
-                if (projectQueryResult.getNumResults() != 1) {
-                    return createErrorResponse("Coverage", "Error getting species and assembly from catalog");
-                }
-
-                // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
-                String species = projectQueryResult.first().getOrganism().getScientificName();
-                String assembly = projectQueryResult.first().getOrganism().getAssembly();
-                CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase().toClientConfiguration());
-                GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-                QueryResponse<Gene> response = geneClient.get(Arrays.asList(geneStr.split(",")), QueryOptions.empty());
-                if (CollectionUtils.isNotEmpty(response.allResults())) {
-                    for (Gene gene : response.allResults()) {
-                        // Create region from gene coordinates
-                        regionList.add(new Region(gene.getChromosome(), gene.getStart() - geneOffset, gene.getEnd() + geneOffset));
-                    }
-                }
+                regionList = getRegionsFromGenes(geneStr, geneOffset, onlyExons, exonOffset, regionList, studyStr);
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
-                for (Region region : regionList) {
-                    queryResultList.add(alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, sessionId));
+                if (StringUtils.isEmpty(threshold)) {
+                    for (Region region : regionList) {
+                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, sessionId);
+                        if (coverage.getResult().size() > 0) {
+                            queryResultList.add(coverage);
+                        }
+                    }
+                } else {
+                    // Report regions for a given coverage range
+                    String[] split = threshold.split("-");
+                    int minCoverage;
+                    int maxCoverage;
+                    try {
+                        if (split.length == 1) {
+                            minCoverage = Integer.parseInt(split[0]);
+                            maxCoverage = Integer.MAX_VALUE;
+                        } else if (split.length == 2) {
+                            minCoverage = Integer.parseInt(split[0]);
+                            maxCoverage = Integer.parseInt(split[1]);
+                        } else {
+                            return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                                    + ". Valid ranges include minimum and maximum values, e.g.: 20-60"));
+                        }
+                    } catch (NumberFormatException e) {
+                        return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                                + ". Valid ranges include minimum and maximum values, e.g.: 20-60"));
+                    }
+                    if (minCoverage > maxCoverage) {
+                        return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                                + ". The maximum value must be greater or equal to the minimum value, e.g.: 20-60"));
+                    }
+
+                    if (windowSize != 1) {
+                        return createErrorResponse(new AlignmentCoverageException("Invalid window size: " + windowSize
+                                + ". Window size must be 1 when retrieving coverage with a given threshold"));
+                    }
+
+                    for (Region region : regionList) {
+                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, minCoverage,
+                                maxCoverage, sessionId);
+                        if (coverage.getResult().size() > 0) {
+                            queryResultList.add(coverage);
+                        }
+                    }
                 }
+
                 return createOkResponse(queryResultList);
             } else {
                 return createErrorResponse("coverage", "Missing region, no region provides");
@@ -210,17 +244,92 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
+    @Path("/log2CoverageRatio")
+    @ApiOperation(value = "Compute log2 coverage ratio from file #1 and file #2", position = 15, response = RegionCoverage.class)
+    public Response getSomaticAndGermlineCoverageRatio(@ApiParam(value = "File #1 (e.g., somatic file ID or name in Catalog)", required = true) @QueryParam("file1") String somaticFileIdStr,
+                                                       @ApiParam(value = "File #2 (e.g., germline file ID or name in Catalog)", required = true) @QueryParam("file2") String germlineFileIdStr,
+                                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+                                                       @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
+                                                       @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
+                                                       @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
+                                                       @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
+                                                       @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
+                                                       @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+        try {
+            ParamUtils.checkIsSingleID(somaticFileIdStr);
+            ParamUtils.checkIsSingleID(germlineFileIdStr);
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+
+            List<Region> regionList = new ArrayList<>();
+
+            // Parse regions from region parameter
+            if (StringUtils.isNotEmpty(regionStr)) {
+                regionList.addAll(Region.parseRegions(regionStr));
+            }
+
+            // Get regions from genes/exons parameters
+            if (StringUtils.isNotEmpty(geneStr)) {
+                regionList = getRegionsFromGenes(geneStr, geneOffset, onlyExons, exonOffset, regionList, studyStr);
+            }
+
+            if (CollectionUtils.isNotEmpty(regionList)) {
+                // Getting total counts for file #1: somatic file
+                QueryResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(studyStr, somaticFileIdStr, sessionId);
+                if (CollectionUtils.isEmpty(somaticResult.getResult()) || somaticResult.getResult().get(0) == 0) {
+                    return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + somaticFileIdStr);
+                }
+                long somaticTotalCounts = somaticResult.getResult().get(0);
+
+                // Getting total counts for file #2: germline file
+                QueryResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(studyStr, germlineFileIdStr, sessionId);
+                if (CollectionUtils.isEmpty(germlineResult.getResult()) || germlineResult.getResult().get(0) == 0) {
+                    return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + germlineFileIdStr);
+                }
+                long germlineTotalCounts = germlineResult.getResult().get(0);
+
+                // Compute log2 coverage ratio for each region given
+                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
+                for (Region region : regionList) {
+                    QueryResult<RegionCoverage> somaticCoverage = alignmentStorageManager.coverage(studyStr, somaticFileIdStr, region, windowSize, sessionId);
+                    QueryResult<RegionCoverage> germlineCoverage = alignmentStorageManager.coverage(studyStr, germlineFileIdStr, region, windowSize, sessionId);
+                    if (somaticCoverage.getResult().size() == 1 && germlineCoverage.getResult().size() == 1) {
+                        try {
+                            StopWatch watch = StopWatch.createStarted();
+                            RegionCoverage coverage = BamUtils.log2CoverageRatio(somaticCoverage.getResult().get(0), somaticTotalCounts,
+                                    germlineCoverage.getResult().get(0), germlineTotalCounts);
+                            int dbTime = somaticResult.getDbTime() + somaticCoverage.getDbTime()
+                                    + germlineResult.getDbTime() + germlineCoverage.getDbTime() + ((int) watch.getTime());
+                            queryResultList.add(new QueryResult<>(region.toString(), dbTime, 1, 1, null, null, Collections.singletonList(coverage)));
+                        } catch (AlignmentCoverageException e) {
+                            logger.error("log2CoverageRatio: " + e.getMessage() + ": somatic file = " + somaticFileIdStr + ", germline file = " + germlineFileIdStr + ", region = " + region.toString());
+                        }
+                    } else {
+                        logger.error("log2CoverageRatio: something wrong happened: somatic file = " + somaticFileIdStr + ", germline file = " + germlineFileIdStr + ", region = " + region.toString());
+                    }
+                }
+                return createOkResponse(queryResultList);
+            } else {
+                return createErrorResponse("log2CoverageRatio", "Missing region, no region provides");
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/lowCoverage")
-    @ApiOperation(value = "Fetch regions with a low coverage", position = 15, response = RegionCoverage.class)
+    @ApiOperation(value = "Fetch regions with a low coverage", position = 15, hidden = true, response = RegionCoverage.class)
     public Response getLowCoveredRegions(
             @ApiParam(value = "File id or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
             @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
-            @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("300") @QueryParam("geneOffset") int geneOffset,
+            @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
+            @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
+            @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
             @ApiParam(value = "Number of reads under which a region will will be considered low covered") @DefaultValue("20") @QueryParam("minCoverage") int minCoverage) {
         try {
-            isSingleId(fileIdStr);
+            ParamUtils.checkIsSingleID(fileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             List<Region> regionList = new ArrayList<>();
 
@@ -229,28 +338,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 regionList.addAll(Region.parseRegions(regionStr));
             }
 
-            // Get regions from gene and geneOffest parameters
+            // Get regions from genes/exons parameters
             if (StringUtils.isNotEmpty(geneStr)) {
-                // Get species and assembly from catalog
-                QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
-                        new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
-                        new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
-                if (projectQueryResult.getNumResults() != 1) {
-                    return createErrorResponse("lowCoveredRegions", "Error getting species and assembly from catalog");
-                }
-
-                // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
-                String species = projectQueryResult.first().getOrganism().getScientificName();
-                String assembly = projectQueryResult.first().getOrganism().getAssembly();
-                CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase().toClientConfiguration());
-                GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-                QueryResponse<Gene> response = geneClient.get(Arrays.asList(geneStr.split(",")), QueryOptions.empty());
-                if (CollectionUtils.isNotEmpty(response.allResults())) {
-                    for (Gene gene : response.allResults()) {
-                        // Create region from gene coordinates
-                        regionList.add(new Region(gene.getChromosome(), gene.getStart() - geneOffset, gene.getEnd() + geneOffset));
-                    }
-                }
+                regionList = getRegionsFromGenes(geneStr, geneOffset, onlyExons, exonOffset, regionList, studyStr);
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
@@ -309,4 +399,87 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
     }
 
+    //-------------------------------------------------------------------------
+    // P R I V A T E     M E T H O D S
+    //-------------------------------------------------------------------------
+
+    private List<Region> getRegionsFromGenes(String geneStr, int geneOffset, boolean onlyExons, int exonOffset, List<Region> initialRegions,
+                                             String studyStr)
+            throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, IOException {
+        Map<String, Region> regionMap = new HashMap<>();
+
+        // Process initial regions
+        if (CollectionUtils.isNotEmpty(initialRegions)) {
+            for (Region region : initialRegions) {
+                updateRegionMap(region, regionMap);
+            }
+        }
+
+        // Get species and assembly from catalog
+        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+                new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
+        if (projectQueryResult.getNumResults() != 1) {
+            throw new CatalogException("Error getting species and assembly from catalog when computing coverage");
+        }
+
+        // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
+        String species = projectQueryResult.first().getOrganism().getScientificName();
+        String assembly = projectQueryResult.first().getOrganism().getAssembly();
+        CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
+                .toClientConfiguration());
+        GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+        QueryResponse<Gene> response = geneClient.get(Arrays.asList(geneStr.split(",")), QueryOptions.empty());
+        if (CollectionUtils.isNotEmpty(response.allResults())) {
+            for (Gene gene : response.allResults()) {
+                // Create region from gene coordinates
+                Region region = null;
+                if (onlyExons) {
+                    if (geneOffset > 0) {
+                        region = new Region(gene.getChromosome(), gene.getStart() - geneOffset, gene.getStart());
+                        updateRegionMap(region, regionMap);
+                        region = new Region(gene.getChromosome(), gene.getEnd(), gene.getEnd() + geneOffset);
+                        updateRegionMap(region, regionMap);
+                    }
+                    if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
+                        for (Transcript transcript : gene.getTranscripts()) {
+                            if (CollectionUtils.isNotEmpty(transcript.getExons())) {
+                                for (Exon exon : transcript.getExons()) {
+                                    region = new Region(exon.getChromosome(), exon.getGenomicCodingStart() - exonOffset,
+                                            exon.getGenomicCodingEnd() + exonOffset);
+                                    updateRegionMap(region, regionMap);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    region = new Region(gene.getChromosome(), gene.getStart() - geneOffset, gene.getEnd() + geneOffset);
+                    updateRegionMap(region, regionMap);
+                }
+            }
+        }
+        return new ArrayList<>(regionMap.values());
+    }
+
+    public void updateRegionMap(Region region, Map<String, Region> map) {
+        if (!map.containsKey(region.toString())) {
+            List<String> toRemove = new ArrayList<>();
+            for (Region reg : map.values()) {
+                // Check if the new region overlaps regions in the map
+                if (region.overlaps(reg.getChromosome(), reg.getStart(), reg.getEnd())) {
+                    // First, mark to remove the current region
+                    toRemove.add(reg.toString());
+                    // Second, extend the new region
+                    region = new Region(reg.getChromosome(), Math.min(reg.getStart(), region.getStart()),
+                            Math.max(reg.getEnd(), region.getEnd()));
+                }
+            }
+            // Remove all marked regions
+            for (String key : toRemove) {
+                map.remove(key);
+            }
+            // Insert the new (or extended) region
+            map.put(region.toString(), region);
+        }
+    }
 }

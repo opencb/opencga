@@ -146,7 +146,7 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
     public static class TranscriptionFlagsQueryGenerator extends TermQueryGenerator {
 
         public TranscriptionFlagsQueryGenerator() {
-            super(VariantQueryParam.ANNOT_TRANSCRIPTION_FLAG.key());
+            super(VariantQueryParam.ANNOT_TRANSCRIPT_FLAG.key());
         }
 
         @Override

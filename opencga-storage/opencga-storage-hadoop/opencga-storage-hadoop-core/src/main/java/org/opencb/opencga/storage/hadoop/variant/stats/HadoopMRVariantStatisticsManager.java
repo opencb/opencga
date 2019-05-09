@@ -46,7 +46,7 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         StudyMetadata sm = metadataManager.getStudyMetadata(study);
 
-        if (sm.isAggregated()) {
+        if (isAggregated(sm, options)) {
             throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
                     + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
         }

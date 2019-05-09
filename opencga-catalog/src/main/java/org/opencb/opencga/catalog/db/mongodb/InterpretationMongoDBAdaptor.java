@@ -60,7 +60,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getInterpretation().getId()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS.key(), Status.READY));
 
@@ -68,7 +68,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         QueryResult<Long> count = interpretationCollection.count(bson);
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Cannot create interpretation. An interpretation with { id: '"
-                    + interpretation.getInterpretation().getId() + "'} already exists.");
+                    + interpretation.getId() + "'} already exists.");
         }
 
         long interpretationUid = getNewId();
@@ -79,8 +79,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);
-        if (StringUtils.isNotEmpty(interpretation.getInterpretation().getCreationDate())) {
-            interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(interpretation.getInterpretation().getCreationDate()));
+        if (StringUtils.isNotEmpty(interpretation.getCreationDate())) {
+            interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(interpretation.getCreationDate()));
         } else {
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }

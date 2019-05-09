@@ -81,6 +81,8 @@ public class StudyManager extends AbstractManager {
             + STUDY_PATTERN + ")$");
     private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
 
+    static final QueryOptions INCLUDE_STUDY_UID = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
+
     protected Logger logger;
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -689,7 +691,7 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<Group> createGroup(String studyStr, Group group, String sessionId) throws CatalogException {
         ParamUtils.checkObj(group, "group");
-        ParamUtils.checkParameter(group.getId(), "Group id");
+        ParamUtils.checkGroupId(group.getId());
 
         if (group.getSyncedFrom() != null) {
             ParamUtils.checkParameter(group.getSyncedFrom().getAuthOrigin(), "Authentication origin");

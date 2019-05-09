@@ -60,7 +60,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         URI outputFile = newOutputUri().resolve("export.avro");
 
         System.out.println("outputFile = " + outputFile);
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, new Query(), new QueryOptions());
 
         clearDB(DB_NAME);
 
@@ -80,7 +80,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         List<String> samples = new LinkedList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet()).subList(1, 3);
         Set<String> samplesSet = new HashSet<>(samples);
         Query query = new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), samples);
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, new QueryOptions());
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, query, new QueryOptions());
 
         clearDB(DB_NAME);
 
@@ -99,7 +99,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA.toString());
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, queryOptions);
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, query, queryOptions);
 
         clearDB(DB_NAME);
 
@@ -117,7 +117,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), ".");
         QueryOptions queryOptions = new QueryOptions();
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, queryOptions);
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, query, queryOptions);
 
         clearDB(DB_NAME);
 

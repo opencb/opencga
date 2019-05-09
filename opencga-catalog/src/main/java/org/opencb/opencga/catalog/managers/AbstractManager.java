@@ -17,23 +17,26 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.models.InternalGetQueryResult;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.PrivateStudyUid;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by hpccoll1 on 12/05/15.
@@ -139,18 +142,129 @@ public abstract class AbstractManager {
         return null;
     }
 
+
     /**
-     * Checks if the list of members are all valid.
+     * Return the results in the QueryResult object in the same order they were queried by the list of entries.
+     * For entities with version where all versions have been requested, call to InternalGetQueryResult.getVersionedResults() to get
+     * a list of lists of T.
      *
-     * The "members" can be:
-     *  - '*' referring to all the users.
-     *  - 'anonymous' referring to the anonymous user.
-     *  - '@{groupId}' referring to a {@link Group}.
-     *  - '{userId}' referring to a specific user.
-     * @param studyId studyId
-     * @param members List of members
-     * @throws CatalogDBException CatalogDBException
+     * @param entries Original list used to perform the query.
+     * @param getId   Generic function that will fetch the id that will be used to compare with the list of entries.
+     * @param queryResult QueryResult object.
+     * @param silent  Boolean indicating whether we will fail in case of an inconsistency or not.
+     * @param keepAllVersions Boolean indicating whether to keep all versions of fail in case of id duplicities.
+     * @param <T>     Generic entry (Sample, File, Cohort...)
+     * @return the QueryResult with the proper order of results.
+     * @throws CatalogException In case of inconsistencies found.
      */
+    <T extends IPrivateStudyUid> InternalGetQueryResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId,
+                                                                             QueryResult<T> queryResult, boolean silent,
+                                                                             boolean keepAllVersions) throws CatalogException {
+        InternalGetQueryResult<T> internalGetQueryResult = new InternalGetQueryResult<>(queryResult);
+
+        Map<String, List<T>> resultMap = new HashMap<>();
+
+        for (T entry : internalGetQueryResult.getResult()) {
+            String id = getId.apply(entry);
+            if (!resultMap.containsKey(id)) {
+                resultMap.put(id, new ArrayList<>());
+            } else if (!keepAllVersions) {
+                throw new CatalogException("Duplicated entry " + id + " found");
+            }
+            resultMap.get(id).add(entry);
+        }
+
+        List<T> orderedEntryList = new ArrayList<>(internalGetQueryResult.getNumResults());
+        List<Integer> groups = new ArrayList<>(entries.size());
+        for (String entry : entries) {
+            if (resultMap.containsKey(entry)) {
+                orderedEntryList.addAll(resultMap.get(entry));
+                groups.add(resultMap.get(entry).size());
+            } else {
+                if (!silent) {
+                    throw new CatalogException("Entry " + entry + " not found in QueryResult");
+                }
+                groups.add(0);
+                internalGetQueryResult.addMissing(entry, "Not found or user does not have permissions.");
+            }
+        }
+
+        internalGetQueryResult.setResult(orderedEntryList);
+        internalGetQueryResult.setGroups(groups);
+        return internalGetQueryResult;
+    }
+
+    /**
+     * This method will make sure that 'field' is included in case there is a INCLUDE or never excluded in case there is a EXCLUDE list.
+     *
+     * @param options QueryOptions object.
+     * @param field field that needs to remain.
+     * @return a new QueryOptions with the necessary modifications.
+     */
+    QueryOptions keepFieldInQueryOptions(QueryOptions options, String field) {
+        if (options.isEmpty()) {
+            // Everything will be included, so we don't need to do anything
+            return options;
+        }
+
+        QueryOptions queryOptions = new QueryOptions(options);
+
+        List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+        if (!includeList.isEmpty() && !includeList.contains(field)) {
+            // We need to add the field
+            List<String> includeListCopy = new ArrayList<>(includeList);
+            includeListCopy.add(field);
+            queryOptions.put(QueryOptions.INCLUDE, includeListCopy);
+        }
+
+        List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+        if (!excludeList.isEmpty() && excludeList.contains(field)) {
+            // We need to remove the field from the exclusion list
+            List<String> excludeListCopy = excludeList.stream().filter(x -> !x.equals(field)).collect(Collectors.toList());
+            queryOptions.put(QueryOptions.EXCLUDE, excludeListCopy);
+        }
+
+        return queryOptions;
+    }
+
+    /**
+     * Obtains a list containing the entries that are in {@code originalEntries} that are not in {@code finalEntries}.
+     *
+     * @param originalEntries Original list that will be used to compare against.
+     * @param finalEntries    List of {@code T} that will be compared against the {@code originalEntries}.
+     * @param getId           Generic function to get the string used to make the comparison.
+     * @param <T>             Generic entry (Sample, File, Cohort...)
+     * @return a list containing the entries that are in {@code originalEntries} that are not in {@code finalEntries}.
+     */
+    <T extends IPrivateStudyUid> List<String>  getMissingFields(List<String> originalEntries, List<T> finalEntries,
+                                                                Function<T, String> getId) {
+        Set<String> entrySet = new HashSet<>();
+        for (T finalEntry : finalEntries) {
+            entrySet.add(getId.apply(finalEntry));
+        }
+
+        List<String> differences = new ArrayList<>();
+        for (String originalEntry : originalEntries) {
+            if (!entrySet.contains(originalEntry)) {
+                differences.add(originalEntry);
+            }
+        }
+
+        return differences;
+    }
+
+        /**
+         * Checks if the list of members are all valid.
+         *
+         * The "members" can be:
+         *  - '*' referring to all the users.
+         *  - 'anonymous' referring to the anonymous user.
+         *  - '@{groupId}' referring to a {@link Group}.
+         *  - '{userId}' referring to a specific user.
+         * @param studyId studyId
+         * @param members List of members
+         * @throws CatalogDBException CatalogDBException
+         */
     protected void checkMembers(long studyId, List<String> members) throws CatalogDBException {
         for (String member : members) {
             checkMember(studyId, member);
@@ -178,90 +292,6 @@ public abstract class AbstractManager {
             }
         } else {
             userDBAdaptor.checkId(member);
-        }
-    }
-
-    public static class MyResource<T extends PrivateStudyUid> {
-        private String user;
-        private Study study;
-        private T resource;
-
-        public MyResource() {
-        }
-
-        public MyResource(String user, Study study, T resource) {
-            this.user = user;
-            this.study = study;
-            this.resource = resource;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public MyResource setUser(String user) {
-            this.user = user;
-            return this;
-        }
-
-        public Study getStudy() {
-            return study;
-        }
-
-        public MyResource setStudy(Study study) {
-            this.study = study;
-            return this;
-        }
-
-        public T getResource() {
-            return resource;
-        }
-
-        public MyResource setResource(T resource) {
-            this.resource = resource;
-            return this;
-        }
-    }
-
-    public static class MyResources<T> {
-        private String user;
-        private Study study;
-        private List<T> resourceList;
-
-        public MyResources() {
-        }
-
-        public MyResources(String user, Study study, List<T> resourceList) {
-            this.user = user;
-            this.study = study;
-            this.resourceList = resourceList;
-        }
-
-        public String getUser() {
-            return user;
-        }
-
-        public MyResources setUser(String user) {
-            this.user = user;
-            return this;
-        }
-
-        public Study getStudy() {
-            return study;
-        }
-
-        public MyResources setStudy(Study study) {
-            this.study = study;
-            return this;
-        }
-
-        public List<T> getResourceList() {
-            return resourceList;
-        }
-
-        public MyResources setResourceList(List<T> resourceList) {
-            this.resourceList = resourceList;
-            return this;
         }
     }
 

@@ -476,9 +476,18 @@ public class VariantCommandOptions {
         @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
         public String modeOfInheritance;
 
+        @Parameter(names = {"--family-members"}, description = FAMILY_MEMBERS_DESC, arity = 1)
+        public String familyMembers;
+
+        @Parameter(names = {"--family-proband"}, description = FAMILY_PROBAND_DESC, arity = 1)
+        public String familyProband;
+
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
 
+        // FIXME: This param should not be in the REST command line!
+        @Parameter(names = {"--variants-file"}, description = "GFF File with regions")
+        public String variantsFile;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")

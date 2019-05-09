@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.stats.me;
+package org.opencb.opencga.storage.hadoop.variant.index.family;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -28,9 +28,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -48,23 +46,23 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MendelianErrorDriver extends AbstractVariantsTableDriver {
+public class FamilyIndexDriver extends AbstractVariantsTableDriver {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MendelianErrorDriver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FamilyIndexDriver.class);
 
     public static final String TRIOS = "trios";
     public static final String TRIOS_FILE = "triosFile";
     public static final String TRIOS_FILE_DELETE = "triosFileDelete";
     public static final String OVERWRITE = "overwrite";
 
-    private static final String TRIOS_LIST = "MendelianErrorDriver.trios_list";
+    private static final String TRIOS_LIST = "FamilyIndexDriver.trios_list";
     private List<Integer> sampleIds;
     private boolean partial;
     private String region;
 
     @Override
-    protected Class<MendelianErrorMapper> getMapperClass() {
-        return MendelianErrorMapper.class;
+    protected Class<FamilyIndexMapper> getMapperClass() {
+        return FamilyIndexMapper.class;
     }
 
     @Override
@@ -166,7 +164,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
         VariantMapReduceUtil.initTableMapperJob(job, variantTable,
                 scan, getMapperClass(), VariantAlignedInputFormat.class);
         VariantAlignedInputFormat.setDelegatedInputFormat(job, TableInputFormat.class);
-        VariantAlignedInputFormat.setBatchSize(job, SampleIndexDBLoader.BATCH_SIZE);
+        VariantAlignedInputFormat.setBatchSize(job, SampleIndexSchema.BATCH_SIZE);
 
         VariantMapReduceUtil.setOutputHBaseTable(job, getTableNameGenerator().getSampleIndexTableName(getStudyId()));
 
@@ -180,24 +178,33 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
         if (succeed && !partial) {
             VariantStorageMetadataManager metadataManager = getMetadataManager();
             for (int i = 0; i < sampleIds.size(); i += 3) {
+                Integer father = sampleIds.get(i);
+                Integer mother = sampleIds.get(i + 1);
                 Integer child = sampleIds.get(i + 2);
                 metadataManager.updateSampleMetadata(getStudyId(), child, sampleMetadata -> {
                     sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.READY);
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                    if (father > 0) {
+                        sampleMetadata.setFather(father);
+                    }
+                    if (mother > 0) {
+                        sampleMetadata.setMother(mother);
+                    }
                     return sampleMetadata;
                 });
             }
-
         }
     }
 
     @Override
     protected String getJobOperationName() {
-        return "calculate_mendelian_errors";
+        return "generate_family_index";
     }
 
-    public static class MendelianErrorMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
+    public static class FamilyIndexMapper extends VariantTableSampleIndexOrderMapper<ImmutableBytesWritable, Put> {
 
         private Map<Integer, ByteArrayOutputStream> mendelianErrorsMap = new HashMap<>();
+        private Map<Integer, Map<String, ByteArrayOutputStream>> parentsGTMap = new HashMap<>();
         private Map<Integer, Map<String, Integer>> genotypeCount = new HashMap<>();
         private List<List<Integer>> trios;
         private byte[] family;
@@ -221,6 +228,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
             for (List<Integer> trio : trios) {
                 Integer child = trio.get(2);
                 mendelianErrorsMap.put(child, new ByteArrayOutputStream());
+                parentsGTMap.put(child, new HashMap<>());
                 genotypeCount.put(child, new HashMap<>());
             }
 
@@ -246,7 +254,6 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                 }
             }
 
-
             for (List<Integer> trio : trios) {
                 Integer father = trio.get(0);
                 Integer mother = trio.get(1);
@@ -257,6 +264,13 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                 String childGtStr = gtMap.get(child);
 
                 int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
+
+                if (SampleIndexDBLoader.validGenotype(childGtStr)) {
+                    parentsGTMap.get(child)
+                            .computeIfAbsent(childGtStr, gt -> new ByteArrayOutputStream())
+                            .write(GenotypeCodec.encode(fatherGtStr, motherGtStr));
+                }
+
                 if ((fatherGtStr != null || father == -1) && (motherGtStr != null || mother == -1) && childGtStr != null) {
                     Genotype fatherGt;
                     Genotype motherGt;
@@ -274,7 +288,7 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
                     context.getCounter(COUNTER_GROUP_NAME, "me_" + me).increment(1);
                     if (me > 0) {
                         ByteArrayOutputStream stream = mendelianErrorsMap.get(child);
-                        converter.serializeMendelianError(stream, variant, childGtStr, idx, me);
+                        MendelianErrorSampleIndexConverter.toBytes(stream, variant, childGtStr, idx, me);
                     }
                 }
             }
@@ -286,18 +300,32 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
             for (Map.Entry<Integer, ByteArrayOutputStream> entry : mendelianErrorsMap.entrySet()) {
                 Integer sampleId = entry.getKey();
-                ByteArrayOutputStream value = entry.getValue();
+                ByteArrayOutputStream meValue = entry.getValue();
 
+                byte[] row = SampleIndexSchema.toRowKey(sampleId, chromosome, position);
+                Put put = new Put(row);
 
-                byte[] row = HBaseToSampleIndexConverter.toRowKey(sampleId, chromosome, position);
+                for (Map.Entry<String, ByteArrayOutputStream> gtEntry : parentsGTMap.get(sampleId).entrySet()) {
+                    String gt = gtEntry.getKey();
+                    ByteArrayOutputStream gtValue = gtEntry.getValue();
 
-                if (value.size() > 0) {
-                    Put put = new Put(row);
+                    if (gtValue.size() > 0) {
+                        // Copy value, as the ByteArrayOutputStream is erased
+                        byte[] value = gtValue.toByteArray();
+                        put.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt), value);
+                        gtValue.reset();
+                    }
+                }
+
+                if (meValue.size() > 0) {
                     // Copy value, as the ByteArrayOutputStream is erased
-                    put.addColumn(family, HBaseToSampleIndexConverter.toMendelianErrorColumn(), value.toByteArray());
+                    byte[] value = meValue.toByteArray();
+                    put.addColumn(family, SampleIndexSchema.toMendelianErrorColumn(), value);
+                    meValue.reset();
+                }
 
+                if (!put.isEmpty()) {
                     context.write(new ImmutableBytesWritable(row), put);
-                    value.reset();
                 }
             }
 
@@ -307,9 +335,9 @@ public class MendelianErrorDriver extends AbstractVariantsTableDriver {
 
     public static void main(String[] args) throws Exception {
         try {
-            System.exit(new MendelianErrorDriver().privateMain(args, null));
+            System.exit(new FamilyIndexDriver().privateMain(args, null));
         } catch (Exception e) {
-            LOGGER.error("Error executing " + MendelianErrorDriver.class, e);
+            LOGGER.error("Error executing " + FamilyIndexDriver.class, e);
             System.exit(1);
         }
     }

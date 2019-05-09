@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
@@ -138,7 +139,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         Map<String, Set<String>> cohortsMap = new LinkedHashMap<>(cohorts.size());
         for (String cohort : cohorts) {
-            if (studyMetadata.isAggregated()) {
+            if (isAggregated(studyMetadata, options)) {
                 cohortsMap.put(cohort, Collections.emptySet());
             } else {
                 Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), cohort);
@@ -191,10 +192,11 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
 //            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
+        Aggregation aggregation = getAggregation(studyMetadata, options);
 
         // if no cohorts provided and the study is aggregated: try to get the cohorts from the tagMap
-        if (cohorts == null || studyMetadata.isAggregated() && tagmap != null) {
-            if (studyMetadata.isAggregated() && tagmap != null) {
+        if (cohorts == null || AggregationUtils.isAggregated(aggregation) && tagmap != null) {
+            if (AggregationUtils.isAggregated(aggregation) && tagmap != null) {
                 cohorts = new LinkedHashMap<>();
                 for (String c : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
                     cohorts.put(c, Collections.emptySet());
@@ -218,12 +220,12 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
-        VariantDBReader reader = new VariantDBReader(studyMetadata, variantDBAdaptor, readerQuery, readerOptions);
+        VariantDBReader reader = new VariantDBReader(variantDBAdaptor, readerQuery, readerOptions);
         List<Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         ProgressLogger progressLogger = buildCreateStatsProgressLogger(dbAdaptor, readerQuery, readerOptions);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyMetadata, variantSourceStats, tagmap, progressLogger,
-                    getAggregation(studyMetadata.getAggregation(), options)));
+                    aggregation));
         }
         StringDataWriter writer = buildVariantStatsStringDataWriter(output);
 

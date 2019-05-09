@@ -70,9 +70,13 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
                 .setFailOnEmptyVariants(true)
                 .setSimpleGenotypes(false);
 //        timestamp = HConstants.LATEST_TIMESTAMP;
-        timestamp = context.getConfiguration().getLong(AbstractVariantsTableDriver.TIMESTAMP, -1);
-        if (timestamp == -1) {
-            throw new IllegalArgumentException("Missing TimeStamp");
+        if (AbstractVariantsTableDriver.NONE_TIMESTAMP.equals(context.getConfiguration().get(AbstractVariantsTableDriver.TIMESTAMP))) {
+            timestamp = -1;
+        } else {
+            timestamp = context.getConfiguration().getLong(AbstractVariantsTableDriver.TIMESTAMP, -1);
+            if (timestamp == -1) {
+                throw new IllegalArgumentException("Missing TimeStamp");
+            }
         }
     }
 

@@ -206,11 +206,23 @@ public class AlignmentStorageManager extends StorageManager {
         return alignmentStorageEngine.getDBAdaptor().coverage(Paths.get(file.getUri()), region, windowSize);
     }
 
+    public QueryResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int minCoverage, int maxCoverage,
+                                                String sessionId) throws Exception {
+        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
+        return alignmentStorageEngine.getDBAdaptor().coverage(Paths.get(file.getUri()), region, minCoverage, maxCoverage);
+    }
+
     public QueryResult<RegionCoverage> getLowCoverageRegions(String studyIdStr, String fileIdStr, Region region, int minCoverage,
                                                              String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
         return alignmentStorageEngine.getDBAdaptor().getLowCoverageRegions(Paths.get(file.getUri()), region, minCoverage);
     }
+
+    public QueryResult<Long> getTotalCounts(String studyIdStr, String fileIdStr, String sessionId) throws Exception {
+        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
+        return alignmentStorageEngine.getDBAdaptor().getTotalCounts(Paths.get(file.getUri()));
+    }
+
 
     File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,

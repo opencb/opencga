@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,8 +90,7 @@ public abstract class VariantStatisticsManager {
             boolean overwrite, boolean updateStats, ObjectMap options) throws StorageEngineException {
 
         Collection<Integer> cohortIds = metadataManager.registerCohorts(studyMetadata.getName(), cohorts).values();
-        checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, updateStats,
-                getAggregation(studyMetadata.getAggregation(), options));
+        checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, updateStats, getAggregation(studyMetadata, options));
 
         metadataManager.updateStudyMetadata(studyMetadata.getName(), sm -> {
             for (Integer cohortId : cohortIds) {
@@ -260,6 +260,9 @@ public abstract class VariantStatisticsManager {
         }
 
         readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+        if (isAggregated(study, options) || sampleIds.isEmpty()) {
+            readerQuery.put(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL);
+        }
         readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
         readerQuery.append(VariantQueryParam.UNKNOWN_GENOTYPE.key(),
                 getUnknownGenotype(options));
@@ -274,8 +277,13 @@ public abstract class VariantStatisticsManager {
         return options.get(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class, null);
     }
 
-    protected static Aggregation getAggregation(Aggregation aggregation, ObjectMap options) {
-        return AggregationUtils.valueOf(options.getString(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), aggregation.toString()));
+    protected static Aggregation getAggregation(StudyMetadata studyMetadata, ObjectMap options) {
+        return AggregationUtils.valueOf(options.getString(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                studyMetadata.getAggregation().toString()));
+    }
+
+    protected static boolean isAggregated(StudyMetadata studyMetadata, ObjectMap options) {
+        return AggregationUtils.isAggregated(getAggregation(studyMetadata, options));
     }
 
 }

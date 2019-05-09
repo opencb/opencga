@@ -222,7 +222,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             QueryResult queryResult = catalogManager.getFileManager().get(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -300,7 +300,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
@@ -363,7 +363,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response resyncFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             Study study = catalogManager.getStudyManager().get(studyStr, null, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
@@ -382,12 +382,17 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getGroups(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
             @PathParam("studies") String studiesStr,
-            @ApiParam(value = "Group name. If provided, it will only fetch information for the provided group.") @QueryParam("name") String groupId,
+            @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
+            @ApiParam(value = "[DEPRECATED] Replaced by id.") @QueryParam("name") String groupName,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studiesStr);
+
+            if (StringUtils.isNotEmpty(groupName)) {
+                groupId = groupName;
+            }
             return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -459,11 +464,11 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         params = ObjectUtils.defaultIfNull(params, new GroupCreateParams());
 
-        if (StringUtils.isNotEmpty(params.name)) {
+        if (StringUtils.isEmpty(params.name)) {
             params.name = params.id;
         }
 
-        if (StringUtils.isNotEmpty(params.id)) {
+        if (StringUtils.isEmpty(params.id)) {
             params.id = params.name;
         }
         if (StringUtils.isEmpty(params.id)) {
@@ -492,7 +497,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new GroupParams());
 
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, groupId, params, sessionId));
         } catch (Exception e) {
@@ -510,7 +515,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new MemberParams());
 
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@members", params.toGroupParams(), sessionId));
         } catch (Exception e) {
@@ -529,7 +534,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new MemberParams());
 
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(
                     catalogManager.getStudyManager().updateGroup(studyStr, "@admins", params.toGroupParams(), sessionId));
         } catch (Exception e) {
@@ -545,7 +550,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @PathParam("study") String studyStr,
             @ApiParam(value = "Group name", required = true) @PathParam("group") String groupId) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().deleteGroup(studyStr, groupId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -561,7 +566,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity") Study.Entity
                     entity) {
         try {
-            isSingleId(studyStr);
+            ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -688,8 +693,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
             @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) MemberAclUpdateOld params) {
         try {
-            isSingleId(studyStr);
-            isSingleId(memberId);
+            ParamUtils.checkIsSingleID(studyStr);
+            ParamUtils.checkIsSingleID(memberId);
             Study.StudyAclParams aclParams = getAclParams(params.add, params.remove, params.set, null);
             List<String> idList = getIdList(studyStr);
             return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, sessionId));
@@ -748,10 +753,43 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studies}/stats")
-    @ApiOperation(value = "Fetch catalog study stats", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch catalog study stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
                 @PathParam("studies") String studies,
+            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
+            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
+            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
+            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
+            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
+            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
+                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
+        try {
+            if (defaultStats == null) {
+                defaultStats = true;
+            }
+            List<String> idList = getIdList(studies);
+            Map<String, Object> result = new HashMap<>();
+            for (String study : idList) {
+                result.put(study, catalogManager.getStudyManager().facet(study, fileFields, sampleFields, individualFields, cohortFields,
+                        familyFields, defaultStats, sessionId));
+            }
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studies}/aggregationStats")
+    @ApiOperation(value = "Fetch catalog study stats", position = 15, response = QueryResponse.class)
+    public Response getAggregationStats(
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
+            @PathParam("studies") String studies,
             @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
             @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
                     + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,

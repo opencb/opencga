@@ -131,24 +131,24 @@ public class VariantStorageManager extends StorageManager {
             throws StorageEngineException, CatalogException, IOException {
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), study)
                 .append(VariantQueryParam.STUDY.key(), study);
-        return exportData(outputFile, outputFormat, query, new QueryOptions(), sessionId);
+        return exportData(outputFile, outputFormat, null, query, new QueryOptions(), sessionId);
     }
 
     /**
      * Exports the result of the given query and the associated metadata.
-     *
-     * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
-     * @param outputFormat Variant Output format.
-     * @param query        Query with the variants to export
-     * @param queryOptions Query options
-     * @param sessionId    User's session id
-     * @return List of generated files
-     * @throws CatalogException       if there is any error with Catalog
-     * @throws IOException            If there is any IO error
-     * @throws StorageEngineException If there is any error exporting variants
+     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat  Variant Output format.
+     * @param variantsFile  Optional variants file.
+     * @param query         Query with the variants to export
+     * @param queryOptions  Query options
+     * @param sessionId     User's session id
+     * @return              List of generated files
+     * @throws CatalogException if there is any error with Catalog
+     * @throws IOException  If there is any IO error
+     * @throws StorageEngineException  If there is any error exporting variants
      */
-    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions,
-                                String sessionId)
+    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
+                                Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         if (query == null) {
             query = new Query();
@@ -165,7 +165,7 @@ public class VariantStorageManager extends StorageManager {
             studyInfos.add(getStudyInfo(study, Collections.emptyList(), sessionId));
         }
 
-        return op.exportData(studyInfos, query, outputFormat, outputFile, sessionId, queryOptions);
+        return op.exportData(studyInfos, query, outputFormat, outputFile, variantsFile, sessionId, queryOptions);
     }
 
     // --------------------------//
@@ -463,10 +463,6 @@ public class VariantStorageManager extends StorageManager {
                 engine -> engine.distinct(query, field));
     }
 
-    public void facet() {
-        throw new UnsupportedOperationException();
-    }
-
     public VariantQueryResult<Variant> getPhased(Variant variant, String study, String sample, String sessionId, QueryOptions options)
             throws CatalogException, IOException, StorageEngineException {
         return secure(new Query(VariantQueryParam.STUDY.key(), study), options, sessionId,
@@ -609,7 +605,7 @@ public class VariantStorageManager extends StorageManager {
         return supplier.apply(variantStorageEngine);
     }
 
-    private <R extends QueryResult> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
+    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
                                              VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
         ObjectMap auditAttributes = new ObjectMap()
@@ -645,9 +641,9 @@ public class VariantStorageManager extends StorageManager {
             auditAttributes.append("storageTimeMillis", storageStopWatch == null
                     ? -1
                     : storageStopWatch.getTime(TimeUnit.MILLISECONDS));
-            if (result != null) {
-                auditAttributes.append("dbTime", result.getDbTime());
-                auditAttributes.append("numResults", result.getResult().size());
+            if (result instanceof QueryResult) {
+                auditAttributes.append("dbTime", ((QueryResult) result).getDbTime());
+                auditAttributes.append("numResults", ((QueryResult) result).getResult().size());
             }
             auditAttributes.append("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS));
             auditAttributes.append("error", result == null);
@@ -667,12 +663,6 @@ public class VariantStorageManager extends StorageManager {
                     dbName,
                     userId, null, null, auditAction, auditAttributes);
         }
-    }
-
-    private <R> R secure(Query facetedQuery, Query query, QueryOptions queryOptions,
-                         String sessionId, VariantReadOperation<R> supplier)
-            throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, supplier);
     }
 
     private Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
@@ -700,7 +690,7 @@ public class VariantStorageManager extends StorageManager {
                 String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
                     List<QueryResult<Sample>> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
-                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId);
+                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId);
                     if (samplesQueryResult.size() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");
@@ -771,6 +761,9 @@ public class VariantStorageManager extends StorageManager {
         if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_DISORDER.key())) {
             query.put(VariantCatalogQueryUtils.FAMILY_DISORDER.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_DISORDER.key()));
         }
+        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_PROBAND.key())) {
+            query.put(VariantCatalogQueryUtils.FAMILY_PROBAND.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_PROBAND.key()));
+        }
         if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key())) {
             query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(),
                     queryOptions.get(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key()));
@@ -797,7 +790,7 @@ public class VariantStorageManager extends StorageManager {
 
     public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, engine -> {
+        return secure(query, queryOptions, sessionId, "facet", engine -> {
             addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
             FacetQueryResult result = engine.facet(query, queryOptions);

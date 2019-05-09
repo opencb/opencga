@@ -145,7 +145,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("LDAP_RDN", rdn);
-            User user = new User(uid, displayName, mail, "", usersSearch, new Account().setType(Account.GUEST).setAuthOrigin(originId),
+            User user = new User(uid, displayName, mail, "", usersSearch, new Account().setType(Account.Type.GUEST)
+                    .setAuthentication(new Account.AuthenticationOrigin(originId, false)),
                     User.UserStatus.READY, "", -1, -1, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), attributes);
 
             userList.add(user);

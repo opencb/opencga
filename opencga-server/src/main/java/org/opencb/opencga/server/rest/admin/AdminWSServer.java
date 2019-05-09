@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -13,8 +14,8 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.server.rest.PanelWSServer;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
+import org.opencb.opencga.server.rest.PanelWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -44,12 +45,12 @@ public class AdminWSServer extends OpenCGAWSServer {
                 createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
-            if (user.account == null) {
-                user.account = Account.GUEST;
+            if (user.type == null) {
+                user.type = Account.Type.GUEST;
             }
 
             QueryResult queryResult = catalogManager.getUserManager()
-                    .create(user.id, user.name, user.email, user.password, user.organization, null, user.account, queryOptions, sessionId);
+                    .create(user.id, user.name, user.email, user.password, user.organization, null, user.type, queryOptions, sessionId);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -60,25 +61,39 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/users/import")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Import users or a group of users from LDAP", response = User.class,
-            notes = "One of <b>users</b> or <b>group</b> need to be filled in at least. <br>"
+    @ApiOperation(value = "Import users or a group of users from LDAP or AAD", response = User.class,
+            notes = "<b>id</b> contain a list of resource ids (users or applications) or a single group id to be imported and "
+                    + "<b>resourceType</b> contains the type of resource present in the 'id' field (USER, GROUP or APPLICATION). <br>"
                     + "Optionally, <b>study</b> and <b>studyGroup</b> can be passed. If so, a group with name <b>studyGroup</b> will be "
                     + "created in the study <b>study</b> containing the list of users imported. <br>"
                     + "<b>authenticationOriginId</b> will correspond to the authentication origin id defined in the main Catalog "
                     + "configuration. <br>"
                     + "<b>type</b> will be one of 'guest' or 'full'. If not provided, it will be considered 'guest' by default."
     )
-    public Response ldapImport(@ApiParam(value = "JSON containing the parameters", required = true) LDAPImportParams ldapParams) {
+    public Response remoteImport(@ApiParam(value = "JSON containing the parameters", required = true) RemoteImportParams remoteParams) {
         try {
-            ObjectMap params = new ObjectMap();
-            params.putIfNotNull("users", ldapParams.users);
-            params.putIfNotNull("group", ldapParams.group);
-            params.putIfNotNull("study", ldapParams.study);
-            params.putIfNotNull("study-group", ldapParams.studyGroup);
-//            params.putIfNotNull("expirationDate", executor.expDate);
+            if (remoteParams.resourceType == null) {
+                throw new CatalogException("Missing mandatory 'resourceType' field.");
+            }
+            if (ListUtils.isEmpty(remoteParams.id)) {
+                throw new CatalogException("Missing mandatory 'id' field.");
+            }
 
-            return createOkResponse(catalogManager.getUserManager().importFromExternalAuthOrigin(ldapParams.authenticationOriginId,
-                    ldapParams.account, params, sessionId));
+            if (remoteParams.resourceType == ResourceType.USER || remoteParams.resourceType == ResourceType.APPLICATION) {
+                catalogManager.getUserManager().importRemoteEntities(remoteParams.authenticationOriginId, remoteParams.id,
+                        remoteParams.resourceType == ResourceType.APPLICATION, remoteParams.studyGroup, remoteParams.study, sessionId);
+            } else if (remoteParams.resourceType == ResourceType.GROUP) {
+                if (remoteParams.id.size() > 1) {
+                    throw new CatalogException("More than one group found in 'id'. Only one group is accepted at a time");
+                }
+
+                catalogManager.getUserManager().importRemoteGroupOfUsers(remoteParams.authenticationOriginId, remoteParams.id.get(0),
+                        remoteParams.studyGroup, remoteParams.study, false, sessionId);
+            } else {
+                throw new CatalogException("Unknown resourceType '" + remoteParams.resourceType + "'");
+            }
+
+            return createOkResponse("OK");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -264,16 +279,21 @@ public class AdminWSServer extends OpenCGAWSServer {
     }
 
     public static class UserCreateParams extends org.opencb.opencga.server.rest.UserWSServer.UserCreatePOST {
-        public String account;
+        public Account.Type type;
     }
 
-    public static class LDAPImportParams {
+    public static class RemoteImportParams {
         public String authenticationOriginId;
-        public List<String> users;
-        public String group;
+        public List<String> id;
+        public ResourceType resourceType;
         public String study;
         public String studyGroup;
-        public String account;
+    }
+
+    public enum ResourceType {
+        USER,
+        GROUP,
+        APPLICATION
     }
 
     public static class LDAPSyncParams {

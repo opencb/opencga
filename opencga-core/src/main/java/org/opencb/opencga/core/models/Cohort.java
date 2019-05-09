@@ -171,7 +171,6 @@ public class Cohort extends Annotable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -331,7 +330,6 @@ public class Cohort extends Annotable {
         return release == cohort.release
                 && Objects.equals(uuid, cohort.uuid)
                 && Objects.equals(id, cohort.id)
-                && Objects.equals(name, cohort.name)
                 && type == cohort.type
                 && Objects.equals(creationDate, cohort.creationDate)
                 && Objects.equals(status, cohort.status)
@@ -344,7 +342,7 @@ public class Cohort extends Annotable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, id, name, type, creationDate, status, description, samples, family, stats, release, attributes);
+        return Objects.hash(uuid, id, type, creationDate, status, description, samples, family, stats, release, attributes);
     }
 
 }

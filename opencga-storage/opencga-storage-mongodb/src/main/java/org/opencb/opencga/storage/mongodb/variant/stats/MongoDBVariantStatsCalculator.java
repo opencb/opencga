@@ -108,7 +108,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
             addGt(gtStrCount, defaultGenotype, unknownGenotypes);
 
             Map<Genotype, Integer> gtCountMap = new HashMap<>(gtStrCount.size());
-            gtStrCount.forEach((str, count) -> gtCountMap.compute(new Genotype(str, variant.getReference(), variant.getAlternate()),
+            gtStrCount.forEach((str, count) -> gtCountMap.compute(new Genotype(str),
                     (key, value) -> value == null ? count : value + count));
 
             VariantStats stats = VariantStatsCalculator.calculate(variant, gtCountMap);
