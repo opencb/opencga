@@ -865,7 +865,7 @@ public class VariantSqlQueryParser {
                 // If empty, should find none. Add non-existing genotype
                 // TODO: Fast empty result
                 if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
-                    genotypes.add("x/x");
+                    genotypes.add(GenotypeClass.NONE_GT_VALUE);
                 }
 
                 List<String> sampleGtFilters = new ArrayList<>(genotypes.size());

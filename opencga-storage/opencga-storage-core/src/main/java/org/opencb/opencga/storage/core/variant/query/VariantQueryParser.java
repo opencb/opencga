@@ -326,7 +326,7 @@ public class VariantQueryParser {
 
                 if (genotypes.isEmpty()) {
                     // TODO: Do fast fail, NO RESULTS!
-                    genotypes = Collections.singletonList("x/x");
+                    genotypes = Collections.singletonList(GenotypeClass.NONE_GT_VALUE);
                 }
 
                 if (sb.length() > 0) {
