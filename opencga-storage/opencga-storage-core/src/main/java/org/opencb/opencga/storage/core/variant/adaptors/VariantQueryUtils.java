@@ -141,6 +141,56 @@ public final class VariantQueryUtils {
 
     private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
 
+    public enum SoBiotypeFlagCombination {
+        NONE,
+
+        SO,
+        BIOTYPE,
+        FLAG,
+
+        SO_BIOTYPE,
+        SO_FLAG,
+        SO_BIOTYPE_FLAG,
+
+        BIOTYPE_FLAG;
+
+        public boolean isSo() {
+            return name().startsWith("SO");
+        }
+
+        public boolean isBiotype() {
+            return name().contains("BIOTYPE");
+        }
+
+        public boolean isFlag() {
+            return name().endsWith("FLAG");
+        }
+
+        public static SoBiotypeFlagCombination fromQuery(Query query) {
+            //            boolean flagCombined = false; // Is flag being used in the combination?
+            String combination = "";
+            combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "SO_" : "";
+            combination += isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
+            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                List<String> flags = new LinkedList<>(query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key()));
+                flags.remove("basic");
+                flags.remove("CCDS");
+                // If empty, only contains "basic" or "CCDS"
+                if (flags.isEmpty()) {
+                    combination += "FLAG";
+                }
+            }
+            if (combination.isEmpty()) {
+                return SoBiotypeFlagCombination.NONE;
+            } else {
+                if (combination.endsWith("_")) {
+                    combination = combination.substring(0, combination.length() - 1);
+                }
+                return valueOf(combination);
+            }
+        }
+    }
+
     interface VariantMixin {
         // Serialize variants with "toString". Used to serialize queries.
         @JsonValue
