@@ -238,31 +238,42 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1kG_phase3__CEU":0.0053191,popFreq__1kG_phase3__CLM">0.0125319"
         key = ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(
-                    ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null));
         }
 
         // MAF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(
-                    ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null));
         }
 
         // REF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(
-                    ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null));
         }
 
-        // stats maf
-        // in the model: "stats__1kg_phase3__ALL"=0.02
+        // Stats ALT
+        // In the model: "stats__1kg_phase3__ALL"=0.02
+        key = STATS_ALT.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parsePopFreqValue(STATS_ALT, "stats", query.getString(key), "ALT", defaultStudyName));
+        }
+
+        // Stats MAF
+        // In the model: "stats__1kg_phase3__ALL"=0.02
         key = STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             filterList.add(parsePopFreqValue(STATS_MAF, "stats", query.getString(key), "MAF", defaultStudyName));
+        }
+
+        // Stats REF
+        // In the model: "stats__1kg_phase3__ALL"=0.02
+        key = STATS_REF.key();
+        if (StringUtils.isNotEmpty(query.getString(key))) {
+            filterList.add(parsePopFreqValue(STATS_REF, "stats", query.getString(key), "REF", defaultStudyName));
         }
 
         // GO
@@ -966,6 +977,7 @@ public class SolrQueryParser {
      * @param param        Param name
      * @param name         Paramenter type: propFreq or stats
      * @param value        Paramenter value
+     * @param value        Type of frequency: REF, ALT, MAF
      * @param defaultStudy Default study. To be used only if the study is not present.
      * @return             The string with the boolean conditions
      */
