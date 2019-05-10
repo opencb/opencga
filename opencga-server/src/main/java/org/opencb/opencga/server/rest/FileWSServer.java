@@ -336,8 +336,9 @@ public class FileWSServer extends OpenCGAWSServer {
                              @QueryParam("study") String studyStr) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId);
-            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
+            try (DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId)) {
+                return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -359,8 +360,9 @@ public class FileWSServer extends OpenCGAWSServer {
             catalogManager.getAuthorizationManager().checkFilePermission(study.getUid(), file.getUid(), userId,
                     FileAclEntry.FilePermissions.VIEW_CONTENT);
 
-            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, sessionId);
-            return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            try (DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, sessionId)) {
+                return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -387,8 +389,9 @@ public class FileWSServer extends OpenCGAWSServer {
 
             QueryOptions options = new QueryOptions("ignoreCase", ignoreCase);
             options.put("multi", multi);
-            DataInputStream stream = catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, options, sessionId);
-            return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            try (DataInputStream stream = catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, options, sessionId)) {
+                return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
