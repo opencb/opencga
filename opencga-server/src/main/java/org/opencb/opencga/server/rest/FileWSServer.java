@@ -188,8 +188,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @FormDataParam("study") String studyStr,
-            @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
-                    required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
+            @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
                     String description,
             @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
@@ -200,8 +199,12 @@ public class FileWSServer extends OpenCGAWSServer {
 
         long t = System.currentTimeMillis();
 
-        if (!relativeFilePath.endsWith("/")) {
-            relativeFilePath = relativeFilePath + "/";
+        if (StringUtils.isNotEmpty(relativeFilePath)) {
+            if (relativeFilePath.equals(".")) {
+                relativeFilePath = "";
+            } else if (!relativeFilePath.endsWith("/")) {
+                relativeFilePath = relativeFilePath + "/";
+            }
         }
 
         if (relativeFilePath.startsWith("/")) {
@@ -333,8 +336,9 @@ public class FileWSServer extends OpenCGAWSServer {
                              @QueryParam("study") String studyStr) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId);
-            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
+            try (DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId)) {
+                return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -356,8 +360,9 @@ public class FileWSServer extends OpenCGAWSServer {
             catalogManager.getAuthorizationManager().checkFilePermission(study.getUid(), file.getUid(), userId,
                     FileAclEntry.FilePermissions.VIEW_CONTENT);
 
-            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, sessionId);
-            return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            try (DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, sessionId)) {
+                return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -384,8 +389,9 @@ public class FileWSServer extends OpenCGAWSServer {
 
             QueryOptions options = new QueryOptions("ignoreCase", ignoreCase);
             options.put("multi", multi);
-            DataInputStream stream = catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, options, sessionId);
-            return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            try (DataInputStream stream = catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, options, sessionId)) {
+                return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -493,9 +499,9 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Status", required = false) @DefaultValue("") @QueryParam("status") String status,
             @ApiParam(value = "Directory under which we want to look for files or folders", required = false) @DefaultValue("") @QueryParam("directory") String directory,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
             @ApiParam(value = "Tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") String size,
@@ -1252,7 +1258,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog file stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Name") @QueryParam("name") String name,
             @ApiParam(value = "Type") @QueryParam("type") String type,
             @ApiParam(value = "Format") @QueryParam("format") String format,

@@ -193,7 +193,7 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1");
-        String expectedFilter = "&q=*:*&fq=(stats__platinum__ALL:[0+TO+0.1}+OR+(*+-stats__platinum__ALL:*))";
+        String expectedFilter = "&q=*:*&fq=(stats__platinum__ALL:[0+TO+0.1})";
 
         // Without study
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
@@ -225,9 +225,9 @@ public class SolrQueryParserTest {
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1;OTH<0.1");
         String expectedFilter = "&q=*:*&fq="
-                + "((stats__platinum__ALL:[0+TO+0.1}+OR+(*+-stats__platinum__ALL:*))"
+                + "((stats__platinum__ALL:[0+TO+0.1})"
                 + "+AND+"
-                + "(stats__platinum__OTH:[0+TO+0.1}+OR+(*+-stats__platinum__OTH:*)))";
+                + "(stats__platinum__OTH:[0+TO+0.1}))";
 
         // Without study
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
