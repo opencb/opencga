@@ -183,6 +183,7 @@ public class SolrQueryParser {
 
         // now we continue with the other AND conditions...
         // Study (study)
+        boolean studiesOr = false;
         StudyMetadata defaultStudy = getDefaultStudy(query, queryOptions, variantStorageMetadataManager);
         String defaultStudyName = defaultStudy == null
                 ? null
@@ -203,6 +204,7 @@ public class SolrQueryParser {
 
                 if (op == null || op == QueryOperation.OR) {
                     filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ",")));
+                    studiesOr = true;
                 } else {
                     filterList.add(parseCategoryTermValue("studies", StringUtils.join(studyNames, ";")));
                 }
@@ -238,42 +240,42 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1kG_phase3__CEU":0.0053191,popFreq__1kG_phase3__CLM">0.0125319"
         key = ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null, false));
         }
 
         // MAF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null, false));
         }
 
         // REF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null, false));
         }
 
         // Stats ALT
         // In the model: "stats__1kg_phase3__ALL"=0.02
         key = STATS_ALT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_ALT, "stats", query.getString(key), "ALT", defaultStudyName));
+            filterList.add(parsePopFreqValue(STATS_ALT, "stats", query.getString(key), "ALT", defaultStudyName, studiesOr));
         }
 
         // Stats MAF
         // In the model: "stats__1kg_phase3__ALL"=0.02
         key = STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_MAF, "stats", query.getString(key), "MAF", defaultStudyName));
+            filterList.add(parsePopFreqValue(STATS_MAF, "stats", query.getString(key), "MAF", defaultStudyName, studiesOr));
         }
 
         // Stats REF
         // In the model: "stats__1kg_phase3__ALL"=0.02
         key = STATS_REF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_REF, "stats", query.getString(key), "REF", defaultStudyName));
+            filterList.add(parsePopFreqValue(STATS_REF, "stats", query.getString(key), "REF", defaultStudyName, studiesOr));
         }
 
         // GO
@@ -977,11 +979,13 @@ public class SolrQueryParser {
      * @param param        Param name
      * @param name         Paramenter type: propFreq or stats
      * @param value        Paramenter value
-     * @param value        Type of frequency: REF, ALT, MAF
+     * @param type         Type of frequency: REF, ALT, MAF
      * @param defaultStudy Default study. To be used only if the study is not present.
+     * @param studiesOr    True if multiple studies are present joined by , (i.e., OR logical operation), only for STATS
      * @return             The string with the boolean conditions
      */
-    private String parsePopFreqValue(VariantQueryParam param, String name, String value, String type, String defaultStudy) {
+    private String parsePopFreqValue(VariantQueryParam param, String name, String value, String type, String defaultStudy,
+                                     boolean studiesOr) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -995,12 +999,10 @@ public class SolrQueryParser {
             String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
 
             boolean addOr = true;
-
             List<String> values = splitValue(value, queryOperation);
             if (name.equals("stats")) {
-                addOr = (getNumberOfStudies(values, param, value, defaultStudy) > 1);
+                addOr = (studiesOr || getNumberOfStudies(values, param, value, defaultStudy) > 1);
             }
-
 
             List<String> list = new ArrayList<>(values.size());
             for (String v : values) {
