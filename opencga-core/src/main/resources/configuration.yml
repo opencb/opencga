@@ -26,11 +26,23 @@ monitor:
   fileDaemonInterval: 8000      # number of milliseconds between checks
   port: ${OPENCGA.MONITOR.PORT}
 
+healthCheck:
+  interval : 30 # seconds to get actual healthCheck than cache
+
 execution:
   mode: ${OPENCGA.EXECUTION.MODE}
+  maxConcurrentIndexJobs : 1 # only applies to local executor
   defaultQueue: ""
   availableQueues: ""
   toolsPerQueue: {}
+  options:
+    #Azure Batch Service information
+    batchAccount : "batchAccount"
+    batchKey : "batchKey"
+    batchUri : "https://batchservice.uksouth.batch.azure.com"
+    batchPoolId : "poolId"
+    dockerImageName : "openCGADockerImageName"
+    dockerArgs : "dockerRunOptions"
 
 email:
   host: ${OPENCGA.MAIL.HOST}
@@ -97,6 +109,10 @@ authentication:
 #      filters: tokenField1=aa,bb,cc;tokenField2=aa,bb,cc  # Optional. Filters to be applied. OpenCGA will check if tokenField1 = aa or bb
 #                # or cc and tokenField2 = aa or bb or cc. If any of the filters don't succeed, even if the user is properly authenticated
 #                # in AAD, the user will not be able to generate a token and login in OpenCGA.
+
+healthCheck:
+  # The interval at which the healthchecks run
+  interval: 30
 
 server:
   rest:

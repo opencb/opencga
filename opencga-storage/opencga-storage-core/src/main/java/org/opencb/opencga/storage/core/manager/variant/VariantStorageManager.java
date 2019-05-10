@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -59,6 +60,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -93,17 +95,16 @@ public class VariantStorageManager extends StorageManager {
 
     /**
      * Loads the given file into an empty study.
-     *
+     * <p>
      * The input file should have, in the same directory, a metadata file, with the same name ended with
      * {@link org.opencb.opencga.storage.core.variant.io.VariantExporter#METADATA_FILE_EXTENSION}
      *
-     *
-     * @param inputUri      Variants input file in avro format.
-     * @param study         Study where to load the variants
-     * @param sessionId     User's session id
-     * @throws CatalogException if there is any error with Catalog
-     * @throws IOException      if there is any I/O error
-     * @throws StorageEngineException  if there si any error loading the variants
+     * @param inputUri  Variants input file in avro format.
+     * @param study     Study where to load the variants
+     * @param sessionId User's session id
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws IOException            if there is any I/O error
+     * @throws StorageEngineException if there si any error loading the variants
      */
     public void importData(URI inputUri, String study, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
@@ -116,14 +117,15 @@ public class VariantStorageManager extends StorageManager {
 
     /**
      * Exports the result of the given query and the associated metadata.
-     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
-     * @param outputFormat  Output format.
-     * @param study         Study to export
-     * @param sessionId     User's session id
-     * @return              List of generated files
-     * @throws CatalogException if there is any error with Catalog
-     * @throws IOException  If there is any IO error
-     * @throws StorageEngineException  If there is any error exporting variants
+     *
+     * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat Output format.
+     * @param study        Study to export
+     * @param sessionId    User's session id
+     * @return List of generated files
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws IOException            If there is any IO error
+     * @throws StorageEngineException If there is any error exporting variants
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
@@ -556,6 +558,33 @@ public class VariantStorageManager extends StorageManager {
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Unable to get VariantDBAdaptor", e);
         }
+    }
+
+    public boolean isSolrAvailable() {
+        SolrManager solrManager = null;
+        try {
+            solrManager = new SolrManager(
+                    storageConfiguration.getSearch().getHosts(),
+                    storageConfiguration.getSearch().getMode(),
+                    storageConfiguration.getSearch().getTimeout());
+            String collectionName = "test_connection";
+            if (!solrManager.exists(collectionName)) {
+                solrManager.create(collectionName, VariantSearchManager.CONF_SET);
+            }
+        } catch (Exception e) {
+            logger.warn("Ignore exception checking if Solr is available", e);
+            return false;
+        } finally {
+            if (solrManager != null) {
+                try {
+                    solrManager.close();
+                } catch (IOException e) {
+                    logger.warn("Ignore exception closing Solr", e);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // Permission related methods

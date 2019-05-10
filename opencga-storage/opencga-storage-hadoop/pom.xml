@@ -237,7 +237,7 @@
             </activation>
             <properties>
                 <opencga-storage-hadoop-deps.classifier>hdp-2.6.5</opencga-storage-hadoop-deps.classifier>
-                <hdp.dependencies.version>2.6.5.90-1</hdp.dependencies.version>
+                <hdp.dependencies.version>2.6.5.3007-2</hdp.dependencies.version>
 
                 <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
                 <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>

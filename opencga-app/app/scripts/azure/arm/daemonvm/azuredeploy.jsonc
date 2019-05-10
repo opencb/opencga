@@ -1,0 +1,417 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "subnetName": {
+            "type": "string",
+            "defaultvalue": "default"
+        },
+        "virtualNetworkId": {
+            "type": "string"
+        },
+        "publicIpAddressType": {
+            "type": "string",
+            "defaultvalue": "Dynamic"
+        },
+        "publicIpAddressSku": {
+            "type": "string",
+            "defaultvalue": "Basic"
+        },
+        "osDiskType": {
+            "type": "string",
+            "defaultvalue": "Premium_LRS"
+        },
+        "virtualMachineSize": {
+            "type": "string",
+            "defaultvalue": "Standard_L8s"
+        },
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "opencgaadmin"
+        },
+        "openCgaAdminPassword": {
+            "type": "securestring"
+        },
+        "sshKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Admin password on all VMs."
+            }
+        },
+        "hdInsightSshDns": {
+            "type": "string"
+        },
+        "hdInsightSshUsername": {
+            "type": "string"
+        },
+        "hdInsightSshPassword": {
+            "type": "securestring"
+        },
+        "initContainerImage": {
+            "type": "string"
+        },
+        "daemonContainerImage": {
+            "type": "string"
+        },
+        "mountArgs": {
+            "type": "string"
+        },
+        "opencgaFQDN": {
+            "type": "string"
+        },
+        "solrHosts": {
+            "type": "array"
+        },
+        "solrUser": {
+            "type": "string"
+        },
+        "solrPassword": {
+            "type": "securestring"
+        },
+        "mongoDbHosts": {
+            "type": "array"
+        },
+        "mongoDbUser": {
+            "type": "string"
+        },
+        "mongoDbPassword": {
+            "type": "securestring"
+        },
+        "cellbaseRestUrls": {
+            "type": "string",
+            "metadata": {
+                "description": "A CSV list of cellbase REST service hosts"
+            }
+        },
+        "cellbaseMongoDbHosts": {
+            "type": "string",
+            "metadata": {
+                "description": "A CSV list of mongo DB hosts with the cellbase database"
+            }
+        },
+        "cellbaseMongoDbUser": {
+            "type": "string"
+        },
+        "cellbaseMongoDbPassword": {
+            "type": "securestring"
+        },
+        "catalogSecretKey": {
+            "type": "securestring"
+        },
+        "batchAccountName": {
+            "type": "string"
+        },
+        "batchEndpoint": {
+            "type": "string"
+        },
+        "batchAccountKey": {
+            "type": "string"
+        },
+        "batchPoolId": {
+            "type": "string"
+        },
+        "batchDockerArgs": {
+            "type": "string"
+        },
+        "batchContainerImage": {
+            "type": "string"
+        },
+        "batchMaxConcurrentJobs": {
+            "type": "int"
+        },
+        "healthCheckInterval": {
+            "type": "int",
+            "defaultValue": 30,
+            "metadata": {
+                "description": "HealthCheck cache interval value in seconds."
+            }
+        },
+        "LogAnalyticsWorkspaceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace ID"
+            }
+        },
+        "logAnalyticsWorkSpaceKey":{
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Key"
+            }
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
+        }
+    },
+    "variables": {
+        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+        "vnetId": "[parameters('virtualNetworkId')]",
+        "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+        "solrHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('solrHosts')), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', ''),'\"')]",
+        "mongoDbHostsCSV": "[concat('\"', replace(replace(replace(replace(string(parameters('mongoDbHosts')), ' ', ''), '[{\"fqdn\":\"', ''), '\"},{\"fqdn\":\"', ','), '\"}]', ''),'\"')]",
+        "restHost": "[concat('https://',parameters('opencgaFQDN'), '/opencga')]",
+        "grpcHost": "[concat('http://',parameters('opencgaFQDN'), ':9999')]",
+        "singleQuote": "'",
+        "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/scripts/mount.py -O /tmp/mount.py')]",
+        "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
+        // This build the command used to setup the configuration file for OpenCGA
+        // it takes in inputs from the larger ARM template to configure Mongo, SOLR, Storage and other settings
+        // the script used can be found here /opencga-app/app/scripts/docker/opencga-init/*.py
+        // NOTE> Editors will show this line as invalid JSON but as the `[]` denote the ARM language 
+        //       this functions correctly. 
+        "initCmd": "[concat('docker run  --name=opencga-init --mount type=bind,src=/media/primarynfs,dst=/opt/volume', 
+            ' -e INIT_OPENCGA_PASS=',parameters('openCgaAdminPassword'), 
+            ' -e INIT_HEALTH_CHECK_INTERVAL=',parameters('healthCheckInterval'), 
+            ' -e INIT_HBASE_SSH_DNS=',parameters('hdInsightSshDns'), 
+            ' -e INIT_HBASE_SSH_USER=',parameters('hdInsightSshUsername'), 
+            ' -e INIT_HBASE_SSH_PASS=',parameters('hdInsightSshPassword'), 
+            ' -e INIT_SEARCH_HOSTS=',variables('solrHostsCSV'), 
+            ' -e INIT_CELLBASE_MONGO_HOSTS=',variables('mongoDbHostsCSV'), 
+            ' -e INIT_CLINICAL_HOSTS=',variables('solrHostsCSV'), 
+            ' -e INIT_CATALOG_DATABASE_HOSTS=',variables('mongoDbHostsCSV'), 
+            ' -e INIT_CATALOG_DATABASE_USER=',parameters('mongoDbUser'), 
+            ' -e INIT_CATALOG_DATABASE_PASSWORD=',parameters('mongoDbPassword'), 
+            ' -e INIT_CATALOG_SEARCH_HOSTS=',variables('solrHostsCSV'), 
+            ' -e INIT_CATALOG_SEARCH_USER=',parameters('solrUser'), 
+            ' -e INIT_CATALOG_SEARCH_PASSWORD=',parameters('solrPassword'), 
+            ' -e INIT_REST_HOST=', variables('singleQuote'),variables('restHost'), variables('singleQuote'),
+            ' -e INIT_GRPC_HOST=', variables('singleQuote'), variables('grpcHost'), variables('singleQuote'),
+            ' -e INIT_BATCH_EXECUTION_MODE=AZURE ', 
+            ' -e INIT_BATCH_ACCOUNT_NAME=',parameters('batchAccountName'), 
+            ' -e INIT_BATCH_ACCOUNT_KEY=',parameters('batchAccountKey'), 
+            ' -e INIT_BATCH_ENDPOINT=',parameters('batchEndpoint'), 
+            ' -e INIT_BATCH_POOL_ID=',parameters('batchPoolId'), 
+            ' -e INIT_BATCH_DOCKER_ARGS=',variables('singleQuote'), parameters('batchDockerArgs'),variables('singleQuote'), 
+            ' -e INIT_BATCH_DOCKER_IMAGE=',parameters('batchContainerImage'), 
+            ' -e INIT_BATCH_MAX_CONCURRENT_JOBS=',string(parameters('batchMaxConcurrentJobs')), 
+            ' -e INIT_CELLBASE_MONGO_HOSTS=',string(parameters('cellbaseMongoDbHosts')),  
+            ' -e INIT_CELLBASE_MONGO_HOSTS_USER=',string(parameters('cellbaseMongoDbUser')), 
+            ' -e INIT_CELLBASE_MONGO_HOSTS_PASSWORD=',string(parameters('cellbaseMongoDbPassword')),  
+            ' -e INIT_CELLBASE_REST_URLS=',string(parameters('cellbaseRestUrls')),  
+            ' ', parameters('initContainerImage'), 
+            ' ', parameters('catalogSecretKey'))]",
+        // This command is used by cloud init to start the daemon service which monitors work and 
+        // queues jobs to run on AzureBatch when submitted
+        "daemonCmd": "[concat('docker run --name=opencga-daemon -d --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly',
+            ' --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions',
+            ' --mount type=bind,src=/media/primarynfs/variants,dst=/opt/opencga/variants',
+            ' -e OPENCGA_PASS=',parameters('openCgaAdminPassword'),' ',parameters('daemonContainerImage'))]",
+        // This command is used to start the Azure Monitoring agent and allow it to collect container logs
+        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock',
+            ' -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers',
+            ' -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),
+            ' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+        "cloud-init": [
+            "#cloud-config",
+            "",
+            "package_upgrade: true",
+            "package_reboot_if_required: true",
+            "",
+            "runcmd:",
+            " - 'apt-get update'",
+            " - 'curl -fsSL https://get.docker.com/ | sh'",
+            " - 'curl -fsSL https://get.docker.com/gpg | sudo apt-key add -'",
+            "[concat(' - ', variables('logAnalyticsAgent'))]",
+            "[concat(' - ', variables('getScriptCmd'))]",
+            "[concat(' - ', variables('mountCmd'))]",
+            "[concat(' - ', variables('initCmd'))]",
+            "[concat(' - ', variables('daemonCmd'))]",
+            ""
+        ],
+        "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
+        "customData": "[base64(variables('cloud-init-string'))]"
+    },
+    "resources": [
+        {
+            "name": "daemonvm-nic",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/', 'daemonvm-ip')]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('subnetRef')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', 'daemonvm-ip')]"
+                            }
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', 'daemonvm-nic')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/networkInterfaces','daemonvm-nic')]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "daemonvm-nic",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                      
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ],
+            "tags": {}
+        },
+        {
+            "name": "daemonvm-ip",
+            "type": "Microsoft.Network/publicIpAddresses",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', 'daemonvm-ip')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/publicIPAddresses','daemonvm-ip')]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "daemonvm-ip",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                            "category": "DDoSProtectionNotifications",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "enabled": false,
+                              "days": 0
+                            }
+                          },  
+                          {
+                            "category": "DDoSMitigationFlowLogs",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "enabled": false,
+                              "days": 0
+                            }
+                          },{
+                            "category": "DDoSMitigationReports",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "enabled": false,
+                              "days": 0
+                            }
+                          }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ],
+            "sku": {
+                "name": "[parameters('publicIpAddressSku')]"
+            },
+            "tags": {}
+        },
+        {
+            "name": "daemonvm",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2018-06-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', 'daemonvm-nic')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachineSize')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[parameters('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "18.04-LTS",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'daemonvm-nic')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "daemonvm",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": true,
+                        "ssh": {
+                            "publicKeys": [
+                                {
+                                    "path": "[variables('sshKeyPath')]",
+                                    "keyData": "[parameters('sshKeyData')]"
+                                }
+                            ]
+                        }
+                    },
+                    "customData": "[variables('customData')]"
+                }
+            },
+            "tags": {}
+        }
+    ],
+    "outputs": {
+        "adminUsername": {
+            "type": "string",
+            "value": "[parameters('adminUsername')]"
+        },
+        "cloud-config-string": {
+            "type": "string",
+            "value": "[variables('cloud-init-string')]"
+        }
+    }
+}

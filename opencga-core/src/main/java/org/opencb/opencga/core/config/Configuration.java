@@ -50,6 +50,7 @@ public class Configuration {
 
     private Admin admin;
     private Monitor monitor;
+    private HealthCheck healthCheck;
     private Execution execution;
     private Audit audit;
 
@@ -362,5 +363,14 @@ public class Configuration {
 
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
+    }
+
+    public HealthCheck getHealthCheck() {
+        return healthCheck;
+    }
+
+    public Configuration setHealthCheck(HealthCheck healthCheck) {
+        this.healthCheck = healthCheck;
+        return this;
     }
 }
