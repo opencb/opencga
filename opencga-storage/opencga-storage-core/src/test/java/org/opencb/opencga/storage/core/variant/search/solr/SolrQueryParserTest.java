@@ -109,7 +109,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"WASH7P_1792\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(geneToSoAcc:\"WASH7P_1792\")", solrQuery.toString());
     }
 
     @Test
@@ -122,6 +122,45 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
         assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:17700)", solrQuery.toString());
+    }
+
+    @Test
+    public void parseGene() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(GENE.key(), "WASH7P");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"WASH7P\"", solrQuery.toString());
+    }
+
+    @Test
+    public void parseBiotype() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_BIOTYPE.key(), "protein_coding");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=biotypes:\"protein_coding\"", solrQuery.toString());
+    }
+
+    @Test
+    public void parseGeneAndConsequenceTypeAndRegionAndBiotype() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(GENE.key(), "WASH7P");
+        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001792");
+        query.put(REGION.key(), "1:17700");
+        query.put(ANNOT_BIOTYPE.key(), "protein_coding");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\"+AND+start:17700))+AND+(geneToSoAcc:\"protein_coding_1792\"))+OR+(geneToSoAcc:\"WASH7P_protein_coding_1792\")", solrQuery.toString());
     }
 
     @Test
@@ -498,7 +537,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"NCF4_1583\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"NCF4_1583\")", solrQuery.toString());
     }
 
     @Test
@@ -514,7 +553,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\")", solrQuery.toString());
     }
 
     @Test
@@ -532,7 +571,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\")+OR+geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\"))+OR+(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\")", solrQuery.toString());
     }
 
     @Test
@@ -549,7 +588,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\")", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\"))", solrQuery.toString());
     }
 
     @Test
