@@ -183,9 +183,10 @@ public class SolrQueryParser {
 
         // now we continue with the other AND conditions...
         // Study (study)
+        @Deprecated
         boolean studiesOr = false;
         StudyMetadata defaultStudy = getDefaultStudy(query, queryOptions, variantStorageMetadataManager);
-        String defaultStudyName = defaultStudy == null
+        String defaultStudyName = (defaultStudy == null)
                 ? null
                 : VariantSearchToVariantConverter.studyIdToSearchModel(defaultStudy.getName());
         String key = STUDY.key();
@@ -240,42 +241,42 @@ public class SolrQueryParser {
         // in the search model: "popFreq__1kG_phase3__CEU":0.0053191,popFreq__1kG_phase3__CLM">0.0125319"
         key = ANNOT_POPULATION_ALTERNATE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null, false));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_ALTERNATE_FREQUENCY, "popFreq", query.getString(key), "ALT", null, null));
         }
 
         // MAF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null, false));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, "popFreq", query.getString(key), "MAF", null, null));
         }
 
         // REF population frequency
         // in the search model: "popFreq__1kG_phase3__CLM":0.005319148767739534
         key = ANNOT_POPULATION_REFERENCE_FREQUENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null, false));
+            filterList.add(parsePopFreqValue(ANNOT_POPULATION_REFERENCE_FREQUENCY, "popFreq", query.getString(key), "REF", null, null));
         }
 
         // Stats ALT
         // In the model: "stats__1kg_phase3__ALL"=0.02
         key = STATS_ALT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_ALT, "stats", query.getString(key), "ALT", defaultStudyName, studiesOr));
+            filterList.add(parsePopFreqValue(STATS_ALT, "stats", query.getString(key), "ALT", defaultStudyName, query.getString(STUDY.key())));
         }
 
         // Stats MAF
         // In the model: "stats__1kg_phase3__ALL"=0.02
         key = STATS_MAF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_MAF, "stats", query.getString(key), "MAF", defaultStudyName, studiesOr));
+            filterList.add(parsePopFreqValue(STATS_MAF, "stats", query.getString(key), "MAF", defaultStudyName, query.getString(STUDY.key())));
         }
 
         // Stats REF
         // In the model: "stats__1kg_phase3__ALL"=0.02
         key = STATS_REF.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parsePopFreqValue(STATS_REF, "stats", query.getString(key), "REF", defaultStudyName, studiesOr));
+            filterList.add(parsePopFreqValue(STATS_REF, "stats", query.getString(key), "REF", defaultStudyName, query.getString(STUDY.key())));
         }
 
         // GO
@@ -977,15 +978,15 @@ public class SolrQueryParser {
      *
      *
      * @param param        Param name
-     * @param name         Paramenter type: propFreq or stats
-     * @param value        Paramenter value
+     * @param name         Parameter type: propFreq or stats
+     * @param value        Parameter value
      * @param type         Type of frequency: REF, ALT, MAF
      * @param defaultStudy Default study. To be used only if the study is not present.
-     * @param studiesOr    True if multiple studies are present joined by , (i.e., OR logical operation), only for STATS
+     * @param studies    True if multiple studies are present joined by , (i.e., OR logical operation), only for STATS
      * @return             The string with the boolean conditions
      */
     private String parsePopFreqValue(VariantQueryParam param, String name, String value, String type, String defaultStudy,
-                                     boolean studiesOr) {
+                                     String studies) {
         // In Solr, range queries can be inclusive or exclusive of the upper and lower bounds:
         //    - Inclusive range queries are denoted by square brackets.
         //    - Exclusive range queries are denoted by curly brackets.
@@ -996,19 +997,39 @@ public class SolrQueryParser {
             value = value.replace("<", "<<");
 
             QueryOperation queryOperation = parseOrAndFilter(param, value);
-            String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
+            String logicalComparator = (queryOperation == QueryOperation.OR) ? " OR " : " AND ";
 
+            // We need to know if
             boolean addOr = true;
-            List<String> values = splitValue(value, queryOperation);
             if (name.equals("stats")) {
-                addOr = (studiesOr || getNumberOfStudies(values, param, value, defaultStudy) > 1);
+                if (StringUtils.isNotEmpty(studies) || StringUtils.isNotEmpty(defaultStudy)) {
+                    Set<String> studiesSet = new HashSet<>();
+                    if (defaultStudy != null) {
+                        studiesSet.add(defaultStudy);
+                    }
+                    // Studies...
+                    if (studies != null && !studies.contains(",")) {
+                        studiesSet.addAll(Arrays.asList(studies.split(";")));
+                    }
+
+                    if (studiesSet.size() > 0) {
+                        List<String> values = splitValue(value, queryOperation);
+                        addOr = false;
+                        for (String val: values) {
+                            String std = val.contains(":") ? val.split(":")[0] : defaultStudy;
+                            if (!studiesSet.contains(std)) {
+                                addOr = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
+            List<String> values = splitValue(value, queryOperation);
             List<String> list = new ArrayList<>(values.size());
             for (String v : values) {
-
                 String[] keyOpValue = splitOperator(v);
-
                 String studyPop = keyOpValue[0];
                 String op = keyOpValue[1];
                 String numValue = keyOpValue[2];
@@ -1034,7 +1055,8 @@ public class SolrQueryParser {
                 }
 
                 if (name.equals("popFreq")) {
-                    if (study.equals("GNOMAD_GENOMES") && pop.equals("ALL")) {
+                    if ((study.equals("1kG_phase3") || study.equals("GNOMAD_GENOMES") || study.equals("GNOMAD_EXOMES"))
+                            && pop.equals("ALL")) {
                         addOr = false;
                     } else {
                         addOr = true;
@@ -1054,32 +1076,32 @@ public class SolrQueryParser {
         return sb.toString();
     }
 
-    private int getNumberOfStudies(List<String> values, VariantQueryParam paramName, String paramValue, String defaultStudy) {
-        Set<String> studies = new HashSet<>();
-
-        for (String v : values) {
-            String[] keyOpValue = splitOperator(v);
-
-            String studyPop = keyOpValue[0];
-            if (studyPop == null) {
-                throw VariantQueryException.malformedParam(paramName, paramValue);
-            }
-
-            String[] studyPopSplit = splitStudyResource(studyPop);
-            String study;
-            if (studyPopSplit.length == 2) {
-                study = VariantSearchToVariantConverter.studyIdToSearchModel(studyPopSplit[0]);
-            } else {
-                if (StringUtils.isEmpty(defaultStudy)) {
-                    throw VariantQueryException.malformedParam(paramName, paramValue, "Missing study");
-                }
-                study = defaultStudy;
-            }
-            studies.add(study);
-        }
-
-        return studies.size();
-    }
+//    private int getNumberOfStudies(List<String> values, VariantQueryParam paramName, String paramValue, String defaultStudy) {
+//        Set<String> studies = new HashSet<>();
+//
+//        for (String v : values) {
+//            String[] keyOpValue = splitOperator(v);
+//
+//            String studyPop = keyOpValue[0];
+//            if (studyPop == null) {
+//                throw VariantQueryException.malformedParam(paramName, paramValue);
+//            }
+//
+//            String[] studyPopSplit = splitStudyResource(studyPop);
+//            String study;
+//            if (studyPopSplit.length == 2) {
+//                study = VariantSearchToVariantConverter.studyIdToSearchModel(studyPopSplit[0]);
+//            } else {
+//                if (StringUtils.isEmpty(defaultStudy)) {
+//                    throw VariantQueryException.malformedParam(paramName, paramValue, "Missing study");
+//                }
+//                study = defaultStudy;
+//            }
+//            studies.add(study);
+//        }
+//
+//        return studies.size();
+//    }
 
     private String[] getMafOrRefFrequency(String type, String operator, String value) {
         String[] opValue = new String[2];

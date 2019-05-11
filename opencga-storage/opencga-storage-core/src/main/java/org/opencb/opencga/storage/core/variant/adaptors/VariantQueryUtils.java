@@ -528,8 +528,7 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static StudyMetadata getDefaultStudy(Query query, QueryOptions options,
-                                                VariantStorageMetadataManager metadataManager) {
+    public static StudyMetadata getDefaultStudy(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
         final StudyMetadata defaultStudy;
         if (isValidParam(query, STUDY)) {
             String value = query.getString(STUDY.key());
@@ -538,14 +537,11 @@ public final class VariantQueryUtils {
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
             List<String> studiesNames = splitValue(value, studiesOperation);
             List<Integer> studyIds = metadataManager.getStudyIds(studiesNames); // Non negated studyIds
-
-
             if (studyIds.size() == 1) {
                 defaultStudy = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {
                 defaultStudy = null;
             }
-
         } else {
             List<String> studyNames = metadataManager.getStudyNames();
             if (studyNames != null && studyNames.size() == 1) {
