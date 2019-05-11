@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.models.Job;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;
@@ -29,9 +30,10 @@ import java.io.IOException;
 /**
  * Created by pfurio on 22/08/16.
  */
-public class LocalExecutor extends AbstractExecutor {
+public class LocalExecutor implements BatchExecutor {
 
     private static int threadInitNumber;
+    private static Logger logger;
 
     public LocalExecutor() {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
@@ -41,7 +43,7 @@ public class LocalExecutor extends AbstractExecutor {
     public void execute(Job job, String token) throws Exception {
         Runnable runnable = () -> {
             try {
-                ExecutorConfig executorConfig = getExecutorConfig(job);
+                ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
 
                 logger.info("Ready to run {}", job.getCommandLine());
                 Command com = new Command(getCommandLine(job, token));
@@ -112,7 +114,7 @@ public class LocalExecutor extends AbstractExecutor {
     }
 
     @Override
-    protected String getStatus(Job job) {
+    public String getStatus(Job job) {
         return Job.JobStatus.UNKNOWN;
     }
 

@@ -1,0 +1,115 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "identityName": {
+            "type": "string"
+        },
+        "functionAppName": {
+            "type": "string"
+        },
+        "vaultName": {
+            "type": "string"
+        },
+        "objectId": {
+            "type": "string",
+            "metadata": {
+              "description": "Specifies the object ID of a user, service principal or security group in the Azure Active Directory tenant for the vault. The object ID must be unique for the list of access policies. Get it by using Get-AzADUser or Get-AzADServicePrincipal cmdlets."
+            }
+        },
+        "appGwName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "Owner": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
+        "roleNameGuid": "[guid(concat(resourceGroup().id, 'appgw'))]",
+        "bootstrapRoleAssignmentId": "[guid(concat(resourceGroup().id, 'contributor'))]",
+        "roleScope": "[resourceGroup().id]",
+        "tenantId": "[subscription().tenantId]",
+        "functionName": "requestCertificate",
+        "singleQuote": "'"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.KeyVault/vaults/accessPolicies",
+            "name": "[concat(parameters('vaultName'), '/add')]",
+            "apiVersion": "2016-10-01",
+            "properties": {
+                "accessPolicies": [
+                    {
+                        "tenantId": "[variables('tenantId')]",
+                        "objectId": "[parameters('objectId')]",
+                        "permissions": {
+                            "secrets": ["all"],
+                            "certificates": ["all"]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2017-05-01",
+            "name": "[variables('roleNameGuid')]",
+            "properties": {
+              "roleDefinitionId": "[variables('Owner')]",
+              "principalId": "[parameters('objectId')]",
+              "scope": "[variables('roleScope')]"
+            }
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2017-09-01",
+            "name": "[variables('bootstrapRoleAssignmentId')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleNameGuid'))]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('Owner')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2015-08-31-preview').principalId]",
+                "scope": "[variables('roleScope')]"
+            }
+        },
+        {
+            "name": "function-runner-containerinstance",
+            "type": "Microsoft.ContainerInstance/containerGroups",
+            "apiVersion": "2018-10-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Authorization/roleAssignments', variables('roleNameGuid'))]",
+                "[resourceId('Microsoft.Authorization/roleAssignments', variables('bootstrapRoleAssignmentId'))]"
+            ],
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName'))]": {}
+                }
+            },
+            "properties": {
+                "containers": [
+                    {
+                        "name": "function-runner",
+                        "properties": {
+                            "image": "microsoft/azure-cli",
+                            "command": [
+                                "/bin/sh",
+                                "-c",
+                                "[concat('sleep 45; az login --identity -u ', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '; appName=', parameters('functionAppName'), '; resourceGroup=', resourceGroup().name, '; appGwName=', parameters('appGwName'), '; functionName=', variables('functionName'), '; subscriptionId=$(az account show -o tsv --query id); accessToken=$(az account get-access-token -o tsv --query accessToken); echo $accessToken; functionToken=$(curl -H \"portal-token: ${accessToken}\" https://functions.azure.com/api/runtimetoken/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.Web/sites/${appName}); echo $functionToken; functionToken=$(echo -n $functionToken | tail -c +2 | head -c -1); echo $functionToken; while [ -z \"$functionKey\" ]; do functionKey=$(curl -H \"Authorization: Bearer ${functionToken}\" https://${appName}.azurewebsites.net/admin/functions/${functionName}/keys | jq ', variables('singleQuote'), '.keys[0].value', variables('singleQuote'), ' -r); sleep 30; done; echo $functionKey; az functionapp config appsettings set -g ${resourceGroup} -n ${appName} --settings reqFnKey=\"${functionKey}\"; while [ \"$status\" != \"Updating\" ]; do curl https://${appName}.azurewebsites.net/api/${functionName}?code=${functionKey}; sleep 120; status=$(az network application-gateway show -g ${resourceGroup} -n ${appGwName} --query provisioningState -o tsv); done')]"
+                            ],
+                            "environmentVariables": [],
+                            "resources": {
+                                "requests": {
+                                    "cpu": "1.0",
+                                    "memoryInGb": "1.5"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "restartPolicy": "OnFailure",
+                "osType": "Linux"
+            }
+        }
+    ]
+}
