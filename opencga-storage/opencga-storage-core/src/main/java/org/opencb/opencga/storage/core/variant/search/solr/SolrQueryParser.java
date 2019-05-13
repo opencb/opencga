@@ -438,7 +438,6 @@ public class SolrQueryParser {
                 onlyCobinationPart = combinationPart;
                 break;
             case CT:
-//                combinationPart = parseCategoryTermValue("soAcc", cts); ??
                 combinationPart = buildConsequenceTypeOrAnd(consequenceTypes, ctLogicalOperator);
                 geneCombinationPart = buildFrom(genes, cts);
                 onlyCobinationPart = combinationPart;
@@ -450,7 +449,12 @@ public class SolrQueryParser {
                 break;
             case FLAG:
                 combinationPart = parseCategoryTermValue("other",  "TRANS*" + query.getString(ANNOT_TRANSCRIPT_FLAG.key()));
-                geneCombinationPart = buildFrom(genes, flags);
+                if (CollectionUtils.isNotEmpty(genes)) {
+                    geneCombinationPart = "(" + buildXrefOrGeneOrRegion(null, genes, null) + ") AND (" + combinationPart + ")";
+                } else {
+                    geneCombinationPart = "";
+                    //geneCombinationPart = "(" + combinationPart + ")";
+                }
                 onlyCobinationPart = combinationPart;
                 break;
             case BIOTYPE_FLAG:
@@ -1239,29 +1243,31 @@ public class SolrQueryParser {
         }
 
         // and now regions
-        for (Region region: regions) {
-            if (StringUtils.isNotEmpty(region.getChromosome())) {
-                // Clean chromosome
-                String chrom = region.getChromosome();
-                chrom = chrom.replace("chrom", "");
-                chrom = chrom.replace("chrm", "");
-                chrom = chrom.replace("chr", "");
-                chrom = chrom.replace("ch", "");
+        if (CollectionUtils.isNotEmpty(regions)) {
+            for (Region region : regions) {
+                if (StringUtils.isNotEmpty(region.getChromosome())) {
+                    // Clean chromosome
+                    String chrom = region.getChromosome();
+                    chrom = chrom.replace("chrom", "");
+                    chrom = chrom.replace("chrm", "");
+                    chrom = chrom.replace("chr", "");
+                    chrom = chrom.replace("ch", "");
 
-                if (sb.length() > 0) {
-                    sb.append(" OR ");
+                    if (sb.length() > 0) {
+                        sb.append(" OR ");
+                    }
+                    sb.append("(");
+                    if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
+                        sb.append("chromosome:\"").append(chrom).append("\"");
+                    } else if (region.getEnd() == Integer.MAX_VALUE) {
+                        sb.append("chromosome:\"").append(chrom).append("\" AND start:").append(region.getStart());
+                    } else {
+                        sb.append("chromosome:\"").append(chrom)
+                                .append("\" AND start:[").append(region.getStart()).append(" TO *]")
+                                .append(" AND end:[* TO ").append(region.getEnd()).append("]");
+                    }
+                    sb.append(")");
                 }
-                sb.append("(");
-                if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
-                    sb.append("chromosome:\"").append(chrom).append("\"");
-                } else if (region.getEnd() == Integer.MAX_VALUE) {
-                    sb.append("chromosome:\"").append(chrom).append("\" AND start:").append(region.getStart());
-                } else {
-                    sb.append("chromosome:\"").append(chrom)
-                            .append("\" AND start:[").append(region.getStart()).append(" TO *]")
-                            .append(" AND end:[* TO ").append(region.getEnd()).append("]");
-                }
-                sb.append(")");
             }
         }
 
