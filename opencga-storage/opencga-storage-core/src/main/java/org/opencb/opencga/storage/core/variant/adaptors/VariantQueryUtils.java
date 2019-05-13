@@ -141,21 +141,18 @@ public final class VariantQueryUtils {
 
     private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
 
-    public enum SoBiotypeFlagCombination {
+    public enum BiotypeConsquenceTypeFlagCombination {
         NONE,
-
-        SO,
         BIOTYPE,
-        FLAG,
+        BIOTYPE_CT,
+        BIOTYPE_FLAG,
+        BIOTYPE_CT_FLAG,
+        CT,
+        CT_FLAG,
+        FLAG;
 
-        SO_BIOTYPE,
-        SO_FLAG,
-        SO_BIOTYPE_FLAG,
-
-        BIOTYPE_FLAG;
-
-        public boolean isSo() {
-            return name().startsWith("SO");
+        public boolean isConsequenceType() {
+            return name().contains("CT");
         }
 
         public boolean isBiotype() {
@@ -166,22 +163,21 @@ public final class VariantQueryUtils {
             return name().endsWith("FLAG");
         }
 
-        public static SoBiotypeFlagCombination fromQuery(Query query) {
-            //            boolean flagCombined = false; // Is flag being used in the combination?
-            String combination = "";
-            combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "SO_" : "";
-            combination += isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
+        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query) {
+            // Do not change the order of the following lines, it must match the Enum values!
+            String combination = isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
+            combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "CT_" : "";
             if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
                 List<String> flags = new LinkedList<>(query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key()));
                 flags.remove("basic");
                 flags.remove("CCDS");
-                // If empty, only contains "basic" or "CCDS"
+                // If empty, it means it only contains "basic" or "CCDS"
                 if (flags.isEmpty()) {
                     combination += "FLAG";
                 }
             }
             if (combination.isEmpty()) {
-                return SoBiotypeFlagCombination.NONE;
+                return BiotypeConsquenceTypeFlagCombination.NONE;
             } else {
                 if (combination.endsWith("_")) {
                     combination = combination.substring(0, combination.length() - 1);

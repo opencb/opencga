@@ -371,7 +371,7 @@ public class VariantSqlQueryParser {
             regionFilters.add(getVariantFilter(variantQueryXref.getVariants()));
         }
 
-        SoBiotypeFlagCombination combination = SoBiotypeFlagCombination.fromQuery(query);
+        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query);
         boolean flagCombined = combination.isFlag(); // Is flag being used in the combination?
 
         boolean onlyGeneRegionFilter = regionFilters.isEmpty();
@@ -389,10 +389,10 @@ public class VariantSqlQueryParser {
 
             final List<String> combinedFilters;
             switch (combination) {
-                case SO:
+                case CT:
                     combinedFilters = combineGeneSo(query, genes);
                     break;
-                case SO_FLAG:
+                case CT_FLAG:
                     combinedFilters = combineGeneSoFlag(query, genes);
                     break;
                 case BIOTYPE_FLAG:
@@ -402,10 +402,10 @@ public class VariantSqlQueryParser {
                 case BIOTYPE:
                     combinedFilters = combineGeneBiotype(query, genes);
                     break;
-                case SO_BIOTYPE:
+                case BIOTYPE_CT:
                     combinedFilters = combineGeneBiotypeSo(query, genes);
                     break;
-                case SO_BIOTYPE_FLAG:
+                case BIOTYPE_CT_FLAG:
                     // Combine geneBiotypeSo and geneSoFlag
                     List<String> geneBiotypeSo = combineGeneBiotypeSo(query, genes);
                     List<String> geneSoFlag = combineGeneSoFlag(query, genes);
@@ -1180,9 +1180,9 @@ public class VariantSqlQueryParser {
             }
         }
 
-        SoBiotypeFlagCombination combination = SoBiotypeFlagCombination.fromQuery(query);
+        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query);
         switch (combination) {
-            case SO:
+            case CT:
                 addQueryFilter(query, ANNOT_CONSEQUENCE_TYPE, VariantColumn.SO, filters, VariantQueryUtils::parseConsequenceType);
                 break;
             case FLAG:
@@ -1197,13 +1197,13 @@ public class VariantSqlQueryParser {
                 addQueryFilter(query, ANNOT_BIOTYPE, VariantColumn.BIOTYPE, filters);
                 addQueryFilter(query, ANNOT_TRANSCRIPT_FLAG, VariantColumn.TRANSCRIPT_FLAGS, filters);
                 break;
-            case SO_BIOTYPE:
+            case BIOTYPE_CT:
                 addSoBiotypeCombination(query, filters);
                 break;
-            case SO_FLAG:
+            case CT_FLAG:
                 addSoFlagCombination(query, filters);
                 break;
-            case SO_BIOTYPE_FLAG:
+            case BIOTYPE_CT_FLAG:
                 addSoBiotypeCombination(query, filters);
                 addSoFlagCombination(query, filters);
                 break;
