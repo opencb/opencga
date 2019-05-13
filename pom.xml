@@ -52,7 +52,7 @@
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
         <solr.version>6.4.2</solr.version>
-        <jetty.version>9.3.14.v20161028</jetty.version>
+        <jetty.version>9.4.12.v20180830</jetty.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <opencga.war.name>opencga</opencga.war.name>
