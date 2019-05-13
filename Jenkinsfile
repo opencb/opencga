@@ -53,7 +53,7 @@ pipeline {
              steps {
                 script {
                    def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "opencga-batch"]
-                   def tag = sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
+                   def tag = sh(returnStdout: true, script: "git log -1 --pretty=%h").trim()
                    withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
                        for(int i =0; i < images.size(); i++){
                            sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
