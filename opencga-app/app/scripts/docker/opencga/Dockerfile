@@ -1,13 +1,18 @@
 FROM ubuntu:16.04
 
-RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-
 RUN apt-get update && apt-get install -y software-properties-common && \
-    add-apt-repository ppa:webupd8team/java && apt-get update && \
-    apt-get install -y oracle-java8-installer openssh-client sshpass && \
+    apt-get install -y openjdk-8-jre && \
     java -version && \
     rm -rf /var/lib/apt/lists/* && \
-    apt-get clean
+    apt-get clean;
+
+RUN apt-get update && \
+    apt-get install ca-certificates-java && \
+    apt-get clean && \
+    update-ca-certificates -f;
+
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+RUN export JAVA_HOME
 
 ARG buildPath="./build"
 
