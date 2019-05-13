@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
+import org.opencb.opencga.core.models.Job;
+
 /**
  * Created by pfurio on 22/08/16.
  */
@@ -106,5 +108,40 @@ public class ExecutorConfig {
     public ExecutorConfig setOutdir(String outdir) {
         this.outdir = outdir;
         return this;
+    }
+
+    public static ExecutorConfig getExecutorConfig(Job job) {
+        ExecutorConfig executorConfig = null;
+
+        if (job != null && job.getResourceManagerAttributes() != null) {
+            executorConfig = new ExecutorConfig();
+
+            if (job.getResourceManagerAttributes().get(BatchExecutor.STDOUT) != null) {
+                executorConfig.setStdout(job.getResourceManagerAttributes().get(BatchExecutor.STDOUT).toString());
+            }
+
+            if (job.getResourceManagerAttributes().get(BatchExecutor.STDERR) != null) {
+                executorConfig.setStderr(job.getResourceManagerAttributes().get(BatchExecutor.STDERR).toString());
+            }
+
+            if (job.getResourceManagerAttributes().get(BatchExecutor.OUTDIR) != null) {
+                executorConfig.setOutdir(job.getResourceManagerAttributes().get(BatchExecutor.OUTDIR).toString());
+            }
+
+            if (job.getResourceManagerAttributes().get(BatchExecutor.TIMEOUT) != null) {
+                executorConfig.setTimeout(Integer.parseInt(job.getResourceManagerAttributes().get(BatchExecutor.TIMEOUT).toString()));
+            }
+
+            if (job.getResourceManagerAttributes().get(BatchExecutor.MAX_MEM) != null) {
+                executorConfig.setMaxMem(Integer.parseInt(job.getResourceManagerAttributes().get(BatchExecutor.MAX_MEM).toString()));
+            }
+
+            if (job.getResourceManagerAttributes().get(BatchExecutor.NUM_THREADS) != null) {
+                executorConfig.setNumThreads(Integer.parseInt(job.getResourceManagerAttributes()
+                        .get(BatchExecutor.NUM_THREADS).toString()));
+            }
+        }
+
+        return executorConfig;
     }
 }

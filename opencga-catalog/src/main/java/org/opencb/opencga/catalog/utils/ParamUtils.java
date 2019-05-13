@@ -98,7 +98,7 @@ public class ParamUtils {
         if (userId == null || userId.isEmpty()) {
             throw new CatalogParameterException("Missing user id.");
         }
-        if (!userId.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+        if (!userId.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Invalid user id. Id needs to start by any character and might contain single '-', '_', "
                     + "'.', symbols followed by any character or number.");
         }
@@ -117,6 +117,12 @@ public class ParamUtils {
     public static void checkIdentifier(String identifier, String name) throws CatalogParameterException {
         if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Error in identifier: Invalid identifier format for '" + name + "'.");
+        }
+    }
+
+    public static void checkGroupId(String groupId) throws CatalogParameterException {
+        if (groupId == null || groupId.isEmpty() || !groupId.matches("^[@]?[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+            throw new CatalogParameterException("Error in identifier: Invalid group identifier format");
         }
     }
 

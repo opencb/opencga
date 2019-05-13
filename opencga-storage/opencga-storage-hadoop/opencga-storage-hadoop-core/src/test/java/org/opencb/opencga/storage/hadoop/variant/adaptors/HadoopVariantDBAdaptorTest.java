@@ -62,7 +62,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
     private static final boolean FILES = true;
     private static final boolean GROUP_BY = false;
-    private static final boolean CT_GENES = true;
     protected static final boolean MISSING_ALLELE = false;
 
     @ClassRule
@@ -213,12 +212,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void limitSkip(Query query, QueryOptions options) {
         Assume.assumeTrue("Unable to paginate queries without sorting", options.getBoolean(QueryOptions.SORT, false));
         super.limitSkip(query, options);
-    }
-
-    @Override
-    public void testGetAllVariants_ct_gene() {
-        Assume.assumeTrue(CT_GENES);
-        super.testGetAllVariants_ct_gene();
     }
 
     @Override

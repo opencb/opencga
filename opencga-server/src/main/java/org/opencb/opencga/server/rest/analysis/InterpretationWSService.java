@@ -354,6 +354,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
         public String dueDate;
         public List<Comment> comments;
+        public List<Alert> alerts;
         public ClinicalAnalysis.Priority priority;
         public List<String> flags;
 
@@ -407,7 +408,7 @@ public class InterpretationWSService extends AnalysisWSService {
             String assignee = analyst != null ? analyst.assignee : "";
             return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f, roleToProband, consent,
                     interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null,
-                    dueDate, comments, status, 1, attributes).setName(name);
+                    dueDate, comments, alerts, status, 1, attributes).setName(name);
         }
     }
     

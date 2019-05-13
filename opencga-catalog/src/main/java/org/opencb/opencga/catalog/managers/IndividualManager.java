@@ -106,14 +106,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    QueryResult<Individual> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Individual> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
         }
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 //        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -123,15 +125,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 //                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
 //                IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
 //                IndividualDBAdaptor.QueryParams.SEX.key()));
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(queryCopy, queryOptions, user);
         if (individualQueryResult.getNumResults() == 0) {
-            individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+            individualQueryResult = individualDBAdaptor.get(queryCopy, queryOptions);
             if (individualQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Individual " + entry + " not found");
             } else {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the individual " + entry);
             }
-        } else if (individualQueryResult.getNumResults() > 1) {
+        } else if (individualQueryResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
             throw new CatalogException("More than one individual found based on " + entry);
         } else {
             return individualQueryResult;
@@ -139,15 +141,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    InternalGetQueryResult<Individual> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<Individual> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                                   String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing individual entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        Query query = new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Individual, String> individualStringFunction = Individual::getId;
         IndividualDBAdaptor.QueryParams idQueryParam = null;
@@ -164,18 +167,19 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(queryCopy, queryOptions, user);
 
-        if (silent || individualQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, individualStringFunction, individualQueryResult, silent);
+        if (silent || individualQueryResult.getNumResults() >= uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, individualStringFunction, individualQueryResult, silent,
+                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
         }
         // Query without adding the user check
-        QueryResult<Individual> resultsNoCheck = individualDBAdaptor.get(query, queryOptions);
+        QueryResult<Individual> resultsNoCheck = individualDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == individualQueryResult.getNumResults()) {
             throw CatalogException.notFound("individuals",

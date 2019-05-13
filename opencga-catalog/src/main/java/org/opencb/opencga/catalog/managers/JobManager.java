@@ -85,21 +85,23 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    QueryResult<Job> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Job> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(JobDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
         }
 //        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
 //                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
 //                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, user);
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(queryCopy, options, user);
         if (jobQueryResult.getNumResults() == 0) {
-            jobQueryResult = jobDBAdaptor.get(query, options);
+            jobQueryResult = jobDBAdaptor.get(queryCopy, options);
             if (jobQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Job " + entry + " not found");
             } else {
@@ -113,15 +115,16 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    InternalGetQueryResult<Job> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<Job> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options, String user,
+                                            boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing job entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Job, String> jobStringFunction = Job::getId;
         JobDBAdaptor.QueryParams idQueryParam = null;
@@ -138,17 +141,17 @@ public class JobManager extends ResourceManager<Job> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, user);
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(queryCopy, options, user);
         if (silent || jobQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, jobStringFunction, jobQueryResult, silent);
+            return keepOriginalOrder(uniqueList, jobStringFunction, jobQueryResult, silent, false);
         }
         // Query without adding the user check
-        QueryResult<Job> resultsNoCheck = jobDBAdaptor.get(query, queryOptions);
+        QueryResult<Job> resultsNoCheck = jobDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == jobQueryResult.getNumResults()) {
             throw CatalogException.notFound("jobs", getMissingFields(uniqueList, jobQueryResult.getResult(), jobStringFunction));

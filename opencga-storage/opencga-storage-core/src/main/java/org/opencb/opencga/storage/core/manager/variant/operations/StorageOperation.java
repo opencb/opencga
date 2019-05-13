@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -50,7 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.*;
+import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.*;
 
 /**
  * Created by pfurio on 23/08/16.
@@ -164,7 +164,7 @@ public abstract class StorageOperation {
                         }
                     }
                 } catch (IOException e) {
-                    logger.error("Error modifying " + AbstractExecutor.JOB_STATUS_FILE, e);
+                    logger.error("Error modifying " + BatchExecutor.JOB_STATUS_FILE, e);
                 }
             });
     }

@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -49,7 +50,7 @@ public class PanelManagerTest extends GenericTest {
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
@@ -159,7 +160,7 @@ public class PanelManagerTest extends GenericTest {
         ObjectMap params = new ObjectMap()
                 .append(PanelDBAdaptor.UpdateParams.AUTHOR.key(), "author")
                 .append(PanelDBAdaptor.UpdateParams.REGIONS.key(), Collections.singletonList(
-                        new ObjectMap("location", "chr1:1-1000")
+                        new ObjectMap("coordinates", Collections.singletonList(new DiseasePanel.Coordinate("", "chr1:1-1000", "")))
                 ))
                 .append(PanelDBAdaptor.UpdateParams.PHENOTYPES.key(), Collections.singletonList(
                         new ObjectMap("id", "ontologyTerm")
@@ -175,7 +176,7 @@ public class PanelManagerTest extends GenericTest {
 
         assertEquals("author", panelUpdated.getSource().getAuthor());
         assertEquals(1, panelUpdated.getRegions().size());
-        assertEquals("chr1:1-1000", panelUpdated.getRegions().get(0).getLocation());
+        assertEquals("chr1:1-1000", panelUpdated.getRegions().get(0).getCoordinates().get(0).getLocation());
         assertEquals(1, panelUpdated.getGenes().size());
         assertEquals("BRCA2", panelUpdated.getGenes().get(0).getId());
         assertEquals(1, panelUpdated.getPhenotypes().size());

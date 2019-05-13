@@ -96,28 +96,30 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    QueryResult<Family> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Family> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(FamilyDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(FamilyDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(FamilyDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(FamilyDBAdaptor.QueryParams.ID.key(), entry);
         }
 //        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
 //               FamilyDBAdaptor.QueryParams.UUID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
 //               FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
 //                FamilyDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, user);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(queryCopy, options, user);
         if (familyQueryResult.getNumResults() == 0) {
-            familyQueryResult = familyDBAdaptor.get(query, options);
+            familyQueryResult = familyDBAdaptor.get(queryCopy, options);
             if (familyQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Family " + entry + " not found");
             } else {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the family " + entry);
             }
-        } else if (familyQueryResult.getNumResults() > 1) {
+        } else if (familyQueryResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
             throw new CatalogException("More than one family found based on " + entry);
         } else {
             return familyQueryResult;
@@ -125,15 +127,16 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    InternalGetQueryResult<Family> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<Family> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                               String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing family entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        Query query = new Query(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Family, String> familyStringFunction = Family::getId;
         FamilyDBAdaptor.QueryParams idQueryParam = null;
@@ -150,18 +153,19 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(queryCopy, queryOptions, user);
 
-        if (silent || familyQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, familyStringFunction, familyQueryResult, silent);
+        if (silent || familyQueryResult.getNumResults() >= uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, familyStringFunction, familyQueryResult, silent,
+                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
         }
         // Query without adding the user check
-        QueryResult<Family> resultsNoCheck = familyDBAdaptor.get(query, queryOptions);
+        QueryResult<Family> resultsNoCheck = familyDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == familyQueryResult.getNumResults()) {
             throw CatalogException.notFound("families",

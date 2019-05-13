@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -152,7 +152,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                 copyResults(outdir, studyFqn, catalogOutDirId, sessionId);
             }
             if (outdir != null) {
-                java.io.File[] files = outdir.toFile().listFiles((dir, name) -> !name.equals(AbstractExecutor.JOB_STATUS_FILE));
+                java.io.File[] files = outdir.toFile().listFiles((dir, name) -> !name.equals(BatchExecutor.JOB_STATUS_FILE));
                 if (files != null) {
                     for (java.io.File file : files) {
                         newFiles.add(file.toURI());

@@ -52,7 +52,7 @@ public class FileRanges extends OpenCGAWSServer {
                               @ApiParam(value = "File id, name or path") @PathParam("file") String fileIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr) {
-        DataInputStream stream = null;
+
         try {
             QueryResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
@@ -90,15 +90,11 @@ public class FileRanges extends OpenCGAWSServer {
                         .status(Response.Status.PARTIAL_CONTENT).build();
 
             } else {
-                stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId);
-                return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
+                try (DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId)) {
+                    return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
+                }
             }
         } catch (Exception e) {
-            if (stream != null) {
-                try {
-                    stream.close();
-                } catch (IOException ignore) { }
-            }
             return createErrorResponse(e);
         }
     }

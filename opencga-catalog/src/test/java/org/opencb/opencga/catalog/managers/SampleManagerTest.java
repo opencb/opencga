@@ -108,6 +108,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, query, null, sessionIdUser);
         assertEquals(1, sampleQueryResult.getNumResults());
         assertEquals(1, sampleQueryResult.first().getVersion());
+
+        List<QueryResult<Sample>> testSample = catalogManager.getSampleManager()
+                .get(studyFqn, Collections.singletonList("testSample"), new Query(Constants.ALL_VERSIONS, true), null, false, sessionIdUser);
+        assertEquals(1, testSample.size());
+        assertEquals(4, testSample.get(0).getResult().size());
     }
 
     @Test
@@ -1218,7 +1223,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
-                Account.GUEST, QueryOptions.empty(), null);
+                Account.Type.GUEST, QueryOptions.empty(), null);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("dummy",
                 GroupParams.Action.ADD), sessionIdUser);
 

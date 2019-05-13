@@ -67,7 +67,7 @@ public class UserWSServer extends OpenCGAWSServer {
             }
 
             QueryResult queryResult = catalogManager.getUserManager()
-                    .create(user.id, user.name, user.email, user.password, user.organization, null, Account.FULL, queryOptions, null);
+                    .create(user.id, user.name, user.email, user.password, user.organization, null, Account.Type.FULL, queryOptions, null);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

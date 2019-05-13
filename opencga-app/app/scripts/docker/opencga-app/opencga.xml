@@ -1,0 +1,6 @@
+<Context>
+     <Resources>
+         <PostResources className="org.apache.catalina.webresources.DirResourceSet"
+                        webAppMount="/WEB-INF/classes" base="/opt/opencga/conf/hadoop" />
+     </Resources>
+</Context>

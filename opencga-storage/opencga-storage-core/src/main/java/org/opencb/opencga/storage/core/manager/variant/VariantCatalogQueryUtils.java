@@ -19,11 +19,13 @@ package org.opencb.opencga.storage.core.manager.variant;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
@@ -557,12 +559,38 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         if (isValidParam(query, PANEL)) {
+            String assembly = null;
             Set<String> geneNames = new HashSet<>();
+            Set<Region> regions = new HashSet<>();
+            Set<String> variants = new HashSet<>();
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
                 Panel panel = getPanel(defaultStudyStr, panelId, sessionId);
                 for (GenePanel genePanel : panel.getGenes()) {
                     geneNames.add(genePanel.getName());
+                }
+
+                if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
+                    if (assembly == null) {
+                        Project project = getProjectFromQuery(query, sessionId,
+                                new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
+                        assembly = project.getOrganism().getAssembly();
+                    }
+                    if (panel.getRegions() != null) {
+                        for (DiseasePanel.RegionPanel region : panel.getRegions()) {
+                            for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
+                                if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
+                                    regions.add(Region.parseRegion(coordinate.getLocation()));
+                                }
+                            }
+                        }
+                    }
+                    // TODO: Check assembly of variants
+//                    if (panel.getVariants() != null) {
+//                        for (DiseasePanel.VariantPanel variant : panel.getVariants()) {
+//                            variant.getId()
+//                        }
+//                    }
                 }
             }
 

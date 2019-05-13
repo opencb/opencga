@@ -318,7 +318,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 .append("bioformat", filesCommandOptions.uploadCommandOptions.bioformat)
                 .append("parents", filesCommandOptions.uploadCommandOptions.parents);
 
-        if (filesCommandOptions.uploadCommandOptions.catalogPath != null) {
+        if (StringUtils.isNotEmpty(filesCommandOptions.uploadCommandOptions.catalogPath)) {
             params.append("relativeFilePath", filesCommandOptions.uploadCommandOptions.catalogPath);
         }
 

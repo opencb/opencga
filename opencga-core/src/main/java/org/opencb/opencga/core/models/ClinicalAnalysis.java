@@ -59,6 +59,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private int release;
 
     private List<Comment> comments;
+    private List<Alert> alerts;
     private Map<String, Object> attributes;
 
     public enum Priority {
@@ -209,8 +210,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
                             Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
                             List<Interpretation> interpretations, Priority priority, ClinicalAnalyst analyst, List<String> flags,
-                            String creationDate, String dueDate, List<Comment> comments, ClinicalStatus status, int release,
-                            Map<String, Object> attributes) {
+                            String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts, ClinicalStatus status,
+                            int release, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -229,6 +230,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.comments = comments;
         this.status = status;
         this.release = release;
+        this.alerts = alerts;
         this.attributes = attributes;
     }
 
@@ -245,16 +247,17 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", family=").append(family);
         sb.append(", roleToProband=").append(roleToProband);
         sb.append(", interpretations=").append(interpretations);
+        sb.append(", consent=").append(consent);
         sb.append(", analyst=").append(analyst);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
-        sb.append(", consent=").append(consent);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", comments=").append(comments);
         sb.append(", release=").append(release);
+        sb.append(", comments=").append(comments);
+        sb.append(", alerts=").append(alerts);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -440,6 +443,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setComments(List<Comment> comments) {
         this.comments = comments;
+        return this;
+    }
+
+    public List<Alert> getAlerts() {
+        return alerts;
+    }
+
+    public ClinicalAnalysis setAlerts(List<Alert> alerts) {
+        this.alerts = alerts;
         return this;
     }
 

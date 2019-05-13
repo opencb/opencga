@@ -72,7 +72,7 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
@@ -133,7 +133,7 @@ public class FamilyManagerTest extends GenericTest {
     public void getFamilyWithOnlyAllowedMembers() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez");
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.GUEST, null, null);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null, null);
         String token = catalogManager.getUserManager().login("user2", PASSWORD);
 
         try {

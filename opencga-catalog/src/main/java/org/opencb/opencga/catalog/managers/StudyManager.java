@@ -691,7 +691,7 @@ public class StudyManager extends AbstractManager {
 
     public QueryResult<Group> createGroup(String studyStr, Group group, String sessionId) throws CatalogException {
         ParamUtils.checkObj(group, "group");
-        ParamUtils.checkParameter(group.getId(), "Group id");
+        ParamUtils.checkGroupId(group.getId());
 
         if (group.getSyncedFrom() != null) {
             ParamUtils.checkParameter(group.getSyncedFrom().getAuthOrigin(), "Authentication origin");
@@ -704,10 +704,6 @@ public class StudyManager extends AbstractManager {
         // Fix the group id
         if (!group.getId().startsWith("@")) {
             group.setId("@" + group.getId());
-        }
-
-        if (group.getName().startsWith("@")) {
-            group.setName(group.getName().substring(1));
         }
 
         authorizationManager.checkCreateDeleteGroupPermissions(study.getUid(), userId, group.getId());

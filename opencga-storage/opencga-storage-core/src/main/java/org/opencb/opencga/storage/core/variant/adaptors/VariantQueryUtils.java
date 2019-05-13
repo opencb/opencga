@@ -85,6 +85,7 @@ public final class VariantQueryUtils {
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
 
+    public static final String LOF = "lof";
     // LOF does not include missense_variant
     public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             VariantAnnotationUtils.FRAMESHIFT_VARIANT,
@@ -139,6 +140,56 @@ public final class VariantQueryUtils {
     }
 
     private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
+
+    public enum SoBiotypeFlagCombination {
+        NONE,
+
+        SO,
+        BIOTYPE,
+        FLAG,
+
+        SO_BIOTYPE,
+        SO_FLAG,
+        SO_BIOTYPE_FLAG,
+
+        BIOTYPE_FLAG;
+
+        public boolean isSo() {
+            return name().startsWith("SO");
+        }
+
+        public boolean isBiotype() {
+            return name().contains("BIOTYPE");
+        }
+
+        public boolean isFlag() {
+            return name().endsWith("FLAG");
+        }
+
+        public static SoBiotypeFlagCombination fromQuery(Query query) {
+            //            boolean flagCombined = false; // Is flag being used in the combination?
+            String combination = "";
+            combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "SO_" : "";
+            combination += isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
+            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                List<String> flags = new LinkedList<>(query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key()));
+                flags.remove("basic");
+                flags.remove("CCDS");
+                // If empty, only contains "basic" or "CCDS"
+                if (flags.isEmpty()) {
+                    combination += "FLAG";
+                }
+            }
+            if (combination.isEmpty()) {
+                return SoBiotypeFlagCombination.NONE;
+            } else {
+                if (combination.endsWith("_")) {
+                    combination = combination.substring(0, combination.length() - 1);
+                }
+                return valueOf(combination);
+            }
+        }
+    }
 
     interface VariantMixin {
         // Serialize variants with "toString". Used to serialize queries.
@@ -1190,6 +1241,18 @@ public final class VariantQueryUtils {
         }
 
         return pair.getKey();
+    }
+
+    public static List<String> parseConsequenceTypes(List<String> cts) {
+        List<String> parsedCts = new ArrayList<>(cts.size());
+        for (String ct : cts) {
+            if (ct.equalsIgnoreCase(LOF)) {
+                parsedCts.addAll(VariantQueryUtils.LOF_SET);
+            } else {
+                parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
+            }
+        }
+        return parsedCts;
     }
 
     public static int parseConsequenceType(String so) {

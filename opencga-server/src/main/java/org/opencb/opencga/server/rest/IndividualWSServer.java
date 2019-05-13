@@ -117,7 +117,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove("individuals");
 
             List<String> individualList = getIdList(individualStr);
-            List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, queryOptions,
+            List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
                     silent, sessionId);
             return createOkResponse(individualQueryResult);
         } catch (Exception e) {

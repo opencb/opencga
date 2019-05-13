@@ -109,7 +109,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             }
 
             List<String> idList = getIdList(panelStr);
-            List<QueryResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, queryOptions, silent, sessionId);
+            List<QueryResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -288,14 +288,15 @@ public class PanelWSServer extends OpenCGAWSServer {
         public List<VariantPanel> variants;
         public List<GenePanel> genes;
         public List<RegionPanel> regions;
+        public List<STR> strs;
 
         public Map<String, Integer> stats;
 
         public Map<String, Object> attributes;
 
         public Panel toPanel() {
-            return new Panel(id, name, categories, phenotypes, tags, variants, genes, regions, stats, 1, 1, author, source,
-                    new Status(), description, attributes);
+            return new Panel(id, name, categories, phenotypes, tags, variants, genes, regions, strs, stats, 1, 1, author,
+                    source, new Status(), description, attributes);
         }
 
         public ObjectMap toObjectMap() throws JsonProcessingException {
@@ -311,6 +312,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             panel.setPhenotypes(phenotypes);
             panel.setVariants(variants);
             panel.setGenes(genes);
+            panel.setStrs(strs);
             panel.setRegions(regions);
             panel.setStats(stats);
             panel.setAttributes(attributes);
