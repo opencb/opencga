@@ -18,6 +18,9 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     // Currently only one is allowed.
     private Set<Integer> secondaryIndexCohorts;
 
+    private Integer father;
+    private Integer mother;
+
     public SampleMetadata() {
         files = new HashSet<>();
         cohorts = new HashSet<>();
@@ -72,6 +75,24 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return this;
     }
 
+    public Integer getFather() {
+        return father;
+    }
+
+    public SampleMetadata setFather(Integer father) {
+        this.father = father;
+        return this;
+    }
+
+    public Integer getMother() {
+        return mother;
+    }
+
+    public SampleMetadata setMother(Integer mother) {
+        this.mother = mother;
+        return this;
+    }
+
     public TaskMetadata.Status getIndexStatus() {
         return getStatus("index");
     }
@@ -102,6 +123,14 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
     public TaskMetadata.Status getMendelianErrorStatus() {
         return getStatus("mendelian_error");
+    }
+
+    public SampleMetadata setFamilyIndexStatus(TaskMetadata.Status familyIndexStatus) {
+        return setStatus("family_index", familyIndexStatus);
+    }
+
+    public TaskMetadata.Status getFamilyIndexStatus() {
+        return getStatus("family_index");
     }
 
     @Override

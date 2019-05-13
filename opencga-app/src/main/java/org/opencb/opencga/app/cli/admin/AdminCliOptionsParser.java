@@ -46,6 +46,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
 
     public AdminCliOptionsParser() {
         jCommander.setProgramName("opencga-admin.sh");
@@ -499,7 +500,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String userPassword;
 
         @Parameter(names = {"--type"}, description = "User account type of the user (guest or full).", arity = 1)
-        public String type = Account.FULL;
+        public Account.Type type = Account.Type.FULL;
 
         @Parameter(names = {"--email"}, description = "User email", required = true, arity = 1)
         public String userEmail;
@@ -518,11 +519,14 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"-u", "--user"}, description = "Comma separated list of user ids to be imported from the authenticated origin", arity = 1)
+        @Parameter(names = {"-u", "--user"}, description = DEPRECATED + "Use --id and --resource-type instead.", arity = 1)
         public String user;
 
-        @Parameter(names = {"-g", "--group"}, description = "Group defined in the authenticated origin from which users will be imported", arity = 1)
+        @Parameter(names = {"-g", "--group"}, description = DEPRECATED + "Use --id and --resource-type instead.", arity = 1)
         public String group;
+
+        @Parameter(names = {"--id"}, description = "Comma separated list of resource ids (users or applications) or single group id to be imported.", arity = 1)
+        public String id;
 
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where the users or group will be associated to."
                 + " Parameter --study-group is needed to perform this action.", arity = 1)
@@ -537,7 +541,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String authOrigin;
 
         @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
-        public String type = Account.GUEST;
+        public String type = Account.Type.GUEST.name();
+
+        @Parameter(names = {"--resource-type"}, description = "Resource to be imported. One of 'user', 'group' or 'application'", arity = 1)
+        public String resourceType = "user";
 
         @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, one year starting from the "
                 + "import day", arity = 1)
@@ -570,7 +577,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean syncAll;
 
         @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
-        public String type = Account.GUEST;
+        public Account.Type type = Account.Type.GUEST;
 
         @Parameter(names = {"--force"}, description = "Flag to force the synchronisation into groups that already exist and were not " +
                 "previously synchronised.", arity = 0)

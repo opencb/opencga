@@ -16,26 +16,29 @@
 
 package org.opencb.opencga.storage.core.manager.variant;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.CatalogUtils;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -51,6 +54,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.CompoundHeterozygousQueryExecutor.MISSING_SAMPLE;
 
 /**
  * Created on 28/02/17.
@@ -76,9 +80,13 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final String FAMILY_DISORDER_DESC = "Specify the disorder to use for the family segregation";
     public static final QueryParam FAMILY_DISORDER =
             QueryParam.create("familyDisorder", FAMILY_DISORDER_DESC, QueryParam.Type.TEXT);
+    public static final String FAMILY_PROBAND_DESC = "Specify the proband child to use for the family segregation";
+    public static final QueryParam FAMILY_PROBAND =
+            QueryParam.create("familyProband", FAMILY_PROBAND_DESC, QueryParam.Type.TEXT);
     public static final String FAMILY_SEGREGATION_DESCR = "Filter by mode of inheritance from a given family. Accepted values: "
             + "[ monoallelic, monoallelicIncompletePenetrance, biallelic, "
-            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, DeNovo ]";
+            + "biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, "
+            + "DeNovo, CompoundHeterozygous ]";
     public static final QueryParam FAMILY_SEGREGATION =
             QueryParam.create("familySegregation", FAMILY_SEGREGATION_DESCR, QueryParam.Type.TEXT);
 
@@ -239,8 +247,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throw VariantQueryException.malformedParam(FAMILY_MEMBERS, familyMembers.toString(), "Only one member provided");
             }
 
+            // Use search instead of get to avoid smartResolutor to fetch all samples
             Set<Long> indexedSampleUids = catalogManager.getCohortManager()
-                    .get(defaultStudyStr, StudyEntry.DEFAULT_COHORT,
+                    .search(defaultStudyStr, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT),
                             new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key()), sessionId)
                     .first()
                     .getSamples()
@@ -294,6 +303,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                     SampleDBAdaptor.QueryParams.ID.key(),
                                     SampleDBAdaptor.QueryParams.UID.key())), sessionId)
                     .getResult();
+            Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, s -> s));
+
+            // By default, include all samples from the family
+            if (!isValidParam(query, INCLUDE_SAMPLE)) {
+                query.append(INCLUDE_SAMPLE.key(), samples.stream().map(Sample::getId).collect(Collectors.toList()));
+            }
 
             // If filter FAMILY is among with MODE_OF_INHERITANCE, fill the list of genotypes.
             // Otherwise, add the samples from the family to the SAMPLES query param.
@@ -313,15 +328,30 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, null);
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
 
+                String proband = query.getString(FAMILY_PROBAND.key());
                 String moiString = query.getString(FAMILY_SEGREGATION.key());
                 if (moiString.equalsIgnoreCase("mendelianError") || moiString.equalsIgnoreCase("deNovo")) {
-                    List<Member> children = pedigreeManager.getWithoutChildren();
+                    List<Member> children;
+                    if (StringUtils.isNotEmpty(proband)) {
+                        Member probandMember = pedigree.getMembers()
+                                .stream()
+                                .filter(member -> member.getId().equals(proband))
+                                .findFirst()
+                                .orElse(null);
+                        if (probandMember == null) {
+                            throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
+                                    "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                        }
+                        children = Collections.singletonList(probandMember);
+                    } else {
+                        children = pedigreeManager.getWithoutChildren();
+                    }
                     List<String> childrenIds = children.stream().map(Member::getId).collect(Collectors.toList());
                     List<String> childrenSampleIds = new ArrayList<>(childrenIds.size());
 
                     for (String childrenId : childrenIds) {
                         Long sampleUid = individualToSampleUid.get(childrenId);
-                        Sample sample = samples.stream().filter(s -> s.getUid() == sampleUid).findFirst().orElse(null);
+                        Sample sample = sampleMap.get(sampleUid);
                         if (sample == null) {
                             throw new VariantQueryException("Sample not found for individual \"" + childrenId + '"');
                         }
@@ -334,7 +364,54 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                     }
                 } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
-                    throw new VariantQueryException("Unsupported CompoundHeterozygous");
+                    List<Member> children;
+                    if (StringUtils.isNotEmpty(proband)) {
+                        Member probandMember = pedigree.getMembers()
+                                .stream()
+                                .filter(member -> member.getId().equals(proband))
+                                .findFirst()
+                                .orElse(null);
+                        if (probandMember == null) {
+                            throw VariantQueryException.malformedParam(FAMILY_PROBAND, proband,
+                                    "Individual '" + proband + "' " + "not found in family '" + familyId + "'.");
+                        }
+                        children = Collections.singletonList(probandMember);
+                    } else {
+                        children = pedigreeManager.getWithoutChildren();
+                        if (children.size() > 1) {
+                            String childrenStr = children.stream().map(Member::getId).collect(Collectors.joining("', '", "[ '", "' ]"));
+                            throw new VariantQueryException(
+                                    "Unsupported compoundHeterozygous method with families with more than one child."
+                                    + " Specify proband with parameter '" + FAMILY_PROBAND.key() + "'."
+                                    + " Available children: " + childrenStr);
+                        }
+                    }
+
+                    Member child = children.get(0);
+
+                    String childId = sampleMap.get(individualToSampleUid.get(child.getId())).getId();
+                    String fatherId = MISSING_SAMPLE;
+                    String motherId = MISSING_SAMPLE;
+                    if (child.getFather() != null && child.getFather().getId() != null) {
+                        Sample fatherSample = sampleMap.get(individualToSampleUid.get(child.getFather().getId()));
+                        if (fatherSample != null) {
+                            fatherId = fatherSample.getId();
+                        }
+                    }
+
+                    if (child.getMother() != null && child.getMother().getId() != null) {
+                        Sample motherSample = sampleMap.get(individualToSampleUid.get(child.getMother().getId()));
+                        if (motherSample != null) {
+                            motherId = motherSample.getId();
+                        }
+                    }
+
+                    if (fatherId.equals(MISSING_SAMPLE) && motherId.equals(MISSING_SAMPLE)) {
+                        throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
+                                "Require at least one parent to get compound heterozygous");
+                    }
+
+                    query.append(SAMPLE_COMPOUND_HETEROZYGOUS.key(), Arrays.asList(childId, fatherId, motherId));
                 } else {
                     if (family.getDisorders().isEmpty()) {
                         throw VariantQueryException.malformedParam(FAMILY, familyId, "Family doesn't have disorders");
@@ -372,37 +449,37 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         case "MONOALLELIC":
                         case "monoallelic":
                         case "dominant":
-                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "MONOALLELIC_INCOMPLETE_PENETRANCE":
                         case "monoallelicIncompletePenetrance":
-                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.dominant(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
                             break;
                         case "BIALLELIC":
                         case "biallelic":
                         case "recesive":
-                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "BIALLELIC_INCOMPLETE_PENETRANCE":
                         case "biallelicIncompletePenetrance":
-                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.recessive(pedigree, disorder, ClinicalProperty.Penetrance.INCOMPLETE);
                             break;
                         case "XLINKED_MONOALLELIC":
                         case "XlinkedMonoallelic":
-                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true);
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "XLINKED_BIALLELIC":
                         case "XlinkedBiallelic":
-                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false);
+                            genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         case "YLINKED":
                         case "Ylinked":
-                            genotypes = ModeOfInheritance.yLinked(pedigree, disorder);
+                            genotypes = ModeOfInheritance.yLinked(pedigree, disorder, ClinicalProperty.Penetrance.COMPLETE);
                             break;
                         default:
                             throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString);
                     }
-                    if (genotypes == null) {
+                    if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
                         throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, moiString,
                                 "Invalid segregation mode for the family '" + family.getId() + "'");
                     }
@@ -469,6 +546,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         } else if (isValidParam(query, FAMILY_MEMBERS)) {
             throw VariantQueryException.malformedParam(FAMILY_MEMBERS, query.getString(FAMILY_MEMBERS.key()),
                     "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_MEMBERS.toString() + "\".");
+        } else if (isValidParam(query, FAMILY_PROBAND)) {
+            throw VariantQueryException.malformedParam(FAMILY_PROBAND, query.getString(FAMILY_PROBAND.key()),
+                    "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_PROBAND.toString() + "\".");
         } else if (isValidParam(query, FAMILY_SEGREGATION)) {
             throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, query.getString(FAMILY_SEGREGATION.key()),
                     "Require parameter \"" + FAMILY.key() + "\" to use \"" + FAMILY_SEGREGATION.toString() + "\".");
@@ -479,12 +559,38 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         }
 
         if (isValidParam(query, PANEL)) {
+            String assembly = null;
             Set<String> geneNames = new HashSet<>();
+            Set<Region> regions = new HashSet<>();
+            Set<String> variants = new HashSet<>();
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
                 Panel panel = getPanel(defaultStudyStr, panelId, sessionId);
-                for (GenePanel genePanel : panel.getDiseasePanel().getGenes()) {
+                for (GenePanel genePanel : panel.getGenes()) {
                     geneNames.add(genePanel.getName());
+                }
+
+                if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
+                    if (assembly == null) {
+                        Project project = getProjectFromQuery(query, sessionId,
+                                new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
+                        assembly = project.getOrganism().getAssembly();
+                    }
+                    if (panel.getRegions() != null) {
+                        for (DiseasePanel.RegionPanel region : panel.getRegions()) {
+                            for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
+                                if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
+                                    regions.add(Region.parseRegion(coordinate.getLocation()));
+                                }
+                            }
+                        }
+                    }
+                    // TODO: Check assembly of variants
+//                    if (panel.getVariants() != null) {
+//                        for (DiseasePanel.VariantPanel variant : panel.getVariants()) {
+//                            variant.getId()
+//                        }
+//                    }
                 }
             }
 
@@ -555,6 +661,78 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             release = null;
         }
         return release;
+    }
+
+    public List<List<String>> getTriosFromFamily(
+            String studyFqn, Family family, VariantStorageMetadataManager metadataManager, boolean skipIncompleteFamily, String sessionId)
+            throws StorageEngineException, CatalogException {
+        int studyId = metadataManager.getStudyId(studyFqn);
+        List<List<String>> trios = new LinkedList<>();
+        Map<Long, Individual> members = family.getMembers().stream().collect(Collectors.toMap(Individual::getUid, i -> i));
+        for (Individual individual : family.getMembers()) {
+            String fatherSample = null;
+            String motherSample = null;
+            String childSample = null;
+
+            if (CollectionUtils.isNotEmpty(individual.getSamples())) {
+                for (Sample sample : individual.getSamples()) {
+                    sample = catalogManager.getSampleManager().get(studyFqn,
+                            new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
+                            new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
+                    Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
+                    if (sampleId != null) {
+                        childSample = sample.getId();
+                        break;
+                    }
+                }
+            }
+            if (individual.getFather() != null && members.containsKey(individual.getFather().getUid())) {
+                Individual father = members.get(individual.getFather().getUid());
+                if (CollectionUtils.isNotEmpty(father.getSamples())) {
+                    for (Sample sample : father.getSamples()) {
+                        sample = catalogManager.getSampleManager().get(studyFqn,
+                                new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
+                                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
+                        Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
+                        if (sampleId != null) {
+                            fatherSample = sample.getId();
+                            break;
+                        }
+                    }
+                }
+            }
+            if (individual.getMother() != null && members.containsKey(individual.getMother().getUid())) {
+                Individual mother = members.get(individual.getMother().getUid());
+                if (CollectionUtils.isNotEmpty(mother.getSamples())) {
+                    for (Sample sample : mother.getSamples()) {
+                        sample = catalogManager.getSampleManager().get(studyFqn,
+                                new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
+                                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
+                        Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
+                        if (sampleId != null) {
+                            motherSample = sample.getId();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Allow one missing parent
+            if (childSample != null && (fatherSample != null || motherSample != null)) {
+                trios.add(Arrays.asList(
+                        fatherSample == null ? "-" : fatherSample,
+                        motherSample == null ? "-" : motherSample,
+                        childSample));
+            }
+        }
+        if (trios.size() == 0) {
+            if (skipIncompleteFamily) {
+                logger.debug("Skip family '" + family.getId() + "'. ");
+            } else {
+                throw new StorageEngineException("Can not calculate mendelian errors on family '" + family.getId() + "'");
+            }
+        }
+        return trios;
     }
 
     public abstract class FilterValidator {
@@ -649,7 +827,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                                                           Function<T, String> getId, Function<T, Integer> getRelease,
                                                                           Consumer<T> valueValidator, String sessionId)
                 throws CatalogException {
-            List<QueryResult<T>> queryResults = manager.get(defaultStudyStr, values, null, RELEASE_OPTIONS, sessionId);
+            List<QueryResult<T>> queryResults = manager.get(defaultStudyStr, values, RELEASE_OPTIONS, sessionId);
             List<String> validatedValues = new ArrayList<>(values.size());
             for (QueryResult<T> queryResult : queryResults) {
                 T value = queryResult.first();
@@ -694,8 +872,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                         String sessionId)
                 throws CatalogException {
             if (release == null) {
-                AbstractManager.MyResources<File> uids = catalogManager.getFileManager().getUids(values, defaultStudyStr, sessionId);
-                return uids.getResourceList().stream().map(File::getName).collect(Collectors.toList());
+                List<QueryResult<File>> files = catalogManager.getFileManager().get(defaultStudyStr, values,
+                        FileManager.INCLUDE_FILE_IDS, sessionId);
+                return files.stream().map(QueryResult::first).map(File::getName).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
                         file -> ((int) file.getIndex().getRelease()), file -> {
@@ -718,8 +897,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                AbstractManager.MyResources<Sample> uids = catalogManager.getSampleManager().getUids(values, defaultStudyStr, sessionId);
-                return uids.getResourceList().stream().map(Sample::getId).collect(Collectors.toList());
+                List<QueryResult<Sample>> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                return samples.stream().map(QueryResult::first).map(Sample::getId).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getSampleManager(),
                         Sample::getId, Sample::getRelease, null, sessionId);
@@ -757,8 +937,32 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                         String sessionId)
                 throws CatalogException {
             if (release == null) {
-                AbstractManager.MyResources<Cohort> uids = catalogManager.getCohortManager().getUids(values, defaultStudyStr, sessionId);
-                return uids.getResourceList().stream().map(Cohort::getId).collect(Collectors.toList());
+                // Query cohort by cohort if
+                if (StringUtils.isEmpty(defaultStudyStr) || values.stream().anyMatch(value -> value.contains(":"))) {
+                    List<String> validated = new ArrayList<>(values.size());
+                    for (String value : values) {
+                        String[] split = VariantQueryUtils.splitStudyResource(value);
+                        String study = defaultStudyStr;
+                        if (split.length == 2) {
+                            study = split[0];
+                            value = split[1];
+                        }
+                        Cohort cohort = catalogManager.getCohortManager().get(study, value, CohortManager.INCLUDE_COHORT_IDS,
+                                sessionId).first();
+                        String fqn = catalogManager.getStudyManager().get(study,
+                                new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId).first().getFqn();
+                        if (fqn.equals(defaultStudyStr)) {
+                            validated.add(cohort.getId());
+                        } else {
+                            validated.add(fqn + ":" + cohort.getId());
+                        }
+                    }
+                    return validated;
+                } else {
+                    List<QueryResult<Cohort>> cohorts = catalogManager.getCohortManager().get(defaultStudyStr, values,
+                            CohortManager.INCLUDE_COHORT_IDS, sessionId);
+                    return cohorts.stream().map(QueryResult::first).map(Cohort::getId).collect(Collectors.toList());
+                }
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getCohortManager(),
                         Cohort::getId, Cohort::getRelease, null, sessionId);

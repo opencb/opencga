@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -28,6 +27,7 @@ import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.VariableSet;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +42,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         ID("id", TEXT, ""),
         UID("uid", DECIMAL, ""),
         UUID("uuid", TEXT, ""),
+        @Deprecated
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
@@ -74,7 +75,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
         private static Map<String, QueryParams> map;
         static {
-            map = new LinkedMap();
+            map = new HashMap<>();
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);
             }
@@ -116,6 +117,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     enum UpdateParams {
         ID(QueryParams.ID.key()),
+        @Deprecated
         NAME(QueryParams.NAME.key()),
         CREATION_DATE(QueryParams.CREATION_DATE.key()),
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
@@ -126,7 +128,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
         private static Map<String, UpdateParams> map;
         static {
-            map = new LinkedMap();
+            map = new HashMap<>();
             for (UpdateParams params : UpdateParams.values()) {
                 map.put(params.key(), params);
             }

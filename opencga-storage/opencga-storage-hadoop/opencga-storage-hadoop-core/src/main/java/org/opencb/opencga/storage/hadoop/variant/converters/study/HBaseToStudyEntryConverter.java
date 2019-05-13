@@ -417,7 +417,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
         alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
-        if (!selectVariantElements.getFiles().get(studyMetadata.getId()).contains(fileId)) {
+        if (selectVariantElements != null && !selectVariantElements.getFiles().get(studyMetadata.getId()).contains(fileId)) {
             // TODO: Should we return the original CALL?
 //            if (call != null && !call.isEmpty()) {
 //                studyEntry.getFiles().add(new FileEntry(fileName, call, Collections.emptyMap()));
@@ -425,6 +425,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             return;
         }
 
+        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        HashMap<String, String> attributes = convertFileAttributes(fileColumn, fixedAttributes);
+        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
+        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
+    }
+
+    public static HashMap<String, String> convertFileAttributes(PhoenixArray fileColumn, List<String> fixedAttributes) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
         String qual = (String) (fileColumn.getElement(FILE_QUAL_IDX));
         if (qual != null) {
@@ -435,7 +442,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             attributes.put(StudyEntry.FILTER, filter);
         }
 
-        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
         int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
             if (i >= fileColumn.getDimensions()) {
@@ -447,8 +453,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
-        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
-        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
+        return attributes;
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyMetadata studyMetadata, int fillMissingColumnValue) {
@@ -511,10 +516,16 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
      */
     protected List<Boolean> getMissingUpdatedSamples(StudyMetadata studyMetadata, int fillMissingColumnValue) {
         Pair<Integer, Integer> pair = Pair.of(studyMetadata.getId(), fillMissingColumnValue);
-        List<Boolean> missingUpdatedList = missingUpdatedSamplesMap.get(pair);
-        if (missingUpdatedList == null) {
+        return missingUpdatedSamplesMap.computeIfAbsent(pair, key -> {
+            // If not found, no sample has been processed
             Set<Integer> sampleIds = getReturnedSampleIds(studyMetadata);
-            missingUpdatedList = Arrays.asList(new Boolean[sampleIds.size()]);
+            List<Boolean> missingUpdatedList = Arrays.asList(new Boolean[sampleIds.size()]);
+            if (fillMissingColumnValue <= 0) {
+                for (int i = 0; i < sampleIds.size(); i++) {
+                    missingUpdatedList.set(i, false);
+                }
+                return missingUpdatedList;
+            }
             // If fillMissingColumnValue has an invalid value, the variant is new, so gaps must be returned as ?/? for every sample
             LinkedHashSet<Integer> indexedFiles = getIndexedFiles(studyMetadata.getId());
             if (indexedFiles.contains(fillMissingColumnValue)) {
@@ -551,9 +562,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     missingUpdatedList.set(i, Boolean.FALSE);
                 }
             }
-            missingUpdatedSamplesMap.put(pair, missingUpdatedList);
-        }
-        return missingUpdatedList;
+            return missingUpdatedList;
+        });
     }
 
     /**

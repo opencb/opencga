@@ -46,6 +46,7 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
     public static final String FILL_GAPS_INPUT_DEFAULT = "archive";
     public static final String FILL_MISSING_INTERMEDIATE_FILE = "fill_missing.intermediate.file";
     public static final String FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR = "fill_missing.write.mappers.limit.factor";
+    public static final String FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS = "fill_missing.simplifiedMultiAllelicVariants";
     private Collection<Integer> samples;
     private final Logger logger = LoggerFactory.getLogger(FillGapsDriver.class);
     private String input;

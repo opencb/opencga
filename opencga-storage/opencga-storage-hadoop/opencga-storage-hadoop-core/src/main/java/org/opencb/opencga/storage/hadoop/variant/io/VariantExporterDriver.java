@@ -40,7 +40,6 @@ import java.util.logging.Level;
 
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryOptionsFromConfig;
-import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
 /**
  * Created on 14/06/18.
@@ -49,7 +48,7 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduc
  * hbase_conf=$(hbase classpath | tr ":" "\n" | grep "/conf" | tr "\n" ":")
  * export HADOOP_CLASSPATH=${hbase_conf}:$PWD/libs/avro-1.7.7.jar:$PWD/libs/jackson-databind-2.6.6.jar:$PWD/libs/jackson-core-2.6.6.jar
  * export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:$PWD/libs/jackson-annotations-2.6.6.jar
- * yarn jar opencga-storage-hadoop-core-1.4.0-rc3-dev-jar-with-dependencies.jar \
+ * yarn jar opencga-storage-hadoop-core-1.4.0-jar-with-dependencies.jar \
  *      org.opencb.opencga.storage.hadoop.variant.io.VariantExporterDriver \
  *      opencga_variants study myStudy --of avro --output my.variants.avro --region 22
  *
@@ -66,6 +65,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
+        setStudyId(-1);
         super.parseAndValidateParameters();
         outputFormat = VariantOutputFormat.valueOf(getConf().get(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
         outFile = getConf().get(OUTPUT_PARAM);
@@ -124,6 +124,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         }
 
         VariantMapReduceUtil.setNoneReduce(job);
+        setNoneTimestamp(job);
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
 

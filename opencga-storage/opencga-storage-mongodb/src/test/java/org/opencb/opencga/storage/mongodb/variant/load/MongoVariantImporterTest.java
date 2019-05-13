@@ -22,7 +22,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -46,12 +46,12 @@ import static org.junit.Assert.assertEquals;
 public class MongoVariantImporterTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
 
-    private StudyConfiguration studyConfiguration;
+    private StudyMetadata studyMetadata;
 
     @Before
     public void setUp() throws Exception {
-        studyConfiguration = newStudyConfiguration();
-        runDefaultETL(smallInputUri, variantStorageEngine, studyConfiguration,
+        studyMetadata = newStudyMetadata();
+        runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS"));
     }
 
@@ -60,7 +60,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         URI outputFile = newOutputUri().resolve("export.avro");
 
         System.out.println("outputFile = " + outputFile);
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, new Query(), new QueryOptions());
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, new Query(), new QueryOptions());
 
         clearDB(DB_NAME);
 
@@ -77,10 +77,10 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         URI outputFile = newOutputUri().resolve("export.avro");
 
         System.out.println("outputFile = " + outputFile);
-        List<String> samples = new LinkedList<>(studyConfiguration.getSampleIds().keySet()).subList(1, 3);
+        List<String> samples = new LinkedList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet()).subList(1, 3);
         Set<String> samplesSet = new HashSet<>(samples);
         Query query = new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), samples);
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, new QueryOptions());
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, query, new QueryOptions());
 
         clearDB(DB_NAME);
 
@@ -99,7 +99,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA.toString());
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, queryOptions);
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, query, queryOptions);
 
         clearDB(DB_NAME);
 
@@ -117,7 +117,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), ".");
         QueryOptions queryOptions = new QueryOptions();
-        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, query, queryOptions);
+        variantStorageEngine.exportData(outputFile, VariantOutputFormat.AVRO, null, query, queryOptions);
 
         clearDB(DB_NAME);
 

@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.parseConsequenceType;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
@@ -49,6 +50,18 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         implements Converter<VariantAnnotation, Map<PhoenixHelper.Column, ?>> {
 
     public static final int COMPRESS_THRESHOLD = (int) (0.8 * 1024 * 1024); // 0.8MB
+    private static final Map<PhoenixHelper.Column, Object> DEFAULT_POP_FREQ;
+
+    static {
+        HashMap<PhoenixHelper.Column, Object> map = new HashMap<>(DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS.size());
+
+        List<Float> value = Arrays.asList(1F, 0F);
+        for (PhoenixHelper.Column column : DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS) {
+            map.put(column, value);
+        }
+        DEFAULT_POP_FREQ = Collections.unmodifiableMap(map);
+    }
+
     private VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
 
     private int annotationId;
@@ -87,10 +100,17 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         } else {
             map.put(FULL_ANNOTATION, json);
         }
-        map.put(ANNOTATION_ID, annotationId);
+        if (annotationId >= 0) {
+            map.put(ANNOTATION_ID, annotationId);
+        }
 
         Set<String> genes = new HashSet<>();
-        Set<String> gnSo = new HashSet<>();
+        Set<String> geneSo = new HashSet<>();
+        Set<String> biotypeSo = new HashSet<>();
+        Set<String> geneBiotypeSo = new HashSet<>();
+        Set<String> geneBiotype = new HashSet<>();
+        Set<String> geneSoFlag = new HashSet<>();
+        Set<String> soFlag = new HashSet<>();
         Set<String> transcripts = new HashSet<>();
         Set<String> flags = new HashSet<>();
         Set<Integer> soList = new HashSet<>();
@@ -127,24 +147,43 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 addNotNull(soList, so);
 
                 if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
-                    gnSo.add(buildGeneSO(consequenceType.getGeneName(), so));
-                }
-                if (StringUtils.isNotEmpty(consequenceType.getEnsemblGeneId())) {
-                    gnSo.add(buildGeneSO(consequenceType.getEnsemblGeneId(), so));
-                }
-                if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
-                    gnSo.add(buildGeneSO(consequenceType.getEnsemblTranscriptId(), so));
-                }
-                if (proteinVariantAnnotation != null) {
-                    if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
-                        gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotAccession(), so));
+                    geneSo.add(combine(consequenceType.getGeneName(), so));
+                    geneSo.add(combine(consequenceType.getEnsemblGeneId(), so));
+                    geneSo.add(combine(consequenceType.getEnsemblTranscriptId(), so));
+
+                    if (StringUtils.isNotEmpty(consequenceType.getBiotype())) {
+                        geneBiotypeSo.add(combine(consequenceType.getGeneName(), consequenceType.getBiotype(), so));
+                        geneBiotypeSo.add(combine(consequenceType.getEnsemblGeneId(), consequenceType.getBiotype(), so));
+                        geneBiotypeSo.add(combine(consequenceType.getEnsemblTranscriptId(), consequenceType.getBiotype(), so));
                     }
-                    if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotName())) {
-                        gnSo.add(buildGeneSO(proteinVariantAnnotation.getUniprotName(), so));
-                    }
+                }
+                if (StringUtils.isNotEmpty(consequenceType.getBiotype())) {
+                    // This is useful when no gene or transcript is passed, for example we want 'LoF' in real 'protein_coding'
+                    biotypeSo.add(combine(consequenceType.getBiotype(), so));
                 }
 
+                if (proteinVariantAnnotation != null) {
+                    geneSo.add(combine(proteinVariantAnnotation.getUniprotAccession(), so));
+                    geneSo.add(combine(proteinVariantAnnotation.getUniprotName(), so));
+                }
+
+                // Add a combination with the transcript flag
+                if (consequenceType.getTranscriptAnnotationFlags() != null) {
+                    for (String flag : consequenceType.getTranscriptAnnotationFlags()) {
+                        if (flag.equals("basic") || flag.equals("CCDS")) {
+                            geneSoFlag.add(combine(consequenceType.getGeneName(), so, flag));
+                            geneSoFlag.add(combine(consequenceType.getEnsemblGeneId(), so, flag));
+                            geneSoFlag.add(combine(consequenceType.getEnsemblTranscriptId(), so, flag));
+                            // This is useful when no gene or transcript is used, for example 'LoF' in 'basic' transcripts
+                            soFlag.add(combine(so, flag));
+                        }
+                    }
+                }
             }
+            geneBiotype.add(combine(consequenceType.getGeneName(), consequenceType.getBiotype()));
+            geneBiotype.add(combine(consequenceType.getEnsemblGeneId(), consequenceType.getBiotype()));
+            geneBiotype.add(combine(consequenceType.getEnsemblTranscriptId(), consequenceType.getBiotype()));
+
             if (proteinVariantAnnotation != null) {
                 if (proteinVariantAnnotation.getSubstitutionScores() != null) {
                     for (Score score : proteinVariantAnnotation.getSubstitutionScores()) {
@@ -213,6 +252,14 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             }
         }
 
+        // Remove null values, if any
+        geneSo.remove(null);
+        biotypeSo.remove(null);
+        geneBiotypeSo.remove(null);
+        geneBiotype.remove(null);
+        geneSoFlag.remove(null);
+        soFlag.remove(null);
+
         map.put(CHROMOSOME, variantAnnotation.getChromosome());
         map.put(POSITION, variantAnnotation.getStart());
         map.put(REFERENCE, variantAnnotation.getReference());
@@ -220,13 +267,18 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.put(GENES, genes);
         map.put(TRANSCRIPTS, transcripts);
         map.put(BIOTYPE, biotype);
-        map.put(GENE_SO, gnSo);
+        map.put(GENE_SO, geneSo);
+        map.put(BIOTYPE_SO, biotypeSo);
+        map.put(GENE_BIOTYPE_SO, geneBiotypeSo);
+        map.put(GENE_BIOTYPE, geneBiotype);
+        map.put(GENE_SO_FLAG, geneSoFlag);
+        map.put(SO_FLAG, soFlag);
         map.put(SO, soList);
         map.put(POLYPHEN, sortProteinSubstitutionScores(polyphen));
         map.put(POLYPHEN_DESC, polyphenDesc);
         map.put(SIFT, sortProteinSubstitutionScores(sift));
         map.put(SIFT_DESC, siftDesc);
-        map.put(TRANSCRIPTION_FLAGS, flags);
+        map.put(TRANSCRIPT_FLAGS, flags);
         map.put(GENE_TRAITS_ID, geneTraitId);
         map.put(PROTEIN_KEYWORDS, proteinKeywords);
         map.put(GENE_TRAITS_NAME, geneTraitName);
@@ -241,6 +293,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             }
         }
 
+        map.putAll(DEFAULT_POP_FREQ);
         if (variantAnnotation.getPopulationFrequencies() != null) {
             for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
                 PhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
@@ -268,8 +321,25 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         return map;
     }
 
-    public static String buildGeneSO(String gene, Integer so) {
-        return gene == null ? null : gene + '_' + so;
+    public static String combine(String geneOrBiotype, int so) {
+        return StringUtils.isEmpty(geneOrBiotype) ? null : geneOrBiotype + '_' + so;
+    }
+
+    public static String combine(int so, String flag) {
+        // FIXME: This will compute a numerical add between so and '_' (i.e. so + 95)
+        return StringUtils.isEmpty(flag) ? null : so + '_' + flag;
+    }
+
+    public static String combine(String gene, int so, String flag) {
+        return StringUtils.isAnyEmpty(gene, flag) ? null : gene + '_' + so + '_' + flag;
+    }
+
+    public static String combine(String gene, String biotye, int so) {
+        return StringUtils.isAnyEmpty(gene, biotye) ? null : gene + '_' + biotye + '_' + so;
+    }
+
+    public static String combine(String gene, String biotye) {
+        return StringUtils.isAnyEmpty(gene, biotye) ? null : gene + '_' + biotye;
     }
 
     Put buildPut(VariantAnnotation variantAnnotation) {

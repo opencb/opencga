@@ -79,7 +79,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new FileUtils(catalogManager);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.FULL, null, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null, null).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
@@ -143,7 +143,7 @@ public class CatalogStorageMetadataSynchronizerTest {
                     Collections.emptyMap());
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add(file.getName());
-            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
+            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
             catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), true, null, sessionId);
         }
@@ -183,7 +183,7 @@ public class CatalogStorageMetadataSynchronizerTest {
 
         StudyMetadata sc = studyConfigurationFactory.getStudyMetadata(studyId);
 
-        List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, null, sessionId)
+        List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId)
                 .getResult()
                 .stream()
                 .map(Sample::getId)

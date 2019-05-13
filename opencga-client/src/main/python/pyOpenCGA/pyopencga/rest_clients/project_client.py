@@ -35,10 +35,10 @@ class Projects(_ParentBasicCRUDClient):
         """
         return self._get('search', **options)
 
-    def stats(self, project, **options):
+    def aggregationStats(self, project, **options):
         """
         Fetch catalog project stats
-        URL: /{apiVersion}/projects/{projects}/stats
+        URL: /{apiVersion}/projects/{projects}/aggregationStats
 
         :param project: project id
         :param default: calculate default stats (bool)
@@ -53,7 +53,7 @@ class Projects(_ParentBasicCRUDClient):
         :param cohortFields: list of cohort fields separated by semicolons, 
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
         """
-        return self._get('stats', query_id=project, **options)
+        return self._get('aggregationStats', query_id=project, **options)
 
     def studies(self, project, **options):
         """

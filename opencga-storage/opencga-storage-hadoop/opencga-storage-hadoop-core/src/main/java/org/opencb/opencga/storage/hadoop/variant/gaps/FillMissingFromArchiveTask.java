@@ -40,8 +40,8 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     private boolean overwrite;
 
     public FillMissingFromArchiveTask(StudyMetadata studyMetadata, VariantStorageMetadataManager metadataManager,
-                                      GenomeHelper helper, boolean overwrite) {
-        super(studyMetadata, metadataManager, helper, Collections.emptyList(), true);
+                                      GenomeHelper helper, boolean overwrite, boolean simplifiedNewMultiAllelicVariants) {
+        super(studyMetadata, metadataManager, helper, Collections.emptyList(), true, simplifiedNewMultiAllelicVariants);
         fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyMetadata.getId());
         this.overwrite = overwrite;
         this.indexedFiles = new ArrayList<>(metadataManager.getIndexedFiles(studyMetadata.getId()));
@@ -88,8 +88,9 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
             TreeMap<Variant, Set<Integer>> variantsToFill = new TreeMap<>(VARIANT_COMPARATOR);
 
             for (Cell cell : result.rawCells()) {
-                if (Bytes.startsWith(CellUtil.cloneQualifier(cell), VARIANT_COLUMN_B_PREFIX)) {
-                    Variant variant = getVariantFromArchiveVariantColumn(region.getChromosome(), CellUtil.cloneQualifier(cell));
+                byte[] column = CellUtil.cloneQualifier(cell);
+                if (Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
+                    Variant variant = getVariantFromArchiveVariantColumn(region.getChromosome(), column);
                     if (cell.getValueLength() > 0 && !overwrite) {
                         byte[] bytes = CellUtil.cloneValue(cell);
                         Integer lastFile = (Integer) PInteger.INSTANCE.toObject(bytes);

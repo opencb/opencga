@@ -1,0 +1,167 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string"
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string"
+        },
+        "applicationGatewaySubnetId":{
+            "type": "string"
+        },
+        "skuName":{
+            "defaultValue": "Standard_Small",
+            "type": "string"
+        },
+        "skuTier":{
+            "defaultValue": "Standard",
+            "type": "string"
+        },
+        "skuCapacity":{
+            "defaultValue": 1,
+            "type": "int"
+        },
+        "dnsNamePrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "DNS prefix used by the app gateway IP"
+            }
+        },
+        "appGwSslEmail": {
+            "type": "string"
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
+        }
+    },
+    "variables": {
+        "functionAppName": "[concat('appgwfn-', uniquestring(resourceGroup().name))]",
+        "keyVaultName": "[concat('keyvault-', uniquestring(resourceGroup().name))]"
+    },
+    "resources": [
+        {
+            "resourceGroup": "[resourceGroup().name]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "appgw",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/appgw.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {  
+                    "applicationGatewaySubnetId": {
+                        "value": "[parameters('applicationGatewaySubnetId')]"
+                    },
+                    "skuName":{
+                        "value": "[parameters('skuName')]"
+                    },
+                    "skuTier":{
+                        "value": "[parameters('skuTier')]"
+                    },
+                    "skuCapacity":{
+                        "value": "[parameters('skuCapacity')]"
+                    },
+                    "azureFunctionName": {
+                        "value": "[variables('functionAppName')]"
+                    },
+                    "dnsNamePrefix":{
+                        "value": "[parameters('dnsNamePrefix')]"
+                    },
+                    "LogAnalyticsWorkspaceResourceID": {
+                        "value": "[parameters('LogAnalyticsWorkspaceResourceID')]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[resourceGroup().name]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "keyvault",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/keyvault.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[variables('keyVaultName')]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[resourceGroup().name]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "functions",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/functions.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "functionAppName": {
+                        "value": "[variables('functionAppName')]"
+                    },
+                    "appGwSslEmail": {
+                        "value": "[parameters('appGwSslEmail')]"
+                    },
+                    "keyVaultName": {
+                        "value": "[variables('keyVaultName')]"
+                    }
+                }
+            }
+        },
+        {
+            "resourceGroup": "[resourceGroup().name]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "msi",
+            "dependsOn": ["keyvault", "functions", "appgw"],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/accesspolicies.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "functionAppName": {
+                        "value": "[variables('functionAppName')]"
+                    },
+                    "identityName": {
+                        "value": "[reference('functions').outputs.identityName.value]"
+                    },
+                    "vaultName": {
+                        "value": "[variables('keyVaultName')]"
+                    },
+                    "objectId": {
+                        "value": "[reference('functions').outputs.principalId.value]"
+                    },
+                    "appGwName": {
+                        "value": "[reference('appgw').outputs.appGwName.value]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "appgwBackendAddressPoolId": {
+            "type": "string",
+            "value": "[reference('appgw').outputs.appgwBackendAddressPoolId.value]"
+        },
+        "fqdn": {
+            "type":"string",
+            "value": "[reference('appgw').outputs.fqdn.value]"
+        }
+    }
+}

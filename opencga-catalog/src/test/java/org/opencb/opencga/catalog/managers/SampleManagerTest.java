@@ -108,6 +108,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, query, null, sessionIdUser);
         assertEquals(1, sampleQueryResult.getNumResults());
         assertEquals(1, sampleQueryResult.first().getVersion());
+
+        List<QueryResult<Sample>> testSample = catalogManager.getSampleManager()
+                .get(studyFqn, Collections.singletonList("testSample"), new Query(Constants.ALL_VERSIONS, true), null, false, sessionIdUser);
+        assertEquals(1, testSample.size());
+        assertEquals(4, testSample.get(0).getResult().size());
     }
 
     @Test
@@ -340,6 +345,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         query.put(Constants.ANNOTATION, "variableSet!==" + vs1.getId());
         annotQueryResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
         assertEquals(8, annotQueryResult.getNumResults());
+
+        query.put(Constants.ANNOTATION, "variableSet=" + vs1.getId());
+        annotQueryResult = catalogManager.getSampleManager().search(studyFqn, query,
+                new QueryOptions(QueryOptions.INCLUDE, Constants.VARIABLE_SET + "." + vs1.getId()), sessionIdUser);
+        assertEquals(1, annotQueryResult.getNumResults());
+        assertEquals(1, annotQueryResult.first().getAnnotationSets().size());
+        assertEquals(vs1.getId(), annotQueryResult.first().getAnnotationSets().get(0).getVariableSetId());
     }
 
     @Test
@@ -1090,7 +1102,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 .update(studyFqn, sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId),
                         new QueryOptions("lazy", false), sessionIdUser).first();
 
-        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
     }
 
     @Test
@@ -1104,7 +1116,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 .update(studyFqn, sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualId),
                         new QueryOptions("lazy", false), sessionIdUser).first();
 
-        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
@@ -1119,12 +1131,12 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new Sample.SampleAclParams(SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null, true),
                 sessionIdUser);
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions("lazy", false), sessionIdUser2).first();
-        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
 
         sample = catalogManager.getSampleManager().get(studyFqn, new Query("individual", "Individual1"), new QueryOptions("lazy", false),
                 sessionIdUser2).first();
-        assertEquals(individualId, ((Individual) sample.getAttributes().get("individual")).getId());
+        assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
 
     }
@@ -1211,7 +1223,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
-                Account.GUEST, QueryOptions.empty(), null);
+                Account.Type.GUEST, QueryOptions.empty(), null);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("dummy",
                 GroupParams.Action.ADD), sessionIdUser);
 

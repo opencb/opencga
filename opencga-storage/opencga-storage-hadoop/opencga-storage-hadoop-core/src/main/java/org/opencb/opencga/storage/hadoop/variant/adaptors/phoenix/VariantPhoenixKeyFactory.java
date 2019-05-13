@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
+import htsjdk.variant.variantcontext.Allele;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -112,7 +113,7 @@ public class VariantPhoenixKeyFactory {
                 + QueryConstants.SEPARATOR_BYTE_ARRAY.length
                 + PUnsignedInt.INSTANCE.getByteSize()
                 + PVarchar.INSTANCE.estimateByteSizeFromLength(ref.length());
-        alt = buildSVAlternate(ref, alt, end, sv);
+        alt = buildSymbolicAlternate(ref, alt, end, sv);
         if (!alt.isEmpty()) {
             size += QueryConstants.SEPARATOR_BYTE_ARRAY.length
                     + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
@@ -127,13 +128,9 @@ public class VariantPhoenixKeyFactory {
         // Separator not needed. PUnsignedInt.INSTANCE.isFixedWidth() = true
         offset += PVarchar.INSTANCE.toBytes(ref, rk, offset);
 
-        if (!alt.isEmpty() || sv != null) {
-            // If the alternate is not empty, separator between reference and alternate is required.
-            // or
-            // If we have SV, the alternate is not the last element, so we need the separator
-            rk[offset++] = QueryConstants.SEPARATOR_BYTE;
-        }
         if (!alt.isEmpty()) {
+            // If the alternate is not empty, separator between reference and alternate is required.
+            rk[offset++] = QueryConstants.SEPARATOR_BYTE;
             offset += PVarchar.INSTANCE.toBytes(alt, rk, offset);
         }
 
@@ -142,20 +139,12 @@ public class VariantPhoenixKeyFactory {
     }
 
     // visible for test
-    static String buildSVAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
-        // FIXME: Only symbolic variants shold include the extended SV alternate!
-        // All variants with reference or alternate large than SV_THRESHOLD, must have the extended SV version, even if it's empty
-        if (sv == null
-                && (reference.length() >= Variant.SV_THRESHOLD && alternate.isEmpty()
-                || alternate.length() >= Variant.SV_THRESHOLD && reference.isEmpty())) {
-
-            sv = new StructuralVariation();
-        }
+    public static String buildSymbolicAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
         if (sv != null) {
-            // TODO: This code should be uncommented
-//            if (!Allele.wouldBeSymbolicAllele(alternate.getBytes()) && sv.equals(new StructuralVariation())) {
-//                return alternate;
-//            }
+            if (!Allele.wouldBeSymbolicAllele(alternate.getBytes()) && emptyCiStartEnd(sv)) {
+                // Skip non symbolic variants
+                return alternate;
+            }
 
             if (StructuralVariantType.TANDEM_DUPLICATION.equals(sv.getType())) {
                 alternate = VariantBuilder.DUP_TANDEM_ALT;
@@ -176,6 +165,13 @@ public class VariantPhoenixKeyFactory {
 
         }
         return alternate;
+    }
+
+    protected static boolean emptyCiStartEnd(StructuralVariation sv) {
+        return (sv.getCiStartLeft() == null || sv.getCiStartLeft() == 0)
+                && (sv.getCiStartRight() == null || sv.getCiStartRight() == 0)
+                && (sv.getCiEndLeft() == null || sv.getCiEndLeft() == 0)
+                && (sv.getCiEndRight() == null || sv.getCiEndRight() == 0);
     }
 
     public static Pair<String, Integer> extractChrPosFromVariantRowKey(byte[] variantRowKey) {
@@ -250,7 +246,7 @@ public class VariantPhoenixKeyFactory {
         }
     }
 
-    private static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type) {
+    public static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type) {
 
         Integer end = null;
         int ciStartL = 0;
@@ -259,11 +255,11 @@ public class VariantPhoenixKeyFactory {
         int ciEndR = 0;
         String insSeqL = null;
         String insSeqR = null;
-        boolean hasSV = false;
+        final boolean hasSV;
         if (alternate != null && alternate.contains(SV_ALTERNATE_SEPARATOR)) {
             String[] s = alternate.split(SV_ALTERNATE_SEPARATOR_SPLIT);
             alternate = s[0];
-            end = Integer.parseInt(s[1]);
+            end = s[1].equals("null") ? null : Integer.parseInt(s[1]);
             ciStartL = Integer.parseInt(s[2]);
             ciStartR = Integer.parseInt(s[3]);
             ciEndL = Integer.parseInt(s[4]);
@@ -274,10 +270,12 @@ public class VariantPhoenixKeyFactory {
                 insSeqR = s[7];
             }
 
-            if (end == 0) {
+            if (end != null && end == 0) {
                 end = null;
             }
             hasSV = true;
+        } else {
+            hasSV = false;
         }
 
         VariantBuilder builder = new VariantBuilder(chromosome, start, end, reference, alternate);

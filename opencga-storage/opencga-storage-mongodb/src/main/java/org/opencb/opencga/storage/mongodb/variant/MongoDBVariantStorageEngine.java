@@ -37,15 +37,14 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -54,6 +53,7 @@ import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
+import org.opencb.opencga.storage.mongodb.variant.query.RegionVariantQueryExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -478,7 +478,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantMongoDBAdaptor getDBAdaptor() throws StorageEngineException {
+    public VariantMongoDBAdaptor getDBAdaptor() {
         // Lazy initialization of dbAdaptor
         if (dbAdaptor.get() == null) {
             synchronized (dbAdaptor) {
@@ -491,45 +491,19 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         return dbAdaptor.get();
     }
 
-    /**
-     * Decide if a query should be resolved using SearchManager or not.
-     *
-     * Applies some exceptions over the default method:
-     *  - If true, and the query contains only filters for REGION and (optionally) STUDY, do not use SearchIndex
-     *
-     * @param query   Query
-     * @param options QueryOptions
-     * @return true if should resolve only with SearchManager
-     * @throws StorageEngineException StorageEngineException
-     */
     @Override
-    protected boolean doQuerySearchManager(Query query, QueryOptions options) throws StorageEngineException {
-        if (super.doQuerySearchManager(query, options)) {
-            if (VariantStorageEngine.UseSearchIndex.from(options).equals(VariantStorageEngine.UseSearchIndex.YES)) {
-                // Query search manager is mandatory
-                return true;
-            }
-            // Get set of valid params. Remove Modifier params
-            Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query);
-            queryParams.removeAll(MODIFIER_QUERY_PARAMS);
+    protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
+        List<VariantQueryExecutor> executors = new ArrayList<>();
 
-            // REGION + [ STUDY ]
-            if (queryParams.contains(REGION) // Has region
-                    // Optionally, has study
-                    && (queryParams.size() == 1 || queryParams.size() == 2 && queryParams.contains(VariantQueryParam.STUDY))
-                    && options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {   // Do not require total count
-                // Do not use SearchIndex either for intersect.
-                options.put(VariantSearchManager.USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.NO);
-                return false;
-            } else {
-                return true;
-            }
-        } else {
-            return false;
-        }
+        // First, detect if it's a region only query.
+        executors.add(new RegionVariantQueryExecutor(getDBAdaptor(), getStorageEngineId(), getOptions()));
+        // Then, add the default executors
+        executors.addAll(super.initVariantQueryExecutors());
+
+        return executors;
     }
 
-    private VariantMongoDBAdaptor newDBAdaptor() throws StorageEngineException {
+    private VariantMongoDBAdaptor newDBAdaptor() {
         MongoCredentials credentials = getMongoCredentials();
         VariantMongoDBAdaptor variantMongoDBAdaptor;
         ObjectMap options = getOptions();
@@ -566,7 +540,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
+    public VariantStorageMetadataManager getMetadataManager() {
         ObjectMap options = getOptions();
         if (metadataManager != null) {
             return metadataManager;
@@ -581,7 +555,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public Query preProcessQuery(Query originalQuery, QueryOptions options) throws StorageEngineException {
+    public Query preProcessQuery(Query originalQuery, QueryOptions options) {
         if (isValidParam(originalQuery, SAMPLE_MENDELIAN_ERROR)) {
             throw VariantQueryException.unsupportedVariantQueryFilter(SAMPLE_MENDELIAN_ERROR, getStorageEngineId());
         }
@@ -591,7 +565,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
         Query query = super.preProcessQuery(originalQuery, options);
         List<String> studyNames = metadataManager.getStudyNames();
-        CellBaseUtils cellBaseUtils = getCellBaseUtils();
 
         if (isValidParam(query, VariantQueryParam.STUDY)
                 && studyNames.size() == 1
@@ -605,9 +578,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 && !isValidParam(query, GENOTYPE)) {
             query.remove(VariantQueryParam.STUDY.key());
         }
-
-        convertGoToGeneQuery(query, cellBaseUtils);
-        convertExpressionToGeneQuery(query, cellBaseUtils);
 
         return query;
     }

@@ -55,7 +55,7 @@ public abstract class VariantDBAdaptorMultiFileSpecificSamplesCollectionTest ext
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
         try {
-            query = preProcessQuery(query, options);
+            query = variantStorageEngine.preProcessQuery(query, options);
             VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
             String collection = VariantSearchUtils.inferSpecificSearchIndexSamplesCollection(query, options, scm, DB_NAME);
 

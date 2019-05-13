@@ -124,7 +124,7 @@
 
 !3 Find Multiple Cohorts With One Invalid Entry Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId2,$cohortId,0000/info?study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId2' && jsonbody.response[2].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: Cohort 0000 not found"|
+| GET | /v1/cohorts/$cohortId2,$cohortId,0000/info?study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$cohortId2' && jsonbody.response[2].errorMsg == "Not found or user does not have permissions."|
 
 !3 Get cohorts as Groups
 !|Table: Rest Fixture | $baseURL |
@@ -153,7 +153,7 @@
 
 !3 (negative) Get cohort Sample With Multiple Ids
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/cohorts/$cohortId,$cohortId/samples |500|  Content-Type: application/json |jsonbody.error == "More than one entry found"|
+| GET | /v1/cohorts/$cohortId,$cohortId/samples |500|  Content-Type: application/json |jsonbody.error == "More than one id found. Only one ID is allowed."|
 
 !3 Get cohorts Sample With Include
 !|Table: Rest Fixture | $baseURL |

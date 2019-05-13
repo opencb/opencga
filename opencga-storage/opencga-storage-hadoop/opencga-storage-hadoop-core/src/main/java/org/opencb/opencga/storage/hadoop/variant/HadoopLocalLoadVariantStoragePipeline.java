@@ -142,10 +142,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             fileMetadata.setId(String.valueOf(fileId));
 //            fileMetadata.setStudyId(Integer.toString(studyId));
 
+            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
             long start = System.currentTimeMillis();
             if (VariantReaderUtils.isProto(fileName)) {
-                ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
-
                 ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
                 if (fileMetadata.getStats() != null) {
                     progressLogger.setApproximateTotalCount(fileMetadata.getStats().getNumVariants());
@@ -153,8 +152,6 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
                 loadFromProto(input, table, helper, progressLogger);
             } else {
-                ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
-
                 ProgressLogger progressLogger;
                 if (fileMetadata.getStats() != null) {
                     progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :",

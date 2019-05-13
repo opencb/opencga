@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -120,7 +120,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         String outdir = opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId);
         variantManager.annotate(studyFqn, new Query(), outdir, new QueryOptions(VariantAnnotationManager.CREATE, true), sessionId);
 
-        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !name.contains(AbstractExecutor.JOB_STATUS_FILE));
+        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !name.contains(BatchExecutor.JOB_STATUS_FILE));
         assertEquals(1, files.length);
         QueryOptions config = new QueryOptions(VariantAnnotationManager.LOAD_FILE, Paths.get(outdir, files[0]).toAbsolutePath().toString());
 

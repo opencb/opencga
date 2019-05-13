@@ -25,7 +25,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -52,26 +53,26 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
     }
 
-    private VariantFileMetadata loadFile(String resource, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
-        return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resource, studyConfiguration, map);
+    private VariantFileMetadata loadFile(String resource, StudyMetadata studyMetadata, Map<? extends String, ?> map) throws Exception {
+        return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resource, studyMetadata, map);
     }
 
-    private void removeFile(String file, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
-        Integer fileId = studyConfiguration.getFileIds().get(file);
+    private void removeFile(String file, StudyMetadata studyMetadata, Map<? extends String, ?> map) throws Exception {
+        Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file);
         System.out.printf("Remove File ID %s for %s", fileId, file);
-        VariantHbaseTestUtils.removeFile(getVariantStorageEngine(), DB_NAME, fileId, studyConfiguration, map);
+        VariantHbaseTestUtils.removeFile(getVariantStorageEngine(), DB_NAME, fileId, studyMetadata, map);
     }
 
     @Test
     @Ignore
     public void removeFileTestMergeAdvanced() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getName();
+        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
+        System.out.println("studyMetadata = " + studyMetadata);
+        String studyName = studyMetadata.getName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
-        loadFile("s1.genome.vcf", studyConfiguration, options);
+        loadFile("s1.genome.vcf", studyMetadata, options);
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         Map<String, Variant> variants = buildVariantsIdx();
         assertFalse(variants.containsKey("1:10014:A:G"));
@@ -80,7 +81,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        loadFile("s2.genome.vcf", studyConfiguration, options);
+        loadFile("s2.genome.vcf", studyMetadata, options);
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         variants = buildVariantsIdx();
         assertThat(variants.keySet(), hasItem("1:10014:A:G"));
@@ -92,7 +93,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
         // delete
-        removeFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        removeFile("s2.genome.vcf", studyMetadata, Collections.emptyMap());
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         variants = buildVariantsIdx();
         if (variants.containsKey("1:10014:A:G")) {
@@ -104,18 +105,18 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        checkSampleIndexTable(studyConfiguration, getVariantStorageEngine().getDBAdaptor(), "s2.genome.vcf");
+        checkSampleIndexTable(studyMetadata, getVariantStorageEngine().getDBAdaptor(), "s2.genome.vcf");
     }
 
     @Test
     public void removeFileTestMergeBasic() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getName();
+        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
+        System.out.println("studyMetadata = " + studyMetadata);
+        String studyName = studyMetadata.getName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        loadFile("s1.genome.vcf", studyConfiguration, options);
+        loadFile("s1.genome.vcf", studyMetadata, options);
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         Map<String, Variant> variants = buildVariantsIdx();
         assertFalse(variants.containsKey("1:10014:A:G"));
@@ -124,7 +125,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        loadFile("s2.genome.vcf", studyConfiguration, options);
+        loadFile("s2.genome.vcf", studyMetadata, options);
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         variants = buildVariantsIdx();
         assertThat(variants.keySet(), hasItem("1:10014:A:G"));
@@ -136,13 +137,13 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
 //        assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
         // delete
-        removeFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        removeFile("s2.genome.vcf", studyMetadata, Collections.emptyMap());
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         variants = buildVariantsIdx();
         if (variants.containsKey("1:10014:A:G")) {
             System.out.println(variants.get("1:10014:A:G").getImpl());
         }
-        checkSampleIndexTable(studyConfiguration, getVariantStorageEngine().getDBAdaptor(), "s2.genome.vcf");
+        checkSampleIndexTable(studyMetadata, getVariantStorageEngine().getDBAdaptor(), "s2.genome.vcf");
 
         // FIXME: This variant should be removed!
         // assertThat(variants.keySet(), not(hasItem("1:10014:A:G")));
@@ -154,13 +155,13 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
 
     @Test
     public void removeFileTestMergeBasicFillGaps() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getName();
+        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
+        System.out.println("studyMetadata = " + studyMetadata);
+        String studyName = studyMetadata.getName();
 
         ObjectMap options = new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        loadFile("s1.genome.vcf", studyConfiguration, options);
+        loadFile("s1.genome.vcf", studyMetadata, options);
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
         Map<String, Variant> variants = buildVariantsIdx();
@@ -170,7 +171,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        loadFile("s2.genome.vcf", studyConfiguration, options);
+        loadFile("s2.genome.vcf", studyMetadata, options);
 
         getVariantStorageEngine().fillGaps(studyName, Arrays.asList("s1", "s2"), options);
 
@@ -185,14 +186,14 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
         // delete
-        removeFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        removeFile("s2.genome.vcf", studyMetadata, Collections.emptyMap());
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
         variants = buildVariantsIdx();
         if (variants.containsKey("1:10014:A:G")) {
             System.out.println(variants.get("1:10014:A:G").getImpl());
         }
 
-        checkSampleIndexTable(studyConfiguration, dbAdaptor, "s2.genome.vcf");
+        checkSampleIndexTable(studyMetadata, dbAdaptor, "s2.genome.vcf");
 
         // FIXME: This variant should be removed!
         // assertThat(variants.keySet(), not(hasItem("1:10014:A:G")));
@@ -204,12 +205,12 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
 
     @Test
     public void removeSingleFileTest() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = studyConfiguration.getName();
+        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
+        System.out.println("studyMetadata = " + studyMetadata);
+        String studyName = studyMetadata.getName();
 
         Map<String, Object> options = Collections.singletonMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
-        loadFile("s1.genome.vcf", studyConfiguration, options);
+        loadFile("s1.genome.vcf", studyMetadata, options);
         Map<String, Variant> variants = buildVariantsIdx();
 
         assertFalse(variants.containsKey("1:10014:A:G"));
@@ -219,15 +220,15 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         // delete
-        removeFile("s1.genome.vcf", studyConfiguration, options);
+        removeFile("s1.genome.vcf", studyMetadata, options);
 
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
 
-        checkSampleIndexTable(studyConfiguration, dbAdaptor, "s1.genome.vcf");
+        checkSampleIndexTable(studyMetadata, dbAdaptor, "s1.genome.vcf");
 
         variants = buildVariantsIdx();
         assertEquals("Expected none variants", 0, variants.size());
-        assertEquals("Expected none indexed files", 0, studyConfiguration.getIndexedFiles().size());
+        assertEquals("Expected none indexed files", 0, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
     }
 
     private Map<String, Variant> buildVariantsIdx() throws Exception {
@@ -250,12 +251,13 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         return variants;
     }
 
-    protected void checkSampleIndexTable(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, String removedFile) throws Exception {
-        LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(studyConfiguration.getFileIds().get(removedFile));
+    protected void checkSampleIndexTable(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, String removedFile) throws Exception {
+        FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata.getId(), removedFile);
+        LinkedHashSet<Integer> sampleIds = fileMetadata.getSamples();
         SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(getVariantStorageEngine().getDBAdaptor().getGenomeHelper(), dbAdaptor.getHBaseManager(),
                 dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
         for (Integer sampleId : sampleIds) {
-            assertFalse(sampleIndexDBAdaptor.rawIterator(studyConfiguration.getId(), sampleId).hasNext());
+            assertFalse(sampleIndexDBAdaptor.iteratorByGt(studyMetadata.getId(), sampleId).hasNext());
         }
     }
 

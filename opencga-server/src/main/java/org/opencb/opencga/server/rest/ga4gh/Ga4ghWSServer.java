@@ -185,35 +185,36 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
         try {
             QueryResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, sessionId);
 
-            BamManager bamManager = new BamManager(Paths.get(queryResult.first().getUri().getPath()));
-            List<String> chunkOffsetList = bamManager.getBreakpoints(new Region(reference, start, end));
+            try (BamManager bamManager = new BamManager(Paths.get(queryResult.first().getUri().getPath()))) {
+                List<String> chunkOffsetList = bamManager.getBreakpoints(new Region(reference, start, end));
 
-            String url = uriInfo.getBaseUri().toString() + apiVersion + "/utils/ranges/" + fileIdStr + "?study=" + studyStr;
-            List<ObjectMap> urls = new ArrayList<>(chunkOffsetList.size() + 2);
+                String url = uriInfo.getBaseUri().toString() + apiVersion + "/utils/ranges/" + fileIdStr + "?study=" + studyStr;
+                List<ObjectMap> urls = new ArrayList<>(chunkOffsetList.size() + 2);
 
-            // Add header
-            urls.add(new ObjectMap("url", "data:application/octet-stream;base64,"
-                    + Base64.getEncoder().encodeToString(bamManager.compressedHeader())));
+                // Add header
+                urls.add(new ObjectMap("url", "data:application/octet-stream;base64,"
+                        + Base64.getEncoder().encodeToString(bamManager.compressedHeader())));
 
-            // Add urls to ranges
-            for (String byteRange : chunkOffsetList) {
-                urls.add(new ObjectMap()
-                        .append("url", url)
-                        .append("headers", new ObjectMap()
-                                .append("Authorization", "Bearer " + sessionId)
-                                .append("Range", "bytes=" + byteRange)
-                        )
+                // Add urls to ranges
+                for (String byteRange : chunkOffsetList) {
+                    urls.add(new ObjectMap()
+                            .append("url", url)
+                            .append("headers", new ObjectMap()
+                                    .append("Authorization", "Bearer " + sessionId)
+                                    .append("Range", "bytes=" + byteRange)
+                            )
+                    );
+                }
+
+                // Add EOF marker
+                urls.add(new ObjectMap("url", "data:application/octet-stream;base64,H4sIBAAAAAAA/wYAQkMCABsAAwAAAAAAAAAAAA=="));
+
+                ObjectMap result = new ObjectMap("htsget", new ObjectMap()
+                        .append("format", queryResult.first().getFormat())
+                        .append("urls", urls)
                 );
+                return createRawOkResponse(result);
             }
-
-            // Add EOF marker
-            urls.add(new ObjectMap("url", "data:application/octet-stream;base64,H4sIBAAAAAAA/wYAQkMCABsAAwAAAAAAAAAAAA=="));
-
-            ObjectMap result = new ObjectMap("htsget", new ObjectMap()
-                    .append("format", queryResult.first().getFormat())
-                    .append("urls", urls)
-            );
-            return createRawOkResponse(result);
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }

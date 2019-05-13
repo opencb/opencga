@@ -123,7 +123,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                                  QueryOptions options) {
 
         // Default objects
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, query, options);
+        VariantDBReader reader = new VariantDBReader(adaptor, query, options);
         org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter writer =
                 new org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter(reader, outputUri.getPath());
         int batchSize = 100;

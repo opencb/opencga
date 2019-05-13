@@ -5,6 +5,8 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -56,7 +58,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
             boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
             calculator = new VariantStatisticsCalculator(overwrite);
             Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
-            calculator.setAggregationType(studyMetadata.getAggregation(), tagmap);
+            calculator.setAggregationType(getAggregation(studyMetadata, context.getConfiguration()), tagmap);
             study = studyMetadata.getName();
 
             Collection<Integer> cohorts = getCohorts(context.getConfiguration());
@@ -161,5 +163,14 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
                 f.accept(TAGMAP_PREFIX + entry.getKey(), entry.getValue().toString());
             }
         }
+    }
+
+    private Aggregation getAggregation(StudyMetadata studyMetadata, Configuration configuration) {
+        return AggregationUtils.valueOf(configuration.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                studyMetadata.getAggregation().name()));
+    }
+
+    private Aggregation getAggregation(Configuration configuration) {
+        return AggregationUtils.valueOf(configuration.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.NONE.name()));
     }
 }

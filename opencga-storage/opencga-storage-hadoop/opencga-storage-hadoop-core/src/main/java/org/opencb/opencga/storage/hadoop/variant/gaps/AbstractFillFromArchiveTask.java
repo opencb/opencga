@@ -97,7 +97,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
     protected AbstractFillFromArchiveTask(StudyMetadata studyMetadata,
                                           VariantStorageMetadataManager metadataManager, GenomeHelper helper,
                                           Collection<Integer> samples,
-                                          boolean skipReferenceVariants) {
+                                          boolean skipReferenceVariants, boolean simplifiedNewMultiAllelicVariants) {
         this.studyMetadata = studyMetadata;
         this.helper = helper;
 
@@ -127,7 +127,7 @@ public abstract class AbstractFillFromArchiveTask implements Task<Result, Abstra
             }
         }
 
-        fillGapsTask = new FillGapsTask(studyMetadata, helper, skipReferenceVariants, metadataManager);
+        fillGapsTask = new FillGapsTask(studyMetadata, helper, skipReferenceVariants, simplifiedNewMultiAllelicVariants, metadataManager);
         rowKeyFactory = new ArchiveRowKeyFactory(helper.getConf());
     }
 

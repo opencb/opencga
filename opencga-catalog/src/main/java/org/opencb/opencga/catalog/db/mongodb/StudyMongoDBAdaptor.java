@@ -190,7 +190,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         for (Panel panel : panels) {
             String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(study.getUid(), panel, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += panel.getDiseasePanel().getName() + ":" + fileErrorMsg + ", ";
+                errorMsg += panel.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 
@@ -1201,8 +1201,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        //Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
-        //filterEnumParams(parameters, studyParameters, acceptedEnums);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.TYPE.key()), Study.Type.class);
+        filterEnumParams(parameters, studyParameters, acceptedEnums);
 
         if (parameters.containsKey(QueryParams.URI.key())) {
             URI uri = parameters.get(QueryParams.URI.key(), URI.class);

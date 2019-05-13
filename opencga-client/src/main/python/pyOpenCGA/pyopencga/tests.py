@@ -1,7 +1,8 @@
 import json
 import re
 import unittest
-from urlparse import parse_qs
+#from urlparse import parse_qs
+from urllib.parse import parse_qs
 
 import httpretty
 from sure import expect
@@ -9,7 +10,7 @@ from sure import expect
 from pyopencga.opencga_client import OpenCGAClient
 
 
-class OpenCGAClinetTest(unittest.TestCase):
+class OpenCGAClientTest(unittest.TestCase):
     def create_paginate_response(self, request, uri, headers):
         """
 

@@ -77,7 +77,7 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
                 throw new IllegalStateException("Unable to fill gaps for files from different batches in archive!");
             }
         }
-        fillGapsTask = new FillGapsTask(studyMetadata, helper, false, metadataManager);
+        fillGapsTask = new FillGapsTask(studyMetadata, helper, false, false, metadataManager);
     }
 
     @Override

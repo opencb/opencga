@@ -349,13 +349,16 @@ public class VariantCommandExecutor extends CommandExecutor {
             URI uri = StringUtils.isEmpty(variantQueryCommandOptions.commonQueryOptions.output)
                     ? null
                     : UriUtils.createUri(variantQueryCommandOptions.commonQueryOptions.output);
+            URI variantsFile = StringUtils.isEmpty(variantQueryCommandOptions.variantsFile)
+                    ? null
+                    : UriUtils.createUri(variantQueryCommandOptions.variantsFile);
 
             if (variantQueryCommandOptions.annotations != null) {
                 options.add("annotations", variantQueryCommandOptions.annotations);
             }
             VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory
                     .toOutputFormat(variantQueryCommandOptions.outputFormat, variantQueryCommandOptions.commonQueryOptions.output);
-            variantStorageEngine.exportData(uri, of, query, options);
+            variantStorageEngine.exportData(uri, of, variantsFile, query, options);
         }
     }
 

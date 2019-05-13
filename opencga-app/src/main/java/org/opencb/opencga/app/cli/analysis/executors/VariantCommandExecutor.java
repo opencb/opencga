@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.MendelianErrorPrecomputeCommandOptions.MENDELIAN_ERRORS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
@@ -122,6 +123,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case "stats":
                 stats();
+                break;
+            case MENDELIAN_ERRORS_COMMAND:
+                calculateMendelianErrors();
                 break;
             case "annotate":
                 annotate();
@@ -236,7 +240,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             }
             VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory
                     .toOutputFormat(cliOptions.commonOptions.outputFormat, cliOptions.output);
-            variantManager.exportData(cliOptions.output, outputFormat, query, queryOptions, sessionId);
+            variantManager.exportData(cliOptions.output, outputFormat, cliOptions.variantsFile, query, queryOptions, sessionId);
         }
     }
 
@@ -362,6 +366,21 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         }
 
         variantManager.stats(cliOptions.study, cohorts, cliOptions.outdir, options, sessionId);
+    }
+
+    private void calculateMendelianErrors() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
+            StorageEngineException, InstantiationException, IllegalAccessException, URISyntaxException {
+        VariantCommandOptions.MendelianErrorPrecomputeCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions()
+                .append("overwrite", cliOptions.overwrite);
+        options.putAll(cliOptions.commonOptions.params);
+
+        List<String> families = Arrays.asList(cliOptions.family.split(","));
+
+        variantManager.calculateMendelianErrors(cliOptions.study, families, options, sessionId);
     }
 
     private void annotate() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,

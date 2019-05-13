@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import org.bson.Document;
 import org.opencb.biodata.models.feature.AllelesCode;
 import org.opencb.biodata.models.feature.Genotype;
@@ -25,14 +23,11 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia &lt;cyenyxe@ebi.ac.uk&gt;
@@ -59,19 +54,10 @@ public class DocumentToVariantStatsConverter {
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
     private VariantStorageMetadataManager variantStorageMetadataManager = null;
-    private Map<Integer, StudyMetadata> studyMetadataMap;
     private Map<Integer, String> studyIds = new HashMap<>();
-    private Map<Integer, Map<Integer, String>> studyCohortNames = new HashMap<>();
     private Map<String, Genotype> genotypeMap = new HashMap<>();
 
     public DocumentToVariantStatsConverter() {
-    }
-
-    @Deprecated
-    public DocumentToVariantStatsConverter(List<? extends StudyMetadata> list) {
-        this.studyMetadataMap = list
-                .stream()
-                .collect(Collectors.toMap(StudyMetadata::getId, Function.identity()));
     }
 
     public DocumentToVariantStatsConverter(VariantStorageMetadataManager variantStorageMetadataManager) {
@@ -134,7 +120,7 @@ public class DocumentToVariantStatsConverter {
         stats.setGenotypeFreq(genotypesFreq);
 
         Object alleleFreq = object.get(ALT_FREQ_FIELD);
-        if (alleleFreq != null && ((Number) alleleFreq).floatValue() > 0) {
+        if (alleleFreq != null/* && ((Number) alleleFreq).floatValue() > 0*/) {
             // This field is not present in files loaded before v1.3.3
             stats.setRefAlleleFreq(((Number) object.get(REF_FREQ_FIELD)).floatValue());
             stats.setAltAlleleFreq(((Number) alleleFreq).floatValue());
@@ -294,20 +280,13 @@ public class DocumentToVariantStatsConverter {
         return studyIds.get(studyId);
     }
 
-    private final BiMap<String, Integer> cohortIds = HashBiMap.create();
-
     private String getCohortName(int studyId, int cohortId) {
-        return cohortIds.inverse().computeIfAbsent(cohortId, c -> variantStorageMetadataManager.getCohortName(studyId, cohortId));
+        return variantStorageMetadataManager.getCohortName(studyId, cohortId);
     }
 
     private Integer getCohortId(int studyId, String cohortName) {
-        return cohortIds.computeIfAbsent(studyId + "_" + cohortName, c -> variantStorageMetadataManager.getCohortId(studyId, cohortName));
+        return variantStorageMetadataManager.getCohortId(studyId, cohortName);
     }
-
-    private StudyMetadata getStudyMetadata(int studyId) {
-        return studyMetadataMap.computeIfAbsent(studyId, s -> variantStorageMetadataManager.getStudyMetadata(s));
-    }
-
 
 }
 

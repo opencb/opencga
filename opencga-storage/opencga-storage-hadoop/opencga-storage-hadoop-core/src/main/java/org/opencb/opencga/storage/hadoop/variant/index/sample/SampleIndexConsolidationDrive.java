@@ -80,7 +80,7 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
         } else {
             for (int sample : samples) {
                 Scan newScan = new Scan(templateScan);
-                newScan.setRowPrefixFilter(HBaseToSampleIndexConverter.toRowKey(sample));
+                newScan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
                 scans.add(newScan);
             }
         }
@@ -128,10 +128,12 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
     public static class SampleIndexConsolidationMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
 
         private byte[] family;
+        private SampleIndexVariantBiConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            converter = new SampleIndexVariantBiConverter();
         }
 
         @Override
@@ -165,13 +167,13 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
                     Cell cell = otherCells.get(gt);
                     if (cell == null) {
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "new_gt").increment(1);
-                        put.addColumn(family, Bytes.toBytes(gt), Bytes.toBytes(String.join(",", variants)));
-                        put.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
+                        put.addColumn(family, Bytes.toBytes(gt), converter.toBytesFromStrings(variants));
+                        put.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
                     } else {
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt").increment(1);
                         // Merge with existing values
-                        TreeSet<Variant> variantsSet = new TreeSet<>(HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
-                        List<Variant> loadedVariants = HBaseToSampleIndexConverter.getVariants(cell);
+                        TreeSet<Variant> variantsSet = new TreeSet<>(SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+                        List<Variant> loadedVariants = converter.toVariants(cell);
                         variantsSet.addAll(loadedVariants);
                         for (String variant : variants) {
                             variantsSet.add(new Variant(variant));
@@ -180,18 +182,8 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
                         if (loadedVariants.size() == variantsSet.size()) {
                             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "merged_gt_skip").increment(1);
                         } else {
-                            StringBuilder sb = new StringBuilder();
-                            Iterator<Variant> iterator = variantsSet.iterator();
-                            // Add first directly. List can not be empty.
-                            sb.append(iterator.next().toString());
-                            while (iterator.hasNext()) {
-                                Variant variant = iterator.next();
-                                sb.append(',');
-                                sb.append(variant.toString());
-                            }
-
-                            put.addColumn(family, HBaseToSampleIndexConverter.toGenotypeColumn(gt), Bytes.toBytes(sb.toString()));
-                            put.addColumn(family, HBaseToSampleIndexConverter.toGenotypeCountColumn(gt), Bytes.toBytes(variantsSet.size()));
+                            put.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt), converter.toBytes(variantsSet));
+                            put.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variantsSet.size()));
                         }
                     }
                 }

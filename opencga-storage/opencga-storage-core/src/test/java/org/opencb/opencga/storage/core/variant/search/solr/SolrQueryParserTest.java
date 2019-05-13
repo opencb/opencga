@@ -18,7 +18,9 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -36,19 +38,25 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public class SolrQueryParserTest {
 
+    private String studyName = "platinum";
     private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
             + "popFreq_*,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,polyphen,siftDesc,"
             + "phastCons,phylop,id,chromosome,start,end,type";
 //    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*__format,sampleFormat__*";
     private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*";
+    private String flDefaultStudy = flBase + ",fileInfo__" + studyName + "__*,qual__" + studyName + "__*,"
+            + "filter__" + studyName + "__*,sampleFormat__" + studyName + "__*";
 
     SolrQueryParser solrQueryParser;
 
-    String studyName = "platinum";
     VariantStorageMetadataManager scm;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void init() throws StorageEngineException {
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
         scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         scm.createStudy(studyName);
 
@@ -101,7 +109,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"WASH7P_1792\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(geneToSoAcc:\"WASH7P_1792\")", solrQuery.toString());
     }
 
     @Test
@@ -114,6 +122,45 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
         assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:17700)", solrQuery.toString());
+    }
+
+    @Test
+    public void parseGene() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(GENE.key(), "WASH7P");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"WASH7P\"", solrQuery.toString());
+    }
+
+    @Test
+    public void parseBiotype() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_BIOTYPE.key(), "protein_coding");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=biotypes:\"protein_coding\"", solrQuery.toString());
+    }
+
+    @Test
+    public void parseGeneAndConsequenceTypeAndRegionAndBiotype() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(GENE.key(), "WASH7P");
+        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001792");
+        query.put(REGION.key(), "1:17700");
+        query.put(ANNOT_BIOTYPE.key(), "protein_coding");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\"+AND+start:17700))+AND+(geneToSoAcc:\"protein_coding_1792\"))+OR+(geneToSoAcc:\"WASH7P_protein_coding_1792\")", solrQuery.toString());
     }
 
     @Test
@@ -154,6 +201,19 @@ public class SolrQueryParserTest {
     }
 
     @Test
+    public void parsePhylopAndBiotype() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_BIOTYPE.key(), "protein_coding");
+        query.put(ANNOT_CONSERVATION.key(), "phylop<-1.0");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=biotypes:\"protein_coding\"&fq=phylop:{-100.0+TO+-1.0}", solrQuery.toString());
+    }
+
+    @Test
     public void parsePhylopAndGeneAndPop() {
         QueryOptions queryOptions = new QueryOptions();
 
@@ -165,6 +225,67 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
         assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"WASH7P\"&fq=phylop:{-100.0+TO+-1.0}&fq=popFreq__1kG_phase3__ALL:{0.1+TO+*]", solrQuery.toString());
+    }
+
+    @Test
+    public void parseStats() throws StorageEngineException {
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(STATS_MAF.key(), "ALL<0.1");
+        String expectedFilter = "&q=*:*&fq=(stats__platinum__ALL:[0+TO+0.1})";
+
+        // Without study
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefault1 + expectedFilter, solrQuery.toString());
+
+        // With study
+        query.put(STUDY.key(), studyName);
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
+
+        // With study in stats
+        query.put(STATS_MAF.key(), studyName + ":ALL<0.1");
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
+
+        // Without study : FAIL
+        scm.createStudy("secondStudy");
+        query.remove(STUDY.key());
+        query.put(STATS_MAF.key(), "ALL<0.1");
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage("Missing study");
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+    }
+
+    @Test
+    public void parseMultiStats() {
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(STATS_MAF.key(), "ALL<0.1;OTH<0.1");
+        String expectedFilter = "&q=*:*&fq="
+                + "((stats__platinum__ALL:[0+TO+0.1})"
+                + "+AND+"
+                + "(stats__platinum__OTH:[0+TO+0.1}))";
+
+        // Without study
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefault1 + expectedFilter, solrQuery.toString());
+
+        // With study
+        query.put(STUDY.key(), studyName);
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
+
+        // With study in some stats
+        query.put(STATS_MAF.key(), studyName + ":ALL<0.1;OTH<0.1");
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
+
+        // With study in stats
+        query.put(STATS_MAF.key(), studyName + ":ALL<0.1;" + studyName + ":OTH<0.1");
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
     }
 
     @Test
@@ -411,12 +532,12 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
 
         Query query = new Query();
-        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
         query.put(ANNOT_XREF.key(), "RIPK2,NCF4");
+        query.put(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"NCF4_1583\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"NCF4_1583\")", solrQuery.toString());
     }
 
     @Test
@@ -432,7 +553,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(geneToSoAcc:\"RIPK2_1583\"+OR+geneToSoAcc:\"RIPK2_1580\"+OR+geneToSoAcc:\"NCF4_1583\"+OR+geneToSoAcc:\"NCF4_1580\")", solrQuery.toString());
     }
 
     @Test
@@ -467,7 +588,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\")", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\")+OR+(chromosome:\"2\"))+AND+(soAcc:\"1583\"+OR+soAcc:\"1580\"))", solrQuery.toString());
     }
 
     @Test
@@ -510,19 +631,6 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
         assertEquals(flDefault1 + "&q=*:*&fq=(traits:\"HP%253A000365\"+OR+traits:\"HP%253A0000007\")", solrQuery.toString());
-    }
-
-    @Test
-    public void parseClinVars() {
-        QueryOptions queryOptions = new QueryOptions();
-
-        Query query = new Query();
-
-        query.put(ANNOT_CLINVAR.key(), "RCV000010071");
-
-        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
-        display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=xrefs:\"RCV000010071\"", solrQuery.toString());
     }
 
     @Test
@@ -571,7 +679,7 @@ public class SolrQueryParserTest {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
 
-        String fl = ",sampleFormat__*__format,sampleFormat__platinum__sampleName,sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
+        String fl = ",sampleFormat__platinum__sampleName,sampleFormat__platinum__format,sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
         assertEquals(flBase + fl + "&q=*:*&fq=((gt__" + studyName + "__NA12878:\"1/1\")+OR+(gt__" + studyName + "__NA12877:\"1/0\"))", solrQuery.toString());
     }
 

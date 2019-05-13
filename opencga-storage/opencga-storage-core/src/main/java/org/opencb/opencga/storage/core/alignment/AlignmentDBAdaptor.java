@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.alignment;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -119,7 +121,11 @@ public interface AlignmentDBAdaptor {
 
     QueryResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
 
+    QueryResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception;
+
     QueryResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception;
+
+    QueryResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException;
 
 //    QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 }

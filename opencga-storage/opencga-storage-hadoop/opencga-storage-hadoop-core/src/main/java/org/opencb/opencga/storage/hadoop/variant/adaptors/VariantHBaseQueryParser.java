@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.HConstants;
@@ -31,13 +30,14 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,17 +64,18 @@ public class VariantHBaseQueryParser {
     private final GenomeHelper genomeHelper;
     private final VariantStorageMetadataManager metadataManager;
 
-    public static final Set<VariantQueryParam> SUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(Sets.newHashSet(
-//            STUDIES, // Not fully supported
-//            FILES,   // Not supported at all
-//            SAMPLES, // May be supported
-            REGION,
-            TYPE,
-            INCLUDE_FILE,
-            INCLUDE_STUDY,
-            INCLUDE_SAMPLE,
-            INCLUDE_FORMAT,
-            UNKNOWN_GENOTYPE));
+    private static final Set<VariantQueryParam> SUPPORTED_QUERY_PARAMS;
+
+    static {
+        SUPPORTED_QUERY_PARAMS = new HashSet<>();
+        SUPPORTED_QUERY_PARAMS.add(REGION);
+        SUPPORTED_QUERY_PARAMS.add(TYPE);
+        SUPPORTED_QUERY_PARAMS.addAll(VariantQueryUtils.MODIFIER_QUERY_PARAMS);
+
+        //SUPPORTED_QUERY_PARAMS.add(STUDIES); // Not fully supported
+        //SUPPORTED_QUERY_PARAMS.add(FILES);   // Not supported at all
+        //SUPPORTED_QUERY_PARAMS.add(SAMPLES); // May be supported
+    }
 
     public VariantHBaseQueryParser(GenomeHelper genomeHelper, VariantStorageMetadataManager metadataManager) {
         this.genomeHelper = genomeHelper;
@@ -169,7 +170,7 @@ public class VariantHBaseQueryParser {
     }
 
     public List<Scan> parseQueryMultiRegion(VariantQueryFields selectElements, Query query, QueryOptions options) {
-        VariantQueryXref xrefs = VariantQueryUtils.parseXrefs(query);
+        VariantQueryParser.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
         if (!xrefs.getOtherXrefs().isEmpty()) {
             throw VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_XREF,
                     HadoopVariantStorageEngine.STORAGE_ENGINE_ID, "Only variant ids are supported with HBase native query");

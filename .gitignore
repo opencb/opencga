@@ -6,6 +6,9 @@ build
 bower_components
 node_modules
 
+# Docker
+make_env
+
 # General
 *.jar
 *.war

@@ -14,16 +14,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -57,7 +59,7 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.FULL, null, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.Type.FULL, null, null).first();
 
         sessionId = catalog.getUserManager().login("user", "1234");
         catalog.getProjectManager().create("p1", "p1", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
@@ -90,11 +92,13 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getCohortManager().create("s1", new Cohort().setId("c2").setSamples(Collections.emptyList()), null, sessionId);
         catalog.getCohortManager().create("s1", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(samples), null, sessionId);
 
+        catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
+
         catalog.getProjectManager().create("p2", "p2", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
 
         Panel panel = new Panel("MyPanel", "MyPanel", 1);
-        panel.getDiseasePanel().setGenes(
+        panel.setGenes(
                 Arrays.asList(
                         new GenePanel().setName("BRCA2"),
                         new GenePanel().setName("CADM1"),
@@ -246,8 +250,20 @@ public class VariantCatalogQueryUtilsTest {
 
         assertEquals("sample1:HOM_ALT;sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT;sample2:HET_REF"));
         assertEquals("sample1:HOM_ALT,sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT,sample2:HET_REF"));
+        assertEquals("sample2:HOM_ALT,sample1:HET_REF", parseValue("s1", GENOTYPE, "sample2:HOM_ALT,sample1:HET_REF"));
 
 
+        assertEquals("c1;c2", parseValue("s1", COHORT, "c1;c2"));
+        assertEquals("c1>0.1;c2>0.1", parseValue("s1", STATS_MAF, "c1>0.1;c2>0.1"));
+
+        assertEquals("c1", parseValue("s1", COHORT, "s1:c1"));
+        assertEquals("c1>0.1", parseValue("s1", STATS_MAF, "s1:c1>0.1"));
+
+        assertEquals("c1", parseValue("s1", COHORT, "user@p1:s1:c1"));
+        assertEquals("c1>0.1", parseValue("s1", STATS_MAF, "user@p1:s1:c1>0.1"));
+
+        assertEquals("user@p1:s1:ALL;user@p1:s2:ALL", parseValue("s1,s2", COHORT, "s1:ALL;s2:ALL"));
+        assertEquals("user@p1:s1:ALL>0.1;user@p1:s2:ALL>0.1", parseValue("s1,s2", STATS_MAF, "s1:ALL>0.1;s2:ALL>0.1"));
     }
 
     @Test
@@ -351,6 +367,30 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Multiple projects");
         queryUtils.getAnyStudy(new Query(), sessionId);
+    }
+
+    @Test
+    public void getTriosFromFamily() throws Exception {
+
+        Family f1 = catalog.getFamilyManager().get("s1", "f1", null, sessionId).first();
+        VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        StudyMetadata s1 = metadataManager.createStudy("s1");
+        List<Integer> sampleIds = metadataManager.registerSamples(s1.getId(), Arrays.asList(
+                "sample1",
+                "sample2",
+                "sample3",
+                "sample4"
+        ));
+
+        for (Integer sampleId : sampleIds) {
+            metadataManager.updateSampleMetadata(s1.getId(), sampleId,
+                    sampleMetadata -> sampleMetadata.setIndexStatus(TaskMetadata.Status.READY));
+        }
+
+        List<List<String>> trios = queryUtils.getTriosFromFamily("s1", f1, metadataManager, true, sessionId);
+//        System.out.println("trios = " + trios);
+        assertEquals(Arrays.asList(Arrays.asList("sample1", "sample2", "sample3"), Arrays.asList("sample1", "sample2", "sample4")), trios);
+
     }
 
     protected String parseValue(VariantQueryParam param, String value) throws CatalogException {

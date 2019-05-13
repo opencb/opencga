@@ -21,7 +21,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
@@ -269,7 +268,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     private List<String> createCohortsIfNeeded(String studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
         List<String> cohorts = new ArrayList<>();
         // Silent query, so it does not fail for missing cohorts
-        Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames), new Query(),
+        Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames),
                 new QueryOptions(QueryOptions.INCLUDE, "name,id"), true, sessionId)
                 .stream()
                 .map(QueryResult::first)

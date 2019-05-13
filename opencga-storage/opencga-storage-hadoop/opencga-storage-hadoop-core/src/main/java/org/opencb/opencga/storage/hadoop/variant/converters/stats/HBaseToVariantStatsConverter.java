@@ -67,8 +67,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
         for (Map.Entry<byte[], byte[]> entry : map.entrySet()) {
             byte[] columnBytes = entry.getKey();
             byte[] value = entry.getValue();
-            if (value != null && startsWith(columnBytes, VariantPhoenixHelper.STATS_PREFIX_BYTES)
-                    && endsWith(columnBytes, VariantPhoenixHelper.STATS_PROTOBUF_SUFIX_BYTES)) {
+            if (value != null && endsWith(columnBytes, VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX_BYTES)) {
                 String columnName = Bytes.toString(columnBytes);
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
@@ -91,8 +90,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String columnName = metaData.getColumnName(i);
                 byte[] value = resultSet.getBytes(i);
-                if (value != null && columnName.startsWith(VariantPhoenixHelper.STATS_PREFIX)
-                        && columnName.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)) {
+                if (value != null && columnName.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
                     String[] split = columnName.split("_");
                     Integer studyId = getStudyId(split);
                     Integer cohortId = getCohortId(split);
@@ -124,6 +122,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             stats.setMgfGenotype(protoStats.getMgfGenotype());
             stats.setMaf(protoStats.getMaf());
             stats.setMafAllele(protoStats.getMafAllele());
+            stats.setAlleleCount(protoStats.getAlleleCount());
             stats.setAltAlleleCount(protoStats.getAltAlleleCount());
             stats.setAltAlleleFreq(protoStats.getAltAlleleFreq());
             stats.setRefAlleleCount(protoStats.getRefAlleleCount());

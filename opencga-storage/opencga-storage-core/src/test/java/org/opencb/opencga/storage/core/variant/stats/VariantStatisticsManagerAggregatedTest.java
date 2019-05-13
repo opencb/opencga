@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import com.google.common.collect.Iterators;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -27,6 +28,7 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -34,10 +36,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -82,12 +81,24 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
     @Test
     public void calculateAggregatedStatsTest() throws Exception {
+        calculateAggregatedStatsTest(new QueryOptions());
+    }
+
+    @Test
+    public void calculateAggregatedStatsNonAggregatedStudyTest() throws Exception {
+        dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata.getName(), sm -> {
+            sm.setAggregation(Aggregation.NONE);
+            return sm;
+        });
+        calculateAggregatedStatsTest(new QueryOptions(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregationType()));
+    }
+
+    protected void calculateAggregatedStatsTest(QueryOptions options) throws Exception {
         //Calculate stats for 2 cohorts at one time
         VariantStatisticsManager vsm = variantStorageEngine.newVariantStatisticsManager();
 
         checkAggregatedCohorts(dbAdaptor, studyMetadata);
 
-        QueryOptions options = new QueryOptions();
         options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.resolve("aggregated.stats").getPath());
         if (getAggregationMappingFile() != null) {
@@ -102,11 +113,17 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
     }
 
     protected void checkAggregatedCohorts(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata) {
+        List<CohortMetadata> cohorts = Arrays.asList(
+                Iterators.toArray(
+                        Iterators.filter(
+                                dbAdaptor.getMetadataManager().cohortIterator(studyMetadata.getId()),
+                                CohortMetadata::isStatsReady),
+                        CohortMetadata.class));
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 Map<String, VariantStats> cohortStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortStats.keySet().toString();
-                dbAdaptor.getMetadataManager().cohortIterator(studyMetadata.getId()).forEachRemaining(cohort -> {
+                cohorts.forEach(cohort -> {
                     String cohortName = cohort.getName();
                     assertTrue("CohortStats should contain stats for cohort " + cohortName
                                     + ". Only contains stats for " + calculatedCohorts,

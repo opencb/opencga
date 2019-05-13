@@ -61,7 +61,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
         admin.createNamespace(NamespaceDescriptor.create("opencga").build());
 
 
-        runDefaultETL(getResourceUri("s1.genome.vcf"), variantStorageManager, newStudyConfiguration(),
+        runDefaultETL(getResourceUri("s1.genome.vcf"), variantStorageManager, newStudyMetadata(),
                 new ObjectMap()
                         .append(HadoopVariantStorageEngine.HBASE_NAMESPACE, "opencga")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
@@ -83,7 +83,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
 
     @Test
     public void testNoNamespace() throws Exception {
-        runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyConfiguration(),
+        runDefaultETL(smallInputUri, getVariantStorageEngine(), newStudyMetadata(),
                 new ObjectMap()
                         .append(HadoopVariantStorageEngine.HBASE_NAMESPACE, "")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), true)

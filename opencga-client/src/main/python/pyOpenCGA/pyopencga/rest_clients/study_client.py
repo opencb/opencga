@@ -74,10 +74,10 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('resyncFiles', query_id=study, **options)
 
-    def stats(self, study, **options):
+    def aggregationStats(self, study, **options):
         """
         Fetch catalog study stats
-        URL: /{apiVersion}/studies/{studies}/stats
+        URL: /{apiVersion}/studies/{studies}/aggregationStats
 
         :param study: study id
         :param default: calculate default stats (bool)
@@ -93,7 +93,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
         """
 
-        return self._get('stats', query_id=study, **options)
+        return self._get('aggregationStats', query_id=study, **options)
 
     def create_groups(self, study, data, **options):
         """
