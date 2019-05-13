@@ -51,7 +51,7 @@
 !3 (Negative) Update Project ID
 !|Table: Rest Fixture | $baseURL |
 | setBody |{"id" : "updatedID"}|
-| POST | /v1/projects/$lProjectId/update |400|Content-Type : text/plain||
+| POST | /v1/projects/$lProjectId/update |500|Content-Type : text/html||
 
 !3 (Negative) Update Project Mandatory Field ( Not Allowed)
 !|Table: Rest Fixture | $baseURL |
