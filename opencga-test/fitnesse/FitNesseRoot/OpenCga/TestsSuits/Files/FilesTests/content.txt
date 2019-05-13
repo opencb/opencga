@@ -93,21 +93,22 @@
 | setHeader | Authorization : Bearer |
 | GET | /v1/files/$fileId/info |403|Content-Type: application/json|jsonbody.error != ''|
 
+# OpenCGA has Id, UUID, Name and Path for files/folder, user can only mix SAME type while searching more than one item ( name, name or UUID, UUID etc)
 !3 Get File & Folder Info 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId,$folderId/info |200|Content-Type: application/json|jsonbody.error === ''&& jsonbody.response[0].result[0].id == "$fileId" && jsonbody.response[1].result[0].id == "$folderId:"|
+| GET | /v1/files/file,$folderId/info |200|Content-Type: application/json|jsonbody.error === ''&& jsonbody.response[0].result[0].id == "$fileId" && jsonbody.response[1].result[0].id == "$folderId:"|
 
 !3 Get File & Folder Info In Reverse Order 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$folderId,$fileId/info |200|Content-Type: application/json|jsonbody.error === ''&& jsonbody.response[0].result[0].id == "$folderId:" && jsonbody.response[1].result[0].id == "$fileId"|
+| GET | /v1/files/$folderId,file/info |200|Content-Type: application/json|jsonbody.error === ''&& jsonbody.response[0].result[0].id == "$folderId:" && jsonbody.response[1].result[0].id == "$fileId"|
 
 !3 Get File & Folder Info With Invalid Entry 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId,0000,$folderId/info |500|Content-Type: application/json|jsonbody.error === "File 0000 not found"|
+| GET | /v1/files/file,0000,$folderId/info |500|Content-Type: application/json|jsonbody.error === "Missing files: 0000 not found."|
 
 !3 Get File & Folder Info With Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId,0000,$folderId/info?silent=true |200|Content-Type: application/json||
+| GET | /v1/files/file,0000,$folderId/info?silent=true |200|Content-Type: application/json||
 
 !3 Get Contents of File
 !|Table: Rest Fixture | $baseURL |
@@ -123,21 +124,19 @@
 
 !3 Get ACL For File & Folder
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId,$folderId/acl |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == "$fileId" && jsonbody.response[1].id == "$folderId"|
+| GET | /v1/files/file,$folderId/acl |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == "file" && jsonbody.response[1].id == "$folderId"|
 
 !3 Get ACL For File & Folder In Reverse Order
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$folderId,$fileId/acl |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == '$folderId' && jsonbody.response[1].id == "$fileId"|
+| GET | /v1/files/$folderId,file/acl |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == '$folderId' && jsonbody.response[1].id == "file"|
 
 !3 Get ACL For File & Folder With One Invalid Entry
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/$fileId,$folderId,99999/acl?silent=false |500|Content-Type: application/json|jsonbody.error == "File 99999 not found"|
-
+| GET | /v1/files/file,$folderId,99999/acl?silent=false |500|Content-Type: application/json|jsonbody.error == 'Missing files: 99999 not found.'|
 
 !3 Get ACL For File & Folder With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/files/$fileId,$folderId,99999/acl?silent=true |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].id == "$fileId" && jsonbody.response[1].id == "$folderId"|
-| GET | /v1/files/$fileId,$folderId,99999/acl?silent=true |200|Content-Type: application/json||
 
 !3 Get File Tree
 !|Table: Rest Fixture | $baseURL |
@@ -149,7 +148,7 @@
 
 !3 Get File Formats
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/files/formats ||Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result.length == '24'|
+| GET | /v1/files/formats ||Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result.length == '25'|
 
 !3 Create Sample 1
 !|Table: Rest Fixture | $baseURL |
@@ -180,8 +179,13 @@
 
 !3 Update File With Same Sample Twice 
 !|Table: Rest Fixture | $baseURL |
-| setBody |{ "samples" : ["$sampleId3,$sampleId3"]}|
-| POST | /v1/files/$fileId/update?study=$study |500|Content-Type: application/json||
+| setBody |{ "samples" : ["$sampleId3","$sampleId3"]}|
+| POST | /v1/files/$fileId/update?study=$study |500|Content-Type: application/json|jsonbody.error == "Provided sample IDs are not unique. Only unique IDs are accepted."|
+
+!3 Update File With Sample Once 
+!|Table: Rest Fixture | $baseURL |
+| setBody |{ "samples" : ["$sampleId3"]}|
+| POST | /v1/files/$fileId/update?study=$study |200|Content-Type: application/json||
 
 !3 Get Samples Attached to File
 !|Table: Rest Fixture | $baseURL |

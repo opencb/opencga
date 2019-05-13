@@ -321,11 +321,12 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         return map;
     }
 
-    public static String combine(String gene, int so) {
-        return StringUtils.isEmpty(gene) ? null : gene + '_' + so;
+    public static String combine(String geneOrBiotype, int so) {
+        return StringUtils.isEmpty(geneOrBiotype) ? null : geneOrBiotype + '_' + so;
     }
 
     public static String combine(int so, String flag) {
+        // FIXME: This will compute a numerical add between so and '_' (i.e. so + 95)
         return StringUtils.isEmpty(flag) ? null : so + '_' + flag;
     }
 

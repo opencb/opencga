@@ -32,10 +32,20 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
-    abstract QueryResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException;
+    QueryResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+        return internalGet(studyUid, entry, null, options, user);
+    }
 
-    abstract InternalGetQueryResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    abstract QueryResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException;
+
+    InternalGetQueryResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+            throws CatalogException {
+        return internalGet(studyUid, entryList, null, options, user, silent);
+    }
+
+    abstract InternalGetQueryResult<R> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                                   String user, boolean silent) throws CatalogException;
 
     /**
      * Create an entry in catalog.
@@ -91,34 +101,57 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @throws CatalogException CatalogException.
      */
     public List<QueryResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
-        return get(studyStr, entryList, options, false, token);
+        return get(studyStr, entryList, new Query(), options, false, token);
     }
 
     public List<QueryResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
             throws CatalogException {
+        return get(studyStr, entryList, new Query(), options, silent, token);
+    }
+
+    public List<QueryResult<R>> get(String studyStr, List<String> entryList, Query query, QueryOptions options, boolean silent,
+                                    String token) throws CatalogException {
         List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        InternalGetQueryResult<R> responseResult = internalGet(study.getUid(), entryList, options, userId, silent);
+        InternalGetQueryResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
 
+//        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+//        if (responseResult.getMissing() != null) {
+//            missingMap = responseResult.getMissing().stream()
+//                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+//        }
+//        int counter = 0;
+//        for (String entry : entryList) {
+//            if (missingMap.containsKey(entry)) {
+//                // We add a QueryResult entry with the missing field
+//                resultList.add(new QueryResult<>(entry, responseResult.getDbTime(), 0, 0, "", missingMap.get(entry).getErrorMsg(),
+//                        Collections.emptyList()));
+//            } else {
+//                R response = responseResult.getResult().get(counter);
+//                resultList.add(new QueryResult<>(response.getId(), responseResult.getDbTime(), 1, 1, "", "",
+//                        Collections.singletonList(response)));
+//                counter += 1;
+//            }
+//        }
         Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
         if (responseResult.getMissing() != null) {
             missingMap = responseResult.getMissing().stream()
                     .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
         }
-        int counter = 0;
-        for (String entry : entryList) {
-            if (missingMap.containsKey(entry)) {
-                // We add a QueryResult entry with the missing field
-                resultList.add(new QueryResult<>(entry, responseResult.getDbTime(), 0, 0, "", missingMap.get(entry).getErrorMsg(),
+
+        List<List<R>> versionedResults = responseResult.getVersionedResults();
+        for (int i = 0; i < versionedResults.size(); i++) {
+            String entryId = entryList.get(i);
+            if (versionedResults.get(i).isEmpty()) {
+                // Missing
+                resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), 0, 0, "", missingMap.get(entryId).getErrorMsg(),
                         Collections.emptyList()));
             } else {
-                R response = responseResult.getResult().get(counter);
-                resultList.add(new QueryResult<>(response.getId(), responseResult.getDbTime(), 1, 1, "", "",
-                        Collections.singletonList(response)));
-                counter += 1;
+                int size = versionedResults.get(i).size();
+                resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), size, size, "", "", versionedResults.get(i)));
             }
         }
         return resultList;

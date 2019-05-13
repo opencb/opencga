@@ -25,13 +25,12 @@ import java.util.Calendar;
  */
 public class Account {
 
-    public static final String GUEST = "guest";
-    public static final String FULL = "full";
-
-    private String type;
+    private Type type;
     private String creationDate;
     private String expirationDate;
+    @Deprecated
     private String authOrigin;
+    private AuthenticationOrigin authentication;
 
     public Account() {
         String creationDate = TimeUtils.getTime();
@@ -41,17 +40,17 @@ public class Account {
         cal.add(Calendar.YEAR, +1);
         String expirationDate = TimeUtils.getTime(cal.getTime());
 
-        this.type = FULL;
+        this.type = Type.FULL;
         this.creationDate = creationDate;
         this.expirationDate = expirationDate;
-        this.authOrigin = "internal";
+        this.authentication = null;
     }
 
-    public Account(String type, String creationDate, String expirationDate, String authOrigin) {
+    public Account(Type type, String creationDate, String expirationDate, AuthenticationOrigin authentication) {
         this.type = type;
         this.expirationDate = expirationDate;
         this.creationDate = creationDate;
-        this.authOrigin = authOrigin;
+        this.authentication = authentication;
     }
 
     @Override
@@ -60,16 +59,16 @@ public class Account {
         sb.append("type='").append(type).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", expirationDate='").append(expirationDate).append('\'');
-        sb.append(", authOrigin='").append(authOrigin).append('\'');
+        sb.append(", authentication='").append(authentication).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getType() {
+    public Type getType() {
         return type;
     }
 
-    public Account setType(String type) {
+    public Account setType(Type type) {
         this.type = type;
         return this;
     }
@@ -92,12 +91,60 @@ public class Account {
         return this;
     }
 
+    @Deprecated
     public String getAuthOrigin() {
         return authOrigin;
     }
 
+    @Deprecated
     public Account setAuthOrigin(String authOrigin) {
         this.authOrigin = authOrigin;
         return this;
+    }
+
+    public AuthenticationOrigin getAuthentication() {
+        return authentication;
+    }
+
+    public Account setAuthentication(AuthenticationOrigin authentication) {
+        this.authentication = authentication;
+        return this;
+    }
+
+    public enum Type {
+        GUEST,
+        FULL
+    }
+
+    public static class AuthenticationOrigin {
+
+        private String id;
+        private boolean application;
+
+        public AuthenticationOrigin() {
+        }
+
+        public AuthenticationOrigin(String id, boolean application) {
+            this.id = id;
+            this.application = application;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public AuthenticationOrigin setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public boolean getApplication() {
+            return application;
+        }
+
+        public AuthenticationOrigin setApplication(boolean application) {
+            this.application = application;
+            return this;
+        }
     }
 }

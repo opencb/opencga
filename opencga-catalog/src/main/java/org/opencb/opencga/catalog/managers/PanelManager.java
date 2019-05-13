@@ -2,6 +2,8 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Xref;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -75,25 +77,27 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    QueryResult<Panel> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    QueryResult<Panel> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
-        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
         if (UUIDUtils.isOpenCGAUUID(entry)) {
-            query.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
+            queryCopy.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
-            query.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
+            queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
         }
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, queryOptions, user);
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
         if (panelQueryResult.getNumResults() == 0) {
-            panelQueryResult = panelDBAdaptor.get(query, queryOptions);
+            panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions);
             if (panelQueryResult.getNumResults() == 0) {
                 throw new CatalogException("Panel " + entry + " not found");
             } else {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the panel " + entry);
             }
-        } else if (panelQueryResult.getNumResults() > 1) {
+        } else if (panelQueryResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
             throw new CatalogException("More than one panel found based on " + entry);
         } else {
             return panelQueryResult;
@@ -101,15 +105,16 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    InternalGetQueryResult<Panel> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
-            throws CatalogException {
+    InternalGetQueryResult<Panel> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+                                              String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing panel entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        Query queryCopy = query == null ? new Query() : new Query(query);
+        queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
         Function<Panel, String> panelStringFunction = Panel::getId;
         PanelDBAdaptor.QueryParams idQueryParam = null;
@@ -126,17 +131,18 @@ public class PanelManager extends ResourceManager<Panel> {
                 throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
             }
         }
-        query.put(idQueryParam.key(), uniqueList);
+        queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(query, queryOptions, user);
-        if (silent || panelQueryResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, panelStringFunction, panelQueryResult, silent);
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
+        if (silent || panelQueryResult.getNumResults() >= uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, panelStringFunction, panelQueryResult, silent,
+                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
         }
         // Query without adding the user check
-        QueryResult<Panel> resultsNoCheck = panelDBAdaptor.get(query, queryOptions);
+        QueryResult<Panel> resultsNoCheck = panelDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == panelQueryResult.getNumResults()) {
             throw CatalogException.notFound("panels", getMissingFields(uniqueList, panelQueryResult.getResult(), panelStringFunction));
@@ -320,37 +326,82 @@ public class PanelManager extends ResourceManager<Panel> {
 
                     List<GenePanel> genes = new ArrayList<>();
                     for (Map<String, Object> gene : (List<Map>) panelInfo.get("genes")) {
-                        String ensemblGeneId = "";
-                        List<Xref> xrefs = new ArrayList<>();
-                        List<String> publications = new ArrayList<>();
+                        GenePanel genePanel = new GenePanel();
+
+                        extractCommonInformationFromPanelApp(gene, genePanel);
+
+                        List<Coordinate> coordinates = new ArrayList<>();
 
                         Map<String, Object> geneData = (Map) gene.get("gene_data");
-
-                        // read the first Ensembl gene ID if exists
                         Map<String, Object> ensemblGenes = (Map) geneData.get("ensembl_genes");
-                        if (ensemblGenes.containsKey("GRch37")) {
-                            ensemblGeneId = String.valueOf(((Map) ((Map) ensemblGenes.get("GRch37")).get("82")).get("ensembl_id"));
-                        } else if (ensemblGenes.containsKey("GRch38")) {
-                            ensemblGeneId = String.valueOf(((Map) ((Map) ensemblGenes.get("GRch38")).get("90")).get("ensembl_id"));
-                        }
-
-                        // read OMIM ID
-                        if (geneData.containsKey("omim_gene") && geneData.get("omim_gene") != null) {
-                            for (String omim : (List<String>) geneData.get("omim_gene")) {
-                                xrefs.add(new Xref(omim, "OMIM", "OMIM"));
+                        // Read coordinates
+                        for (String assembly : ensemblGenes.keySet()) {
+                            Map<String, Object> assemblyObject = (Map<String, Object>) ensemblGenes.get(assembly);
+                            for (String version : assemblyObject.keySet()) {
+                                Map<String, Object> coordinateObject = (Map<String, Object>) assemblyObject.get(version);
+                                String correctAssembly = "GRch37".equals(assembly) ? "GRCh37" : "GRCh38";
+                                coordinates.add(new Coordinate(correctAssembly, String.valueOf(coordinateObject.get("location")),
+                                        "Ensembl v" + version));
                             }
                         }
-                        xrefs.add(new Xref(String.valueOf(geneData.get("gene_name")), "GeneName", "GeneName"));
 
-                        // read publications
-                        if (gene.containsKey("publications")) {
-                            publications = (List<String>) gene.get("publications");
+                        genePanel.setName(String.valueOf(geneData.get("hgnc_symbol")));
+                        genePanel.setCoordinates(coordinates);
+
+                        genes.add(genePanel);
+                    }
+
+                    List<RegionPanel> regions = new ArrayList<>();
+                    for (Map<String, Object> panelAppRegion : (List<Map>) panelInfo.get("regions")) {
+                        RegionPanel region = new RegionPanel();
+
+                        extractCommonInformationFromPanelApp(panelAppRegion, region);
+
+                        String id = (String) panelAppRegion.get("chromosome");
+
+                        List<Integer> coordinateList = null;
+                        if (ListUtils.isNotEmpty((Collection<?>) panelAppRegion.get("grch38_coordinates"))) {
+                            coordinateList = (List<Integer>) panelAppRegion.get("grch38_coordinates");
+                        } else if (ListUtils.isNotEmpty((Collection<?>) panelAppRegion.get("grch37_coordinates"))) {
+                            coordinateList = (List<Integer>) panelAppRegion.get("grch37_coordinates");
+                        }
+                        if (coordinateList != null && coordinateList.size() == 2) {
+                            id = id + ":" + coordinateList.get(0) + "-" + coordinateList.get(1);
+                        } else {
+                            logger.warn("Could not read region coordinates");
                         }
 
-                        // add gene panel
-                        genes.add(new GenePanel(ensemblGeneId, String.valueOf(geneData.get("hgnc_symbol")), xrefs,
-                                String.valueOf(gene.get("mode_of_inheritance")), null, String.valueOf(gene.get("confidence_level")),
-                                (List<String>) gene.get("evidence"), publications));
+                        VariantType variantType = null;
+                        String typeOfVariant = String.valueOf(panelAppRegion.get("type_of_variants"));
+                        if ("cnv_loss".equals(typeOfVariant)) {
+                            variantType = VariantType.LOSS;
+                        } else if ("cnv_gain".equals(typeOfVariant)) {
+                            variantType = VariantType.GAIN;
+                        } else {
+                            System.out.println(typeOfVariant);
+                        }
+
+                        region.setId(id);
+                        region.setDescription(String.valueOf(panelAppRegion.get("verbose_name")));
+                        region.setHaploinsufficiencyScore(String.valueOf(panelAppRegion.get("haploinsufficiency_score")));
+                        region.setTriplosensitivityScore(String.valueOf(panelAppRegion.get("triplosensitivity_score")));
+                        region.setRequiredOverlapPercentage((int) panelAppRegion.get("required_overlap_percentage"));
+                        region.setTypeOfVariants(variantType);
+
+                        regions.add(region);
+                    }
+
+                    List<STR> strs = new ArrayList<>();
+                    for (Map<String, Object> panelAppSTR : (List<Map>) panelInfo.get("strs")) {
+                        STR str = new STR();
+
+                        extractCommonInformationFromPanelApp(panelAppSTR, str);
+
+                        str.setRepeatedSequence(String.valueOf(panelAppSTR.get("repeated_sequence")));
+                        str.setNormalRepeats((int) panelAppSTR.get("normal_repeats"));
+                        str.setPathogenicRepeats((int) panelAppSTR.get("pathogenic_repeats"));
+
+                        strs.add(str);
                     }
 
                     Map<String, Object> attributes = new HashMap<>();
@@ -371,6 +422,8 @@ public class PanelManager extends ResourceManager<Panel> {
                     diseasePanel.setCategories(categories);
                     diseasePanel.setPhenotypes(phenotypes);
                     diseasePanel.setGenes(genes);
+                    diseasePanel.setStrs(strs);
+                    diseasePanel.setRegions(regions);
                     diseasePanel.setSource(new SourcePanel()
                             .setId(String.valueOf(panelInfo.get("id")))
                             .setName(String.valueOf(panelInfo.get("name")))
@@ -391,6 +444,94 @@ public class PanelManager extends ResourceManager<Panel> {
 
             i++;
         }
+    }
+
+    private <T extends Common> void extractCommonInformationFromPanelApp(Map<String, Object> panelAppCommonMap, T common) {
+        String ensemblGeneId = "";
+        List<Xref> xrefs = new ArrayList<>();
+        List<String> publications = new ArrayList<>();
+        List<OntologyTerm> phenotypes = new ArrayList<>();
+        List<Coordinate> coordinates = new ArrayList<>();
+
+        Map<String, Object> geneData = (Map) panelAppCommonMap.get("gene_data");
+        if (geneData != null) {
+            Map<String, Object> ensemblGenes = (Map) geneData.get("ensembl_genes");
+
+            if (ensemblGenes.containsKey("GRch37")) {
+                ensemblGeneId = String.valueOf(((Map) ((Map) ensemblGenes.get("GRch37")).get("82")).get("ensembl_id"));
+            } else if (ensemblGenes.containsKey("GRch38")) {
+                ensemblGeneId = String.valueOf(((Map) ((Map) ensemblGenes.get("GRch38")).get("90")).get("ensembl_id"));
+            }
+
+            // read OMIM ID
+            if (geneData.containsKey("omim_gene") && geneData.get("omim_gene") != null) {
+                for (String omim : (List<String>) geneData.get("omim_gene")) {
+                    xrefs.add(new Xref(omim, "OMIM", "OMIM"));
+                }
+            }
+            xrefs.add(new Xref(String.valueOf(geneData.get("gene_name")), "GeneName", "GeneName"));
+        }
+
+        // Add coordinates
+        String chromosome = String.valueOf(panelAppCommonMap.get("chromosome"));
+        if (ListUtils.isNotEmpty((Collection<?>) panelAppCommonMap.get("grch38_coordinates"))) {
+            List<Integer> auxCoordinates = (List<Integer>) panelAppCommonMap.get("grch38_coordinates");
+            coordinates.add(new Coordinate("GRCh38", chromosome + ":" + auxCoordinates.get(0) + "-" + auxCoordinates.get(1),
+                    "Ensembl"));
+        }
+        if (ListUtils.isNotEmpty((Collection<?>) panelAppCommonMap.get("grch37_coordinates"))) {
+            List<Integer> auxCoordinates = (List<Integer>) panelAppCommonMap.get("grch37_coordinates");
+            coordinates.add(new Coordinate("GRCh37", chromosome + ":" + auxCoordinates.get(0) + "-" + auxCoordinates.get(1),
+                    "Ensembl"));
+        }
+
+
+        // read publications
+        if (panelAppCommonMap.containsKey("publications")) {
+            publications = (List<String>) panelAppCommonMap.get("publications");
+        }
+
+        // Read phenotypes
+        if (panelAppCommonMap.containsKey("phenotypes") && !((List<String>) panelAppCommonMap.get("phenotypes")).isEmpty()) {
+            for (String phenotype : ((List<String>) panelAppCommonMap.get("phenotypes"))) {
+                String id = phenotype;
+                String source = "";
+                if (phenotype.length() >= 6) {
+                    String substring = phenotype.substring(phenotype.length() - 6);
+                    try {
+                        Integer.parseInt(substring);
+                        // If the previous call doesn't raise any exception, we are reading an OMIM id.
+                        id = substring;
+                        source = "OMIM";
+                    } catch (NumberFormatException e) {
+                        id = phenotype;
+                    }
+                }
+
+                phenotypes.add(new OntologyTerm(id, phenotype, source, Collections.emptyMap()));
+            }
+        }
+
+        // Read penetrance
+        String panelAppPenetrance = String.valueOf(panelAppCommonMap.get("penetrance"));
+        ClinicalProperty.Penetrance penetrance = null;
+        if (StringUtils.isNotEmpty(panelAppPenetrance)) {
+            try {
+                penetrance = ClinicalProperty.Penetrance.valueOf(panelAppPenetrance.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                logger.warn("Could not parse penetrance. Value found: " + panelAppPenetrance);
+            }
+        }
+
+        common.setId(ensemblGeneId);
+        common.setXrefs(xrefs);
+        common.setModeOfInheritance(String.valueOf(panelAppCommonMap.get("mode_of_inheritance")));
+        common.setPenetrance(penetrance);
+        common.setConfidence(String.valueOf(panelAppCommonMap.get("confidence_level")));
+        common.setEvidences((List<String>) panelAppCommonMap.get("evidence"));
+        common.setPublications(publications);
+        common.setPhenotypes(phenotypes);
+        common.setCoordinates(coordinates);
     }
 
     @Override

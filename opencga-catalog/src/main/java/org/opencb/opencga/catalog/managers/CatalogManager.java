@@ -144,11 +144,11 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateJWTParameters(params);
     }
 
-    public ObjectMap getDatabaseStatus() {
+    public boolean getDatabaseStatus() {
         if (existsCatalogDB()) {
             return catalogDBAdaptorFactory.getDatabaseStatus();
         } else {
-            return new ObjectMap("error", "Database " + configuration.getDatabasePrefix() + "_opencga not found");
+            return false;
         }
     }
 

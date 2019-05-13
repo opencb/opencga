@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
@@ -70,14 +71,15 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -85,7 +87,6 @@ import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
-import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,8 +120,6 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
-    public static final String HADOOP_BIN = "hadoop.bin";
-    public static final String HADOOP_ENV = "hadoop.env";
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
     @Deprecated
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
@@ -197,6 +196,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public static final String PENDING_ANNOTATION_TABLE_COMPRESSION = "opencga.pending-annotation.table.compression";
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
+
     public static final String STATS_LOCAL = "stats.local";
 
     public static final String DBADAPTOR_PHOENIX_FETCH_SIZE = "dbadaptor.phoenix.fetch_size";
@@ -996,29 +996,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return conf;
     }
 
-    private MRExecutor getMRExecutor() {
-        ObjectMap options = getOptions();
-        if (options.containsKey(EXTERNAL_MR_EXECUTOR)) {
-            Class<? extends MRExecutor> aClass;
-            if (options.get(EXTERNAL_MR_EXECUTOR) instanceof Class) {
-                aClass = options.get(EXTERNAL_MR_EXECUTOR, Class.class).asSubclass(MRExecutor.class);
-            } else {
-                try {
-                    aClass = Class.forName(options.getString(EXTERNAL_MR_EXECUTOR)).asSubclass(MRExecutor.class);
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            try {
-                return aClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        } else if (mrExecutor == null) {
-            return new ExternalMRExecutor(options);
-        } else {
-            return mrExecutor;
+    private MRExecutor getMRExecutor() throws StorageEngineException {
+        if (mrExecutor == null) {
+            mrExecutor = MRExecutorFactory.getMRExecutor(getOptions());
         }
+        return mrExecutor;
     }
 
     /**
@@ -1040,17 +1022,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             tableNameGenerator = new HBaseVariantTableNameGenerator(dbName, getOptions());
         }
         return tableNameGenerator;
-    }
-
-    public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageEngineException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
-        if (!Paths.get(jar).isAbsolute()) {
-            jar = System.getProperty("app.home", "") + "/" + jar;
-        }
-        return jar;
     }
 
     public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
@@ -1090,6 +1061,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         }
     }
 
+    @Override
+    public void testConnection() throws StorageEngineException {
+        try {
+            HBaseAdmin.checkHBaseAvailable(getHadoopConfiguration());
+        } catch (Exception e) {
+            logger.error("Connection to database '{}' failed", dbName);
+            throw new StorageEngineException("HBase Database connection test failed");
+        }
+    }
+
     /**
      * Created on 23/04/18.
      *
@@ -1108,7 +1089,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         @Override
         protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
             super.map(key, result, context);
-    //        context.write(key, HadoopVariantSearchIndexUtils.addUnknownSyncStatus(new Put(result.getRow()), columnFamily));
+            //        context.write(key, HadoopVariantSearchIndexUtils.addUnknownSyncStatus(new Put(result.getRow()), columnFamily));
         }
     }
 }

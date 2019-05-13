@@ -85,6 +85,7 @@ public final class VariantQueryUtils {
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
 
+    public static final String LOF = "lof";
     // LOF does not include missense_variant
     public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             VariantAnnotationUtils.FRAMESHIFT_VARIANT,
@@ -139,6 +140,52 @@ public final class VariantQueryUtils {
     }
 
     private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
+
+    public enum BiotypeConsquenceTypeFlagCombination {
+        NONE,
+        BIOTYPE,
+        BIOTYPE_CT,
+        BIOTYPE_FLAG,
+        BIOTYPE_CT_FLAG,
+        CT,
+        CT_FLAG,
+        FLAG;
+
+        public boolean isConsequenceType() {
+            return name().contains("CT");
+        }
+
+        public boolean isBiotype() {
+            return name().contains("BIOTYPE");
+        }
+
+        public boolean isFlag() {
+            return name().endsWith("FLAG");
+        }
+
+        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query) {
+            // Do not change the order of the following lines, it must match the Enum values!
+            String combination = isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
+            combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "CT_" : "";
+            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                List<String> flags = new LinkedList<>(query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key()));
+                flags.remove("basic");
+                flags.remove("CCDS");
+                // If empty, it means it only contains "basic" or "CCDS"
+                if (flags.isEmpty()) {
+                    combination += "FLAG";
+                }
+            }
+            if (combination.isEmpty()) {
+                return BiotypeConsquenceTypeFlagCombination.NONE;
+            } else {
+                if (combination.endsWith("_")) {
+                    combination = combination.substring(0, combination.length() - 1);
+                }
+                return valueOf(combination);
+            }
+        }
+    }
 
     interface VariantMixin {
         // Serialize variants with "toString". Used to serialize queries.
@@ -477,8 +524,7 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static StudyMetadata getDefaultStudy(Query query, QueryOptions options,
-                                                VariantStorageMetadataManager metadataManager) {
+    public static StudyMetadata getDefaultStudy(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
         final StudyMetadata defaultStudy;
         if (isValidParam(query, STUDY)) {
             String value = query.getString(STUDY.key());
@@ -487,14 +533,11 @@ public final class VariantQueryUtils {
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
             List<String> studiesNames = splitValue(value, studiesOperation);
             List<Integer> studyIds = metadataManager.getStudyIds(studiesNames); // Non negated studyIds
-
-
             if (studyIds.size() == 1) {
                 defaultStudy = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {
                 defaultStudy = null;
             }
-
         } else {
             List<String> studyNames = metadataManager.getStudyNames();
             if (studyNames != null && studyNames.size() == 1) {
@@ -1190,6 +1233,18 @@ public final class VariantQueryUtils {
         }
 
         return pair.getKey();
+    }
+
+    public static List<String> parseConsequenceTypes(List<String> cts) {
+        List<String> parsedCts = new ArrayList<>(cts.size());
+        for (String ct : cts) {
+            if (ct.equalsIgnoreCase(LOF)) {
+                parsedCts.addAll(VariantQueryUtils.LOF_SET);
+            } else {
+                parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
+            }
+        }
+        return parsedCts;
     }
 
     public static int parseConsequenceType(String so) {

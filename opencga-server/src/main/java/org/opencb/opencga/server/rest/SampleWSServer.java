@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
@@ -86,7 +85,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, queryOptions, silent, sessionId);
+            List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

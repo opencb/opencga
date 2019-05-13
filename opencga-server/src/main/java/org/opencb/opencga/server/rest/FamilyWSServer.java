@@ -28,7 +28,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
@@ -88,7 +87,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, queryOptions, silent, sessionId);
+            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, sessionId);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

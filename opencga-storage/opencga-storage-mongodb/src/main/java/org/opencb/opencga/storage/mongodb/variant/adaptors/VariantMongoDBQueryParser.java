@@ -708,7 +708,7 @@ public class VariantMongoDBQueryParser {
                     // If empty, should find none. Add non-existing genotype
                     // TODO: Fast empty result
                     if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
-                        genotypes.add("x/x");
+                        genotypes.add(GenotypeClass.NONE_GT_VALUE);
                     }
 
                     int sampleId = metadataManager.getSampleId(defaultStudy.getId(), sample, true);

@@ -413,7 +413,10 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>18.0</version>
+                <!--WARNING-->
+                <!--DO NOT UPGRADE OR HADOOP WILL NOT WORK-->
+                <!--See #1086-->
+                <version>19.0</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>

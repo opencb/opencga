@@ -142,45 +142,55 @@ public abstract class AbstractManager {
         return null;
     }
 
+
     /**
      * Return the results in the QueryResult object in the same order they were queried by the list of entries.
+     * For entities with version where all versions have been requested, call to InternalGetQueryResult.getVersionedResults() to get
+     * a list of lists of T.
      *
      * @param entries Original list used to perform the query.
      * @param getId   Generic function that will fetch the id that will be used to compare with the list of entries.
      * @param queryResult QueryResult object.
      * @param silent  Boolean indicating whether we will fail in case of an inconsistency or not.
+     * @param keepAllVersions Boolean indicating whether to keep all versions of fail in case of id duplicities.
      * @param <T>     Generic entry (Sample, File, Cohort...)
      * @return the QueryResult with the proper order of results.
      * @throws CatalogException In case of inconsistencies found.
      */
     <T extends IPrivateStudyUid> InternalGetQueryResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId,
-                                                                             QueryResult<T> queryResult, boolean silent)
-            throws CatalogException {
+                                                                             QueryResult<T> queryResult, boolean silent,
+                                                                             boolean keepAllVersions) throws CatalogException {
         InternalGetQueryResult<T> internalGetQueryResult = new InternalGetQueryResult<>(queryResult);
 
-        Map<String, T> resultMap = new HashMap<>();
+        Map<String, List<T>> resultMap = new HashMap<>();
 
         for (T entry : internalGetQueryResult.getResult()) {
             String id = getId.apply(entry);
-            if (resultMap.containsKey(id)) {
+            if (!resultMap.containsKey(id)) {
+                resultMap.put(id, new ArrayList<>());
+            } else if (!keepAllVersions) {
                 throw new CatalogException("Duplicated entry " + id + " found");
             }
-            resultMap.put(id, entry);
+            resultMap.get(id).add(entry);
         }
 
         List<T> orderedEntryList = new ArrayList<>(internalGetQueryResult.getNumResults());
+        List<Integer> groups = new ArrayList<>(entries.size());
         for (String entry : entries) {
             if (resultMap.containsKey(entry)) {
-                orderedEntryList.add(resultMap.get(entry));
+                orderedEntryList.addAll(resultMap.get(entry));
+                groups.add(resultMap.get(entry).size());
             } else {
                 if (!silent) {
                     throw new CatalogException("Entry " + entry + " not found in QueryResult");
                 }
+                groups.add(0);
                 internalGetQueryResult.addMissing(entry, "Not found or user does not have permissions.");
             }
         }
 
         internalGetQueryResult.setResult(orderedEntryList);
+        internalGetQueryResult.setGroups(groups);
         return internalGetQueryResult;
     }
 

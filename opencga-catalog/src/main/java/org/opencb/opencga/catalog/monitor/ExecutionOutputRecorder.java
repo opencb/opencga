@@ -38,7 +38,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
+import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.JOB_STATUS_FILE;
 
 /*
  * Created by jacobo on 4/11/14.
