@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
@@ -41,8 +42,8 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
 
     private static Logger logger = LoggerFactory.getLogger(HadoopDefaultVariantStatisticsManager.class);
 
-    public HadoopDefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
-        super(dbAdaptor);
+    public HadoopDefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider) {
+        super(dbAdaptor, ioManagerProvider);
     }
 
     @Override

@@ -39,6 +39,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonDataReader;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -52,15 +53,13 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMix
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 
@@ -82,13 +81,15 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     private final VariantDBAdaptor dbAdaptor;
     protected long numStatsToLoad = 0;
     private static Logger logger = LoggerFactory.getLogger(DefaultVariantStatisticsManager.class);
+    private final IOManagerProvider ioManagerProvider;
 
-    public DefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
+    public DefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider) {
         this.dbAdaptor = dbAdaptor;
         jsonFactory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(jsonFactory);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        this.ioManagerProvider = ioManagerProvider;
     }
 
     @Override
@@ -104,16 +105,6 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         URI stats = createStats(dbAdaptor, output, study, cohorts, options);
 
         loadStats(dbAdaptor, stats, study, options);
-    }
-
-
-    protected OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
-        OutputStream outputStream = new FileOutputStream(filePath.toFile());
-        logger.info("will write stats to {}", filePath);
-        if (filePath.toString().endsWith(".gz")) {
-            outputStream = new GZIPOutputStream(outputStream);
-        }
-        return outputStream;
     }
 
     /**
@@ -241,8 +232,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             throw new StorageEngineException("Unable to calculate statistics.", e);
         }
         // source stats
-        Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
-        try (OutputStream outputSourceStream = getOutputStream(fileSourcePath, options)) {
+        URI fileSourcePath = UriUtils.replacePath(output, output.getPath() + SOURCE_STATS_SUFFIX);
+        try (OutputStream outputSourceStream = ioManagerProvider.newOutputStream(fileSourcePath)) {
             ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
             outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
         }
@@ -265,13 +256,13 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                 }, 200).setBatchSize(5000);
     }
 
-    protected StringDataWriter buildVariantStatsStringDataWriter(URI output) {
-        Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
-        logger.info("will write stats to {}", variantStatsPath);
-        return new StringDataWriter(variantStatsPath, true);
+    protected StringDataWriter buildVariantStatsStringDataWriter(URI output) throws IOException {
+        URI variantStats = UriUtils.replacePath(output, output.getPath() + VARIANT_STATS_SUFFIX);
+        logger.info("will write stats to {}", variantStats);
+        return new StringDataWriter(ioManagerProvider.newOutputStream(variantStats), true, true);
     }
 
-    class VariantStatsWrapperTask implements ParallelTaskRunner.Task<Variant, String> {
+    class VariantStatsWrapperTask implements Task<Variant, String> {
 
         private boolean overwrite;
         private Map<String, Set<String>> cohorts;
@@ -362,8 +353,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     public void loadStats(URI uri, StudyMetadata studyMetadata, QueryOptions options) throws
             IOException, StorageEngineException {
 
-        URI variantStatsUri = Paths.get(uri.getPath() + VARIANT_STATS_SUFFIX).toUri();
-        URI sourceStatsUri = Paths.get(uri.getPath() + SOURCE_STATS_SUFFIX).toUri();
+        URI variantStatsUri = UriUtils.replacePath(uri, uri.getPath() + VARIANT_STATS_SUFFIX);
+        URI sourceStatsUri = UriUtils.replacePath(uri, uri.getPath() + SOURCE_STATS_SUFFIX);
 
         Set<String> cohorts = readCohortsFromStatsFile(variantStatsUri);
 //        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
@@ -391,10 +382,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             throws IOException, StorageEngineException {
 
         /* Open input streams */
-        Path variantInput = Paths.get(uri.getPath());
-        InputStream variantInputStream;
-        variantInputStream = new FileInputStream(variantInput.toFile());
-        variantInputStream = new GZIPInputStream(variantInputStream);
+
+        InputStream variantInputStream = ioManagerProvider.newInputStream(uri);
 
 
         ProgressLogger progressLogger = new ProgressLogger("Loaded stats:", numStatsToLoad);
@@ -471,13 +460,9 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
     public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyMetadata studyMetadata, QueryOptions options)
             throws IOException {
-
-        /* select input path */
-        Path sourceInput = Paths.get(uri.getPath());
-
         /* Open input stream and initialize Json parse */
         VariantSourceStats variantSourceStats;
-        try (InputStream sourceInputStream = new GZIPInputStream(new FileInputStream(sourceInput.toFile()));
+        try (InputStream sourceInputStream = ioManagerProvider.newInputStream(uri);
              JsonParser sourceParser = jsonFactory.createParser(sourceInputStream)) {
             variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
         }
@@ -496,12 +481,9 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     }
 
     private Set<String> readCohortsFromStatsFile(URI uri) throws IOException {
-        /** Select input path **/
-        Path variantInput = Paths.get(uri.getPath());
-
         Set<String> cohortNames;
         /** Open input streams and Initialize Json parse **/
-        try (InputStream variantInputStream = new GZIPInputStream(new FileInputStream(variantInput.toFile()));
+        try (InputStream variantInputStream = ioManagerProvider.newInputStream(uri);
              JsonParser parser = jsonFactory.createParser(variantInputStream)) {
             if (parser.nextToken() != null) {
                 VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);

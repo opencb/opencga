@@ -55,10 +55,14 @@ public class StringDataWriter implements DataWriter<String> {
     }
 
     public StringDataWriter(OutputStream os, boolean endLine) {
+        this(os, endLine, false);
+    }
+
+    public StringDataWriter(OutputStream os, boolean endLine, boolean closeOutputStream) {
         this.path = null;
         this.os = Objects.requireNonNull(os);
         this.endLine = endLine;
-        this.closeOutputStream = false;
+        this.closeOutputStream = closeOutputStream;
     }
 
     public static void write(Path path, List<String> batch) {

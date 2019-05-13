@@ -28,8 +28,10 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -45,17 +47,12 @@ import org.opencb.opencga.storage.hadoop.variant.transform.VariantToVcfSliceConv
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STDIN;
@@ -73,18 +70,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     private int taskId;
     private HashSet<String> loadedGenotypes;
 
-    /**
-     * @param configuration      {@link StorageConfiguration}
-     * @param dbAdaptor          {@link VariantHadoopDBAdaptor}
-     * @param conf               {@link Configuration}
-     * @param variantReaderUtils {@link VariantReaderUtils}
-     * @param options            {@link ObjectMap}
-     */
     public HadoopLocalLoadVariantStoragePipeline(StorageConfiguration configuration,
-                                                 VariantHadoopDBAdaptor dbAdaptor, Configuration conf,
-                                                 VariantReaderUtils variantReaderUtils,
+                                                 VariantHadoopDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider, Configuration conf,
                                                  ObjectMap options) {
-        super(configuration, dbAdaptor, variantReaderUtils, options, null, conf);
+        super(configuration, dbAdaptor, options, null, conf, ioManagerProvider);
     }
 
     @Override
@@ -127,16 +116,15 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         if (getMetadataManager().getTask(studyId, taskId).currentStatus().equals(TaskMetadata.Status.DONE)) {
             logger.info("File {} already loaded. Skip this step!",
-                    Paths.get(inputUri.getPath()).getFileName().toString());
+                    UriUtils.fileName(inputUri));
             return;
         }
 
         Thread hook = getMetadataManager().buildShutdownHook(OPERATION_NAME, getStudyId(), taskId);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            Path input = Paths.get(inputUri.getPath());
             String table = getArchiveTable();
-            String fileName = input.getFileName().toString();
+            String fileName = UriUtils.fileName(inputUri);
 
             VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(inputUri);
             fileMetadata.setId(String.valueOf(fileId));
@@ -150,17 +138,17 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     progressLogger.setApproximateTotalCount(fileMetadata.getStats().getNumVariants());
                 }
 
-                loadFromProto(input, table, helper, progressLogger);
+                loadFromProto(inputUri, table, helper, progressLogger);
             } else {
                 ProgressLogger progressLogger;
                 if (fileMetadata.getStats() != null) {
-                    progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :",
+                    progressLogger = new ProgressLogger("Loaded variants for file \"" + fileName + "\" :",
                             fileMetadata.getStats().getNumVariants());
                 } else {
-                    progressLogger = new ProgressLogger("Loaded variants for file \"" + input.getFileName() + "\" :");
+                    progressLogger = new ProgressLogger("Loaded variants for file \"" + fileName + "\" :");
                 }
 
-                loadFromAvro(input, table, helper, progressLogger);
+                loadFromAvro(inputUri, table, helper, progressLogger);
             }
             long end = System.currentTimeMillis();
             logger.info("end - start = " + (end - start) / 1000.0 + "s");
@@ -173,7 +161,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
 
-    protected void loadFromProto(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
+    protected void loadFromProto(URI input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         long counter = 0;
 
@@ -199,7 +187,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 //                        .filter(variant -> !variant.getType().equals(VariantType.NO_VARIATION))
 //                        .collect(Collectors.toList())).then(variantsWriter);
 
-        try (InputStream in = new BufferedInputStream(new GZIPInputStream(new FileInputStream(input.toFile())))) {
+        try (InputStream in = ioManagerProvider.newInputStream(input)) {
             archiveWriter.open();
             archiveWriter.pre();
             variantsWriter.open();
@@ -244,11 +232,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
     }
 
-    protected void loadFromAvro(Path input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
+    protected void loadFromAvro(URI input, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
 
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
+        VariantReader variantReader = variantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
         int studyId = helper.getStudyId();
         int fileId = Integer.valueOf(helper.getFileMetadata().getId());
 

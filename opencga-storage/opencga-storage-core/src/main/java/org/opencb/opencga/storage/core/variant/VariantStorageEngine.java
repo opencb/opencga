@@ -321,7 +321,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
-        return new VariantExporter(this, metadataFactory);
+        return new VariantExporter(this, metadataFactory, ioManagerProvider);
     }
 
     /**
@@ -402,7 +402,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 annotationQuery.put(VariantQueryParam.FILE.key(), fileIds);
 
                 ObjectMap annotationOptions = new ObjectMap(options)
-                        .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
+                        .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.toString())
                         .append(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
 
                 annotate(annotationQuery, annotationOptions);
@@ -475,7 +475,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor());
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioManagerProvider);
     }
 
     /**
@@ -565,7 +565,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantStatisticsManager
      */
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        return new DefaultVariantStatisticsManager(getDBAdaptor());
+        return new DefaultVariantStatisticsManager(getDBAdaptor(), ioManagerProvider);
     }
 
     /**
@@ -908,7 +908,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public VariantReaderUtils getVariantReaderUtils() {
-        return new VariantReaderUtils();
+        return new VariantReaderUtils(ioManagerProvider);
     }
 
     /**
