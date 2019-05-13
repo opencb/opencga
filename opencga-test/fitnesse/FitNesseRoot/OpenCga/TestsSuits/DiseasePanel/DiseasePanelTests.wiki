@@ -118,7 +118,7 @@ Test
 
 !3 Find Multiple Disease Panels With One Invalid Entry Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId2,$panelId,0000/info?study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$panelId2' && jsonbody.response[2].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: Panel 0000 not found"|
+| GET | /v1/panels/$panelId2,$panelId,0000/info?study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$panelId2' && jsonbody.response[2].errorMsg == "Not found or user does not have permissions."|
 
 !3 Delete First Disease Panel
 !|Table: Rest Fixture | $baseURL |
