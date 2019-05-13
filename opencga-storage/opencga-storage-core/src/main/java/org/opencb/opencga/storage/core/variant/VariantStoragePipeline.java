@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
@@ -37,9 +40,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.io.avro.AvroFileWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -48,6 +54,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
@@ -56,10 +63,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
@@ -81,6 +88,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final ObjectMap options;
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
+    protected final IOManagerProvider ioManagerProvider;
     private final Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
     protected final ObjectMap transformStats = new ObjectMap();
     protected Integer privateFileId;
@@ -89,8 +97,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
 
     public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
-                                  VariantReaderUtils variantReaderUtils) {
-        this(configuration, storageEngineId, dbAdaptor, variantReaderUtils,
+                                  IOManagerProvider ioManagerProvider) {
+        this(configuration, storageEngineId, dbAdaptor, ioManagerProvider,
                 new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions()));
     }
 
@@ -98,15 +106,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      * @param configuration     Storage Configuration
      * @param storageEngineId   StorageEngineID
      * @param dbAdaptor         VariantDBAdaptor. Can be null if the load step is skipped
-     * @param variantReaderUtils    VariantReaderUtils
+     * @param ioManagerProvider IOManager
      * @param options           Unique copy of the options to be used. This object can not be shared.
      */
     public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
-                                  VariantReaderUtils variantReaderUtils, ObjectMap options) {
+                                  IOManagerProvider ioManagerProvider, ObjectMap options) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
         this.dbAdaptor = dbAdaptor;
-        this.variantReaderUtils = variantReaderUtils;
+        this.variantReaderUtils = new VariantReaderUtils(ioManagerProvider);
+        this.ioManagerProvider = ioManagerProvider;
         this.options = options;
         if (dbAdaptor == null) {
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
@@ -155,7 +164,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return input;
     }
 
-    protected VariantFileMetadata createEmptyVariantFileMetadata(Path input) {
+    protected VariantFileMetadata createEmptyVariantFileMetadata(URI input) {
         VariantFileMetadata fileMetadata = VariantReaderUtils.createEmptyVariantFileMetadata(input);
         int fileId;
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION
@@ -170,20 +179,15 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     /**
      * Transform raw variant files into biodata model.
      *
-     * @param inputUri Input file. Accepted formats: *.vcf, *.vcf.gz
-     * @param pedigreeUri Pedigree input file. Accepted formats: *.ped
-     * @param outputUri The destination folder
+     * @param input Input file. Accepted formats: *.vcf, *.vcf.gz
+     * @param pedigree Pedigree input file. Accepted formats: *.ped
+     * @param output The destination folder
      * @throws StorageEngineException If any IO problem
      */
     @Override
-    public URI transform(URI inputUri, URI pedigreeUri, URI outputUri) throws StorageEngineException {
+    public URI transform(URI input, URI pedigree, URI output) throws StorageEngineException {
         // input: VcfReader
         // output: JsonWriter
-
-
-        Path input = Paths.get(inputUri.getPath());
-        Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
-        Path output = Paths.get(outputUri.getPath());
 
 //        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
@@ -200,12 +204,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // Create empty VariantFileMetadata
         VariantFileMetadata metadataTemplate = createEmptyVariantFileMetadata(input);
         // Read VariantFileMetadata
-        final VariantFileMetadata metadata = VariantReaderUtils.readVariantFileMetadata(input, metadataTemplate, stdin);
+        final VariantFileMetadata metadata = variantReaderUtils.readVariantFileMetadata(input, metadataTemplate, stdin);
 
 
         VariantFileHeader variantMetadata = metadata.getHeader();
-        String filePath = metadata.getPath();
-        String fileName = Paths.get(filePath).getFileName().toString();
+        String fileName = UriUtils.fileName(input);
         String studyId = String.valueOf(getStudyId());
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
@@ -225,16 +228,22 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
 
 
-        Path outputMalformedVariants = output.resolve(fileName + '.' + VariantReaderUtils.MALFORMED_FILE + ".txt");
-        Path outputVariantsFile = output.resolve(fileName + '.' + VariantReaderUtils.VARIANTS_FILE + '.' + format + extension);
-        Path outputMetaFile = VariantReaderUtils.getMetaFromTransformedFile(outputVariantsFile);
+        URI outputMalformedVariants = output.resolve(fileName + '.' + VariantReaderUtils.MALFORMED_FILE + ".txt");
+        URI outputVariantsFile = output.resolve(fileName + '.' + VariantReaderUtils.VARIANTS_FILE + '.' + format + extension);
+        URI outputMetaFile = VariantReaderUtils.getMetaFromTransformedFile(outputVariantsFile);
 
         // Close at the end!
         final MalformedVariantHandler malformedHandler;
         try {
-            malformedHandler = new MalformedVariantHandler(outputMalformedVariants);
+            malformedHandler = new MalformedVariantHandler(() -> {
+                try {
+                    return ioManagerProvider.newOutputStream(outputMalformedVariants);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
         } catch (IOException e) {
-            throw new StorageEngineException(e.getMessage(), e);
+            throw StorageEngineException.ioException(e);
         }
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
@@ -245,70 +254,39 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 .build();
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
-        long start, end;
-//        if (numTasks == 1 && "json".equals(format)) { //Run transformation with a SingleThread runner. The legacy way
-//            if (!".gz".equals(extension)) { //FIXME: Add compatibility with snappy compression
-//                logger.warn("Force using gzip compression");
-//                extension = ".gz";
-//                outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
-//            }
-//
-//            //Ped Reader
-//            PedigreeReader pedReader = null;
-//            if (pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
-//                pedReader = new PedigreePedReader(pedigree.toString());
-//            }
-//
-//            //Reader
-//            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
-//
-//            //Writers
-//            VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-//            jsonWriter.includeStats(includeStats);
-//
-//            List<VariantWriter> writers = Collections.singletonList(jsonWriter);
-//
-//            //Runner
-//            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers,
-//                    Collections.singletonList(new VariantSetStatsCalculator(source)), batchSize);
-//
-//            logger.info("Single thread transform...");
-//            start = System.currentTimeMillis();
-//            try {
-//                vr.run();
-//            } catch (IOException e) {
-//                throw new StorageEngineException("Fail runner execution", e);
-//            }
-//            end = System.currentTimeMillis();
-//
-//        } else
+        StopWatch stopWatch;
         if ("avro".equals(format)) {
-
             //Reader
-            StringDataReader dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input);
-            long fileSize = 0;
+            long fileSize;
+            StringDataReader dataReader;
             try {
-                fileSize = dataReader.getFileSize();
+                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioManagerProvider);
+                fileSize = stdin ? -1 : ioManagerProvider.size(input);
             } catch (IOException e) {
-                throw new StorageEngineException("Error reading file " + input, e);
+                throw StorageEngineException.ioException(e);
             }
             ProgressLogger progressLogger = new ProgressLogger("Transforming file:", fileSize, 200);
             dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
 
             //Writer
             DataWriter<ByteBuffer> dataWriter;
-            if (stdout) {
-                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, System.out);
-            } else {
-                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, outputVariantsFile);
+            try {
+                if (stdout) {
+                    dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, System.out);
+                } else {
+                    dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression,
+                            ioManagerProvider.newOutputStream(outputVariantsFile), true);
+                }
+            } catch (IOException e) {
+                throw StorageEngineException.ioException(e);
             }
             Supplier<VariantTransformTask<ByteBuffer>> taskSupplier;
 
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
-                Pair<VCFHeader, VCFHeaderVersion> header = VariantReaderUtils.readHtsHeader(input, stdin);
+                Pair<VCFHeader, VCFHeaderVersion> header = variantReaderUtils.readHtsHeader(input, stdin);
                 VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
-                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), studyId, metadata, outputMetaFile,
+                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), studyId, metadata,
                         statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)
                         .addMalformedErrorHandler(malformedHandler)
@@ -318,7 +296,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 final VariantVcfFactory factory = createVariantVcfFactory(fileName);
                 logger.info("Using Biodata to read variants.");
                 VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, studyId, metadata, outputMetaFile, statsCalculator,
+                taskSupplier = () -> new VariantAvroTransformTask(factory, studyId, metadata, statsCalculator,
                         includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)
                         .addMalformedErrorHandler(malformedHandler)
@@ -339,21 +317,22 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 throw new StorageEngineException("Error while creating ParallelTaskRunner", e);
             }
             logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
-            start = System.currentTimeMillis();
+            stopWatch = StopWatch.createStarted();
             try {
                 ptr.run();
             } catch (ExecutionException e) {
                 throw new StorageEngineException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
-            end = System.currentTimeMillis();
+            stopWatch.stop();
         } else if ("json".equals(format)) {
             //Reader
-            StringDataReader dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input);
-            long fileSize = 0;
+            long fileSize;
+            StringDataReader dataReader;
             try {
-                fileSize = dataReader.getFileSize();
+                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioManagerProvider);
+                fileSize = stdin ? -1 : ioManagerProvider.size(input);
             } catch (IOException e) {
-                throw new StorageEngineException("Error reading file " + input, e);
+                throw StorageEngineException.ioException(e);
             }
             ProgressLogger progressLogger = new ProgressLogger("Transforming file:", fileSize, 200);
             dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
@@ -363,7 +342,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             if (stdout) {
                 dataWriter = new StringDataWriter(System.out, true);
             } else {
-                dataWriter = new StringDataWriter(outputVariantsFile, true);
+                try {
+                    dataWriter = new StringDataWriter(
+                            ioManagerProvider.newOutputStream(outputVariantsFile), true, true);
+                } catch (IOException e) {
+                    throw StorageEngineException.ioException(e);
+                }
             }
 
             ParallelTaskRunner<String, String> ptr;
@@ -371,10 +355,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             Supplier<VariantTransformTask<String>> taskSupplier;
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
-                Pair<VCFHeader, VCFHeaderVersion> header = VariantReaderUtils.readHtsHeader(input, stdin);
+                Pair<VCFHeader, VCFHeaderVersion> header = variantReaderUtils.readHtsHeader(input, stdin);
                 VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), studyId, metadata,
-                        outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
+                        statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)
                         .addMalformedErrorHandler(malformedHandler)
                         .configureNormalizer(variantMetadata);
@@ -383,7 +367,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 final VariantVcfFactory factory = createVariantVcfFactory(fileName);
                 logger.info("Using Biodata to read variants.");
                 VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
-                taskSupplier = () -> new VariantJsonTransformTask(factory, studyId, metadata, outputMetaFile, statsCalculator,
+                taskSupplier = () -> new VariantJsonTransformTask(factory, studyId, metadata, statsCalculator,
                         includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError)
                         .addMalformedErrorHandler(malformedHandler)
@@ -404,23 +388,29 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
 
             logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
-            start = System.currentTimeMillis();
+            stopWatch = StopWatch.createStarted();
             try {
                 ptr.run();
             } catch (ExecutionException e) {
                 throw new StorageEngineException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
-            end = System.currentTimeMillis();
+            stopWatch.stop();
         } else if ("proto".equals(format)) {
-            Pair<Long, Long> times = transformProto(input, fileName, output, metadata, outputVariantsFile, outputMetaFile,
+            stopWatch = transformProto(input, fileName, output, metadata, outputVariantsFile, outputMetaFile,
                     includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
-            start = times.getKey();
-            end = times.getValue();
         } else {
             throw new IllegalArgumentException("Unknown format " + format);
         }
-        logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        logger.info("Variants transformed!");
+        logger.info("Variants transformed in " + TimeUtils.durationToString(stopWatch));
+
+        try (OutputStream outputMetadataStream = ioManagerProvider.newOutputStream(outputMetaFile)) {
+            ObjectMapper jsonObjectMapper = new ObjectMapper();
+            jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+            jsonObjectMapper.writeValue(outputMetadataStream, metadata.getImpl());
+        } catch (IOException e) {
+            throw StorageEngineException.ioException(e);
+        }
+
 
         // Close the malformed variant handler
         malformedHandler.close();
@@ -428,7 +418,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             getTransformStats().put("malformed lines", malformedHandler.getMalformedLines());
         }
 
-        return outputUri.resolve(outputVariantsFile.getFileName().toString());
+        return outputVariantsFile;
     }
 
     protected VariantVcfFactory createVariantVcfFactory(String fileName) throws StorageEngineException {
@@ -441,9 +431,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return factory;
     }
 
-    protected Pair<Long, Long> transformProto(
-            Path input, String fileName, Path output, VariantFileMetadata metadata, Path outputVariantsFile,
-            Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
+    protected StopWatch transformProto(
+            URI input, String fileName, URI output, VariantFileMetadata metadata, URI outputVariantsFile,
+            URI outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
             int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler,
             boolean failOnError)
             throws StorageEngineException {

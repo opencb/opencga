@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.mongodb.annotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -27,8 +28,9 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVa
 public class MongoDBVariantAnnotationManager extends DefaultVariantAnnotationManager {
     private final VariantMongoDBAdaptor mongoDbAdaptor;
 
-    public MongoDBVariantAnnotationManager(VariantAnnotator annotator, VariantMongoDBAdaptor mongoDbAdaptor) {
-        super(annotator, mongoDbAdaptor);
+    public MongoDBVariantAnnotationManager(VariantAnnotator annotator, VariantMongoDBAdaptor mongoDbAdaptor,
+                                           IOManagerProvider ioManagerProvider) {
+        super(annotator, mongoDbAdaptor, ioManagerProvider);
         this.mongoDbAdaptor = mongoDbAdaptor;
     }
 

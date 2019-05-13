@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.transform;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
@@ -37,14 +35,14 @@ import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
-import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,7 +54,7 @@ import java.util.function.BiConsumer;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task<String, T> {
+public abstract class VariantTransformTask<T> implements Task<String, T> {
 
     protected final VariantFactory factory;
     protected final VariantFileMetadata fileMetadata;
@@ -66,7 +64,6 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     protected final VCFCodec vcfCodec;
     protected final VariantContextToVariantConverter converter;
     protected final VariantNormalizer normalizer;
-    protected final Path outputFileJsonFile;
     protected final VariantSetStatsCalculator variantStatsTask;
     protected final AtomicLong htsConvertTime = new AtomicLong(0);
     protected final AtomicLong biodataConvertTime = new AtomicLong(0);
@@ -76,13 +73,12 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     private VariantStudyMetadata metadata;
 
     public VariantTransformTask(VariantFactory factory,
-                                String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
+                                String studyId, VariantFileMetadata fileMetadata,
                                 VariantSetStatsCalculator variantStatsTask,
                                 boolean includesrc, boolean generateReferenceBlocks) {
         this.factory = factory;
         this.fileMetadata = fileMetadata;
         this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
-        this.outputFileJsonFile = outputFileJsonFile;
         this.variantStatsTask = variantStatsTask;
         this.includeSrc = includesrc;
 
@@ -93,14 +89,13 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
-                                String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
+                                String studyId, VariantFileMetadata fileMetadata,
                                 VariantSetStatsCalculator variantStatsTask,
                                 boolean includeSrc, boolean generateReferenceBlocks) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.fileMetadata = fileMetadata;
         this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
-        this.outputFileJsonFile = outputFileJsonFile;
         this.includeSrc = includeSrc;
 
         this.vcfCodec = new FullVcfCodec();
@@ -217,22 +212,18 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         synchronized (variantStatsTask) {
             variantStatsTask.post();
         }
-        writeVariantFileMetadata(fileMetadata, outputFileJsonFile);
         logger.debug("Time txt2hts: " + this.htsConvertTime.get());
         logger.debug("Time hts2biodata: " + this.biodataConvertTime.get());
         logger.debug("Time normalization: " + this.normTime.get());
     }
 
-    public static void writeVariantFileMetadata(VariantFileMetadata fileMetadata, Path outputFileJsonFile) {
+    public static void writeVariantFileMetadata(VariantFileMetadata fileMetadata, OutputStream outputMetadataStream) {
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-
-        ObjectWriter variantSourceObjectWriter
-                = jsonObjectMapper.writerFor(org.opencb.biodata.models.variant.metadata.VariantFileMetadata.class);
         try {
-            String sourceJsonString = variantSourceObjectWriter.writeValueAsString(fileMetadata.getImpl());
-            StringDataWriter.write(outputFileJsonFile, Collections.singletonList(sourceJsonString));
-        } catch (JsonProcessingException e) {
+            jsonObjectMapper.writeValue(outputMetadataStream, fileMetadata.getImpl());
+            outputMetadataStream.close();
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }

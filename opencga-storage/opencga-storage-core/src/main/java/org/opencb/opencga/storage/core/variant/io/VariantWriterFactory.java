@@ -25,7 +25,9 @@ import org.opencb.biodata.tools.variant.stats.writer.VariantStatsTsvExporter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -38,9 +40,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.BufferedOutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
@@ -123,6 +127,19 @@ public class VariantWriterFactory {
      * @throws                  IllegalArgumentException if the outputFormatStr is not valid
      */
     public static VariantOutputFormat toOutputFormat(String outputFormatStr, String output) {
+        return toOutputFormat(outputFormatStr, StringUtils.isEmpty(output) ? null : URI.create(output));
+    }
+
+    /**
+     * Transform the string to a valid output format.
+     * If none, VCF by default.
+     *
+     * @param outputFormatStr   Output format as String
+     * @param output            Output file
+     * @return                  Valid VariantOutputFormat
+     * @throws                  IllegalArgumentException if the outputFormatStr is not valid
+     */
+    public static VariantOutputFormat toOutputFormat(String outputFormatStr, URI output) {
         if (!StringUtils.isEmpty(outputFormatStr)) {
             outputFormatStr = outputFormatStr.replace('.', '_');
             return VariantOutputFormat.valueOf(outputFormatStr.toUpperCase());
@@ -131,6 +148,14 @@ public class VariantWriterFactory {
         } else {
             return VCF_GZ;
         }
+    }
+
+    public static URI checkOutput(@Nullable URI output, VariantOutputFormat outputFormat) throws IOException {
+        if (isStandardOutput(output)) {
+            return null;
+        }
+
+        return UriUtils.replacePath(output, checkOutput(output.getPath(), outputFormat));
     }
 
     public static String checkOutput(@Nullable String output, VariantOutputFormat outputFormat) throws IOException {
@@ -161,33 +186,11 @@ public class VariantWriterFactory {
             }
         }
 
-        Path path = Paths.get(output).toAbsolutePath();
-        File file = path.toFile();
-        if (file.isDirectory()) {
-            throw new IOException(path + ": Is a directory");
-        } else {
-            if (file.exists()) {
-                if (!file.canWrite()) {
-                    throw new IOException(path + ": Permission denied");
-                }
-            } else {
-                File parentFile = file.getParentFile();
-                if (!parentFile.exists()) {
-                    throw new IOException(parentFile + ": Not found");
-                } else if (!parentFile.canWrite()) {
-                    throw new IOException(parentFile + ": Permission denied");
-                }
-            }
-        }
         return output;
     }
 
-    public static OutputStream getOutputStream(String output, String outputFormatStr) throws IOException {
-        VariantOutputFormat outputFormat = toOutputFormat(outputFormatStr, output);
-        return getOutputStream(output, outputFormat);
-    }
-
-    public static OutputStream getOutputStream(String output, VariantOutputFormat outputFormat) throws IOException {
+    public static OutputStream getOutputStream(URI output, VariantOutputFormat outputFormat, IOManagerProvider ioManagerProvider)
+            throws IOException {
         boolean gzip = outputFormat.isGzip();
 
         // output format has priority over output name
@@ -196,7 +199,7 @@ public class VariantWriterFactory {
             // Unclosable OutputStream
             outputStream = new UnclosableOutputStream(System.out);
         } else {
-            outputStream = new FileOutputStream(output);
+            outputStream = ioManagerProvider.newOutputStreamRaw(output);
             logger.debug("writing to %s", output);
         }
 
@@ -279,6 +282,10 @@ public class VariantWriterFactory {
 
     public static boolean isStandardOutput(String output) {
         return StringUtils.isEmpty(output);
+    }
+
+    public static boolean isStandardOutput(URI output) {
+        return output == null;
     }
 
     protected StudyMetadata getStudyMetadata(Query query, boolean singleStudy) {

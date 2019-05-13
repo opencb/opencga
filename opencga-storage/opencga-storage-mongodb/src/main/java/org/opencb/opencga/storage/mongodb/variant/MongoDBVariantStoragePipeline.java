@@ -34,6 +34,7 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -42,7 +43,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine.MergeMode;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.core.variant.transform.RemapVariantIdsTask;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -61,8 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -101,9 +99,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata currentTask;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
-                                         VariantMongoDBAdaptor dbAdaptor) {
-        super(configuration, storageEngineId, dbAdaptor,
-                new VariantReaderUtils());
+                                         VariantMongoDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider) {
+        super(configuration, storageEngineId, dbAdaptor, ioManagerProvider);
         this.dbAdaptor = dbAdaptor;
     }
 
@@ -298,7 +295,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
 
             // File reader
-            DataReader<Variant> variantReader = VariantReaderUtils.getVariantReader(Paths.get(inputUri), metadata, stdin)
+            DataReader<Variant> variantReader = variantReaderUtils.getVariantReader(inputUri, metadata, stdin)
                     .then(duplicatedVariantsDetector)
                     .then(remapIdsTask);
 
@@ -372,7 +369,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         }
     }
 
-    public void stage(URI inputUri) throws StorageEngineException {
+    public void stage(URI input) throws StorageEngineException {
         final int fileId = getFileId();
 
         if (!options.getBoolean(STAGE.key(), false)) {
@@ -380,9 +377,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             return;
         }
 
-        Path input = Paths.get(inputUri.getPath());
 
-        VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
+        VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
         int numRecords = fileMetadata.getStats().getNumVariants();
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
@@ -398,7 +394,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyMetadata.getId());
 
             //Reader
-            VariantReader variantReader = VariantReaderUtils.getVariantReader(input, metadata, stdin);
+            VariantReader variantReader = variantReaderUtils.getVariantReader(input, metadata, stdin);
 
             //Remapping ids task
             org.opencb.commons.run.Task remapIdsTask = new RemapVariantIdsTask(studyMetadata.getId(), fileId);
@@ -770,8 +766,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             expectedCount += writeResult.getOverlappedVariants();
         }
 
-        String filePath = fileMetadata.getPath();
-        String fileName = Paths.get(filePath).getFileName().toString();
+        String fileName = getMetadataManager().getFileMetadata(studyMetadata.getId(), fileId).getName();
         logger.info("============================================================");
         logger.info("Check loaded file '" + fileName + "' (" + fileId + ')');
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {

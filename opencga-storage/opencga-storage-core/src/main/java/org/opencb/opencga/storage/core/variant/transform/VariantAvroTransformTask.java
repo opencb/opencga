@@ -27,7 +27,6 @@ import org.opencb.commons.io.avro.AvroEncoder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,16 +39,16 @@ public class VariantAvroTransformTask extends VariantTransformTask<ByteBuffer> {
 
     protected final AvroEncoder<VariantAvro> encoder;
 
-    public VariantAvroTransformTask(VariantFactory factory, String studyId, VariantFileMetadata fileMetadata, Path outputFileJsonFile,
+    public VariantAvroTransformTask(VariantFactory factory, String studyId, VariantFileMetadata fileMetadata,
                                     VariantSetStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
-        super(factory, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
+        super(factory, studyId, fileMetadata, variantStatsTask, includeSrc, generateReferenceBlocks);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 
     public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, String studyId, VariantFileMetadata fileMetadata,
-                                    Path outputFileJsonFile, VariantSetStatsCalculator variantStatsTask, boolean includeSrc,
+                                    VariantSetStatsCalculator variantStatsTask, boolean includeSrc,
                                     boolean generateReferenceBlocks) {
-        super(header, version, studyId, fileMetadata, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
+        super(header, version, studyId, fileMetadata, variantStatsTask, includeSrc, generateReferenceBlocks);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 

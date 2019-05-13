@@ -41,6 +41,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -58,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -91,12 +93,17 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
+    private final IOManagerProvider ioManagerProvider;
+    private final VariantReaderUtils variantReaderUtils;
 
-    public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
+    public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
+                                           IOManagerProvider ioManagerProvider) {
         Objects.requireNonNull(variantAnnotator);
         Objects.requireNonNull(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         this.variantAnnotator = variantAnnotator;
+        this.ioManagerProvider = ioManagerProvider;
+        variantReaderUtils = new VariantReaderUtils(this.ioManagerProvider);
     }
 
     @Override
@@ -127,7 +134,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             logger.info("Starting annotation creation");
             logger.info("Query : {} ", query.toJson());
             annotationFile = createAnnotation(
-                    Paths.get(params.getString(OUT_DIR, "/tmp")),
+                    URI.create(params.getString(OUT_DIR)),
                     params.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
                     query, params);
             logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);
@@ -166,14 +173,12 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      * @return URI of the generated file.
      * @throws VariantAnnotatorException IOException thrown
      */
-    public URI createAnnotation(Path outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
+    public URI createAnnotation(URI outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
 
         boolean gzip = params == null || params.getBoolean("gzip", true);
         boolean avro = params == null || params.getBoolean("annotation.file.avro", false);
-        Path path = Paths.get(outDir != null
-                ? outDir.toString()
-                : "/tmp", fileName + ".annot" + (avro ? ".avro" : ".json") + (gzip ? ".gz" : ""));
-        URI fileUri = path.toUri();
+
+        URI fileUri = outDir.resolve(fileName + ".annot" + (avro ? ".avro" : ".json") + (gzip ? ".gz" : ""));
 
         /** Getting iterator from OpenCGA Variant database. **/
         QueryOptions iteratorQueryOptions = getIteratorQueryOptions(query, params);
@@ -215,9 +220,14 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
             final DataWriter<VariantAnnotation> variantAnnotationDataWriter;
             if (avro) {
-                variantAnnotationDataWriter = new AvroDataWriter<>(path, gzip, VariantAnnotation.getClassSchema());
+                //FIXME
+                variantAnnotationDataWriter = new AvroDataWriter<>(null, gzip, VariantAnnotation.getClassSchema());
             } else {
-                variantAnnotationDataWriter = new VariantAnnotationJsonDataWriter(path, gzip);
+                try {
+                    variantAnnotationDataWriter = new VariantAnnotationJsonDataWriter(ioManagerProvider.newOutputStream(fileUri));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
 
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
@@ -265,8 +275,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     }
 
     protected boolean isCustomAnnotation(URI uri) {
-        Path path = Paths.get(uri);
-        String fileName = path.getFileName().toString().toLowerCase();
+        String fileName = UriUtils.fileName(uri);
         return !VariantReaderUtils.isAvro(fileName) && !VariantReaderUtils.isJson(fileName);
     }
 
@@ -310,12 +319,13 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                                 .setProgressLogger(progressLogger), null, config);
     }
 
-    protected DataReader<VariantAnnotation> newVariantAnnotationDataReader(URI uri) {
+    protected DataReader<VariantAnnotation> newVariantAnnotationDataReader(URI uri) throws IOException {
         DataReader<VariantAnnotation> reader;
         if (VariantReaderUtils.isAvro(uri.toString())) {
+            // FIXME
             reader = new AvroDataReader<>(Paths.get(uri).toFile(), VariantAnnotation.class);
         } else if (VariantReaderUtils.isJson(uri.toString())) {
-            reader = new VariantAnnotationJsonDataReader(Paths.get(uri).toFile());
+            reader = new VariantAnnotationJsonDataReader(ioManagerProvider.newInputStream(uri));
 //        } else if (VariantReaderUtils.isVcf(uri.toString())) {
 //            //TODO: Read from VEP file
 //            reader = new VepFormatReader(Paths.get(uri).toString());
@@ -454,7 +464,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
 
         Path path = Paths.get(uri);
-        String fileName = path.getFileName().toString().toLowerCase();
+        String fileName = UriUtils.fileName(uri).toLowerCase();
         if (fileName.endsWith(".gff") || fileName.endsWith(".gff.gz")) {
             try {
                 GffReader gffReader = new GffReader(path);
@@ -508,7 +518,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         } else if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz")) {
             VariantStudyMetadata metadata = new VariantFileMetadata(fileName, fileName).toVariantStudyMetadata("s");
             ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
-                    VariantReaderUtils.getVariantVcfReader(Paths.get(fileName), metadata),
+                    variantReaderUtils.getVariantVcfReader(Paths.get(fileName), metadata),
                     variantList -> {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());

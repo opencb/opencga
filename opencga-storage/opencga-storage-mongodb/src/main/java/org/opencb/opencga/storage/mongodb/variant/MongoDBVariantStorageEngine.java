@@ -190,18 +190,18 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor);
+        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioManagerProvider);
     }
 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        return new MongoDBVariantStatisticsManager(getDBAdaptor());
+        return new MongoDBVariantStatisticsManager(getDBAdaptor(), ioManagerProvider);
     }
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
         VariantMongoDBAdaptor mongoDbAdaptor = getDBAdaptor();
-        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor);
+        return new MongoDBVariantAnnotationManager(annotator, mongoDbAdaptor, ioManagerProvider);
     }
 
     @Override

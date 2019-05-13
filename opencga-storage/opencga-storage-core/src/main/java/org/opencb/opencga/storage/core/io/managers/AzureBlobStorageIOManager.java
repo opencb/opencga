@@ -6,6 +6,8 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.log4j.Level;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -23,10 +25,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.InvalidKeyException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Created on 01/05/19.
@@ -42,6 +46,11 @@ public class AzureBlobStorageIOManager implements IOManager {
 
     public AzureBlobStorageIOManager() {
         this(System.getenv("AZURE_STORAGE_ACCOUNT"), System.getenv("AZURE_STORAGE_ACCESS_KEY"));
+    }
+
+    public AzureBlobStorageIOManager(ObjectMap options) {
+        accountName = options.getString("accountName");
+        accountKey = options.getString("accountKey");
     }
 
     public AzureBlobStorageIOManager(String azureStorageAccount, String azureStorageAccessKey) {
@@ -76,20 +85,22 @@ public class AzureBlobStorageIOManager implements IOManager {
     }
 
     private void open() throws InvalidKeyException {
+        // Mute INFO from LoggingFactory.slf4jLogger.
+        // See https://github.com/Azure/azure-storage-java/issues/433
+        org.apache.log4j.Logger.getLogger(LoggingFactory.class).setLevel(Level.WARN);
+
         // Create a ServiceURL to call the Blob service. We will also use this to construct the ContainerURL
         SharedKeyCredentials creds = new SharedKeyCredentials(accountName, accountKey);
         // We are using a default pipeline here, you can learn more about it at
         // https://github.com/Azure/azure-storage-java/wiki/Azure-Storage-Java-V10-Overview
         try {
             serviceURL = new ServiceURL(new URL("https://" + accountName + ".blob.core.windows.net"),
-                    StorageURL.createPipeline(creds, new PipelineOptions()));
+                    StorageURL.createPipeline(creds, new PipelineOptions()
+                            .withLoggingOptions(new LoggingOptions(3000))
+                    ));
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException(e);
         }
-
-//        for (ContainerItem containerItem : serviceURL.listContainersSegment(null, null).blockingGet().body().containerItems()) {
-//            System.out.println("containerItem = " + containerItem.name());
-//        }
     }
 
     protected BlobURL createBlobURL(URI uri) throws IOException {
@@ -106,8 +117,19 @@ public class AzureBlobStorageIOManager implements IOManager {
         return serviceURL.createContainerURL(containerName);
     }
 
+    public List<String> listContainers() throws IOException {
+        ensureOpen();
+        return serviceURL.listContainersSegment(null, null)
+                .blockingGet()
+                .body()
+                .containerItems()
+                .stream()
+                .map(ContainerItem::name)
+                .collect(Collectors.toList());
+    }
+
     @Override
-    public InputStream newInputStream(URI uri) throws IOException {
+    public InputStream newInputStreamRaw(URI uri) throws IOException {
         BlobURL blobURL = createBlobURL(uri);
 
         Single<DownloadResponse> download = blobURL.download();
@@ -118,7 +140,7 @@ public class AzureBlobStorageIOManager implements IOManager {
     }
 
     @Override
-    public OutputStream newOutputStream(URI uri) throws IOException {
+    public OutputStream newOutputStreamRaw(URI uri) throws IOException {
         return new AzureBlobOutputStream(createBlobURL(uri).toBlockBlobURL());
     }
 
@@ -150,6 +172,16 @@ public class AzureBlobStorageIOManager implements IOManager {
     }
 
     @Override
+    public boolean isDirectory(URI uri) throws IOException {
+        return uri.getPath().endsWith("/");
+    }
+
+    @Override
+    public boolean canWrite(URI uri) throws IOException {
+        return true;
+    }
+
+    @Override
     public long size(URI uri) throws IOException {
         return getBlobGetPropertiesHeaders(uri).contentLength();
     }
@@ -172,7 +204,7 @@ public class AzureBlobStorageIOManager implements IOManager {
             if (e.errorCode().equals(StorageErrorCode.BLOB_NOT_FOUND)) {
                 throw new FileNotFoundException(uri.toString());
             } else {
-                throw new IOException(e);
+                throw new IOException("Problem reading blob properties. ErrorCode: " + e.errorCode(), e);
             }
         }
         return blobProperties;
@@ -200,8 +232,8 @@ public class AzureBlobStorageIOManager implements IOManager {
         AsynchronousFileChannel fileChannel = AsynchronousFileChannel.open(localTargetFile,
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
-        BlobDownloadHeaders response = TransferManager.downloadBlobToFile(fileChannel, blobURL, null, null).blockingGet();
-        logger.info("[" + response.copyStatus().toString() + "] Completed copyToLocal in " + TimeUtils.durationToString(stopWatch));
+        TransferManager.downloadBlobToFile(fileChannel, blobURL, null, null).blockingGet();
+        logger.info("Completed copyToLocal in " + TimeUtils.durationToString(stopWatch));
     }
 
     //    public void move(URI source, URI target) throws IOException {
@@ -269,14 +301,17 @@ public class AzureBlobStorageIOManager implements IOManager {
                     }
                 }
                 int remaining = current.remaining();
+                int readBytes;
                 if (len > remaining) {
                     current.get(b, off, remaining);
+                    readBytes = remaining;
                 } else {
                     current.get(b, off, len);
+                    readBytes = len;
                 }
-                int readBytes = remaining - current.remaining();
                 i += readBytes;
                 len -= readBytes;
+                off += readBytes;
             }
             return i;
         }

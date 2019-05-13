@@ -300,7 +300,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 // Copy results to catalog
                 copyResults(outdir, studyFQNByInputFileId, catalogOutDirId, sessionId);
             }
-            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, release, saveIntermediateFiles, options, sessionId);
+            updateFileInfo(study, filesToIndex, variantStorageEngine.getVariantReaderUtils(),
+                    storagePipelineResults, outdir, release, saveIntermediateFiles, options, sessionId);
             // Restore previous cohort status. Cohort status will be read from StudyConfiguration.
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);
@@ -378,7 +379,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         return Type.LOAD;
     }
 
-    private void updateFileInfo(Study study, List<File> filesToIndex, List<StoragePipelineResult> storagePipelineResults, Path outdir,
+    private void updateFileInfo(Study study, List<File> filesToIndex, VariantReaderUtils variantReaderUtils,
+                                List<StoragePipelineResult> storagePipelineResults, Path outdir,
                                 Integer release, boolean saveIntermediateFiles, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
 
@@ -479,7 +481,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
 
             if (transformedSuccess) {
-                updateVariantFileStats(study.getFqn(), indexedFile, outdir, sessionId);
+                updateVariantFileStats(study.getFqn(), variantReaderUtils, indexedFile, outdir, sessionId);
             }
 
             // Update storagePipelineResult
@@ -514,12 +516,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
      *
      *
      * @param studyFqn
+     * @param variantReaderUtils
      * @param inputFile
      * @param outdir
      * @param sessionId
      * @throws CatalogException if a Catalog error occurs.
      */
-    private void updateVariantFileStats(String studyFqn, File inputFile, Path outdir, String sessionId)
+    private void updateVariantFileStats(String studyFqn, VariantReaderUtils variantReaderUtils, File inputFile, Path outdir,
+                                        String sessionId)
             throws CatalogException, IOException {
         if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
             Path metaFile = outdir.resolve(inputFile.getName() + "." + VariantReaderUtils.METADATA_FILE_FORMAT_GZ);
@@ -528,7 +532,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             }
             VariantSetStats stats;
             try {
-                VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(metaFile, null);
+                VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(metaFile, null);
                 stats = fileMetadata.getStats();
             } catch (StorageEngineException e) {
                 throw new CatalogException("Error reading file \"" + metaFile + "\"", e);

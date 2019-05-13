@@ -83,6 +83,16 @@ benchmark:
       password: ""
       options: {}         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
 
+io:
+  managers:
+    local:
+      class: "org.opencb.opencga.storage.core.io.managers.LocalIOManager"
+#    azure:
+#      class: "org.opencb.opencga.storage.core.io.managers.AzureBlobStorageIOManager"
+#      options:
+#        accountName: "<accountName>"
+#        accountKey: "<accountKey>"
+
 ## The following section defines all availables storage engine plugins installed
 ## Default plugin is 'mongodb' storage engine
 storageEngines:

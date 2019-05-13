@@ -41,9 +41,9 @@ import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -58,9 +58,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
+import java.io.InputStreamReader;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -195,32 +195,30 @@ public class VariantSearchManager {
      * Load a Solr core/collection from a Avro or JSON file.
      *
      * @param collection Collection name
-     * @param path       Path to the file to load
+     * @param uri        Path to the file to load
+     * @param variantReaderUtils Variant reader utils
      * @throws VariantSearchException VariantSearchException
      * @throws IOException            IOException
      */
-    public void load(String collection, Path path) throws VariantSearchException, IOException {
+    public void load(String collection, URI uri, VariantReaderUtils variantReaderUtils) throws VariantSearchException, IOException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
         // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
 
-        // Check path is not null and exists.
-        FileUtils.checkFile(path);
-
-        File file = path.toFile();
-        if (file.getName().endsWith("json") || file.getName().endsWith("json.gz")) {
+        String fileName = UriUtils.fileName(uri);
+        if (fileName.endsWith("json") || fileName.endsWith("json.gz")) {
             try {
-                loadJson(collection, path);
+                loadJson(collection, uri, variantReaderUtils);
             } catch (SolrServerException e) {
                 throw new VariantSearchException("Error loading variants from JSON file.", e);
             }
-        } else if (file.getName().endsWith("avro") || file.getName().endsWith("avro.gz")) {
+        } else if (fileName.endsWith("avro") || fileName.endsWith("avro.gz")) {
             try {
-                loadAvro(collection, path);
+                loadAvro(collection, uri, variantReaderUtils);
             } catch (StorageEngineException | SolrServerException e) {
                 throw new VariantSearchException("Error loading variants from AVRO file.", e);
             }
         } else {
-            throw new VariantSearchException("File format " + path + " not supported. Please, use Avro or JSON file formats.");
+            throw new VariantSearchException("File format " + uri + " not supported. Please, use Avro or JSON file formats.");
         }
     }
 
@@ -558,13 +556,13 @@ public class VariantSearchManager {
     /**
      * Load a JSON file into the Solr core/collection.
      *
-     * @param path Path to the JSON file
+     * @param uri Path to the JSON file
      * @throws IOException
      * @throws SolrException
      */
-    private void loadJson(String collection, Path path) throws IOException, SolrServerException {
+    private void loadJson(String collection, URI uri, VariantReaderUtils utils) throws IOException, SolrServerException {
         // This opens json and json.gz files automatically
-        try (BufferedReader bufferedReader = FileUtils.newBufferedReader(path)) {
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(utils.getIOManagerProvider().newInputStream(uri)))) {
             // TODO: get the buffer size from configuration file
             List<Variant> variants = new ArrayList<>(insertBatchSize);
             int count = 0;
@@ -575,7 +573,7 @@ public class VariantSearchManager {
                 variants.add(variant);
                 count++;
                 if (count % insertBatchSize == 0) {
-                    logger.debug("Loading variants from '{}', {} variants loaded", path.toString(), count);
+                    logger.debug("Loading variants from '{}', {} variants loaded", uri.toString(), count);
                     insert(collection, variants);
                     variants.clear();
                 }
@@ -583,15 +581,16 @@ public class VariantSearchManager {
 
             // Insert the remaining variants
             if (CollectionUtils.isNotEmpty(variants)) {
-                logger.debug("Loading remaining variants from '{}', {} variants loaded", path.toString(), count);
+                logger.debug("Loading remaining variants from '{}', {} variants loaded", uri.toString(), count);
                 insert(collection, variants);
             }
         }
     }
 
-    private void loadAvro(String collection, Path path) throws StorageEngineException, IOException, SolrServerException {
+    private void loadAvro(String collection, URI uri, VariantReaderUtils variantReaderUtils)
+            throws StorageEngineException, IOException, SolrServerException {
         // reader
-        VariantReader reader = VariantReaderUtils.getVariantReader(path);
+        VariantReader reader = variantReaderUtils.getVariantReader(uri, null);
 
         // TODO: get the buffer size from configuration file
         int bufferSize = 10000;

@@ -530,7 +530,7 @@ public class VariantHbaseTestUtils {
 //            studyMetadata.copy(updatedStudyMetadata);
 //        }
 
-        return variantStorageManager.readVariantFileMetadata(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
+        return variantStorageManager.getVariantReaderUtils().readVariantFileMetadata(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
     }
 
     public static VariantFileMetadata loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,

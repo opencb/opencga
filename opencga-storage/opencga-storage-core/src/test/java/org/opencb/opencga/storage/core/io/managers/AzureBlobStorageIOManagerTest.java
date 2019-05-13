@@ -1,17 +1,19 @@
 package org.opencb.opencga.storage.core.io.managers;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created on 02/05/19.
@@ -23,18 +25,39 @@ public class AzureBlobStorageIOManagerTest {
     private AzureBlobStorageIOManager io;
     private String azureStorageAccount = System.getenv("AZURE_STORAGE_ACCOUNT");
     private String azureStorageAccessKey = System.getenv("AZURE_STORAGE_ACCESS_KEY");
+    private URI file;
+    private static Path rootDir;
+
+    @BeforeClass
+    public static void beforeClass() throws IOException {
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
+        Files.createDirectories(rootDir);
+    }
 
     @Before
     public void setUp() throws Exception {
         Assume.assumeTrue(StringUtils.isNoneEmpty(azureStorageAccessKey));
         io = new AzureBlobStorageIOManager(azureStorageAccount, azureStorageAccessKey);
+        file = URI.create("https://" + azureStorageAccount + ".blob.core.windows.net/test/myTestFile.txt");
     }
 
     @Test
-    public void test() throws Exception {
-        URI file = URI.create("https://" + azureStorageAccount + ".blob.core.windows.net/test/myTestFile.txt");
+    public void testListContainers() throws IOException {
+        System.out.println(io.listContainers());
+    }
 
+    @Test
+    public void testSupport() throws IOException {
         Assert.assertTrue(io.supports(file));
+    }
+
+    @Test
+    public void testSupportIOManagerFactory() throws IOException {
+        Assert.assertTrue(new IOManagerProvider(LocalIOManager.class, AzureBlobStorageIOManager.class).supports(file));
+    }
+
+    @Test(timeout = 10000)
+    public void testUploadAndDelete() throws Exception {
         String message = "Hello world! " + System.currentTimeMillis();
 
         StopWatch stopWatch = StopWatch.createStarted();
@@ -49,9 +72,10 @@ public class AzureBlobStorageIOManagerTest {
         System.out.println(TimeUtils.durationToString(stopWatch));
 
         int expectedSize = (message.length() + 1) * 1024 * 1024;
-        System.out.println("io.size(file) = " + io.size(file));
-        System.out.println("io.md5(file) = " + io.md5(file));
+        System.out.println("file size = " + expectedSize);
+
         Assert.assertEquals(expectedSize, io.size(file));
+        Assert.assertTrue(io.exists(file));
 
         int size = 0;
         try(BufferedReader in = new BufferedReader(new InputStreamReader(io.newInputStream(file)))) {
@@ -62,9 +86,17 @@ public class AzureBlobStorageIOManagerTest {
             Assert.assertEquals(expectedSize, size);
         }
 
+        System.out.println("io.md5(file) = " + io.md5(file));
+        Path localFile = rootDir.resolve("tmpFile.txt");
+        io.copyToLocal(file, localFile);
+        io.copyFromLocal(localFile, file);
+        Assert.assertEquals(expectedSize, Files.size(localFile));
 
-        System.out.println(io.delete(file));
-        System.out.println(io.delete(file));
+        System.out.println("io.md5(file) = " + io.md5(file));
+        Assert.assertEquals(expectedSize, io.size(file));
+
+        Assert.assertTrue(io.delete(file));
+        Assert.assertFalse(io.delete(file));
     }
 
 }
