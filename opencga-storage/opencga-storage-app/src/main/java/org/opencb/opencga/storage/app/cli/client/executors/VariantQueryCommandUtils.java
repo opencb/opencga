@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -100,7 +101,7 @@ public class VariantQueryCommandUtils {
 
     public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
             throws Exception {
-        VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, null);
+        VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, (URI) null);
         return parseGenericVariantQuery(
                 queryVariantsOptions, queryVariantsOptions.study, studyNames, queryVariantsOptions.commonQueryOptions.count, of);
     }

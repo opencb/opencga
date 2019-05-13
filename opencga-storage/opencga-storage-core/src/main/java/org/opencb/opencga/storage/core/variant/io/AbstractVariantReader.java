@@ -23,6 +23,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.commons.utils.FileUtils;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -37,13 +38,25 @@ import java.util.*;
  */
 public abstract class AbstractVariantReader implements VariantReader {
 
-    private final Path metadataPath;
+    private Path metadataPath;
     private final Map<String, LinkedHashMap<String, Integer>> samplesPositions;
+    private InputStream metadataInputStream;
     private LinkedHashMap<String, Integer> samplesPosition;
     private VariantFileMetadata fileMetadata;
 
     public AbstractVariantReader(Path metadataPath, VariantStudyMetadata metadata) {
         this.metadataPath = metadataPath;
+        this.samplesPositions = null;
+        if (metadata.getFiles().isEmpty()) {
+            fileMetadata = new VariantFileMetadata("", "");
+            metadata.getFiles().add(fileMetadata.getImpl());
+        } else {
+            fileMetadata = new VariantFileMetadata(metadata.getFiles().get(0));
+        }
+    }
+
+    public AbstractVariantReader(InputStream metadataInputStream, VariantStudyMetadata metadata) {
+        this.metadataInputStream = metadataInputStream;
         this.samplesPositions = null;
         if (metadata.getFiles().isEmpty()) {
             fileMetadata = new VariantFileMetadata("", "");
@@ -61,20 +74,26 @@ public abstract class AbstractVariantReader implements VariantReader {
     @Override
     public boolean pre() {
 
-        if (metadataPath != null) {
-            Files.exists(metadataPath);
-            try (InputStream inputStream = FileUtils.newInputStream(metadataPath)) {
+        try {
+            if (metadataPath != null) {
+                if (!Files.exists(metadataPath)) {
+                    throw new FileNotFoundException(metadataPath.toString());
+                }
+                this.metadataInputStream = FileUtils.newInputStream(metadataPath);
+            }
+            if (metadataInputStream != null) {
                 // Read global JSON file and copy its info into the already available VariantSource object
-                VariantFileMetadata readMetadata = VariantReaderUtils.readVariantFileMetadataFromJson(inputStream);
+                VariantFileMetadata readMetadata = VariantReaderUtils.readVariantFileMetadataFromJson(metadataInputStream);
 
                 fileMetadata.setId(readMetadata.getId());
                 fileMetadata.setPath(readMetadata.getPath());
                 fileMetadata.setHeader(readMetadata.getHeader());
                 fileMetadata.setSamplesPosition(readMetadata.getSamplesPosition());
                 fileMetadata.setStats(readMetadata.getStats());
-            } catch (IOException ex) {
-                throw new UncheckedIOException(ex);
+                metadataInputStream.close();
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
 
         if (fileMetadata != null) {

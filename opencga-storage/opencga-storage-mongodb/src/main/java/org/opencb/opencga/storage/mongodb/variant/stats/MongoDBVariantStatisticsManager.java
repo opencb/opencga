@@ -12,6 +12,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonSerializerTask;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -38,8 +39,8 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 
     private static Logger logger = LoggerFactory.getLogger(MongoDBVariantStatisticsManager.class);
 
-    public MongoDBVariantStatisticsManager(VariantMongoDBAdaptor dbAdaptor) {
-        super(dbAdaptor);
+    public MongoDBVariantStatisticsManager(VariantMongoDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider) {
+        super(dbAdaptor, ioManagerProvider);
     }
 
     @Override

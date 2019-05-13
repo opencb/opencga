@@ -17,15 +17,18 @@
 package org.opencb.opencga.storage.core.variant.io.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.*;
-import org.apache.commons.io.Charsets;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -38,10 +41,17 @@ public class VariantAnnotationJsonDataWriter implements DataWriter<VariantAnnota
     private Path outputPath;
     private boolean gzip;
     private SequenceWriter sequenceWriter;
+    private OutputStream outputStream;
 
     public VariantAnnotationJsonDataWriter(Path outputPath, boolean gzip) {
-        this.outputPath = outputPath;
+        this.outputPath = Objects.requireNonNull(outputPath);
         this.gzip = gzip;
+    }
+
+    public VariantAnnotationJsonDataWriter(OutputStream outputStream) {
+        this.outputStream = Objects.requireNonNull(outputStream);
+        this.outputPath = null;
+        this.gzip = false;
     }
 
     @Override
@@ -49,10 +59,12 @@ public class VariantAnnotationJsonDataWriter implements DataWriter<VariantAnnota
         /** Open output stream **/
         OutputStreamWriter writer;
         try {
-            OutputStream outputStream = gzip
-                    ? new GZIPOutputStream(new FileOutputStream(outputPath.toFile()))
-                    : new FileOutputStream(outputPath.toFile());
-            writer = new OutputStreamWriter(outputStream, Charsets.UTF_8);
+            if (outputStream == null) {
+                outputStream = gzip
+                        ? new GZIPOutputStream(new FileOutputStream(outputPath.toFile()))
+                        : new FileOutputStream(outputPath.toFile());
+            }
+            writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

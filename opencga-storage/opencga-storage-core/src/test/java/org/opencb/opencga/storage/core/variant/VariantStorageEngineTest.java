@@ -36,9 +36,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.TestIOManager;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -46,7 +46,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -65,6 +66,8 @@ import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.common.UriUtils.dirName;
+import static org.opencb.opencga.core.common.UriUtils.fileName;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -135,6 +138,46 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
         checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, true,
                 getExpectedNumLoadedVariants(fileMetadata));
+    }
+
+    @Test
+    public void externalIOManager() throws Exception {
+        clearDB(DB_NAME);
+
+        variantStorageEngine.getIOManagerProvider().add(new TestIOManager());
+        variantReaderUtils.getIOManagerProvider().add(new TestIOManager());
+        StudyMetadata studyMetadata = newStudyMetadata();
+
+
+//        URI input = VariantStorageBaseTest.smallInputUri;
+        URI input = URI.create("test://localhost/").resolve(dirName(smallInputUri)).resolve(fileName(smallInputUri));
+
+        URI outputUri = URI.create("test://localhost/").resolve(dirName(VariantStorageBaseTest.outputUri));
+        StoragePipelineResult etlResult = runETL(variantStorageEngine,
+                input,
+                outputUri,
+                new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                        .append(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+                        .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
+//                        .append("annotation.file.avro", "true")
+                        .append(VariantAnnotationManager.SPECIES, "hsapiens")
+                        .append(VariantAnnotationManager.ASSEMBLY, "grch37"),
+                true, true, true);
+
+        assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.gz'",
+                fileName(etlResult.getTransformResult()).endsWith("variants.avro.gz"));
+        VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
+        assertEquals(1, metadataManager.getIndexedFiles(studyMetadata.getId()).size());
+        checkTransformedVariants(etlResult.getTransformResult(), studyMetadata);
+        checkLoadedVariants(variantStorageEngine.getDBAdaptor(), studyMetadata, true, false, true, getExpectedNumLoadedVariants(fileMetadata));
+
+
+        URI exportOutput = outputUri.resolve("export.vcf.gz");
+        variantStorageEngine.exportData(exportOutput, VariantWriterFactory.VariantOutputFormat.VCF_GZ, null,
+                new Query(), new QueryOptions(QueryOptions.SORT, true));
+
+        assertTrue(ioManagerProvider.exists(exportOutput));
     }
 
     @Test
@@ -556,8 +599,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         checkLoadedVariants(dbAdaptor, studyMetadata, true, false, false, getExpectedNumLoadedVariants(fileMetadata));
 
-        String fileId = UriUtils.fileName(smallInputUri);
-        VariantReader reader = VariantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
+        String fileId = fileName(smallInputUri);
+        VariantReader reader = variantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
                 new VariantFileMetadata(fileId, "").toVariantStudyMetadata(String.valueOf(studyMetadata.getId())));
 
         reader.open();
@@ -620,7 +663,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             throws StorageEngineException {
         long start = System.currentTimeMillis();
         VariantFileMetadata source = new VariantFileMetadata("6", VCF_TEST_FILE_NAME);
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source.toVariantStudyMetadata(String.valueOf(studyMetadata.getId())));
+        VariantReader variantReader = variantReaderUtils.getVariantReader(variantsJson,
+                source.toVariantStudyMetadata(String.valueOf(studyMetadata.getId())));
 
         variantReader.open();
         variantReader.pre();

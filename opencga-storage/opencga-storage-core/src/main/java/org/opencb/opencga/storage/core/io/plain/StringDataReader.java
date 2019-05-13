@@ -17,11 +17,14 @@
 package org.opencb.opencga.storage.core.io.plain;
 
 import org.opencb.commons.io.DataReader;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.io.managers.IOManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,6 +39,8 @@ import java.util.zip.GZIPInputStream;
  */
 public class StringDataReader implements DataReader<String> {
 
+    private final URI uri;
+    private final IOManager ioManager;
     protected BufferedReader reader;
     protected final Path path;
     protected static Logger logger = LoggerFactory.getLogger(StringDataReader.class);
@@ -51,12 +56,28 @@ public class StringDataReader implements DataReader<String> {
         this.path = Objects.requireNonNull(path);
         this.is = null;
         closeReader = true;
+        this.uri = null;
+        this.ioManager = null;
     }
 
     public StringDataReader(InputStream is) {
-        this.path = null;
+        this(is, false);
+    }
+
+    public StringDataReader(InputStream is, boolean closeStream) {
         this.is = Objects.requireNonNull(is);
-        closeReader = false;
+        this.closeReader = closeStream;
+        this.path = null;
+        this.uri = null;
+        this.ioManager = null;
+    }
+
+    public StringDataReader(URI uri, IOManager ioManager) {
+        this.uri = Objects.requireNonNull(uri);
+        this.ioManager = Objects.requireNonNull(ioManager);
+        this.is = null;
+        this.path = null;
+        this.closeReader = true;
     }
 
     @Override
@@ -66,9 +87,16 @@ public class StringDataReader implements DataReader<String> {
                 sizeInputStream = new SizeInputStream(is, 0);
                 this.reader = new BufferedReader(new InputStreamReader(sizeInputStream));
             } else {
-                String fileName = path.toFile().getName();
-                lastAvailable = getFileSize();
-                sizeInputStream = new SizeInputStream(new FileInputStream(path.toFile()), lastAvailable);
+                String fileName;
+                if (uri != null) {
+                    fileName = UriUtils.fileName(uri);
+                    lastAvailable = ioManager.size(uri);
+                    sizeInputStream = new SizeInputStream(ioManager.newInputStreamRaw(uri), lastAvailable);
+                } else {
+                    fileName = path.toFile().getName();
+                    lastAvailable = getFileSize();
+                    sizeInputStream = new SizeInputStream(new FileInputStream(path.toFile()), lastAvailable);
+                }
                 if (fileName.endsWith(".gz")) {
                     logger.debug("Gzip input compress");
                     this.reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(sizeInputStream)));
@@ -171,7 +199,7 @@ public class StringDataReader implements DataReader<String> {
         }
     }
 
-    class SizeInputStream extends InputStream {
+    private static class SizeInputStream extends InputStream {
         // The InputStream to read bytes from
         private InputStream in = null;
 

@@ -29,6 +29,7 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -74,8 +75,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     private Query query;
 
     public HadoopDefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantHadoopDBAdaptor dbAdaptor,
-                                                 MRExecutor mrExecutor, ObjectMap options) {
-        super(variantAnnotator, dbAdaptor);
+                                                 MRExecutor mrExecutor, ObjectMap options, IOManagerProvider ioManagerProvider) {
+        super(variantAnnotator, dbAdaptor, ioManagerProvider);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         baseOptions = options;

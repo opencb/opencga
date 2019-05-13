@@ -16,17 +16,12 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.BiMap;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
@@ -35,13 +30,15 @@ import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -49,7 +46,6 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
@@ -67,8 +63,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -100,10 +94,10 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     public HadoopVariantStoragePipeline(
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor,
-            VariantReaderUtils variantReaderUtils, ObjectMap options,
+            ObjectMap options,
             MRExecutor mrExecutor,
-            Configuration conf) {
-        super(configuration, STORAGE_ENGINE_ID, dbAdaptor, variantReaderUtils, options);
+            Configuration conf, IOManagerProvider ioManagerProvider) {
+        super(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioManagerProvider, options);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
@@ -145,15 +139,20 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    protected Pair<Long, Long> transformProto(Path input, String fileName, Path output,
-                                              VariantFileMetadata fileMetadata, Path outputVariantsFile,
-                                              Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
+    protected StopWatch transformProto(URI input, String fileName, URI output,
+                                              VariantFileMetadata fileMetadata, URI outputVariantsFile,
+                                              URI outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
                                               int batchSize, String extension, String compression,
                                               BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
             throws StorageEngineException {
 
         //Writer
-        DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
+        DataWriter<VcfSliceProtos.VcfSlice> dataWriter;
+        try {
+            dataWriter = new ProtoFileWriter<>(ioManagerProvider.newOutputStream(outputVariantsFile));
+        } catch (IOException e) {
+            throw StorageEngineException.ioException(e);
+        }
 
         // Normalizer
         VariantNormalizer normalizer = new VariantNormalizer(true, true, false);
@@ -163,18 +162,17 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         // Stats calculator
         VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(String.valueOf(getStudyId()), fileMetadata);
 
-        final VariantReader dataReader;
+        final DataReader<Variant> dataReader;
         String studyId = String.valueOf(getStudyId());
         if (VariantReaderUtils.isVcf(input.toString())) {
-            VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(input, fileMetadata.toVariantStudyMetadata(studyId),
-                    normalizer);
+            VariantVcfHtsjdkReader reader = variantReaderUtils.getVariantVcfReader(input, fileMetadata.toVariantStudyMetadata(studyId));
             if (null != malformatedHandler) {
                 reader.registerMalformatedVcfHandler(malformatedHandler);
                 reader.setFailOnError(failOnError);
             }
-            dataReader = reader;
+            dataReader = reader.then(normalizer);
         } else {
-            dataReader = VariantReaderUtils.getVariantReader(input, fileMetadata.toVariantStudyMetadata(studyId));
+            dataReader = variantReaderUtils.getVariantReader(input, fileMetadata.toVariantStudyMetadata(studyId));
         }
 
         // Transformer
@@ -183,8 +181,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
         logger.info("Generating output file {}", outputVariantsFile);
 
-        long start = System.currentTimeMillis();
-        long end;
+        StopWatch stopWatch = StopWatch.createStarted();
         // FIXME
         if (options.getBoolean("transform.proto.parallel", true)) {
             VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
@@ -218,7 +215,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             } catch (ExecutionException e) {
                 throw new StorageEngineException(String.format("Error while Transforming file %s into %s", input, outputVariantsFile), e);
             }
-            end = System.currentTimeMillis();
         } else {
             VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper);
             long[] t = new long[]{0, 0, 0};
@@ -232,7 +228,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 transformTask.pre();
                 statsCalculator.pre();
 
-                start = System.currentTimeMillis();
                 last = System.nanoTime();
                 // Process data
                 List<Variant> read = dataReader.read(batchSize);
@@ -257,7 +252,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 dataWriter.write(drain);
                 t[2] += System.nanoTime() - last;
 
-                end = System.currentTimeMillis();
 
 //                fileMetadata.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
                 statsCalculator.post();
@@ -265,7 +259,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 dataReader.post();
                 dataWriter.post();
 
-                end = System.currentTimeMillis();
+                stopWatch.stop();
                 logger.info("Times for reading: {}, transforming {}, writing {}",
                         TimeUnit.NANOSECONDS.toSeconds(t[0]),
                         TimeUnit.NANOSECONDS.toSeconds(t[1]),
@@ -277,18 +271,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 dataReader.close();
             }
         }
-
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
-        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-
-        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantFileMetadata.class);
-        try {
-            String sourceJsonString = variantSourceObjectWriter.writeValueAsString(fileMetadata);
-            StringDataWriter.write(outputMetaFile, Collections.singletonList(sourceJsonString));
-        } catch (IOException e) {
-            throw new StorageEngineException("Error writing meta file", e);
-        }
-        return new ImmutablePair<>(start, end);
+        stopWatch.stop();
+        return stopWatch;
     }
 
     @Override
@@ -342,8 +326,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         if (!fileMetadata.isIndexed()) {
             load(input, studyId, fileId);
         } else {
-            logger.info("File {} already loaded. Skip this step!",
-                    Paths.get(input.getPath()).getFileName().toString());
+            logger.info("File {} already loaded. Skip this step!", UriUtils.fileName(input));
         }
 
         return input; // TODO  change return value?

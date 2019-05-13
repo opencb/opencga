@@ -20,11 +20,11 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +45,8 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     public static final String LOAD_SLEEP = "dummy.variants.load.sleep";
     private final Logger logger = LoggerFactory.getLogger(DummyVariantStoragePipeline.class);
 
-    public DummyVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor, VariantReaderUtils variantReaderUtils) {
-        super(configuration, storageEngineId, dbAdaptor, variantReaderUtils);
+    public DummyVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider) {
+        super(configuration, storageEngineId, dbAdaptor, ioManagerProvider);
     }
 
     public void init(ObjectMap options) {

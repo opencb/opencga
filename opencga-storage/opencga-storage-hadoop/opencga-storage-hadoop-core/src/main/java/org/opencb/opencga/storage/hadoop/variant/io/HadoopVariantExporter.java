@@ -11,9 +11,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -36,9 +38,10 @@ public class HadoopVariantExporter extends VariantExporter {
     private final MRExecutor mrExecutor;
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantExporter.class);
 
-    public HadoopVariantExporter(HadoopVariantStorageEngine engine, VariantMetadataFactory metadataFactory, MRExecutor mrExecutor)
+    public HadoopVariantExporter(HadoopVariantStorageEngine engine, VariantMetadataFactory metadataFactory, MRExecutor mrExecutor,
+                                 IOManagerProvider ioManagerProvider)
             throws StorageEngineException {
-        super(engine, metadataFactory);
+        super(engine, metadataFactory, ioManagerProvider);
         this.mrExecutor = mrExecutor;
     }
 
@@ -50,7 +53,7 @@ public class HadoopVariantExporter extends VariantExporter {
                 || variantsFile != null
                 || StringUtils.isEmpty(outputFileUri.getScheme()) || outputFileUri.getScheme().equals("file")) {
             super.export(outputFileUri, outputFormat, variantsFile, query, queryOptions);
-        } else if (outputFileUri.getScheme().equals("hdfs")) {
+        } else if (ioManagerProvider.get(outputFileUri) instanceof HDFSIOManager) {
             VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
             FileSystem fileSystem = FileSystem.get(dbAdaptor.getConfiguration());
             Path outputPath = new Path(outputFileUri);
