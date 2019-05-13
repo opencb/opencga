@@ -53,10 +53,10 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
 
         return self._get('search', **options)
 
-    def stats(self, **options):
+    def aggregationStats(self, **options):
         """
         Fetch catalog sample stats
-        URL: /{apiVersion}/samples/stats
+        URL: /{apiVersion}/samples/aggregationStats
 
         :param study: study [[user@]project:]study where study and project can be either
             the id or alias
@@ -77,7 +77,7 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
             fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
 
     def load_from_ped(self, file,  **options):
         """

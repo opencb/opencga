@@ -43,10 +43,10 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
 
         return self._get('search', **options)
 
-    def stats(self, **options):
+    def aggregationStats(self, **options):
         """
         Fetch catalog family stats
-        URL: /{apiVersion}/families/stats
+        URL: /{apiVersion}/families/aggregationStats
 
         :param study: study [[user@]project:]study where study and project can be either the id or alias
         :param creationYear: creation year
@@ -65,5 +65,5 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
             For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
 
