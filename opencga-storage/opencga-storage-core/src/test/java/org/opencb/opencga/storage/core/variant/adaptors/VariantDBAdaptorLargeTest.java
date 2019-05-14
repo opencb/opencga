@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -552,7 +553,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertEquals(count, queryResult.getNumResults());
     }
 
-    @Test
+    @Test()
     public void testGetAllVariants_filterFiles_not_1() {
         String unknownGenotype = "./.";
         query.append(FILE.key(), "!" + file1)
@@ -561,6 +562,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                 .append(INCLUDE_STUDY.key(), studyMetadata1.getName());
         queryResult = dbAdaptor.get(query, options);
 
+        FileMetadata fileMetadata = metadataManager.getFileMetadata(studyMetadata1.getId(), file1);
         for (Variant variant : queryResult.getResult()) {
             Set<String> returnedFileIds = variant.getStudies()
                     .stream()
@@ -570,16 +572,16 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
                     .map(FileEntry::getFileId)
                     .collect(Collectors.toSet());
             assertEquals(Collections.singleton(fileName2), returnedFileIds);
-            Set<String> returnedStudiesIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toSet());
+            Set<String> returnedStudiesIds = variant.getStudiesMap().keySet();
             assertTrue("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds.contains(studyMetadata1.getName()));
             StudyEntry sourceEntry = variant.getStudy(studyMetadata1.getName());
-            for (Map.Entry<String, Map<String, String>> entry : sourceEntry.getSamplesDataAsMap().entrySet()) {
-                String genotype = entry.getValue().get("GT");
-                if (metadataManager.getFileMetadata(studyMetadata1.getId(), file1).getSamples().contains(metadataManager.getSampleId(studyMetadata1.getId(), entry.getKey()))
-                        && !sourceEntry.getAllAttributes().containsKey(file1 + "_QUAL")) {
+            for (String sampleName : sourceEntry.getOrderedSamplesName()) {
+                String genotype = sourceEntry.getSampleData(sampleName, "GT");
+                if (fileMetadata.getSamples().contains(metadataManager.getSampleId(studyMetadata1.getId(), sampleName))
+                        && sourceEntry.getFile(fileName1) == null) {
                     assertEquals(unknownGenotype, genotype);
                 } else {
-                    assertFalse(unknownGenotype.equals(genotype));
+                    assertNotEquals(unknownGenotype, genotype);
                 }
             }
         }
