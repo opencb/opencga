@@ -149,7 +149,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter;
         try {
-            dataWriter = new ProtoFileWriter<>(ioConnectorProvider.newOutputStream(outputVariantsFile));
+            dataWriter = new ProtoFileWriter<>(ioConnectorProvider.newOutputStream(outputVariantsFile), true);
         } catch (IOException e) {
             throw StorageEngineException.ioException(e);
         }
