@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.io;
 
-import org.opencb.opencga.storage.core.io.managers.LocalIOManager;
+import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,14 +14,14 @@ import java.nio.file.Paths;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class TestIOManager extends LocalIOManager {
+public class TestIOConnector extends LocalIOConnector {
 
     private URI toLocalUri(URI uri) {
         return Paths.get("target/test-data/", uri.getPath()).toUri();
     }
 
     @Override
-    public boolean supports(URI uri) {
+    public boolean isValid(URI uri) {
         return uri.getScheme().equals("test");
     }
 
@@ -87,11 +87,11 @@ public class TestIOManager extends LocalIOManager {
 
     @Override
     public int hashCode() {
-        return TestIOManager.class.hashCode();
+        return TestIOConnector.class.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof TestIOManager;
+        return obj instanceof TestIOConnector;
     }
 }

@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.io.plain;
 
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.io.managers.IOManager;
+import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
@@ -40,7 +40,7 @@ import java.util.zip.GZIPInputStream;
 public class StringDataReader implements DataReader<String> {
 
     private final URI uri;
-    private final IOManager ioManager;
+    private final IOConnector ioConnector;
     protected BufferedReader reader;
     protected final Path path;
     protected static Logger logger = LoggerFactory.getLogger(StringDataReader.class);
@@ -57,7 +57,7 @@ public class StringDataReader implements DataReader<String> {
         this.is = null;
         closeReader = true;
         this.uri = null;
-        this.ioManager = null;
+        this.ioConnector = null;
     }
 
     public StringDataReader(InputStream is) {
@@ -69,12 +69,12 @@ public class StringDataReader implements DataReader<String> {
         this.closeReader = closeStream;
         this.path = null;
         this.uri = null;
-        this.ioManager = null;
+        this.ioConnector = null;
     }
 
-    public StringDataReader(URI uri, IOManager ioManager) {
+    public StringDataReader(URI uri, IOConnector ioConnector) {
         this.uri = Objects.requireNonNull(uri);
-        this.ioManager = Objects.requireNonNull(ioManager);
+        this.ioConnector = Objects.requireNonNull(ioConnector);
         this.is = null;
         this.path = null;
         this.closeReader = true;
@@ -90,8 +90,8 @@ public class StringDataReader implements DataReader<String> {
                 String fileName;
                 if (uri != null) {
                     fileName = UriUtils.fileName(uri);
-                    lastAvailable = ioManager.size(uri);
-                    sizeInputStream = new SizeInputStream(ioManager.newInputStreamRaw(uri), lastAvailable);
+                    lastAvailable = ioConnector.size(uri);
+                    sizeInputStream = new SizeInputStream(ioConnector.newInputStreamRaw(uri), lastAvailable);
                 } else {
                     fileName = path.toFile().getName();
                     lastAvailable = getFileSize();

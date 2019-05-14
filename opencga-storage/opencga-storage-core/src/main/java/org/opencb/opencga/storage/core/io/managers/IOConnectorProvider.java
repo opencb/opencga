@@ -1,8 +1,9 @@
 package org.opencb.opencga.storage.core.io.managers;
 
+import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.config.IOManagersConfiguration;
-import org.opencb.opencga.storage.core.config.IOManagersConfiguration.IOManagerConfiguration;
+import org.opencb.opencga.storage.core.config.IOConfiguration;
+import org.opencb.opencga.storage.core.config.IOConfiguration.IOConnectorConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
@@ -12,68 +13,81 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * Created on 01/05/19.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class IOManagerProvider implements IOManager {
+public class IOConnectorProvider implements IOConnector {
 
-    private final List<IOManager> ioManagers;
+    private final List<IOConnector> ioConnectors;
 
-    public IOManagerProvider(StorageConfiguration configuration) {
-        IOManagersConfiguration io = configuration.getIo();
+    public IOConnectorProvider(StorageConfiguration configuration) {
+        IOConfiguration io = configuration.getIo();
         if (io == null) {
-            io = new IOManagersConfiguration(Collections.singletonMap(
-                    "local", new IOManagerConfiguration(LocalIOManager.class.getName(), null)));
+            io = new IOConfiguration();
         }
-        ioManagers = new ArrayList<>(io.getManagers().size());
+        if (io.getConnectors() == null) {
+            io.setConnectors(new LinkedHashMap<>());
+        }
+        ioConnectors = new ArrayList<>(io.getConnectors().size());
 
-        for (IOManagerConfiguration value : io.getManagers().values()) {
-            Class<? extends IOManager> aClass = getClass(value.getClazz());
-            ioManagers.add(newInstance(aClass, value.getOptions()));
+        if (!io.getConnectors().containsKey("local")) {
+            ioConnectors.add(new LocalIOConnector());
         }
+
+        for (Map.Entry<String, IOConnectorConfiguration> entry : io.getConnectors().entrySet()) {
+            Class<? extends IOConnector> aClass = parseClass(entry.getKey(), entry.getValue().getClazz());
+            ioConnectors.add(newInstance(aClass, entry.getValue()));
+        }
+
     }
 
-    public IOManagerProvider(Class<? extends IOManager>... classes) {
-        this(Arrays.stream(classes).map(Class::getName).collect(Collectors.toList()));
+    public IOConnectorProvider(Class<? extends IOConnector>... classes) {
+        this(new ObjectMap(), classes);
     }
 
-    public IOManagerProvider(List<String> ioManagersClassName) {
-        ioManagers = new ArrayList<>(ioManagersClassName.size());
-        for (String ioManagerClazz : ioManagersClassName) {
-            ioManagers.add(newInstance(getClass(ioManagerClazz), null));
+    public IOConnectorProvider(ObjectMap options, Class<? extends IOConnector>... classes) {
+        ioConnectors = new ArrayList<>(classes.length);
+        for (Class<? extends IOConnector> aClass : classes) {
+            ioConnectors.add(newInstance(aClass, options));
         }
     }
 
     @SuppressWarnings("unchecked")
-    protected Class<? extends IOManager> getClass(String ioManagerClazz) {
+    protected Class<? extends IOConnector> parseClass(String ioConnectorName, String ioConnectorClazz) {
         Class<?> aClass;
+        if (StringUtils.isEmpty(ioConnectorClazz)) {
+            switch (ioConnectorName) {
+                case "local":
+                    return LocalIOConnector.class;
+                case "azure":
+                    return AzureBlobStorageIOConnector.class;
+                default:
+                    throw new IllegalArgumentException("Unknown connector " + ioConnectorName);
+            }
+        }
         try {
-            aClass = Class.forName(ioManagerClazz);
+            aClass = Class.forName(ioConnectorClazz);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException(e);
         }
-        if (IOManager.class.isAssignableFrom(aClass)) {
-            return (Class<? extends IOManager>) aClass;
+        if (IOConnector.class.isAssignableFrom(aClass)) {
+            return (Class<? extends IOConnector>) aClass;
         } else {
-            throw new IllegalArgumentException("Class " + aClass + " is not an instance of " + IOManager.class);
+            throw new IllegalArgumentException("Class " + aClass + " is not an instance of " + IOConnector.class);
         }
     }
 
-    protected IOManager newInstance(Class<? extends IOManager> aClass, ObjectMap options) {
+    protected IOConnector newInstance(Class<? extends IOConnector> aClass, ObjectMap options) {
         try {
             if (options != null) {
                 for (Constructor<?> constructor : aClass.getConstructors()) {
                     if (constructor.getParameterCount() == 1
                             && constructor.getParameters()[0].getType().isAssignableFrom(ObjectMap.class)) {
-                        return (IOManager) constructor.newInstance(options);
+                        return (IOConnector) constructor.newInstance(options);
                     }
                 }
             }
@@ -84,23 +98,23 @@ public class IOManagerProvider implements IOManager {
 
     }
 
-    public synchronized void add(IOManager ioManager) {
-        if (!ioManagers.contains(ioManager)) {
-            ioManagers.add(ioManager);
+    public synchronized void add(IOConnector ioConnector) {
+        if (!ioConnectors.contains(ioConnector)) {
+            ioConnectors.add(ioConnector);
         }
     }
 
-    public IOManager get(URI uri) throws IOException {
-        for (IOManager ioManager : ioManagers) {
-            if (ioManager.supports(uri)) {
-                return ioManager;
+    public IOConnector get(URI uri) throws IOException {
+        for (IOConnector ioConnector : ioConnectors) {
+            if (ioConnector.isValid(uri)) {
+                return ioConnector;
             }
         }
         throw new IOException("Unsupported file: " + uri);
     }
 
     @Override
-    public boolean supports(URI uri) {
+    public boolean isValid(URI uri) {
         try {
             return get(uri) != null;
         } catch (IOException e) {

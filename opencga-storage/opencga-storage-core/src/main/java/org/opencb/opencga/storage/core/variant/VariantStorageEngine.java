@@ -321,7 +321,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
-        return new VariantExporter(this, metadataFactory, ioManagerProvider);
+        return new VariantExporter(this, metadataFactory, ioConnectorProvider);
     }
 
     /**
@@ -475,7 +475,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioManagerProvider);
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider);
     }
 
     /**
@@ -565,7 +565,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantStatisticsManager
      */
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        return new DefaultVariantStatisticsManager(getDBAdaptor(), ioManagerProvider);
+        return new DefaultVariantStatisticsManager(getDBAdaptor(), ioConnectorProvider);
     }
 
     /**
@@ -908,7 +908,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public VariantReaderUtils getVariantReaderUtils() {
-        return new VariantReaderUtils(ioManagerProvider);
+        return new VariantReaderUtils(ioConnectorProvider);
     }
 
     /**

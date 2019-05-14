@@ -31,7 +31,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
@@ -62,20 +62,20 @@ public class VariantExporter {
     protected final VariantStorageEngine engine;
     protected final VariantWriterFactory variantWriterFactory;
     protected final VariantMetadataFactory metadataFactory;
-    protected final IOManagerProvider ioManagerProvider;
+    protected final IOConnectorProvider ioConnectorProvider;
 
     private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
 
-    public VariantExporter(VariantStorageEngine engine, IOManagerProvider ioManagerProvider) throws StorageEngineException {
-        this(engine, new VariantMetadataFactory(engine.getMetadataManager()), ioManagerProvider);
+    public VariantExporter(VariantStorageEngine engine, IOConnectorProvider ioConnectorProvider) throws StorageEngineException {
+        this(engine, new VariantMetadataFactory(engine.getMetadataManager()), ioConnectorProvider);
     }
 
-    public VariantExporter(VariantStorageEngine engine, VariantMetadataFactory metadataFactory, IOManagerProvider ioManagerProvider)
+    public VariantExporter(VariantStorageEngine engine, VariantMetadataFactory metadataFactory, IOConnectorProvider ioConnectorProvider)
             throws StorageEngineException {
         this.engine = engine;
         variantWriterFactory = new VariantWriterFactory(engine.getDBAdaptor());
         this.metadataFactory = metadataFactory;
-        this.ioManagerProvider = ioManagerProvider;
+        this.ioConnectorProvider = ioConnectorProvider;
     }
 
     /**
@@ -93,9 +93,9 @@ public class VariantExporter {
             throws IOException, StorageEngineException {
 
         outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
-        ioManagerProvider.checkWritable(outputFile);
+        ioConnectorProvider.checkWritable(outputFile);
 
-        try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat, ioManagerProvider)) {
+        try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat, ioConnectorProvider)) {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
             exportData(os, outputFormat, variantsFile, query, queryOptions, logProgress);
         }
@@ -166,7 +166,7 @@ public class VariantExporter {
 
     protected void writeMetadata(VariantMetadata metadata, URI metadataFile) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        try (OutputStream os = ioManagerProvider.newOutputStream(metadataFile)) {
+        try (OutputStream os = ioConnectorProvider.newOutputStream(metadataFile)) {
             objectMapper.writeValue(os, metadata);
         }
     }

@@ -37,29 +37,29 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class AzureBlobStorageIOManager implements IOManager {
+public class AzureBlobStorageIOConnector implements IOConnector {
 
     private final String accountName;
     private final String accountKey;
     private ServiceURL serviceURL;
-    protected static Logger logger = LoggerFactory.getLogger(AzureBlobStorageIOManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(AzureBlobStorageIOConnector.class);
 
-    public AzureBlobStorageIOManager() {
+    public AzureBlobStorageIOConnector() {
         this(System.getenv("AZURE_STORAGE_ACCOUNT"), System.getenv("AZURE_STORAGE_ACCESS_KEY"));
     }
 
-    public AzureBlobStorageIOManager(ObjectMap options) {
+    public AzureBlobStorageIOConnector(ObjectMap options) {
         accountName = options.getString("accountName");
         accountKey = options.getString("accountKey");
     }
 
-    public AzureBlobStorageIOManager(String azureStorageAccount, String azureStorageAccessKey) {
+    public AzureBlobStorageIOConnector(String azureStorageAccount, String azureStorageAccessKey) {
         accountName = azureStorageAccount;
         accountKey = azureStorageAccessKey;
     }
 
     @Override
-    public boolean supports(URI uri) {
+    public boolean isValid(URI uri) {
         if (StringUtils.isNotEmpty(uri.getScheme())) {
             if (uri.getScheme().equals("http") || uri.getScheme().equals("https")) {
                 if (uri.getHost().endsWith(accountName + ".blob.core.windows.net")) {

@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -189,7 +189,7 @@ public class VariantWriterFactory {
         return output;
     }
 
-    public static OutputStream getOutputStream(URI output, VariantOutputFormat outputFormat, IOManagerProvider ioManagerProvider)
+    public static OutputStream getOutputStream(URI output, VariantOutputFormat outputFormat, IOConnectorProvider ioConnectorProvider)
             throws IOException {
         boolean gzip = outputFormat.isGzip();
 
@@ -199,7 +199,7 @@ public class VariantWriterFactory {
             // Unclosable OutputStream
             outputStream = new UnclosableOutputStream(System.out);
         } else {
-            outputStream = ioManagerProvider.newOutputStreamRaw(output);
+            outputStream = ioConnectorProvider.newOutputStreamRaw(output);
             logger.debug("writing to %s", output);
         }
 

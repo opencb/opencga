@@ -15,11 +15,11 @@ import java.nio.file.Paths;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class LocalIOManager implements IOManager {
-    protected static Logger logger = LoggerFactory.getLogger(LocalIOManager.class);
+public class LocalIOConnector implements IOConnector {
+    protected static Logger logger = LoggerFactory.getLogger(LocalIOConnector.class);
 
     @Override
-    public boolean supports(URI uri) {
+    public boolean isValid(URI uri) {
         return StringUtils.isEmpty(uri.getScheme()) || uri.getScheme().equals("file");
     }
 

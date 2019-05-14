@@ -45,7 +45,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -88,7 +88,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected final ObjectMap options;
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
-    protected final IOManagerProvider ioManagerProvider;
+    protected final IOConnectorProvider ioConnectorProvider;
     private final Logger logger = LoggerFactory.getLogger(VariantStoragePipeline.class);
     protected final ObjectMap transformStats = new ObjectMap();
     protected Integer privateFileId;
@@ -97,8 +97,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
 
     public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
-                                  IOManagerProvider ioManagerProvider) {
-        this(configuration, storageEngineId, dbAdaptor, ioManagerProvider,
+                                  IOConnectorProvider ioConnectorProvider) {
+        this(configuration, storageEngineId, dbAdaptor, ioConnectorProvider,
                 new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions()));
     }
 
@@ -106,16 +106,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      * @param configuration     Storage Configuration
      * @param storageEngineId   StorageEngineID
      * @param dbAdaptor         VariantDBAdaptor. Can be null if the load step is skipped
-     * @param ioManagerProvider IOManager
+     * @param ioConnectorProvider IOConnector
      * @param options           Unique copy of the options to be used. This object can not be shared.
      */
     public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
-                                  IOManagerProvider ioManagerProvider, ObjectMap options) {
+                                  IOConnectorProvider ioConnectorProvider, ObjectMap options) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
         this.dbAdaptor = dbAdaptor;
-        this.variantReaderUtils = new VariantReaderUtils(ioManagerProvider);
-        this.ioManagerProvider = ioManagerProvider;
+        this.variantReaderUtils = new VariantReaderUtils(ioConnectorProvider);
+        this.ioConnectorProvider = ioConnectorProvider;
         this.options = options;
         if (dbAdaptor == null) {
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
@@ -237,7 +237,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         try {
             malformedHandler = new MalformedVariantHandler(() -> {
                 try {
-                    return ioManagerProvider.newOutputStream(outputMalformedVariants);
+                    return ioConnectorProvider.newOutputStream(outputMalformedVariants);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -260,8 +260,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             long fileSize;
             StringDataReader dataReader;
             try {
-                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioManagerProvider);
-                fileSize = stdin ? -1 : ioManagerProvider.size(input);
+                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioConnectorProvider);
+                fileSize = stdin ? -1 : ioConnectorProvider.size(input);
             } catch (IOException e) {
                 throw StorageEngineException.ioException(e);
             }
@@ -275,7 +275,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, System.out);
                 } else {
                     dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression,
-                            ioManagerProvider.newOutputStream(outputVariantsFile), true);
+                            ioConnectorProvider.newOutputStream(outputVariantsFile), true);
                 }
             } catch (IOException e) {
                 throw StorageEngineException.ioException(e);
@@ -329,8 +329,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             long fileSize;
             StringDataReader dataReader;
             try {
-                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioManagerProvider);
-                fileSize = stdin ? -1 : ioManagerProvider.size(input);
+                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioConnectorProvider);
+                fileSize = stdin ? -1 : ioConnectorProvider.size(input);
             } catch (IOException e) {
                 throw StorageEngineException.ioException(e);
             }
@@ -344,7 +344,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             } else {
                 try {
                     dataWriter = new StringDataWriter(
-                            ioManagerProvider.newOutputStream(outputVariantsFile), true, true);
+                            ioConnectorProvider.newOutputStream(outputVariantsFile), true, true);
                 } catch (IOException e) {
                     throw StorageEngineException.ioException(e);
                 }
@@ -403,7 +403,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
         logger.info("Variants transformed in " + TimeUtils.durationToString(stopWatch));
 
-        try (OutputStream outputMetadataStream = ioManagerProvider.newOutputStream(outputMetaFile)) {
+        try (OutputStream outputMetadataStream = ioConnectorProvider.newOutputStream(outputMetaFile)) {
             ObjectMapper jsonObjectMapper = new ObjectMapper();
             jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
             jsonObjectMapper.writeValue(outputMetadataStream, metadata.getImpl());

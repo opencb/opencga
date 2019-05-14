@@ -4,7 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.io.managers.IOManager;
+import org.opencb.opencga.storage.core.io.managers.IOConnector;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,9 +18,9 @@ import java.nio.file.Path;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HDFSIOManager extends Configured implements IOManager {
+public class HDFSIOConnector extends Configured implements IOConnector {
 
-    public HDFSIOManager(ObjectMap options) {
+    public HDFSIOConnector(ObjectMap options) {
         Configuration conf = new Configuration();
         if (options != null) {
             for (String key : options.keySet()) {
@@ -29,7 +29,7 @@ public class HDFSIOManager extends Configured implements IOManager {
         }
     }
 
-    public HDFSIOManager(Configuration conf) {
+    public HDFSIOConnector(Configuration conf) {
         super(conf);
     }
 
@@ -38,7 +38,7 @@ public class HDFSIOManager extends Configured implements IOManager {
     }
 
     @Override
-    public boolean supports(URI uri) {
+    public boolean isValid(URI uri) {
         try {
             return getFileSystem(uri) != null;
         } catch (IOException e) {

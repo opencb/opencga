@@ -21,10 +21,12 @@ import org.junit.Test;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,6 +65,11 @@ public class DefaultAlignmentDBAdaptorTest {
         Files.copy(Paths.get(resource.getPath()), fileOutputStream);
 
         AlignmentStorageEngine defaultAlignmentStorageManager = new LocalAlignmentStorageEngine();
+        InputStream is = getClass().getClassLoader().getResourceAsStream("storage-configuration.yml");
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+        storageConfiguration.getStorageEngine().getAlignment().getOptions().put("bigWigWindowsSize", 1000);
+        defaultAlignmentStorageManager.setConfiguration(storageConfiguration, "", "");
+
         defaultAlignmentStorageManager.index(Arrays.asList(inputFile.toURI()), getTmpRootDir().toUri(), true, true, true);
 
         assertTrue(Files.exists(Paths.get(inputFile.getPath())));
