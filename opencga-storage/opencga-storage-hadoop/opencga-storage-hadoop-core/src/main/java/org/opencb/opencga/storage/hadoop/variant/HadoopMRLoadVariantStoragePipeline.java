@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -50,10 +50,10 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
     public HadoopMRLoadVariantStoragePipeline(
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
-            IOManagerProvider ioManagerProvider, Configuration conf,
+            IOConnectorProvider ioConnectorProvider, Configuration conf,
             ObjectMap options) {
         super(configuration, dbAdaptor,
-                options, mrExecutor, conf, ioManagerProvider);
+                options, mrExecutor, conf, ioConnectorProvider);
         throw new IllegalStateException("Unable to load from hdfs using a MR job");
     }
 

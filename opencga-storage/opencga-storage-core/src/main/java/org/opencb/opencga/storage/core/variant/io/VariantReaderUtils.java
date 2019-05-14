@@ -28,7 +28,7 @@ import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
@@ -55,10 +55,10 @@ public class VariantReaderUtils {
     private static final Pattern VALID_META = Pattern.compile("^.+\\." + METADATA_FILE + "\\." + METADATA_FORMAT + "\\.gz$");
     private static final Pattern VALID_VARIANTS = Pattern.compile("^.+\\." + VARIANTS_FILE + "\\.(avro|json|proto)(\\.(gz|snappy))?$");
 
-    private final IOManagerProvider ioManagerProvider;
+    private final IOConnectorProvider ioConnectorProvider;
 
-    public VariantReaderUtils(IOManagerProvider ioManagerProvider) {
-        this.ioManagerProvider = ioManagerProvider;
+    public VariantReaderUtils(IOConnectorProvider ioConnectorProvider) {
+        this.ioConnectorProvider = ioConnectorProvider;
     }
 
     /**
@@ -426,13 +426,13 @@ public class VariantReaderUtils {
 
     private InputStream newInputStream(URI input) throws StorageEngineException {
         try {
-            return ioManagerProvider.newInputStream(input);
+            return ioConnectorProvider.newInputStream(input);
         } catch (IOException e) {
             throw StorageEngineException.ioException(input.toString(), e);
         }
     }
 
-    public IOManagerProvider getIOManagerProvider() {
-        return ioManagerProvider;
+    public IOConnectorProvider getIOConnectorProvider() {
+        return ioConnectorProvider;
     }
 }

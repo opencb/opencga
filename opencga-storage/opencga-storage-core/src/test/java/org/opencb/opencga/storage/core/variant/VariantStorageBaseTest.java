@@ -27,7 +27,7 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -104,7 +104,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     private static Logger logger = LoggerFactory.getLogger(VariantStorageBaseTest.class);
     private static Path rootDir = null;
     private static boolean cleanFirst = false;
-    public static IOManagerProvider ioManagerProvider;
+    public static IOConnectorProvider ioConnectorProvider;
     public static  VariantReaderUtils variantReaderUtils;
 //    private static AtomicInteger count = new AtomicInteger(0);
 
@@ -256,7 +256,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         variantStorageEngine.getOptions().put(DefaultVariantAnnotationManager.NUM_THREADS, 2);
         metadataManager = variantStorageEngine.getMetadataManager();
         variantReaderUtils = variantStorageEngine.getVariantReaderUtils();
-        ioManagerProvider = variantStorageEngine.getIOManagerProvider();
+        ioConnectorProvider = variantStorageEngine.getIOManagerProvider();
     }
 
     @After

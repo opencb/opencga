@@ -18,14 +18,14 @@ import java.util.zip.GZIPOutputStream;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface IOManager {
+public interface IOConnector {
 
-    boolean supports(URI uri);
+    boolean isValid(URI uri);
 
     InputStream newInputStreamRaw(URI uri) throws IOException;
 
     default InputStream newInputStream(URI uri) throws IOException {
-        Logger logger = LoggerFactory.getLogger(IOManager.class);
+        Logger logger = LoggerFactory.getLogger(IOConnector.class);
         InputStream inputStream = newInputStreamRaw(uri);
         if (uri.getPath().endsWith(".gz")) {
             logger.debug("Gzip input compress");
@@ -42,7 +42,7 @@ public interface IOManager {
     OutputStream newOutputStreamRaw(URI uri) throws IOException;
 
     default OutputStream newOutputStream(URI uri) throws IOException {
-        Logger logger = LoggerFactory.getLogger(IOManager.class);
+        Logger logger = LoggerFactory.getLogger(IOConnector.class);
         OutputStream outputStream = newOutputStreamRaw(uri);
         if (uri.getPath().endsWith(".gz")) {
             logger.debug("Gzip output compress");

@@ -20,9 +20,9 @@ import java.nio.file.Paths;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class AzureBlobStorageIOManagerTest {
+public class AzureBlobStorageIOConnectorTest {
 
-    private AzureBlobStorageIOManager io;
+    private AzureBlobStorageIOConnector io;
     private String azureStorageAccount = System.getenv("AZURE_STORAGE_ACCOUNT");
     private String azureStorageAccessKey = System.getenv("AZURE_STORAGE_ACCESS_KEY");
     private URI file;
@@ -37,7 +37,7 @@ public class AzureBlobStorageIOManagerTest {
     @Before
     public void setUp() throws Exception {
         Assume.assumeTrue(StringUtils.isNoneEmpty(azureStorageAccessKey));
-        io = new AzureBlobStorageIOManager(azureStorageAccount, azureStorageAccessKey);
+        io = new AzureBlobStorageIOConnector(azureStorageAccount, azureStorageAccessKey);
         file = URI.create("https://" + azureStorageAccount + ".blob.core.windows.net/test/myTestFile.txt");
     }
 
@@ -47,13 +47,13 @@ public class AzureBlobStorageIOManagerTest {
     }
 
     @Test
-    public void testSupport() throws IOException {
-        Assert.assertTrue(io.supports(file));
+    public void testIsValid() throws IOException {
+        Assert.assertTrue(io.isValid(file));
     }
 
     @Test
-    public void testSupportIOManagerFactory() throws IOException {
-        Assert.assertTrue(new IOManagerProvider(LocalIOManager.class, AzureBlobStorageIOManager.class).supports(file));
+    public void testIsValidIOManagerFactory() throws IOException {
+        Assert.assertTrue(new IOConnectorProvider(LocalIOConnector.class, AzureBlobStorageIOConnector.class).isValid(file));
     }
 
     @Test(timeout = 10000)

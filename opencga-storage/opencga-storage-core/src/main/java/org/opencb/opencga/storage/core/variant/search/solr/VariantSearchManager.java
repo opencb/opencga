@@ -562,7 +562,8 @@ public class VariantSearchManager {
      */
     private void loadJson(String collection, URI uri, VariantReaderUtils utils) throws IOException, SolrServerException {
         // This opens json and json.gz files automatically
-        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(utils.getIOManagerProvider().newInputStream(uri)))) {
+        try (BufferedReader bufferedReader = new BufferedReader(
+                new InputStreamReader(utils.getIOConnectorProvider().newInputStream(uri)))) {
             // TODO: get the buffer size from configuration file
             List<Variant> variants = new ArrayList<>(insertBatchSize);
             int count = 0;

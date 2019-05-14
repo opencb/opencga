@@ -8,8 +8,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
-import org.opencb.opencga.storage.core.io.managers.LocalIOManager;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
@@ -44,7 +44,7 @@ public class VariantMetadataConverterTest {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
 
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
-        variantReaderUtils = new VariantReaderUtils(new IOManagerProvider(LocalIOManager.class));
+        variantReaderUtils = new VariantReaderUtils(new IOConnectorProvider(LocalIOConnector.class));
         VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
         studyMetadata = new StudyMetadata(1, "study").addVariantFileHeader(fileMetadata.getHeader(), null);
 

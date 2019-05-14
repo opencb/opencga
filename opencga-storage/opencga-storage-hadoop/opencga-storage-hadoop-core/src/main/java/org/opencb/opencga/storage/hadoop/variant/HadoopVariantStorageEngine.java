@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -63,7 +63,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadList
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
-import org.opencb.opencga.storage.hadoop.io.HDFSIOManager;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
@@ -233,14 +233,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected IOManagerProvider createIOManagerProvider(StorageConfiguration configuration) {
-        IOManagerProvider ioManagerProvider = super.createIOManagerProvider(configuration);
+    protected IOConnectorProvider createIOConnectorProvider(StorageConfiguration configuration) {
+        IOConnectorProvider ioConnectorProvider = super.createIOConnectorProvider(configuration);
         try {
-            ioManagerProvider.add(new HDFSIOManager(getHadoopConfiguration()));
+            ioConnectorProvider.add(new HDFSIOConnector(getHadoopConfiguration()));
         } catch (StorageEngineException e) {
             throw new RuntimeException(e);
         }
-        return ioManagerProvider;
+        return ioConnectorProvider;
     }
 
     @Override
@@ -387,12 +387,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions(), ioManagerProvider);
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions(), ioConnectorProvider);
     }
 
     @Override
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
-        return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioManagerProvider);
+        return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioConnectorProvider);
     }
 
     @Override
@@ -432,7 +432,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
         // By default, execute a MR to calculate statistics
         if (getOptions().getBoolean(STATS_LOCAL, false)) {
-            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor(), ioManagerProvider);
+            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor(), ioConnectorProvider);
         } else {
             return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(), getOptions());
         }
@@ -641,7 +641,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             mergeMode = MergeMode.BASIC;
         }
         HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
-                ioManagerProvider, hadoopConfiguration, options);
+                ioConnectorProvider, hadoopConfiguration, options);
 //        if (mergeMode.equals(MergeMode.BASIC)) {
 //            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,
 //                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
