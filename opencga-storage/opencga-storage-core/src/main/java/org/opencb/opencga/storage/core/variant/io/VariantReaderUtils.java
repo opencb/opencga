@@ -158,7 +158,7 @@ public class VariantReaderUtils {
             if (stdin) {
                 variantAvroReader = new VariantAvroReader(System.in, newInputStream(sourceFile), metadata);
             } else {
-                variantAvroReader = new VariantAvroReader(newInputStream(input), newInputStream(sourceFile), metadata);
+                variantAvroReader = new VariantAvroReader(newInputStreamRaw(input), newInputStream(sourceFile), metadata);
             }
         } else {
             throw variantInputNotSupported(input);
@@ -427,6 +427,14 @@ public class VariantReaderUtils {
     private InputStream newInputStream(URI input) throws StorageEngineException {
         try {
             return ioConnectorProvider.newInputStream(input);
+        } catch (IOException e) {
+            throw StorageEngineException.ioException(input.toString(), e);
+        }
+    }
+
+    private InputStream newInputStreamRaw(URI input) throws StorageEngineException {
+        try {
+            return ioConnectorProvider.newInputStreamRaw(input);
         } catch (IOException e) {
             throw StorageEngineException.ioException(input.toString(), e);
         }

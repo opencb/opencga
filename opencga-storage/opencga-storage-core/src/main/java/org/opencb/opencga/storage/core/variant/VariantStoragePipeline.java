@@ -275,7 +275,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, System.out);
                 } else {
                     dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression,
-                            ioConnectorProvider.newOutputStream(outputVariantsFile), true);
+                            ioConnectorProvider.newOutputStreamRaw(outputVariantsFile), true);
                 }
             } catch (IOException e) {
                 throw StorageEngineException.ioException(e);
