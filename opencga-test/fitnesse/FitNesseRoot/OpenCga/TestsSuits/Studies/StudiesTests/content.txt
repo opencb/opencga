@@ -133,6 +133,7 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result.length == 0|
 
+
 !3 Create Group
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$groupId",  "users" : "$userA,$userB"}|
@@ -150,12 +151,7 @@
 
 !3 Remove Group
 !|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "XYZ"}|
-| POST | /v1/studies/$lStudyId/groups/update?action=REMOVE |200|  Content-Type: application/json |jsonbody.response[0].result.length == 0|
-
-!3 Remove Group
-!|Table: Rest Fixture | $baseURL |
-| setBody | {"name" : "@XYZ"}|
+| setBody | {"id" : "@XYZ"}|
 | POST | /v1/studies/$lStudyId/groups/update?action=REMOVE |200|  Content-Type: application/json |jsonbody.response[0].result.length == 1|
 
 !3 Get Group By Name
