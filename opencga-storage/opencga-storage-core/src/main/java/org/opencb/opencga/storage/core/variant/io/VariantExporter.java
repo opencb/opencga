@@ -93,7 +93,9 @@ public class VariantExporter {
             throws IOException, StorageEngineException {
 
         outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
-        ioConnectorProvider.checkWritable(outputFile);
+        if (!VariantWriterFactory.isStandardOutput(outputFile)) {
+            ioConnectorProvider.checkWritable(outputFile);
+        }
 
         try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat, ioConnectorProvider)) {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
