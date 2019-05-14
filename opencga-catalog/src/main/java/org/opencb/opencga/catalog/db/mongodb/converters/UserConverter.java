@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.models.User;
 
@@ -26,6 +27,25 @@ public class UserConverter extends GenericDocumentComplexConverter<User> {
 
     public UserConverter() {
         super(User.class);
+    }
+
+    @Override
+    public User convertToDataModelType(Document document) {
+        // TODO: Remove this piece of code once we are sure User contains the migrated new account type from 1.4.2
+        Document account = (Document) document.get("account");
+        if (account != null && account.get("authentication") == null) {
+            // We make sure type is in upper case because we are now storing the enum names
+            String type = account.getString("type");
+            account.put("type", type.toUpperCase());
+
+            String authOrigin = account.getString("authOrigin");
+            Document authentication = new Document()
+                    .append("id", authOrigin)
+                    .append("application", false);
+            account.put("authentication", authentication);
+        }
+
+        return super.convertToDataModelType(document);
     }
 
 }
