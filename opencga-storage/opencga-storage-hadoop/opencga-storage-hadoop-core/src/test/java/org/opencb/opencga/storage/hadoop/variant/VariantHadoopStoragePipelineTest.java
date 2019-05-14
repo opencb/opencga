@@ -84,7 +84,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                             .append(Options.CALCULATE_STATS.key(), false)
             );
 
-            fileMetadata = variantStorageManager.readVariantFileMetadata(etlResult.getTransformResult());
+            fileMetadata = variantStorageManager.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
             VariantSetStats stats = fileMetadata.getStats();
             Assert.assertNotNull(stats);
         } finally {

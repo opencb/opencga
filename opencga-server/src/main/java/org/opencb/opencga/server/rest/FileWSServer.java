@@ -336,9 +336,8 @@ public class FileWSServer extends OpenCGAWSServer {
                              @QueryParam("study") String studyStr) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            try (DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId)) {
-                return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
-            }
+            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId);
+            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileIdStr);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -360,9 +359,9 @@ public class FileWSServer extends OpenCGAWSServer {
             catalogManager.getAuthorizationManager().checkFilePermission(study.getUid(), file.getUid(), userId,
                     FileAclEntry.FilePermissions.VIEW_CONTENT);
 
-            try (DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, sessionId)) {
-                return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
-            }
+            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, sessionId);
+            return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+
         } catch (Exception e) {
             return createErrorResponse(e);
         }

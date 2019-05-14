@@ -145,6 +145,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         fileFilterValidator.processFilter(query, VariantQueryParam.FILE, release, sessionId, defaultStudyStr);
         fileFilterValidator.processFilter(query, VariantQueryParam.INCLUDE_FILE, release, sessionId, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.COHORT, release, sessionId, defaultStudyStr);
+        cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_ALT, release, sessionId, defaultStudyStr);
+        cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_REF, release, sessionId, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_MAF, release, sessionId, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.STATS_MGF, release, sessionId, defaultStudyStr);
         cohortFilterValidator.processFilter(query, VariantQueryParam.MISSING_ALLELES, release, sessionId, defaultStudyStr);

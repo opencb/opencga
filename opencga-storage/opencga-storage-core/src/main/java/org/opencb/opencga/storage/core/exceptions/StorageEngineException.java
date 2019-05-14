@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.exceptions;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -102,5 +103,13 @@ public class StorageEngineException extends Exception {
         return new StorageEngineException(
                 "Unable to load file '" + fileName + "'. "
                         + "There was some already loaded samples, but not all of them.");
+    }
+
+    public static StorageEngineException ioException(String file, IOException e) {
+        return new StorageEngineException(file, e);
+    }
+
+    public static StorageEngineException ioException(IOException e) {
+        return new StorageEngineException(e.getMessage(), e);
     }
 }

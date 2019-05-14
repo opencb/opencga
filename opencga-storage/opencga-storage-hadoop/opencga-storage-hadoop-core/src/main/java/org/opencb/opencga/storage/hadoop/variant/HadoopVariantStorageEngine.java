@@ -20,8 +20,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -29,17 +27,19 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -55,7 +55,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.query.DBAdaptorVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
@@ -64,6 +63,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadList
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
@@ -93,7 +93,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -104,7 +103,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
@@ -224,7 +222,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
-    private HdfsVariantReaderUtils variantReaderUtils;
     private HBaseManager hBaseManager;
     private final AtomicReference<VariantHadoopDBAdaptor> dbAdaptor = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(HadoopVariantStorageEngine.class);
@@ -233,6 +230,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     public HadoopVariantStorageEngine() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
+    }
+
+    @Override
+    protected IOConnectorProvider createIOConnectorProvider(StorageConfiguration configuration) {
+        IOConnectorProvider ioConnectorProvider = super.createIOConnectorProvider(configuration);
+        try {
+            ioConnectorProvider.add(new HDFSIOConnector(getHadoopConfiguration()));
+        } catch (StorageEngineException e) {
+            throw new RuntimeException(e);
+        }
+        return ioConnectorProvider;
     }
 
     @Override
@@ -267,7 +275,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
                     return null;
                 }
                 try {
-                    Thread.currentThread().setName(Paths.get(inputFile).getFileName().toString());
+                    Thread.currentThread().setName(UriUtils.fileName(inputFile));
                     StoragePipelineResult storagePipelineResult = new StoragePipelineResult(inputFile);
                     URI nextUri = inputFile;
                     boolean error = false;
@@ -379,12 +387,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions());
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions(), ioConnectorProvider);
     }
 
     @Override
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
-        return new HadoopVariantExporter(this, metadataFactory, getMRExecutor());
+        return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioConnectorProvider);
     }
 
     @Override
@@ -424,7 +432,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
         // By default, execute a MR to calculate statistics
         if (getOptions().getBoolean(STATS_LOCAL, false)) {
-            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor());
+            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor(), ioConnectorProvider);
         } else {
             return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(), getOptions());
         }
@@ -633,7 +641,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             mergeMode = MergeMode.BASIC;
         }
         HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
-                hadoopConfiguration, getVariantReaderUtils(hadoopConfiguration), options);
+                ioConnectorProvider, hadoopConfiguration, options);
 //        if (mergeMode.equals(MergeMode.BASIC)) {
 //            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,
 //                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
@@ -642,19 +650,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 //                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
 //        }
         return storageETL;
-    }
-
-    public HdfsVariantReaderUtils getVariantReaderUtils() {
-        return getVariantReaderUtils(conf);
-    }
-
-    private HdfsVariantReaderUtils getVariantReaderUtils(Configuration config) {
-        if (null == variantReaderUtils) {
-            variantReaderUtils = new HdfsVariantReaderUtils(config);
-        } else if (this.variantReaderUtils.conf == null && config != null) {
-            variantReaderUtils = new HdfsVariantReaderUtils(config);
-        }
-        return variantReaderUtils;
     }
 
     @Override
@@ -1024,43 +1019,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return tableNameGenerator;
     }
 
-    public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
-        return getVariantReaderUtils(null).readVariantFileMetadata(input);
-    }
-
-    private static class HdfsVariantReaderUtils extends VariantReaderUtils {
-        private final Configuration conf;
-
-        HdfsVariantReaderUtils(Configuration conf) {
-            this.conf = conf;
-        }
-
-        @Override
-        public VariantFileMetadata readVariantFileMetadata(URI input) throws StorageEngineException {
-            VariantFileMetadata source;
-
-            if (input.getScheme() == null || input.getScheme().startsWith("file")) {
-                return VariantReaderUtils.readVariantFileMetadata(Paths.get(input.getPath()), null);
-            }
-
-            Path metaPath = new Path(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
-            FileSystem fs = null;
-            try {
-                fs = FileSystem.get(conf);
-            } catch (IOException e) {
-                throw new StorageEngineException("Unable to get FileSystem", e);
-            }
-            try (
-                    InputStream inputStream = new GZIPInputStream(fs.open(metaPath))
-            ) {
-                source = VariantReaderUtils.readVariantFileMetadataFromJson(inputStream);
-            } catch (IOException e) {
-                throw new StorageEngineException("Unable to read VariantFileMetadata", e);
-            }
-            return source;
-        }
-    }
-
     @Override
     public void testConnection() throws StorageEngineException {
         try {
@@ -1069,6 +1027,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             logger.error("Connection to database '{}' failed", dbName);
             throw new StorageEngineException("HBase Database connection test failed");
         }
+    }
+
+    public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
+        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        if (jar == null) {
+            throw new StorageEngineException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+        }
+        if (!Paths.get(jar).isAbsolute()) {
+            jar = System.getProperty("app.home", "") + "/" + jar;
+        }
+        return jar;
     }
 
     /**

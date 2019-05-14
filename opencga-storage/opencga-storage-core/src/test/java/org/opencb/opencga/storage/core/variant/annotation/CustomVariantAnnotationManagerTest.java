@@ -64,7 +64,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId(), projectMetadata);
-        DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
+        DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor, ioConnectorProvider);
 
 
         String annotKey = "BEDAnnotation";
@@ -109,7 +109,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId(), projectMetadata);
-        DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
+        DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor, ioConnectorProvider);
 
 
         String annotKey = "GFFAnnotation";
@@ -155,7 +155,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId(), projectMetadata);
-        DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
+        DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor, ioConnectorProvider);
 
         String annotKey = "VCFAnnotation";
         annotationManager.loadCustomAnnotation(getResourceUri("custom_annotation/myannot.vcf"), new QueryOptions(CUSTOM_ANNOTATION_KEY, annotKey));

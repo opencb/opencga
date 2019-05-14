@@ -38,6 +38,11 @@ public class VariantAvroReader extends AbstractVariantReader {
 
     private final AvroDataReader<VariantAvro> avroDataReader;
 
+    public VariantAvroReader(InputStream is, InputStream metaInputStream, VariantStudyMetadata metadata) {
+        super(metaInputStream, metadata);
+        avroDataReader = new AvroDataReader<>(is, VariantAvro.class);
+    }
+
     public VariantAvroReader(InputStream is, File metadataFile, VariantStudyMetadata metadata) {
         super(metadataFile.toPath(), metadata);
         avroDataReader = new AvroDataReader<>(is, VariantAvro.class);

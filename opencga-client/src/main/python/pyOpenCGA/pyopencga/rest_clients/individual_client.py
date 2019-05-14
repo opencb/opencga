@@ -9,10 +9,10 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         _category = 'individuals'
         super(Individuals, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def stats(self, **options):
+    def aggregationStats(self, **options):
         """
         Fetch catalog individual stats
-        URL: /{apiVersion}/individuals/stats
+        URL: /{apiVersion}/individuals/aggregationStats
 
         :param study: study [[user@]project:]study where study and project can be either the id or alias
         :param hasFather: has father (Bool, default=None)
@@ -41,7 +41,7 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
             e.g.: studies>>biotype;type;numSamples[0..10]:1
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
 
     def search(self, **options):
         """

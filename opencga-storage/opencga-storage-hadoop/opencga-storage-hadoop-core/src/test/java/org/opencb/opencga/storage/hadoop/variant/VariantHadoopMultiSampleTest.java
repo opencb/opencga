@@ -455,7 +455,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void checkLoadedFilesS1S2(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor) throws IOException, StorageEngineException {
 
         Path path = Paths.get(getResourceUri("s1_s2.genome.vcf"));
-        VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(path, null);
+        VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(path, null);
 
         VariantReader variantReader = new VariantVcfHtsjdkReader(path, fileMetadata.toVariantStudyMetadata(STUDY_NAME));
         variantReader.open();

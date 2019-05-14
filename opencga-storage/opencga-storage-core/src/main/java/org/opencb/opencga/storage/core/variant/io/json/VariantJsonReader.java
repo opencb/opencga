@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.variant.io.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -34,6 +33,7 @@ import org.xerial.snappy.SnappyInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,8 +41,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -57,6 +55,13 @@ public class VariantJsonReader extends AbstractVariantReader {
     private InputStream variantsStream;
 
     private String variantFilename;
+
+    public VariantJsonReader(VariantStudyMetadata metadata, InputStream variantsStream, InputStream metaFileStream) {
+        super(metaFileStream, metadata);
+        this.variantsStream = variantsStream;
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
+    }
 
     public VariantJsonReader(VariantStudyMetadata metadata, String variantFilename, String globalFilename) {
         super(Paths.get(globalFilename), metadata);
@@ -74,6 +79,9 @@ public class VariantJsonReader extends AbstractVariantReader {
 
     @Override
     public boolean open() {
+        if (variantFilename == null) {
+            return true;
+        }
         try {
             Path variantsPath = Paths.get(this.variantFilename);
 //            this.variantsPath = Paths.get(source.getFileName());
@@ -90,8 +98,7 @@ public class VariantJsonReader extends AbstractVariantReader {
             }
 
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
+            throw new UncheckedIOException(ex);
         }
 
         return true;
@@ -108,8 +115,7 @@ public class VariantJsonReader extends AbstractVariantReader {
             variantsParser = factory.createParser(variantsStream);
             // TODO Optimizations for memory management?
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
+            throw new UncheckedIOException(ex);
         }
 
         return true;
@@ -125,7 +131,7 @@ public class VariantJsonReader extends AbstractVariantReader {
                 listRecords.add(variant);
             }
         } catch (IOException ex) {
-            Logger.getLogger(VariantVcfReader.class.getName()).log(Level.SEVERE, null, ex);
+            throw new UncheckedIOException(ex);
         }
         return addSamplesPosition(listRecords);
     }
@@ -140,8 +146,7 @@ public class VariantJsonReader extends AbstractVariantReader {
         try {
             variantsParser.close();
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
+            throw new UncheckedIOException(ex);
         }
 
         return true;
