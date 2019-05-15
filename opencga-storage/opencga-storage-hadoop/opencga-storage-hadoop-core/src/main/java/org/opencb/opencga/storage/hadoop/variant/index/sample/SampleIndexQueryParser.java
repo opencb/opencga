@@ -498,6 +498,8 @@ public class SampleIndexQueryParser {
             transcriptFlagBasic = query.getString(ANNOT_TRANSCRIPT_FLAG.key()).equals(TRANSCRIPT_FLAG_BASIC);
         }
 
+        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query);
+
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
             List<String> cts = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
             cts = cts.stream()
@@ -508,9 +510,12 @@ public class SampleIndexQueryParser {
                 if (transcriptFlagBasic) {
                     b |= LOF_EXTENDED_BASIC_MASK;
                 }
-                // If all present, and not filtering by gene, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_SET.size() == cts.size() && !isValidParam(query, GENE)) {
-                    query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                // If all present, remove consequenceType filter
+                if (allSamplesAnnotated && LOF_SET.size() == cts.size()) {
+                    // Ensure not filtering by gene, and not combining with other params
+                    if (!isValidParam(query, GENE) && combination.numParams() == 1) {
+                        query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                    }
                 }
             }
             if (LOF_EXTENDED_SET.containsAll(cts)) {
@@ -518,9 +523,12 @@ public class SampleIndexQueryParser {
                 if (transcriptFlagBasic) {
                     b |= LOF_EXTENDED_BASIC_MASK;
                 }
-                // If all present, and not filtering by gene, remove consequenceType filter
+                // If all present, remove consequenceType filter
                 if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == cts.size() && !isValidParam(query, GENE)) {
-                    query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                    // Ensure not filtering by gene, and not combining with other params
+                    if (!isValidParam(query, GENE) && combination.numParams() == 1) {
+                        query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                    }
                 }
             }
         }
@@ -531,7 +539,10 @@ public class SampleIndexQueryParser {
                 b |= BIOTYPE_MASK;
                 // If all present, remove biotype filter
                 if (allSamplesAnnotated && BIOTYPE_SET.size() == biotypes.size()) {
-                    query.remove(ANNOT_BIOTYPE.key());
+                    // Ensure not filtering by gene, and not combining with other params
+                    if (!isValidParam(query, GENE) && combination.numParams() == 1) {
+                        query.remove(ANNOT_BIOTYPE.key());
+                    }
                 }
             }
         }

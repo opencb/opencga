@@ -151,6 +151,10 @@ public final class VariantQueryUtils {
         CT_FLAG,
         FLAG;
 
+        public int numParams() {
+            return this == NONE ? 0 : StringUtils.countMatches(name(), "_") + 1;
+        }
+
         public boolean isConsequenceType() {
             return name().contains("CT");
         }

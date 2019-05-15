@@ -221,11 +221,6 @@ public class SampleIndexQueryParserTest {
         parseAnnotationMask(query, false);
         assertFalse(query.isEmpty()); // Not all samples annotated
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
-                .append(GENE.key(), "BRCA2");
-        parseAnnotationMask(query, true);
-        assertEquals(2, query.size()); // Filtering by gene
-
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)));
         parseAnnotationMask(query, true);
         assertFalse(query.isEmpty());
@@ -238,5 +233,31 @@ public class SampleIndexQueryParserTest {
         parseAnnotationMask(query, true);
         assertFalse(query.isEmpty());
 
+        query = new Query().append(ANNOT_BIOTYPE.key(), BIOTYPE_SET);
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_BIOTYPE.key(), "protein_coding");
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(GENE.key(), "BRCA2");
+        parseAnnotationMask(query, true); // Filtering by ct + gene
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertTrue(VariantQueryUtils.isValidParam(query, GENE));
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(ANNOT_BIOTYPE.key(), "protein_coding");
+        parseAnnotationMask(query, true); // Filtering by ct + biotype
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(ANNOT_BIOTYPE.key(), BIOTYPE_SET);
+        parseAnnotationMask(query, true); // Filtering by ct + biotype
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
     }
 }
