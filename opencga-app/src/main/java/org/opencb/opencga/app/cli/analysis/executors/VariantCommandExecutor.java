@@ -60,7 +60,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.MendelianErrorPrecomputeCommandOptions.MENDELIAN_ERRORS_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexAnnotateCommandOptions.SAMPLE_INDEX_ANNOTATE_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
@@ -124,8 +126,14 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "stats":
                 stats();
                 break;
-            case MENDELIAN_ERRORS_COMMAND:
-                calculateMendelianErrors();
+            case SAMPLE_INDEX_COMMAND:
+                sampleIndex();
+                break;
+            case SAMPLE_INDEX_ANNOTATE_COMMAND:
+                sampleIndexAnnotate();
+                break;
+            case FAMILY_INDEX_COMMAND:
+                familyIndex();
                 break;
             case "annotate":
                 annotate();
@@ -368,9 +376,37 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.stats(cliOptions.study, cohorts, cliOptions.outdir, options, sessionId);
     }
 
-    private void calculateMendelianErrors() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
-            StorageEngineException, InstantiationException, IllegalAccessException, URISyntaxException {
-        VariantCommandOptions.MendelianErrorPrecomputeCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
+    private void sampleIndex()
+            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
+        VariantCommandOptions.SampleIndexCommandOptions cliOptions = variantCommandOptions.sampleIndexCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        List<String> samples = Arrays.asList(cliOptions.sample.split(","));
+
+        variantManager.sampleIndex(cliOptions.study, samples, options, sessionId);
+    }
+
+    private void sampleIndexAnnotate()
+            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
+        VariantCommandOptions.SampleIndexAnnotateCommandOptions cliOptions = variantCommandOptions.sampleIndexAnnotateCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        List<String> samples = Arrays.asList(cliOptions.sample.split(","));
+
+        variantManager.sampleIndexAnnotate(cliOptions.study, samples, options, sessionId);
+    }
+
+    private void familyIndex()
+            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
+        VariantCommandOptions.FamilyIndexCommandOptions cliOptions = variantCommandOptions.familyIndexCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
@@ -380,7 +416,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         List<String> families = Arrays.asList(cliOptions.family.split(","));
 
-        variantManager.calculateMendelianErrors(cliOptions.study, families, options, sessionId);
+        variantManager.familyIndex(cliOptions.study, families, options, sessionId);
     }
 
     private void annotate() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,

@@ -79,9 +79,11 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
@@ -396,7 +398,40 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        options = getMergedOptions(options);
+
+        options.put(SampleIndexDriver.SAMPLES, samples);
+        int studyId = getMetadataManager().getStudyId(study);
+        getMRExecutor().run(SampleIndexDriver.class,
+                FamilyIndexDriver.buildArgs(
+                        getArchiveTableName(studyId),
+                        getVariantTableName(),
+                        studyId,
+                        null,
+                        options), options,
+                "Build sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
+    }
+
+
+    @Override
+    public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        options = getMergedOptions(options);
+
+        options.put(SampleIndexAnnotationLoaderDriver.SAMPLES, samples);
+        int studyId = getMetadataManager().getStudyId(study);
+        getMRExecutor().run(SampleIndexAnnotationLoaderDriver.class,
+                FamilyIndexDriver.buildArgs(
+                        getArchiveTableName(studyId),
+                        getVariantTableName(),
+                        studyId,
+                        null,
+                        options), options,
+                "Annotate sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));    }
+
+
+    @Override
+    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
         if (trios.size() < 1000) {
             options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
