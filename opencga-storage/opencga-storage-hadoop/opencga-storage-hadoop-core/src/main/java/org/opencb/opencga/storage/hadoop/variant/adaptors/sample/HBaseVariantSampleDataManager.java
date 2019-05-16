@@ -148,6 +148,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
                 PhoenixHelper.Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
                 get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), statsColumn.bytes());
+                System.out.println("get = " + get);
 
                 // Get
                 Result result = table.get(get);
@@ -171,8 +172,10 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
                 // Extract stats
                 Map<Integer, VariantStats> statsMap = statsConverter.convert(result).get(studyId);
-                for (Map.Entry<Integer, VariantStats> entry : statsMap.entrySet()) {
-                    stats.put(metadataManager.getCohortName(studyId, entry.getKey()), entry.getValue());
+                if (statsMap != null) {
+                    for (Map.Entry<Integer, VariantStats> entry : statsMap.entrySet()) {
+                        stats.put(metadataManager.getCohortName(studyId, entry.getKey()), entry.getValue());
+                    }
                 }
             });
 
