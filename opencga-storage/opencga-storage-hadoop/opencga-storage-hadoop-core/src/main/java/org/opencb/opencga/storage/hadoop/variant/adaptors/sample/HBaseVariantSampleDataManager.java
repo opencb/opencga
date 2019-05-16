@@ -15,6 +15,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -25,6 +26,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.sample.SampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -60,21 +62,22 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
         }
         StopWatch stopWatch = StopWatch.createStarted();
 
+        Variant variant = new Variant(variantStr);
+
         int studyId = metadataManager.getStudyId(study);
-
-        Map<String, Collection<String>> gtGroups = getGenotypeGroups(studyId, genotypes, merge);
-        Map<String, String> gtGroupsInverse = new HashMap<>();
-        gtGroups.forEach((gt, subGts) -> subGts.forEach(subGt -> gtGroupsInverse.put(subGt, gt)));
-
 
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
 
-        Variant variant = new Variant(variantStr);
+        // Create GT groups
+        Map<String, Collection<String>> gtGroups = getGenotypeGroups(studyId, genotypes, merge);
+        Map<String, String> gtGroupsInverse = new HashMap<>();
+        gtGroups.forEach((gt, subGts) -> subGts.forEach(subGt -> gtGroupsInverse.put(subGt, gt)));
+
         try {
+            // Create one GET per group of genotypes
             List<Get> sampleGets = new ArrayList<>(gtGroups.size());
             for (Map.Entry<String, Collection<String>> entry : gtGroups.entrySet()) {
-
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
                 LinkedList<Filter> filters = new LinkedList<>();
                 LinkedList<Filter> genotypeFilters = new LinkedList<>();
@@ -95,11 +98,10 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 sampleGets.add(get);
             }
 
+            // Execute queries
             List<Integer> samples = new ArrayList<>(gtGroups.size() * limit);
             List<Pair<Integer, List<String>>> sampleDataMap = new ArrayList<>(gtGroups.size() * limit);
-
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
-
                 Result[] results = table.get(sampleGets);
 
                 for (int i = 0; i < gtGroups.size(); i++) {
@@ -112,10 +114,13 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         if (cell.getValueLength() == 0) {
                             continue;
                         }
+                        // Extract sample data
                         if (AbstractPhoenixConverter.endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
                             String columnName = Bytes.toString(qualifier);
                             String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
-//                            Integer studyId = Integer.valueOf(split[0]);
+                            if (Integer.valueOf(split[0]) != studyId) {
+                                continue;
+                            }
                             Integer sampleId = Integer.valueOf(split[1]);
                             samples.add(sampleId);
                             PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(
@@ -127,16 +132,27 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 }
             });
 
-
+            // Query files and stats
             List<Pair<String, PhoenixArray>> filesMap = new ArrayList<>();
             Set<Integer> fileIdsFromSampleIds = metadataManager.getFileIdsFromSampleIds(studyId, samples);
-//            Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
+            HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(dbAdaptor.getGenomeHelper());
+            Map<String, VariantStats> stats = new HashMap<>();
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
+                // Add file columns
                 for (Integer fileId : fileIdsFromSampleIds) {
                     get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
                 }
+
+                // Add Stats column
+                Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
+                PhoenixHelper.Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
+                get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), statsColumn.bytes());
+
+                // Get
                 Result result = table.get(get);
+
+                // Extract files
                 for (Cell cell : result.rawCells()) {
                     byte[] qualifier = CellUtil.cloneQualifier(cell);
                     if (cell.getValueLength() == 0) {
@@ -152,11 +168,18 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                         filesMap.add(Pair.of(fileId, array));
                     }
                 }
+
+                // Extract stats
+                Map<Integer, VariantStats> statsMap = statsConverter.convert(result).get(studyId);
+                for (Map.Entry<Integer, VariantStats> entry : statsMap.entrySet()) {
+                    stats.put(metadataManager.getCohortName(studyId, entry.getKey()), entry.getValue());
+                }
             });
 
+            // Convert to VariantSampleData
             HBaseToStudyEntryConverter converter = new HBaseToStudyEntryConverter(
                     dbAdaptor.getGenomeHelper().getColumnFamily(), metadataManager,
-                    new HBaseToVariantStatsConverter(dbAdaptor.getGenomeHelper()));
+                    statsConverter);
             converter.setSelectVariantElements(
                     new VariantQueryFields(metadataManager.getStudyMetadata(studyId), samples, new ArrayList<>(fileIdsFromSampleIds)));
 
@@ -183,16 +206,13 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             }
             Map<String, FileEntry> files = studyEntry.getFiles().stream().collect(Collectors.toMap(FileEntry::getFileId, f -> f));
 
-            VariantSampleData variantSampleData = new VariantSampleData(variantStr, study, sampleData, files);
+            VariantSampleData variantSampleData = new VariantSampleData(variantStr, study, sampleData, files, stats);
             return new QueryResult<>("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS), 1, 1, null, null,
                     Collections.singletonList(variantSampleData));
 
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
-
-
-
     }
 
     protected Map<String, Collection<String>> getGenotypeGroups(int studyId, Set<String> genotypes, boolean merge) {
