@@ -35,8 +35,6 @@ import java.util.List;
 
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexAnnotateCommandOptions.SAMPLE_INDEX_ANNOTATE_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexAnnotateCommandOptions.SAMPLE_INDEX_ANNOTATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
@@ -71,7 +69,6 @@ public class VariantCommandOptions {
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
     public final SampleIndexCommandOptions sampleIndexCommandOptions;
-    public final SampleIndexAnnotateCommandOptions sampleIndexAnnotateCommandOptions;
     public final FamilyIndexCommandOptions familyIndexCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
     public final AnnotationSaveCommandOptions annotationSaveSnapshotCommandOptions;
@@ -106,7 +103,6 @@ public class VariantCommandOptions {
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.sampleIndexCommandOptions = new SampleIndexCommandOptions();
-        this.sampleIndexAnnotateCommandOptions = new SampleIndexAnnotateCommandOptions();
         this.familyIndexCommandOptions = new FamilyIndexCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
         this.annotationSaveSnapshotCommandOptions = new AnnotationSaveCommandOptions();
@@ -521,28 +517,12 @@ public class VariantCommandOptions {
     @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
     public class SampleIndexCommandOptions extends GeneralCliOptions.StudyOption {
         public static final String SAMPLE_INDEX_COMMAND = "sample-index";
-        public static final String SAMPLE_INDEX_COMMAND_DESCRIPTION = "Build the sample index.";
+        public static final String SAMPLE_INDEX_COMMAND_DESCRIPTION = "Annotate sample index.";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--sample"}, required = true, description = "Samples to include in the index. " +
-                "Use \"" + VariantQueryUtils.ALL + "\" to rebuild the index for all samples in the study.")
-        public String sample;
-
-//        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
-//        public boolean overwrite = false;
-    }
-
-    @Parameters(commandNames = {SAMPLE_INDEX_ANNOTATE_COMMAND}, commandDescription = SAMPLE_INDEX_ANNOTATE_COMMAND_DESCRIPTION)
-    public class SampleIndexAnnotateCommandOptions extends GeneralCliOptions.StudyOption {
-        public static final String SAMPLE_INDEX_ANNOTATE_COMMAND = "sample-index-annotate";
-        public static final String SAMPLE_INDEX_ANNOTATE_COMMAND_DESCRIPTION = "Annotate the sample index.";
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--sample"}, required = true, description = "Samples to annotate. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to annotate the index for all samples in the study.")
         public String sample;
 

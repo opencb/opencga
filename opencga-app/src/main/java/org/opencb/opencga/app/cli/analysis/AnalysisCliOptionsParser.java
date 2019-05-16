@@ -90,7 +90,6 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(SECONDARY_INDEX_REMOVE_COMMAND, variantCommandOptions.variantSecondaryIndexRemoveCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand(SAMPLE_INDEX_COMMAND, variantCommandOptions.sampleIndexCommandOptions);
-        variantSubCommands.addCommand(SAMPLE_INDEX_ANNOTATE_COMMAND, variantCommandOptions.sampleIndexAnnotateCommandOptions);
         variantSubCommands.addCommand(FAMILY_INDEX_COMMAND, variantCommandOptions.familyIndexCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_SAVE_COMMAND, variantCommandOptions.annotationSaveSnapshotCommandOptions);
