@@ -35,13 +35,13 @@ public class VariantSampleDataManager {
 
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
+    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
         int sampleLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
         return getSampleData(variant, study, options, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
+    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
 
         Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
@@ -153,7 +153,7 @@ public class VariantSampleDataManager {
                 Collections.singletonList(new VariantSampleData(variant, study, gtMap, files)));
     }
 
-    protected String normalizeGt(String gt) {
+    protected final String normalizeGt(String gt) {
         if (gt.contains("|")) {
             return normalizeGt.computeIfAbsent(gt, k -> {
                 Genotype genotype = new Genotype(k.replace('|', '/'));
