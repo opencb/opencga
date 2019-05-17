@@ -51,7 +51,7 @@ class QueryResponse:
         for query_result in self.response:
             if isinstance(query_result['result'], list):
                 for result in query_result['result']:
-                     yield result
+                    yield result
             else:
                 # This is a special scenario that only happens in AnalysisResults
                 # where result is not array
