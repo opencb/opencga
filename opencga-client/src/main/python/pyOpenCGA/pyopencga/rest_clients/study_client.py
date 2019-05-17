@@ -16,7 +16,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         :param study: study id
         :param name: group name. If provided, it will only fetch information for the provided group.
-        :param silent: boolean to retrieve all possible entries that are queried for, false to raise 
+        :param silent: boolean to retrieve all possible entries that are queried for, false to raise
             an exception whenever one of the entries looked for cannot be shown for whichever reason
         """
 
@@ -33,9 +33,9 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param alias: study alias
         :param fqn: study full qualified name
         :param type: type of study: CASE_CONTROL, CASE_SET...
-        :param creationDate: creation date (Format: yyyyMMddHHmmss. 
+        :param creationDate: creation date (Format: yyyyMMddHHmmss.
              Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss. 
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss.
              Examples: >2018, 2017-2018, <201805...)
         :param status: status
         :param attributes: attributes
@@ -74,26 +74,26 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('resyncFiles', query_id=study, **options)
 
-    def stats(self, study, **options):
+    def aggregation_stats(self, study, **options):
         """
         Fetch catalog study stats
-        URL: /{apiVersion}/studies/{studies}/stats
+        URL: /{apiVersion}/studies/{studies}/aggregationStats
 
         :param study: study id
         :param default: calculate default stats (bool)
-        :param fileFields: list of file fields separated by semicolons, 
+        :param fileFields: list of file fields separated by semicolons,
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param individualFields: list of individual fields separated by semicolons, 
+        :param individualFields: list of individual fields separated by semicolons,
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param familyFields: list of family fields separated by semicolons, 
+        :param familyFields: list of family fields separated by semicolons,
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param sampleFields: list of sample fields separated by semicolons, 
+        :param sampleFields: list of sample fields separated by semicolons,
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param cohortFields: list of cohort fields separated by semicolons, 
+        :param cohortFields: list of cohort fields separated by semicolons,
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
         """
 
-        return self._get('stats', query_id=study, **options)
+        return self._get('aggregationStats', query_id=study, **options)
 
     def create_groups(self, study, data, **options):
         """
@@ -125,10 +125,10 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
             "id": "string",
             "name": "string",
             "users": "string"
-        }       
+        }
         """
 
-        return self._post('groups', query_id=study, subcategory='update', data=data, 
+        return self._post('groups', query_id=study, subcategory='update', data=data,
                           action=action, **options)
 
 
@@ -146,7 +146,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('groups', query_id=study, subcategory='users/update', second_query_id=group, 
+        return self._post('groups', query_id=study, subcategory='users/update', second_query_id=group,
                           data=data, action=action, **options)
 
     def permission_rules(self, study, entity, **options):
@@ -156,7 +156,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         :param study: study id
         :param entity: entity where the permission rules should be applied to
-       
+
         * Available entity values:
             [
             'SAMPLES',
@@ -179,13 +179,13 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         :param study: study id
         :param entity: entity where the permission rules should be applied to
-        :param action: Action to be performed: 
-            - ADD to add a new permission rule; 
-            - REMOVE to remove all permissions assigned by an existing permission rule 
-                (even if it overlaps any manual permission); 
-            - REVERT to remove all permissions assigned by an existing permission rule 
-                (keep manual overlaps); 
-            - NONE to remove an existing permission rule without removing any permissions 
+        :param action: Action to be performed:
+            - ADD to add a new permission rule;
+            - REMOVE to remove all permissions assigned by an existing permission rule
+                (even if it overlaps any manual permission);
+            - REVERT to remove all permissions assigned by an existing permission rule
+                (keep manual overlaps);
+            - NONE to remove an existing permission rule without removing any permissions
                 that could have been assigned already by the permission rule.
         :param data: dict with the following Model:
         {
@@ -198,7 +198,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
             "string"
           ]
         }
-    
+
         * Available entity values:
             [
             'SAMPLES',
@@ -221,7 +221,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         URL: /{apiVersion}/studies/{study}/variableSets
 
         :param study: study id
-        :param id: Id of the variableSet to be retrieved. 
+        :param id: Id of the variableSet to be retrieved.
             If no id is passed, it will show all the variableSets of the study
         """
 
@@ -271,7 +271,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
         Add or remove variables to a VariableSet
         URL: /{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update
-        
+
         :param study: study id
         :param variable_set: variable_set id
         :param action: Action to be performed: ADD or REMOVE a variable

@@ -43,32 +43,6 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
 
         return self._get('search', **options)
 
-    def aggregationStats(self, **options):
-        """
-        [DEPRECATED] use aggregation_stats() instead.
-        Fetch catalog family stats
-        URL: /{apiVersion}/families/aggregationStats
-
-        :param study: study [[user@]project:]study where study and project can be either the id or alias
-        :param creationYear: creation year
-        :param creationMonth: creation month (JANUARY, FEBRUARY...)
-        :param creationDay: creation day
-        :param creationDayOfWeek: creation day of week (MONDAY, TUESDAY...)
-        :param status: status
-        :param phenotypes: phenotypes
-        :param release: release
-        :param version: version
-        :param numMembers: number of members
-        :param expectedSize: expected size
-        :param annotation: annotation, e.g: key1=value(;key2=value)
-        :param default: calculate default stats
-        :param field: list of fields separated by semicolons, e.g.: studies;type.
-            For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1
-        """
-
-        return self._get('aggregationStats', **options)
-
-
     def aggregation_stats(self, **options):
         """
         Fetch catalog family stats

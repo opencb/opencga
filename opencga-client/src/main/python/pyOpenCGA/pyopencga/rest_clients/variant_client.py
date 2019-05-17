@@ -58,10 +58,10 @@ class Variant(_ParentRestClient):
 
         return self._post('validate', data=data, **options)
 
-    def stats(self, **options):
+    def aggregation_stats(self, **options):
         """
         Fetch variant stats
-        URL: /{apiVersion}/analysis/variant/stats
+        URL: /{apiVersion}/analysis/variant/aggregationStats
 
         :param fields: List of facet fields separated by semicolons,
             e.g.: studies;type. For nested faceted fields use >>,
@@ -123,7 +123,7 @@ class Variant(_ParentRestClient):
             descriptions,...
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
 
     def samples(self, **options):
         """

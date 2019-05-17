@@ -9,10 +9,10 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         _category = 'files'
         super(Files, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def stats(self, **options):
+    def aggregation_stats(self, **options):
         """
         Fetch catalog file stats
-        URL: /{apiVersion}/files/stats
+        URL: /{apiVersion}/files/aggregationStats
 
         :param study: study [[user@]project:]study where study and project can be either the id or alias
         :param name: name
@@ -37,7 +37,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
             For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
 
     def bioformats(self, **options):
         """

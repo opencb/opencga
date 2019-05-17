@@ -1,4 +1,4 @@
-from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient,  _ParentAnnotationSetRestClient  
+from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient,  _ParentAnnotationSetRestClient
 
 class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
     """
@@ -9,14 +9,14 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         _category = 'individuals'
         super(Individuals, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def stats(self, **options):
+    def aggregation_stats(self, **options):
         """
         Fetch catalog individual stats
-        URL: /{apiVersion}/individuals/stats
+        URL: /{apiVersion}/individuals/aggregationStats
 
         :param study: study [[user@]project:]study where study and project can be either the id or alias
         :param hasFather: has father (Bool, default=None)
-        :param hasMother: has mother (Bool, deafult=None) 
+        :param hasMother: has mother (Bool, deafult=None)
         :param numMultiples: number of multiples
         :param multiplesType: multiples type
         :param sex: sex
@@ -41,7 +41,7 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
             e.g.: studies>>biotype;type;numSamples[0..10]:1
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
 
     def search(self, **options):
         """
@@ -50,16 +50,16 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
 
         :param study: study [[user@]project:]study where study and project can be either the id or alias
         :param id: id
-        :param name: name    
-        :param father: father  
-        :param mother: mother  
+        :param name: name
+        :param father: father
+        :param mother: mother
         :param samples: comma separated list of sample ids or names
-        :param sex: sex 
+        :param sex: sex
         :param ethnicity: ethnicity
         :param disorders: comma separated list of disorders ids or names
-        :param population.name: population name 
-        :param population.subpopulation: subpopulation name    
-        :param population.description: population description 
+        :param population.name: population name
+        :param population.subpopulation: subpopulation name
+        :param population.description: population description
         :param phenotypes: comma separated list of phenotype ids or names
         :param karyotypicSex: karyotypic sex (deafult = None)
             ['UNKNOWN', 'XX', 'XY', 'XO', 'XXY', 'XXX', 'XXYY', 'XXXY', 'XXXX', 'XYY', 'OTHER']
@@ -68,11 +68,11 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         :param affectationStatus: affectation status (default = None)
             ['CONTROL', 'AFFECTED', 'UNAFFECTED', 'UNKNOWN']
         :param creationDate: creation date (Format: yyyyMMddHHmmss)
-        :param modificationDate: Modification date (Format: yyyyMMddHHmmss. 
+        :param modificationDate: Modification date (Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805...)
-        :param annotationsetName: DEPRECATED: Use annotation queryParam this way: 
+        :param annotationsetName: DEPRECATED: Use annotation queryParam this way:
             annotationSet[=|==|!|!=]{annotationSetName}
-        :param variableSet: DEPRECATED: Use annotation queryParam this way: 
+        :param variableSet: DEPRECATED: Use annotation queryParam this way:
             variableSet[=|==|!|!=]{variableSetId}
         :param annotation: annotation, e.g: key1=value(;key2=value)
         :param skipCount: skip count (Bool, deafult=false)
