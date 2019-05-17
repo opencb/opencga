@@ -53,10 +53,19 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
 
         return self._get('search', **options)
 
-    def stats(self, **options):
+    def aggregationStats(self, **options):
+        """
+        [DEPRECATED] use aggregation_stats() instead
+        Fetch catalog cohort stats
+        URL: /{apiVersion}/cohorts/aggregationStats
+        """
+
+        return self._get('aggregationStats', **options)
+
+    def aggregation_stats(self, **options):
         """
         Fetch catalog cohort stats
-        URL: /{apiVersion}/cohorts/stats
+        URL: /{apiVersion}/cohorts/aggregationStats
 
         :param study: Study [[user@]project:]study where study and project can
             be either the id or alias
@@ -74,7 +83,7 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
             For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
 
     def samples(self, cohort, **options):
         """
