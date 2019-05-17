@@ -183,7 +183,7 @@ class Variant(_ParentRestClient):
 
         return self._get('metadata', **options)
 
-    def query(self, data, **options):
+    def query(self, **options):
         """
         Fetch variants from a VCF/gVCF file
         URL: /{apiVersion}/analysis/variant/query
@@ -313,7 +313,7 @@ class Variant(_ParentRestClient):
             histologies, descriptions,...
         """
 
-        return self._post('query', data=data, **options)
+        return self._get('query', **options)
 
     def calculate_family_genotypes(self, family, mode_of_inheritance, disease, **options):
         """
