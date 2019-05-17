@@ -53,7 +53,7 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
 
         return self._get('search', **options)
 
-    def aggregationStats(self, **options):
+    def aggregation_stats(self, **options):
         """
         Fetch catalog cohort stats
         URL: /{apiVersion}/cohorts/aggregationStats

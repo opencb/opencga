@@ -58,7 +58,7 @@ class Variant(_ParentRestClient):
 
         return self._post('validate', data=data, **options)
 
-    def aggregationStats(self, **options):
+    def aggregation_stats(self, **options):
         """
         Fetch variant stats
         URL: /{apiVersion}/analysis/variant/aggregationStats

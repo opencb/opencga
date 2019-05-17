@@ -70,7 +70,6 @@ class _ParentRestClient(object):
         if self.auto_refresh:
             self._refresh_token_client()
         return QueryResponse(response)
-        # return response
 
     def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
