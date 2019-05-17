@@ -61,16 +61,15 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexAnnotateCommandOptions.SAMPLE_INDEX_ANNOTATE_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
@@ -128,9 +127,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case SAMPLE_INDEX_COMMAND:
                 sampleIndex();
-                break;
-            case SAMPLE_INDEX_ANNOTATE_COMMAND:
-                sampleIndexAnnotate();
                 break;
             case FAMILY_INDEX_COMMAND:
                 familyIndex();
@@ -379,20 +375,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     private void sampleIndex()
             throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
         VariantCommandOptions.SampleIndexCommandOptions cliOptions = variantCommandOptions.sampleIndexCommandOptions;
-
-        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-
-        QueryOptions options = new QueryOptions();
-        options.putAll(cliOptions.commonOptions.params);
-
-        List<String> samples = Arrays.asList(cliOptions.sample.split(","));
-
-        variantManager.sampleIndex(cliOptions.study, samples, options, sessionId);
-    }
-
-    private void sampleIndexAnnotate()
-            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
-        VariantCommandOptions.SampleIndexAnnotateCommandOptions cliOptions = variantCommandOptions.sampleIndexAnnotateCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 

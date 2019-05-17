@@ -292,9 +292,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 }
                 multipleSamplesPerIndividual |= numSamples > 1;
             }
-            if (sampleUids.size() == 1) {
-                throw VariantQueryException.malformedParam(FAMILY, familyId, "Only one member of the family is indexed in storage");
-            } else if (sampleUids.isEmpty()) {
+            if (sampleUids.isEmpty()) {
                 throw VariantQueryException.malformedParam(FAMILY, familyId, "Family not indexed in storage");
             }
 
@@ -326,6 +324,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 if (multipleSamplesPerIndividual) {
                     throw VariantQueryException.malformedParam(FAMILY, familyId,
                             "Some individuals from this family have multiple indexed samples");
+                }
+                if (sampleUids.size() == 1) {
+                    throw VariantQueryException.malformedParam(FAMILY_SEGREGATION, familyId,
+                            "Only one member of the family is indexed in storage");
                 }
                 Pedigree pedigree = FamilyManager.getPedigreeFromFamily(family, null);
                 PedigreeManager pedigreeManager = new PedigreeManager(pedigree);
