@@ -9,7 +9,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         _category = 'files'
         super(Files, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def aggregationStats(self, **options):
+    def aggregation_stats(self, **options):
         """
         Fetch catalog file stats
         URL: /{apiVersion}/files/aggregationStats

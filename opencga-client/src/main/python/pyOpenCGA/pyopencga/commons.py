@@ -27,35 +27,43 @@ class QueryResponse:
     def first(self):
         return self.response[0]
 
-    """ Return the first result of the QueryResult in the position 'position'. If no position is passed, it will return 
-     the one from the first QueryResult """
     def result(self, position=None):
+        """
+        Return the first result of the QueryResult in the position 'position'.
+        If no position is passed, it will return the one from the first
+        QueryResult
+        """
         pos = 0
         if position is not None:
             pos = position
         if isinstance(self.response[pos]['result'], list):
             return self.response[pos]['result'][0]
         else:
-            # This is a special scenario that only happens in AnalysisResults where result is not array
+            # This is a special scenario that only happens in AnalysisResults
+            # where result is not array
             return self.response[pos]['result']
 
-    """ Iterates over all the results of all the QueryResults """
     def results(self):
+        """
+        Iterates over all the results of all the QueryResults
+        """
         for query_result in self.response:
             if isinstance(query_result['result'], list):
                 for result in query_result['result']:
                     yield result
             else:
-                # This is a special scenario that only happens in AnalysisResults where result is not array
+                # This is a special scenario that only happens in AnalysisResults
+                # where result is not array
                 yield query_result['result']
 
-    """ Return the total number of results taking into account the whole list of QueryResults """
     def num_total_results(self):
+        """
+        Return the total number of results taking into account the whole list of QueryResults
+        """
         num_results = 0
         for query_result in self.response:
             num_results += query_result['numResults']
         return num_results
-
 
 
 def _create_rest_url(host, version, sid, category, resource, subcategory=None, query_id=None,
