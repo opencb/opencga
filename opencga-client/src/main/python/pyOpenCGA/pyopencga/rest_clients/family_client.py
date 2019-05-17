@@ -1,4 +1,4 @@
-from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient  
+from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient
 
 class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
     """
@@ -21,13 +21,13 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
         :param samples: comma separated list of sample ids or names
         :param phenotypes: comma separated list of phenotype ids or names
         :param disorders: comma separated list of disorder ids or names
-        :param creationDate: creation date (Format: yyyyMMddHHmmss. 
+        :param creationDate: creation date (Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss. 
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss.
             Examples: >2018, 2017-2018, <201805...)
-        :param annotationsetName: DEPRECATED: Use annotation queryParam this way: 
+        :param annotationsetName: DEPRECATED: Use annotation queryParam this way:
             annotationSet[=|==|!|!=]{annotationSetName}
-        :param variableSet: DEPRECATED: Use annotation queryParam this way: 
+        :param variableSet: DEPRECATED: Use annotation queryParam this way:
             variableSet[=|==|!|!=]{variableSetId}
         :param annotation: annotation, e.g: key1=value(;key2=value)
         :param skipCount: skip count
@@ -43,10 +43,11 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
 
         return self._get('search', **options)
 
-    def stats(self, **options):
+    def aggregationStats(self, **options):
         """
+        [DEPRECATED] use aggregation_stats() instead.
         Fetch catalog family stats
-        URL: /{apiVersion}/families/stats
+        URL: /{apiVersion}/families/aggregationStats
 
         :param study: study [[user@]project:]study where study and project can be either the id or alias
         :param creationYear: creation year
@@ -61,9 +62,34 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
         :param expectedSize: expected size
         :param annotation: annotation, e.g: key1=value(;key2=value)
         :param default: calculate default stats
-        :param field: list of fields separated by semicolons, e.g.: studies;type. 
+        :param field: list of fields separated by semicolons, e.g.: studies;type.
             For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1
         """
 
-        return self._get('stats', **options)
+        return self._get('aggregationStats', **options)
+
+
+    def aggregation_stats(self, **options):
+        """
+        Fetch catalog family stats
+        URL: /{apiVersion}/families/aggregationStats
+
+        :param study: study [[user@]project:]study where study and project can be either the id or alias
+        :param creationYear: creation year
+        :param creationMonth: creation month (JANUARY, FEBRUARY...)
+        :param creationDay: creation day
+        :param creationDayOfWeek: creation day of week (MONDAY, TUESDAY...)
+        :param status: status
+        :param phenotypes: phenotypes
+        :param release: release
+        :param version: version
+        :param numMembers: number of members
+        :param expectedSize: expected size
+        :param annotation: annotation, e.g: key1=value(;key2=value)
+        :param default: calculate default stats
+        :param field: list of fields separated by semicolons, e.g.: studies;type.
+            For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1
+        """
+
+        return self._get('aggregationStats', **options)
 
