@@ -148,7 +148,6 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
                 PhoenixHelper.Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
                 get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), statsColumn.bytes());
-                System.out.println("get = " + get);
 
                 // Get
                 Result result = table.get(get);
@@ -197,6 +196,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             }
 
             Map<String, List<SampleData>> sampleData = new HashMap<>();
+            gtGroups.keySet().forEach(gt -> sampleData.put(gt, new ArrayList<>(limit)));
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
                 Map<String, String> map = studyEntry.getSampleDataAsMap(sampleName);
                 String gt = gtGroupsInverse.get(map.get("GT"));
@@ -205,7 +205,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                     continue;
                 }
                 String fileId = fileNameFromSampleId.get(metadataManager.getSampleId(studyId, sampleName));
-                sampleData.computeIfAbsent(gt, k -> new ArrayList<>(limit)).add(new SampleData(sampleName, map, fileId));
+                sampleData.get(gt).add(new SampleData(sampleName, map, fileId));
             }
             Map<String, FileEntry> files = studyEntry.getFiles().stream().collect(Collectors.toMap(FileEntry::getFileId, f -> f));
 

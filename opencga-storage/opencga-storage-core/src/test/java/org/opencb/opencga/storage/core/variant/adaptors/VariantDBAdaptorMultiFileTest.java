@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 
 import java.io.IOException;
 import java.net.URI;
@@ -30,6 +31,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
 import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
+import static org.opencb.biodata.models.variant.StudyEntry.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -1072,4 +1074,69 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatches());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
     }
+
+    @Test
+    public void testSampleData() throws Exception {
+        VariantSampleData sampleData;
+
+        // 0/1 : 77, 79, 80
+        // 1/1 : 78
+        sampleData = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions()).first();
+        assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
+        assertEquals(2, sampleData.getSamples().size());
+        assertEquals(3, sampleData.getSamples().get("0/1").size());
+        assertEquals(1, sampleData.getSamples().get("1/1").size());
+        assertEquals(4, sampleData.getFiles().size());
+
+//        System.out.println(new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true).writerWithDefaultPrettyPrinter().writeValueAsString(sampleData));
+
+        sampleData = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
+        assertEquals(2, sampleData.getSamples().size());
+        assertEquals(1, sampleData.getSamples().get("0/1").size());
+        assertEquals(1, sampleData.getSamples().get("1/1").size());
+        assertEquals(sampleNA12877, sampleData.getSamples().get("0/1").get(0).getId());
+        assertEquals(file12877, sampleData.getSamples().get("0/1").get(0).getFileId());
+        assertEquals(sampleNA12878, sampleData.getSamples().get("1/1").get(0).getId());
+        assertEquals(file12878, sampleData.getSamples().get("1/1").get(0).getFileId());
+        assertEquals(2, sampleData.getFiles().size());
+
+        sampleData = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP, 1)).first();
+        System.out.println("sampleData = " + sampleData);
+        assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
+        assertEquals(2, sampleData.getSamples().size());
+        assertEquals(1, sampleData.getSamples().get("0/1").size());
+        assertEquals(0, sampleData.getSamples().get("1/1").size());
+        assertEquals(sampleNA12879, sampleData.getSamples().get("0/1").get(0).getId());
+        assertEquals(file12879, sampleData.getSamples().get("0/1").get(0).getFileId());
+        assertEquals(1, sampleData.getFiles().size());
+
+
+        // 0/1 : 77
+        sampleData = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions()).first();
+        assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
+        assertEquals(2, sampleData.getSamples().size());
+        assertEquals(1, sampleData.getSamples().get("0/1").size());
+        assertEquals(0, sampleData.getSamples().get("1/1").size());
+        assertEquals(sampleNA12877, sampleData.getSamples().get("0/1").get(0).getId());
+        assertEquals(file12877, sampleData.getSamples().get("0/1").get(0).getFileId());
+        assertEquals(1, sampleData.getFiles().size());
+
+        sampleData = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
+        assertEquals(2, sampleData.getSamples().size());
+        assertEquals(1, sampleData.getSamples().get("0/1").size());
+        assertEquals(0, sampleData.getSamples().get("1/1").size());
+        assertEquals(sampleNA12877, sampleData.getSamples().get("0/1").get(0).getId());
+        assertEquals(file12877, sampleData.getSamples().get("0/1").get(0).getFileId());
+        assertEquals(1, sampleData.getFiles().size());
+
+        sampleData = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP, 1)).first();
+        assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
+        assertEquals(2, sampleData.getSamples().size());
+        assertEquals(0, sampleData.getSamples().get("0/1").size());
+        assertEquals(0, sampleData.getSamples().get("1/1").size());
+        assertEquals(0, sampleData.getFiles().size());
+    }
+
 }
