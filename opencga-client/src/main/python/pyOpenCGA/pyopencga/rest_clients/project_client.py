@@ -10,6 +10,27 @@ class Projects(_ParentBasicCRUDClient):
         _category = "projects"
         super(Projects, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
+    def aggregation_stats(self, project, **options):
+        """
+        Fetch catalog project stats
+        URL: /{apiVersion}/projects/{projects}/aggregationStats
+
+        :param project: project id
+        :param default: calculate default stats (bool)
+        :param fileFields: list of file fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param individualFields: list of individual fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param familyFields: list of family fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param sampleFields: list of sample fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param cohortFields: list of cohort fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        """
+        return self._get('aggregationStats', query_id=project, **options)
+
     def search(self, **options):
         """
         Method to search projects
@@ -35,26 +56,6 @@ class Projects(_ParentBasicCRUDClient):
         """
         return self._get('search', **options)
 
-    def aggregation_stats(self, project, **options):
-        """
-        Fetch catalog project stats
-        URL: /{apiVersion}/projects/{projects}/aggregationStats
-
-        :param project: project id
-        :param default: calculate default stats (bool)
-        :param fileFields: list of file fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param individualFields: list of individual fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param familyFields: list of family fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param sampleFields: list of sample fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param cohortFields: list of cohort fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        """
-        return self._get('aggregationStats', query_id=project, **options)
-
     def studies(self, project, **options):
         """
         Fetch all the studies contained in the projects
@@ -79,4 +80,3 @@ class Projects(_ParentBasicCRUDClient):
         :param project: project id
         """
         return self._post('incRelease', query_id=project, **options)
-

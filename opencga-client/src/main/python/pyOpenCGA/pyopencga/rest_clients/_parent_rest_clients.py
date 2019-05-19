@@ -83,12 +83,13 @@ class _ParentRestClient(object):
         """Queries the REST service and returns the result"""
         return self._rest_retry('delete', resource, query_id, subcategory, second_query_id, **options)
 
-class _ParentBasicCRUDClient(_ParentRestClient):
-    def create(self, data, **options):
-        return self._post('create', data=data, **options)
 
+class _ParentBasicCRUDClient(_ParentRestClient):
     def info(self, query_id, **options):
         return self._get('info', query_id=query_id, **options)
+
+    def create(self, data, **options):
+        return self._post('create', data=data, **options)
 
     def update(self, query_id, data, **options):
         return self._post('update', query_id=query_id, data=data, **options)

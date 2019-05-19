@@ -315,7 +315,7 @@ class Variant(_ParentRestClient):
 
         return self._get('query', **options)
 
-    def calculate_family_genotypes(self, family, mode_of_inheritance, disease, **options):
+    def calculate_family_genotypes(self, family, mode_of_inheritance, **options):
         """
         Calculate the possible genotypes for the members of a family
         URL: /{apiVersion}/analysis/variant/familyGenotypes
@@ -327,31 +327,16 @@ class Variant(_ParentRestClient):
 
         options['family'] = family
         options['modeOfInheritance'] = mode_of_inheritance
-        options['disease'] = disease
 
         return self._get('familyGenotypes', **options)
 
-    def facet(self, **options): ## [DEPRECATED]
-        """
-        This method has been renamed, use endpoint /stats instead [DEPRECATED]
-        URL: /{apiVersion}/analysis/variant/facet
-
-        :param facet: List of facet fields separated by semicolons,
-            e.g.: studies;type. For nested faceted fields use >>,
-            e.g.: studies>>biotype;type
-        :param facetRange: List of facet ranges separated by semicolons with the
-            format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1
-        """
-
-        return self._get('facet', **options)
-
-    def calculate_variant_stats(self, **options): ## [PENDING]
-        """
-        Calculate variant stats [PENDING]
-        URL: /{apiVersion}/analysis/variant/cohortStats
-        """
-
-        return self._get('cohortStats', **options)
+    # def calculate_variant_stats(self, **options): ## [PENDING]
+    #     """
+    #     Calculate variant stats [PENDING]
+    #     URL: /{apiVersion}/analysis/variant/cohortStats
+    #     """
+    #
+    #     return self._get('cohortStats', **options)
 
     def query_variant_annotations(self, **options):
         """

@@ -32,9 +32,9 @@ class Users(_ParentBasicCRUDClient):
         
         return self._post('login', data={}, query_id=user, **options)
 
-    def logout(self, **options):
+    def logout(self):
         """
-        This method logout the user by disabling the session id
+        This method logout the user by deleting the session id, no server call is needed
         """
         
         self.session_id = None
