@@ -9,6 +9,7 @@ class Users(_ParentBasicCRUDClient):
         _category = 'users'
         super(Users, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def login(self, user, pwd, **options):
         """
         This is the method for login
@@ -24,7 +25,7 @@ class Users(_ParentBasicCRUDClient):
 
     def refresh_token(self, user, **options):
         """
-        This is a method to refresh token to maintain the conection with the server
+        This is a method to refresh token to maintain the connection with the server
         URL: /{apiVersion}/users/{user}/login
         
         :param user: user id
@@ -95,8 +96,7 @@ class Users(_ParentBasicCRUDClient):
 	}
         """
         
-        return self._post('configs', query_id=user, subcategory='update', data=data, 
-                          action=action, **options)
+        return self._post('configs', query_id=user, subcategory='update', data=data, action=action, **options)
 
     def filters(self, user, **options): ## Method name may be changed
         """
@@ -154,10 +154,7 @@ class Users(_ParentBasicCRUDClient):
         'UNKNOWN'
        """
 
-        return self._post('configs', query_id=user, subcategory='filters/update',
-                          data=data, action=action, **options)
-
-
+        return self._post('configs', query_id=user, subcategory='filters/update', data=data, action=action, **options)
 
     ## [INFO] The implementation of update_filter needs a reimplementation of URL building methods
     def update_filter(self, user, filter_name, data, **options):
@@ -208,5 +205,3 @@ class Users(_ParentBasicCRUDClient):
         subcategory = 'filters/{name}/update'.format(name=filter_name)
 
         return self._post('configs', query_id=user, subcategory=subcategory, data=data, **options)
-
-

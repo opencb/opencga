@@ -9,6 +9,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         _category = 'files'
         super(Files, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def aggregation_stats(self, **options):
         """
         Fetch catalog file stats
@@ -69,8 +70,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param status: status
         :param directory: directory under which we want to look for files or folders
         :param creationDate: creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss.
-            Examples: >2018, 2017-2018, <201805...)
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param description: description
         :param tags: tags
         :param size: size
@@ -202,4 +202,3 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._post('download', query_id=file, data=data, **options)
-

@@ -9,6 +9,7 @@ class Tool(_ParentRestClient):
         _category = 'analysis/tool'
         super(Tool, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def execute(self, data, **options):
         """
         Execute an analysis using an internal or external tool

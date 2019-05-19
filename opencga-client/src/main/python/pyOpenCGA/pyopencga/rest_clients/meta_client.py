@@ -9,11 +9,13 @@ class Meta(_ParentRestClient):
         _category = "meta"
         super(Meta, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def about(self, **options):
         """
         Returns info about current OpenCGA code.
         URL: /{apiVersion}/meta/about
         """
+
         return self._get('about', **options)
 
     def ping(self, **options):
@@ -21,6 +23,7 @@ class Meta(_ParentRestClient):
         Ping Opencga webservices.
         URL: /{apiVersion}/meta/ping
         """
+
         return self._get('ping', **options)
 
     def status(self, **options):
@@ -28,6 +31,5 @@ class Meta(_ParentRestClient):
         Database status.
         URL: /{apiVersion}/meta/status
         """
+
         return self._get('status', **options)
-
-

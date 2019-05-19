@@ -55,10 +55,8 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param alias: study alias
         :param fqn: study full qualified name
         :param type: type of study: CASE_CONTROL, CASE_SET...
-        :param creationDate: creation date (Format: yyyyMMddHHmmss.
-             Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss.
-             Examples: >2018, 2017-2018, <201805...)
+        :param creationDate: creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param status: status
         :param attributes: attributes
         :param nattributes: numerical attributes

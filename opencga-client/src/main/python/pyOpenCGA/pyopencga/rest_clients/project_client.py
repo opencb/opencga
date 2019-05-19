@@ -29,6 +29,7 @@ class Projects(_ParentBasicCRUDClient):
         :param cohortFields: list of cohort fields separated by semicolons,
             e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
         """
+
         return self._get('aggregationStats', query_id=project, **options)
 
     def search(self, **options):
@@ -43,10 +44,8 @@ class Projects(_ParentBasicCRUDClient):
         :param organization: project organization
         :param description: project description
         :param study: study id or alias
-        :param creationDate: creation date (Format: yyyyMMddHHmmss.
-            Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss.
-            Examples: >2018, 2017-2018, <201805...)
+        :param creationDate: creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param status: status
         :param attributes: attributes
         :param include: set which fields are included in the response, e.g.: name,alias...
@@ -54,17 +53,17 @@ class Projects(_ParentBasicCRUDClient):
         :param limit: max number of results to be returned.
         :param skip: number of results to be skipped.
         """
+
         return self._get('search', **options)
 
     def studies(self, project, **options):
         """
-        Fetch all the studies contained in the projects
+        Fetch all the studies from the given project ID
         URL: /{apiVersion}/projects/{projects}/studies
 
         :param project: project id
         :param silent: boolean to retrieve all possible entries that are queried for, false
-            to raise an exception whenever one of the entries looked for cannot be shown
-            for whichever reason
+            to raise an exception whenever one of the entries looked for cannot be shown for whichever reason
         :param include: set which fields are included in the response, e.g.: name,alias...
         :param exclude: set which fields are excluded in the response, e.g.: name,alias...
         :param limit: max number of results to be returned.

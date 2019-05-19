@@ -9,6 +9,7 @@ class GA4GH(_ParentRestClient):
         _category = "ga4gh"
         super(GA4GH, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def responses(self, chrom, pos, allele, beacon, **options):
         """
         Beacon webservices
