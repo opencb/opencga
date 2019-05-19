@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
@@ -39,7 +40,7 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -52,6 +53,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
@@ -63,12 +65,13 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadList
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
-import org.opencb.opencga.storage.hadoop.io.HDFSIOManager;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.sample.HBaseVariantSampleDataManager;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -79,9 +82,11 @@ import org.opencb.opencga.storage.hadoop.variant.gaps.PrepareFillMissingDriver;
 import org.opencb.opencga.storage.hadoop.variant.gaps.write.FillMissingHBaseWriterDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHeterozygousQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConsolidationDrive;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
@@ -233,14 +238,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    protected IOManagerProvider createIOManagerProvider(StorageConfiguration configuration) {
-        IOManagerProvider ioManagerProvider = super.createIOManagerProvider(configuration);
+    protected IOConnectorProvider createIOConnectorProvider(StorageConfiguration configuration) {
+        IOConnectorProvider ioConnectorProvider = super.createIOConnectorProvider(configuration);
         try {
-            ioManagerProvider.add(new HDFSIOManager(getHadoopConfiguration()));
+            ioConnectorProvider.add(new HDFSIOConnector(getHadoopConfiguration()));
         } catch (StorageEngineException e) {
             throw new RuntimeException(e);
         }
-        return ioManagerProvider;
+        return ioConnectorProvider;
     }
 
     @Override
@@ -387,16 +392,49 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions(), ioManagerProvider);
+        return new HadoopDefaultVariantAnnotationManager(annotator, getDBAdaptor(), getMRExecutor(), getOptions(), ioConnectorProvider);
     }
 
     @Override
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
-        return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioManagerProvider);
+        return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioConnectorProvider);
     }
 
     @Override
-    public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+    public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        options = getMergedOptions(options);
+
+        options.put(SampleIndexDriver.SAMPLES, samples);
+        int studyId = getMetadataManager().getStudyId(study);
+        getMRExecutor().run(SampleIndexDriver.class,
+                FamilyIndexDriver.buildArgs(
+                        getArchiveTableName(studyId),
+                        getVariantTableName(),
+                        studyId,
+                        null,
+                        options), options,
+                "Build sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
+    }
+
+
+    @Override
+    public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        options = getMergedOptions(options);
+
+        options.put(SampleIndexAnnotationLoaderDriver.SAMPLES, samples);
+        int studyId = getMetadataManager().getStudyId(study);
+        getMRExecutor().run(SampleIndexAnnotationLoaderDriver.class,
+                FamilyIndexDriver.buildArgs(
+                        getArchiveTableName(studyId),
+                        getVariantTableName(),
+                        studyId,
+                        null,
+                        options), options,
+                "Annotate sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));    }
+
+
+    @Override
+    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
         if (trios.size() < 1000) {
             options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
@@ -432,7 +470,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
         // By default, execute a MR to calculate statistics
         if (getOptions().getBoolean(STATS_LOCAL, false)) {
-            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor(), ioManagerProvider);
+            return new HadoopDefaultVariantStatisticsManager(getDBAdaptor(), ioConnectorProvider);
         } else {
             return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(), getOptions());
         }
@@ -641,7 +679,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
             mergeMode = MergeMode.BASIC;
         }
         HadoopVariantStoragePipeline storageETL = new HadoopLocalLoadVariantStoragePipeline(configuration, dbAdaptor,
-                ioManagerProvider, hadoopConfiguration, options);
+                ioConnectorProvider, hadoopConfiguration, options);
 //        if (mergeMode.equals(MergeMode.BASIC)) {
 //            storageETL = new HadoopMergeBasicVariantStoragePipeline(configuration, dbAdaptor,
 //                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
@@ -948,6 +986,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
         return getDBAdaptor().getMetadataManager();
+    }
+
+    @Override
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
+        return new HBaseVariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
     }
 
     @Override

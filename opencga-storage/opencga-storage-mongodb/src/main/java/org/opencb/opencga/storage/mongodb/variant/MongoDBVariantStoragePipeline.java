@@ -34,7 +34,7 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -99,8 +99,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata currentTask;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
-                                         VariantMongoDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider) {
-        super(configuration, storageEngineId, dbAdaptor, ioManagerProvider);
+                                         VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider) {
+        super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider);
         this.dbAdaptor = dbAdaptor;
     }
 

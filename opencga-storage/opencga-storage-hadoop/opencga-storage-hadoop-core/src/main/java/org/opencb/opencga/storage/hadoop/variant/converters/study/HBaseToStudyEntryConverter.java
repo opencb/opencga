@@ -20,6 +20,8 @@ import com.google.common.base.Throwables;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
@@ -252,10 +254,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Map<Integer, List<Pair<Integer, List<String>>>> sampleDataMap = new HashMap<>();
         Map<Integer, List<Pair<String, PhoenixArray>>> filesMap = new HashMap<>();
 
-        for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {
-            byte[] qualifier = entry.getKey();
-            byte[] bytes = entry.getValue();
-            if (bytes == null || bytes.length == 0) {
+        for (Cell cell : result.rawCells()) {
+            byte[] qualifier = CellUtil.cloneQualifier(cell);
+            if (cell.getValueLength() == 0) {
                 continue;
             }
             if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
@@ -263,7 +264,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
                 Integer sampleId = getSampleId(split);
-                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
+                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(
+                        cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 List<String> sampleData = toModifiableList(array);
                 studies.add(studyId);
                 sampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, sampleData));
@@ -273,7 +275,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 Integer studyId = getStudyId(split);
                 String fileId = getFileId(split);
                 studies.add(studyId);
-                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
+                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(
+                        cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
             } else if (endsWith(qualifier, VariantPhoenixHelper.STUDY_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
@@ -303,7 +306,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return map;
     }
 
-    protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
+    public StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, Integer studyId) {
         return convert(sampleDataMap, filesMap, variant, getStudyMetadata(studyId), -1);

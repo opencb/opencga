@@ -45,4 +45,13 @@ public class SampleData {
         this.fileId = fileId;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "SampleData{"
+                + "id='" + id + '\''
+                + ", sampleData=" + sampleData
+                + ", fileId='" + fileId + '\''
+                + '}';
+    }
 }

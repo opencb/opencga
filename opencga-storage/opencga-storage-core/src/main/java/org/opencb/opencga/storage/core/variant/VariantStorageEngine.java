@@ -321,7 +321,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantExporter
      */
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
-        return new VariantExporter(this, metadataFactory, ioManagerProvider);
+        return new VariantExporter(this, metadataFactory, ioConnectorProvider);
     }
 
     /**
@@ -475,7 +475,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantAnnotationManager
      */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator) throws StorageEngineException {
-        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioManagerProvider);
+        return new DefaultVariantAnnotationManager(annotator, getDBAdaptor(), ioConnectorProvider);
     }
 
     /**
@@ -554,8 +554,47 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    public void calculateMendelianErrors(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
-        throw new UnsupportedOperationException("Unsupported calculateMendelianErrors");
+    /**
+     * Build the sample index. For advanced users only.
+     * SampleIndex is built while loading data, so this operation should be executed only to rebuild the index,
+     * when changing some parameters.
+     *
+     * @param study   Study
+     * @param samples List of samples. Use {@link VariantQueryUtils#ALL} to index all samples.
+     * @param options Other options
+     * @throws StorageEngineException in an error occurs
+     */
+    public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported sampleIndex");
+    }
+
+    /**
+     * Annotate the sample index. For advanced users only.
+     * SampleIndex should be annotated after the annotation process, so this operation should be executed only
+     * to reannotate the index,when changing the annotation version.
+     *
+     * @param study   Study
+     * @param samples List of samples. Use {@link VariantQueryUtils#ALL} to index all samples.
+     * @param options Other options
+     * @throws StorageEngineException in an error occurs
+     */
+    public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported sampleIndex annotate");
+    }
+
+    /**
+     * Build the family index given a list of trios.
+     * The Family Index is used alongside with the SampleIndex to speed up queries involving children and parents.
+     *
+     * @param study   Study
+     * @param trios List of trios "father, mother, child".
+     *              Missing parents in trios are specified with "-",
+     *              If a family has two children, two trios should be defined.
+     * @param options Other options
+     * @throws StorageEngineException in an error occurs
+     */
+    public void familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported familyIndex");
     }
 
     /**
@@ -565,7 +604,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @throws StorageEngineException  if there is an error creating the VariantStatisticsManager
      */
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
-        return new DefaultVariantStatisticsManager(getDBAdaptor(), ioManagerProvider);
+        return new DefaultVariantStatisticsManager(getDBAdaptor(), ioConnectorProvider);
     }
 
     /**
@@ -908,7 +947,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public VariantReaderUtils getVariantReaderUtils() {
-        return new VariantReaderUtils(ioManagerProvider);
+        return new VariantReaderUtils(ioConnectorProvider);
     }
 
     /**

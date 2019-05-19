@@ -34,6 +34,19 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     public static final String HET = "0/1,0|1,1|0";
     public static final String REF = "0/0,0|0,0";
     public static final String MISSING_SAMPLE = "-";
+    public static final HashSet<String> DEFAULT_BIOTYPES = new HashSet<>(Arrays.asList(
+            VariantAnnotationUtils.IG_C_GENE,
+            VariantAnnotationUtils.IG_D_GENE,
+            VariantAnnotationUtils.IG_J_GENE,
+            VariantAnnotationUtils.IG_V_GENE,
+            VariantAnnotationUtils.PROTEIN_CODING,
+            VariantAnnotationUtils.NONSENSE_MEDIATED_DECAY,
+            VariantAnnotationUtils.NON_STOP_DECAY,
+            VariantAnnotationUtils.TR_C_GENE,
+            VariantAnnotationUtils.TR_D_GENE,
+            VariantAnnotationUtils.TR_J_GENE,
+            VariantAnnotationUtils.TR_V_GENE
+    ));
     private final VariantIterable iterable;
     private static Logger logger = LoggerFactory.getLogger(CompoundHeterozygousQueryExecutor.class);
 
@@ -92,14 +105,16 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         query = new Query(query);
         List<String> includeSample = getAndCheckIncludeSample(query, proband, father, mother);
 
+        Set<String> biotypes;
         if (isValidParam(query, VariantQueryParam.ANNOT_BIOTYPE)) {
-            String biotype = query.getString(VariantQueryParam.ANNOT_BIOTYPE.key());
-            if (!biotype.equals(VariantAnnotationUtils.PROTEIN_CODING)) {
-                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_BIOTYPE.key() + " filter \"" + biotype + "\""
-                        + " when filtering by Compound Heterozygous. The only valid value is " + VariantAnnotationUtils.PROTEIN_CODING);
-            }
+            biotypes = new HashSet<>(query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key()));
+//            if (!biotype.equals(VariantAnnotationUtils.PROTEIN_CODING)) {
+//                throw new VariantQueryException("Unsupported " + VariantQueryParam.ANNOT_BIOTYPE.key() + " filter \"" + biotype + "\""
+//                        + " when filtering by Compound Heterozygous. The only valid value is " + VariantAnnotationUtils.PROTEIN_CODING);
+//            }
         } else {
-            query.append(VariantQueryParam.ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+            biotypes = DEFAULT_BIOTYPES;
+            query.append(VariantQueryParam.ANNOT_BIOTYPE.key(), biotypes);
         }
 
         Set<String> cts = new HashSet<>();
@@ -127,7 +142,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
                 includeSample.indexOf(proband),
                 includeSample.indexOf(mother),
                 includeSample.indexOf(father),
-                limit + skip, cts);
+                limit + skip, cts, biotypes);
 
 //        logger.debug("Got " + compoundHeterozygous.size() + " compHet groups with "
 //                + compoundHeterozygous.values().stream().mapToInt(List::size).sum() + " variants, "

@@ -320,7 +320,41 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
-    public void calculateMendelianErrors(String studyStr, List<String> familiesStr, ObjectMap config, String sessionId)
+    public void sampleIndex(String studyStr, List<String> samples, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        DataStore dataStore = getDataStore(study.getFqn(), sessionId);
+        VariantStorageEngine engine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        if (CollectionUtils.isEmpty(samples)) {
+            throw new IllegalArgumentException("Empty list of samples");
+        }
+
+        engine.sampleIndex(study.getFqn(), samples, config);
+    }
+
+    public void sampleIndexAnnotate(String studyStr, List<String> samples, ObjectMap config, String sessionId)
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        DataStore dataStore = getDataStore(study.getFqn(), sessionId);
+        VariantStorageEngine engine =
+                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+
+        if (CollectionUtils.isEmpty(samples)) {
+            throw new IllegalArgumentException("Empty list of samples");
+        }
+
+        engine.sampleIndexAnnotate(study.getFqn(), samples, config);
+    }
+
+    public void familyIndex(String studyStr, List<String> familiesStr, ObjectMap config, String sessionId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -352,7 +386,7 @@ public class VariantStorageManager extends StorageManager {
             }
         }
 
-        engine.calculateMendelianErrors(study.getFqn(), trios, config);
+        engine.familyIndex(study.getFqn(), trios, config);
     }
 
     public void fillGaps(String studyStr, List<String> samples, ObjectMap config, String sessionId)

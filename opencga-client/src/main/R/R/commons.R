@@ -149,7 +149,14 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         skip <- skip+real_batch_size
         res_list <- parseResponse(resp=response$resp, content=response$content)
         num_results <- res_list$num_results
-        result <- as.character(res_list$result)
+        tmp_result <- res_list$result
+        # There are responses such as AnalysisResults that only return 1 result, not an array of results.
+        if (is.data.frame((jsonlite::fromJSON(res_list$result))[[1]])) {
+            # For those cases, we will simulate an array of results
+            tmp_result <- paste0("[", res_list$result, "]")
+        }
+        
+        result <- as.character(tmp_result)
         
         # remove first [ and last ] from json
         result <- trimws(result)
@@ -222,6 +229,8 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
             fullUrl <- paste0(fullUrl, "&sid=", token)
         }
         
+        # Encode the URL
+        fullUrl <- httr::build_url(httr::parse_url(fullUrl))
         print(paste("URL:",fullUrl))
         resp <- httr::GET(fullUrl, httr::add_headers(Accept="application/json", Authorization=session), httr::timeout(300))
         
@@ -256,6 +265,8 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
             fullUrl <- paste0(fullUrl, "&sid=", token)
         }
         
+        # Encode the URL
+        fullUrl <- httr::build_url(httr::parse_url(fullUrl))
         print(paste("URL:",fullUrl))
         if (exists("bodyParams")){
             resp <- httr::POST(fullUrl, body = bodyParams, 
@@ -274,7 +285,7 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
 parseResponse <- function(resp, content){
     js <- lapply(content, function(x) jsonlite::fromJSON(x))
     if (resp$status_code == 200){
-        if (js[[1]]$warning == ""){
+        if (!("warning" %in% js[[1]]) || js[[1]]$warning == ""){
             print("Query successful!")
         }else{
             print("Query successful with warnings.")

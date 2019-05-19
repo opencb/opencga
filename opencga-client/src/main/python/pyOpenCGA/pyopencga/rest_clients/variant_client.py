@@ -58,7 +58,7 @@ class Variant(_ParentRestClient):
 
         return self._post('validate', data=data, **options)
 
-    def aggregationStats(self, **options):
+    def aggregation_stats(self, **options):
         """
         Fetch variant stats
         URL: /{apiVersion}/analysis/variant/aggregationStats
@@ -183,7 +183,7 @@ class Variant(_ParentRestClient):
 
         return self._get('metadata', **options)
 
-    def query(self, data, **options):
+    def query(self, **options):
         """
         Fetch variants from a VCF/gVCF file
         URL: /{apiVersion}/analysis/variant/query
@@ -313,7 +313,7 @@ class Variant(_ParentRestClient):
             histologies, descriptions,...
         """
 
-        return self._post('query', data=data, **options)
+        return self._get('query', **options)
 
     def calculate_family_genotypes(self, family, mode_of_inheritance, disease, **options):
         """

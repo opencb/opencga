@@ -69,7 +69,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             variantStorageEngine.fillGaps(study, family, new ObjectMap());
 
-            variantStorageEngine.calculateMendelianErrors(study, Collections.singletonList(family), new ObjectMap());
+            variantStorageEngine.familyIndex(study, Collections.singletonList(family), new ObjectMap());
 
 
             VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));

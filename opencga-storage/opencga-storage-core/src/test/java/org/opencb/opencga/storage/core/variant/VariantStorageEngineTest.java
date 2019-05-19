@@ -38,7 +38,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.TestIOManager;
+import org.opencb.opencga.storage.core.io.TestIOConnector;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -144,8 +144,8 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void externalIOManager() throws Exception {
         clearDB(DB_NAME);
 
-        variantStorageEngine.getIOManagerProvider().add(new TestIOManager());
-        variantReaderUtils.getIOManagerProvider().add(new TestIOManager());
+        variantStorageEngine.getIOManagerProvider().add(new TestIOConnector());
+        variantReaderUtils.getIOConnectorProvider().add(new TestIOConnector());
         StudyMetadata studyMetadata = newStudyMetadata();
 
 
@@ -177,7 +177,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         variantStorageEngine.exportData(exportOutput, VariantWriterFactory.VariantOutputFormat.VCF_GZ, null,
                 new Query(), new QueryOptions(QueryOptions.SORT, true));
 
-        assertTrue(ioManagerProvider.exists(exportOutput));
+        assertTrue(ioConnectorProvider.exists(exportOutput));
     }
 
     @Test

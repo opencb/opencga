@@ -41,7 +41,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -93,17 +93,17 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
-    private final IOManagerProvider ioManagerProvider;
+    private final IOConnectorProvider ioConnectorProvider;
     private final VariantReaderUtils variantReaderUtils;
 
     public DefaultVariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor,
-                                           IOManagerProvider ioManagerProvider) {
+                                           IOConnectorProvider ioConnectorProvider) {
         Objects.requireNonNull(variantAnnotator);
         Objects.requireNonNull(dbAdaptor);
         this.dbAdaptor = dbAdaptor;
         this.variantAnnotator = variantAnnotator;
-        this.ioManagerProvider = ioManagerProvider;
-        variantReaderUtils = new VariantReaderUtils(this.ioManagerProvider);
+        this.ioConnectorProvider = ioConnectorProvider;
+        variantReaderUtils = new VariantReaderUtils(this.ioConnectorProvider);
     }
 
     @Override
@@ -224,7 +224,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 variantAnnotationDataWriter = new AvroDataWriter<>(null, gzip, VariantAnnotation.getClassSchema());
             } else {
                 try {
-                    variantAnnotationDataWriter = new VariantAnnotationJsonDataWriter(ioManagerProvider.newOutputStream(fileUri));
+                    variantAnnotationDataWriter = new VariantAnnotationJsonDataWriter(ioConnectorProvider.newOutputStream(fileUri));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -325,7 +325,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             // FIXME
             reader = new AvroDataReader<>(Paths.get(uri).toFile(), VariantAnnotation.class);
         } else if (VariantReaderUtils.isJson(uri.toString())) {
-            reader = new VariantAnnotationJsonDataReader(ioManagerProvider.newInputStream(uri));
+            reader = new VariantAnnotationJsonDataReader(ioConnectorProvider.newInputStream(uri));
 //        } else if (VariantReaderUtils.isVcf(uri.toString())) {
 //            //TODO: Read from VEP file
 //            reader = new VepFormatReader(Paths.get(uri).toString());

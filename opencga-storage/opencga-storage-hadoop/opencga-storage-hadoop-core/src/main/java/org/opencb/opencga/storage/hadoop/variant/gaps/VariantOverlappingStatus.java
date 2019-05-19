@@ -36,4 +36,24 @@ public enum VariantOverlappingStatus {
     public String toString() {
         return v;
     }
+
+    public static VariantOverlappingStatus valueFromShortString(String v) {
+        if (v == null || v.length() != 1) {
+            throw new IllegalArgumentException("Unknown value : " + v);
+        }
+        switch (v.charAt(0)) {
+            case 'V' :
+                return VARIANT;
+            case 'R' :
+                return REFERENCE;
+            case 'G' :
+                return GAP;
+            case 'M' :
+                return MULTI;
+            case 'N' :
+                return NONE;
+            default:
+                throw new IllegalArgumentException("Unknown value : " + v);
+        }
+    }
 }

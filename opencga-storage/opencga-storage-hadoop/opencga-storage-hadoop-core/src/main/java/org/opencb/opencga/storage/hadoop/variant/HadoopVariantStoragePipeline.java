@@ -38,7 +38,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -96,8 +96,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             VariantHadoopDBAdaptor dbAdaptor,
             ObjectMap options,
             MRExecutor mrExecutor,
-            Configuration conf, IOManagerProvider ioManagerProvider) {
-        super(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioManagerProvider, options);
+            Configuration conf, IOConnectorProvider ioConnectorProvider) {
+        super(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, options);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
@@ -149,7 +149,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter;
         try {
-            dataWriter = new ProtoFileWriter<>(ioManagerProvider.newOutputStream(outputVariantsFile));
+            dataWriter = new ProtoFileWriter<>(ioConnectorProvider.newOutputStream(outputVariantsFile), true);
         } catch (IOException e) {
             throw StorageEngineException.ioException(e);
         }

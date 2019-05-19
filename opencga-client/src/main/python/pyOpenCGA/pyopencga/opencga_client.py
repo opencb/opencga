@@ -68,7 +68,7 @@ class OpenCGAClient(object):
         self.ga4gh = None
         self.meta = None
 
-        ## [TODO] convert to @properties 
+        ## [TODO] convert to @properties
         self.users = Users(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.projects = Projects(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
         self.studies = Studies(self.configuration, self.session_id, self._login_handler, auto_refresh=self.auto_refresh)
@@ -90,7 +90,7 @@ class OpenCGAClient(object):
         self.clients = [self.users, self.projects, self.studies, self.files,
                         self.samples, self.cohorts, self.families, self.jobs,
                         self.individuals, self.clinical,
-                        self.alignment, self.variant, self.ga4gh, self.meta, 
+                        self.alignment, self.variant, self.ga4gh, self.meta,
                         self.admin, self.panels, self.tool]
 
         for client in self.clients:
@@ -111,9 +111,9 @@ class OpenCGAClient(object):
         def login_handler(refresh=False):
             self.user_id = user
             if refresh:
-                self.session_id = Users(self.configuration, session_id=self.session_id).refresh_token(user=user).get().sessionId
+                self.session_id = Users(self.configuration, session_id=self.session_id).refresh_token(user=user).result()['token']
             else:
-                self.session_id = Users(self.configuration).login(user=user, pwd=pwd).get().sessionId
+                self.session_id = Users(self.configuration).login(user=user, pwd=pwd).result()['token']
 
             for client in self.clients:
                 client.session_id = self.session_id  # renew the client's session id

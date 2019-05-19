@@ -39,7 +39,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonDataReader;
-import org.opencb.opencga.storage.core.io.managers.IOManagerProvider;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -81,15 +81,15 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     private final VariantDBAdaptor dbAdaptor;
     protected long numStatsToLoad = 0;
     private static Logger logger = LoggerFactory.getLogger(DefaultVariantStatisticsManager.class);
-    private final IOManagerProvider ioManagerProvider;
+    private final IOConnectorProvider ioConnectorProvider;
 
-    public DefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor, IOManagerProvider ioManagerProvider) {
+    public DefaultVariantStatisticsManager(VariantDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider) {
         this.dbAdaptor = dbAdaptor;
         jsonFactory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(jsonFactory);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        this.ioManagerProvider = ioManagerProvider;
+        this.ioConnectorProvider = ioConnectorProvider;
     }
 
     @Override
@@ -233,7 +233,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         }
         // source stats
         URI fileSourcePath = UriUtils.replacePath(output, output.getPath() + SOURCE_STATS_SUFFIX);
-        try (OutputStream outputSourceStream = ioManagerProvider.newOutputStream(fileSourcePath)) {
+        try (OutputStream outputSourceStream = ioConnectorProvider.newOutputStream(fileSourcePath)) {
             ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
             outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
         }
@@ -259,7 +259,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     protected StringDataWriter buildVariantStatsStringDataWriter(URI output) throws IOException {
         URI variantStats = UriUtils.replacePath(output, output.getPath() + VARIANT_STATS_SUFFIX);
         logger.info("will write stats to {}", variantStats);
-        return new StringDataWriter(ioManagerProvider.newOutputStream(variantStats), true, true);
+        return new StringDataWriter(ioConnectorProvider.newOutputStream(variantStats), true, true);
     }
 
     class VariantStatsWrapperTask implements Task<Variant, String> {
@@ -383,7 +383,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
         /* Open input streams */
 
-        InputStream variantInputStream = ioManagerProvider.newInputStream(uri);
+        InputStream variantInputStream = ioConnectorProvider.newInputStream(uri);
 
 
         ProgressLogger progressLogger = new ProgressLogger("Loaded stats:", numStatsToLoad);
@@ -462,7 +462,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             throws IOException {
         /* Open input stream and initialize Json parse */
         VariantSourceStats variantSourceStats;
-        try (InputStream sourceInputStream = ioManagerProvider.newInputStream(uri);
+        try (InputStream sourceInputStream = ioConnectorProvider.newInputStream(uri);
              JsonParser sourceParser = jsonFactory.createParser(sourceInputStream)) {
             variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
         }
@@ -483,7 +483,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
     private Set<String> readCohortsFromStatsFile(URI uri) throws IOException {
         Set<String> cohortNames;
         /** Open input streams and Initialize Json parse **/
-        try (InputStream variantInputStream = ioManagerProvider.newInputStream(uri);
+        try (InputStream variantInputStream = ioConnectorProvider.newInputStream(uri);
              JsonParser parser = jsonFactory.createParser(variantInputStream)) {
             if (parser.nextToken() != null) {
                 VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);

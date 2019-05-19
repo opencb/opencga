@@ -4,6 +4,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -35,13 +36,13 @@ public class VariantSampleDataManager {
 
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
+    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
         int sampleLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
         return getSampleData(variant, study, options, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
+    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
 
         Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
@@ -68,6 +69,7 @@ public class VariantSampleDataManager {
         Map<String, Integer> gtCountMap = new HashMap<>();
         Map<String, List<SampleData>> gtMap = new HashMap<>();
         Map<String, FileEntry> files = new HashMap<>();
+        Map<String, VariantStats> stats = new HashMap<>();
 
         for (String gt : merge ? Collections.singleton(VariantQueryUtils.ALL) : genotypes) {
             gtCountMap.put(gt, 0);
@@ -84,8 +86,13 @@ public class VariantSampleDataManager {
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
                     .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
             sampleSkip += sampleLimit;
-            QueryOptions variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE,
-                    Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
+            QueryOptions variantQueryOptions;
+            if (stats.isEmpty()) {
+                variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
+            } else {
+                variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE,
+                        Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
+            }
 
             VariantQueryResult<Variant> result = dbAdaptor.get(query, variantQueryOptions);
             if (result.getNumResults() == 0) {
@@ -96,6 +103,10 @@ public class VariantSampleDataManager {
             Variant v = result.first();
 
             StudyEntry studyEntry = v.getStudies().get(0);
+
+            if (studyEntry.getStats() != null) {
+                stats.putAll(studyEntry.getStats());
+            }
 
             List<String> samples = studyEntry.getOrderedSamplesName();
             readSamples += samples.size();
@@ -150,10 +161,10 @@ public class VariantSampleDataManager {
 
 //        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
         return new QueryResult<>(variant, dbTime, 1, 1, null, null,
-                Collections.singletonList(new VariantSampleData(variant, study, gtMap, files)));
+                Collections.singletonList(new VariantSampleData(variant, study, gtMap, files, stats)));
     }
 
-    protected String normalizeGt(String gt) {
+    protected final String normalizeGt(String gt) {
         if (gt.contains("|")) {
             return normalizeGt.computeIfAbsent(gt, k -> {
                 Genotype genotype = new Genotype(k.replace('|', '/'));

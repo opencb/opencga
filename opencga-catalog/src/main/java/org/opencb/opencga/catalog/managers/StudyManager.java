@@ -934,6 +934,10 @@ public class StudyManager extends AbstractManager {
     }
 
     public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(groupId)) {
+            throw new CatalogException("Missing group id");
+        }
+
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = resolveId(studyStr, userId);
 
