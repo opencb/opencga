@@ -201,4 +201,4 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param study: Study [[user@]project:]study where study and project can be either the id or alias
         """
 
-        return self._post('download', query_id=file, data=data, **options)
+        return self._get('download', query_id=file, **options)

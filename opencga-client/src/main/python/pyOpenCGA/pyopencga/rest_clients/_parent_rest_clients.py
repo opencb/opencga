@@ -121,67 +121,20 @@ class _ParentAclRestClient(_ParentRestClient):
 
 
 class _ParentAnnotationSetRestClient(_ParentRestClient):
-    def search_annotationsets(self, query_id, study, **options):
+
+    def update_annotations(self, query_id, annotationset_id, data, **options):
         """
-        annotationsets search
+        update annotations from an AnnotationSet
 
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('annotationsets', study=study, query_id=query_id, subcategory='search', **options)
-
-    def annotationsets(self, query_id, study, **options):
-        """
-        annotationsets
-
-        :param query_id:
-        :param options:
+        :param query_id: Entry identifier.
+        :param annotationset_id: AnnotationSet id.
+        :param data: Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only
+        the key 'remove' containing the comma separated variables to be removed as a value when the action is REMOVE
+        or a json with only the key 'reset' containing the comma separated variables that will be set to the default
+        value when the action is RESET
+        :param options: QueryParam options
         """
 
-        return self._get('annotationsets', query_id=query_id, study=study, subcategory='info', **options)
-
-    def delete_annotationsets(self, query_id, study, annotationset_name, **options):
-        """
-        delete annotationsets
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('annotationsets', query_id=query_id, study=study, subcategory='delete',
-                         second_query_id=annotationset_name, **options)
-
-    def annotationsets_info(self, query_id, study, annotationset_name, **options):
-        """
-        info annotationsets
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('annotationsets', query_id=query_id, study=study, subcategory='info',
-                         second_query_id=annotationset_name, **options)
-
-    def create_annotationsets(self, query_id, study, variable_set_id, data, **options):
-        """
-        create annotationsets
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._post('annotationsets', study=study, query_id=query_id, subcategory='create',
-                          variableSetId=variable_set_id, data=data, **options)
-
-    def update_annotationsets(self, query_id, study, annotationset_name, data, **options):
-        """
-        update annotationsets
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._post('annotationsets', study=study, query_id=query_id, subcategory='update',
-                          second_query_id=annotationset_name, data=data, **options)
+        return self._post('annotationSets', query_id=query_id, second_query_id=annotationset_id,
+                            subcategory='annotations/update', data=data, **options)
 
