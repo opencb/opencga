@@ -261,7 +261,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('variableSets', query_id=study, data=data, action=action, **options)
+        return self._post('variableSets', query_id=study, data=data, subcategory="update", action=action, **options)
 
     def update_variable_from_variableset(self, study, variable_set, action, **options):
         """
