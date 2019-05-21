@@ -39,6 +39,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
@@ -72,6 +74,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     private VariantFileMetadata fileMetadata;
     protected static boolean loaded = false;
     private SolrClient solrClient;
+    private SearchIndexVariantQueryExecutor variantQueryExecutor;
 
     @Before
     public void before() throws Exception {
@@ -87,6 +90,11 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 //        }).when(solrClient).query(anyString(), any());
         solr.configure(variantStorageEngine);
         variantStorageEngine.getVariantSearchManager().setSolrClient(solrClient);
+        for (VariantQueryExecutor variantQueryExecutor : getVariantStorageEngine().getVariantQueryExecutors()) {
+            if (variantQueryExecutor instanceof SearchIndexVariantQueryExecutor) {
+                this.variantQueryExecutor = ((SearchIndexVariantQueryExecutor) variantQueryExecutor);
+            }
+        }
     }
 
     public void loadFile() throws Exception {
@@ -263,7 +271,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
-        VariantQueryResult<Long> result = variantStorageEngine
+        VariantQueryResult<Long> result = variantQueryExecutor
                 .approximateCount(query, new QueryOptions(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), realCount * 0.1));
         long approxCount = result.first();
         System.out.println("approxCount = " + approxCount);
@@ -278,7 +286,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Query query = new Query(SAMPLE.key(), "NA19660")
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
-        VariantQueryResult<Long> result = variantStorageEngine
+        VariantQueryResult<Long> result = variantQueryExecutor
                 .approximateCount(query, new QueryOptions(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), allVariants.getNumResults()));
         long approxCount = result.first();
         System.out.println("approxCount = " + approxCount);
@@ -291,7 +299,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     public void testExactApproxCountToSearch() throws Exception {
         Query query = new Query(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
-        VariantQueryResult<Long> result = variantStorageEngine
+        VariantQueryResult<Long> result = variantQueryExecutor
                 .approximateCount(query, new QueryOptions(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 2));
         long approxCount = result.first();
         System.out.println("approxCount = " + approxCount);
@@ -302,9 +310,9 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testUseSearchIndex() throws StorageEngineException {
-        assertFalse(variantStorageEngine.doIntersectWithSearch(new Query(), new QueryOptions()));
-        assertTrue(variantStorageEngine.doIntersectWithSearch(new Query(), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES)));
-        assertTrue(variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions()));
+        assertFalse(variantQueryExecutor.doIntersectWithSearch(new Query(), new QueryOptions()));
+        assertTrue(variantQueryExecutor.doIntersectWithSearch(new Query(), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES)));
+        assertTrue(variantQueryExecutor.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions()));
     }
 
     @Test
@@ -312,7 +320,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         VariantQueryException exception = VariantQueryException.unsupportedVariantQueryFilter(VariantQueryParam.ANNOT_TRAIT, variantStorageEngine.getStorageEngineId());
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
-        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.NO));
+        variantQueryExecutor.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.NO));
     }
 
     @Test
@@ -321,15 +329,15 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         thrown.expect(exception.getClass());
         thrown.expectMessage(exception.getMessage());
         variantStorageEngine.getConfiguration().getSearch().setActive(false);
-        variantStorageEngine.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES));
+        variantQueryExecutor.doIntersectWithSearch(new Query(ANNOT_TRAIT.key(), "myTrait"), new QueryOptions(USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.YES));
     }
 
     @Test
     public void testDoQuerySearchManager() throws Exception {
         VariantStorageEngine engine = getVariantStorageEngine();
-        assertFalse(engine.doQuerySearchManager(new Query(), new QueryOptions()));
-        assertTrue(engine.doQuerySearchManager(new Query(), new QueryOptions(VariantField.SUMMARY, true)));
-        assertTrue(engine.doQuerySearchManager(new Query(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
-        assertTrue(engine.doQuerySearchManager(new Query(STUDY.key(), 3), new QueryOptions(INCLUDE, VariantField.ANNOTATION)));
+        assertFalse(variantQueryExecutor.doQuerySearchManager(new Query(), new QueryOptions()));
+        assertTrue(variantQueryExecutor.doQuerySearchManager(new Query(), new QueryOptions(VariantField.SUMMARY, true)));
+        assertTrue(variantQueryExecutor.doQuerySearchManager(new Query(STUDY.key(), 3), new QueryOptions(VariantField.SUMMARY, true)));
+        assertTrue(variantQueryExecutor.doQuerySearchManager(new Query(STUDY.key(), 3), new QueryOptions(INCLUDE, VariantField.ANNOTATION)));
     }
 }

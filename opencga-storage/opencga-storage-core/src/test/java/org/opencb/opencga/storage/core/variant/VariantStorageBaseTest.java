@@ -27,9 +27,12 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +104,8 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     private static Logger logger = LoggerFactory.getLogger(VariantStorageBaseTest.class);
     private static Path rootDir = null;
     private static boolean cleanFirst = false;
+    public static IOConnectorProvider ioConnectorProvider;
+    public static  VariantReaderUtils variantReaderUtils;
 //    private static AtomicInteger count = new AtomicInteger(0);
 
     @Rule
@@ -248,7 +253,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_MAX.key(), 10000);
         variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_DEFAULT.key(), 10000);
         variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_MAX.key(), 10000);
+        variantStorageEngine.getOptions().put(DefaultVariantAnnotationManager.NUM_THREADS, 2);
         metadataManager = variantStorageEngine.getMetadataManager();
+        variantReaderUtils = variantStorageEngine.getVariantReaderUtils();
+        ioConnectorProvider = variantStorageEngine.getIOManagerProvider();
     }
 
     @After

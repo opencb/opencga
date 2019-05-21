@@ -202,6 +202,12 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         }
     }
 
+    @Override
+    public void close() throws Exception {
+        terminateIterator();
+        super.close();
+    }
+
     public Query getQuery() {
         return query;
     }

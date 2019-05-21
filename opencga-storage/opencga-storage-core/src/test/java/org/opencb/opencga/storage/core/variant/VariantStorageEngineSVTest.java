@@ -14,9 +14,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
 import java.net.URI;
@@ -126,11 +125,11 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     @Test
     public void exportVcf() throws Exception {
-        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true));
+        variantStorageEngine.exportData(null, VariantWriterFactory.VariantOutputFormat.VCF, null, new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions(QueryOptions.SORT, true));
     }
 
     protected Map<String, Variant> readVariants(URI input) throws StorageEngineException, NonStandardCompliantSampleField {
-        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(input));
+        VariantReader variantReader = variantReaderUtils.getVariantReader(Paths.get(input));
         variantReader.open();
         variantReader.pre();
         List<Variant> variants = variantReader.read(1000);

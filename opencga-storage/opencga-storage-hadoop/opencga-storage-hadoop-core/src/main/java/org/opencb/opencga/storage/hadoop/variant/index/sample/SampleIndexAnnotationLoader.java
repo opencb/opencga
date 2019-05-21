@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -107,8 +108,8 @@ public class SampleIndexAnnotationLoader {
                             annotationMasks.add(nextPair);
                             Variant firstVariant = nextPair.getKey();
                             chromosome = firstVariant.getChromosome();
-                            start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexDBLoader.BATCH_SIZE);
-                            end = start + SampleIndexDBLoader.BATCH_SIZE;
+                            start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE);
+                            end = start + SampleIndexSchema.BATCH_SIZE;
                             nextPair = null;
                         }
                         while (iterator.hasNext()) {
@@ -131,18 +132,18 @@ public class SampleIndexAnnotationLoader {
                 annotationMasks -> {
                     // Ensure is sorted as expected
                     annotationMasks.sort(Comparator.comparing(Pair::getKey,
-                            HBaseToSampleIndexConverter.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+                            SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
 
                     Variant firstVariant = annotationMasks.get(0).getKey();
                     String chromosome = firstVariant.getChromosome();
-                    int start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexDBLoader.BATCH_SIZE);
-                    int end = start + SampleIndexDBLoader.BATCH_SIZE;
+                    int start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE);
+                    int end = start + SampleIndexSchema.BATCH_SIZE;
 
                     progressLogger.increment(annotationMasks.size(), () -> "Up to batch " + chromosome + ":" + start + "-" + end);
                     List<Put> puts = new ArrayList<>(samples.size());
 
                     for (Integer sampleId : samples) {
-                        Map<String, List<Variant>> map = sampleDBAdaptor.rawQuery(studyId, sampleId, chromosome, start);
+                        Map<String, List<Variant>> map = sampleDBAdaptor.queryByGt(studyId, sampleId, chromosome, start);
                         Put put = annotate(chromosome, start, sampleId, map, annotationMasks);
                         if (!put.isEmpty()) {
                             puts.add(put);
@@ -170,7 +171,7 @@ public class SampleIndexAnnotationLoader {
         Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
 
         for (Integer sample : samples) {
-            sampleIterators.put(sample, sampleDBAdaptor.rawIterator(studyId, sample));
+            sampleIterators.put(sample, sampleDBAdaptor.iteratorByGt(studyId, sample));
         }
 
         BufferedMutator mutator = hBaseManager.getConnection().getBufferedMutator(TableName.valueOf(sampleIndexTableName));
@@ -192,8 +193,8 @@ public class SampleIndexAnnotationLoader {
                             || firstVariant.getStart() < start
                             || firstVariant.getStart() > end) {
                         chromosome = firstVariant.getChromosome();
-                        start = firstVariant.getStart() - firstVariant.getStart() % SampleIndexDBLoader.BATCH_SIZE;
-                        end = start + SampleIndexDBLoader.BATCH_SIZE;
+                        start = firstVariant.getStart() - firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE;
+                        end = start + SampleIndexSchema.BATCH_SIZE;
                         annotationMasks = annotationIndexDBAdaptor.get(chromosome, start, end);
                     }
 
@@ -213,7 +214,7 @@ public class SampleIndexAnnotationLoader {
 
     private Put annotate(String chromosome, int start, Integer sampleId,
                         Map<String, List<Variant>> sampleIndex, List<Pair<Variant, Byte>> annotationMasks) {
-        byte[] rk = HBaseToSampleIndexConverter.toRowKey(sampleId, chromosome, start);
+        byte[] rk = SampleIndexSchema.toRowKey(sampleId, chromosome, start);
         Put put = new Put(rk);
 
         for (Map.Entry<String, List<Variant>> entry : sampleIndex.entrySet()) {
@@ -260,12 +261,19 @@ public class SampleIndexAnnotationLoader {
 //                            throw new IllegalStateException(msg);
             }
 
-            put.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt), annotations);
+            put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotations);
+            put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
+                    IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotations)));
         }
         return put;
     }
 
     private void postAnnotationLoad(int studyId, List<Integer> samples) throws StorageEngineException {
+        postAnnotationLoad(studyId, samples, metadataManager);
+    }
+
+    public static void postAnnotationLoad(int studyId, List<Integer> samples, VariantStorageMetadataManager metadataManager)
+            throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                 sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, TaskMetadata.Status.READY);

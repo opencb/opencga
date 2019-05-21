@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
+import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.User;
@@ -75,7 +76,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void syncGroups() throws CatalogException, NamingException, IOException {
+    private void syncGroups() throws CatalogException {
         AdminCliOptionsParser.SyncCommandOptions executor = usersCommandOptions.syncCommandOptions;
 
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
@@ -124,22 +125,36 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void importUsersAndGroups() throws CatalogException, NamingException, IOException {
+    private void importUsersAndGroups() throws CatalogException {
         AdminCliOptionsParser.ImportCommandOptions executor = usersCommandOptions.importCommandOptions;
+
+        // TODO: Remove this piece of code when we remove the deprecated variables
+        if (StringUtils.isNotEmpty(executor.user)) {
+            executor.id = executor.user;
+            executor.resourceType = "user";
+        } else if (StringUtils.isNotEmpty(executor.group)) {
+            executor.id = executor.group;
+            executor.resourceType = "group";
+        }
 
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
                 executor.commonOptions.adminPassword);
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().login("admin", executor.commonOptions.adminPassword);
 
-            if (StringUtils.isNotEmpty(executor.user)) {
-                catalogManager.getUserManager().importRemoteUsers(executor.authOrigin, Arrays.asList(executor.user.split(",")),
-                        executor.studyGroup, executor.study, token);
-            } else if (StringUtils.isNotEmpty(executor.group)) {
+            if (StringUtils.isEmpty(executor.resourceType)) {
+                logger.error("Missing resource type");
+                return;
+            }
+
+            if ("user".equalsIgnoreCase(executor.resourceType) || "application".equalsIgnoreCase(executor.resourceType)) {
+                catalogManager.getUserManager().importRemoteEntities(executor.authOrigin, Arrays.asList(executor.user.split(",")),
+                        executor.resourceType.equalsIgnoreCase("application"), executor.studyGroup, executor.study, token);
+            } else if ("group".equalsIgnoreCase(executor.resourceType)) {
                 catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.group, executor.studyGroup,
                         executor.study, false, token);
             } else {
-                logger.error("Nothing to do. Missing 'users' or 'groups'");
+                logger.error("Unknown resource type. Please use one of 'user', 'group' or 'application'");
             }
         }
     }

@@ -32,11 +32,14 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -657,35 +660,30 @@ public class OpenCGAWSServer {
         }
     }
 
-    protected List<String> checkUniqueList(String ids) throws WebServiceException {
+    protected static List<String> checkUniqueList(String ids) throws WebServiceException {
         if (StringUtils.isNotEmpty(ids)) {
             List<String> idsList = Arrays.asList(ids.split(","));
-            Set<String> hashSet = new HashSet<>(idsList);
-            if (hashSet.size() == idsList.size()) {
-                return idsList;
-            } else {
-                throw new WebServiceException("Provided IDs are not unique. Only unique IDs are accepted.");
-            }
+            return checkUniqueList(idsList, "");
         } else {
             throw new WebServiceException("ID is null or Empty");
         }
     }
 
-    protected boolean isSingleId(String id) throws WebServiceException {
-        if (StringUtils.isNotEmpty(id)) {
-            if (id.contains(",")) {
-                throw new WebServiceException("More than one id is provided. Only one ID is allowed!");
+    protected static List<String> checkUniqueList(List<String> ids, String field) throws WebServiceException {
+        if (ListUtils.isNotEmpty(ids)) {
+            Set<String> hashSet = new HashSet<>(ids);
+            if (hashSet.size() == ids.size()) {
+                return ids;
             } else {
-                return true;
+                throw new WebServiceException("Provided " + field + " IDs are not unique. Only unique IDs are accepted.");
             }
-        } else {
-            throw new WebServiceException("ID is null or Empty");
         }
+        return null;
     }
 
-    protected void areSingleIds(String... ids) throws WebServiceException {
+    protected void areSingleIds(String... ids) throws CatalogParameterException {
         for (String id : ids) {
-            isSingleId(id);
+            ParamUtils.checkIsSingleID(id);
         }
     }
 

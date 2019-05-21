@@ -394,7 +394,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         if (variantSearchModel.getGeneToSoAcc() != null) {
             for (String geneToSoAcc : variantSearchModel.getGeneToSoAcc()) {
                 String[] fields = geneToSoAcc.split("_");
-                if (consequenceTypeMap.containsKey(fields[0])) {
+                if (fields.length == 2 && StringUtils.isNumeric(fields[1]) && consequenceTypeMap.containsKey(fields[0])) {
                     int soAcc = Integer.parseInt(fields[1]);
                     geneRelatedSoTerms.add(soAcc);  // we memorise the SO term for next block
 
@@ -405,11 +405,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
                     }
                     consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms().add(sequenceOntologyTerm);
-
-//                    // only set protein for that conseq. type if annotated protein and SO acc is 1583 (missense_variant)
-//                    if (soAcc == 1583) {
-//                        consequenceTypeMap.get(fields[0]).setProteinVariantAnnotation(proteinAnnotation);
-//                    }
                 }
             }
         }
@@ -439,7 +434,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // and update the variant annotation with the consequence types
         variantAnnotation.setConsequenceTypes(consequenceTypes);
 
-        // set populations
+        // set population frequencies
         List<PopulationFrequency> populationFrequencies = new ArrayList<>();
         if (variantSearchModel.getPopFreq() != null && variantSearchModel.getPopFreq().size() > 0) {
             for (String key : variantSearchModel.getPopFreq().keySet()) {
@@ -758,8 +753,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 xrefs.addAll(variantAnnotation.getHgvs());
             }
 
-            // Set Genes and Consequence Types and create Other list to insert transcript info (biotype, protein
-            // variant annotation,...)
+            // Set Genes and Consequence Types and create Other list to insert transcript info (biotype, protein, ariant annotation,...)
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             List<String> other = new ArrayList<>();
             if (consequenceTypes != null) {
@@ -774,6 +768,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                     // Set genes and biotypes if exist
                     if (StringUtils.isNotEmpty(conseqType.getGeneName())) {
+                        // One gene can contain several transcripts and therefore several Consequence Types
                         if (!genes.containsKey(conseqType.getGeneName())) {
                             genes.put(conseqType.getGeneName(), new LinkedHashSet<>());
                         }
@@ -798,28 +793,44 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                         if (StringUtils.isNotEmpty(conseqType.getBiotype())) {
                             biotypes.add(conseqType.getBiotype());
+
+                            // Add the combination of Gene and Biotype, this will prevent variants to be returned when they overlap
+                            // two different genes where the overlapping gene has the wanted Biotype.
+                            geneToSOAccessions.add(conseqType.getGeneName() + "_" + conseqType.getBiotype());
+                            geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + conseqType.getBiotype());
+                            geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + conseqType.getBiotype());
                         }
                     }
 
                     // Remove 'SO:' prefix to Store SO Accessions as integers and also store the gene - SO acc relation
                     for (SequenceOntologyTerm sequenceOntologyTerm : conseqType.getSequenceOntologyTerms()) {
-                        int soNumber = Integer.parseInt(sequenceOntologyTerm.getAccession().substring(3));
-                        soAccessions.add(soNumber);
+                        int soIdInt = Integer.parseInt(sequenceOntologyTerm.getAccession().substring(3));
+                        soAccessions.add(soIdInt);
 
                         if (StringUtils.isNotEmpty(conseqType.getGeneName())) {
-                            geneToSOAccessions.add(conseqType.getGeneName() + "_" + soNumber);
-                            geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soNumber);
-                            geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soNumber);
+                            geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt);
+                            geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soIdInt);
+                            geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soIdInt);
+
+                            if (StringUtils.isNotEmpty(conseqType.getBiotype())) {
+                                geneToSOAccessions.add(conseqType.getGeneName() + "_" + conseqType.getBiotype() + "_" + soIdInt);
+                                geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
+                                geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
+
+                                // This is useful when no gene or transcript is passed, for example we want 'LoF' in real 'protein_coding'
+                                geneToSOAccessions.add(conseqType.getBiotype() + "_" + soIdInt);
+                            }
 
                             // Add a combination with the transcript flag
                             if (conseqType.getTranscriptAnnotationFlags() != null) {
                                 for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
-                                    geneToSOAccessions.add(conseqType.getGeneName() + "_" + soNumber + "_" + transcriptFlag);
-                                    geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soNumber + "_" + transcriptFlag);
-                                    geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soNumber + "_" + transcriptFlag);
-
-                                    // This is useful when no gene or transcript is used, for example we want 'LoF' in 'basic' transcripts
-                                    geneToSOAccessions.add(soNumber + "_" + transcriptFlag);
+                                    if (transcriptFlag.equalsIgnoreCase("basic") || transcriptFlag.equalsIgnoreCase("CCDS")) {
+                                        geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt + "_" + transcriptFlag);
+                                        geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soIdInt + "_" + transcriptFlag);
+                                        geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soIdInt + "_" + transcriptFlag);
+                                        // This is useful when no gene or transcript is used, for example 'LoF' in 'basic' transcripts
+                                        geneToSOAccessions.add(soIdInt + "_" + transcriptFlag);
+                                    }
                                 }
                             }
                         }
@@ -829,8 +840,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     if (StringUtils.isNotEmpty(conseqType.getCodon())
                             || (conseqType.getCdnaPosition() != null && conseqType.getCdnaPosition() > 0)
                             || (conseqType.getCdsPosition() != null && conseqType.getCdsPosition() > 0)) {
-                        // Sanity check
-                        if (trans.length() == 0) {
+                        if (trans.length() == 0) {  // Sanity check
                             logger.warn("Codon information without Ensembl transcript ID");
                         } else {
                             trans.append(FIELD_SEP)
@@ -926,17 +936,21 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
 
             // Set Populations frequencies
+            Map<String, Float> populationFrequencies = new HashMap<>();
             if (variantAnnotation.getPopulationFrequencies() != null) {
-                Map<String, Float> populationFrequencies = new HashMap<>();
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                    populationFrequencies.put("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getStudy()
+                    populationFrequencies.put("popFreq"
+                                    + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getStudy()
                                     + VariantSearchUtils.FIELD_SEPARATOR + populationFrequency.getPopulation(),
                             populationFrequency.getAltAlleleFreq());
                 }
-                if (!populationFrequencies.isEmpty()) {
-                    variantSearchModel.setPopFreq(populationFrequencies);
-                }
             }
+            // Add 0.0 for mot commonly used populations, this will allow to skip a NON EXIST query and improve performance
+            populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "1kG_phase3__ALL", 0.0f);
+            populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "GNOMAD_EXOMES__ALL", 0.0f);
+            populationFrequencies.putIfAbsent("popFreq" + VariantSearchUtils.FIELD_SEPARATOR + "GNOMAD_GENOMES__ALL", 0.0f);
+            // Set population frequencies into the model
+            variantSearchModel.setPopFreq(populationFrequencies);
 
             // Set Conservation scores
             if (variantAnnotation.getConservation() != null) {

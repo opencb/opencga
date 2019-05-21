@@ -23,7 +23,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
@@ -37,7 +36,6 @@ import java.util.concurrent.TimeUnit;
  * Created by jmmut on 3/03/15.
  */
 public class VariantDBReader implements VariantReader {
-    private StudyMetadata studyMetadata;
     private VariantIterable iterable;
     private Query query;
     private QueryOptions options;
@@ -48,18 +46,13 @@ public class VariantDBReader implements VariantReader {
     protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
 
     public VariantDBReader(VariantIterable iterable, Query query, QueryOptions options) {
-        this(null, iterable, query, options);
+        this.iterable = iterable;
+        this.query = query;
+        this.options = options;
     }
 
     public VariantDBReader(VariantDBIterator iterator) {
         this.iterator = iterator;
-    }
-
-    public VariantDBReader(StudyMetadata studyMetadata, VariantIterable iterable, Query query, QueryOptions options) {
-        this.studyMetadata = studyMetadata;
-        this.iterable = iterable;
-        this.query = query;
-        this.options = options;
     }
 
     @Override

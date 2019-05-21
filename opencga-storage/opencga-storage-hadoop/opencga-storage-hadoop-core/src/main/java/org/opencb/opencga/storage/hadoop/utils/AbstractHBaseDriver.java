@@ -111,7 +111,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.error("error with job!");
         }
         LOGGER.info("=================================================");
-        LOGGER.info("Finish job " + getJobName() + " in " + TimeUtils.durationToString(stopWatch));
+        LOGGER.info("Finish job " + getJobName());
+        LOGGER.info("Total time : " + TimeUtils.durationToString(stopWatch));
         LOGGER.info("=================================================");
         postExecution(job);
         close();

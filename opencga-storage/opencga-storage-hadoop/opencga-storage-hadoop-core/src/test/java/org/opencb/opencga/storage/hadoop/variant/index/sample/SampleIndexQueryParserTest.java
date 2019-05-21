@@ -3,10 +3,15 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import java.util.ArrayList;
+
+import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseAnnotationMask;
@@ -19,6 +24,30 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleIndexQueryParserTest {
+
+    @Test
+    public void validSampleIndexQueryTest() {
+        // Single sample
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(SAMPLE.key(), "S1")));
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1")));
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./1")));
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,0/1")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:!1/1"))); // Negated
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:0/0")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./0")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./.")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.")));
+
+        // ALL samples (and)
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:0/1"))); // Any valid
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:./.")));
+
+        // ANY sample (or)
+        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,S2:0/1"))); // all must be valid
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:0/1")));
+        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:./.")));
+
+    }
 
     @Test
     public void parseFileMaskTest() {
@@ -83,20 +112,20 @@ public class SampleIndexQueryParserTest {
         assertEquals(EMPTY_MASK /*UNUSED_6_MASK*/, parseAnnotationMask(new Query(TYPE.key(), VariantType.INSERTION)));
         assertEquals(EMPTY_MASK /*UNUSED_6_MASK*/, parseAnnotationMask(new Query(TYPE.key(), VariantType.DELETION)));
 
-        assertEquals(PROTEIN_CODING_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "protein_coding")));
+        assertEquals(BIOTYPE_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "protein_coding")));
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "other_than_protein_coding")));
         assertEquals(LOF_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.1")));
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<<0.1")));
 
-        assertEquals(LOF_MISSENSE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")));
-        assertEquals(LOF_MISSENSE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant")));
-        assertEquals(LOF_MASK | LOF_MISSENSE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")));
-        assertEquals(LOF_MASK | LOF_MISSENSE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")));
+        assertEquals(LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")));
+        assertEquals(LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant")));
+        assertEquals(LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")));
+        assertEquals(LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")));
 
-        assertEquals(LOF_MISSENSE_MASK | LOF_MISSENSE_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost,stop_gained")
-                .append(ANNOT_TRANSCRIPTION_FLAG.key(), "basic")));
-        assertEquals(LOF_MASK | LOF_MISSENSE_MASK | LOF_MISSENSE_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")
-                .append(ANNOT_TRANSCRIPTION_FLAG.key(), "basic")));
+        assertEquals(LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost,stop_gained")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
+        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
 
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.01")));
         assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001")));
@@ -111,24 +140,8 @@ public class SampleIndexQueryParserTest {
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.1;GNOMAD_GENOMES:ALL<0.1")));
 
 
-        assertEquals(POP_FREQ_ALL_01_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
                   "GNOMAD_EXOMES:AFR<0.01;"
-                + "GNOMAD_EXOMES:AMR<0.01;"
-                + "GNOMAD_EXOMES:EAS<0.01;"
-                + "GNOMAD_EXOMES:FIN<0.01;"
-                + "GNOMAD_EXOMES:NFE<0.01;"
-                + "GNOMAD_EXOMES:ASJ<0.01;"
-                + "GNOMAD_EXOMES:OTH<0.01;"
-                + "1kG_phase3:AFR<0.01;"
-                + "1kG_phase3:AMR<0.01;"
-                + "1kG_phase3:EAS<0.01;"
-                + "1kG_phase3:EUR<0.01;"
-                + "1kG_phase3:SAS<0.01")));
-
-        // Adding more populations should use the filter
-        assertEquals(POP_FREQ_ALL_01_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                  "GNOMAD_EXOMES:ALL<0.01;" // added
-                + "GNOMAD_EXOMES:AFR<0.01;"
                 + "GNOMAD_EXOMES:AMR<0.01;"
                 + "GNOMAD_EXOMES:EAS<0.01;"
                 + "GNOMAD_EXOMES:FIN<0.01;"
@@ -186,5 +199,65 @@ public class SampleIndexQueryParserTest {
                 + "1kG_phase3:EUR<0.01;"
                 + "1kG_phase3:SAS<0.01")));
 
+    }
+
+    @Test
+    public void testCoveredQuery() {
+        Query query;
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_SET));
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET));
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET));
+        parseAnnotationMask(query, false);
+        assertFalse(query.isEmpty()); // Not all samples annotated
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)));
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)));
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)));
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+        query = new Query().append(ANNOT_BIOTYPE.key(), BIOTYPE_SET);
+        parseAnnotationMask(query, true);
+        assertTrue(query.isEmpty());
+
+        query = new Query().append(ANNOT_BIOTYPE.key(), "protein_coding");
+        parseAnnotationMask(query, true);
+        assertFalse(query.isEmpty());
+
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(GENE.key(), "BRCA2");
+        parseAnnotationMask(query, true); // Filtering by ct + gene
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertTrue(VariantQueryUtils.isValidParam(query, GENE));
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(ANNOT_BIOTYPE.key(), "protein_coding");
+        parseAnnotationMask(query, true); // Filtering by ct + biotype
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
+
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(ANNOT_BIOTYPE.key(), BIOTYPE_SET);
+        parseAnnotationMask(query, true); // Filtering by ct + biotype
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
     }
 }

@@ -11,9 +11,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -36,19 +38,22 @@ public class HadoopVariantExporter extends VariantExporter {
     private final MRExecutor mrExecutor;
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantExporter.class);
 
-    public HadoopVariantExporter(HadoopVariantStorageEngine engine, VariantMetadataFactory metadataFactory, MRExecutor mrExecutor)
+    public HadoopVariantExporter(HadoopVariantStorageEngine engine, VariantMetadataFactory metadataFactory, MRExecutor mrExecutor,
+                                 IOConnectorProvider ioConnectorProvider)
             throws StorageEngineException {
-        super(engine, metadataFactory);
+        super(engine, metadataFactory, ioConnectorProvider);
         this.mrExecutor = mrExecutor;
     }
 
     @Override
-    public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, Query query,
+    public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile, Query query,
                        QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        if (outputFileUri == null || StringUtils.isEmpty(outputFileUri.getScheme()) || outputFileUri.getScheme().equals("file")) {
-            super.export(outputFileUri, outputFormat, query, queryOptions);
-        } else if (outputFileUri.getScheme().equals("hdfs")) {
+        if (outputFileUri == null
+                || variantsFile != null
+                || StringUtils.isEmpty(outputFileUri.getScheme()) || outputFileUri.getScheme().equals("file")) {
+            super.export(outputFileUri, outputFormat, variantsFile, query, queryOptions);
+        } else if (ioConnectorProvider.get(outputFileUri) instanceof HDFSIOConnector) {
             VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
             FileSystem fileSystem = FileSystem.get(dbAdaptor.getConfiguration());
             Path outputPath = new Path(outputFileUri);

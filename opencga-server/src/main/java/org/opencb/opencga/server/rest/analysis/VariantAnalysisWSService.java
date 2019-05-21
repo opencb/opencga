@@ -67,7 +67,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class VariantAnalysisWSService extends AnalysisWSService {
 
     private static final String DEPRECATED = " [DEPRECATED] ";
-    public static final Map<String, org.opencb.commons.datastore.core.QueryParam> DEPRECATED_VARIANT_QUERY_PARAM;
+    private static final Map<String, org.opencb.commons.datastore.core.QueryParam> DEPRECATED_VARIANT_QUERY_PARAM;
 
     static {
         Map<String, org.opencb.commons.datastore.core.QueryParam> map = new LinkedHashMap<>();
@@ -85,6 +85,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         map.put("include-format", INCLUDE_FORMAT);
         map.put("include-genotype", INCLUDE_GENOTYPE);
         map.put("sampleFilter", VariantCatalogQueryUtils.SAMPLE_ANNOTATION);
+        map.put("maf", STATS_MAF);
+        map.put("mgf", STATS_MGF);
 
         map.put("annot-ct", ANNOT_CONSEQUENCE_TYPE);
         map.put("annot-xref", ANNOT_XREF);
@@ -93,7 +95,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         map.put("alternate_frequency", ANNOT_POPULATION_ALTERNATE_FREQUENCY);
         map.put("reference_frequency", ANNOT_POPULATION_REFERENCE_FREQUENCY);
         map.put("annot-population-maf", ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
-        map.put("annot-transcription-flags", ANNOT_TRANSCRIPTION_FLAG);
+        map.put("annot-transcription-flags", ANNOT_TRANSCRIPT_FLAG);
+        map.put("transcriptionFlag", ANNOT_TRANSCRIPT_FLAG);
         map.put("annot-gene-trait-id", ANNOT_GENE_TRAIT_ID);
         map.put("annot-gene-trait-name", ANNOT_GENE_TRAIT_NAME);
         map.put("annot-hpo", ANNOT_HPO);
@@ -246,14 +249,18 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "sampleSkip", value = SAMPLE_SKIP_DESCR, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "maf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "mgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
@@ -272,7 +279,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptionFlag", value = ANNOT_TRANSCRIPTION_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
@@ -316,7 +323,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //            @ApiImplicitParam(name = "alternate_frequency", value = DEPRECATED + "Use 'populationFrequencyAlt' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "reference_frequency", value = DEPRECATED + "Use 'populationFrequencyRef' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-population-maf", value = DEPRECATED + "Use 'populationFrequencyMaf' instead", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "annot-transcription-flags", value = DEPRECATED + "Use 'transcriptionFlags' instead", dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "annot-transcription-flags", value = DEPRECATED + "Use 'transcriptFlags' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-gene-trait-id", value = DEPRECATED + "Use 'geneTraitId' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-gene-trait-name", value = DEPRECATED + "Use 'geneTraitName' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "annot-hpo", value = DEPRECATED + "Use 'hpo' instead", dataType = "string", paramType = "query"),
@@ -412,7 +419,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String populationFrequencyMaf;
         public String populationFrequencyAlt;
         public String populationFrequencyRef;
-        public String transcriptionFlag;
+        public String transcriptFlag;
         public String geneTraitId;
         public String geneTraitName;
         public String trait;
@@ -452,7 +459,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         @Deprecated @JsonProperty("annot-population-maf") public String annot_populationMaf;
         @Deprecated public String alternate_frequency;
         @Deprecated public String reference_frequency;
-        @Deprecated @JsonProperty("annot-transcription-flags") public String transcriptionFlags;
+        @Deprecated @JsonProperty("annot-transcription-flags") public String transcriptFlags;
         @Deprecated @JsonProperty("annot-gene-trait-id") public String annot_geneTraitId;
         @Deprecated @JsonProperty("annot-gene-trait-name") public String annot_geneTraitName;
         @Deprecated @JsonProperty("annot-hpo") public String annot_hpo;
@@ -710,40 +717,57 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/facet")
-    @ApiOperation(value = "This method has been renamed, use endpoint /stats instead" + DEPRECATED, position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "This method has been renamed, use endpoint /aggregationStats instead" + DEPRECATED, position = 15, hidden = true, response = QueryResponse.class)
     public Response getFacets(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
                               @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
-        return getStats(facet);
+        return getAggregationStats(facet);
+    }
+
+    @Deprecated
+    @GET
+    @Path("/stats")
+    @ApiOperation(value = "This method has been renamed, use endpoint /aggregationStats instead" + DEPRECATED, position = 15, hidden = true, response = QueryResponse.class)
+    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
+                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
+        return getAggregationStats(facet);
     }
 
     @GET
-    @Path("/stats")
-    @ApiOperation(value = "Fetch variant stats", position = 15, response = QueryResponse.class)
+    @Path("/aggregationStats")
+    @ApiOperation(value = "Calculate and fetch aggregation stats", position = 15, response = QueryResponse.class)
     @ApiImplicitParams({
             // Variant filters
-            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
             // Study filters
             @ApiImplicitParam(name = "project", value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
 
-//            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "samplesMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
 //            @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "maf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "mgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
 
             // Annotation filters
             @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
@@ -756,7 +780,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptionFlag", value = ANNOT_TRANSCRIPTION_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
@@ -769,7 +793,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
     })
-    public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
+    public Response getAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -808,7 +832,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
     }
 
-    private Query getVariantQuery(QueryOptions queryOptions) {
+    // FIXME This method must be deleted once deprecated params are not supported any more
+    public static Query getVariantQuery(QueryOptions queryOptions) {
         Query query = VariantStorageManager.getVariantQuery(queryOptions);
         queryOptions.forEach((key, value) -> {
             org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);

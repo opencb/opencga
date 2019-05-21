@@ -8,6 +8,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
@@ -18,6 +20,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 
 /**
@@ -34,13 +37,15 @@ public class VariantMetadataConverterTest {
     private ProjectMetadata projectMetadata;
     private VariantStorageMetadataManager metadataManager;
     private StudyMetadata studyMetadata;
+    private VariantReaderUtils variantReaderUtils;
 
     @Before
     public void setUp() throws Exception {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
 
         URI uri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
-        VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
+        variantReaderUtils = new VariantReaderUtils(new IOConnectorProvider(LocalIOConnector.class));
+        VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(Paths.get(uri), null);
         studyMetadata = new StudyMetadata(1, "study").addVariantFileHeader(fileMetadata.getHeader(), null);
 
         metadataManager.unsecureUpdateStudyMetadata(studyMetadata);
@@ -73,7 +78,7 @@ public class VariantMetadataConverterTest {
 
     @Test
     public void toVariantMetadataTest() throws IOException {
-        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryFields(studyMetadata, null, null));
+        VariantMetadata variantMetadata = variantMetadataConverter.toVariantMetadata(new VariantQueryFields(studyMetadata, Collections.emptyList(), Collections.emptyList()));
         System.out.println("variantMetadata = " + objectWriter.writeValueAsString(variantMetadata));
 
     }

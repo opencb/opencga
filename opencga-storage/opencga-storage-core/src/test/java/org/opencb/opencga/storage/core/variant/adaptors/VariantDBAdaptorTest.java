@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import htsjdk.variant.variantcontext.VariantContext;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
@@ -32,6 +33,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -223,12 +225,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     protected Query preProcessQuery(Query query, QueryOptions options) {
-        try {
-            query = variantStorageEngine.preProcessQuery(query, options);
-        } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
-        }
-        return query;
+        return variantStorageEngine.preProcessQuery(query, options);
     }
 
     public Long count(Query query) {
@@ -641,18 +638,119 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 //        assertEquals(396, queryResult.getNumResults());
     }
 
+    /*
+       # Get variants grouped by transcript
+       zcat opencga_variants_test.*.annot.json.gz |
+            jq '
+                def unwind(key): (key | .[]) as $value | . + ({} | (key = $value));
+                unwind(.consequenceTypes) | {
+                    so:.consequenceTypes.sequenceOntologyTerms,
+                    gene:.consequenceTypes.geneName,
+                    transcript:.consequenceTypes.ensemblTranscriptId,
+                    biotype:.consequenceTypes.biotype,
+                    flags:.consequenceTypes.transcriptAnnotationFlags,
+                    var: (.chromosome+":"+ (.start  | tostring ) +":"+.reference+":"+.alternate),
+                    id:.id
+                }' -c | gzip > annotation_by_transcript.json.gz &
+     */
+
     @Test
-    public void testGetAllVariants_ct_gene() {
+    public void testCombineGeneBtSoFlag() {
+        // Expected match at PLCH2
+        queryCombined(
+                Arrays.asList(),
+                Arrays.asList("PLCH2", "ERMAP", "SH2D5"),
+                "protein_coding",
+                "downstream_gene_variant",
+                "basic");
+
+        // Expected match at PLCH2 and 1:150970577:G:T
+        queryCombined(
+                Arrays.asList("1:150970577:G:T", "1:92445257:C:G", "1:104116413:T:C"),
+                Arrays.asList("PLCH2", "ERMAP", "SH2D5"),
+                "protein_coding",
+                "downstream_gene_variant",
+                "basic");
+    }
+
+    @Test
+    public void testCombineGeneBtSo() {
+        queryCombined(
+                Arrays.asList(),
+                Arrays.asList("ERMAP", "SH2D5"),
+                "protein_coding",
+                "downstream_gene_variant");
+
+        // Expected match at ERMAP and 1:92445257:C:G
+        queryCombined(
+                Arrays.asList("1:92445257:C:G", "1:104116413:T:C"),
+                Arrays.asList("ERMAP", "SH2D5"),
+                "protein_coding",
+                "downstream_gene_variant");
+    }
+    @Test
+    public void testCombineGeneBt() {
+        queryCombined(
+                Arrays.asList(),
+                Arrays.asList("ERMAP", "MIR431"),
+                "protein_coding",
+                null);
+
+        // Expected match at ERMAP and 1:92445257:C:G.
+        // Other two are miRNA
+        queryCombined(
+                Arrays.asList("1:92445257:C:G", "14:101350721:T:C"),
+                Arrays.asList("ERMAP", "MIR431"),
+                "protein_coding",
+                null);
+
+    }
+
+    @Test
+    public void testCombineBtSo() {
+        queryCombined(
+                Collections.emptyList(),
+                Collections.emptyList(),
+                "protein_coding",
+                "downstream_gene_variant");
+
+        // Expected match at 1:92445257:C:G
+        queryCombined(
+                Arrays.asList("1:92445257:C:G", "1:104116413:T:C"),
+                Arrays.asList(),
+                "protein_coding",
+                "downstream_gene_variant");
+    }
+
+    @Test
+    public void testCombineBtSoFlag() {
+        // May have extra values!
+
+        // Combine bt+so+flag
+        queryCombined(
+                Collections.emptyList(),
+                Collections.emptyList(),
+                "protein_coding",
+                "downstream_gene_variant",
+                "basic");
+    }
+
+    @Test
+    public void testCombineGeneSo() {
         queryGeneCT("BIRC6", "SO:0001566");  // Should return 0 results
         queryGeneCT("BIRC6", "SO:0001583");
         queryGeneCT("DNAJC6", "SO:0001819");
         queryGeneCT("SH2D5", "SO:0001632");
         queryGeneCT("ERMAP,SH2D5", "SO:0001632");
+    }
 
-        queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-                        .append(ANNOT_XREF.key(), "ERMAP,SH2D5,7:100807230:G:T")
-                        .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
-                at("7:100807230:G:T"));
+    @Test
+    public void testCombineGeneSoVariants() {
+        queryCombined(
+                Arrays.asList("7:100807230:G:T"),
+                Arrays.asList("ERMAP", "SH2D5"),
+                null,
+                "downstream_gene_variant");
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
                 .append(GENE.key(), "ERMAP")
@@ -705,6 +803,102 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 )))));
     }
 
+    private void queryCombined(List<String> variants,
+                               List<String> genes,
+                               String biotype,
+                               String so) {
+        queryCombined(variants, genes, biotype, so, null);
+    }
+
+    private void queryCombined(List<String> variants,
+                               List<String> genes,
+                               String biotype,
+                               String so, String flag) {
+        List<String> xrefs = new ArrayList<>();
+        if (variants != null) {
+            xrefs.addAll(variants);
+        }
+        if (genes != null) {
+            xrefs.addAll(genes);
+        }
+        Query query = new Query()
+//                .append(REGION.key(), region)
+                .append(ANNOT_XREF.key(), xrefs)
+                .append(ANNOT_BIOTYPE.key(), biotype)
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), so)
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), flag);
+        logger.info(query.toJson());
+        queryResult = query(query, null);
+        logger.info(" -> numResults " + queryResult.getNumResults());
+
+        Matcher<VariantAnnotation> regionMatcher;
+        Matcher<String> geneMatcher;
+        Matcher<String> biotypeMatcher;
+        Matcher<String> soMatcher;
+        Matcher<ConsequenceType> flagMatcher;
+
+        if (CollectionUtils.isEmpty(variants)) {
+            if (CollectionUtils.isEmpty(genes)) {
+                // No gene or region filter, accept anything as region
+                regionMatcher = any(VariantAnnotation.class);
+            } else {
+                regionMatcher = not(any(VariantAnnotation.class));
+            }
+        } else {
+            regionMatcher = anyOf(variants.stream().map(VariantMatchers::at).collect(Collectors.toList()));
+        }
+
+        if (CollectionUtils.isEmpty(genes)) {
+            geneMatcher = not(any(String.class));
+        } else {
+            geneMatcher = anyOf(genes.stream().map(CoreMatchers::is).collect(Collectors.toList()));
+        }
+
+        soMatcher = StringUtils.isEmpty(so) ? any(String.class) : is(so);
+        if (StringUtils.isEmpty(flag)) {
+            flagMatcher = any(ConsequenceType.class);
+        } else {
+            flagMatcher = withAny("flag", ConsequenceType::getTranscriptAnnotationFlags, is(flag));
+        }
+
+        if (StringUtils.isEmpty(biotype)) {
+            biotypeMatcher = any(String.class);
+        } else {
+            biotypeMatcher = is(biotype);
+        }
+
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(
+                anyOf(
+                        allOf(
+                                hasAnyGeneOf(genes),
+                                withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
+                                        with("gene", ConsequenceType::getGeneName, geneMatcher),
+                                        withAny("SO", ConsequenceType::getSequenceOntologyTerms,
+                                                anyOf(
+                                                        with("soAccession", SequenceOntologyTerm::getAccession, soMatcher),
+                                                        with("soName", SequenceOntologyTerm::getName, soMatcher)
+                                                )
+                                        ),
+                                        with("biotype", ConsequenceType::getBiotype, biotypeMatcher),
+                                        flagMatcher)))
+                        ,
+                        allOf(
+                                regionMatcher,
+//                                not(hasAnyGeneOf(genes)),
+                                withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
+                                        withAny("SO", ConsequenceType::getSequenceOntologyTerms,
+                                                anyOf(
+                                                        with("soAccession", SequenceOntologyTerm::getAccession, soMatcher),
+                                                        with("soName", SequenceOntologyTerm::getName, soMatcher)
+                                                )
+                                        ),
+                                        with("biotype", ConsequenceType::getBiotype, biotypeMatcher),
+                                        flagMatcher
+                                )))
+                ))
+        ));
+    }
+
     @Test
     public void testGetAllVariants_transcriptionAnnotationFlags() {
         //ANNOT_TRANSCRIPTION_FLAGS
@@ -733,7 +927,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         for (String flag : flags.elementSet()) {
             System.out.println(flag + ", " + flags.count(flag));
-            query = new Query(ANNOT_TRANSCRIPTION_FLAG.key(), flag);
+            query = new Query(ANNOT_TRANSCRIPT_FLAG.key(), flag);
             queryResult = query(query, null);
             assertEquals(flags.count(flag), queryResult.getNumResults());
         }
@@ -1789,6 +1983,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             Long variantQueryResult = count(new Query(ANNOT_CONSEQUENCE_TYPE.key(), map.get("id")));
             assertEquals((variantQueryResult).intValue(), ((Number) map.get("count")).intValue());
         }
+    }
+
+    @Test
+    public void testGetAllVariants_Freqs() throws Exception {
+//        STATS_REF
+//        STATS_ALT
+
+        QueryResult<Variant> queryResult;
+        long numResults = 0;
+        long expectedNumResults = 0;
+
+
+        queryResult = query(new Query(STATS_ALT.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + "<0.3"), null);
+        assertThat(queryResult, everyResult(allVariants, withStudy(STUDY_NAME, withStats(StudyEntry.DEFAULT_COHORT, with("af",
+                VariantStats::getAltAlleleFreq, lt(0.3))))));
+
+        numResults += queryResult.getNumResults();
+        numResults += query(new Query(STATS_REF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + "<0.3"), null).getNumResults();
+        expectedNumResults = query(new Query(STATS_MAF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + "<0.3"), null).getNumResults();
+        assertEquals(expectedNumResults, numResults);
+
     }
 
     @Test

@@ -18,9 +18,9 @@ package org.opencb.opencga.storage.core.manager;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.DataStore;
@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation.getDataStore;
 
@@ -97,16 +98,15 @@ public abstract class StorageManager {
             throws CatalogException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyIdStr, userId);
+
         List<File> files;
-        Study study;
         if (fileIdStrs.isEmpty()) {
             files = Collections.emptyList();
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyIdStr, userId);
         } else {
-            AbstractManager.MyResources<File> resource = catalogManager.getFileManager().getUids(fileIdStrs, studyIdStr, sessionId);
-            files = resource.getResourceList();
-            study = resource.getStudy();
+            List<QueryResult<File>> queryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStrs, null, sessionId);
+            files = queryResult.stream().map(QueryResult::first).collect(Collectors.toList());
         }
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
         for (File file : files) {

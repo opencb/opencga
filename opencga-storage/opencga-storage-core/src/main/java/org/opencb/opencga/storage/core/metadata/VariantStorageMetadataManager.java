@@ -430,6 +430,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, options);
     }
 
+    public Iterator<VariantFileMetadata> variantFileMetadataIterator(int studyId, QueryOptions options)
+            throws StorageEngineException {
+        Query query = new Query(FileMetadataDBAdaptor.VariantFileMetadataQueryParam.STUDY_ID.key(), studyId);
+        return variantFileMetadataIterator(query, options);
+    }
+
     public Iterator<VariantFileMetadata> variantFileMetadataIterator(Query query, QueryOptions options)
             throws StorageEngineException {
         try {
@@ -892,7 +898,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     }
                     cohort.setSamples(newSamples);
 
-                    if (!oldSamples.equals(sampleIds)) {
+                    if (!oldSamples.equals(sampleIdsList)) {
                         // Cohort has been modified! Invalidate if needed.
                         if (cohort.isStatsReady()) {
                             cohort.setStatsStatus(TaskMetadata.Status.ERROR);

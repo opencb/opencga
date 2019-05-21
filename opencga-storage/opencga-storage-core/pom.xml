@@ -19,10 +19,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <azure.optional>true</azure.optional>
+    </properties>
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.4.1-dev</version>
+        <version>1.4.2-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -109,6 +112,12 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+            <version>11.0.0</version>
+            <optional>${azure.optional}</optional>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
             <version>${opencga.version}</version>
@@ -153,5 +162,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>azure</id>
+            <activation>
+                <property>
+                    <name>azure</name>
+                </property>
+            </activation>
+            <properties>
+                <azure.optional>false</azure.optional>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

@@ -44,6 +44,7 @@ public class StorageConfiguration {
     private CacheConfiguration cache;
     private SearchConfiguration search;
     private SearchConfiguration clinical;
+    private IOConfiguration io;
 
     private BenchmarkConfiguration benchmark;
     private List<StorageEngineConfiguration> storageEngines;
@@ -225,6 +226,15 @@ public class StorageConfiguration {
 
     public StorageConfiguration setClinical(SearchConfiguration clinical) {
         this.clinical = clinical;
+        return this;
+    }
+
+    public IOConfiguration getIo() {
+        return io;
+    }
+
+    public StorageConfiguration setIo(IOConfiguration io) {
+        this.io = io;
         return this;
     }
 

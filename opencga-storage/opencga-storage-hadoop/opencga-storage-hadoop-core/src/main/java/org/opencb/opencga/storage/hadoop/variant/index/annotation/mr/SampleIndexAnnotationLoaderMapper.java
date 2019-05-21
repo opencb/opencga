@@ -12,9 +12,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.ByteArrayOutputStream;
@@ -51,6 +52,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter(helper, 0);
 
         byte index = new AnnotationIndexConverter().convert(annotationConverter.convert(result));
+                // TODO Get stats given index values
 
         for (Cell cell : result.rawCells()) {
             if (VariantPhoenixHelper.isSampleCell(cell)) {
@@ -65,8 +67,13 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
                             cell.getValueOffset(),
                             cell.getValueLength());
                     PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                    gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-                    validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                    if (ptr.getLength() == 0) {
+                        gt = GenotypeClass.NA_GT_VALUE;
+                        validGt = true;
+                    } else {
+                        gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+                        validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                    }
                 } else {
                     gt = GenotypeClass.NA_GT_VALUE;
                     validGt = true;
@@ -93,13 +100,16 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "write_indices").increment(1);
         for (Map.Entry<Integer, Map<String, ByteArrayOutputStream>> entry : annotationIndices.entrySet()) {
             Integer sampleId = entry.getKey();
-            Put put = new Put(HBaseToSampleIndexConverter.toRowKey(sampleId, chromosome, position));
+            Put put = new Put(SampleIndexSchema.toRowKey(sampleId, chromosome, position));
             for (Map.Entry<String, ByteArrayOutputStream> e : entry.getValue().entrySet()) {
                 String gt = e.getKey();
                 ByteArrayOutputStream value = e.getValue();
                 if (value.size() > 0) {
                     // Copy byte array, as the ByteArrayOutputStream will be reset and reused!
-                    put.addColumn(family, HBaseToSampleIndexConverter.toAnnotationIndexColumn(gt), value.toByteArray());
+                    byte[] annotationIndex = value.toByteArray();
+                    put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotationIndex);
+                    put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
+                            IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotationIndex)));
                 }
             }
 

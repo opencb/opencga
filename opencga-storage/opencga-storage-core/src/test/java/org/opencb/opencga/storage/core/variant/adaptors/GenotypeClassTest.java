@@ -14,6 +14,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class GenotypeClassTest {
 
+    private final List<String> loadedGenotypes = Arrays.asList(
+            "0/0", "0",
+            "0/1", "1/1",
+            "0|1", "1|0", "1|1",
+            "./.", ".|.", ".",
+            "1/2", "1|2", "./0", ".|0", "0|.", "0/.", "./1", "1/.");
+
     @Test
     public void testGenotypes() throws Exception {
         List<String> gts = Arrays.asList("0/0", "0", "0/1", "1/1", "./.", ".", "1/2", "0/2", "2/2", "2/3", "./0", "0/.", "./1", "1/.");
@@ -23,5 +30,17 @@ public class GenotypeClassTest {
         assertEquals(Arrays.asList("0/1", "0/2"), GenotypeClass.HET_REF.filter(gts));
         assertEquals(Arrays.asList("1/2", "2/3"), GenotypeClass.HET_ALT.filter(gts));
         assertEquals(Arrays.asList("./.", "."), GenotypeClass.MISS.filter(gts));
+
+    }
+
+    @Test
+    public void testPhasedGenotypes() throws Exception {
+        assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("0/1"), loadedGenotypes));
+        assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("1/0"), loadedGenotypes));
+        assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("0/1", "1/0"), loadedGenotypes));
+        assertEquals(Arrays.asList("0|1"), GenotypeClass.filter(Arrays.asList("0|1"), loadedGenotypes));
+        assertEquals(Arrays.asList("1|0"), GenotypeClass.filter(Arrays.asList("1|0"), loadedGenotypes));
+        assertEquals(Arrays.asList("0"), GenotypeClass.filter(Arrays.asList("0"), loadedGenotypes));
+        assertEquals(Arrays.asList("1"), GenotypeClass.filter(Arrays.asList("1"), loadedGenotypes));
     }
 }

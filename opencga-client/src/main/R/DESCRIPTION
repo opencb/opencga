@@ -14,7 +14,8 @@ Depends:
 Imports:
     jsonlite,
     httr,
-    configr
+    configr,
+    base64enc
 Suggests:
     BiocStyle,
     knitr,

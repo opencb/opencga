@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -25,24 +26,31 @@ public class ProtoFileWriter<T extends com.google.protobuf.GeneratedMessageV3> i
 
     private OutputStream outputStream = null;
     private Path input = null;
+    private final boolean closeStream;
     private final AtomicLong timeWrite = new AtomicLong(0);
 
     public ProtoFileWriter(OutputStream outputStream) {
-        this.outputStream = outputStream;
+        this(outputStream, false);
+    }
+
+    public ProtoFileWriter(OutputStream outputStream, boolean closeStream) {
+        this.outputStream = Objects.requireNonNull(outputStream);
+        this.closeStream = closeStream;
     }
 
     public ProtoFileWriter(Path input) {
-        this.input = input;
+        this.input = Objects.requireNonNull(input);
+        closeStream = true;
     }
 
     public ProtoFileWriter(Path input, String compression) {
         this(input);
-        this.compression = compression;
+        this.compression = Objects.requireNonNull(compression);
     }
 
     @Override
     public boolean open() {
-        if (null != this.input) {
+        if (outputStream == null) {
             try {
                 OutputStream out = new BufferedOutputStream(new FileOutputStream(input.toFile()));
                 if (StringUtils.equalsIgnoreCase(compression, "gzip") || StringUtils.equalsIgnoreCase(compression, "gz")) {
@@ -67,7 +75,7 @@ public class ProtoFileWriter<T extends com.google.protobuf.GeneratedMessageV3> i
             logger.error("Problems flushing outputstream", e);
             return false;
         }
-        if (null != this.input) {
+        if (closeStream) {
             try {
                 this.outputStream.close();
             } catch (IOException e) {

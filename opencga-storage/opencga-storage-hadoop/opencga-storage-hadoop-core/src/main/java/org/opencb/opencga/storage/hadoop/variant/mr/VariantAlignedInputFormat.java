@@ -4,7 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,7 +37,7 @@ public class VariantAlignedInputFormat extends InputFormat {
 
             delegatedInputFormat = ReflectionUtils.newInstance(clazz, conf);
 
-            batchSize = conf.getInt(BATCH_SIZE, SampleIndexDBLoader.BATCH_SIZE);
+            batchSize = conf.getInt(BATCH_SIZE, SampleIndexSchema.BATCH_SIZE);
 
             init = true;
         }

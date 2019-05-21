@@ -2,10 +2,8 @@ package org.opencb.opencga.storage.core.variant.search;
 
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.Score;
@@ -17,13 +15,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
@@ -43,7 +38,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     public VariantSolrExternalResource solr = new VariantSolrExternalResource();
 
     @Test
-    public void testTranscriptInfo() throws IOException, VariantSearchException, StorageEngineException, FileFormatException, SolrServerException {
+    public void testTranscriptInfo() throws Exception {
         int limit = 500;
 
         VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
@@ -168,7 +163,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     }
 
     @Test
-    public void testSpecialCharacter() throws IOException, VariantSearchException, StorageEngineException, FileFormatException, SolrServerException {
+    public void testSpecialCharacter() throws Exception {
         int limit = 1;
 
         VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
@@ -256,8 +251,8 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         }
     }
 
-    private List<Variant> getVariants(int limit) {
-        VariantVcfHtsjdkReader reader = VariantReaderUtils.getVariantVcfReader(Paths.get(smallInputUri.getPath()), null);
+    private List<Variant> getVariants(int limit) throws Exception {
+        VariantVcfHtsjdkReader reader = variantReaderUtils.getVariantVcfReader(Paths.get(smallInputUri.getPath()), null);
         reader.open();
         reader.pre();
         VCFHeader vcfHeader = reader.getVCFHeader();

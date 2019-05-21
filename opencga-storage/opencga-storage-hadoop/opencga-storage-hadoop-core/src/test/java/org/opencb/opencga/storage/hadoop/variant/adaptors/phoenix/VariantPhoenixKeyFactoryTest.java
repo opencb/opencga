@@ -34,6 +34,7 @@ public class VariantPhoenixKeyFactoryTest {
     @Test
     public void testStructuralVariantRowKey() throws Exception {
         checkVariantRowKeyGeneration(new Variant("5:110-510:-:<DEL>"));
+        checkVariantRowKeyGeneration(new Variant("5:100:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:-"));
         checkVariantRowKeyGeneration(new Variant("5:100<110<120-500<510<520:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:-"));
         checkVariantRowKeyGeneration(new Variant("5:100<110<120-500<510<520:A:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
         checkVariantRowKeyGeneration(new Variant("5:100<110<120-500<510<520:A:<DEL>"));
@@ -85,7 +86,7 @@ public class VariantPhoenixKeyFactoryTest {
                 Bytes.toBytes(variant.getChromosome()),
                 Bytes.toBytes(variant.getStart()),
                 Bytes.toBytes(variant.getReference()),
-                Bytes.toBytes(VariantPhoenixKeyFactory.buildSVAlternate(variant.getReference(), variant.getAlternate(), variant.getEnd(), variant.getSv())),
+                Bytes.toBytes(VariantPhoenixKeyFactory.buildSymbolicAlternate(variant.getReference(), variant.getAlternate(), variant.getEnd(), variant.getSv())),
         });
 
         if (key.getLength() == key.get().length) {
