@@ -27,6 +27,7 @@ setup(
         'requests >= 2.7',
         'pip >= 7.1.2',
         'pathlib >= 1.0.1'
+        'pyyaml >= 3.12'
         ],
     project_urls={
         'Documentation': 'http://docs.opencb.org/display/opencga/RESTful+Web+Services',
