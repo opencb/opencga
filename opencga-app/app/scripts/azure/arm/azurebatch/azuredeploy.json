@@ -207,7 +207,6 @@
                 "deploymentConfiguration": {
                     "virtualMachineConfiguration": {
                         "containerConfiguration": {
-                            "containerImageNames": "[parameters('dockerImagesToCache')]",
                             "type": "DockerCompatible"
                         },
                         "imageReference": {
