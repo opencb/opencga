@@ -284,7 +284,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return panelCollection.count(bson);
     }
 
@@ -306,14 +306,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getPanelPermission().name(), Entity.PANEL.name());
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Panel count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return panelCollection.count(bson);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        return panelCollection.distinct(field, parseQuery(query, false));
+        return panelCollection.distinct(field, parseQuery(query));
     }
 
     @Override
@@ -342,7 +342,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         if (panelParameters.containsKey(QueryParams.STATUS_NAME.key())) {
             query.put(Constants.ALL_VERSIONS, true);
-            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query, false),
+            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query),
                     new Document("$set", panelParameters), new QueryOptions("multi", true));
 
             return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
@@ -353,7 +353,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         if (!panelParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query, false),
+            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query),
                     new Document("$set", panelParameters), new QueryOptions("multi", true));
             return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
         }
@@ -484,7 +484,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         QueryResult<DeleteResult> remove = panelCollection.remove(bson, QueryOptions.empty());
         if (remove.getNumResults() == 0 || remove.first().getDeletedCount() == 0) {
             throw new CatalogDBException("Could not delete disease panel(s)");
@@ -585,7 +585,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             qOptions = new QueryOptions();
         }
 
-        Bson bson = parseQuery(finalQuery, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(finalQuery, queryForAuthorisedEntries);
         logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return panelCollection.nativeQuery().find(bson, qOptions).iterator();
     }
@@ -609,21 +609,21 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return rank(panelCollection, bsonQuery, field, QueryParams.ID.key(), numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(panelCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(panelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
@@ -634,7 +634,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_PANELS.name(), PanelAclEntry.PanelPermissions.VIEW.name(), Entity.PANEL.name());
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(panelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
@@ -645,7 +645,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_PANELS.name(), PanelAclEntry.PanelPermissions.VIEW.name(), Entity.PANEL.name());
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(panelCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
@@ -664,7 +664,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
 
         Document update = new Document()
                 .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
@@ -679,18 +679,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         unmarkPermissionRule(panelCollection, studyId, permissionRuleId);
     }
 
-    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
-        return parseQuery(query, isolated, null);
+    private Bson parseQuery(Query query) throws CatalogDBException {
+        return parseQuery(query, null);
     }
 
-    private Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    private Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
         Query queryCopy = new Query(query);
-
-        if (isolated) {
-            andBsonList.add(new Document("$isolated", 1));
-        }
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
