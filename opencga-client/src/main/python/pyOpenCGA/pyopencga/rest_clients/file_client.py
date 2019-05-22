@@ -1,6 +1,6 @@
-from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient
+from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient
 
-class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
+class Files(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
     """
     This class contains methods for the Files webservices
     """
@@ -191,7 +191,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._post('upload', data=data, **options)
 
-    def download(self, file, data, **options):
+    def download(self, file, **options):
         """
         Download file. The usage of /{file}/download webservice through Swagger is discouraged.
         An special DOWNLOAD permission is needed to download files from OpenCGA.

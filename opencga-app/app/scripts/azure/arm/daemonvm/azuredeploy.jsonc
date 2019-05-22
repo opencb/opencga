@@ -166,7 +166,7 @@
         "restHost": "[concat('https://',parameters('opencgaFQDN'), '/opencga')]",
         "grpcHost": "[concat('http://',parameters('opencgaFQDN'), ':9999')]",
         "singleQuote": "'",
-        "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/scripts/mount.py -O /tmp/mount.py')]",
+        "getScriptCmd": "[concat('wget ',parameters('_artifactsLocation'),'/scripts/mount.py -O /tmp/mount.py', parameters('_artifactsLocationSasToken'))]",
         "mountCmd": "[concat('python3 /tmp/mount.py ', parameters('mountArgs'))]",
         // This build the command used to setup the configuration file for OpenCGA
         // it takes in inputs from the larger ARM template to configure Mongo, SOLR, Storage and other settings

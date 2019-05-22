@@ -57,24 +57,6 @@
                 },
                 {
                     "type": "Microsoft.OperationsManagement/solutions",
-                    "name": "[concat('AntiMalware', '(', parameters('WorkspaceName'),')')]",
-                    "apiVersion": "2015-11-01-preview",
-                    "location": "[parameters('WorkspaceLocation')]",
-                    "plan": {
-                        "name": "[concat('AntiMalware', '(', parameters('WorkspaceName'),')')]",
-                        "promotionCode": "",
-                        "product": "OMSGallery/AntiMalware",
-                        "publisher": "Microsoft"
-                    },
-                    "properties": {
-                        "workspaceResourceId": "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
-                    },
-                    "dependsOn": [
-                        "[resourceId('microsoft.operationalinsights/workspaces', parameters('WorkspaceName'))]"
-                    ]
-                },
-                {
-                    "type": "Microsoft.OperationsManagement/solutions",
                     "name": "[concat('AzureAppGatewayAnalytics', '(', parameters('WorkspaceName'),')')]",
                     "apiVersion": "2015-11-01-preview",
                     "location": "[parameters('WorkspaceLocation')]",

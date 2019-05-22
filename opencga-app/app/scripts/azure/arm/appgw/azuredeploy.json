@@ -52,7 +52,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/appgw.json')]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/appgw.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {  
@@ -88,7 +88,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/keyvault.json')]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/keyvault.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -106,7 +106,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/functions.json')]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/functions.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -131,7 +131,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/accesspolicies.json')]",
+                    "uri": "[concat(parameters('_artifactsLocation'), '/appgw/accesspolicies.json', parameters('_artifactsLocationSasToken'))]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
