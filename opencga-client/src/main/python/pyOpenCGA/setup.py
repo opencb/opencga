@@ -28,7 +28,7 @@ setup(
         'pip >= 7.1.2',
         'pathlib >= 1.0.1'
         'pyyaml >= 3.12'
-        ],
+    ],
     project_urls={
         'Documentation': 'http://docs.opencb.org/display/opencga/RESTful+Web+Services',
         'Source': 'https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA',
