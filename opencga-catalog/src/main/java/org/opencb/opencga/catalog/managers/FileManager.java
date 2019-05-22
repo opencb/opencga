@@ -278,7 +278,7 @@ public class FileManager extends ResourceManager<File> {
 
             /* Update relations */
 
-            File.RelatedFile producedFromRelation = new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM);
+            File.RelatedFile producedFromRelation = new File.RelatedFile(vcf, File.RelatedFile.Relation.PRODUCED_FROM);
 
             // Update json file
             logger.debug("Updating json relation");
@@ -2968,7 +2968,8 @@ public class FileManager extends ResourceManager<File> {
                 fileIds.addAll(
                         transformedFile.getRelatedFiles().stream()
                                 .filter(myFile -> myFile.getRelation() == File.RelatedFile.Relation.PRODUCED_FROM)
-                                .map(File.RelatedFile::getFileId)
+                                .map(File.RelatedFile::getFile)
+                                .map(File::getId)
                                 .collect(Collectors.toSet())
                 );
             }

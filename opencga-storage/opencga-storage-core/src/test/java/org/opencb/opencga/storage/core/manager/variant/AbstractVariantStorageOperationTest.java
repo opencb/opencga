@@ -254,7 +254,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
                 .collect(Collectors.toList());
         assertEquals(1, relatedFiles.size());
-        assertEquals(inputFile.getId(), relatedFiles.get(0).getFileId());
+        assertEquals(inputFile.getId(), relatedFiles.get(0).getFile().getId());
 
         assertEquals(transformedFile.getId(), inputFile.getIndex().getTransformedFile().getId());
 
@@ -343,7 +343,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                     .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
                     .collect(Collectors.toList());
             assertEquals(1, relatedFiles.size());
-            assertEquals(inputFile.getId(), relatedFiles.get(0).getFileId());
+            assertEquals(inputFile.getId(), relatedFiles.get(0).getFile().getId());
         }
 
 
@@ -358,7 +358,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             if (input.getRelatedFiles().isEmpty()) {
                 indexedFileId = input.getId();
             } else {
-                indexedFileId = input.getRelatedFiles().get(0).getFileId();
+                indexedFileId = input.getRelatedFiles().get(0).getFile().getId();
             }
             assertEquals(expectedStatus, catalogManager.getFileManager().get(indexedFileId, null, sessionId).first().getIndex().getStatus().getName());
             System.out.println("etlResult = " + etlResult);

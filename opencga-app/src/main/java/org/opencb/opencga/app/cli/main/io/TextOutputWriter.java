@@ -255,7 +255,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\n", format, file.getName(), file.getType(),
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
                     file.getStatus().getName(), file.getSize(), indexStatus,
-                    StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
+                    StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFile).map(File::getId)
+                            .collect(Collectors.toList()), ", "),
                     StringUtils.join(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), ", ")));
         }
     }

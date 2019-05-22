@@ -832,7 +832,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
         for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
             if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
-                vcfId = relatedFile.getFileId();
+                vcfId = relatedFile.getFile().getId();
                 break;
             }
         }

@@ -23,7 +23,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -243,7 +242,7 @@ public class File {
 
     public static class RelatedFile {
 
-        private long fileId;
+        private File file;
         private Relation relation;
 
         public enum Relation {
@@ -255,27 +254,26 @@ public class File {
         public RelatedFile() {
         }
 
-        public RelatedFile(long fileId, Relation relation) {
-            this.fileId = fileId;
+        public RelatedFile(File file, Relation relation) {
+            this.file = file;
             this.relation = relation;
         }
 
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("RelatedFile{");
-            sb.append("fileId=").append(fileId);
+            sb.append("file=").append(file);
             sb.append(", relation=").append(relation);
             sb.append('}');
             return sb.toString();
         }
 
-        public long getFileId() {
-            return fileId;
+        public File getFile() {
+            return file;
         }
 
-        public RelatedFile setFileId(long fileId) {
-            this.fileId = fileId;
-            return this;
+        public void setFile(File file) {
+            this.file = file;
         }
 
         public Relation getRelation() {
@@ -287,23 +285,6 @@ public class File {
             return this;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof RelatedFile)) {
-                return false;
-            }
-            RelatedFile that = (RelatedFile) o;
-            return fileId == that.fileId
-                    && relation == that.relation;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(fileId, relation);
-        }
     }
 
     @Override

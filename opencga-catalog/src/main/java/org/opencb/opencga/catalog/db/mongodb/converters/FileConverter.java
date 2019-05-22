@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 
@@ -52,6 +53,9 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
 
     @Override
     public Document convertToStorageType(File file) {
+        List<File.RelatedFile> relatedFileList = file.getRelatedFiles();
+        file.setRelatedFiles(null);
+
         Document document = super.convertToStorageType(file);
         document.put("id", document.getInteger("id").longValue());
 
@@ -64,6 +68,17 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
         document.put("experiment", new Document("id", experimentId));
 
         document.put("samples", convertSamples(file.getSamples()));
+
+        List<Document> relatedFiles = new ArrayList<>();
+        if (ListUtils.isNotEmpty(relatedFileList)) {
+            for (File.RelatedFile relatedFile : relatedFileList) {
+                relatedFiles.add(new Document()
+                        .append("relation", relatedFile.getRelation())
+                        .append("file", new Document("id", relatedFile.getFile().getId()))
+                );
+            }
+        }
+        document.put("relatedFiles", relatedFiles);
 
         return document;
     }
