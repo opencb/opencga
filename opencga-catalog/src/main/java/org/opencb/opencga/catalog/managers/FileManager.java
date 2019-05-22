@@ -2441,6 +2441,15 @@ public class FileManager extends ResourceManager<File> {
         boolean resync = params.getBoolean("resync", false);
         String description = params.getString("description", "");
 
+        List<File.RelatedFile> relatedFiles = params.getAsList("relatedFiles", File.RelatedFile.class);
+        for (File.RelatedFile relatedFile : relatedFiles) {
+            // FIXME: Change in 1.4.x to get the file id from "id"
+            String fileId = relatedFile.getFile().getName();
+            MyResourceId resource = getId(fileId, String.valueOf(studyId), sessionId);
+            // FIXME: Change to set the file uid in 1.4.x
+            relatedFile.getFile().setId(resource.getResourceId());
+        }
+
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
         Path catalogPath = Paths.get(pathDestiny);
 
@@ -2491,7 +2500,7 @@ public class FileManager extends ResourceManager<File> {
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(), Collections.emptyList(), new Job(),
-                        Collections.emptyList(), null, Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
+                        relatedFiles, null, Collections.emptyMap(), catalogManager.getStudyManager().getCurrentRelease(studyId),
                         Collections.emptyMap());
                 checkHooks(subfile, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
@@ -2562,7 +2571,7 @@ public class FileManager extends ResourceManager<File> {
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, 0, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null, Collections.emptyMap(),
+                                    Collections.emptyList(), new Job(), relatedFiles, null, Collections.emptyMap(),
                                     catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
                             checkHooks(folder, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(folder, studyId, new QueryOptions());
@@ -2612,7 +2621,7 @@ public class FileManager extends ResourceManager<File> {
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), null, Collections.emptyMap(),
+                                    Collections.emptyList(), new Job(), relatedFiles, null, Collections.emptyMap(),
                                     catalogManager.getStudyManager().getCurrentRelease(studyId), Collections.emptyMap());
                             checkHooks(subfile, catalogManager.getStudyManager().getFQN(studyId), HookConfiguration.Stage.CREATE);
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());

@@ -23,14 +23,20 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
 import org.opencb.opencga.core.models.Sample;
@@ -38,19 +44,14 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.*;
 import java.net.URI;
@@ -940,7 +941,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/link")
     @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
-    public Response link(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
+    @Deprecated
+    public Response linkGet(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
                          @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId") String studyIdStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
                          @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
@@ -989,6 +991,55 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
+    @POST
+    @Path("/link")
+    @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
+    public Response link(
+            @ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
+            @ApiParam(name = "params", value = "File parameters", required = true) FileLinkParams params) {
+        try {
+            logger.debug("study: {}", studyStr);
+            logger.debug("uri: {}", uriStr);
+            logger.debug("params: {}", params);
+
+            // TODO: We should stop doing this at some point. As the parameters are now passed through the body, users can already pass "/" characters
+            params.path = params.path.replace(":", "/");
+
+            ObjectMap objectMap = new ObjectMap("parents", parents);
+            objectMap.putIfNotEmpty("description", params.description);
+            objectMap.putIfNotNull("relatedFiles", params.getRelatedFiles());
+            List<String> uriList = Arrays.asList(uriStr.split(","));
+
+            List<QueryResult<File>> queryResultList = new ArrayList<>();
+
+            if (uriList.size() == 1) {
+                // If it is just one uri to be linked, it will return an error response if there is some kind of error.
+                URI myUri = UriUtils.createUri(uriList.get(0));
+                String userId = catalogManager.getUserManager().getUserId(sessionId);
+                long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+                queryResultList.add(catalogManager.getFileManager().link(myUri, params.path, studyId, objectMap, sessionId));
+            } else {
+                for (String uri : uriList) {
+                    logger.info("uri: {}", uri);
+                    try {
+                        URI myUri = UriUtils.createUri(uri);
+                        String userId = catalogManager.getUserManager().getUserId(sessionId);
+                        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+                        queryResultList.add(catalogManager.getFileManager().link(myUri, params.path, studyId, objectMap, sessionId));
+                    } catch (URISyntaxException | CatalogException | IOException e) {
+                        queryResultList.add(new QueryResult<>("Link file", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
+                    }
+                }
+            }
+            return createOkResponse(queryResultList);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
     @GET
     @Path("/unlink")
@@ -1268,6 +1319,37 @@ public class FileWSServer extends OpenCGAWSServer {
                 List<Long> sampleIds = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
                 file.setSampleIds(sampleIds);
             }
+        }
+    }
+
+    public static class RelatedFile {
+        public String file;
+        public File.RelatedFile.Relation relation;
+    }
+
+    private static class FileLinkParams {
+        public String path;
+        public String description;
+        public List<RelatedFile> relatedFiles;
+
+        @Override
+        public String toString() {
+            return "FileLinkParams{" +
+                    "path='" + path + '\'' +
+                    ", description='" + description + '\'' +
+                    ", relatedFiles=" + relatedFiles +
+                    '}';
+        }
+
+        public List<File.RelatedFile> getRelatedFiles() {
+            if (ListUtils.isEmpty(relatedFiles)) {
+                return null;
+            }
+            List<File.RelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
+            for (RelatedFile relatedFile : relatedFiles) {
+                relatedFileList.add(new File.RelatedFile(new File().setName(relatedFile.file), relatedFile.relation));
+            }
+            return relatedFileList;
         }
     }
 

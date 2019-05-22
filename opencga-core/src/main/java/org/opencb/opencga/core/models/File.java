@@ -187,7 +187,9 @@ public class File {
         BAM,
         BAI,
         CRAM,
+        CRAI,
         FASTQ,
+        FASTA,
         PED,
 
         TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
@@ -236,6 +238,7 @@ public class File {
         COVERAGE,
         SEQUENCE,
         PEDIGREE,
+        REFERENCE_GENOME,
         NONE,
         UNKNOWN
     }
@@ -248,7 +251,8 @@ public class File {
         public enum Relation {
             PRODUCED_FROM,
             PART_OF_PAIR,
-            PEDIGREE
+            PEDIGREE,
+            REFERENCE_GENOME
         }
 
         public RelatedFile() {
