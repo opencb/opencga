@@ -998,7 +998,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         List<VariantQueryExecutor> executors = new ArrayList<>(6);
 
         executors.add(new SampleIndexCompoundHeterozygousQueryExecutor(
-                getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor()));
+                getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor(), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));
         executors.add(new SampleIndexVariantQueryExecutor(

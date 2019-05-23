@@ -47,6 +47,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
             VariantAnnotationUtils.TR_J_GENE,
             VariantAnnotationUtils.TR_V_GENE
     ));
+    public static final int DEFAULT_SAMPLING_SIZE = 500;
     private final VariantIterable iterable;
     private static Logger logger = LoggerFactory.getLogger(CompoundHeterozygousQueryExecutor.class);
 
@@ -100,6 +101,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         // Prepare query and options
         int skip = Math.max(0, inputOptions.getInt(QueryOptions.SKIP));
         int limit = Math.max(0, inputOptions.getInt(QueryOptions.LIMIT));
+        int samplingSize = getSamplingSize(inputOptions, DEFAULT_SAMPLING_SIZE, iterator);
         QueryOptions options = buildQueryOptions(inputOptions);
 
         query = new Query(query);
@@ -142,7 +144,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
                 includeSample.indexOf(proband),
                 includeSample.indexOf(mother),
                 includeSample.indexOf(father),
-                limit + skip, cts, biotypes);
+                Math.max(limit + skip, samplingSize), cts, biotypes);
 
 //        logger.debug("Got " + compoundHeterozygous.size() + " compHet groups with "
 //                + compoundHeterozygous.values().stream().mapToInt(List::size).sum() + " variants, "
@@ -151,6 +153,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         // Skip
         Iterator<Variant> variantIterator = compoundHeterozygous.iterator();
         Iterators.advance(variantIterator, skip);
+        variantIterator = Iterators.limit(variantIterator, limit);
 
         // Return either an iterator or a query result
         if (iterator) {
@@ -158,7 +161,14 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         } else {
             VariantQueryResult<Variant> result = VariantDBIterator.wrapper(variantIterator)
                     .toQueryResult(Collections.singletonMap(study, includeSample));
-            setNumTotalResults(unfilteredIterator, result, query, inputOptions);
+            if ((limit + skip) < samplingSize && compoundHeterozygous.size() < samplingSize) {
+                result.setApproximateCount(false);
+                result.setNumTotalResults(compoundHeterozygous.size());
+            } else {
+                setNumTotalResults(unfilteredIterator, result, query, inputOptions,
+                        unfilteredIterator.getCount(),
+                        compoundHeterozygous.size());
+            }
             try {
                 unfilteredIterator.close();
             } catch (Exception e) {
@@ -166,6 +176,11 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
             }
             return result;
         }
+    }
+
+    protected void setNumTotalResults(VariantDBIteratorWithCounts unfilteredIterator, VariantQueryResult<Variant> result,
+                                      Query query, QueryOptions inputOptions, int numVariantsFromPrimary, int numResults) {
+        setNumTotalResults(unfilteredIterator, result, query, inputOptions, null, numVariantsFromPrimary, numResults);
     }
 
     protected QueryOptions buildQueryOptions(QueryOptions options) {

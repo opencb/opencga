@@ -42,6 +42,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private final VariantQueryIterator queryIterator;
     private final QueryOptions options;
     private final BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory;
+    protected final Iterator<?> variantsIterator;
     private VariantDBIterator variantDBIterator;
     // Total number of elements to return. Includes the skipped elements. limit + skip
     private final int maxResults;
@@ -67,17 +68,8 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     public MultiVariantDBIterator(Iterator<?> variantsIterator, int batchSize,
                                   Query query, QueryOptions options,
                                   BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory) {
-        this(new VariantQueryIterator(variantsIterator, query, batchSize), options, iteratorFactory);
-    }
-
-    /**
-     * @param queryIterator   Query iterator. Provides queries to execute
-     * @param options         Query options to be used with the iterator factory
-     * @param iteratorFactory Iterator factory. See {@link VariantDBAdaptor#iterator()}
-     */
-    private MultiVariantDBIterator(VariantQueryIterator queryIterator, QueryOptions options,
-                                   BiFunction<Query, QueryOptions, VariantDBIterator> iteratorFactory) {
-        this.queryIterator = queryIterator;
+        this.variantsIterator = variantsIterator;
+        this.queryIterator = new VariantQueryIterator(this.variantsIterator, query, batchSize);
         this.options = options == null ? new QueryOptions() : new QueryOptions(options);
         this.iteratorFactory = Objects.requireNonNull(iteratorFactory);
         variantDBIterator = emptyIterator();

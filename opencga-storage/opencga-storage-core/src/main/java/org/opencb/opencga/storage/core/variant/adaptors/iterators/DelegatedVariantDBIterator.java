@@ -24,6 +24,10 @@ public class DelegatedVariantDBIterator extends VariantDBIterator {
         return delegated.addCloseable(closeable);
     }
 
+    public VariantDBIterator getDelegated() {
+        return delegated;
+    }
+
     @Override
     public long getTimeConverting() {
         return delegated.getTimeConverting();
