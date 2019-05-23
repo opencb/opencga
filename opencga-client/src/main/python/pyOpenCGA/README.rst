@@ -3,14 +3,14 @@
 PyOpenCGA
 ==========
 
-This Python client package makes use of the comprehensive RESTful web services API implemented for the `OpenCGA`_ framework.
+This Python client package makes use of the comprehensive RESTful web services API implemented for the `OpenCGA`_ platform.
+OpenCGA is an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation
 
-OpenCGA is an open-source project that aims to provide a Big Data storage engine and analysis framework for genomic scale data analysis of hundreds of terabytes or even petabytes. 
-OpenCGA provides a scalable and high-performance Storage Engine framework to index biological data such as BAM or VCF files using different NoSQL databases, currently only MongoDB has been fully developed. 
-A data analytics and genomic Analysis layer interface has been implemented over this big data storage index. 
-A metadata Catalog has been alse developed to provide authentification and ACLs and to keep track all of files and sample annotation.
+OpenCGA implements a secure and high performance platform for Big Data analysis and visualisation in current genomics.
+OpenCGA uses the most modern and advanced technologies to scale to petabytes of data. OpenCGA is designed and implemented to work with
+few million genomes. It is built on top of three main components: Catalog, Variant and Alignment Storage and Analysis.
 
-More info about this project in the `OpenCGA Wiki`_
+More info about this project in the `OpenCGA Docs`_
 
 Installation
 ------------
@@ -23,7 +23,7 @@ PyOpenCGA can be cloned in your local machine by executing in your terminal::
 
 Once you have downloaded the project you can install the library. We recommend to install it inside a `virtual environment`_::
 
-   $ cd opencga/tree/develop/opencga-client/src/main/python
+   $ cd opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA
    $ python setup.py install
 
 Pip install
@@ -86,8 +86,9 @@ The next step is to create the specific client for the data we want to query:
 
 .. code-block:: python
 
-    >>> projects = oc.projects # Query for projetcs
+    >>> projects = oc.projects # Query for projects
     >>> studies = oc.studies # Query for studies 
+    >>> samples = oc.samples()  # Query for samples
     >>> cohorts = oc.cohorts()  # Query for cohorts
 
 Now you can start asking to the OpenCGA RESTful service with pyOpenCGA:
@@ -137,6 +138,6 @@ The best way to know which data can be retrieved for each client check `OpenCGA 
 
 
 .. _OpenCGA: https://github.com/opencb/opencga
-.. _OpenCGA Wiki: https://github.com/opencb/opencga/wiki
+.. _OpenCGA Docs: http://docs.opencb.org/display/opencga
 .. _virtual environment: https://help.dreamhost.com/hc/en-us/articles/115000695551-Installing-and-using-virtualenv-with-Python-3 
 .. _OpenCGA web services: http://bioinfodev.hpc.cam.ac.uk/opencga/webservices/

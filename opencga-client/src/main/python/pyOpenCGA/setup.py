@@ -13,15 +13,25 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='pyOpenCGA',
-    version='0.8',
-    description='A REST client for OpenCGA web services',
+    name='pyopencga',
+    version='1.4.0',
+    description='A REST client for OpenCGA REST web services',
     long_description=long_description,
     long_description_content_type='text/x-rst',
+    url='https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA',
     packages=['pyopencga', 'pyopencga.rest_clients'],
     license='Apache Software License',
     author='David Gomez-Peregrina, Pablo Marín-García',
     author_email='david.gomez@mgviz.org, pmarin@kanteron.com',
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+    ],
     keywords='opencb opencga bioinformatics genomic database',
     install_requires=[
         'requests >= 2.7',
@@ -30,7 +40,7 @@ setup(
         'pyyaml >= 3.12'
     ],
     project_urls={
-        'Documentation': 'http://docs.opencb.org/display/opencga/RESTful+Web+Services',
+        'Documentation': 'http://docs.opencb.org/display/opencga/Python',
         'Source': 'https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA',
         'OpenCGA': 'https://github.com/opencb/opencga',
         'OpenCGA Documentation': 'http://docs.opencb.org/display/opencga',
