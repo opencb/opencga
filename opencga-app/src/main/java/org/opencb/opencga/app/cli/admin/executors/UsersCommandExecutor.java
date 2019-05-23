@@ -26,13 +26,9 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.LdapImportResult;
 
-import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -86,38 +82,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             String sessionId = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
             if (executor.syncAll) {
-                QueryResult<Group> allGroups = catalogManager.getStudyManager().getGroup(executor.study, null, sessionId);
-
-                boolean foundAny = false;
-                for (Group group : allGroups.getResult()) {
-                    if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(executor.authOrigin)) {
-                        foundAny = true;
-                        logger.info("Synchronising users from {} to {}", group.getSyncedFrom().getRemoteGroup(), group.getId());
-
-                        // Sync
-                        GroupParams groupParams = new GroupParams(StringUtils.join(group.getUserIds(), ","), GroupParams.Action.REMOVE);
-                        QueryResult<Group> deleteUsers = catalogManager.getStudyManager()
-                                .updateGroup(executor.study, group.getId(), groupParams, sessionId);
-                        if (deleteUsers.first().getUserIds().size() > 0) {
-                            logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
-                                    deleteUsers.first().getUserIds().size(), deleteUsers.first().getId());
-                            return;
-                        }
-
-                        ObjectMap params = new ObjectMap();
-                        params.putIfNotNull("group", group.getSyncedFrom().getRemoteGroup());
-                        params.putIfNotNull("study-group", group.getId());
-                        params.putIfNotNull("study", executor.study);
-                        params.putIfNotNull("expirationDate", executor.expDate);
-                        LdapImportResult ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                                executor.type, params, sessionId);
-
-                        printImportReport(ldapImportResult);
-                    }
-                }
-                if (!foundAny) {
-                    logger.info("No groups to sync found under study {}", executor.study);
-                }
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(executor.study, executor.authOrigin, sessionId);
             } else {
                 catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.from, executor.to, executor.study,
                         true, sessionId);
