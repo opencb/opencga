@@ -252,14 +252,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
-            Object o = parameters.get(QueryParams.RELATED_FILES.key());
-            if (o instanceof List<?>) {
-                List<Document> relatedFiles = new ArrayList<>(((List<?>) o).size());
-                for (Object relatedFile : ((List<?>) o)) {
-                    relatedFiles.add(getMongoDBDocument(relatedFile, "RelatedFile"));
-                }
-                fileParameters.put(QueryParams.RELATED_FILES.key(), relatedFiles);
-            }
+            List<File.RelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), File.RelatedFile.class);
+            List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
+            fileParameters.put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
         }
         if (parameters.containsKey(QueryParams.INDEX_TRANSFORMED_FILE.key())) {
             fileParameters.put(QueryParams.INDEX_TRANSFORMED_FILE.key(),

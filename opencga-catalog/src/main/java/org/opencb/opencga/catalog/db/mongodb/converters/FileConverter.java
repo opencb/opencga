@@ -68,17 +68,7 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
         document.put("experiment", new Document("id", experimentId));
 
         document.put("samples", convertSamples(file.getSamples()));
-
-        List<Document> relatedFiles = new ArrayList<>();
-        if (ListUtils.isNotEmpty(relatedFileList)) {
-            for (File.RelatedFile relatedFile : relatedFileList) {
-                relatedFiles.add(new Document()
-                        .append("relation", relatedFile.getRelation().name())
-                        .append("file", new Document("id", relatedFile.getFile().getId()))
-                );
-            }
-        }
-        document.put("relatedFiles", relatedFiles);
+        document.put("relatedFiles", convertRelatedFiles(relatedFileList));
 
         return document;
     }
@@ -95,5 +85,21 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
             }
         }
         return samples;
+    }
+
+    public List<Document> convertRelatedFiles(List<File.RelatedFile> relatedFileList) {
+        if (relatedFileList == null || relatedFileList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Document> relatedFiles = new ArrayList<>();
+        if (ListUtils.isNotEmpty(relatedFileList)) {
+            for (File.RelatedFile relatedFile : relatedFileList) {
+                relatedFiles.add(new Document()
+                        .append("relation", relatedFile.getRelation().name())
+                        .append("file", new Document("id", relatedFile.getFile().getId()))
+                );
+            }
+        }
+        return relatedFiles;
     }
 }

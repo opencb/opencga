@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
 
@@ -289,6 +291,27 @@ public class File {
             return this;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+
+            if (o == null || getClass() != o.getClass()) return false;
+
+            RelatedFile that = (RelatedFile) o;
+
+            return new EqualsBuilder()
+                    .append(file.getId(), that.file.getId())
+                    .append(relation, that.relation)
+                    .isEquals();
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder(17, 37)
+                    .append(file.getId())
+                    .append(relation)
+                    .toHashCode();
+        }
     }
 
     @Override
