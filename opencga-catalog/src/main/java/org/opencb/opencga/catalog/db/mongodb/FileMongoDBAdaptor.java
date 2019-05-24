@@ -24,6 +24,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -31,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -39,6 +41,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
@@ -434,7 +437,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         QueryResult<File> queryResult;
         try (DBIterator<File> dbIterator = iterator(query, options)) {
             while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
+                documentList.add(completeWithRelatedFiles(dbIterator.next(), null));
             }
         }
         queryResult = endQuery("Get", startTime, documentList);
@@ -455,7 +458,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     public QueryResult<File> get(long fileId, QueryOptions options) throws CatalogDBException {
         checkId(fileId);
         Query query = new Query(QueryParams.ID.key(), fileId);
-        return get(query, options);
+        QueryResult<File> fileQueryResult = get(query, options);
+        completeWithRelatedFiles(fileQueryResult.first(), null);
+        return fileQueryResult;
     }
 
     @Override
@@ -465,7 +470,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         QueryResult<File> queryResult;
         try (DBIterator<File> dbIterator = iterator(query, options, user)) {
             while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
+                documentList.add(completeWithRelatedFiles(dbIterator.next(), user));
             }
         }
         queryResult = endQuery("Get", startTime, documentList);
@@ -504,6 +509,44 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
+    }
+
+    private File completeWithRelatedFiles(File file, String user) {
+        if (ListUtils.isEmpty(file.getRelatedFiles())) {
+            return file;
+        }
+
+        // We store a map of fileId - Relation to be able to recover the whole structure
+        Map<Long, File.RelatedFile.Relation> relatedFilesMap = new HashMap();
+        for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
+            relatedFilesMap.put(relatedFile.getFile().getId(), relatedFile.getRelation());
+        }
+
+        Query query = new Query(QueryParams.ID.key(), relatedFilesMap.keySet());
+
+        // We will only return the name, path, uri and id of the related files
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.NAME.key(),
+                QueryParams.PATH.key(), QueryParams.URI.key()));
+
+        QueryResult<File> relatedQueryResult;
+        try {
+            if (StringUtils.isNotEmpty(user)) {
+                relatedQueryResult = get(query, queryOptions, user);
+            } else {
+                relatedQueryResult = get(query, queryOptions);
+            }
+        } catch (CatalogException e) {
+            logger.error("Could not query related files: {}", e.getMessage(), e);
+            return file;
+        }
+        List<File.RelatedFile> relatedFileList = new ArrayList<>(relatedQueryResult.getNumResults());
+
+        for (File tmpFile : relatedQueryResult.getResult()) {
+            relatedFileList.add(new File.RelatedFile(tmpFile, relatedFilesMap.get(tmpFile.getId())));
+        }
+        file.setRelatedFiles(relatedFileList);
+
+        return file;
     }
 
     @Override

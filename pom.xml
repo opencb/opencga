@@ -40,7 +40,7 @@
         <opencga.version>1.3.10</opencga.version>
         <java.version>1.8</java.version>
         <java-common-libs.version>3.6.0</java-common-libs.version>
-        <biodata.version>1.3.2</biodata.version>
+        <biodata.version>1.3.3-SNAPSHOT</biodata.version>
         <cellbase.version>4.5.4</cellbase.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <jackson.version>2.9.7</jackson.version>

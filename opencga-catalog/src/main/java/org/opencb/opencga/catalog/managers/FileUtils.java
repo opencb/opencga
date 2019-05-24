@@ -758,8 +758,11 @@ public class FileUtils {
                 case SAM:
                 case BAM:
                 case CRAM:
+                case CRAI:
                 case BAI:
                     return File.Bioformat.ALIGNMENT;
+                case FASTA:
+                    return File.Bioformat.REFERENCE_GENOME;
                 case BIGWIG:
                     return File.Bioformat.COVERAGE;
                 case FASTQ:
@@ -897,10 +900,17 @@ public class FileUtils {
                 return File.Format.SAM;
             case "cram":
                 return File.Format.CRAM;
+            case "crai":
+                return File.Format.CRAI;
             case "ped":
                 return File.Format.PED;
             case "fastq":
                 return File.Format.FASTQ;
+            case "fasta":
+            case "fa":
+            case "fas":
+            case "fsa":
+                return File.Format.FASTA;
             case "tsv":
                 return File.Format.TAB_SEPARATED_VALUES;
             case "csv":

@@ -2347,6 +2347,8 @@ public class FileManager extends ResourceManager<File> {
 
     private QueryResult<File> privateLink(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
+        params = ParamUtils.defaultObject(params, ObjectMap::new);
+
         CatalogIOManager ioManager = catalogIOManagerFactory.get(uriOrigin);
         if (!ioManager.exists(uriOrigin)) {
             throw new CatalogIOException("File " + uriOrigin + " does not exist");
@@ -2442,12 +2444,14 @@ public class FileManager extends ResourceManager<File> {
         String description = params.getString("description", "");
 
         List<File.RelatedFile> relatedFiles = params.getAsList("relatedFiles", File.RelatedFile.class);
-        for (File.RelatedFile relatedFile : relatedFiles) {
-            // FIXME: Change in 1.4.x to get the file id from "id"
-            String fileId = relatedFile.getFile().getName();
-            MyResourceId resource = getId(fileId, String.valueOf(studyId), sessionId);
-            // FIXME: Change to set the file uid in 1.4.x
-            relatedFile.getFile().setId(resource.getResourceId());
+        if (relatedFiles != null) {
+            for (File.RelatedFile relatedFile : relatedFiles) {
+                // FIXME: Change in 1.4.x to get the file id from "id"
+                String fileId = relatedFile.getFile().getName();
+                MyResourceId resource = getId(fileId, String.valueOf(studyId), sessionId);
+                // FIXME: Change to set the file uid in 1.4.x
+                relatedFile.getFile().setId(resource.getResourceId());
+            }
         }
 
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.

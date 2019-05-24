@@ -73,7 +73,7 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
         if (ListUtils.isNotEmpty(relatedFileList)) {
             for (File.RelatedFile relatedFile : relatedFileList) {
                 relatedFiles.add(new Document()
-                        .append("relation", relatedFile.getRelation())
+                        .append("relation", relatedFile.getRelation().name())
                         .append("file", new Document("id", relatedFile.getFile().getId()))
                 );
             }

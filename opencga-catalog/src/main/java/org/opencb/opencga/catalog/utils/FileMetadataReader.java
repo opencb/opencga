@@ -17,10 +17,10 @@
 package org.opencb.opencga.catalog.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -439,23 +440,26 @@ public class FileMetadataReader {
     }
 
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
-        if (file.getFormat() == File.Format.SAM
-                || file.getFormat() == File.Format.BAM
-                || FileUtils.detectFormat(fileUri) == File.Format.SAM
-                || FileUtils.detectFormat(fileUri) == File.Format.BAM) {
-            AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
-            try {
-                reader.open();
-                reader.pre();
-                reader.post();
-                //        reader.getSamHeader().get
-                return reader.getHeader();
-            } finally {
-                reader.close();
+        try {
+            if (file.getFormat() == File.Format.SAM || file.getFormat() == File.Format.BAM
+                    || FileUtils.detectFormat(fileUri) == File.Format.SAM || FileUtils.detectFormat(fileUri) == File.Format.BAM) {
+                BamManager bamManager = new BamManager(Paths.get(fileUri));
+                return bamManager.getHeader(study.getAlias());
+            } else if (file.getFormat() == File.Format.CRAM || FileUtils.detectFormat(fileUri) == File.Format.CRAM) {
+                Path reference = null;
+                for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
+                    if (relatedFile.getRelation() == File.RelatedFile.Relation.REFERENCE_GENOME) {
+                        reference = Paths.get(relatedFile.getFile().getUri());
+                        break;
+                    }
+                }
+                BamManager bamManager = new BamManager(Paths.get(fileUri), reference);
+                return bamManager.getHeader(study.getAlias());
             }
-        } else {
-            return null;
+        } catch (IOException e) {
+            logger.warn("{}", e.getMessage(), e);
         }
+        return null;
     }
 
     /**

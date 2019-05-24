@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -259,7 +258,27 @@ public class FileManagerTest extends GenericTest {
         return catalogManager.getStudyManager().get(String.valueOf(studyId), 
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), sessionIdUser).first().getUri();    
     }
-    
+
+    @Test
+    public void testLinkCram() throws CatalogException, IOException {
+        String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
+        File referenceFile = fileManager.link(Paths.get(reference).toUri(), "", studyId, null, sessionIdUser).first();
+        assertEquals(File.Format.FASTA, referenceFile.getFormat());
+        assertEquals(File.Bioformat.REFERENCE_GENOME, referenceFile.getBioformat());
+
+        File.RelatedFile relatedFile = new File.RelatedFile(new File().setName("hg19mini.fasta"),
+                File.RelatedFile.Relation.REFERENCE_GENOME);
+        String cramFile = getClass().getResource("/biofiles/cram/cram_with_crai_index.cram").getFile();
+        QueryResult<File> link = fileManager.link(Paths.get(cramFile).toUri(), "", studyId,
+                new ObjectMap("relatedFiles", Collections.singletonList(relatedFile)), sessionIdUser);
+        assertTrue(!link.first().getAttributes().isEmpty());
+        assertNotNull(link.first().getAttributes().get("alignmentHeader"));
+        assertEquals(File.Format.CRAM, link.first().getFormat());
+        assertEquals(File.Bioformat.ALIGNMENT, link.first().getBioformat());
+        assertEquals(referenceFile.getId(), link.first().getRelatedFiles().get(0).getFile().getId());
+        assertEquals(File.RelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
+    }
+
     @Test
     public void testLinkFolder() throws CatalogException, IOException {
 //        // We will link the same folders that are already created in this study into another folder
