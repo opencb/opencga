@@ -86,9 +86,9 @@ The next step is to create the specific client for the data we want to query:
 
 .. code-block:: python
 
-    >>> projects = oc.projects # Query for projetcs
-    >>> studies = oc.studies # Query for studies 
-    >>> cohorts = oc.cohorts()  # Query for cohorts
+    >>> projects = oc.projects # Initialize Projects client
+    >>> studies = oc.studies # Initialize Studies client
+    >>> cohorts = oc.cohorts  # Initialize Cohorst client
 
 Now you can start asking to the OpenCGA RESTful service with pyOpenCGA:
 
@@ -139,4 +139,4 @@ The best way to know which data can be retrieved for each client check `OpenCGA 
 .. _OpenCGA: https://github.com/opencb/opencga
 .. _OpenCGA Wiki: https://github.com/opencb/opencga/wiki
 .. _virtual environment: https://help.dreamhost.com/hc/en-us/articles/115000695551-Installing-and-using-virtualenv-with-Python-3 
-.. _OpenCGA web services: http://bioinfodev.hpc.cam.ac.uk/opencga/webservices/
+.. _OpenCGA web services: http://bioinfodev.hpc.cam.ac.uk/opencga-test/webservices/
