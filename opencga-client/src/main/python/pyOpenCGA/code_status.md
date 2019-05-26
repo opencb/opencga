@@ -5,10 +5,10 @@ Summary
 
 Swagger: http://bioinfodev.hpc.cam.ac.uk:/opencga-test/webservices/rest/swagger.json
 
-Last swagger capture: 2019-03-03
+Last swagger capture: 2019-05-26
 
 
 |Methods	|PENDING	|DOING	|DONE|
 | --- |---|---|---|
-|Implemented	|0	|0	|162|
-|Docstring	|72	|10	|80|
+|Implemented	|0	|0	|156|
+|Docstring	|3	|0	|153|
