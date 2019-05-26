@@ -9,45 +9,40 @@ class Admin(_ParentRestClient):
         _category = 'admin'
         super(Admin, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-
-    def sync_users(self, data, **options):
+    def group_by(self, fields, resource, **options): ## Improve method later
         """
-        Synchronise groups of users with LDAP groups
-        URL: /{apiVersion}/admin/users/sync
-        # Mandatory fields:
+        Group by operation
+        URL: /{apiVersion}/admin/audit/groupBy
 
-        - authOriginId: Authentication origin id defined in the main Catalog configuration.
-        - study: Study [[user@]project:]study where the group of users will be synced with the LDAP group.
-        - from: LDAP group to be synced with a catalog group.
-        - to: Catalog group that will be synced with the LDAP group.
-        - force: Boolean to force the synchronisation with already existing Catalog 
-                 groups that are not yet synchronised with any other group.
-
-        data = {
-            "authenticationOriginId": "string",
-            "from": "string",
-            "to": "string",
-            "study": "string",
-            "force": true
-        }
+        :param fields: Comma separated list of fields by which to group by.
+        :param resource: Resource to be grouped by. Available resources: ['user','project','study','file','sample','job','individual',
+            'cohort','dataset','panel','family','interpretation','tool','variant','variableSet']
+        :param action: Action performed
+        :param before: Object before update
+        :param after: Object after update
+        :param date: Date <,<=,>,>=(Format: yyyyMMddHHmmss) and yyyyMMddHHmmss-yyyyMMddHHmmss
+        :param count: Count the number of elements matching the group (bool:['true','false'])
+        :param limit: Maximum number of documents (groups) to be returned (default 50)
         """
 
-        return self._post('users', subcategory='sync', data=data, **options)
+        options['fields'] = fields
+        options['resource'] = resource
+
+        return self._get('audit', subcategory='groupBy', **options)
 
     def import_users(self, data, **options):
         """
         Import users or a group of users from LDAP
         URL: /{apiVersion}/admin/users/import
-        
+
         data = {
-            "authenticationOriginId": "string",
-            "users": [
-                "string"
-                ],
-            "group": "string",
-            "study": "string",
-            "studyGroup": "string",
-            "account": "string"
+          "authenticationOriginId": "string",
+          "id": [
+            "string"
+          ],
+          "resourceType": "USER",
+          "study": "string",
+          "studyGroup": "string"
         }
         """
 
@@ -59,21 +54,51 @@ class Admin(_ParentRestClient):
         URL: /{apiVersion}/admin/users/create
 
         data = {
-        "id": "string",
-        "name": "string",
-        "email": "string",
-        "password": "string",
-        "organization": "string",
-        "account": "string"
+          "id": "string",
+          "name": "string",
+          "email": "string",
+          "password": "string",
+          "organization": "string",
+          "type": "GUEST"
         }
         """
-        
+
         return self._post('users', subcategory='create', data=data, **options)
 
-    def handle_global_panels(self, data, **options):
+    def install_opencga_database(self, data, **options):
+        """
+        Install OpenCGA database. Creates and initialises the OpenCGA database.
+        URL: /{apiVersion}/admin/catalog/install
+
+        # Mandatory fields:
+        - secretKey: Secret key needed to authenticate through OpenCGA (JWT)
+        - password: Password that will be set to perform future administrative operations over OpenCGA
+
+        data = {
+            "password": "string",
+            "secretKey": "string"
+        }
+        """
+
+        return self-_post('catalog', subcategory='install', data=data, **options)
+
+    def sync_catalog(self, data, **options):
+        """
+        Sync Catalog into the Solr
+        URL: /{apiVersion}/admin/catalog/indexStats
+        """
+
+        return self._post('catalog', subcategory='indexStats', data=data, **options)
+
+    def panels_catalog(self, data, **options):
         """
         Handle global panels
         URL: /{apiVersion}/admin/catalog/panel
+
+        :param panelApp: Import panels from PanelApp (GEL)
+        :param overwrite: Flag indicating to overwrite installed panels in case of an ID conflict
+        :param delete: Comma separated list of global panel ids to delete
+        :param data: Panel parameters to be installed (check swagger data model)
         """
 
         return self._post('catalog', sucategory='panel', data=data, **options)
@@ -90,35 +115,26 @@ class Admin(_ParentRestClient):
 
         return self._post('catalog', subcategory='jwt', data=data, **options)
 
-    def install_opencga_database(self, data, **options):
+    def sync_users(self, data, **options):
         """
-        Install OpenCGA database. Creates and initialises the OpenCGA database.
-        URL: /{apiVersion}/admin/catalog/install
-
+        Synchronise groups of users with LDAP groups
+        URL: /{apiVersion}/admin/users/sync
         # Mandatory fields:
-        - secretKey: Secret key needed to authenticate through OpenCGA (JWT)
-        - password: Password that will be set to perform future administrative operations over OpenCGA
-        
+
+        - authOriginId: Authentication origin id defined in the main Catalog configuration.
+        - study: Study [[user@]project:]study where the group of users will be synced with the LDAP group.
+        - from: LDAP group to be synced with a catalog group.
+        - to: Catalog group that will be synced with the LDAP group.
+        - force: Boolean to force the synchronisation with already existing Catalog
+                 groups that are not yet synchronised with any other group.
+
         data = {
-            "password": "string",
-            "secretKey": "string"
+            "authenticationOriginId": "string",
+            "from": "string",
+            "to": "string",
+            "study": "string",
+            "force": true
         }
         """
-        
-        return self-_post('catalog', subcategory='install', data=data, **options)
 
-    def sync_catalog(self, data, **options):
-        """
-        Sync Catalog into the Solr
-        URL: /{apiVersion}/admin/catalog/indexStats
-        """
-
-        return self._post('catalog', subcategory='indexStats', data=data, **options)
-
-    def group_by(self, **options): ## Improve method later
-        """
-        Group by operation
-        URL: /{apiVersion}/admin/audit/groupBy
-        """
-
-        return self._get('audit', subcategory='groupBy', **options)
+        return self._post('users', subcategory='sync', data=data, **options)
