@@ -19,7 +19,7 @@ pipeline {
             }
         }
 
-        stage ('Build') {
+        stage ('Build With Hadoop Profile') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
             }
@@ -54,6 +54,43 @@ pipeline {
                 script {
                    def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "opencga-batch"]
                    def tag = sh(returnStdout: true, script: "git log -1 --pretty=%h").trim()
+                   withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                       for(int i =0; i < images.size(); i++){
+                           sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
+                           sh "docker push opencb/'${images[i]}':${tag}"
+                       }
+                   }
+                }
+             }
+        }
+
+  stage ('Build With Mongo Profile') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Dopencga.war.name=opencga -Dcheckstyle.skip'
+            }
+        }
+
+        stage ('Docker Build') {
+            options {
+                timeout(time: 25, unit: 'MINUTES')
+            }
+            steps {
+                sh 'docker build -t opencga-next -f opencga-app/app/scripts/docker/opencga-next/Dockerfile .'
+                sh 'docker build -t opencga-demo -f opencga-app/app/scripts/docker/opencga-demo/Dockerfile .'
+            }
+        }
+
+    stage ('Publish Docker Images') {
+             options {
+                    timeout(time: 25, unit: 'MINUTES')
+             }
+             steps {
+                script {
+                   def images = ["opencga-next", "opencga-demo"]
+                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim() + "-mongo"
                    withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
                        for(int i =0; i < images.size(); i++){
                            sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
