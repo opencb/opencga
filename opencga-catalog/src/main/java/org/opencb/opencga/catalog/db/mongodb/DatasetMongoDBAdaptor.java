@@ -122,7 +122,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         }
         Bson bson;
         try {
-            bson = parseQuery(query, false);
+            bson = parseQuery(query);
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get dataset: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
@@ -152,7 +152,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         }
         try {
-            bson = parseQuery(query, false);
+            bson = parseQuery(query);
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get dataset: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
@@ -206,7 +206,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         }
 
         if (!datasetParams.isEmpty()) {
-            QueryResult<UpdateResult> update = datasetCollection.update(parseQuery(query, false), new Document("$set", datasetParams),
+            QueryResult<UpdateResult> update = datasetCollection.update(parseQuery(query), new Document("$set", datasetParams),
                     null);
             return endQuery("Update cohort", startTime, Arrays.asList(update.getNumTotalResults()));
         }
@@ -222,7 +222,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = datasetCollection.remove(parseQuery(query, false), null);
+        QueryResult<DeleteResult> remove = datasetCollection.remove(parseQuery(query), null);
 
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.deleteError("Dataset");
@@ -309,7 +309,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     @Override
     public QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
         long startTime = startQuery();
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         Bson update = new Document("$push", new Document(QueryParams.FILES.key(), new Document("$each", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
@@ -319,7 +319,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     @Override
     public QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
         long startTime = startQuery();
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         Bson update = new Document("$pull", new Document(QueryParams.FILES.key(), new Document("$in", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
@@ -328,7 +328,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return datasetCollection.count(bson);
     }
 
@@ -339,7 +339,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query, false);
+        Bson bsonDocument = parseQuery(query);
         return datasetCollection.distinct(field, bsonDocument);
     }
 
@@ -350,14 +350,14 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     @Override
     public DBIterator<Dataset> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = datasetCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator, datasetConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = datasetCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
     }
@@ -376,19 +376,19 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return rank(datasetCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(datasetCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(datasetCollection, bsonQuery, fields, "name", options);
     }
 
@@ -414,12 +414,8 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         }
     }
 
-    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+    private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-
-        if (isolated) {
-            andBsonList.add(new Document("$isolated", 1));
-        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

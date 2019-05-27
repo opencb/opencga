@@ -359,8 +359,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_ID.key(), groupId)
-                .append("$isolated", 1);
+                .append(QueryParams.GROUP_ID.key(), groupId);
         Document update = new Document("$set", new Document("groups.$.userIds", members));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
@@ -377,8 +376,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_ID.key(), groupId)
-                .append("$isolated", 1);
+                .append(QueryParams.GROUP_ID.key(), groupId);
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
@@ -395,8 +393,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_ID.key(), groupId)
-                .append("$isolated", 1);
+                .append(QueryParams.GROUP_ID.key(), groupId);
         Bson pull = Updates.pullAll("groups.$.userIds", members);
         QueryResult<UpdateResult> update = studyCollection.update(query, pull, null);
         if (update.first().getMatchedCount() != 1) {
@@ -412,8 +409,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users))
-                .append("$isolated", 1);
+                .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users));
         Bson pull = Updates.pullAll("groups.$.userIds", users);
 
         // Pull those users while they are still there
@@ -427,8 +423,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public void deleteGroup(long studyId, String groupId) throws CatalogDBException {
         Bson queryBson = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_ID.key(), groupId)
-                .append("$isolated", 1);
+                .append(QueryParams.GROUP_ID.key(), groupId);
         Document pull = new Document("$pull", new Document("groups", new Document("id", groupId)));
         QueryResult<UpdateResult> update = studyCollection.update(queryBson, pull, null);
 
@@ -443,8 +438,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_ID.key(), groupId)
-                .append("$isolated", 1);
+                .append(QueryParams.GROUP_ID.key(), groupId);
         Document updates = new Document("$set", new Document("groups.$.syncedFrom", mongoDBDocument));
         studyCollection.update(query, updates, null);
     }
@@ -460,8 +454,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(QueryParams.GROUPS.key(), new Document("$elemMatch", new Document()
                         .append("userIds", user)
                         .append("syncedFrom.authOrigin", authOrigin)
-                ))
-                .append("$isolated", 1);
+                ));
         Bson pull = Updates.pull("groups.$.userIds", user);
 
         // Pull the user while it still belongs to a synced group
@@ -479,8 +472,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                             .append("userIds", new Document("$ne", user))
                             .append("syncedFrom.remoteGroup", new Document("$in", groupList))
                             .append("syncedFrom.authOrigin", authOrigin)
-                    ))
-                    .append("$isolated", 1);
+                    ));
             Document push = new Document("$addToSet", new Document("groups.$.userIds", user));
             do {
                 update = studyCollection.update(query, push, multi);
@@ -525,7 +517,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         // We update the study document to contain the new permission rules
         Query query = new Query(QueryParams.UID.key(), studyId);
         Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry, permissionDocumentList));
-        QueryResult<UpdateResult> updateResult = studyCollection.update(parseQuery(query, true), update, QueryOptions.empty());
+        QueryResult<UpdateResult> updateResult = studyCollection.update(parseQuery(query), update, QueryOptions.empty());
 
         if (updateResult.first().getModifiedCount() == 0) {
             throw new CatalogDBException("Unexpected error occurred when adding new permission rules to study");
@@ -1127,7 +1119,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return studyCollection.count(bson);
     }
 
@@ -1138,7 +1130,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return studyCollection.distinct(field, bson);
     }
 
@@ -1222,7 +1214,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
 
             Document updates = new Document("$set", studyParameters);
-            Long nModified = studyCollection.update(parseQuery(query, false), updates, null).getNumTotalResults();
+            Long nModified = studyCollection.update(parseQuery(query), updates, null).getNumTotalResults();
             return endQuery("Study update", startTime, Collections.singletonList(nModified));
         }
 
@@ -1237,7 +1229,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query, false), null);
+        QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query), null);
 
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.deleteError("Study");
@@ -1455,7 +1447,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Query query = new Query(QueryParams.UID.key(), studyId);
         QueryResult<Study> studyQueryResult = get(query, null);
         if (studyQueryResult.getResult().size() == 1) {
-            QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query, false), null);
+            QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query), null);
             if (remove.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
             }
@@ -1577,7 +1569,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         }
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
@@ -1586,19 +1578,19 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return rank(studyCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(studyCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(studyCollection, bsonQuery, fields, "name", options);
     }
 
@@ -1624,12 +1616,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
-    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
+    private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-
-        if (isolated) {
-            andBsonList.add(new Document("$isolated", 1));
-        }
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);

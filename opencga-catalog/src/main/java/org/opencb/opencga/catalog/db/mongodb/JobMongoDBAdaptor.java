@@ -155,7 +155,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query, false);
+        Bson bsonDocument = parseQuery(query);
         return jobCollection.count(bsonDocument);
     }
 
@@ -178,7 +178,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getJobPermission().name(), Entity.JOB.name());
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return jobCollection.count(bson);
     }
@@ -191,7 +191,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query, false);
+        Bson bsonDocument = parseQuery(query);
         return jobCollection.distinct(field, bsonDocument);
     }
 
@@ -206,7 +206,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Map<String, Object> jobParameters = getValidatedUpdateParams(parameters);
 
         if (!jobParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query, false), new Document("$set", jobParameters), null);
+            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query), new Document("$set", jobParameters), null);
             return endQuery("Update job", startTime, Arrays.asList(update.getNumTotalResults()));
         }
         return endQuery("Update job", startTime, new QueryResult<Long>());
@@ -220,7 +220,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query, false), null);
+        QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query), null);
 
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.deleteError("Job");
@@ -230,7 +230,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Job> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.UID.key(), id), false);
+        Bson query = parseQuery(new Query(QueryParams.UID.key(), id));
         Map<String, Object> myParams = getValidatedUpdateParams(parameters);
 
         if (myParams.isEmpty()) {
@@ -302,7 +302,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Query query = new Query(QueryParams.UID.key(), id);
         QueryResult<Job> jobQueryResult = get(query, null);
         if (jobQueryResult.getResult().size() == 1) {
-            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query, false), null);
+            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query), null);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
@@ -510,7 +510,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
 
         filterOutDeleted(query);
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(query, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);
@@ -537,21 +537,21 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return rank(jobCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(jobCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(jobCollection, bsonQuery, fields, "name", options);
     }
 
@@ -562,7 +562,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Entity.JOB.name());
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(jobCollection, bsonQuery, field, QueryParams.NAME.key(), options);
     }
 
@@ -573,7 +573,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Entity.JOB.name());
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(jobCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
     }
 
@@ -587,16 +587,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
     }
 
-    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
-        return parseQuery(query, isolated, null);
+    private Bson parseQuery(Query query) throws CatalogDBException {
+        return parseQuery(query, null);
     }
 
-    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-
-        if (isolated) {
-            andBsonList.add(new Document("$isolated", 1));
-        }
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);

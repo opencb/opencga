@@ -270,7 +270,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
 
         Document update = new Document()
                 .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
@@ -287,7 +287,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return individualCollection.count(bson);
     }
 
@@ -309,7 +309,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getIndividualPermission().name(), Entity.INDIVIDUAL.name());
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
         return individualCollection.count(bson);
@@ -323,7 +323,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return individualCollection.distinct(field, bson);
     }
 
@@ -397,7 +397,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
             query.put(Constants.ALL_VERSIONS, true);
 
-            Bson finalQuery = parseQuery(query, false);
+            Bson finalQuery = parseQuery(query);
             Document finalUpdateDocument = updateDocument.toFinalUpdateDocument();
             logger.debug("Individual update: query : {}, update: {}",
                     finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -416,12 +416,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         Document individualUpdate = updateDocument.toFinalUpdateDocument();
         if (!individualUpdate.isEmpty()) {
-            Bson finalQuery = parseQuery(query, false);
+            Bson finalQuery = parseQuery(query);
             logger.debug("Individual update: query : {}, update: {}",
                     finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     individualUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), individualUpdate,
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query), individualUpdate,
                     new QueryOptions("multi", true));
             return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
         }
@@ -623,7 +623,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = individualCollection.remove(parseQuery(query, false), null);
+        QueryResult<DeleteResult> remove = individualCollection.remove(parseQuery(query), null);
 
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.deleteError("Individual");
@@ -847,7 +847,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         filterOutDeleted(query);
-        Bson bson = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(query, queryForAuthorisedEntries);
 
         QueryOptions qOptions;
         if (options != null) {
@@ -880,21 +880,21 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return rank(individualCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, fields, "name", options);
     }
 
@@ -913,7 +913,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     Entity.INDIVIDUAL.name());
         }
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
@@ -932,7 +932,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     Entity.INDIVIDUAL.name());
         }
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
@@ -946,19 +946,15 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
     }
 
-    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
-        return parseQuery(query, isolated, null);
+    private Bson parseQuery(Query query) throws CatalogDBException {
+        return parseQuery(query, null);
     }
 
-    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         Document annotationDocument = null;
 
         Query queryCopy = new Query(query);
-
-        if (isolated) {
-            andBsonList.add(new Document("$isolated", 1));
-        }
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
