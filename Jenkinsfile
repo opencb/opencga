@@ -83,7 +83,7 @@ pipeline {
             }
         }
 
-    stage ('Publish Docker Images') {
+  stage ('Publish OpenCGA Demo') {
              options {
                     timeout(time: 25, unit: 'MINUTES')
              }
