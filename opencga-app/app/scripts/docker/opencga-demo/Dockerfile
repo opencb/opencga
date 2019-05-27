@@ -1,4 +1,4 @@
-FROM opencb/opencga-next
+FROM opencga-next
 
 ARG SOLR_VERSION="6.6.0"
 
@@ -17,6 +17,6 @@ EXPOSE 27017 28017
 WORKDIR /opt/opencga/bin
 
 # Copy init.sh which perform initialization setps.
-COPY init.sh init.sh
+COPY opencga-app/app/scripts/docker/opencga-demo/init.sh init.sh
 ENTRYPOINT ["/bin/bash", "-c", "./init.sh"]
 

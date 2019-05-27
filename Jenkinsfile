@@ -1,24 +1,6 @@
 pipeline {
     agent any
     stages {
-         stage ('Validate ARM Templates') {
-            options {
-                timeout(time: 5, unit: 'MINUTES')
-            }
-            steps {
-                sh 'cd opencga-app/app/scripts/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
-            }
-        }
-
-        stage ('Test ARM Scripts') {
-            options {
-                timeout(time: 5, unit: 'MINUTES')
-            }
-            steps {
-                sh 'cd opencga-app/app/scripts/azure/arm/scripts && docker build .'
-            }
-        }
-
         stage ('Build With Hadoop Profile') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
