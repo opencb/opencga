@@ -1,6 +1,6 @@
-from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient
+from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient
 
-class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
+class Files(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
     """
     This class contains methods for the Files webservices
     """
@@ -8,6 +8,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
     def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
         _category = 'files'
         super(Files, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+
 
     def aggregation_stats(self, **options):
         """
@@ -69,8 +70,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param status: status
         :param directory: directory under which we want to look for files or folders
         :param creationDate: creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss.
-            Examples: >2018, 2017-2018, <201805...)
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param description: description
         :param tags: tags
         :param size: size
@@ -191,7 +191,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._post('upload', data=data, **options)
 
-    def download(self, file, data, **options):
+    def download(self, file, **options):
         """
         Download file. The usage of /{file}/download webservice through Swagger is discouraged.
         An special DOWNLOAD permission is needed to download files from OpenCGA.
@@ -201,5 +201,4 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param study: Study [[user@]project:]study where study and project can be either the id or alias
         """
 
-        return self._post('download', query_id=file, data=data, **options)
-
+        return self._get('download', query_id=file, **options)

@@ -9,6 +9,7 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
         _category = 'jobs'
         super(Jobs, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def search(self, **options):
         """
         Job search method
@@ -18,10 +19,8 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param name: name
         :param toolName: tool name    
         :param status: status
-        :param creationDate: creation date (Format: yyyyMMddHHmmss. 
-            Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss. 
-            Examples: >2018, 2017-2018, <201805...)
+        :param creationDate: creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param ownerId: owner id
         :param date: date
         :param inputFiles: comma separated list of input file ids
@@ -47,4 +46,3 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._get('visit', query_id=job, **options)
-

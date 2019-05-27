@@ -9,6 +9,28 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         _category = 'studies'
         super(Studies, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
+    def aggregation_stats(self, study, **options):
+        """
+        Fetch catalog study stats
+        URL: /{apiVersion}/studies/{studies}/aggregationStats
+
+        :param study: study id
+        :param default: calculate default stats (bool)
+        :param fileFields: list of file fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param individualFields: list of individual fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param familyFields: list of family fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param sampleFields: list of sample fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        :param cohortFields: list of cohort fields separated by semicolons,
+            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
+        """
+
+        return self._get('aggregationStats', query_id=study, **options)
+
     def groups(self, study, **options):
         """
         Return the groups present in the studies
@@ -33,10 +55,8 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param alias: study alias
         :param fqn: study full qualified name
         :param type: type of study: CASE_CONTROL, CASE_SET...
-        :param creationDate: creation date (Format: yyyyMMddHHmmss.
-             Examples: >2018, 2017-2018, <201805...)
-        :param modificationDate: modification date (Format: yyyyMMddHHmmss.
-             Examples: >2018, 2017-2018, <201805...)
+        :param creationDate: creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
+        :param modificationDate: modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param status: status
         :param attributes: attributes
         :param nattributes: numerical attributes
@@ -74,27 +94,6 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('resyncFiles', query_id=study, **options)
 
-    def aggregation_stats(self, study, **options):
-        """
-        Fetch catalog study stats
-        URL: /{apiVersion}/studies/{studies}/aggregationStats
-
-        :param study: study id
-        :param default: calculate default stats (bool)
-        :param fileFields: list of file fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param individualFields: list of individual fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param familyFields: list of family fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param sampleFields: list of sample fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        :param cohortFields: list of cohort fields separated by semicolons,
-            e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type
-        """
-
-        return self._get('aggregationStats', query_id=study, **options)
-
     def create_groups(self, study, data, **options):
         """
         Create group [DEPRECATED]
@@ -128,8 +127,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('groups', query_id=study, subcategory='update', data=data,
-                          action=action, **options)
+        return self._post('groups', query_id=study, subcategory='update', data=data, action=action, **options)
 
 
     def update_users_from_group(self, study, group, data, action, **options):
@@ -146,8 +144,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('groups', query_id=study, subcategory='users/update', second_query_id=group,
-                          data=data, action=action, **options)
+        return self._post('groups', query_id=study, subcategory='users/update', second_query_id=group, data=data, action=action, **options)
 
     def permission_rules(self, study, entity, **options):
         """
@@ -212,8 +209,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
             ]
        """
 
-        return self._post('permissionRules', query_id=study, subcategory='update', entity=entity,
-              data=data, action=action, **options)
+        return self._post('permissionRules', query_id=study, subcategory='update', entity=entity, data=data, action=action, **options)
 
     def variablesets(self, study, **options):
         """
@@ -265,7 +261,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('variableSets', query_id=study, data=data, action=action, **options)
+        return self._post('variableSets', query_id=study, data=data, subcategory="update", action=action, **options)
 
     def update_variable_from_variableset(self, study, variable_set, action, **options):
         """
@@ -297,6 +293,6 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('variableSets', query_id=study, subcategory='variables/update',
-                          second_query_id=variable_set, data=data, action=action, **options)
+        return self._post('variableSets', query_id=study, subcategory='variables/update', second_query_id=variable_set, data=data,
+                          action=action, **options)
 

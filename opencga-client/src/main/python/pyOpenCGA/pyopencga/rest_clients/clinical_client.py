@@ -9,8 +9,8 @@ class Interpretations(_ParentRestClient):
 
     def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
         _category = 'analysis/clinical'
-        super(Interpretations, self).__init__(configuration, _category, session_id,
-              login_handler, *args, **kwargs)
+        super(Interpretations, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+
 
     def tool_tiering(self, **options):
         """
@@ -44,7 +44,6 @@ class Interpretations(_ParentRestClient):
 
         return self._get('interpretation', subcategory='stats', **options)
 
-
     def query(self, **options):
         """
         Query for reported variants
@@ -70,8 +69,7 @@ class Interpretations(_ParentRestClient):
         :param action: Action to be performed if the array of interpretations is being updated [ADD, REMOVE]
         """
 
-        return self._post('interpretations', query_id=clinical_analysis, subcategory='update',
-                           data=data, action=action, **options)
+        return self._post('interpretations', query_id=clinical_analysis, subcategory='update', data=data, action=action, **options)
 
     def update_interpretation(self, clinical_analysis, interpretation, data, **options):
         """
@@ -146,4 +144,3 @@ class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._get('search', **options)
-

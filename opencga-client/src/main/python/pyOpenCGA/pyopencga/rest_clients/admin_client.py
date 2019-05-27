@@ -9,6 +9,7 @@ class Admin(_ParentRestClient):
         _category = 'admin'
         super(Admin, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def sync_users(self, data, **options):
         """
         Synchronise groups of users with LDAP groups
@@ -121,4 +122,3 @@ class Admin(_ParentRestClient):
         """
 
         return self._get('audit', subcategory='groupBy', **options)
-

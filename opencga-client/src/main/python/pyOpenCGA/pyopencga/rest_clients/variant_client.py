@@ -9,6 +9,7 @@ class Variant(_ParentRestClient):
         _category = "analysis/variant"
         super(Variant, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def index(self, file, **options):
         """
         Index variant files
@@ -46,17 +47,17 @@ class Variant(_ParentRestClient):
 
         return self._get('index', **options)
 
-    def validate(self, file, data, **options):
-        """
-        Validate a VCF file ??
-        URL: /{apiVersion}/analysis/variant/validate
-
-        :param file: VCF file id, name or path
-        """
-
-        options['file'] = file
-
-        return self._post('validate', data=data, **options)
+    # def validate(self, file, data, **options):
+    #     """
+    #     Validate a VCF file ??
+    #     URL: /{apiVersion}/analysis/variant/validate
+    #
+    #     :param file: VCF file id, name or path
+    #     """
+    #
+    #     options['file'] = file
+    #
+    #     return self._post('validate', data=data, **options)
 
     def aggregation_stats(self, **options):
         """
@@ -108,19 +109,15 @@ class Variant(_ParentRestClient):
             {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
         :param transcriptionFlag: List of transcript annotation flags. e.g. CCDS, basic,
             cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno
-        :param geneTraitId: List of gene trait association id. e.g. "umls:C0007222",
-            "OMIM:269600"
+        :param geneTraitId: List of gene trait association id. e.g. "umls:C0007222", "OMIM:269600"
         :param go: List of GO (Gene Ontology) terms. e.g. "GO:0002020"
         :param expression: List of tissues of interest. e.g. "lung"
         :param proteinKeyword: List of Uniprot protein variant annotation keywords
         :param drug: List of drug names
-        :param functionalScore: Functional score: {functional_score}[<|>|<=|>=]{number}
-            e.g. cadd_scaled>5.2 , cadd_raw<=0.3
-        :param clinicalSignificance: Clinical significance: benign, likely_benign,
-            likely_pathogenic, pathogenic
+        :param functionalScore: Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3
+        :param clinicalSignificance: Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic
         :param customAnnotation: Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}
-        :param trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies,
-            descriptions,...
+        :param trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
         """
 
         return self._get('aggregationStats', **options)
@@ -132,24 +129,16 @@ class Variant(_ParentRestClient):
 
         :param study: Study where all the samples belong to
         :param sample:List of samples to check. By default, all samples
-        :param sampleAnnotation: Selects some samples using metadata information
-            from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith
-        :param genotype: Genotypes that the sample must have to be selected
-            (default 0/1,1/1)
-        :param all: Samples must be present in ALL variants or in ANY variant.
-            (Boolean, default is False)
-        :param id: List of IDs, these can be rs IDs (dbSNP) or variants in the
-            format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T
+        :param sampleAnnotation: Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456
+        :param genotype: Genotypes that the sample must have to be selected (default 0/1,1/1)
+        :param all: Samples must be present in ALL variants or in ANY variant. (Boolean, default is False)
+        :param id: List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T
         :param region: List of regions, these can be just a single chromosome
             name or regions in the format chr:start-end, e.g.: 2,3:100000-200000
-        :param gene: List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...).
-            This is an alias to 'xref' parameter
-        :param type: List of types, accepted values are SNV, MNV, INDEL, SV, CNV,
-            INSERTION, DELETION, e.g. SNV,INDEL
-        :param ct: List of SO consequence types, e.g. missense_variant,stop_lost or
-            SO:0001583,SO:0001578
-        :param populationFrequencyAlt: Alternate Population Frequency:
-            {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
+        :param gene: List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter
+        :param type: List of types, accepted values are SNV, MNV, INDEL, SV, CNV, INSERTION, DELETION, e.g. SNV,INDEL
+        :param ct: List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578
+        :param populationFrequencyAlt: Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
         :param include: Fields included in the response, whole JSON path must be provided
         :param exclude: Fields excluded in the response, whole JSON path must be provided
         """
@@ -189,43 +178,33 @@ class Variant(_ParentRestClient):
         URL: /{apiVersion}/analysis/variant/query
 
         :param groupBy: Group variants by: [ct, gene, ensemblGene]
-        :param histogram: Calculate histogram (Boolean, default is False).
-            Requires one region.
+        :param histogram: Calculate histogram (Boolean, default is False). Requires one region.
         :param interval: Histogram interval size (default 2000)
-        :param rank: Ranks different entities with the most number of
-            variants. Rank by: [ct, gene, ensemblGene]
-        :param include: Fields included in the response, whole JSON path must
-            be provided
-        :param exclude: Fields excluded in the response, whole JSON path must
-            be provided
+        :param rank: Ranks different entities with the most number of variants. Rank by: [ct, gene, ensemblGene]
+        :param include: Fields included in the response, whole JSON path must be provided
+        :param exclude: Fields excluded in the response, whole JSON path must be provided
         :param limit: Number of results to be returned in the queries
         :param skip: Number of results to skip in the queries
         :param count: Total number of results (Boolean, False/True)
         :param skipCount: Do not count total number of results (Boolean, False/True)
         :param sort: Sort the results (Boolean, False/True)
         :param summary: Fast fetch of main variant parameters (Boolean, False/True)
-        :param approximateCount: Get an approximate count, instead of an exact
-            total count. Reduces execution time (Boolean, False/True)
+        :param approximateCount: Get an approximate count, instead of an exact total count. Reduces execution time (Boolean, False/True)
         :param approximateCountSamplingSize: Sampling size to get the approximate
             count. Larger values increase accuracy but also increase execution time
-        :param id: List of IDs, these can be rs IDs (dbSNP) or variants in the
-            format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T
+        :param id: List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T
         :param region: List of regions, these can be just a single chromosome
             name or regions in the format chr:start-end, e.g.: 2,3:100000-200000
-        :param type: List of types, accepted values are SNV, MNV, INDEL, SV,
-            CNV, INSERTION, DELETION, e.g. SNV,INDEL
+        :param type: List of types, accepted values are SNV, MNV, INDEL, SV, CNV, INSERTION, DELETION, e.g. SNV,INDEL
         :param reference: Reference allele
         :param alternate: Main alternate allele
-        :param project: Project [user@]project where project can be either the
-            ID or the alias
+        :param project: Project [user@]project where project can be either the ID or the alias
         :param study: Filter variants from the given studies, these can be
             either the numeric ID or the alias with the format user@project:study
-        :param file: Filter variants from the files specified. This will set
-            includeFile parameter when not provided
+        :param file: Filter variants from the files specified. This will set includeFile parameter when not provided
         :param filter: Specify the FILTER for any of the files. If 'file' filter
             is provided, will match the file and the filter. e.g.: PASS,LowGQX
-        :param qual: Specify the QUAL for any of the files. If 'file' filter is
-            provided, will match the file and the qual. e.g.: >123.4
+        :param qual: Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4
         :param info: Filter by INFO attributes from file.
             [{file}:]{key}{op}{value}[,;]* . If no file is specified, will use
             all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 .
@@ -246,55 +225,37 @@ class Variant(_ParentRestClient):
         :param sampleAnnotation: Selects some samples using metadata information
             from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith
         :param sampleMetadata: Return the samples metadata group by study.
-            Sample names will appear in the same order as their corresponding
-            genotypes. (Boolean, False/True)
-        :param unknownGenotype: Returned genotype for unknown genotypes.
-            Common values: [0/0, 0|0, ./.]
+            Sample names will appear in the same order as their corresponding genotypes. (Boolean, False/True)
+        :param unknownGenotype: Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]
         :param cohort: Select variants with calculated stats for the selected cohorts
-        :param maf: Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}.
-            e.g. ALL<=0.4
-        :param mgf: Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}.
-            e.g. ALL<=0.4
-        :param missingAlleles: Number of missing alleles:
-            [{study:}]{cohort}[<|>|<=|>=]{number}
-        :param missingGenotypes: Number of missing genotypes:
-            [{study:}]{cohort}[<|>|<=|>=]{number}
-        :param family: Filter variants where any of the samples from the given
-            family contains the variant (HET or HOM_ALT)
+        :param maf: Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4
+        :param mgf: Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4
+        :param missingAlleles: Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}
+        :param missingGenotypes: Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}
+        :param family: Filter variants where any of the samples from the given family contains the variant (HET or HOM_ALT)
         :param familyPhenotype: Specify the phenotype to use for the mode of inheritance
         :param modeOfInheritance: Filter by mode of inheritance from a given
             family. Accepted values: [ monoallelic, monoallelicIncompletePenetrance,
             biallelic, biallelicIncompletePenetrance, XlinkedBiallelic,
             XlinkedMonoallelic, Ylinked ]
-        :param includeStudy: List of studies to include in the result. Accepts
-            'all' and 'none'.
+        :param includeStudy: List of studies to include in the result. Accepts 'all' and 'none'.
         :param includeFile: List of files to be returned. Accepts 'all' and 'none'.
-        :param includeSample: List of samples to be included in the result. Accepts
-            'all' and 'none'.
-        :param includeFormat: List of FORMAT names from Samples Data to include in
-            the output. e.g: DP,AD. Accepts 'all' and 'none'.
-        :param includeGenotype: Include genotypes, apart of other formats defined
-            with includeFormat
+        :param includeSample: List of samples to be included in the result. Accepts 'all' and 'none'.
+        :param includeFormat: List of FORMAT names from Samples Data to include in the output. e.g: DP,AD. Accepts 'all' and 'none'.
+        :param includeGenotype: Include genotypes, apart of other formats defined with includeFormat
         :param annotationExists: Return only annotated variants
-        :param gene: List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...).
-            This is an alias to 'xref' parameter
-        :param ct: List of SO consequence types, e.g. missense_variant,stop_lost or
-            SO:0001583,SO:0001578
+        :param gene: List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter
+        :param ct: List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578
         :param xref: List of any external reference, these can be genes, proteins or
-            variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar,
-            HPO, Cosmic, ...
+            variants. Accepted IDs include HGNC, Ensembl genes, dbSNP, ClinVar, HPO, Cosmic, ...
         :param biotype: List of biotypes, e.g. protein_coding
         :param proteinSubstitution: Protein substitution scores include SIFT and
             PolyPhen. You can query using the score {protein_score}[<|>|<=|>=]{number}
             or the description {protein_score}[~=|=]{description} e.g. polyphen>0.1,sift=tolerant
-        :param conservation: Filter by conservation score: {conservation_score}[<|>|<=|>=]{number}
-            e.g. phastCons>0.5,phylop<0.1,gerp>0.1
-        :param populationFrequencyAlt: Alternate Population Frequency:
-            {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
-        :param populationFrequencyRef: Reference Population Frequency:
-            {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
-        :param populationFrequencyMaf: Population minor allele frequency:
-            {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
+        :param conservation: Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1
+        :param populationFrequencyAlt: Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
+        :param populationFrequencyRef: Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
+        :param populationFrequencyMaf: Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01
         :param transcriptionFlag: List of transcript annotation flags.
             e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno
         :param geneTraitId: List of gene trait association id. e.g. "umls:C0007222" , "OMIM:269600"
@@ -302,20 +263,16 @@ class Variant(_ParentRestClient):
         :param expression: List of tissues of interest. e.g. "lung"
         :param proteinKeyword: List of Uniprot protein variant annotation keywords
         :param drug: List of drug names
-        :param functionalScore: Functional score: {functional_score}[<|>|<=|>=]{number}
-            e.g. cadd_scaled>5.2 , cadd_raw<=0.3
-        :param clinicalSignificance: Clinical significance: benign, likely_benign,
-            likely_pathogenic, pathogenic
-        :param customAnnotation: Custom annotation: {key}[<|>|<=|>=]{number}
-            or {key}[~=|=]{text}
+        :param functionalScore: Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3
+        :param clinicalSignificance: Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic
+        :param customAnnotation: Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}
         :param panel: Filter by genes from the given disease panel
-        :param trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs,
-            histologies, descriptions,...
+        :param trait: List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...
         """
 
         return self._get('query', **options)
 
-    def calculate_family_genotypes(self, family, mode_of_inheritance, disease, **options):
+    def calculate_family_genotypes(self, family, mode_of_inheritance, **options):
         """
         Calculate the possible genotypes for the members of a family
         URL: /{apiVersion}/analysis/variant/familyGenotypes
@@ -327,31 +284,16 @@ class Variant(_ParentRestClient):
 
         options['family'] = family
         options['modeOfInheritance'] = mode_of_inheritance
-        options['disease'] = disease
 
         return self._get('familyGenotypes', **options)
 
-    def facet(self, **options): ## [DEPRECATED]
-        """
-        This method has been renamed, use endpoint /stats instead [DEPRECATED]
-        URL: /{apiVersion}/analysis/variant/facet
-
-        :param facet: List of facet fields separated by semicolons,
-            e.g.: studies;type. For nested faceted fields use >>,
-            e.g.: studies>>biotype;type
-        :param facetRange: List of facet ranges separated by semicolons with the
-            format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1
-        """
-
-        return self._get('facet', **options)
-
-    def calculate_variant_stats(self, **options): ## [PENDING]
-        """
-        Calculate variant stats [PENDING]
-        URL: /{apiVersion}/analysis/variant/cohortStats
-        """
-
-        return self._get('cohortStats', **options)
+    # def calculate_variant_stats(self, **options): ## [PENDING]
+    #     """
+    #     Calculate variant stats [PENDING]
+    #     URL: /{apiVersion}/analysis/variant/cohortStats
+    #     """
+    #
+    #     return self._get('cohortStats', **options)
 
     def query_variant_annotations(self, **options):
         """

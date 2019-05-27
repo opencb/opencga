@@ -9,45 +9,6 @@ class Alignment(_ParentRestClient):
         _category = 'analysis/alignment'
         super(Alignment, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
-    def stats(self, file, **options):
-        """
-        Fetch the stats of an alignment file
-        URL: /{apiVersion}/analysis/alignment/stats
-
-        :param file: file id or name in Catalog
-        """
-
-        options['file'] = file
-
-        return self._get('stats', **options)
-
-    def coverage(self, file, region, **options):
-        """
-        Fetch the coverage of an alignment file
-        URL: /{apiVersion}/analysis/alignment/coverage
-
-        :param file: file id or name in Catalog
-        :param region: Comma-separated list of regions 'chr:start-end'
-        """
-
-        options['file'] = file
-        options['region'] = region
-
-        return self._get('coverage', **options)
-
-    def low_coverage(self, file, region, **options):
-        """
-        Fetch regions with a low coverage
-        URL: /{apiVersion}/analysis/alignment/lowCoverage
-
-        :param file: file id or name in Catalog
-        :param region: comma-separated regions 'chr:start-end' to check for low covered subregions
-        """
-
-        options['file'] = file
-        options['region'] = region
-
-        return self._get('lowCoverage', **options)
 
     def index(self, file, **options):
         """
@@ -60,6 +21,18 @@ class Alignment(_ParentRestClient):
         options['file'] = file
 
         return self._get('index', **options)
+
+    def stats(self, file, **options):
+        """
+        Fetch the stats of an alignment file
+        URL: /{apiVersion}/analysis/alignment/stats
+
+        :param file: file id or name in Catalog
+        """
+
+        options['file'] = file
+
+        return self._get('stats', **options)
 
     def query(self, file, region, **options):
         """
@@ -74,4 +47,16 @@ class Alignment(_ParentRestClient):
         options['region'] = region
 
         return self._get('query', **options)
+
+    def coverage(self, file, **options):
+        """
+        Fetch the coverage of an alignment file
+        URL: /{apiVersion}/analysis/alignment/coverage
+
+        :param file: file id or name in Catalog
+        """
+
+        options['file'] = file
+
+        return self._get('coverage', **options)
 

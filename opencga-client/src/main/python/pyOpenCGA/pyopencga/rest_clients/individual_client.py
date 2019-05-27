@@ -9,6 +9,7 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         _category = 'individuals'
         super(Individuals, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
+
     def aggregation_stats(self, **options):
         """
         Fetch catalog individual stats
@@ -63,17 +64,12 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         :param phenotypes: comma separated list of phenotype ids or names
         :param karyotypicSex: karyotypic sex (deafult = None)
             ['UNKNOWN', 'XX', 'XY', 'XO', 'XXY', 'XXX', 'XXYY', 'XXXY', 'XXXX', 'XYY', 'OTHER']
-        :param lifeStatus: life status (deafult = None)
-            ['ALIVE', 'ABORTED', 'DECEASED', 'UNBORN', 'STILLBORN', 'MISCARRIAGE', 'UNKNOWN']
-        :param affectationStatus: affectation status (default = None)
-            ['CONTROL', 'AFFECTED', 'UNAFFECTED', 'UNKNOWN']
+        :param lifeStatus: life status (deafult = None) ['ALIVE', 'ABORTED', 'DECEASED', 'UNBORN', 'STILLBORN', 'MISCARRIAGE', 'UNKNOWN']
+        :param affectationStatus: affectation status (default = None) ['CONTROL', 'AFFECTED', 'UNAFFECTED', 'UNKNOWN']
         :param creationDate: creation date (Format: yyyyMMddHHmmss)
-        :param modificationDate: Modification date (Format: yyyyMMddHHmmss.
-            Examples: >2018, 2017-2018, <201805...)
-        :param annotationsetName: DEPRECATED: Use annotation queryParam this way:
-            annotationSet[=|==|!|!=]{annotationSetName}
-        :param variableSet: DEPRECATED: Use annotation queryParam this way:
-            variableSet[=|==|!|!=]{variableSetId}
+        :param modificationDate: Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
+        :param annotationsetName: DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}
+        :param variableSet: DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}
         :param annotation: annotation, e.g: key1=value(;key2=value)
         :param skipCount: skip count (Bool, deafult=false)
         :param release: release value (Current release from the moment the individuals were first created)
@@ -87,4 +83,3 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         """
 
         return self._get('search', **options)
-

@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,22 +56,42 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
 
     protected final void setNumTotalResults(VariantDBIteratorWithCounts variantsFromPrimary, VariantQueryResult<Variant> result,
                                             Query query, QueryOptions options, Integer numIntersectQueries) {
+        setNumTotalResults(variantsFromPrimary, result, query, options, numIntersectQueries,
+                variantsFromPrimary.getCount(), result.getNumResults());
+    }
+
+    /**
+     * Set the approximate number of total results.
+     *
+     * @param variantsFromPrimary    Variants from primary source. Usually, a fast index source.
+     * @param result                 VariantQueryResult to modify
+     * @param query                  Query being executed
+     * @param options                Options of the query
+     * @param numIntersectQueries    Optional number of join queries.
+     * @param numVariantsFromPrimary Number of variants read from the primary source
+     * @param numResults             Final number of results
+     */
+    protected final void setNumTotalResults(VariantDBIteratorWithCounts variantsFromPrimary, VariantQueryResult<Variant> result,
+                                            Query query, QueryOptions options,
+                                            Integer numIntersectQueries, int numVariantsFromPrimary, int numResults) {
         // TODO: Allow exact count with "approximateCount=false"
-        if (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false)) {
-            int sampling = variantsFromPrimary.getCount();
+        if (shouldGetApproximateCount(options)) {
             int limit = options.getInt(QueryOptions.LIMIT, 0);
             int skip = options.getInt(QueryOptions.SKIP, 0);
-            if (limit > 0 && limit > result.getNumResults()) {
-                if (skip > 0 && result.getNumResults() == 0) {
+            if (limit > 0 && limit > numResults) {
+                if (skip > 0 && numResults == 0) {
                     // Skip could be greater than numTotalResults. Approximate count
                     result.setApproximateCount(true);
                 } else {
                     // Less results than limit. Count is not approximated
                     result.setApproximateCount(false);
                 }
-                result.setNumTotalResults(result.getNumResults() + skip);
-            } else if (variantsFromPrimary.hasNext()) {
-                long totalCount;
+                result.setNumTotalResults(numResults + skip);
+                return;
+            }
+
+            long totalCount;
+            if (variantsFromPrimary.hasNext()) {
                 if (!isValidParam(query, REGION)) {
                     totalCount = estimateTotalCount(variantsFromPrimary, query);
 //                } else if (sampleIndexDBAdaptor.isFastCount(sampleIndexQuery) && sampleIndexQuery.getSamplesMap().size() == 1) {
@@ -84,29 +105,45 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
                     totalCount = variantsFromPrimary.getCount();
                     logger.info("Drain variants from " + primarySource + " : " + TimeUtils.durationToString(stopWatch));
                 }
-                long approxCount;
-                logger.info("totalCount = " + totalCount);
-                logger.info("result.getNumResults() = " + result.getNumResults());
-                logger.info("numQueries = " + numIntersectQueries);
-                if (numIntersectQueries != null && numIntersectQueries == 1) {
-                    // Just one query with limit, index was accurate enough
-                    approxCount = totalCount;
-                } else {
-                    // Multiply first to avoid loss of precision
-                    approxCount = totalCount * result.getNumResults() / sampling;
-                    logger.info("sampling = " + sampling);
-                }
-                logger.info("approxCount = " + approxCount);
-                result.setApproximateCount(true);
-                result.setNumTotalResults(approxCount);
-                result.setApproximateCountSamplingSize(sampling);
             } else {
-                logger.info(primarySource + " Iterator exhausted");
-                logger.info("sampling = " + sampling);
-                result.setApproximateCount(sampling != result.getNumResults());
-                result.setNumTotalResults(sampling);
+                logger.info("Variants from " + primarySource + " exhausted");
+                totalCount = variantsFromPrimary.getCount();
             }
+            long approxCount;
+            logger.info("numResults = " + numResults);
+            logger.info("numResultsFromPrimary = " + numVariantsFromPrimary);
+            logger.info("totalCountFromPrimary = " + totalCount);
+            logger.info("numQueries = " + numIntersectQueries);
+            if (numIntersectQueries != null && numIntersectQueries == 1) {
+                // Just one query with limit, index was accurate enough
+                approxCount = totalCount;
+            } else {
+                // Multiply first to avoid loss of precision
+                approxCount = totalCount * numResults / numVariantsFromPrimary;
+            }
+            logger.info("approxCount = " + approxCount);
+            result.setApproximateCount(true);
+            result.setNumTotalResults(approxCount);
+            result.setApproximateCountSamplingSize(numVariantsFromPrimary);
         }
+    }
+
+    protected boolean shouldGetApproximateCount(QueryOptions options) {
+        return shouldGetApproximateCount(options, false);
+    }
+
+    protected boolean shouldGetApproximateCount(QueryOptions options, boolean iterator) {
+        return !iterator && (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false));
+    }
+
+    protected int getSamplingSize(QueryOptions inputOptions, int defaultSamplingSize, boolean iterator) {
+        int samplingSize;
+        if (shouldGetApproximateCount(inputOptions, iterator)) {
+            samplingSize = inputOptions.getInt(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), defaultSamplingSize);
+        } else {
+            samplingSize = 0;
+        }
+        return samplingSize;
     }
 
     private long estimateTotalCount(VariantDBIteratorWithCounts variantsFromPrimary, Query query) {
