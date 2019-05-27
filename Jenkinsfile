@@ -73,7 +73,7 @@ pipeline {
             }
         }
 
-        stage ('Docker Build') {
+        stage ('Docker Build Demo') {
             options {
                 timeout(time: 25, unit: 'MINUTES')
             }
