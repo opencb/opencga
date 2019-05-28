@@ -255,8 +255,20 @@ public class UserManager extends AbstractManager {
                         group.getSyncedFrom().getAuthOrigin());
                 foundAny = true;
 
-                List<User> userList = authenticationManagerMap.get(group.getSyncedFrom().getAuthOrigin())
-                        .getUsersFromRemoteGroup(group.getSyncedFrom().getRemoteGroup());
+                List<User> userList;
+                try {
+                    userList = authenticationManagerMap.get(group.getSyncedFrom().getAuthOrigin())
+                            .getUsersFromRemoteGroup(group.getSyncedFrom().getRemoteGroup());
+                } catch (CatalogException e) {
+                    // There was some kind of issue for which we could not retrieve the group information.
+                    logger.info("Removing all users from group '{}' belonging to group '{}' in the external authentication origin",
+                            group.getId(), group.getSyncedFrom().getAuthOrigin());
+                    logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
+                            group.getId(), group.getSyncedFrom().getAuthOrigin());
+                    GroupParams groupParams = new GroupParams("", GroupParams.Action.SET);
+                    catalogManager.getStudyManager().updateGroup(study, group.getId(), groupParams, token);
+                    continue;
+                }
                 for (User user : userList) {
                     try {
                         create(user, token);
