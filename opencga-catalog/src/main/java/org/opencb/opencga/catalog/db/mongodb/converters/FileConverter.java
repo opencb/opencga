@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.core.models.File;
@@ -56,6 +57,9 @@ public class FileConverter extends AnnotableConverter<File> {
 
     @Override
     public Document convertToStorageType(File file, List<VariableSet> variableSetList) {
+        List<File.RelatedFile> relatedFileList = file.getRelatedFiles();
+        file.setRelatedFiles(null);
+
         Document document = super.convertToStorageType(file, variableSetList);
         document.remove(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
@@ -66,6 +70,7 @@ public class FileConverter extends AnnotableConverter<File> {
         document.put("job", new Document("uid", jobId));
 
         document.put("samples", convertSamples(file.getSamples()));
+        document.put("relatedFiles", convertRelatedFiles(relatedFileList));
 
         document.put(FileMongoDBAdaptor.REVERSE_NAME, StringUtils.reverse(file.getName()));
 
@@ -84,5 +89,21 @@ public class FileConverter extends AnnotableConverter<File> {
             }
         }
         return samples;
+    }
+
+    public List<Document> convertRelatedFiles(List<File.RelatedFile> relatedFileList) {
+        if (relatedFileList == null || relatedFileList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Document> relatedFiles = new ArrayList<>();
+        if (ListUtils.isNotEmpty(relatedFileList)) {
+            for (File.RelatedFile relatedFile : relatedFileList) {
+                relatedFiles.add(new Document()
+                        .append("relation", relatedFile.getRelation().name())
+                        .append("file", new Document("uid", relatedFile.getFile().getUid()))
+                );
+            }
+        }
+        return relatedFiles;
     }
 }

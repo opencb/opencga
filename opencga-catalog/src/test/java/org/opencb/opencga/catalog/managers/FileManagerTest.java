@@ -100,7 +100,27 @@ public class FileManagerTest extends AbstractManagerTest {
         return catalogManager.getStudyManager().get(studyFqn,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), sessionIdUser).first().getUri();    
     }
-    
+
+    @Test
+    public void testLinkCram() throws CatalogException, IOException {
+        String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
+        File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, sessionIdUser).first();
+        assertEquals(File.Format.FASTA, referenceFile.getFormat());
+        assertEquals(File.Bioformat.REFERENCE_GENOME, referenceFile.getBioformat());
+
+        File.RelatedFile relatedFile = new File.RelatedFile(new File().setId("hg19mini.fasta"),
+                File.RelatedFile.Relation.REFERENCE_GENOME);
+        String cramFile = getClass().getResource("/biofiles/cram/cram_with_crai_index.cram").getFile();
+        QueryResult<File> link = fileManager.link(studyFqn, Paths.get(cramFile).toUri(), "",
+                new ObjectMap("relatedFiles", Collections.singletonList(relatedFile)), sessionIdUser);
+        assertTrue(!link.first().getAttributes().isEmpty());
+        assertNotNull(link.first().getAttributes().get("alignmentHeader"));
+        assertEquals(File.Format.CRAM, link.first().getFormat());
+        assertEquals(File.Bioformat.ALIGNMENT, link.first().getBioformat());
+        assertEquals(referenceFile.getId(), link.first().getRelatedFiles().get(0).getFile().getId());
+        assertEquals(File.RelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
+    }
+
     @Test
     public void testLinkFolder() throws CatalogException, IOException {
 //        // We will link the same folders that are already created in this study into another folder

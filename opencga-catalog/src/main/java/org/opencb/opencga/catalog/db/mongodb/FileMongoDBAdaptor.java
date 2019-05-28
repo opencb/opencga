@@ -313,14 +313,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
-            Object o = parameters.get(QueryParams.RELATED_FILES.key());
-            if (o instanceof List<?>) {
-                List<Document> relatedFiles = new ArrayList<>(((List<?>) o).size());
-                for (Object relatedFile : ((List<?>) o)) {
-                    relatedFiles.add(getMongoDBDocument(relatedFile, "RelatedFile"));
-                }
-                document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFiles);
-            }
+            List<File.RelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), File.RelatedFile.class);
+            List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
+            document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
         }
         if (parameters.containsKey(QueryParams.INDEX_TRANSFORMED_FILE.key())) {
             document.getSet().put(QueryParams.INDEX_TRANSFORMED_FILE.key(),
@@ -627,8 +622,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), null, options);
+        return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, this,
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), null, options);
     }
 
     @Override
@@ -637,8 +632,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new FileMongoDBIterator<>(mongoCursor, null, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), null, queryOptions);
+        return new FileMongoDBIterator<>(mongoCursor, null, null, this,
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), null, queryOptions);
     }
 
     @Override
@@ -651,8 +646,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, fileConverter, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), user, options);
+        return new FileMongoDBIterator<>(mongoCursor, fileConverter, iteratorFilter, this,
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     @Override
@@ -668,8 +663,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), user, options);
+        return new FileMongoDBIterator<>(mongoCursor, null, iteratorFilter, this,
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {

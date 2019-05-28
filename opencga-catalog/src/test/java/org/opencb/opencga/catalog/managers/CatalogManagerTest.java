@@ -192,6 +192,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Ignore
     @Test
+    public void syncUsers() throws CatalogException {
+        // Action only for admins
+        String token = catalogManager.getUserManager().login("admin", "admin");
+
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", "bio", "bio", studyFqn, true, token);
+        QueryResult<Group> bio = catalogManager.getStudyManager().getGroup(studyFqn, "bio", sessionIdUser);
+
+        assertEquals(1, bio.getNumResults());
+        assertEquals(0, bio.first().getUserIds().size());
+
+        catalogManager.getUserManager().syncAllUsersOfExternalGroup(studyFqn, "ldap", token);
+        bio = catalogManager.getStudyManager().getGroup(studyFqn, "bio", sessionIdUser);
+
+        assertEquals(1, bio.getNumResults());
+        assertTrue(!bio.first().getUserIds().isEmpty());
+    }
+
+    @Ignore
+    @Test
     public void importLdapGroups() throws CatalogException, IOException {
         // Action only for admins
         String remoteGroup = "bio";

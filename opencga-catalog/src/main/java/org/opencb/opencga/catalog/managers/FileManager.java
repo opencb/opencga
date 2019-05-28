@@ -413,8 +413,7 @@ public class FileManager extends AnnotationSetManager<File> {
             File json = fileList.get(0);
 
             /* Update relations */
-
-            File.RelatedFile producedFromRelation = new File.RelatedFile(vcf.getUid(), File.RelatedFile.Relation.PRODUCED_FROM);
+            File.RelatedFile producedFromRelation = new File.RelatedFile(vcf, File.RelatedFile.Relation.PRODUCED_FROM);
 
             // Update json file
             logger.debug("Updating json relation");
@@ -2070,7 +2069,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         if (file.getRelatedFiles() != null) {
                             for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
                                 if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
-                                    Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), relatedFile.getFileId());
+                                    Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), relatedFile.getFile().getUid());
                                     file = get(studyStr, query, null, sessionId).first();
                                     break;
                                 }
@@ -2657,7 +2656,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 transformedFromFileIds.addAll(
                         fileAux.getRelatedFiles().stream()
                                 .filter(myFile -> myFile.getRelation() == File.RelatedFile.Relation.PRODUCED_FROM)
-                                .map(File.RelatedFile::getFileId)
+                                .map(File.RelatedFile::getFile)
+                                .map(File::getUid)
                                 .collect(Collectors.toSet())
                 );
             }
@@ -2737,7 +2737,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 fileIds.addAll(
                         transformedFile.getRelatedFiles().stream()
                                 .filter(myFile -> myFile.getRelation() == File.RelatedFile.Relation.PRODUCED_FROM)
-                                .map(File.RelatedFile::getFileId)
+                                .map(File.RelatedFile::getFile)
+                                .map(File::getUid)
                                 .collect(Collectors.toSet())
                 );
             }
@@ -2936,6 +2937,15 @@ public class FileManager extends AnnotationSetManager<File> {
         boolean resync = params.getBoolean("resync", false);
         String description = params.getString("description", "");
         String checksum = params.getString(FileDBAdaptor.QueryParams.CHECKSUM.key(), "");
+
+        List<File.RelatedFile> relatedFiles = params.getAsList("relatedFiles", File.RelatedFile.class);
+        if (relatedFiles != null) {
+            for (File.RelatedFile relatedFile : relatedFiles) {
+                File tmpFile = internalGet(study.getUid(), relatedFile.getFile().getId(), INCLUDE_FILE_IDS, userId).first();
+                relatedFile.setFile(tmpFile);
+            }
+        }
+
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
         Path catalogPath = Paths.get(pathDestiny);
 
@@ -2986,9 +2996,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 File subfile = new File(externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, checksum, TimeUtils.getTime(), TimeUtils.getTime(),
                         description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
-                        Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                        studyManager.getCurrentRelease(study, userId), Collections.emptyList(), Collections.emptyMap(),
-                        Collections.emptyMap());
+                        Collections.emptyList(), new Job(), relatedFiles, null, studyManager.getCurrentRelease(study, userId),
+                        Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
                 subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                 checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
                 QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
@@ -3060,7 +3069,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
                                     TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
-                                    new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                                    new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
                                     null, studyManager.getCurrentRelease(study, userId), Collections.emptyList(),
                                     Collections.emptyMap(), Collections.emptyMap());
                             folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
@@ -3112,7 +3121,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
                                     TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
-                                    new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                                    new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
                                     null, studyManager.getCurrentRelease(study, userId), Collections.emptyList(),
                                     Collections.emptyMap(), Collections.emptyMap());
                             subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));

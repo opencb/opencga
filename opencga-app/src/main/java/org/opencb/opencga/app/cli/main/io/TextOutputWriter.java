@@ -278,7 +278,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     file.getRelatedFiles() != null ?
                             StringUtils.join(file.getRelatedFiles()
                                     .stream()
-                                    .map(File.RelatedFile::getFileId)
+                                    .map(File.RelatedFile::getFile)
+                                    .map(File::getId)
                                     .collect(Collectors.toList()), ", ")
                             : "-",
                     file.getSamples() != null ?
