@@ -65,6 +65,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public VariantDBIterator iterator(SampleIndexQuery query) {
+        return iterator(query, QueryOptions.empty());
+    }
+
+    public VariantDBIterator iterator(SampleIndexQuery query, QueryOptions options) {
         String study = query.getStudy();
         Map<String, List<String>> samples = query.getSamplesMap();
 
@@ -84,7 +88,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 return VariantDBIterator.emptyIterator();
             } else {
                 logger.info("Single sample indexes iterator");
-                return internalIterator(query.forSample(sample, filteredGts));
+                SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, filteredGts));
+                return applyLimitSkip(iterator, options);
             }
         }
 
@@ -113,14 +118,31 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 }
             }
         }
+        VariantDBIterator iterator;
         if (operation.equals(QueryOperation.OR)) {
             logger.info("Union of " + iterators.size() + " sample indexes");
-            return new UnionMultiVariantKeyIterator(iterators);
+            iterator = new UnionMultiVariantKeyIterator(iterators);
         } else {
             logger.info("Intersection of " + iterators.size() + " sample indexes plus " + negatedIterators.size() + " negated indexes");
-            return new IntersectMultiVariantKeyIterator(iterators, negatedIterators);
+            iterator = new IntersectMultiVariantKeyIterator(iterators, negatedIterators);
         }
 
+        return applyLimitSkip(iterator, options);
+    }
+
+    protected VariantDBIterator applyLimitSkip(VariantDBIterator iterator, QueryOptions options) {
+        int limit = options.getInt(QueryOptions.LIMIT, -1);
+        int skip = options.getInt(QueryOptions.SKIP, -1);
+        // Client site limit-skip
+        if (skip > 0) {
+            Iterators.advance(iterator, skip);
+        }
+        if (limit > 0) {
+            Iterator<Variant> it = Iterators.limit(iterator, limit);
+            return VariantDBIterator.wrapper(it).addCloseable(iterator);
+        } else {
+            return iterator;
+        }
     }
 
     /**
@@ -384,6 +406,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (query.getMendelianError()) {
             scan.addColumn(family, SampleIndexSchema.toMendelianErrorColumn());
         }
+        scan.setCaching(hBaseManager.getConf().getInt("hbase.client.scanner.caching", 100));
 
         logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()) + " == "
                 + SampleIndexSchema.rowKeyToString(scan.getStartRow()));
@@ -391,10 +414,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 + SampleIndexSchema.rowKeyToString(scan.getStopRow()));
         logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
                 .stream().map(Bytes::toString).collect(Collectors.joining(",")));
-        logger.info("MaxResultSize = " + scan.getMaxResultSize());
+//        logger.info("MaxResultSize = " + scan.getMaxResultSize());
 //        logger.info("Filters = " + scan.getFilter());
 //        logger.info("Batch = " + scan.getBatch());
-//        logger.info("Caching = " + scan.getCaching());
+        logger.info("Caching = " + scan.getCaching());
         logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), (byte) 0xFF));
         logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), query.getFileIndex()));
         if (query.hasFatherFilter()) {
