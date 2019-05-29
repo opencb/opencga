@@ -70,11 +70,11 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
             configuration.getCatalog().getDatabase().setUser(user);
         }
 
+        if (configuration.getAdmin() == null) {
+            configuration.setAdmin(new Admin());
+        }
         if (StringUtils.isNotEmpty(password)) {
-            if (configuration.getAdmin() == null) {
-                configuration.setAdmin(new Admin());
-            }
-            configuration.getAdmin().setPassword(password);
+            configuration.getCatalog().getDatabase().setPassword(password);
         }
 
         if (StringUtils.isNotEmpty(adminPassword)) {

@@ -109,7 +109,12 @@ public class NewStudyMetadata extends AbstractStorageMigrator {
                 String sampleName = entry.getKey();
 
                 SampleMetadata sampleMetadata = new SampleMetadata(studyId, sampleId, sampleName);
-                sampleMetadata.setFiles(new HashSet<>(filesInSample.get(sampleId)));
+                List<Integer> files = filesInSample.get(sampleId);
+                if (files != null) {
+                    sampleMetadata.setFiles(new HashSet<>(files));
+                } else {
+                    sampleMetadata.setFiles(new HashSet<>());
+                }
                 if (sampleMetadata.getFiles().stream().anyMatch(sc.getIndexedFiles()::contains)) {
                     sampleMetadata.setIndexStatus(TaskMetadata.Status.READY);
                 }
