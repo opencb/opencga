@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -329,7 +330,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(catalogOptions.databaseHost));
         }
         if (adminOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(adminOptions.adminPassword);
+            configuration.setAdmin(new Admin(adminOptions.adminPassword, null));
         }
     }
 }

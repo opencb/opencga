@@ -256,7 +256,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
                 .collect(Collectors.toList());
         assertEquals(1, relatedFiles.size());
-        assertEquals(inputFile.getUid(), relatedFiles.get(0).getFileId());
+        assertEquals(inputFile.getUid(), relatedFiles.get(0).getFile().getUid());
 
         assertEquals(transformedFile.getUid(), inputFile.getIndex().getTransformedFile().getId());
 
@@ -350,7 +350,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                     .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
                     .collect(Collectors.toList());
             assertEquals(1, relatedFiles.size());
-            assertEquals(inputFile.getUid(), relatedFiles.get(0).getFileId());
+            assertEquals(inputFile.getUid(), relatedFiles.get(0).getFile().getUid());
         }
 
 
@@ -365,7 +365,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             if (input.getRelatedFiles().isEmpty()) {
                 indexedFileId = input.getId();
             } else {
-                long indexedFileUid = input.getRelatedFiles().get(0).getFileId();
+                long indexedFileUid = input.getRelatedFiles().get(0).getFile().getUid();
                 indexedFileId = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
