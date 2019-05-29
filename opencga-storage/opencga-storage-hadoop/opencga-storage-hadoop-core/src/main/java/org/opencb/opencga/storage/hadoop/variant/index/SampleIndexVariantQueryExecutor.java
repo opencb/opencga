@@ -95,11 +95,10 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     }
 
     private Object getOrIteratorFullyCovered(QueryOptions options, boolean iterator, Query query, SampleIndexQuery sampleIndexQuery) {
-        VariantDBIterator variantIterator = sampleIndexDBAdaptor.iterator(sampleIndexQuery);
+        VariantDBIterator variantIterator = sampleIndexDBAdaptor.iterator(sampleIndexQuery, options);
         if (iterator) {
             return variantIterator;
         } else {
-            variantIterator.toQueryResult();
             VariantQueryResult<Variant> result =
                     addSamplesMetadataIfRequested(variantIterator.toQueryResult(), query, options, getMetadataManager());
 //                if (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false)) {
@@ -111,7 +110,11 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     }
 
     private Object getOrIteratorIntersect(SampleIndexQuery sampleIndexQuery, Query query, QueryOptions options, boolean iterator) {
-        VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(sampleIndexDBAdaptor.iterator(sampleIndexQuery));
+        QueryOptions limiteLessOptions = new QueryOptions(options)
+                .append(QueryOptions.LIMIT, -1)
+                .append(QueryOptions.SKIP, -1);
+        VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(
+                sampleIndexDBAdaptor.iterator(sampleIndexQuery, limiteLessOptions));
 
         int batchSize = options.getInt("multiIteratorBatchSize", 200);
         if (iterator) {
