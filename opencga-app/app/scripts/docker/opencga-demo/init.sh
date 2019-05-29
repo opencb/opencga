@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mongod &  
+mongod --dbpath /data/opencga/mongodb &
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start mongoDB: $status"
