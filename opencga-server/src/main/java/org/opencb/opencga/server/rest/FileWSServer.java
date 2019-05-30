@@ -944,22 +944,28 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/link")
     @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
     public Response link(
-            @ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(name = "params", value = "File parameters", required = true) FileLinkParams params) {
         try {
+            if (StringUtils.isEmpty(params.uri)) {
+                throw new CatalogException("Missing mandatory field 'uri'");
+            }
+
             logger.debug("study: {}", studyStr);
-            logger.debug("uri: {}", uriStr);
+            logger.debug("uri: {}", params.uri);
             logger.debug("params: {}", params);
 
             // TODO: We should stop doing this at some point. As the parameters are now passed through the body, users can already pass "/" characters
+            if (params.path == null) {
+                params.path = "";
+            }
             params.path = params.path.replace(":", "/");
 
             ObjectMap objectMap = new ObjectMap("parents", parents);
             objectMap.putIfNotEmpty("description", params.description);
             objectMap.putIfNotNull("relatedFiles", params.getRelatedFiles());
-            List<String> uriList = Arrays.asList(uriStr.split(","));
+            List<String> uriList = Arrays.asList(params.uri.split(","));
 
             List<QueryResult<File>> queryResultList = new ArrayList<>();
 
@@ -1431,6 +1437,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     private static class FileLinkParams {
+        public String uri;
         public String path;
         public String description;
         public List<RelatedFile> relatedFiles;
@@ -1438,7 +1445,8 @@ public class FileWSServer extends OpenCGAWSServer {
         @Override
         public String toString() {
             return "FileLinkParams{" +
-                    "path='" + path + '\'' +
+                    "uri='" + uri + '\'' +
+                    ", path='" + path + '\'' +
                     ", description='" + description + '\'' +
                     ", relatedFiles=" + relatedFiles +
                     '}';
