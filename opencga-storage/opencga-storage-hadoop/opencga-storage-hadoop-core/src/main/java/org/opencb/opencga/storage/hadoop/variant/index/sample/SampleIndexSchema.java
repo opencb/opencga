@@ -20,11 +20,13 @@ import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 public final class SampleIndexSchema {
 
     public static final int BATCH_SIZE = 1_000_000;
-    public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR = Comparator.comparing(Variant::getStart)
-            .thenComparing(Variant::getEnd)
-            .thenComparing(Variant::getReference)
-            .thenComparing(Variant::getAlternate)
-            .thenComparing(Variant::toString);
+    public static final Comparator<Variant> INTRA_CHROMOSOME_VARIANT_COMPARATOR =
+            Comparator.comparingInt(Variant::getStart)
+                    .thenComparingInt(Variant::getEnd)
+                    .thenComparing(Variant::getReference)
+                    .thenComparing(Variant::getAlternate)
+                    .thenComparing(Variant::toString);
+
     static final String MENDELIAN_ERROR_COLUMN = "ME";
     static final byte[] MENDELIAN_ERROR_COLUMN_BYTES = Bytes.toBytes(MENDELIAN_ERROR_COLUMN);
     static final char META_PREFIX = '_';
