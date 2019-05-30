@@ -1,3 +1,4 @@
 requests
+pip
+pathlib
 pyyaml
-retrying

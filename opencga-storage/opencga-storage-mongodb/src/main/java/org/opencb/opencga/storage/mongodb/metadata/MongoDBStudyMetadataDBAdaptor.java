@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.metadata;
 
+import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +33,8 @@ import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,10 +47,16 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyMetadata> implements StudyMetadataDBAdaptor {
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
+    private final Logger logger = LoggerFactory.getLogger(MongoDBStudyMetadataDBAdaptor.class);
 
     public MongoDBStudyMetadataDBAdaptor(MongoDataStore db, String collectionName) {
         super(db, collectionName, StudyMetadata.class);
-        collection.createIndex(new Document("name", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
+        try {
+            collection.createIndex(new Document("name", 1), new ObjectMap(MongoDBCollection.UNIQUE, true));
+        } catch (DuplicateKeyException e) {
+            logger.warn("Ignore duplicateKeyException creating index. Migration required " + e.getMessage());
+            logger.debug("DuplicateKeyException creating index.", e);
+        }
     }
 
     @Override

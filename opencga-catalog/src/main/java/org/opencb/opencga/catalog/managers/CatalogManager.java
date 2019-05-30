@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +123,10 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void initializeAdmin() throws CatalogDBException {
+        if (this.configuration.getAdmin() == null) {
+            this.configuration.setAdmin(new Admin());
+        }
+
         if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
             this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
         }

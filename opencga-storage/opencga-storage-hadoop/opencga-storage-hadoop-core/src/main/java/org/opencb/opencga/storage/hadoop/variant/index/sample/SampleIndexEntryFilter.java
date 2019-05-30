@@ -76,18 +76,35 @@ public class SampleIndexEntryFilter {
         return variants;
     }
 
-    private Set<Variant> filter(Map<String, SampleIndexGtEntry> gts) {
-        Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+    private Collection<Variant> filter(Map<String, SampleIndexGtEntry> gts) {
+        List<List<Variant>> variantsByGt = new ArrayList<>(gts.size());
+        int numVariants = 0;
         for (SampleIndexGtEntry gtEntry : gts.values()) {
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
 
+            ArrayList<Variant> variants = new ArrayList<>(gtEntry.getVariants().getApproxSize());
+            variantsByGt.add(variants);
             while (expectedResultsFromAnnotation.intValue() > 0 && gtEntry.getVariants().hasNext()) {
                 Variant variant = filter(gtEntry, expectedResultsFromAnnotation);
                 if (variant != null) {
                     variants.add(variant);
+                    numVariants++;
                 }
             }
         }
+
+        if (variantsByGt.size() == 1) {
+            return variantsByGt.get(0);
+        }
+
+        List<Variant> variants = new ArrayList<>(numVariants);
+
+        for (List<Variant> variantList : variantsByGt) {
+            variants.addAll(variantList);
+        }
+        // List.sort is much faster than a TreeSet
+        variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+
         return variants;
     }
 
