@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 RUN apt-get update && apt-get install -y software-properties-common && \
-    apt-get install -y openjdk-8-jre && \
+    apt-get install -y openjdk-8-jre openssh-client sshpass && \
     java -version && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean;
