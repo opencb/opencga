@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
@@ -370,8 +371,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public void addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        if (members == null) {
-            members = Collections.emptyList();
+        if (ListUtils.isEmpty(members)) {
+            return;
         }
 
         Document query = new Document()

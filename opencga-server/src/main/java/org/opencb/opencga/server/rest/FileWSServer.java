@@ -26,6 +26,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -891,7 +892,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/link")
     @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
-    public Response link(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
+    @Deprecated
+    public Response linkGet(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
                          @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId") String studyIdStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
                          @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
@@ -937,6 +939,52 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
+    @POST
+    @Path("/link")
+    @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
+    public Response link(
+            @ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
+            @ApiParam(name = "params", value = "File parameters", required = true) FileLinkParams params) {
+        try {
+            logger.debug("study: {}", studyStr);
+            logger.debug("uri: {}", uriStr);
+            logger.debug("params: {}", params);
+
+            // TODO: We should stop doing this at some point. As the parameters are now passed through the body, users can already pass "/" characters
+            params.path = params.path.replace(":", "/");
+
+            ObjectMap objectMap = new ObjectMap("parents", parents);
+            objectMap.putIfNotEmpty("description", params.description);
+            objectMap.putIfNotNull("relatedFiles", params.getRelatedFiles());
+            List<String> uriList = Arrays.asList(uriStr.split(","));
+
+            List<QueryResult<File>> queryResultList = new ArrayList<>();
+
+            if (uriList.size() == 1) {
+                // If it is just one uri to be linked, it will return an error response if there is some kind of error.
+                URI myUri = UriUtils.createUri(uriList.get(0));
+                queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.path, objectMap, sessionId));
+            } else {
+                for (String uri : uriList) {
+                    logger.info("uri: {}", uri);
+                    try {
+                        URI myUri = UriUtils.createUri(uri);
+                        queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.path, objectMap, sessionId));
+                    } catch (URISyntaxException | CatalogException | IOException e) {
+                        queryResultList.add(new QueryResult<>("Link file", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
+                    }
+                }
+            }
+
+            return createOkResponse(queryResultList);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
     @GET
     @Path("/unlink")
@@ -1374,6 +1422,37 @@ public class FileWSServer extends OpenCGAWSServer {
             params.putIfNotNull(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSets);
 
             return params;
+        }
+    }
+
+    public static class RelatedFile {
+        public String file;
+        public File.RelatedFile.Relation relation;
+    }
+
+    private static class FileLinkParams {
+        public String path;
+        public String description;
+        public List<RelatedFile> relatedFiles;
+
+        @Override
+        public String toString() {
+            return "FileLinkParams{" +
+                    "path='" + path + '\'' +
+                    ", description='" + description + '\'' +
+                    ", relatedFiles=" + relatedFiles +
+                    '}';
+        }
+
+        public List<File.RelatedFile> getRelatedFiles() {
+            if (ListUtils.isEmpty(relatedFiles)) {
+                return null;
+            }
+            List<File.RelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
+            for (RelatedFile relatedFile : relatedFiles) {
+                relatedFileList.add(new File.RelatedFile(new File().setId(relatedFile.file), relatedFile.relation));
+            }
+            return relatedFileList;
         }
     }
 

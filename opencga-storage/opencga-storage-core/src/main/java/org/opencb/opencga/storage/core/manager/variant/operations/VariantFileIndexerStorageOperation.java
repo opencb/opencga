@@ -801,7 +801,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
         for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
             if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
-                long fileUid = relatedFile.getFileId();
+                long fileUid = relatedFile.getFile().getUid();
                 // FIXME!!!
                 vcfId = catalogManager.getFileManager().get(study,
                         new Query(UID.key(), fileUid),
