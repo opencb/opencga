@@ -21,7 +21,7 @@ db.interpretation.createIndex({"studyUid": 1}, {"background": true});
 
 
 // #1268 - Authentication origin
-migrateCollection("user", {}, {account: 1}, function(bulk, doc) {
+migrateCollection("user", {"account.authentication": {$exists: false}}, {account: 1}, function(bulk, doc) {
     var changes = {};
 
     var account = doc.account;
@@ -33,4 +33,21 @@ migrateCollection("user", {}, {account: 1}, function(bulk, doc) {
     changes['account'] = account;
 
     bulk.find({"_id": doc._id}).updateOne({"$set": changes});
+});
+
+migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
+    if (isEmptyArray(doc.groups) || isNotUndefinedOrNull(doc.groups[0].id)) {
+        return;
+    }
+
+    for (var i = 0; i < doc.groups.length; i++) {
+        doc.groups[i]['id'] = doc.groups[i]['name'];
+        doc.groups[i]['name'] = doc.groups[i]['name'].substring(1);
+    }
+
+    var params = {
+        groups: doc.groups
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": params});
 });

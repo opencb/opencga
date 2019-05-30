@@ -37,7 +37,10 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 
 import java.io.IOException;

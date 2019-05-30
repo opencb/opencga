@@ -15,7 +15,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
 
@@ -23,7 +22,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ClinicalAnalysisManagerTest extends GenericTest {
 
