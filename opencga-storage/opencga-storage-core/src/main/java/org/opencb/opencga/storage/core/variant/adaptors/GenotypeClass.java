@@ -161,7 +161,7 @@ public enum GenotypeClass {
 
     private final Predicate<String> predicate;
 
-    private static final Logger logger = LoggerFactory.getLogger(GenotypeClass.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenotypeClass.class);
 
     GenotypeClass(Predicate<String> predicate) {
         Predicate<String> stringPredicate = gt -> !gt.equals(UNKNOWN_GENOTYPE);
@@ -281,7 +281,7 @@ public enum GenotypeClass {
         try {
             genotype = new Genotype(gt);
         } catch (IllegalArgumentException e) {
-            logger.debug("Invalid genotype " + gt, e);
+            LOGGER.debug("Invalid genotype " + gt, e);
             return null;
         }
         return genotype;
