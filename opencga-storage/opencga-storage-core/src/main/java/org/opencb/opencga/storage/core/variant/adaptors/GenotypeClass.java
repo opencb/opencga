@@ -195,6 +195,10 @@ public enum GenotypeClass {
             if (gt.equals(NONE_GT_VALUE) || gt.equals(NA_GT_VALUE) || gt.equals(UNKNOWN_GENOTYPE)) {
                 filteredGts.add(gt);
             } else if (genotypeClass == null) {
+                boolean negated = VariantQueryUtils.isNegated(gt);
+                if (negated) {
+                    gt = VariantQueryUtils.removeNegation(gt);
+                }
                 Genotype genotype = parseGenotype(gt);
                 if (genotype == null) {
                     // Skip invalid genotypes
@@ -205,10 +209,20 @@ public enum GenotypeClass {
                 if (!genotype.isPhased()) {
                     genotype.normalizeAllelesIdx();
                 }
-                filteredGts.add(genotype.toString());
 
                 // If unphased, add phased genotypes, if any
-                filteredGts.addAll(getPhasedGenotypes(genotype, loadedGts));
+                List<String> phasedGenotypes = getPhasedGenotypes(genotype, loadedGts);
+
+                if (negated) {
+                    filteredGts.add(VariantQueryUtils.NOT + genotype.toString());
+                    for (String phasedGenotype : phasedGenotypes) {
+                        filteredGts.add(VariantQueryUtils.NOT + phasedGenotype);
+                    }
+                } else {
+                    filteredGts.add(genotype.toString());
+                    filteredGts.addAll(phasedGenotypes);
+                }
+
             } else {
                 filteredGts.addAll(genotypeClass.filter(loadedGts));
                 filteredGts.addAll(genotypeClass.filter(defaultGts));
@@ -218,6 +232,7 @@ public enum GenotypeClass {
     }
 
     public static List<String> getPhasedGenotypes(Genotype genotype, List<String> loadedGts) {
+        genotype = new Genotype(genotype);
         if (!genotype.isPhased()) {
             List<String> phasedGts = new ArrayList<>(2);
             genotype.setPhased(true);
@@ -248,10 +263,20 @@ public enum GenotypeClass {
      * @return the enum, null if not found
      */
     public static GenotypeClass from(String gt) {
-        return EnumUtils.getEnum(GenotypeClass.class, gt.toUpperCase());
+        GenotypeClass genotypeClass = EnumUtils.getEnum(GenotypeClass.class, gt.toUpperCase());
+        if (genotypeClass == null && VariantQueryUtils.isNegated(gt)) {
+            if (EnumUtils.getEnum(GenotypeClass.class, VariantQueryUtils.removeNegation(gt.toUpperCase())) != null) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.GENOTYPE, gt,
+                        "Unsupported negated genotype alias");
+            }
+        }
+        return genotypeClass;
     }
 
     private static Genotype parseGenotype(String gt) {
+        if (VariantQueryUtils.isNegated(gt)) {
+            throw new IllegalStateException("Unable to parse negated genotype " + gt);
+        }
         Genotype genotype;
         try {
             genotype = new Genotype(gt);

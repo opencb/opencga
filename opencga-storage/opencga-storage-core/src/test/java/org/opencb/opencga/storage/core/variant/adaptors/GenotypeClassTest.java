@@ -36,6 +36,7 @@ public class GenotypeClassTest {
     @Test
     public void testPhasedGenotypes() throws Exception {
         assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("0/1"), loadedGenotypes));
+        assertEquals(Arrays.asList("!0/1", "!0|1", "!1|0"), GenotypeClass.filter(Arrays.asList("!0/1"), loadedGenotypes));
         assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("1/0"), loadedGenotypes));
         assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("0/1", "1/0"), loadedGenotypes));
         assertEquals(Arrays.asList("0|1"), GenotypeClass.filter(Arrays.asList("0|1"), loadedGenotypes));
