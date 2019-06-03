@@ -47,7 +47,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
             VariantAnnotationUtils.TR_J_GENE,
             VariantAnnotationUtils.TR_V_GENE
     ));
-    public static final int DEFAULT_SAMPLING_SIZE = 500;
+    public static final int DEFAULT_SAMPLING_SIZE = 200;
     private final VariantIterable iterable;
     private static Logger logger = LoggerFactory.getLogger(CompoundHeterozygousQueryExecutor.class);
 
@@ -103,6 +103,8 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         int limit = Math.max(0, inputOptions.getInt(QueryOptions.LIMIT));
         int samplingSize = getSamplingSize(inputOptions, DEFAULT_SAMPLING_SIZE, iterator);
         QueryOptions options = buildQueryOptions(inputOptions);
+        // Always sort results for compound heterozygous
+        options.put(QueryOptions.SORT, true);
 
         query = new Query(query);
         List<String> includeSample = getAndCheckIncludeSample(query, proband, father, mother);
@@ -176,11 +178,6 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
             }
             return result;
         }
-    }
-
-    protected void setNumTotalResults(VariantDBIteratorWithCounts unfilteredIterator, VariantQueryResult<Variant> result,
-                                      Query query, QueryOptions inputOptions, int numVariantsFromPrimary, int numResults) {
-        setNumTotalResults(unfilteredIterator, result, query, inputOptions, null, numVariantsFromPrimary, numResults);
     }
 
     protected QueryOptions buildQueryOptions(QueryOptions options) {

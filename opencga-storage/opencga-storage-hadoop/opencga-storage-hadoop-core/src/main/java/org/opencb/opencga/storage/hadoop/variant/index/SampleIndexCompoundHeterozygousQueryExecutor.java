@@ -51,18 +51,19 @@ public class SampleIndexCompoundHeterozygousQueryExecutor extends CompoundHetero
     }
 
     @Override
-    protected void setNumTotalResults(VariantDBIteratorWithCounts unfilteredIterator, VariantQueryResult<Variant> result,
+    protected void setNumTotalResults(VariantDBIteratorWithCounts variantsFromPrimary, VariantQueryResult<Variant> result,
                                       Query query, QueryOptions inputOptions, int numVariantsFromPrimary, int numResults) {
         // Obtain underlying sampleIndex iterator, which is faster than the variants iterator to calculate an approximate count
         VariantDBIteratorWithCounts sampleIndexIterator;
-        VariantDBIterator delegated = unfilteredIterator.getDelegated();
+        VariantDBIterator delegated = variantsFromPrimary.getDelegated();
         if (delegated instanceof ExposedMultiVariantDBIterator) {
             VariantDBIterator fastIterator1 = ((ExposedMultiVariantDBIterator) delegated).getIterator();
             sampleIndexIterator = (VariantDBIteratorWithCounts) fastIterator1;
+            numVariantsFromPrimary = ((ExposedMultiVariantDBIterator) delegated).getNumVariantsFromPrimary();
         } else {
-            sampleIndexIterator = unfilteredIterator;
+            sampleIndexIterator = variantsFromPrimary;
         }
-        setNumTotalResults(sampleIndexIterator, result, query, inputOptions, null, numVariantsFromPrimary, numResults);
+        super.setNumTotalResults(sampleIndexIterator, result, query, inputOptions, numVariantsFromPrimary, numResults);
     }
 
     private static class ExposedMultiVariantDBIterator extends MultiVariantDBIterator {
