@@ -16,6 +16,7 @@ public class HealthCheck {
     }
 
     public HealthCheck() {
+        interval = 30;
     }
 
     @Override
