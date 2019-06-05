@@ -12,6 +12,7 @@ RUN apk update && \
     tar -zxvf solr-${SOLR_VERSION}.tgz && \
     rm -r solr-${SOLR_VERSION}.tgz && \
     sed -i 's/:8080/:9090/g' /opt/opencga/conf/client-configuration.yml  && \
+    sed -i 's/cloud/standalone/g' /opt/opencga/conf/storage-configuration.yml  && \
     wget http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet-1.4.0.tar.gz && \
     tar -zxvf OpenCGAConfSet-1.4.0.tar.gz && \
     rm -r OpenCGAConfSet-1.4.0.tar.gz && \
@@ -19,7 +20,7 @@ RUN apk update && \
     sed -i 's/<dataDir>\${solr.data.dir:}<\/dataDir>/<dataDir>\/data\/opencga\/solr\/\${solr.core.name}<\/dataDir>/g' /opt/solr-6.6.0/server/solr/configsets/OpenCGAConfSet-1.4.0/conf/solrconfig.xml
 
 
-VOLUME ["/data/opencga/mongodb", "/data/opencga/solr", "/opt/opencga/conf", "/opt/opencga/sessions"]
+VOLUME ["/data/opencga/mongodb", "/data/opencga/solr", "/opt/opencga/variants", "/opt/opencga/sessions"]
 EXPOSE 27017 28017
 
 WORKDIR /opt/opencga/bin
