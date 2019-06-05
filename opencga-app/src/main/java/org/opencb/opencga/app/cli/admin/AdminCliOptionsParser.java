@@ -324,7 +324,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--secret-key"}, description = "Secret key needed to authenticate through OpenCGA (JWT).", required = true)
+        @Parameter(names = {"--secret-key"}, description = "Secret key needed to authenticate through OpenCGA (JWT).", required = false)
         public String secretKey;
 
         @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")

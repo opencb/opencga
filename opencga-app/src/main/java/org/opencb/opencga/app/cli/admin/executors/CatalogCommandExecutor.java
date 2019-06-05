@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -146,11 +147,14 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     private void install() throws CatalogException, URISyntaxException {
         validateConfiguration(catalogCommandOptions.installCatalogCommandOptions, catalogCommandOptions.commonOptions);
 
-        this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
         this.configuration.getAdmin().setAlgorithm("HS256");
-//        this.configuration.getAdmin().setAlgorithm(this.catalogCommandOptions.installCatalogCommandOptions.algorithm);
 
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+        this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
+        if (StringUtils.isEmpty(configuration.getAdmin().getSecretKey())) {
+            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphabetic(32));
+        }
+
+        if (StringUtils.isEmpty(configuration.getAdmin().getPassword())) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
@@ -166,7 +170,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         logger.info("\nInstalling database {} in {}\n", catalogManager.getCatalogDatabase(),
                 configuration.getCatalog().getDatabase().getHosts());
 
-        catalogManager.installCatalogDB(this.catalogCommandOptions.installCatalogCommandOptions.secretKey,
+        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(),
                 configuration.getAdmin().getPassword());
     }
 
