@@ -72,7 +72,7 @@ pipeline {
              steps {
                 script {
                    def images = ["opencga-next", "opencga-demo"]
-                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim() + "-mongo"
+                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().substring(1) + "-mongo"
                    withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
                        for(int i =0; i < images.size(); i++){
                            sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
