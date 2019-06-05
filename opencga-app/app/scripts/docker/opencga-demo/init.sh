@@ -51,8 +51,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
         echo Transforming, Loading, Annotating and Calculating Stats
         ./opencga.sh variant index --file quartet.variants.annotated.vcf --calculate-stats --annotate --index-search -o outDir -s "corpasome"
     fi
-fi
-if [ -e $CONTAINER_ALREADY_STARTED ]; then
+else
     echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
 fi
 
