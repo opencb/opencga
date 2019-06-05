@@ -151,7 +151,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
         if (StringUtils.isEmpty(configuration.getAdmin().getSecretKey())) {
-            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphabetic(32));
+            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphabetic(16));
         }
 
         if (StringUtils.isEmpty(configuration.getAdmin().getPassword())) {
