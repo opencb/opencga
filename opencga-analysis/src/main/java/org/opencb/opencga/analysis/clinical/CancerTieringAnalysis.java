@@ -227,23 +227,36 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
         Set<String> reportedVariantIdSet = new HashSet<>();
         for (Variant variant : variants) {
             List<ReportedEvent> reportedEvents = new ArrayList<>();
+            List<ClinVar> clinVars = getClinVars(variant);
+
             List<DiseasePanel> varDiseasePanels = getDiseasePanels(variant, panels);
             if (CollectionUtils.isNotEmpty(varDiseasePanels)) {
                 for (DiseasePanel varDiseasePanel : varDiseasePanels) {
                     if (CollectionUtils.isNotEmpty(varDiseasePanel.getGenes())) {
                         for (DiseasePanel.GenePanel panelGene : varDiseasePanel.getGenes()) {
-                            List<ClinVar> clinVars = getClinVars(variant);
-                            List<SequenceOntologyTerm> lofSOTerms = getLoFSequenceOntologyTerms(variant);
-                            if (isLoF(panelGene) && CollectionUtils.isNotEmpty(lofSOTerms)) {
-                                if (CollectionUtils.isEmpty(clinVars) || !isBenign(clinVars)) {
-                                    reportedEvents.addAll(createrReportEvents(varDiseasePanel, panelGene, lofSOTerms,
-                                            computeBiallelicTiering(panelGene, variant), variant));
-
+                            if (isLoF(panelGene) && variant.getAnnotation() != null
+                                    && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                                    List<SequenceOntologyTerm> lofSOTerms = getLoFSequenceOntologyTerms(consequenceType);
+                                    if (CollectionUtils.isNotEmpty(lofSOTerms)) {
+                                        if (CollectionUtils.isEmpty(clinVars) || !isBenign(clinVars)) {
+                                            reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, lofSOTerms,
+                                                    computeBiallelicTiering(panelGene, variant), consequenceType, variant));
+                                        }
+                                    } else {
+                                        if (CollectionUtils.isNotEmpty(clinVars) && isPathogenic(clinVars)) {
+                                            reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, lofSOTerms,
+                                                    computeBiallelicTiering(panelGene, variant), consequenceType, variant));
+                                        }
+                                    }
                                 }
                             } else {
                                 if (CollectionUtils.isNotEmpty(clinVars) && isPathogenic(clinVars)) {
-                                    reportedEvents.addAll(createrReportEvents(varDiseasePanel, panelGene, lofSOTerms,
-                                            computeBiallelicTiering(panelGene, variant), variant));
+                                    for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                                        List<SequenceOntologyTerm> lofSOTerms = getLoFSequenceOntologyTerms(consequenceType);
+                                        reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, lofSOTerms,
+                                                computeBiallelicTiering(panelGene, variant), consequenceType, variant));
+                                    }
                                 }
                             }
                         }
@@ -284,7 +297,6 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
             }
 
             List<ReportedEvent> reportedEvents = new ArrayList<>();
-            List<SequenceOntologyTerm> soTerms = getLoFSequenceOntologyTerms(variant);
             List<ClinVar> clinVars = getClinVars(variant);
 
             List<DiseasePanel> varDiseasePanels = getDiseasePanels(variant, panels);
@@ -292,18 +304,30 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
                 for (DiseasePanel varDiseasePanel : varDiseasePanels) {
                     if (CollectionUtils.isNotEmpty(varDiseasePanel.getGenes())) {
                         for (DiseasePanel.GenePanel panelGene : varDiseasePanel.getGenes()) {
-                            if (CollectionUtils.isNotEmpty(soTerms)) {
-                                for (SequenceOntologyTerm soTerm : soTerms) {
-                                    if (somaticSOTerms.contains(soTerm.getAccession()) || CONSEQUENCE_RNA.equals(soTerm.getAccession())) {
+                            if (variant.getAnnotation() != null
+                                    && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+                                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                                    // Get somatic SO terms and RNA SO term
+                                    List<SequenceOntologyTerm> soTerms = new ArrayList<>();
+                                    if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
+                                        for (SequenceOntologyTerm soTerm : consequenceType.getSequenceOntologyTerms()) {
+                                            if (somaticSOTerms.contains(soTerm.getAccession())
+                                                    || CONSEQUENCE_RNA.equals(soTerm.getAccession())) {
+                                                soTerms.add(soTerm);
+                                            }
+                                        }
+                                    }
+                                    if (CollectionUtils.isNotEmpty(soTerms)) {
                                         if (CollectionUtils.isEmpty(clinVars) || !isBenign(clinVars)) {
                                             if ("BIALLELIC".equals(panelGene.getModeOfInheritance())) {
-                                                reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, soTerm, TIER_3, variant));
+                                                reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, soTerms, TIER_3,
+                                                        consequenceType, variant));
                                             } else {
                                                 if (CollectionUtils.isNotEmpty(variant.getStudies())) {
                                                     VariantStats stats = variant.getStudies().get(0).getStats("ALL");
                                                     if (stats != null && stats.getMaf() < 0.005f) {
-                                                        reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, soTerm, TIER_3,
-                                                                variant));
+                                                        reportedEvents.add(createrReportEvent(varDiseasePanel, panelGene, soTerms, TIER_3,
+                                                                consequenceType, variant));
                                                     }
                                                 }
                                             }
@@ -325,28 +349,15 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
         return reportedVariants;
     }
 
-    private List<ReportedEvent> createrReportEvents(DiseasePanel diseasePanel, DiseasePanel.GenePanel panelGene,
-                                             List<SequenceOntologyTerm> soTerms, String tier, Variant variant) {
-        List<ReportedEvent> reportedEvents = new ArrayList<>();
-        if (CollectionUtils.isEmpty(soTerms)) {
-            reportedEvents.add(createrReportEvent(diseasePanel, panelGene, null, tier, variant));
-        } else {
-            for (SequenceOntologyTerm soTerm : soTerms) {
-                reportedEvents.add(createrReportEvent(diseasePanel, panelGene, soTerm, tier, variant));
-            }
-        }
-        return reportedEvents;
-    }
-
     private ReportedEvent createrReportEvent(DiseasePanel diseasePanel, DiseasePanel.GenePanel panelGene,
-                                             SequenceOntologyTerm soTerm, String tier, Variant variant) {
+                                             List<SequenceOntologyTerm> soTerms, String tier, ConsequenceType consequenceType,
+                                             Variant variant) {
         ReportedEvent reportedEvent = new ReportedEvent();
 
         reportedEvent.setPanelId(diseasePanel.getId());
-        reportedEvent.setGenomicFeature(new GenomicFeature(panelGene.getId(), "GENE", "", panelGene.getName(), panelGene.getXrefs()));
-        if (soTerm != null) {
-            reportedEvent.setConsequenceTypes(Collections.singletonList(soTerm));
-        }
+        reportedEvent.setGenomicFeature(new GenomicFeature(consequenceType.getEnsemblGeneId(), "GENE",
+                consequenceType.getEnsemblTranscriptId(), consequenceType.getGeneName(), panelGene.getXrefs()));
+        reportedEvent.setConsequenceTypes(soTerms);
         VariantClassification classification = new VariantClassification();
         classification.setTier(tier);
         classification.setAcmg(VariantClassification.calculateAcmgClassification(variant));
@@ -413,16 +424,12 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
         return true;
     }
 
-    private List<SequenceOntologyTerm> getLoFSequenceOntologyTerms(Variant variant) {
+    private List<SequenceOntologyTerm> getLoFSequenceOntologyTerms(ConsequenceType consequenceType) {
         Set<SequenceOntologyTerm> soTermSet = new HashSet<>();
-        if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
-            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
-                    for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
-                        if (lofSOTerms.contains(sequenceOntologyTerm.getAccession())) {
-                            soTermSet.add(sequenceOntologyTerm);
-                        }
-                    }
+        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
+            for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
+                if (lofSOTerms.contains(sequenceOntologyTerm.getAccession())) {
+                    soTermSet.add(sequenceOntologyTerm);
                 }
             }
         }
