@@ -320,7 +320,7 @@ public class PanelManager extends ResourceManager<Panel> {
                     List<Phenotype> phenotypes = new ArrayList<>();
                     for (String relevantDisorder : (List<String>) panelInfo.get("relevant_disorders")) {
                         if (StringUtils.isNotEmpty(relevantDisorder)) {
-                            phenotypes.add(new Phenotype("", relevantDisorder, ""));
+                            phenotypes.add(new Phenotype(relevantDisorder, relevantDisorder, ""));
                         }
                     }
 
