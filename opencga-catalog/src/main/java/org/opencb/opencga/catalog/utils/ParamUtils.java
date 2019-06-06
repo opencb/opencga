@@ -87,7 +87,7 @@ public class ParamUtils {
     }
 
     public static void checkValidUserId(String userId) throws CatalogParameterException {
-        if (userId == null || userId.isEmpty() || !userId.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+        if (userId == null || userId.isEmpty() || !userId.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Invalid user id.");
         }
     }
