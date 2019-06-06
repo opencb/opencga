@@ -199,18 +199,4 @@ public class TeamAnalysis extends FamilyAnalysis<Interpretation> {
         }
         return reportedVariants;
     }
-
-    private List<String> getGeneIdsFromDiseasePanels(List<DiseasePanel> diseasePanels) {
-        List<String> geneIds = new ArrayList<>();
-        if (CollectionUtils.isNotEmpty(diseasePanels)) {
-            for (DiseasePanel diseasePanel : diseasePanels) {
-                if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getGenes())) {
-                    for (GenePanel gene : diseasePanel.getGenes()) {
-                        geneIds.add(gene.getId());
-                    }
-                }
-            }
-        }
-        return geneIds;
-    }
 }
