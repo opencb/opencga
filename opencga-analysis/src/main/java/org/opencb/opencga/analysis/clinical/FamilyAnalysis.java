@@ -47,26 +47,12 @@ public abstract class FamilyAnalysis<T> extends OpenCgaClinicalAnalysis<T> {
 
     protected List<String> diseasePanelIds;
 
-    protected Map<String, RoleInCancer> roleInCancer;
-    protected Map<String, List<String>> actionableVariants;
-
     protected ClinicalProperty.Penetrance penetrance;
-
-    protected ObjectMap config;
-    @Deprecated
-    protected int maxCoverage;
 
     protected final static String SEPARATOR = "__";
 
-    public final static int LOW_COVERAGE_DEFAULT = 20;
-
-    public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
-    public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
     public final static String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
     public final static String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
-
-    protected CellBaseClient cellBaseClient;
-    protected AlignmentStorageManager alignmentStorageManager;
 
 //    protected static Set<String> extendedLof;
 //    protected static Set<String> proteinCoding;
@@ -82,21 +68,11 @@ public abstract class FamilyAnalysis<T> extends OpenCgaClinicalAnalysis<T> {
     public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
                           Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap config,
                           String studyStr, String opencgaHome, String token) {
-        super(clinicalAnalysisId, opencgaHome, studyStr, token);
+        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
 
         this.diseasePanelIds = diseasePanelIds;
 
-        this.actionableVariants = actionableVariants;
-        this.roleInCancer = roleInCancer;
-
         this.penetrance = penetrance;
-
-        this.config = config != null ? config : new ObjectMap();
-        this.maxCoverage = 20;
-
-        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
-        this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
-
     }
 
     @Override
@@ -113,84 +89,6 @@ public abstract class FamilyAnalysis<T> extends OpenCgaClinicalAnalysis<T> {
         return clinicalAnalysis;
     }
 
-
-    protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels)
-            throws AnalysisException {
-        String clinicalAnalysisId = clinicalAnalysis.getId();
-
-        // Sanity check
-        if (clinicalAnalysis.getProband() == null || CollectionUtils.isEmpty(clinicalAnalysis.getProband().getSamples())) {
-            throw new AnalysisException("Missing proband when computing reported low coverage");
-        }
-        String probandId;
-        try {
-            probandId = clinicalAnalysis.getProband().getSamples().get(0).getId();
-        } catch (Exception e) {
-            throw new AnalysisException("Missing proband when computing reported low coverage", e);
-        }
-
-        // Reported low coverage map
-        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-
-        Set<String> lowCoverageByGeneDone = new HashSet<>();
-
-        // Look for the bam file of the proband
-        QueryResult<File> fileQueryResult;
-        try {
-            fileQueryResult = catalogManager.getFileManager().get(studyStr, new Query()
-                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
-                            .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
-                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), token);
-        } catch (CatalogException e) {
-            throw new AnalysisException(e.getMessage(), e);
-        }
-        if (fileQueryResult.getNumResults() > 1) {
-            throw new AnalysisException("More than one BAM file found for proband " + probandId + " in clinical analysis "
-                    + clinicalAnalysisId);
-        }
-
-        String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
-
-        if (bamFileId != null) {
-            for (DiseasePanel diseasePanel : diseasePanels) {
-                for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
-                    String geneName = genePanel.getId();
-                    if (!lowCoverageByGeneDone.contains(geneName)) {
-                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
-                        lowCoverageByGeneDone.add(geneName);
-                    }
-                }
-            }
-        }
-
-        return reportedLowCoverages;
-    }
-
-    protected List<ReportedLowCoverage> getReportedLowCoverages(String geneName, String bamFileId, int maxCoverage) {
-        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-        try {
-            // Get gene exons from CellBase
-            QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(Collections.singletonList(geneName),
-                    QueryOptions.empty());
-            List<RegionCoverage> regionCoverages;
-            for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
-                for (Exon exon: transcript.getExons()) {
-                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyStr, bamFileId,
-                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
-                    for (RegionCoverage regionCoverage: regionCoverages) {
-                        ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
-                                .setGeneName(geneName)
-                                .setId(exon.getId());
-                        reportedLowCoverages.add(reportedLowCoverage);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error getting low coverage regions for panel genes.", e.getMessage());
-        }
-        // And for that exon regions, get low coverage regions
-        return reportedLowCoverages;
-    }
 
     protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
