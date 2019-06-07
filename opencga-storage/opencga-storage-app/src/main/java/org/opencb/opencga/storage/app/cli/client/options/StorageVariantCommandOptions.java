@@ -750,13 +750,6 @@ public class StorageVariantCommandOptions {
      */
     public static class GenericVariantStatsOptions {
 
-        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
-        public boolean create = false;
-
-        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a " +
-                "prefix with structure <INPUT_FILENAME>.<TIME>")
-        public boolean load = false;
-
         @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats in variants already present")
         public boolean overwriteStats = false;
 
@@ -806,6 +799,12 @@ public class StorageVariantCommandOptions {
         @DynamicParameter(names = {"--cohort"}, description = "Cohort definition with the schema -> <cohort>:<sample>" +
                 "(,<sample>)* ", descriptionKey = "CohortName", assignment = ":")
         public Map<String, String> cohort = new HashMap<>();
+
+//        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
+//        public boolean create = false;
+
+        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database")
+        public String load = null;
     }
 
     /**

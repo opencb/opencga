@@ -458,9 +458,6 @@
                     "virtualMachineSize": {
                         "value": "[variables('selectedSize').batch.nodeSize]"
                     },
-                    "dockerImagesToCache": {
-                        "value": []
-                    },
                     "LogAnalyticsWorkspaceResourceID": {
                         "value": "[reference('loganalytics').outputs.logAnalyticsWorkspaceResourceID.value]"
                     },

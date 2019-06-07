@@ -121,6 +121,8 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             // SampleIndex iterator will be closed when closing the variants iterator
             return dbAdaptor.iterator(variants, query, options, batchSize);
         } else {
+            // Ensure results are sorted
+            options.put(QueryOptions.SORT, true);
             MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(
                     new org.opencb.opencga.storage.core.variant.adaptors.iterators.DelegatedVariantDBIterator(variants) {
                         @Override
@@ -147,7 +149,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             SampleIndexQuery sampleIndexQuery, Query query, QueryOptions options) {
         query = new Query(query);
         query.put(REGION.key(), sampleIndexQuery.getRegions());
-        setNumTotalResults(variants, result, query, options, variantDBIterator.getNumQueries());
+        setNumTotalResults(variants, result, query, options, variantDBIterator.getNumVariantsFromPrimary(), result.getNumResults());
     }
 
     private boolean isFullyCoveredQuery(Query query, QueryOptions options) {

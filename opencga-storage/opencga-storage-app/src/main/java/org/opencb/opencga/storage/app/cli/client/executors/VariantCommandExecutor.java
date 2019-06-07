@@ -591,13 +591,21 @@ public class VariantCommandExecutor extends CommandExecutor {
 
 //        assertDirectoryExists(directoryUri);
 
-        /*
-         * Create and load stats
-         */
-        if (cohorts == null || cohorts.values().stream().allMatch(Set::isEmpty)) {
-            variantStorageEngine.calculateStats(studyName, cohortNames, options);
+        if (statsVariantsCommandOptions.load != null) {
+            DefaultVariantStatisticsManager statisticsManager =
+                    (DefaultVariantStatisticsManager) variantStorageEngine.newVariantStatisticsManager();
+            statisticsManager.loadStats(
+                    UriUtils.createUri(statsVariantsCommandOptions.load, true),
+                    statsVariantsCommandOptions.study, options);
         } else {
-            variantStorageEngine.calculateStats(studyName, cohorts, options);
+            /*
+             * Create and load stats
+             */
+            if (cohorts == null || cohorts.values().stream().allMatch(Set::isEmpty)) {
+                variantStorageEngine.calculateStats(studyName, cohortNames, options);
+            } else {
+                variantStorageEngine.calculateStats(studyName, cohorts, options);
+            }
         }
     }
 
