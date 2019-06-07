@@ -967,6 +967,56 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @GET
+    @Path("/interpretation/tools/cancerTiering")
+    @ApiOperation(value = "Cancer Tiering interpretation analysis", position = 14, response = QueryResponse.class)
+    @ApiImplicitParams({
+            // Interpretation filters
+            @ApiImplicitParam(name = FamilyAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = FamilyAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyAnalysis.LOW_COVERAGE_DEFAULT),
+    })
+    public Response cancerTiering(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId) { //},
+//            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
+        try {
+            // Get analysis options from query
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            ObjectMap options = new ObjectMap();
+
+            String param = FamilyAnalysis.INCLUDE_LOW_COVERAGE_PARAM;
+            options.put(param, queryOptions.getBoolean(param, false));
+
+            param = FamilyAnalysis.MAX_LOW_COVERAGE_PARAM;
+            options.put(param, queryOptions.getInt(param, FamilyAnalysis.LOW_COVERAGE_DEFAULT));
+
+            String dataDir = configuration.getDataDir();
+            String opencgaHome = Paths.get(dataDir).getParent().toString();
+
+            // Get assembly from study for actionable variants
+            String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
+
+            Object result;
+//            if (save) {
+//                // Queue job
+//                result = catalogInterpretationManager.queue(studyStr, "cancerTiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
+//            } else {
+
+            // Execute cancer tiering analysis
+            List<String> variantsIdsToDiscard = null;
+
+            CancerTieringAnalysis cancerTieringAnalysis = new CancerTieringAnalysis(clinicalAnalysisId, studyStr, variantsIdsToDiscard,
+                    roleInCancer, actionableVariantsByAssembly.get(assembly), options, opencgaHome, sessionId);
+
+            result = cancerTieringAnalysis.execute();
+//            }
+
+            return createAnalysisOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/interpretation/secondaryFindings")
     @ApiOperation(value = "Search for secondary findings for a list of samples", position = 14, response = QueryResponse.class)
     public Response secondaryFindings(
