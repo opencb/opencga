@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical;
+package org.opencb.opencga.analysis.clinical.interpretation;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
@@ -36,6 +36,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
+import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
+import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -54,7 +57,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
 
-public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
+public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     private final static Query dominantQuery;
     private final static Query recessiveQuery;
@@ -88,23 +91,23 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
     }
 
-    public TieringAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                           Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
-                           String opencgaHome, String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
+
+    public TieringInterpretationAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyId, Map<String, RoleInCancer> roleInCancer,
+                                         Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
+                                         String opencgaHome, String token) {
+        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, penetrance, options, studyId, opencgaHome, token);
     }
 
     @Override
-    public InterpretationResult execute() throws AnalysisException, InterruptedException, CatalogException, InterpretationAnalysisException,
-            StorageEngineException, IOException {
+    public InterpretationResult execute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
-        Query query = new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr);
+        Query query = new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key());
         QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(query, options, token);
 
         if (projectQueryResult.getNumResults() != 1) {
-            throw new CatalogException("Project not found for study " + studyStr + ". Found " + projectQueryResult.getNumResults()
+            throw new CatalogException("Project not found for study " + studyId + ". Found " + projectQueryResult.getNumResults()
                     + " projects.");
         }
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
@@ -120,7 +123,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
 
         // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
-        removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
+        ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
         // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
         // samples easily)
@@ -201,8 +204,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
 
 
         // Secondary findings, if clinical consent is TRUE
-        List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings,
-                new ArrayList<>(sampleMap.keySet()), creator);
+        List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, new ArrayList<>(sampleMap.keySet()), creator);
 
         logger.debug("Reported variant size: {}", primaryFindings.size());
 
@@ -249,7 +251,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
     private Boolean compoundHeterozygous(Map<String, List<Variant>> resultMap) {
         Query query = new Query(recessiveQuery);
         CompoundHeterozygousAnalysis analysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
-                actionableVariants, config, studyStr, opencgaHome, token);
+                actionableVariants, config, studyId, opencgaHome, token);
         try {
             AnalysisResult<Map<String, List<Variant>>> execute = analysis.execute();
             if (MapUtils.isNotEmpty(execute.getResult())) {
@@ -266,7 +268,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
     private Boolean deNovo(Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
         Query query = new Query(dominantQuery);
         DeNovoAnalysis analysis = new DeNovoAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
-                actionableVariants, config, studyStr, opencgaHome, token);
+                actionableVariants, config, studyId, opencgaHome, token);
         try {
             AnalysisResult<List<Variant>> execute = analysis.execute();
             if (ListUtils.isNotEmpty(execute.getResult())) {
@@ -306,7 +308,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
         Query query = new Query()
                 .append(VariantQueryParam.REGION.key(), regions)
                 .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
                 .append(VariantQueryParam.SAMPLE.key(), samples);
@@ -361,7 +363,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
                 return false;
         }
         query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
@@ -369,7 +371,7 @@ public class TieringAnalysis extends FamilyAnalysis<Interpretation> {
             logger.warn("Map of genotypes is empty for {}", moi);
             return false;
         }
-        putGenotypes(genotypes, sampleMap, query);
+        addGenotypeFilter(genotypes, sampleMap, query);
 
         logger.debug("MoI: {}; Query: {}", moi, query.safeToString());
         try {

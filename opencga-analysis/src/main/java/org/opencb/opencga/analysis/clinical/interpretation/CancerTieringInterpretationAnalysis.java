@@ -1,7 +1,24 @@
-package org.opencb.opencga.analysis.clinical;
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.analysis.clinical.interpretation;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.commons.Disorder;
@@ -16,7 +33,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -28,16 +44,13 @@ import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.parboiled.common.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.CRITERIA_PROVIDED_MULTIPLE_SUBMITTERS_NO_CONFLICTS;
-import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.PRACTICE_GUIDELINE;
-import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.REVIEWED_BY_EXPERT_PANEL;
+import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.*;
 
-public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretation> {
+public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
     private Disorder disorder; // This will be got from clinical analysis
     private List<DiseasePanel> diseasePanels;
@@ -66,16 +79,16 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
 
     private static final List<String> pertinentFindingRNA = new ArrayList(Arrays.asList("ENSG00000269900", "ENSG00000270141"));
 
-    public CancerTieringAnalysis(String clinicalAnalysisId, String studyStr, List<String> variantsIdsToDiscard, Map<String,
+    public CancerTieringInterpretationAnalysis(String clinicalAnalysisId, String studyStr, List<String> variantsIdsToDiscard, Map<String,
             ClinicalProperty.RoleInCancer> roleInCancer, Map<String, List<String>> actionableVariants, ObjectMap options,
-                                 String opencgaHome, String token) {
+                                               String opencgaHome, String token) {
         super(clinicalAnalysisId, roleInCancer, actionableVariants, options, opencgaHome, studyStr, token);
 
         this.variantIdsToDiscard = new HashSet<>(variantsIdsToDiscard);
     }
 
     @Override
-    public AnalysisResult<Interpretation> execute() throws Exception {
+    public InterpretationResult execute() throws Exception {
         // Get clinical analysis
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
 
@@ -196,7 +209,7 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
 
         Query query = new Query();
         query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
         .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), somaticSOTerms);
@@ -258,7 +271,7 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
 
         Query query = new Query();
         query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
@@ -576,7 +589,7 @@ public class CancerTieringAnalysis extends OpenCgaClinicalAnalysis<Interpretatio
     }
 
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
-        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().get(studyStr, query, QueryOptions.empty(), token);
+        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().get(studyId, query, QueryOptions.empty(), token);
         for (Panel panel : panelQueryResult.getResult()) {
             panels.add(panel);
         }

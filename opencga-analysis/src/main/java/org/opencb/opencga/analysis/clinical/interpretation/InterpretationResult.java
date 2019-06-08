@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.clinical;
+package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.opencga.analysis.AnalysisResult;
@@ -23,11 +23,11 @@ import java.util.Map;
 
 public class InterpretationResult extends AnalysisResult<Interpretation> {
 
-    protected int dbTime;
-    protected int numResults;
-    protected long numTotalResults;
-    protected String warningMsg;
-    protected String errorMsg;
+    private int dbTime;
+    private int numResults;
+    private long numTotalResults;
+    private String warningMsg;
+    private String errorMsg;
 
     public InterpretationResult(Interpretation result) {
         super(result);

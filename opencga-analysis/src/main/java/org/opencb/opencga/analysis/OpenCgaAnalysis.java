@@ -51,14 +51,14 @@ public abstract class OpenCgaAnalysis<T> {
     protected VariantStorageManager variantStorageManager;
 
     protected String opencgaHome;
-    protected String studyStr;
+    protected String studyId;
     protected String token;
 
     protected Logger logger;
 
-    public OpenCgaAnalysis(String opencgaHome, String studyStr, String token) {
+    public OpenCgaAnalysis(String studyId, String opencgaHome, String token) {
+        this.studyId = studyId;
         this.opencgaHome = opencgaHome;
-        this.studyStr = studyStr;
         this.token = token;
 
         init();

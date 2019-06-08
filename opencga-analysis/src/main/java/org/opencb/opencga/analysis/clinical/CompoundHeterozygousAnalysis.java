@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, List<Variant>>> {
+public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<String, List<Variant>>> {
 
     private Query query;
 
@@ -41,7 +41,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
                                         Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                                         Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome,
                                         String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, null, config, studyStr, opencgaHome, token);
+        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
         this.query = new Query(defaultQuery);
         this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.STUDY.key(), studyStr)
@@ -65,7 +65,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
 
         // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
-        removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
+        ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
         // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
         // samples easily)

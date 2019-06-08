@@ -21,8 +21,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.*;
 
@@ -40,14 +43,24 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
 
     protected ObjectMap config;
 
-    @Deprecated
-    protected int maxCoverage;
+//    protected int maxCoverage;
 
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
-    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer, Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr, String token) {
-        super(opencgaHome, studyStr, token);
+    public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
+
+    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap config, String opencgaHome, String token) {
+        super(studyId, opencgaHome, token);
+
+        this.clinicalAnalysisId = clinicalAnalysisId;
+    }
+
+    @Deprecated
+    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+                                   Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr,
+                                   String token) {
+        super(studyStr, opencgaHome, token);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
 
@@ -56,7 +69,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
 
         this.config = config != null ? config : new ObjectMap();
 
-        this.maxCoverage = 20;
+//        this.maxCoverage = 20;
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
@@ -69,12 +82,12 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                    .get(studyStr, clinicalAnalysisId, QueryOptions.empty(), token);
+                    .get(studyId, clinicalAnalysisId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
         }
 
         ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
@@ -225,7 +238,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
         // Look for the bam file of the proband
         QueryResult<File> fileQueryResult;
         try {
-            fileQueryResult = catalogManager.getFileManager().get(studyStr, new Query()
+            fileQueryResult = catalogManager.getFileManager().get(studyId, new Query()
                             .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
                             .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
                     new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), token);
@@ -244,7 +257,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
                 for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
                     String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
-                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
+                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, DEFAULT_COVERAGE_THRESHOLD));
                         lowCoverageByGeneDone.add(geneName);
                     }
                 }
@@ -263,7 +276,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
             List<RegionCoverage> regionCoverages;
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
-                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyStr, bamFileId,
+                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyId, bamFileId,
                             new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
@@ -278,5 +291,44 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
         }
         // And for that exon regions, get low coverage regions
         return reportedLowCoverages;
+    }
+
+    // OpenCgaClinicalAnalysis
+    protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
+        List<DiseasePanel> diseasePanels = new ArrayList<>();
+        if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
+            List<QueryResult<Panel>> queryResults;
+            try {
+                queryResults = catalogManager.getPanelManager()
+                        .get(studyId, diseasePanelIds, QueryOptions.empty(), token);
+            } catch (CatalogException e) {
+                throw new AnalysisException(e.getMessage(), e);
+            }
+
+            if (queryResults.size() != diseasePanelIds.size()) {
+                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
+            }
+
+            for (QueryResult<Panel> queryResult : queryResults) {
+                if (queryResult.getNumResults() != 1) {
+                    throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels " +
+                            "queried");
+                }
+                diseasePanels.add(queryResult.first());
+            }
+        } else {
+            throw new AnalysisException("Missing disease panels");
+        }
+
+        return diseasePanels;
+    }
+
+    protected void cleanQuery(Query query) {
+        if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
+            query.remove(VariantQueryParam.SAMPLE.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY.key());
+            query.remove(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key());
+            query.remove(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key());
+        }
     }
 }
