@@ -43,7 +43,10 @@ public class NewStudyMetadata extends AbstractStorageMigrator {
         for (Integer studyId : metadataManager.getStudyIds()) {
             StudyConfiguration sc = metadataManager.getStudyConfiguration(studyId, null).first();
 
-            if (sc == null || sc.getFileIds().isEmpty()) {
+            if (sc == null
+                    || (sc.getFileIds().isEmpty()
+                    && sc.getCohortIds().isEmpty()
+                    && sc.getSampleIds().isEmpty())) {
                 logger.info("Skip study " + studyId + ". Migration not needed");
                 continue;
             }
