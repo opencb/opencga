@@ -42,10 +42,89 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
         echo Login user demo ....
         ./opencga.sh users login -u demo <<< demo
         echo Creating Project ....
-        ./opencga.sh projects create -a reference_grch37 -n "Reference studies GRCh37" --organism-scientific-name "Homo sapiens" --organism-assembly "GRCh37" --id "grch37"
+        ./opencga.sh projects create --id "exomes_grch37" -n "Exomes GRCh37" --organism-scientific-name "Homo sapiens" --organism-assembly "GRCh37"
         echo Creating Study ....
-        ./opencga.sh studies create -a corpasome -n "corpasome Genomes Project" --project "grch37" --id "corpasome"
-        echo Download and link Variant File
+        ./opencga.sh studies create -n "corpasome Genomes Project" --project "exomes_grch37" --id "corpasome"
+        sessionId=$(grep token ~/.opencga/session.json | cut -c 14- | rev | cut -c 3- | rev)
+	echo Creating Individuals ....
+        curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
+	  \"id\": \"ISDBM322016\",
+	  \"name\": \"ISDBM322016\",
+	  \"sex\": \"MALE\",
+	  \"parentalConsanguinity\": false,
+	  \"karyotypicSex\": \"XY\",
+	  \"lifeStatus\": \"ALIVE\",
+	  \"samples\": [
+	    {
+	      \"id\": \"ISDBM322016\"
+	    }
+	  ]
+	}" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
+
+	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
+          \"id\": \"ISDBM322018\",
+          \"name\": \"ISDBM322018\",
+          \"sex\": \"FEMALE\",
+          \"parentalConsanguinity\": false,
+          \"karyotypicSex\": \"XX\",
+          \"lifeStatus\": \"ALIVE\",
+          \"samples\": [
+            {
+              \"id\": \"ISDBM322018\"
+            }
+          ]
+        }" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
+
+	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
+	  \"id\": \"ISDBM322015\",
+	  \"name\": \"ISDBM322015\",
+	  \"sex\": \"MALE\",
+	  \"mother\": \"ISDBM322018\",
+	  \"father\": \"ISDBM322016\",
+	  \"parentalConsanguinity\": false,
+	  \"karyotypicSex\": \"XY\",
+	  \"lifeStatus\": \"ALIVE\",
+	  \"samples\": [
+	    {
+	      \"id\": \"ISDBM322015\"
+	    }
+	  ]
+	}" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
+ 
+	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
+ 	 \"id\": \"ISDBM322017\",
+	  \"name\": \"ISDBM322017\",
+	  \"sex\": \"FEMALE\",
+	  \"mother\": \"ISDBM322018\",
+	  \"father\": \"ISDBM322016\",
+	  \"parentalConsanguinity\": false,
+	  \"karyotypicSex\": \"XX\",
+	  \"lifeStatus\": \"ALIVE\",
+	  \"samples\": [
+	    {
+	      \"id\": \"ISDBM322017\"
+	    }
+	  ]
+	}" "http://localhost:9090/opencga/webservices/rest/v1/individuals/create?study=corpasome"
+
+	curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
+	  \"id\": \"corpas\",
+	  \"name\": \"Corpas\",
+	  \"members\": [
+	    {
+	      \"id\": \"ISDBM322015\"
+	    },{
+	      \"id\": \"ISDBM322016\"
+	    },{
+	      \"id\": \"ISDBM322017\"
+	    },{
+	      \"id\": \"ISDBM322018\"
+	    }
+	  ],
+	  \"expectedSize\": 5
+	}" "http://localhost:9090/opencga/webservices/rest/v1/families/create?study=corpasome"
+
+	echo Download and link Variant File
         wget  -O /opt/opencga/variants/quartet.variants.annotated.vcf https://ndownloader.figshare.com/files/3083423
         ./opencga.sh files link -i ../variants/quartet.variants.annotated.vcf -s corpasome
         echo Transforming, Loading, Annotating and Calculating Stats
