@@ -27,6 +27,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
           echo "Failed to install Catalog : $status"
           exit $status
         fi
+    touch $CONTAINER_ALREADY_STARTED
     sleep 5
     echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
     status=$?
@@ -50,7 +51,6 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
         echo Transforming, Loading, Annotating and Calculating Stats
         ./opencga.sh variant index --file quartet.variants.annotated.vcf --calculate-stats --annotate --index-search -o outDir -s "corpasome"
     fi
-    touch $CONTAINER_ALREADY_STARTED
 else
     echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
 fi
