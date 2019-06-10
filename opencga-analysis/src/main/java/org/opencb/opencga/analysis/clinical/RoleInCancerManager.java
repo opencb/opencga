@@ -30,7 +30,11 @@ public class RoleInCancerManager {
     }
 
     private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer() throws IOException {
-        FileUtils.checkFile(path);
+        try {
+            FileUtils.checkFile(path);
+        } catch (Exception e) {
+            return null;
+        }
 
         Map<String, ClinicalProperty.RoleInCancer> roleInCancer = new HashMap<>();
 

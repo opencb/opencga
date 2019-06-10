@@ -139,8 +139,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         }
 
         // Run interpretation
-        TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
-                actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, token);
+        TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
+                teamAnalysisOptions, opencgaHome, token);
 
         InterpretationResult interpretationResult = teamAnalysis.execute();
 
@@ -208,8 +208,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         monitor.start(outDirPath);
 
         // Run interpretation
-        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
-                actionableVariantsByAssembly.get(assembly), options.penetrance, tieringAnalysisOptions, opencgaHome, token);
+        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList,
+                options.penetrance, tieringAnalysisOptions, opencgaHome, token);
 
         InterpretationResult interpretationResult = tieringAnalysis.execute();
 

@@ -51,8 +51,8 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 //            Query query = new Query();
         //query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
-        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalTest.clinicalAnalysis.getId(), null, clinicalTest.studyFqn, null,
-                null, ClinicalProperty.Penetrance.COMPLETE, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
+        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalTest.clinicalAnalysis.getId(), clinicalTest.studyFqn, null,
+                options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         InterpretationResult execute = customAnalysis.execute();
         for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
             System.out.println("variant = " + variant.toStringSimple());
@@ -68,7 +68,6 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 //            System.out.println("Num. variants = " + execute.getResult().size());
     }
 
-    @Test
     public void customAnalysisFromSamplesTest() throws Exception {
         //http://re-prod-opencgahadoop-tomcat-01.gel.zone:8080/opencga-test/webservices/rest/v1/analysis/clinical/interpretation/tools/custom?study=100k_genomes_grch38_germline%3ARD38&sid=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJpbWVkaW5hIiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU1MjY1NTYyNCwiZXhwIjoxNTUyNjU3NDI0fQ.6VO2mI_MJn3fejtdqdNi5W8uFa3rVXM2501QzN--Th8&sample=LP3000468-DNA_G06%3BLP3000473-DNA_C10%3BLP3000469-DNA_F03&summary=false&exclude=annotation.geneExpression&approximateCount=false&skipCount=true&useSearchIndex=auto&unknownGenotype=0%2F0&limit=10&skip=0
 //        for (Variant variant : variantStorageManager.iterable(clinicalTest.token)) {
@@ -87,8 +86,8 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         }
         query.put(VariantQueryParam.SAMPLE.key(), samples);
 
-        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(null, query, clinicalTest.studyFqn, null,
-                null, ClinicalProperty.Penetrance.COMPLETE, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
+        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(null, clinicalTest.studyFqn, query,
+                options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         InterpretationResult execute = customAnalysis.execute();
         for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
             System.out.println("variant = " + variant.toStringSimple());
