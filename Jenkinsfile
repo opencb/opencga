@@ -1,6 +1,23 @@
 pipeline {
     agent any
     stages {
+        stage ('Validate ARM Templates') {
+                   options {
+                       timeout(time: 5, unit: 'MINUTES')
+                   }
+                   steps {
+                       sh 'cd opencga-app/app/scripts/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
+                   }
+               }
+
+        stage ('Test ARM Scripts') {
+                   options {
+                       timeout(time: 5, unit: 'MINUTES')
+                   }
+                   steps {
+                       sh 'cd opencga-app/app/scripts/azure/arm/scripts && docker build .'
+                   }
+               }
         stage ('Build With Hadoop Profile') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
@@ -19,7 +36,7 @@ pipeline {
             }
         }
 
-        stage ('Docker Build') {
+        stage ('Build OpenCGA-Hadoop Docker Images') {
             options {
                 timeout(time: 25, unit: 'MINUTES')
             }
@@ -28,7 +45,7 @@ pipeline {
             }
         }
 
-        stage ('Publish Docker Images') {
+        stage ('Publish OpenCGA-Hadoop Docker Images') {
              options {
                     timeout(time: 25, unit: 'MINUTES')
              }
@@ -55,7 +72,7 @@ pipeline {
             }
         }
 
-        stage ('Docker Build Demo') {
+        stage ('Build OpenCGA-Mongo Docker Images') {
             options {
                 timeout(time: 25, unit: 'MINUTES')
             }
@@ -65,14 +82,14 @@ pipeline {
             }
         }
 
-  stage ('Publish OpenCGA Demo') {
+  stage ('Publish OpenCGA-Mongo Docker Images') {
              options {
                     timeout(time: 25, unit: 'MINUTES')
              }
              steps {
                 script {
                    def images = ["opencga-next", "opencga-demo"]
-                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().substring(1) + "-mongo"
+                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().substring(1)
                    withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
                        for(int i =0; i < images.size(); i++){
                            sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
