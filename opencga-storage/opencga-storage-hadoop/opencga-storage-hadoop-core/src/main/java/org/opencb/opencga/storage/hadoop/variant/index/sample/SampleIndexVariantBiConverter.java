@@ -165,6 +165,7 @@ public class SampleIndexVariantBiConverter {
          */
         Variant next();
 
+        int getApproxSize();
 
         static SampleIndexVariantIterator emptyIterator() {
             return EmptySampleIndexVariantIterator.EMPTY_ITERATOR;
@@ -193,6 +194,10 @@ public class SampleIndexVariantBiConverter {
         public void skip() {
         }
 
+        public int getApproxSize() {
+            return 0;
+        }
+
         @Override
         public Variant next() {
             throw new NoSuchElementException("Empty iterator");
@@ -201,9 +206,12 @@ public class SampleIndexVariantBiConverter {
 
     private class StringSampleIndexVariantIterator implements SampleIndexVariantIterator {
         private final ListIterator<String> variants;
+        private final int size;
 
         StringSampleIndexVariantIterator(byte[] value, int offset, int length) {
-            variants = split(value, offset, length).listIterator();
+            List<String> values = split(value, offset, length);
+            size = values.size();
+            variants = values.listIterator();
         }
 
         @Override
@@ -224,6 +232,10 @@ public class SampleIndexVariantBiConverter {
         @Override
         public Variant next() {
             return new Variant(variants.next());
+        }
+
+        public int getApproxSize() {
+            return size;
         }
     }
 
@@ -274,6 +286,13 @@ public class SampleIndexVariantBiConverter {
         @Override
         public void skip() {
             movePointer();
+        }
+
+        @Override
+        public int getApproxSize() {
+            double expectedVariantSize = 8.0;
+            double approximation = 1.2;
+            return (int) (length / expectedVariantSize * approximation);
         }
 
         private void movePointer() {

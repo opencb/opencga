@@ -137,7 +137,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 //            if (params.annotationSets != null) {
 //                for (CommonModels.AnnotationSetParams annotationSet : params.annotationSets) {
 //                    if (annotationSet != null) {
-//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, catalogManager.getStudyManager(), sessionId));
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyId, catalogManager.getStudyManager(), sessionId));
 //                    }
 //                }
 //            }

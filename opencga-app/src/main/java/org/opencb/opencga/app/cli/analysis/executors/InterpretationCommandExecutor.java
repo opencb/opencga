@@ -24,10 +24,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
-import org.opencb.opencga.analysis.clinical.InterpretationAnalysisUtils;
-import org.opencb.opencga.analysis.clinical.InterpretationResult;
-import org.opencb.opencga.analysis.clinical.TeamAnalysis;
-import org.opencb.opencga.analysis.clinical.TieringAnalysis;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
+import org.opencb.opencga.analysis.clinical.interpretation.InterpretationResult;
+import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -126,7 +126,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
         Path outDirPath = Paths.get(options.outdirId);
         String opencgaHome = Paths.get(configuration.getDataDir()).getParent().toString();
-        String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, token);
+        String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, token);
 
         Runtime.getRuntime().addShutdownHook(hook);
         monitor.start(outDirPath);
@@ -139,7 +139,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         }
 
         // Run interpretation
-        TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
+        TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
                 actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, token);
 
         InterpretationResult interpretationResult = teamAnalysis.execute();
@@ -202,13 +202,13 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
         Path outDirPath = Paths.get(options.outdirId);
         String opencgaHome = Paths.get(configuration.getDataDir()).getParent().toString();
-        String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, token);
+        String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, token);
 
         Runtime.getRuntime().addShutdownHook(hook);
         monitor.start(outDirPath);
 
         // Run interpretation
-        TieringAnalysis tieringAnalysis = new TieringAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
+        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
                 actionableVariantsByAssembly.get(assembly), options.penetrance, tieringAnalysisOptions, opencgaHome, token);
 
         InterpretationResult interpretationResult = tieringAnalysis.execute();

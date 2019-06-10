@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.Variant;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
@@ -41,12 +42,15 @@ public class MendelianErrorSampleIndexConverter {
 
     public static class MendelianErrorSampleIndexVariantIterator implements SampleIndexVariantIterator {
         private final ListIterator<String> variants;
+        private final int size;
         private Variant next;
         private int nextIndex;
         private String nextGt;
 
         public MendelianErrorSampleIndexVariantIterator(byte[] value, int offset, int length) {
-            variants = split(value, offset, length).listIterator();
+            List<String> values = split(value, offset, length);
+            size = values.size();
+            variants = values.listIterator();
         }
 
         @Override
@@ -85,6 +89,11 @@ public class MendelianErrorSampleIndexConverter {
             Variant variant = next;
             next = null; // Clean next variant
             return variant;
+        }
+
+        @Override
+        public int getApproxSize() {
+            return size;
         }
 
         private void fetchNext() {

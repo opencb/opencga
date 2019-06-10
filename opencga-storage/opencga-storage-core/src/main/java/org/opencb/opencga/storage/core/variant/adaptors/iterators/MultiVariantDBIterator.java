@@ -54,6 +54,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private Logger logger = LoggerFactory.getLogger(MultiVariantDBIterator.class);
     private Query query;
     private int numQueries;
+    private Variant lastVariant = null;
 
     /**
      * Creates a multi iterator given a iterator of variants. It will apply the query (if any) to all the variants in the iterator.
@@ -156,9 +157,9 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     @Override
     public Variant next() {
         if (hasNext()) {
-            Variant next = fetch(variantDBIterator::next);
+            lastVariant = fetch(variantDBIterator::next);
             numResults++;
-            return next;
+            return lastVariant;
         } else {
             throw new NoSuchElementException();
         }
@@ -208,6 +209,22 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         return numQueries;
     }
 
+    public int getNumVariantsFromPrimary() {
+        int unusedVariantsFromLastBatch = 0;
+        if (lastVariant != null) {
+            int usedVariantsFromLastBatch = 0;
+            String lastVariantStr = lastVariant.toString();
+            for (Object variant : queryIterator.lastBatch) {
+                usedVariantsFromLastBatch++;
+                if (lastVariantStr.equals(variant.toString())) {
+                    break;
+                }
+            }
+            unusedVariantsFromLastBatch = queryIterator.lastBatch.size() - usedVariantsFromLastBatch;
+        }
+        return queryIterator.totalBatchSizeCount - unusedVariantsFromLastBatch;
+    }
+
     private static class VariantQueryIterator implements Iterator<Query>, AutoCloseable {
         private static final int MAX_BATCH_SIZE = 5000;
         private static final int MIN_BATCH_SIZE = 100;
@@ -223,6 +240,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         // Count of returned results at the end of the previous query
 //        private int lastQueryNumResults = 0;
         private int lastBatchSize;
+        private List<Object> lastBatch = Collections.emptyList();
         private int totalBatchSizeCount;
         //        private boolean firstBatch = true;
         private Logger logger = LoggerFactory.getLogger(VariantQueryIterator.class);
@@ -302,6 +320,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
                 variants.add(variantsIterator.next());
             } while (variantsIterator.hasNext() && variants.size() < batchSize);
             newQuery.append(VariantQueryParam.ID.key(), variants);
+            lastBatch = variants;
             logger.info("Get next query: " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
             return newQuery;
         }

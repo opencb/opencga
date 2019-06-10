@@ -248,15 +248,16 @@ public class VariantPhoenixKeyFactory {
 
     public static Variant buildVariant(String chromosome, int start, String reference, String alternate, String type) {
 
-        Integer end = null;
-        int ciStartL = 0;
-        int ciStartR = 0;
-        int ciEndL = 0;
-        int ciEndR = 0;
-        String insSeqL = null;
-        String insSeqR = null;
-        final boolean hasSV;
-        if (alternate != null && alternate.contains(SV_ALTERNATE_SEPARATOR)) {
+        if (alternate != null && alternate.length() > 5 && alternate.contains(SV_ALTERNATE_SEPARATOR)) {
+            Integer end = null;
+            int ciStartL = 0;
+            int ciStartR = 0;
+            int ciEndL = 0;
+            int ciEndR = 0;
+            String insSeqL = null;
+            String insSeqR = null;
+
+            // Build SV variant, with VariantBuilder
             String[] s = alternate.split(SV_ALTERNATE_SEPARATOR_SPLIT);
             alternate = s[0];
             end = s[1].equals("null") ? null : Integer.parseInt(s[1]);
@@ -273,14 +274,8 @@ public class VariantPhoenixKeyFactory {
             if (end != null && end == 0) {
                 end = null;
             }
-            hasSV = true;
-        } else {
-            hasSV = false;
-        }
 
-        VariantBuilder builder = new VariantBuilder(chromosome, start, end, reference, alternate);
-
-        if (hasSV) {
+            VariantBuilder builder = new VariantBuilder(chromosome, start, end, reference, alternate);
             builder.setSvInsSeq(insSeqL, insSeqR);
 
             if (ciStartL > 0) {
@@ -290,12 +285,17 @@ public class VariantPhoenixKeyFactory {
             if (ciEndL > 0) {
                 builder.setCiEnd(ciEndL, ciEndR);
             }
+            if (StringUtils.isNotBlank(type)) {
+                builder.setType(VariantType.valueOf(type));
+            }
+            return builder.build();
+        } else {
+            // Build simple variant
+            Variant variant = new Variant(chromosome, start, reference, alternate);
+            if (StringUtils.isNotBlank(type)) {
+                variant.setType(VariantType.valueOf(type));
+            }
+            return variant;
         }
-
-        if (StringUtils.isNotBlank(type)) {
-            builder.setType(VariantType.valueOf(type));
-        }
-
-        return builder.build();
     }
 }

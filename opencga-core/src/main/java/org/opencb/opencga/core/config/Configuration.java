@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +70,16 @@ public class Configuration {
     }
 
     public Configuration() {
+        admin = new Admin();
+        monitor = new Monitor();
+        healthCheck = new HealthCheck();
+        execution = new Execution();
+        audit = new Audit();
+        hooks = new HashMap<>();
+        email = new Email();
+        catalog = new Catalog();
+        server = new ServerConfiguration();
+        authentication = new Authentication();
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {

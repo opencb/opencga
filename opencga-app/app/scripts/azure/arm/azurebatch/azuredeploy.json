@@ -60,9 +60,6 @@
         "poolId": {
             "type": "string",
             "defaultValue": "defaultpool"
-        }, 
-        "dockerImagesToCache": {
-            "type": "array"
         },
         "LogAnalyticsWorkspaceResourceID": {
             "type": "string",
