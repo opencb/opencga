@@ -43,28 +43,18 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis<List<Vari
 
     private String sampleId;
 
-    /**
-     * We keep a Map for each assembly with a Map of variant IDs with the phenotype list
-     */
-    private static Map<String, Map<String, List<String>>> actionableVariants;
-
     public static final int BATCH_SIZE = 1000;
 
 
-    public SecondaryFindingsAnalysis(String sampleId, String clinicalAnalysisId, String studyId, ObjectMap config, String opencgaHome,
-                                     String token) {
-        super(clinicalAnalysisId, studyId, config, opencgaHome, token);
-
+    public SecondaryFindingsAnalysis(String sampleId, String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome,
+                                     String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.sampleId = sampleId;
     }
 
 
     @Override
     public AnalysisResult<List<Variant>> execute() throws Exception {
-        if (actionableVariants == null || actionableVariants.isEmpty()) {
-            actionableVariants = getActionableVariantsByAssembly();
-        }
-
         // sampleId has preference over clinicalAnalysisId
         if (StringUtils.isEmpty(this.sampleId)) {
             // Throws an Exception if it cannot fetch analysis ID or proband is null
@@ -81,25 +71,25 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis<List<Vari
             }
         }
 
+        List<Variant> variants = new ArrayList<>();
+
         // Prepare query object
         Query query = new Query();
         query.put(VariantQueryParam.STUDY.key(), studyId);
         query.put(VariantQueryParam.SAMPLE.key(), sampleId);
 
         // Get the correct actionable variants for the assembly
-        String assembly = ClinicalUtils.getAssembly(catalogManager, studyId, token);
-        Map<String, List<String>> actionableVariantsByAssembly = actionableVariants.get(assembly);
-
-        List<Variant> variants = new ArrayList<>();
-        if (actionableVariantsByAssembly != null) {
-            Iterator<String> iterator = actionableVariantsByAssembly.keySet().iterator();
+        String assembly = ClinicalUtils.getAssembly(catalogManager, studyId, sessionId);
+        Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
+        if (actionableVariants != null) {
+            Iterator<String> iterator = actionableVariants.keySet().iterator();
             List<String> variantIds = new ArrayList<>();
             while (iterator.hasNext()) {
                 String id = iterator.next();
                 variantIds.add(id);
                 if (variantIds.size() >= BATCH_SIZE) {
                     query.put(VariantQueryParam.ID.key(), variantIds);
-                    VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
+                    VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
                     variants.addAll(result.getResult());
                     variantIds.clear();
                 }
@@ -107,74 +97,11 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis<List<Vari
 
             if (variantIds.size() > 0) {
                 query.put(VariantQueryParam.ID.key(), variantIds);
-                VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), token);
+                VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
                 variants.addAll(result.getResult());
             }
         }
 
-        AnalysisResult<List<Variant>> listAnalysisResult = new AnalysisResult<>(variants);
-
-        return listAnalysisResult;
-    }
-
-    private Map<String, Map<String, List<String>>> getActionableVariantsByAssembly() throws IOException {
-        // Load actionable variants for each assembly, if present
-        // First, read all actionableVariants filenames, actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
-        Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
-        File folder = Paths.get(opencgaHome + "/analysis/resources/").toFile();
-        File[] files = folder.listFiles();
-        if (files != null && ArrayUtils.isNotEmpty(files)) {
-            for (File file : files) {
-                if (file.isFile() && file.getName().startsWith("actionableVariants_")) {
-                    // Split by _ and .  to fetch assembly
-                    String[] split = file.getName().split("[_\\.]");
-                    if (split.length > 1) {
-                        String assembly = split[1].toLowerCase();
-                        actionableVariantsByAssembly.put(assembly, loadActionableVariants(file));
-                    }
-                }
-            }
-        }
-        return actionableVariantsByAssembly;
-    }
-
-    /**
-     * Returns a Map of variant IDs with a alist of phenotypes.
-     * @param file OpenCGA home installation folder
-     * @return Map of variant IDs with a alist of phenotypes
-     * @throws IOException If file is not found
-     */
-    private Map<String, List<String>> loadActionableVariants(File file) throws IOException {
-        Map<String, List<String>> actionableVariants = new HashMap<>();
-
-        if (file != null && file.exists()) {
-            BufferedReader bufferedReader = FileUtils.newBufferedReader(file.toPath());
-            List<String> lines = bufferedReader.lines().collect(Collectors.toList());
-            for (String line : lines) {
-                if (line.startsWith("#")) {
-                    continue;
-                }
-                String[] split = line.split("\t");
-                if (split.length > 4) {
-                    List<String> phenotypes = new ArrayList<>();
-                    if (split.length > 8 && StringUtils.isNotEmpty(split[8])) {
-                        phenotypes.addAll(Arrays.asList(split[8].split(";")));
-                    }
-                    try {
-                        Variant variant = new VariantBuilder(split[0], Integer.parseInt(split[1]), Integer.parseInt(split[2]), split[3],
-                                split[4]).build();
-                        actionableVariants.put(variant.toString(), phenotypes);
-                    } catch (NumberFormatException e) {
-                        // Skip this variant
-                        System.err.println("Skip actionable variant: " + line + "\nCause: " + e.getMessage());
-                    }
-                } else {
-                    // Skip this variant
-                    System.err.println("Skip actionable variant, invalid format: " + line);
-                }
-            }
-        }
-
-        return actionableVariants;
+        return new AnalysisResult<>(variants);
     }
 }

@@ -28,6 +28,7 @@ import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
 import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -53,9 +54,9 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     private ModeOfInheritance moi;
 
-    public TeamInterpretationAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, ModeOfInheritance moi, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                                      Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, Penetrance.COMPLETE, options, studyStr, opencgaHome, token);
+    public TeamInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds, ModeOfInheritance moi,
+                                      ObjectMap options, String opencgaHome, String sessionId) {
+        super(clinicalAnalysisId, studyId, diseasePanelIds, options, opencgaHome, sessionId);
         this.moi = moi;
     }
 
@@ -77,7 +78,8 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         List<String> sampleList = getSampleNames(clinicalAnalysis, proband);
 
         // Reported variant creator
-        TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancer, actionableVariants,
+        TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancerManager.getRoleInCancer(),
+                actionableVariantManager.getActionableVariants(ClinicalUtils.getAssembly(catalogManager, studyId, sessionId)),
                 clinicalAnalysis.getDisorder(), null, Penetrance.COMPLETE);
 
         // Step 1 - diagnostic variants
@@ -151,7 +153,7 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
         // Reported low coverages management
         List<ReportedLowCoverage> reportedLowCoverages = null;
-        if (config.getBoolean("includeLowCoverage", false)) {
+        if (options.getBoolean(INCLUDE_LOW_COVERAGE_PARAM, false)) {
             reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
         }
 
@@ -159,7 +161,7 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         // Create Interpretation
         Interpretation interpretation = new Interpretation()
                 .setId("OpenCGA-TEAM-" + TimeUtils.getTime())
-                .setAnalyst(getAnalyst(token))
+                .setAnalyst(getAnalyst(sessionId))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
                 .setPanels(biodataDiseasePanels)
@@ -186,16 +188,15 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         List<ReportedVariant> reportedVariants;
         if (moi != null && (moi == DE_NOVO || moi == COMPOUND_HETEROZYGOUS)) {
             if (moi == DE_NOVO) {
-                DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
-                        actionableVariants, config, studyId, opencgaHome, token);
+                DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
                 reportedVariants = creator.create(deNovoAnalysis.execute().getResult());
             } else {
-                CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, diseasePanelIds, query,
-                        roleInCancer, actionableVariants, config, studyId, opencgaHome, token);
+                CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query,
+                        options, opencgaHome, sessionId);
                 reportedVariants = getCompoundHeterozygousReportedVariants(compoundAnalysis.execute().getResult(), creator);
             }
         } else {
-            reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, token).getResult());
+            reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResult());
         }
         return reportedVariants;
     }

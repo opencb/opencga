@@ -79,11 +79,9 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
 
     private static final List<String> pertinentFindingRNA = new ArrayList(Arrays.asList("ENSG00000269900", "ENSG00000270141"));
 
-    public CancerTieringInterpretationAnalysis(String clinicalAnalysisId, String studyStr, List<String> variantsIdsToDiscard, Map<String,
-            ClinicalProperty.RoleInCancer> roleInCancer, Map<String, List<String>> actionableVariants, ObjectMap options,
-                                               String opencgaHome, String token) {
-        super(clinicalAnalysisId, roleInCancer, actionableVariants, options, opencgaHome, studyStr, token);
-
+    public CancerTieringInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> variantsIdsToDiscard,
+                                               ObjectMap options, String opencgaHome, String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.variantIdsToDiscard = new HashSet<>(variantsIdsToDiscard);
     }
 
@@ -139,7 +137,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
 
         // Reported low coverage
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-        if (config.getBoolean("lowRegionCoverage", false)) {
+        if (options.getBoolean("lowRegionCoverage", false)) {
             reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
         }
 
@@ -148,7 +146,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         List<DiseasePanel> diseasePanels = null;
         Interpretation interpretation = new Interpretation()
                 .setId("OpenCGA-CancerTiering-" + TimeUtils.getTime())
-                .setAnalyst(getAnalyst(token))
+                .setAnalyst(getAnalyst(sessionId))
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setCreationDate(TimeUtils.getTime())
                 .setPanels(diseasePanels)
@@ -212,7 +210,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
                 .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
-        .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), somaticSOTerms);
+                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), somaticSOTerms);
 
         // Sample and genotype managenement
         StringBuilder gt = new StringBuilder();
@@ -225,9 +223,10 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         query.put(VariantQueryParam.GENOTYPE.key(), gt.toString());
 
         // Execute query
-        VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+        VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
 
         if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResult())) {
+            Map<String, ClinicalProperty.RoleInCancer> roleInCancer = roleInCancerManager.getRoleInCancer();
             for (Variant variant : variantVariantQueryResult.getResult()) {
                 if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
                     List<ReportedEvent> reportedEvents = new ArrayList<>();
@@ -294,7 +293,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         query.put(VariantQueryParam.GENE.key(), geneIds);
 
         // Execute query
-        VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+        VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
 
         // Discard variants if:
         //    1) it is present in the black list
@@ -362,7 +361,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         query.put(VariantQueryParam.STATS_MAF.key(), "ALL<0.02");
 
         // Execute query
-        variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), token);
+        variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
 
         // Discard variants if:
         //    1) it is present in the black list
@@ -589,7 +588,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     }
 
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
-        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().get(studyId, query, QueryOptions.empty(), token);
+        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().get(studyId, query, QueryOptions.empty(), sessionId);
         for (Panel panel : panelQueryResult.getResult()) {
             panels.add(panel);
         }

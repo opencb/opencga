@@ -32,11 +32,10 @@ public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
 
-    public XQueryInterpretationAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                                        Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
-                                        BioNetDBConfiguration configuration, String opencgaHome, String token) throws BioNetDBException {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
-
+    public XQueryInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds,
+                                        BioNetDBConfiguration configuration, ObjectMap options, String opencgaHome, String sessionId)
+            throws BioNetDBException {
+        super(clinicalAnalysisId, studyId, diseasePanelIds, options, opencgaHome, sessionId);
         this.bioNetDbManager = new BioNetDbManager(configuration);
     }
 

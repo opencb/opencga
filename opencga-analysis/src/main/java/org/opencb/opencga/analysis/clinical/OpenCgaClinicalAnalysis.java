@@ -27,53 +27,57 @@ import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.nio.file.Paths;
 import java.util.*;
 
 public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
 
-    public final static int LOW_COVERAGE_DEFAULT = 20;
-
     public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
     public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
+    public final static int LOW_COVERAGE_DEFAULT = 20;
+    public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
 
     protected String clinicalAnalysisId;
 
-    protected Map<String, ClinicalProperty.RoleInCancer> roleInCancer;
-    protected Map<String, List<String>> actionableVariants;
+    protected ObjectMap options;
 
-    protected ObjectMap config;
-
-//    protected int maxCoverage;
+    protected ActionableVariantManager actionableVariantManager;
+    protected RoleInCancerManager roleInCancerManager;
 
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
-    public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
-
-    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap config, String opencgaHome, String token) {
-        super(studyId, opencgaHome, token);
+    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
+        super(studyId, opencgaHome, sessionId);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
-    }
+        this.options = options;
 
-    @Deprecated
-    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                   Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr,
-                                   String token) {
-        super(studyStr, opencgaHome, token);
-
-        this.clinicalAnalysisId = clinicalAnalysisId;
-
-        this.actionableVariants = actionableVariants;
-        this.roleInCancer = roleInCancer;
-
-        this.config = config != null ? config : new ObjectMap();
-
-//        this.maxCoverage = 20;
+        this.roleInCancerManager = new RoleInCancerManager(Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"));
+        this.actionableVariantManager = new ActionableVariantManager(Paths.get(opencgaHome + "/analysis/resources/"));
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
     }
+
+//    @Deprecated
+//    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+//                                   Map<String, List<String>> actionableVariants, ObjectMap options, String opencgaHome, String studyStr,
+//                                   String token) {
+//        super(studyStr, opencgaHome, token);
+//
+//        this.clinicalAnalysisId = clinicalAnalysisId;
+//
+//        this.actionableVariants = actionableVariants;
+//        this.roleInCancer = roleInCancer;
+//
+//        this.options = options != null ? options : new ObjectMap();
+//
+////        this.maxCoverage = 20;
+//
+//        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
+//        this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
+//    }
 
     @Override
     public abstract AnalysisResult<T> execute() throws Exception;
@@ -82,7 +86,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                    .get(studyId, clinicalAnalysisId, QueryOptions.empty(), token);
+                    .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
@@ -241,7 +245,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
             fileQueryResult = catalogManager.getFileManager().get(studyId, new Query()
                             .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
                             .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
-                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), token);
+                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), sessionId);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
@@ -277,7 +281,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
                     regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyId, bamFileId,
-                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
+                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResult();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
                                 .setGeneName(geneName)
@@ -300,7 +304,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
             List<QueryResult<Panel>> queryResults;
             try {
                 queryResults = catalogManager.getPanelManager()
-                        .get(studyId, diseasePanelIds, QueryOptions.empty(), token);
+                        .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
             } catch (CatalogException e) {
                 throw new AnalysisException(e.getMessage(), e);
             }

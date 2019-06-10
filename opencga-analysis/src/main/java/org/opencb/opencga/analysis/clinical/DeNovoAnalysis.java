@@ -50,11 +50,8 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
     }
 
-    public DeNovoAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Query query,
-                          Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ObjectMap config, String studyId, String opencgaHome,
-                          String token) {
-        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyId, token);
+    public DeNovoAnalysis(String clinicalAnalysisId, String studyId, Query query, ObjectMap options, String opencgaHome, String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.query = new Query(defaultQuery);
         this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                 .append(VariantQueryParam.STUDY.key(), studyId)
@@ -78,13 +75,13 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
         Individual proband = getProband(clinicalAnalysis);
 
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
-                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), token);
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId);
         if (studyQueryResult.getNumResults() == 0) {
             throw new AnalysisException("Study " + studyId + " not found");
         }
 
         String sampleId = proband.getSamples().get(0).getId();
-        SampleMetadata sampleMetadata = variantStorageManager.getSampleMetadata(studyQueryResult.first().getFqn(), sampleId, token);
+        SampleMetadata sampleMetadata = variantStorageManager.getSampleMetadata(studyQueryResult.first().getFqn(), sampleId, sessionId);
         if (TaskMetadata.Status.READY.equals(sampleMetadata.getMendelianErrorStatus())) {
             logger.debug("Getting precomputed DE NOVO variants");
 
@@ -96,7 +93,7 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
 
             logger.debug("Query: {}", query.safeToString());
 
-            variants = variantStorageManager.get(query, QueryOptions.empty(), token).getResult();
+            variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult();
 //            if (CollectionUtils.isNotEmpty(mendelianErrorVariants)) {
 //                for (Variant variant : mendelianErrorVariants) {
 //                    if (!GenotypeClass.HOM_REF.test(variant.getStudies().get(0).getSampleData(sampleId, "GT"))) {
@@ -163,7 +160,7 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
             logger.debug("De novo samples: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(samples));
             logger.debug("De novo query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
 
-            VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
+            VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), sessionId);
             variants = ModeOfInheritance.deNovo(iterator, 0, motherSampleIdx, fatherSampleIdx);
         }
         logger.debug("Variants obtained: {}", variants.size());

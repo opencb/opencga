@@ -46,56 +46,6 @@ public class ClinicalUtils {
         return file;
     }
 
-
-    public static Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer(Path path) throws IOException {
-        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = new HashMap<>();
-
-        // Check file
-        File file = getFile(path);
-
-        if (file != null && file.exists()) {
-            BufferedReader bufferedReader = org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath());
-            List<String> lines = bufferedReader.lines().collect(Collectors.toList());
-            Set<ClinicalProperty.RoleInCancer> set = new HashSet<>();
-            for (String line : lines) {
-                if (line.startsWith("#")) {
-                    continue;
-                }
-
-                set.clear();
-                String[] split = line.split("\t");
-                // Sanity check
-                if (split.length > 1) {
-                    String[] roles = split[1].replace("\"", "").split(",");
-                    for (String role : roles) {
-                        switch (role.trim().toLowerCase()) {
-                            case "oncogene":
-                                set.add(ClinicalProperty.RoleInCancer.ONCOGENE);
-                                break;
-                            case "tsg":
-                                set.add(ClinicalProperty.RoleInCancer.TUMOR_SUPPRESSOR_GENE);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-
-                // Update set
-                if (set.size() > 0) {
-                    if (set.size() == 2) {
-                        roleInCancer.put(split[0], ClinicalProperty.RoleInCancer.BOTH);
-                    } else {
-                        roleInCancer.put(split[0], set.iterator().next());
-                    }
-                }
-            }
-        }
-        return roleInCancer;
-    }
-
-
-
     public static void addVariant(VariantQueryResult<Variant> result, Set<String> excludeIds, List<Variant> variants) {
         if (CollectionUtils.isNotEmpty(result.getResult())) {
             for (Variant variant : result.getResult()) {
@@ -107,21 +57,13 @@ public class ClinicalUtils {
     }
 
 
-    public static Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer(String opencgaHome) throws IOException {
-        // Load role in cancer, if presents
-        java.nio.file.Path path = Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt");
-        return ClinicalUtils.loadRoleInCancer(path);
-
-    }
-
-
     // OpenCgaClinicalAnalysis
-    public static String getAssembly(CatalogManager catalogManager, String studyStr, String sessionId) {
+    public static String getAssembly(CatalogManager catalogManager, String studyId, String sessionId) {
         String assembly = "";
         QueryResult<Project> projectQueryResult;
         try {
             projectQueryResult = catalogManager.getProjectManager().get(
-                    new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
+                    new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                     new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
             if (CollectionUtils.isNotEmpty(projectQueryResult.getResult())) {
                 assembly = projectQueryResult.first().getOrganism().getAssembly();

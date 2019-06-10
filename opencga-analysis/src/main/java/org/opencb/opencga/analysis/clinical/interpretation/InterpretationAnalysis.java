@@ -39,15 +39,14 @@ import java.util.stream.Collectors;
 
 public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis<Interpretation> {
 
-
-    public InterpretationAnalysis(String clinicalAnalysisId, String studyId, ObjectMap config, String opencgaHome, String token) {
-        super(clinicalAnalysisId, studyId, config, opencgaHome, token);
+    public InterpretationAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
     }
 
-    @Deprecated
-    public InterpretationAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer, Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr, String token) {
-        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
-    }
+//    @Deprecated
+//    public InterpretationAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer, Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr, String token) {
+//        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
+//    }
 
     @Override
     public abstract InterpretationResult execute() throws Exception;
@@ -60,7 +59,7 @@ public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis<Int
 //            List<Variant> findings = ClinicalUtils.secondaryFindings(studyId, sampleNames, actionableVariants.keySet(),
 //                    excludeIds, variantStorageManager, token);
             SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleNames.get(0), clinicalAnalysisId,
-                    studyId, null, opencgaHome, token);
+                    studyId, null, opencgaHome, sessionId);
             List<Variant> variants = secondaryFindingsAnalysis.execute().getResult();
             if (CollectionUtils.isNotEmpty(variants)) {
                 secondaryFindings = creator.createSecondaryFindings(variants);

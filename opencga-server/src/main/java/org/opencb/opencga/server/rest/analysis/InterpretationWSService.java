@@ -58,10 +58,6 @@ public class InterpretationWSService extends AnalysisWSService {
     private static Map<String, Map<String, List<String>>> actionableVariantsByAssembly = null;
     private static Map<String, ClinicalProperty.RoleInCancer> roleInCancer = null;
 
-    static {
-        externalFilesLoaded = new AtomicBoolean(false);
-    }
-
     public InterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                    @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
@@ -69,11 +65,6 @@ public class InterpretationWSService extends AnalysisWSService {
 //        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
-
-        // This is only executed the first time to load external files
-        if (externalFilesLoaded.compareAndSet(false, true)) {
-            loadExternalFiles();
-        }
     }
 
     public InterpretationWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
@@ -83,11 +74,6 @@ public class InterpretationWSService extends AnalysisWSService {
 //        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
-
-        // This is only executed the first time to load external files
-        if (externalFilesLoaded.compareAndSet(false, true)) {
-            loadExternalFiles();
-        }
     }
 
     @POST
@@ -111,7 +97,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
     public Response update(
-            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
+            @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
@@ -140,7 +126,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Add or remove Interpretations to/from a Clinical Analysis", position = 1, response = ClinicalAnalysis.class)
     public Response interpretationUpdate(
-            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
+            @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
@@ -728,7 +714,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "fieldRange", value = "Facet field range for continuous fields", dataType = "string", paramType = "query")
     })
     public Response stats(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-                          @ApiParam(value = "Clinical Analysis Id") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+                          @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
                           @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
                           @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
                           @ApiParam(value = "Comma separated list of subject IDs") @QueryParam("subjectIds") List<String> subjectIds,
@@ -752,7 +738,7 @@ public class InterpretationWSService extends AnalysisWSService {
     })
     public Response team(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
             @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation,
             @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
@@ -769,9 +755,6 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            // Get assembly from study for actionable variants
-            String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, sessionId);
-
             Object result;
             if (save) {
                 // Queue job
@@ -785,8 +768,8 @@ public class InterpretationWSService extends AnalysisWSService {
                 }
 
                 // Execute TEAM analysis
-                TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
-                        actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, sessionId);
+                TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
+                        teamAnalysisOptions, opencgaHome, sessionId);
                 result = teamAnalysis.execute();
             }
             return createAnalysisOkResponse(result);
@@ -804,8 +787,8 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT),
     })
     public Response tiering(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
+            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
             @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance,
             @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
@@ -826,17 +809,15 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            // Get assembly from study for actionable variants
-            String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, sessionId);
 
             Object result;
             if (save) {
                 // Queue job
-                result = catalogInterpretationManager.queue(studyStr, "tiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
+                result = catalogInterpretationManager.queue(studyId, "tiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
             } else {
                 // Execute tiering analysis
-                TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
-                        actionableVariantsByAssembly.get(assembly), penetrance, tieringAnalysisOptions, opencgaHome, sessionId);
+                TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyId, panelList,
+                        penetrance, tieringAnalysisOptions, opencgaHome, sessionId);
                 result = tieringAnalysis.execute();
             }
 
@@ -902,6 +883,8 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
 
+            @ApiImplicitParam(name = "penetrance", value = "Penetrance", dataType = "string", paramType = "query", defaultValue = "COMPLETE"),
+
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
@@ -936,15 +919,10 @@ public class InterpretationWSService extends AnalysisWSService {
 
     })
     public Response customAnalysis(
-            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
-            @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance) {
+                    String studyId) {
         try {
-            if (penetrance == null) {
-                penetrance = ClinicalProperty.Penetrance.COMPLETE;
-            }
-
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = VariantAnalysisWSService.getVariantQuery(queryOptions);
@@ -954,12 +932,9 @@ public class InterpretationWSService extends AnalysisWSService {
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 
-            // Get assembly from study for actionable variants
-            String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, sessionId);
-
             // Execute custom analysis
-            CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, query, studyStr, roleInCancer,
-                    actionableVariantsByAssembly.get(assembly), penetrance, customAnalysisOptions, opencgaHome, sessionId);
+            CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, studyId, query,
+                    customAnalysisOptions, opencgaHome, sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
@@ -976,8 +951,8 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT),
     })
     public Response cancerTiering(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId) { //},
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
+            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId) { //},
 //            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
             // Get analysis options from query
@@ -993,9 +968,6 @@ public class InterpretationWSService extends AnalysisWSService {
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 
-            // Get assembly from study for actionable variants
-            String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, sessionId);
-
             Object result;
 //            if (save) {
 //                // Queue job
@@ -1005,8 +977,8 @@ public class InterpretationWSService extends AnalysisWSService {
             // Execute cancer tiering analysis
             List<String> variantsIdsToDiscard = null;
 
-            CancerTieringInterpretationAnalysis cancerTieringInterpretationAnalysis = new CancerTieringInterpretationAnalysis(clinicalAnalysisId, studyStr, variantsIdsToDiscard,
-                    roleInCancer, actionableVariantsByAssembly.get(assembly), options, opencgaHome, sessionId);
+            CancerTieringInterpretationAnalysis cancerTieringInterpretationAnalysis = new CancerTieringInterpretationAnalysis(
+                    clinicalAnalysisId, studyId, variantsIdsToDiscard, options, opencgaHome, sessionId);
 
             result = cancerTieringInterpretationAnalysis.execute();
 //            }
@@ -1021,38 +993,23 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/interpretation/secondaryFindings")
     @ApiOperation(value = "Search for secondary findings for a list of samples", position = 14, response = QueryResponse.class)
     public Response secondaryFindings(
-            @ApiParam(value = "Sample ID") @QueryParam("sample") String sample,
-            @ApiParam(value = "Clinical Analysis Id, the proband will be used") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Sample ID") @QueryParam("sample") String sampleId,
+            @ApiParam(value = "Clinical analysis ID, the proband will be used") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyId) {
         try {
-            // Get assembly from study for actionable variants
-            String assembly = ClinicalUtils.getAssembly(catalogManager, studyId, sessionId);
-            Map<String, List<String>> actionableVariants = actionableVariantsByAssembly.get(assembly);
+            String dataDir = configuration.getDataDir();
+            String opencgaHome = Paths.get(dataDir).getParent().toString();
 
-            if (MapUtils.isEmpty(actionableVariants)) {
-                return createErrorResponse(new AnalysisException("No actionableVariants_xxx.txt[.gz] file found for assembly '" + assembly
-                        + "'. Please, check your configuration."));
-            } else {
-//                VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager,
-//                        StorageEngineFactory.get(storageConfiguration));
-
-                List<String> sampleNames = new ArrayList<>();
-                if (StringUtils.isNotEmpty(sample)) {
-                    sampleNames.addAll(Arrays.asList(sample.split("/")));
-                }
-//                List<Variant> variants = ClinicalUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
-//                        Collections.emptyList(), variantStorageManager, sessionId);
-
-                SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sample, clinicalAnalysisId,
-                        studyId, null, null, sessionId);
-                List<Variant> variants = secondaryFindingsAnalysis.execute().getResult();
-
-                TeamReportedVariantCreator creator = new TeamReportedVariantCreator(null, roleInCancer, actionableVariants,
-                        null, null, null);
-                List<ReportedVariant> reportedVariants = creator.createSecondaryFindings(variants);
-
-                return createAnalysisOkResponse(reportedVariants);
+            List<String> sampleNames = new ArrayList<>();
+            if (StringUtils.isNotEmpty(sampleId)) {
+                sampleNames.addAll(Arrays.asList(sampleId.split("/")));
             }
+
+            SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleId, clinicalAnalysisId, studyId,
+                    null, opencgaHome, sessionId);
+            List<Variant> variants = secondaryFindingsAnalysis.execute().getResult();
+
+            return createAnalysisOkResponse(variants);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1102,13 +1059,5 @@ public class InterpretationWSService extends AnalysisWSService {
         analysisOptions.put(param, queryOptions.getBoolean(param, true));
 
         return analysisOptions;
-    }
-
-    private void loadExternalFiles() throws IOException {
-        String dataDir = configuration.getDataDir();
-        String opencgaHome = Paths.get(dataDir).getParent().toString();
-
-        roleInCancer = ClinicalUtils.getRoleInCancer(opencgaHome);
-//        actionableVariantsByAssembly = ClinicalUtils.getActionableVariantsByAssembly(opencgaHome);
     }
 }

@@ -52,14 +52,14 @@ public abstract class OpenCgaAnalysis<T> {
 
     protected String opencgaHome;
     protected String studyId;
-    protected String token;
+    protected String sessionId;
 
     protected Logger logger;
 
-    public OpenCgaAnalysis(String studyId, String opencgaHome, String token) {
+    public OpenCgaAnalysis(String studyId, String opencgaHome, String sessionId) {
         this.studyId = studyId;
         this.opencgaHome = opencgaHome;
-        this.token = token;
+        this.sessionId = sessionId;
 
         init();
     }
@@ -145,5 +145,4 @@ public abstract class OpenCgaAnalysis<T> {
         }
         return geneIds;
     }
-
 }

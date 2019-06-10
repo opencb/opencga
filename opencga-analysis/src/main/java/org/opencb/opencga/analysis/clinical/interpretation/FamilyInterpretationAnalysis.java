@@ -37,8 +37,6 @@ public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysi
 
     protected List<String> diseasePanelIds;
 
-    protected ClinicalProperty.Penetrance penetrance;
-
     @Deprecated
     protected final static String SEPARATOR = "__";
 
@@ -56,25 +54,22 @@ public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysi
 //                "SO:0001582", "SO:0001889", "SO:0001821", "SO:0001822", "SO:0001583", "SO:0001630", "SO:0001626"));
 //    }
 
-    public FamilyInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds,
-                                        ClinicalProperty.Penetrance penetrance, ObjectMap config, String opencgaHome, String token) {
-        super(clinicalAnalysisId, studyId, config, opencgaHome, token);
-
+    public FamilyInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds, ObjectMap options,
+                                        String opencgaHome, String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.diseasePanelIds = diseasePanelIds;
-
-        this.penetrance = penetrance;
     }
 
-    @Deprecated
-    public FamilyInterpretationAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
-                                        Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap config,
-                                        String studyId, String opencgaHome, String token) {
-        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyId, token);
-
-        this.diseasePanelIds = diseasePanelIds;
-
-        this.penetrance = penetrance;
-    }
+//    @Deprecated
+//    public FamilyInterpretationAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
+//                                        Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap config,
+//                                        String studyId, String opencgaHome, String token) {
+//        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyId, token);
+//
+//        this.diseasePanelIds = diseasePanelIds;
+//
+//        this.penetrance = penetrance;
+//    }
 
     @Deprecated
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {

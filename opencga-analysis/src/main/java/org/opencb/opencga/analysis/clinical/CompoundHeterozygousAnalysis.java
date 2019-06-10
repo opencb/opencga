@@ -37,14 +37,12 @@ public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<St
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
     }
 
-    public CompoundHeterozygousAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Query query,
-                                        Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                        Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome,
-                                        String token) {
-        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
+    public CompoundHeterozygousAnalysis(String clinicalAnalysisId, String studyId, Query query, ObjectMap options, String opencgaHome,
+                                        String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.query = new Query(defaultQuery);
         this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
@@ -110,7 +108,7 @@ public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<St
         logger.debug("CH Samples: {}", StringUtils.join(samples, ","));
         logger.debug("CH Proband idx: {}, mother idx: {}, father idx: {}", probandSampleIdx, motherSampleIdx, fatherSampleIdx);
         logger.debug("CH Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
-        VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
+        VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), sessionId);
         Map<String, List<Variant>> variantMap =
                 ModeOfInheritance.compoundHeterozygous(iterator, probandSampleIdx, motherSampleIdx, fatherSampleIdx);
 
