@@ -39,7 +39,7 @@ az storage container create \
     --public-access container \
     --connection-string $connection
 
-for filename in  ./*.json ./*.jsonc ./**/*.json ./**/*.jsonc ./**/*.sh ./**/*.py;  do
+find | egrep "\.json$|\.jsonc$|\.sh$|\.py$" | while read filename ; do
     [ -e "$filename" ] || continue
         echo "Uploading $filename..."
         az storage blob upload \

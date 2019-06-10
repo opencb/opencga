@@ -74,6 +74,15 @@
                     "apiVersion": "2018-10-01"
                 },
                 "reason": "Container instance schema invalid"
+            },
+            {
+                "message": ".*",
+                "resource": {
+                    "type": "Microsoft.Compute/virtualMachineScaleSets",
+                    "apiVersion": "2019-03-01",
+                    "name": ".*"
+                },
+                "reason": "VMSS global deployment schema invalid"
             }
         ],
         "azuredeploy.json": [

@@ -104,7 +104,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
         URI stats = createStats(dbAdaptor, output, study, cohorts, options);
 
-        loadStats(dbAdaptor, stats, study, options);
+        loadStats(stats, study, options);
     }
 
     /**
@@ -343,9 +343,9 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         }
     }
 
-    public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options) throws
+    public void loadStats(URI uri, String study, QueryOptions options) throws
             IOException, StorageEngineException {
-        VariantStorageMetadataManager variantStorageMetadataManager = variantDBAdaptor.getMetadataManager();
+        VariantStorageMetadataManager variantStorageMetadataManager = dbAdaptor.getMetadataManager();
         StudyMetadata studyMetadata = variantStorageMetadataManager.getStudyMetadata(study);
         loadStats(uri, studyMetadata, options);
     }

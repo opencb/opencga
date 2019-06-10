@@ -1,24 +1,15 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
-import org.opencb.biodata.models.clinical.pedigree.Member;
-import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
@@ -26,103 +17,80 @@ import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
-
-public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
-
-    protected String clinicalAnalysisId;
-    protected List<String> diseasePanelIds;
-
-    protected Map<String, RoleInCancer> roleInCancer;
-    protected Map<String, List<String>> actionableVariants;
-
-    protected ClinicalProperty.Penetrance penetrance;
-
-    protected ObjectMap config;
-    @Deprecated
-    protected int maxCoverage;
-
-    protected final static String SEPARATOR = "__";
+public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
 
     public final static int LOW_COVERAGE_DEFAULT = 20;
 
     public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
     public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
-    public final static String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
-    public final static String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
+
+    protected String clinicalAnalysisId;
+
+    protected Map<String, ClinicalProperty.RoleInCancer> roleInCancer;
+    protected Map<String, List<String>> actionableVariants;
+
+    protected ObjectMap config;
+
+//    protected int maxCoverage;
 
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
-//    protected static Set<String> extendedLof;
-//    protected static Set<String> proteinCoding;
-//
-//    static {
-//        proteinCoding = new HashSet<>(Arrays.asList("protein_coding", "IG_C_gene", "IG_D_gene", "IG_J_gene", "IG_V_gene",
-//                "nonsense_mediated_decay", "non_stop_decay", "TR_C_gene", "TR_D_gene", "TR_J_gene", "TR_V_gene"));
-//
-//        extendedLof = new HashSet<>(Arrays.asList("SO:0001893", "SO:0001574", "SO:0001575", "SO:0001587", "SO:0001589", "SO:0001578",
-//                "SO:0001582", "SO:0001889", "SO:0001821", "SO:0001822", "SO:0001583", "SO:0001630", "SO:0001626"));
-//    }
+    public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
 
-    public FamilyAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap config,
-                          String studyStr, String opencgaHome, String token) {
-        super(opencgaHome, studyStr, token);
+    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap config, String opencgaHome, String token) {
+        super(studyId, opencgaHome, token);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
-        this.diseasePanelIds = diseasePanelIds;
+    }
+
+    @Deprecated
+    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
+                                   Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr,
+                                   String token) {
+        super(studyStr, opencgaHome, token);
+
+        this.clinicalAnalysisId = clinicalAnalysisId;
 
         this.actionableVariants = actionableVariants;
         this.roleInCancer = roleInCancer;
 
-        this.penetrance = penetrance;
-
         this.config = config != null ? config : new ObjectMap();
-        this.maxCoverage = 20;
+
+//        this.maxCoverage = 20;
 
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
-
     }
 
     @Override
     public abstract AnalysisResult<T> execute() throws Exception;
 
-
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                    .get(studyStr, clinicalAnalysisId, QueryOptions.empty(), token);
+                    .get(studyId, clinicalAnalysisId, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
         }
 
         ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
-
-        // Sanity checks
-        if (clinicalAnalysis.getFamily() == null || StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
-            throw new AnalysisException("Missing family in clinical analysis " + clinicalAnalysisId);
-        }
 
         if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
             throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
@@ -247,7 +215,6 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         return individualSampleMap;
     }
 
-
     protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels)
             throws AnalysisException {
         String clinicalAnalysisId = clinicalAnalysis.getId();
@@ -271,7 +238,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         // Look for the bam file of the proband
         QueryResult<File> fileQueryResult;
         try {
-            fileQueryResult = catalogManager.getFileManager().get(studyStr, new Query()
+            fileQueryResult = catalogManager.getFileManager().get(studyId, new Query()
                             .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
                             .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
                     new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), token);
@@ -290,7 +257,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
                 for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
                     String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
-                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
+                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, DEFAULT_COVERAGE_THRESHOLD));
                         lowCoverageByGeneDone.add(geneName);
                     }
                 }
@@ -309,7 +276,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             List<RegionCoverage> regionCoverages;
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
-                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyStr, bamFileId,
+                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyId, bamFileId,
                             new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, token).getResult();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
@@ -326,13 +293,14 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         return reportedLowCoverages;
     }
 
+    // OpenCgaClinicalAnalysis
     protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
             List<QueryResult<Panel>> queryResults;
             try {
                 queryResults = catalogManager.getPanelManager()
-                        .get(studyStr, diseasePanelIds, QueryOptions.empty(), token);
+                        .get(studyId, diseasePanelIds, QueryOptions.empty(), token);
             } catch (CatalogException e) {
                 throw new AnalysisException(e.getMessage(), e);
             }
@@ -355,102 +323,6 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         return diseasePanels;
     }
 
-    protected Analyst getAnalyst(String token) throws AnalysisException {
-        try {
-            String userId = catalogManager.getUserManager().getUserId(token);
-            QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
-
-            return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
-        } catch (CatalogException e) {
-            throw new AnalysisException(e.getMessage(), e);
-        }
-    }
-
-    protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis, List<ReportedVariant> primaryFindings,
-                                                         List<String> sampleNames, ReportedVariantCreator creator)
-            throws StorageEngineException, InterpretationAnalysisException, CatalogException, IOException {
-        List<ReportedVariant> secondaryFindings = null;
-        if (clinicalAnalysis.getConsent() != null
-                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-            List<String> excludeIds = null;
-            if (CollectionUtils.isNotEmpty(primaryFindings)) {
-                excludeIds = primaryFindings.stream().map(ReportedVariant::getId).collect(Collectors.toList());
-            }
-
-            List<Variant> findings = InterpretationAnalysisUtils.secondaryFindings(studyStr, sampleNames, actionableVariants.keySet(),
-                    excludeIds, variantStorageManager, token);
-
-            if (CollectionUtils.isNotEmpty(findings)) {
-                secondaryFindings = creator.createSecondaryFindings(findings);
-            }
-        }
-        return secondaryFindings;
-    }
-
-    protected List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
-                                                                            ReportedVariantCreator creator)
-            throws InterpretationAnalysisException {
-        // Compound heterozygous management
-        // Create transcript - reported variant map from transcript - variant
-        Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
-        for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
-            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
-        }
-        return creator.groupCHVariants(reportedVariantMap);
-    }
-
-
-    protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
-        String genotypeString = StringUtils.join(genotypes.entrySet().stream()
-                .filter(entry -> sampleMap.containsKey(entry.getKey()))
-                .filter(entry -> ListUtils.isNotEmpty(entry.getValue()))
-                .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
-                .collect(Collectors.toList()), ";");
-        if (StringUtils.isNotEmpty(genotypeString)) {
-            query.put(VariantQueryParam.GENOTYPE.key(), genotypeString);
-        }
-        try {
-            logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
-    }
-
-    protected void removeMembersWithoutSamples(Pedigree pedigree, Family family) {
-        Set<String> membersWithoutSamples = new HashSet<>();
-        for (Individual member : family.getMembers()) {
-            if (ListUtils.isEmpty(member.getSamples())) {
-                membersWithoutSamples.add(member.getId());
-            }
-        }
-
-        Iterator<Member> iterator = pedigree.getMembers().iterator();
-        while (iterator.hasNext()) {
-            Member member = iterator.next();
-            if (membersWithoutSamples.contains(member.getId())) {
-                iterator.remove();
-            } else {
-                if (member.getFather() != null && membersWithoutSamples.contains(member.getFather().getId())) {
-                    member.setFather(null);
-                }
-                if (member.getMother() != null && membersWithoutSamples.contains(member.getMother().getId())) {
-                    member.setMother(null);
-                }
-            }
-        }
-
-        if (pedigree.getProband().getFather() != null && membersWithoutSamples.contains(pedigree.getProband().getFather().getId())) {
-            pedigree.getProband().setFather(null);
-        }
-        if (pedigree.getProband().getMother() != null && membersWithoutSamples.contains(pedigree.getProband().getMother().getId())) {
-            pedigree.getProband().setMother(null);
-        }
-
-        logger.debug("Pedigree: {}", pedigree);
-    }
-
-
     protected void cleanQuery(Query query) {
         if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
             query.remove(VariantQueryParam.SAMPLE.key());
@@ -459,5 +331,4 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
             query.remove(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key());
         }
     }
-
 }

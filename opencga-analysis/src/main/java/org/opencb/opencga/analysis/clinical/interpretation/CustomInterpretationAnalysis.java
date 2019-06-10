@@ -1,4 +1,20 @@
-package org.opencb.opencga.analysis.clinical;
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +33,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
+import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
+import org.opencb.opencga.analysis.clinical.OpenCgaClinicalAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -34,7 +53,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
+public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     private Query query;
 
@@ -43,9 +62,9 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
     private final static String CUSTOM_ANALYSIS_NAME = "Custom";
 
-    public CustomAnalysis(String clinicalAnalysisId, Query query, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
-                          String opencgaHome, String token) {
+    public CustomInterpretationAnalysis(String clinicalAnalysisId, Query query, String studyStr, Map<String, RoleInCancer> roleInCancer,
+                                        Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
+                                        String opencgaHome, String token) {
         super(clinicalAnalysisId, null, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
 
         this.query = query;
@@ -70,21 +89,21 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
         // We allow query to be empty, it is likely that we will add some filters from CA
         if (query == null) {
-            query = new Query(VariantQueryParam.STUDY.key(), studyStr);
+            query = new Query(VariantQueryParam.STUDY.key(), studyId);
         }
 
         String segregation = this.query.getString(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key());
 
         if (!query.containsKey(VariantQueryParam.STUDY.key())) {
-            query.put(VariantQueryParam.STUDY.key(), studyStr);
+            query.put(VariantQueryParam.STUDY.key(), studyId);
         }
 
         // Check clinical analysis (only when sample proband ID is not provided)
         if (clinicalAnalysisId != null) {
-            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyStr,
+            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId,
                     clinicalAnalysisId, QueryOptions.empty(), token);
             if (clinicalAnalysisQueryResult.getNumResults() != 1) {
-                throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
+                throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
             }
 
             clinicalAnalysis = clinicalAnalysisQueryResult.first();
@@ -139,7 +158,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
         if (query.get(VariantCatalogQueryUtils.PANEL.key()) != null) {
             List<String> diseasePanelIds = Arrays.asList(query.getString(VariantCatalogQueryUtils.PANEL.key()).split(","));
             List<QueryResult<Panel>> queryResults = catalogManager.getPanelManager()
-                    .get(studyStr, diseasePanelIds, QueryOptions.empty(), token);
+                    .get(studyId, diseasePanelIds, QueryOptions.empty(), token);
 
             if (queryResults.size() != diseasePanelIds.size()) {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
@@ -185,7 +204,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
                 StopWatch watcher2 = StopWatch.createStarted();
                 moi = ClinicalProperty.ModeOfInheritance.DE_NOVO;
                 DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, diseasePanelIds, query, roleInCancer,
-                        actionableVariants, config, studyStr, opencgaHome, token);
+                        actionableVariants, config, studyId, opencgaHome, token);
                 variants = deNovoAnalysis.execute().getResult();
                 dbTime = Math.toIntExact(watcher2.getTime());
             } else {
@@ -245,7 +264,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
             // Add compound heterozyous variants
             StopWatch watcher2 = StopWatch.createStarted();
             CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, diseasePanelIds, query,
-                    roleInCancer, actionableVariants, config, studyStr, opencgaHome, token);
+                    roleInCancer, actionableVariants, config, studyId, opencgaHome, token);
             primaryFindings = getCompoundHeterozygousReportedVariants(compoundAnalysis.execute().getResult(), creator);
             dbTime = Math.toIntExact(watcher2.getTime());
         } else {
@@ -256,8 +275,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
         // Secondary findings, if clinical consent is TRUE
         List<ReportedVariant> secondaryFindings = null;
         if (clinicalAnalysis != null) {
-            secondaryFindings = getSecondaryFindings(clinicalAnalysis, primaryFindings,
-                    query.getAsStringList(VariantQueryParam.SAMPLE.key()), creator);
+            secondaryFindings = getSecondaryFindings(clinicalAnalysis, query.getAsStringList(VariantQueryParam.SAMPLE.key()), creator);
         }
 
         // Low coverage support
@@ -291,7 +309,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
         // Create Interpretation
         return new Interpretation()
-                .setId(CUSTOM_ANALYSIS_NAME + SEPARATOR + TimeUtils.getTimeMillis())
+                .setId(CUSTOM_ANALYSIS_NAME + "__" + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings)
                 .setLowCoverageRegions(reportedLowCoverages)
@@ -305,7 +323,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
 
     void calculateLowCoverageRegions(String probandSampleId, Map<String, List<File>> files, List<DiseasePanel> diseasePanels,
                                      List<ReportedLowCoverage> reportedLowCoverages) {
-        if (config.getBoolean(INCLUDE_LOW_COVERAGE_PARAM, false)) {
+        if (config.getBoolean(OpenCgaClinicalAnalysis.INCLUDE_LOW_COVERAGE_PARAM, false)) {
             String bamFileId = null;
             if (files != null) {
                 for (String sampleId : files.keySet()) {
@@ -332,7 +350,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
                 }
 
                 // Compute low coverage for genes found
-                int maxCoverage = config.getInt(MAX_LOW_COVERAGE_PARAM, LOW_COVERAGE_DEFAULT);
+                int maxCoverage = config.getInt(OpenCgaClinicalAnalysis.MAX_LOW_COVERAGE_PARAM, OpenCgaClinicalAnalysis.LOW_COVERAGE_DEFAULT);
                 Iterator<String> iterator = genes.iterator();
                 while (iterator.hasNext()) {
                     String geneName = iterator.next();
@@ -349,7 +367,7 @@ public class CustomAnalysis extends FamilyAnalysis<Interpretation> {
         return query;
     }
 
-    public CustomAnalysis setQuery(Query query) {
+    public CustomInterpretationAnalysis setQuery(Query query) {
         this.query = query;
         return this;
     }

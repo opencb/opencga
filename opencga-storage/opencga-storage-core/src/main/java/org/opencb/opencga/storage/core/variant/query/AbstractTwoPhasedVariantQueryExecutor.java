@@ -49,14 +49,9 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
      */
     protected abstract long primaryCount(Query query, QueryOptions options);
 
-    protected final void setNumTotalResults(VariantDBIteratorWithCounts variants, VariantQueryResult<Variant> result,
-                                            Query query, QueryOptions options) {
-        setNumTotalResults(variants, result, query, options, null);
-    }
-
     protected final void setNumTotalResults(VariantDBIteratorWithCounts variantsFromPrimary, VariantQueryResult<Variant> result,
-                                            Query query, QueryOptions options, Integer numIntersectQueries) {
-        setNumTotalResults(variantsFromPrimary, result, query, options, numIntersectQueries,
+                                            Query query, QueryOptions options) {
+        setNumTotalResults(variantsFromPrimary, result, query, options,
                 variantsFromPrimary.getCount(), result.getNumResults());
     }
 
@@ -67,13 +62,12 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
      * @param result                 VariantQueryResult to modify
      * @param query                  Query being executed
      * @param options                Options of the query
-     * @param numIntersectQueries    Optional number of join queries.
      * @param numVariantsFromPrimary Number of variants read from the primary source
      * @param numResults             Final number of results
      */
-    protected final void setNumTotalResults(VariantDBIteratorWithCounts variantsFromPrimary, VariantQueryResult<Variant> result,
+    protected void setNumTotalResults(VariantDBIteratorWithCounts variantsFromPrimary, VariantQueryResult<Variant> result,
                                             Query query, QueryOptions options,
-                                            Integer numIntersectQueries, int numVariantsFromPrimary, int numResults) {
+                                            int numVariantsFromPrimary, int numResults) {
         // TODO: Allow exact count with "approximateCount=false"
         if (shouldGetApproximateCount(options)) {
             int limit = options.getInt(QueryOptions.LIMIT, 0);
@@ -113,14 +107,10 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
             logger.info("numResults = " + numResults);
             logger.info("numResultsFromPrimary = " + numVariantsFromPrimary);
             logger.info("totalCountFromPrimary = " + totalCount);
-            logger.info("numQueries = " + numIntersectQueries);
-            if (numIntersectQueries != null && numIntersectQueries == 1) {
-                // Just one query with limit, index was accurate enough
-                approxCount = totalCount;
-            } else {
-                // Multiply first to avoid loss of precision
-                approxCount = totalCount * numResults / numVariantsFromPrimary;
-            }
+
+            // Multiply first to avoid loss of precision
+            approxCount = totalCount * numResults / numVariantsFromPrimary;
+
             logger.info("approxCount = " + approxCount);
             result.setApproximateCount(true);
             result.setNumTotalResults(approxCount);

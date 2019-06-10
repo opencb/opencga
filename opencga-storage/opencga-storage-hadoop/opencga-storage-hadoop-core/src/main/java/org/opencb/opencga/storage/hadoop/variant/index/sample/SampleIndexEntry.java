@@ -103,6 +103,10 @@ public class SampleIndexEntry {
             return this;
         }
 
+        public int getApproxNumVariants() {
+            return variants.getApproxSize();
+        }
+
         public SampleIndexVariantBiConverter.SampleIndexVariantIterator getVariants() {
             return variants;
         }
