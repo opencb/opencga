@@ -13,6 +13,7 @@ RUN apk update && \
     rm -r solr-${SOLR_VERSION}.tgz && \
     sed -i 's/:8080/:9090/g' /opt/opencga/conf/client-configuration.yml  && \
     sed -i 's/cloud/standalone/g' /opt/opencga/conf/storage-configuration.yml  && \
+    sed -i 's/insertBatchSize: 10000/insertBatchSize: 1000/g' /opt/opencga/conf/storage-configuration.yml  && \
     wget http://docs.opencb.org/download/attachments/9240577/OpenCGAConfSet-1.4.0.tar.gz && \
     tar -zxvf OpenCGAConfSet-1.4.0.tar.gz && \
     rm -r OpenCGAConfSet-1.4.0.tar.gz && \

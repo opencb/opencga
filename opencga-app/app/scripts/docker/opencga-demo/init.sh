@@ -20,7 +20,6 @@ sleep 2
 
 CONTAINER_ALREADY_STARTED="CONTAINER_ALREADY_STARTED"
 if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
-    touch $CONTAINER_ALREADY_STARTED
     echo "-- Installing Catalog --"
     /opt/opencga/bin/opencga-admin.sh catalog install --secret-key any_string_you_want  <<< demo
     status=$?
@@ -36,7 +35,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
       exit $status
     fi
 
-    if [ "$load" != "false" ]; then
+    if [ "$skipLoad" == "false" ]; then
         echo Creating user for OpenCGA Catalog .....
         ./opencga-admin.sh users create -u demo --email demo@opencb.com --name "Demo User" --user-password demo <<< demo
         echo Login user demo ....
@@ -51,6 +50,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
         echo Transforming, Loading, Annotating and Calculating Stats
         ./opencga.sh variant index --file quartet.variants.annotated.vcf --calculate-stats --annotate --index-search -o outDir -s "corpasome"
     fi
+    touch $CONTAINER_ALREADY_STARTED
 else
     echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
 fi
