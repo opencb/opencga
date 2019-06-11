@@ -58,6 +58,8 @@ public class IndividualCommandOptions {
     public NumericOptions commonNumericOptions;
 //    public AnnotationCommandOptions.AnnotationCommandOptionsSearch annotationCommandOptionsSearch;
 
+    protected static final String DEPRECATED = "[DEPRECATED] ";
+
     public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
                                     NumericOptions numericOptions, JCommander jCommander) {
 
@@ -103,41 +105,47 @@ public class IndividualCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Individual id", required = true, arity = 1)
+        public String id;
+        
+        @Parameter(names = {"-n", "--name"}, description = "Name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
-        public String family;
-
-        @Parameter(names = {"--father-id"}, description = "FatherId", required = false, arity = 1)
+        @Parameter(names = {"--father-id"}, description = "Father id", arity = 1)
         public String fatherId;
 
-        @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
+        @Parameter(names = {"--mother-id"}, description = "Mother id", arity = 1)
         public String motherId;
 
-        @Parameter(names = {"--sex"}, description = "Sex. (MALE, FEMALE, UNKNOWN, UNDETERMINED). Default: UNKNOWN", required = false)
+        @Parameter(names = {"--sex"}, description = "Sex. (MALE, FEMALE, UNKNOWN, UNDETERMINED). Default: UNKNOWN")
         public String sex = "UNKNOWN";
 
-        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;
 
-        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        @Parameter(names = {"--population-name"}, description = DEPRECATED + "Population name", arity = 1)
         public String populationName;
 
-        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        @Parameter(names = {"--population-description"}, description = DEPRECATED + "Description of the population", arity = 1)
         public String populationDescription;
 
-        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        @Parameter(names = {"--population-subpopulation"}, description = DEPRECATED + "Subpopulation name", arity = 1)
         public String populationSubpopulation;
 
-        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", arity = 1)
         public String karyotypicSex;
 
-        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
         public String lifeStatus;
 
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
         public String affectationStatus;
+
+        @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
+        public Boolean parentalConsanguinity;
+
+        @Parameter(names = {"--samples"}, description = "Comma separated list of associated samples", arity = 1)
+        public String samples;
 
         @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
         public String dateOfBirth;
@@ -166,44 +174,44 @@ public class IndividualCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--father-id"}, description = "fatherId", required = false, arity = 1)
+        @Parameter(names = {"--father-id"}, description = "fatherId", arity = 1)
         public String fatherId;
 
-        @Parameter(names = {"--mother-id"}, description = "motherId", required = false, arity = 1)
+        @Parameter(names = {"--mother-id"}, description = "motherId", arity = 1)
         public String motherId;
 
-        @Parameter(names = {"--family"}, description = "family", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "family", arity = 1)
         public String family;
 
-        @Parameter(names = {"--sex"}, description = "Sex", required = false, arity = 1)
+        @Parameter(names = {"--sex"}, description = "Sex", arity = 1)
         public String sex;
 
-        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
+        @Parameter(names = {"--population"}, description = "[DEPRECATED] population", arity = 1)
         public String population;
 
-        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        @Parameter(names = {"--population-name"}, description = "Population name", arity = 1)
         public String populationName;
 
-        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        @Parameter(names = {"--population-description"}, description = "Description of the population", arity = 1)
         public String populationDescription;
 
-        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", arity = 1)
         public String populationSubpopulation;
 
-        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", arity = 1)
         public String karyotypicSex;
 
-        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
         public String lifeStatus;
 
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
         public String affectationStatus;
 
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
@@ -219,40 +227,40 @@ public class IndividualCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update individual information")
     public class UpdateCommandOptions extends BaseIndividualsCommand {
 
-        @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--father-id"}, description = "FatherId", required = false, arity = 1)
+        @Parameter(names = {"--father-id"}, description = "FatherId", arity = 1)
         public String fatherId;
 
-        @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
+        @Parameter(names = {"--mother-id"}, description = "MotherId", arity = 1)
         public String motherId;
 
-        @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Family", arity = 1)
         public String family;
 
-        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        @Parameter(names = {"--sex"}, description = "Sex")
         public String sex;
 
-        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;
 
-        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        @Parameter(names = {"--population-name"}, description = "Population name", arity = 1)
         public String populationName;
 
-        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        @Parameter(names = {"--population-description"}, description = "Description of the population", arity = 1)
         public String populationDescription;
 
-        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", arity = 1)
         public String populationSubpopulation;
 
-        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", arity = 1)
         public String karyotypicSex;
 
-        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
         public String lifeStatus;
 
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
         public String affectationStatus;
 
         @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
@@ -275,59 +283,59 @@ public class IndividualCommandOptions {
         CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Deprecated
-        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", arity = 1)
         public String id;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", arity = 0)
         public String name;
 
-        @Parameter(names = {"--father-id"}, description = "FatherId", required = false, arity = 1)
+        @Parameter(names = {"--father-id"}, description = "FatherId", arity = 1)
         public String fatherId;
 
-        @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
+        @Parameter(names = {"--mother-id"}, description = "MotherId", arity = 1)
         public String motherId;
 
-        @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
+        @Parameter(names = {"--family"}, description = "Family", arity = 1)
         public String family;
 
-        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        @Parameter(names = {"--sex"}, description = "Sex")
         public IndividualProperty.Sex sex;
 
-        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
+        @Parameter(names = {"--population"}, description = "[DEPRECATED] population", arity = 1)
         public String population;
 
-        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        @Parameter(names = {"--population-name"}, description = "Population name", arity = 1)
         public String populationName;
 
-        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        @Parameter(names = {"--population-description"}, description = "Description of the population", arity = 1)
         public String populationDescription;
 
-        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", arity = 1)
         public String populationSubpopulation;
 
-        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", arity = 1)
         public String karyotypicSex;
 
-        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
         public String lifeStatus;
 
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
         public String affectationStatus;
 
-        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", arity = 0)
         public String annotationSetName;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
+        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", arity = 1)
         public String annotation;
     }
 

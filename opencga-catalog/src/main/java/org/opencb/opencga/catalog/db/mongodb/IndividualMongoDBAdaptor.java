@@ -102,9 +102,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         long startQuery = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        if (!get(new Query(QueryParams.ID.key(), individual.getName())
+        if (!get(new Query(QueryParams.ID.key(), individual.getId())
                 .append(QueryParams.STUDY_UID.key(), studyId), new QueryOptions()).getResult().isEmpty()) {
-            throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
+            throw CatalogDBException.alreadyExists("Individual", "id", individual.getId());
         }
         if (individual.getFather() != null && individual.getFather().getUid() > 0 && !exists(individual.getFather().getUid())) {
             throw CatalogDBException.idNotFound("Individual", individual.getFather().getId());
