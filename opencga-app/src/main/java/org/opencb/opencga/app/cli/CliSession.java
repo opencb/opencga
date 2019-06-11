@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,25 +34,27 @@ public class CliSession {
     private String token;
     private String login;
     private String expirationTime;
+    @Deprecated
     private Map<String, List<String>> projectsAndStudies;
+    private List<String> studies;
 
     public CliSession() {
     }
 
     public CliSession(String host, String user, String token) {
-        this(host, user, token, TimeUtils.getTime(), new HashMap<>());
+        this(host, user, token, TimeUtils.getTime(), Collections.emptyList());
     }
 
-    public CliSession(String host, String user, String token, Map<String, List<String>> projectsAndStudies) {
-        this(host, user, token, TimeUtils.getTime(), projectsAndStudies);
+    public CliSession(String host, String user, String token, List<String> studies) {
+        this(host, user, token, TimeUtils.getTime(), studies);
     }
 
-    public CliSession(String host, String user, String token, String login, Map<String, List<String>> projectsAndStudies) {
+    public CliSession(String host, String user, String token, String login, List<String> studies) {
         this.host = host;
         this.user = user;
         this.token = token;
         this.login = login;
-        this.projectsAndStudies = projectsAndStudies;
+        this.studies = studies;
         this.version = "v1";
     }
 
@@ -65,6 +68,7 @@ public class CliSession {
         sb.append(", login='").append(login).append('\'');
         sb.append(", expirationTime='").append(expirationTime).append('\'');
         sb.append(", projectsAndStudies=").append(projectsAndStudies);
+        sb.append(", studies=").append(studies);
         sb.append('}');
         return sb.toString();
     }
@@ -123,12 +127,22 @@ public class CliSession {
         return this;
     }
 
+    @Deprecated
     public Map<String, List<String>> getProjectsAndStudies() {
         return projectsAndStudies;
     }
 
+    @Deprecated
     public CliSession setProjectsAndStudies(Map<String, List<String>> projectsAndStudies) {
         this.projectsAndStudies = projectsAndStudies;
         return this;
+    }
+
+    public List<String> getStudies() {
+        return studies;
+    }
+
+    public void setStudies(List<String> studies) {
+        this.studies = studies;
     }
 }
