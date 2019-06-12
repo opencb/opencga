@@ -45,7 +45,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
         ./opencga.sh projects create --id "exomes_grch37" -n "Exomes GRCh37" --organism-scientific-name "Homo sapiens" --organism-assembly "GRCh37"
         echo Creating Study ....
         ./opencga.sh studies create -n "corpasome Genomes Project" --project "exomes_grch37" --id "corpasome"
-        sessionId=$(grep token ~/.opencga/session.json | cut -c 14- | rev | cut -c 3- | rev)
+        sessionId=$(grep token ~/.opencga/session.json | cut -d '"' -f 4)
 	echo Creating Individuals ....
         curl -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer $sessionId" -d "{
 	  \"id\": \"ISDBM322016\",
