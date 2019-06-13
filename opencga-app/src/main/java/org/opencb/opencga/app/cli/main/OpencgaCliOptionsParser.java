@@ -184,7 +184,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         familyCommandOptions = new FamilyCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("families", familyCommandOptions);
         JCommander familySubCommands = jCommander.getCommands().get("families");
-//        familySubCommands.addCommand("create", familyCommandOptions.createCommandOptions);
+        familySubCommands.addCommand("create", familyCommandOptions.createCommandOptions);
         familySubCommands.addCommand("info", familyCommandOptions.infoCommandOptions);
         familySubCommands.addCommand("search", familyCommandOptions.searchCommandOptions);
         familySubCommands.addCommand("group-by", familyCommandOptions.groupByCommandOptions);

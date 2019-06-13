@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class ClinicalAnalysisClient extends CatalogClient<ClinicalAnalysis, ClinicalAnalysisAclEntry> {
 
-    private static final String CLINICAL_URL = "clinical";
+    private static final String CLINICAL_URL = "analysis/clinical";
 
     public ClinicalAnalysisClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);

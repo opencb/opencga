@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -137,12 +138,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         queryCommandOptions.genericVariantQueryOptions.includeStudy = resolveStudy(queryCommandOptions.genericVariantQueryOptions.includeStudy);
 
         List<String> studies = new ArrayList<>();
-        if (cliSession != null && cliSession.getProjectsAndStudies() != null) {
-            for (Map.Entry<String, List<String>> entry : cliSession.getProjectsAndStudies().entrySet()) {
-                for (String s : entry.getValue()) {
-                    studies.add(entry.getKey() + ':' + s);
-                }
-            }
+        if (cliSession != null && ListUtils.isNotEmpty(cliSession.getStudies())) {
+            studies = cliSession.getStudies();
         }
         Query query = VariantQueryCommandUtils.parseQuery(queryCommandOptions, studies, clientConfiguration);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryCommandOptions);

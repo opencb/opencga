@@ -30,7 +30,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 @Parameters(commandNames = {"families"}, commandDescription = "Family commands")
 public class FamilyCommandOptions {
 
-//    public CreateCommandOptions createCommandOptions;
+    public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
@@ -59,7 +59,7 @@ public class FamilyCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-//        this.createCommandOptions = new CreateCommandOptions();
+        this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
@@ -88,30 +88,24 @@ public class FamilyCommandOptions {
 
     }
 
-//    @Parameters(commandNames = {"create"}, commandDescription = "Create family.")
-//    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
-//
-//        @ParametersDelegate
-//        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-//
-//        @Parameter(names = {"-n", "--name"}, description = "Family name", required = true, arity = 1)
-//        public String name;
-//
-//        @Parameter(names = {"--father"}, description = "Father name", arity = 1)
-//        public String father;
-//
-//        @Parameter(names = {"--mother"}, description = "Mother name", arity = 1)
-//        public String mother;
-//
-//        @Parameter(names = {"--member"}, description = "Comma separated list of child names", arity = 1)
-//        public String member;
-//
-//        @Parameter(names = {"--description"}, description = "Description of the family", arity = 1)
-//        public String description;
-//
-//        @Parameter(names = {"--parental-consanguinity"}, description = "Flag indicating if the parents descend from the same ancestor", arity = 0)
-//        public boolean parentalConsanguinity;
-//    }
+    @Parameters(commandNames = {"create"}, commandDescription = "Create family.")
+    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--id"}, description = "Family id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"-n", "--name"}, description = "Family name", arity = 1)
+        public String name;
+
+        @Parameter(names = {"--description"}, description = "Description of the family", arity = 1)
+        public String description;
+
+        @Parameter(names = {"--members"}, description = "Comma separated list of family members", arity = 1)
+        public String members;
+    }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get family information")
     public class InfoCommandOptions extends BaseFamilyCommand {
