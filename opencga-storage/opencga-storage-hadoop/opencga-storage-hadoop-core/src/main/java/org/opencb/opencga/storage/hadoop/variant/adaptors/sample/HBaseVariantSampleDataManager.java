@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.sample;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
@@ -21,7 +21,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.SampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
@@ -52,19 +55,28 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
     }
 
     @Override
-    public QueryResult<VariantSampleData> getSampleData(String variantStr, String study, QueryOptions options,
+    protected QueryResult<VariantSampleData> getSampleData(String variantStr, String study, QueryOptions options,
                                                         List<String> includeSamples,
                                                         Set<String> genotypes,
                                                         boolean merge, int sampleLimit) {
-        if (StringUtils.isNotEmpty(options.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))
-                && !VariantQueryUtils.ALL.equals(options.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))) {
-            super.getSampleData(variantStr, study, options);
-        }
         StopWatch stopWatch = StopWatch.createStarted();
 
         Variant variant = new Variant(variantStr);
 
         int studyId = metadataManager.getStudyId(study);
+
+        boolean includeAllSamples = CollectionUtils.isEmpty(includeSamples)
+                || includeSamples.size() == 1 && VariantQueryUtils.ALL.equals(includeSamples.get(0));
+        Set<Integer> includeSampleIds = new HashSet<>();
+        if (!includeAllSamples) {
+            for (String sample : includeSamples) {
+                Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sample, study);
+                }
+                includeSampleIds.add(sampleId);
+            }
+        }
 
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
@@ -95,6 +107,12 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 filters.add(new FilterList(FilterList.Operator.MUST_PASS_ONE, genotypeFilters));
                 filters.add(new ColumnPaginationFilter(limit, skip));
                 get.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, filters));
+                if (!includeAllSamples) {
+                    for (Integer sampleId : includeSampleIds) {
+                        byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId);
+                        get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), column);
+                    }
+                }
                 sampleGets.add(get);
             }
 

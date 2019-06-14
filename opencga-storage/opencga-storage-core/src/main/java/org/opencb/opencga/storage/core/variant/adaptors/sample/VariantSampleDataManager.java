@@ -57,7 +57,7 @@ public class VariantSampleDataManager {
         return getSampleData(variant, study, options, includeSamples, genotypes, merge, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(
+    protected QueryResult<VariantSampleData> getSampleData(
             String variant, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
             boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;

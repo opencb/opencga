@@ -553,8 +553,12 @@ public class VariantStorageManager extends StorageManager {
     public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(VariantQueryParam.STUDY.key(), study);
+        options.remove(QueryOptions.INCLUDE);
+        options.remove(QueryOptions.EXCLUDE);
+        options.remove(VariantField.SUMMARY);
         return secure(query, options, sessionId, engine -> {
             String studyFqn = query.getString(STUDY.key());
+            options.putAll(query);
             return engine.getSampleData(variant, studyFqn, options);
         });
     }
