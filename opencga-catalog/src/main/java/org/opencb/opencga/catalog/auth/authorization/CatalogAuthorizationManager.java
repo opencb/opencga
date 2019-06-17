@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
@@ -83,7 +82,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private final AuthorizationDBAdaptor aclDBAdaptor;
 
-    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, CatalogAuditManager auditManager, Configuration configuration)
+    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, AuditManager auditManager, Configuration configuration)
             throws CatalogDBException, CatalogAuthorizationException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
         this.auditManager = auditManager;

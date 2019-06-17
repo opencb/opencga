@@ -16,26 +16,47 @@
 
 package org.opencb.opencga.catalog.audit;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.audit.AuditRecord.Resource;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static org.opencb.opencga.catalog.audit.AuditRecord.Resource;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+
 /**
  * Created on 18/08/15.
- * <p>
- * Create the AuditRecord from simple params
- * Select which actions will be recorded
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface AuditManager {
+public class AuditManager {
+
+    protected static Logger logger = LoggerFactory.getLogger(AuditManager.class);
+    private final AuditDBAdaptor auditDBAdaptor;
+    private final AuthenticationManager authenticationManager;
+
+    private static final String ROOT = "admin";
+
+    public AuditManager(DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
+        this.auditDBAdaptor = catalogDBAdaptorFactory.getCatalogAuditDbAdaptor();
+        this.authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration.getEmail(),
+                configuration.getAdmin().getSecretKey(), configuration.getAuthentication().getExpiration());
+    }
 
     /**
      * Records a login attempt.
@@ -44,7 +65,7 @@ public interface AuditManager {
      * @param success     Boolean indicating if the login was successful.
      * @throws CatalogException CatalogException
      */
-    default void recordLogin(String userId, boolean success) throws CatalogException {
+    public void recordLogin(String userId, boolean success) throws CatalogException {
         if (success) {
             recordAction(Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null, null,
                     "User successfully logged in", null);
@@ -66,7 +87,7 @@ public interface AuditManager {
      * @param attributes  Optional attributes
      * @throws CatalogException CatalogException
      */
-    default void recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
+    public void recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
         recordAction(resource, AuditRecord.Action.create, AuditRecord.Magnitude.low, id, userId, null, object, description, attributes);
     }
@@ -82,7 +103,7 @@ public interface AuditManager {
      * @param attributes  Optional attributes
      * @throws CatalogException CatalogException
      */
-    default void recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
+    public void recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
             throws CatalogException {
         recordAction(resource, AuditRecord.Action.update, AuditRecord.Magnitude.medium, id, userId, null, update, description, attributes);
     }
@@ -98,7 +119,7 @@ public interface AuditManager {
      * @param attributes  Optional attributes
      * @throws CatalogException CatalogException
      */
-    default void recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
+    public void recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
         recordAction(resource, AuditRecord.Action.delete, AuditRecord.Magnitude.high, id, userId, object, null, description, attributes);
     }
@@ -115,51 +136,32 @@ public interface AuditManager {
      * @param attributes  Optional attributes
      * @throws CatalogException CatalogException
      */
-    default void recordDeletion(Resource resource, Object id, String userId, Object before,  Object after, String description,
+    public void recordDeletion(Resource resource, Object id, String userId, Object before,  Object after, String description,
                                 ObjectMap attributes) throws CatalogException {
         recordAction(resource, AuditRecord.Action.delete, AuditRecord.Magnitude.high, id, userId, before, after, description, attributes);
     }
 
-    /**
-     * Records a restore over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the deletion
-     * @param before      Previous object state
-     * @param after       Posterior object state
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    default void recordRestore(Resource resource, Object id, String userId, Object before,  Object after, String description,
-                                ObjectMap attributes) throws CatalogException {
-        if (before instanceof String && StringUtils.isNotEmpty((String) before)) {
-            before = new ObjectMap("status", before);
-        }
-        if (after instanceof String && StringUtils.isNotEmpty((String) after)) {
-            after = new ObjectMap("status", after);
-        }
-        recordAction(resource, AuditRecord.Action.restore, AuditRecord.Magnitude.high, id, userId, before, after, description, attributes);
+    public void recordAction(Resource resource, AuditRecord.Action action, AuditRecord.Magnitude importance, Object id, String userId,
+                             Object before, Object after, String description, ObjectMap attributes) throws CatalogException {
+        AuditRecord auditRecord = new AuditRecord(id, resource, action, importance, toObjectMap(before), toObjectMap(after),
+                System.currentTimeMillis(), userId, description, attributes);
+        logger.debug("{}", action, auditRecord);
+        auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 
-    /**
-     * Records an object creation over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param action      Executed action
-     * @param importance  Importance of the document being audited (high, medium or low)
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the action
-     * @param before      Optional Previous object state
-     * @param after       Optional Posterior object state
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    void recordAction(Resource resource, AuditRecord.Action action, AuditRecord.Magnitude importance, Object id, String userId,
-                             Object before, Object after, String description, ObjectMap attributes)
-            throws CatalogException;
+    private ObjectMap toObjectMap(Object object) {
+        if (object == null) {
+            return null;
+        }
+        ObjectMapper objectMapper = getDefaultObjectMapper();
+        try {
+            return new ObjectMap(objectMapper.writeValueAsString(object));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return new ObjectMap("object", object);
+        }
+    }
+
 
     /**
      * Groups the matching entries by some fields.
@@ -171,23 +173,17 @@ public interface AuditManager {
      * @return A QueryResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    default QueryResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
         }
         return groupBy(query, Arrays.asList(fields.split(",")), options, sessionId);
     }
 
-    /**
-     * Groups the matching entries by some fields.
-     *
-     * @param query     Query object.
-     * @param options   QueryOptions object.
-     * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
-     * @param sessionId Session id of the user logged in.
-     * @return A QueryResult object containing the results of the query grouped by the fields.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
-
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
+        if (ROOT.equals(authenticationManager.getUserId(token))) {
+            return auditDBAdaptor.groupBy(query, fields, options);
+        }
+        throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");
+    }
 }
