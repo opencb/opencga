@@ -95,14 +95,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.ID.key(), family.getName()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), family.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
         QueryResult<Long> count = familyCollection.count(bson);
         if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Cannot create family. A family with { name: '" + family.getName() + "'} already exists.");
+            throw new CatalogDBException("Cannot create family. A family with { id: '" + family.getId() + "'} already exists.");
         }
 
         long familyId = getNewId();

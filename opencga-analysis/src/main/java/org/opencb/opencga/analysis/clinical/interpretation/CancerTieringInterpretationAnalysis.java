@@ -49,16 +49,13 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.*;
+import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 
 public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
     private Disorder disorder; // This will be got from clinical analysis
     private List<DiseasePanel> diseasePanels;
     private Set<String> variantIdsToDiscard;
-
-    private static final String TIER_1 = "Tier 1";
-    private static final String TIER_2 = "Tier 2";
-    private static final String TIER_3 = "Tier 3";
 
     private static final String OTHER_PHENOTYPE = "Other";
     private static final String CHILDHOOD_PHENOTYPE = "Childhood";
@@ -241,9 +238,9 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
                             reportedEvent.setConsequenceTypes(somaticSOTerms);
                             VariantClassification classification = new VariantClassification();
                             classification.setTier(TIER_2);
-                            List<String> acmg = VariantClassification.calculateAcmgClassification(variant);
+                            List<String> acmg = calculateAcmgClassification(variant);
                             classification.setAcmg(acmg);
-                            classification.setClinicalSignificance(VariantClassification.computeClinicalSignificance(acmg));
+                            classification.setClinicalSignificance(computeClinicalSignificance(acmg));
                             reportedEvent.setClassification(classification);
 
                             reportedEvents.add(reportedEvent);
@@ -438,8 +435,8 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         reportedEvent.setConsequenceTypes(soTerms);
         VariantClassification classification = new VariantClassification();
         classification.setTier(tier);
-        classification.setAcmg(VariantClassification.calculateAcmgClassification(variant));
-        classification.setClinicalSignificance(VariantClassification.computeClinicalSignificance(classification.getAcmg()));
+        classification.setAcmg(calculateAcmgClassification(variant));
+        classification.setClinicalSignificance(computeClinicalSignificance(classification.getAcmg()));
         reportedEvent.setClassification(classification);
 
         return reportedEvent;

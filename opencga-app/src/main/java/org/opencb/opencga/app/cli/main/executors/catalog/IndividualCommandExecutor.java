@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -35,6 +36,10 @@ import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by agaor on 6/06/16.
@@ -121,12 +126,15 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Individual> create() throws CatalogException, IOException {
         logger.debug("Creating individual");
 
+        IndividualCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
+
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.createCommandOptions.fatherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.createCommandOptions.motherId);
-        String sex = individualsCommandOptions.createCommandOptions.sex;
-        if (individualsCommandOptions.createCommandOptions.sex != null) {
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), commandOptions.id);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), commandOptions.fatherId);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), commandOptions.motherId);
+        String sex = commandOptions.sex;
+        if (commandOptions.sex != null) {
             try {
                 params.put(IndividualDBAdaptor.QueryParams.SEX.key(), IndividualProperty.Sex.valueOf(sex));
             } catch (IllegalArgumentException e) {
@@ -135,9 +143,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             }
         }
 
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.createCommandOptions.ethnicity);
-
-        IndividualCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
+        params.putIfNotNull(IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(), commandOptions.parentalConsanguinity);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), commandOptions.ethnicity);
 
         Individual.Population population = new Individual.Population();
         if (commandOptions.populationName != null) {
@@ -155,6 +162,17 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), commandOptions.lifeStatus);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), commandOptions.affectationStatus);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), commandOptions.dateOfBirth);
+
+        if (StringUtils.isNotEmpty(commandOptions.samples)) {
+            String[] samples = StringUtils.split(commandOptions.samples, ",");
+            List<Map<String, String>> sampleList = new ArrayList<>(samples.length);
+            for (String sample : samples) {
+                Map<String, String> map = new HashMap<>();
+                map.put("id", sample);
+                sampleList.add(map);
+            }
+            params.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
+        }
 
         return openCGAClient.getIndividualClient().create(resolveStudy(commandOptions.study), params);
     }

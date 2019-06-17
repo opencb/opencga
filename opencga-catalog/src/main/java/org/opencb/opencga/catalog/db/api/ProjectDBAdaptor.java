@@ -60,6 +60,8 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        OWNER("owner", TEXT, ""),
+
         STUDY("study", TEXT, ""), // For the project/search ws
         STUDY_UID("study.uid", INTEGER_ARRAY, ""),
         STUDY_ID("study.alias", TEXT_ARRAY, ""),

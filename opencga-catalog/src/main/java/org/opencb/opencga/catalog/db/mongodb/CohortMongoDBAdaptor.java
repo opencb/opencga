@@ -93,7 +93,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        checkCohortNameExists(studyId, cohort.getId());
+        checkCohortIdExists(studyId, cohort.getId());
 
         long newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         cohort.setUid(newId);
@@ -679,11 +679,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
     }
 
-    private void checkCohortNameExists(long studyId, String cohortName) throws CatalogDBException {
+    private void checkCohortIdExists(long studyId, String cohortId) throws CatalogDBException {
         QueryResult<Long> count = cohortCollection.count(Filters.and(
-                Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.eq(QueryParams.ID.key(), cohortName)));
+                Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.eq(QueryParams.ID.key(), cohortId)));
         if (count.getResult().get(0) > 0) {
-            throw CatalogDBException.alreadyExists("Cohort", "name", cohortName);
+            throw CatalogDBException.alreadyExists("Cohort", "id", cohortId);
         }
     }
 

@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
@@ -141,18 +142,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 return clientConfiguration.getDefaultStudy();
             } else {
                 // Third, check if there is only one single project and study for this user in the current CLI session file.
-                Map<String, List<String>> projectsAndStudies = cliSession == null ? null : cliSession.getProjectsAndStudies();
-                if (projectsAndStudies != null && projectsAndStudies.size() == 1) {
-                    List<String> projectAliases = new ArrayList<>(projectsAndStudies.keySet());
-                    // Get the study list of the only existing project
-                    List<String> studyAlias = projectsAndStudies.get(projectAliases.get(0));
-                    if (studyAlias.size() == 1) {
-                        study = studyAlias.get(0);
-                    } else {
-                        throw new CatalogException("None or more than one study found");
-                    }
+                List<String> studies = cliSession == null ? null : cliSession.getStudies();
+                if (ListUtils.isNotEmpty(studies) && studies.size() == 1) {
+                    study = studies.get(0);
                 } else {
-                    throw new CatalogException("None or more than one project found");
+                    throw new CatalogException("None or more than one study found");
                 }
             }
         }
