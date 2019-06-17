@@ -110,10 +110,20 @@ public class SampleIndexCompoundHeterozygousQueryExecutor extends CompoundHetero
             VariantDBIterator iterator1 = sampleIndexDBAdaptor.iterator(query1, new QueryOptions(options).append(QueryOptions.SORT, true));
             VariantDBIterator iterator2 = sampleIndexDBAdaptor.iterator(query2, new QueryOptions(options).append(QueryOptions.SORT, true));
 
+            // Remove region filters that would be removed at SampleIndexQueryParser
+            Query variantsQuery = new Query(baseQuery)
+                    .append(VariantQueryParam.ID.key(), null)
+                    .append(VariantQueryParam.REGION.key(), null)
+                    .append(VariantQueryParam.ANNOT_XREF.key(), null)
+                    .append(VariantQueryParam.GENE.key(), null)
+                    .append(ANNOT_GENE_REGIONS.key(), null)
+                    .append(ANNOT_EXPRESSION_GENES.key(), null)
+                    .append(ANNOT_GO_GENES.key(), null);
+
             // Union of two iterators from the SampleIndex
             UnionMultiVariantKeyIterator multiParentIterator = new UnionMultiVariantKeyIterator(Arrays.asList(iterator1, iterator2));
             // Join the sampleIndex iterator with the variants index in an ExposedMultiVariantIterator
-            return exposedMultiVariantIterator(new Query(baseQuery), options, multiParentIterator);
+            return exposedMultiVariantIterator(variantsQuery, options, multiParentIterator);
         }
     }
 
