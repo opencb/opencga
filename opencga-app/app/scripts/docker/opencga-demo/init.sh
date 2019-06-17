@@ -36,7 +36,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
       exit $status
     fi
 
-    if [ "$skipLoad" == "false" ]; then
+    if [ "$load" == "true" ]; then
         echo Creating user for OpenCGA Catalog .....
         ./opencga-admin.sh users create -u demo --email demo@opencb.com --name "Demo User" --user-password demo <<< demo
         echo Login user demo ....
@@ -129,7 +129,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
         ./opencga.sh files link -i ../variants/quartet.variants.annotated.vcf -s corpasome
         echo Transforming, Loading, Annotating and Calculating Stats
         ./opencga.sh variant index --file quartet.variants.annotated.vcf --calculate-stats --annotate --index-search -o outDir -s "corpasome"
-    fi
+fi
 else
     echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
 fi
