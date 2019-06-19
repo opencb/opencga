@@ -30,9 +30,11 @@ import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created on 16/12/16.
@@ -79,6 +81,26 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         for (Variant variant : result.getResult()) {
             System.out.println("variant = " + variant);
         }
+    }
+
+    @Test
+    public void testCheckSamplePermissionNonIndexedSamples() throws Exception {
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+
+        // Without studies
+        Map<String, List<Sample>> map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
+        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
+
+        catalogManager.getSampleManager().create(studyFqn, "newSample", "", "", "", false, null, Collections.emptyMap(), Collections.emptyMap(), new QueryOptions(), sessionId);
+
+        queryOptions = new QueryOptions();
+        query = new Query();
+
+        map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
+        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
     }
 
     @Test

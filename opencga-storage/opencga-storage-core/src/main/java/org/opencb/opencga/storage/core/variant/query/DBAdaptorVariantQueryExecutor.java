@@ -1,9 +1,11 @@
 package org.opencb.opencga.storage.core.variant.query;
 
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 /**
@@ -28,7 +30,11 @@ public class DBAdaptorVariantQueryExecutor extends VariantQueryExecutor {
         if (iterator) {
             return dbAdaptor.iterator(query, options);
         } else {
-            return dbAdaptor.get(query, options);
+            VariantQueryResult<Variant> result = dbAdaptor.get(query, options);
+            if (result.getSource() == null || result.getSource().isEmpty()) {
+                result.setSource(storageEngineId);
+            }
+            return result;
         }
     }
 
