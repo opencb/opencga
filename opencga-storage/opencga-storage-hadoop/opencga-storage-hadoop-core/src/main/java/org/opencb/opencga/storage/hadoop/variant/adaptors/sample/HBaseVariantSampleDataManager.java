@@ -72,7 +72,8 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             for (String sample : includeSamples) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 if (sampleId == null) {
-                    throw VariantQueryException.sampleNotFound(sample, study);
+                    continue;
+//                    throw VariantQueryException.sampleNotFound(sample, study);
                 }
                 includeSampleIds.add(sampleId);
             }
