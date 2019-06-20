@@ -16,10 +16,18 @@
 
 package org.opencb.opencga.analysis;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -31,6 +39,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public abstract class OpenCgaAnalysis<T> {
 
@@ -40,15 +51,15 @@ public abstract class OpenCgaAnalysis<T> {
     protected VariantStorageManager variantStorageManager;
 
     protected String opencgaHome;
-    protected String studyStr;
-    protected String token;
+    protected String studyId;
+    protected String sessionId;
 
     protected Logger logger;
 
-    public OpenCgaAnalysis(String opencgaHome, String studyStr, String token) {
+    public OpenCgaAnalysis(String studyId, String opencgaHome, String sessionId) {
+        this.studyId = studyId;
         this.opencgaHome = opencgaHome;
-        this.studyStr = studyStr;
-        this.token = token;
+        this.sessionId = sessionId;
 
         init();
     }
@@ -108,4 +119,30 @@ public abstract class OpenCgaAnalysis<T> {
         }
     }
 
+    protected Analyst getAnalyst(String token) throws AnalysisException {
+        try {
+            String userId = catalogManager.getUserManager().getUserId(token);
+            QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
+
+            return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
+        } catch (CatalogException e) {
+            throw new AnalysisException(e.getMessage(), e);
+        }
+    }
+
+    protected List<String> getGeneIdsFromDiseasePanels(List<DiseasePanel> diseasePanels) {
+        List<String> geneIds = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(diseasePanels)) {
+            for (DiseasePanel diseasePanel : diseasePanels) {
+                if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getGenes())) {
+                    for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+                        geneIds.add(gene.getId());
+                    }
+                }
+            }
+        }
+        return geneIds;
+    }
 }

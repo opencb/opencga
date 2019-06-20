@@ -67,11 +67,11 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @ApiOperation(value = "Create a new clinical analysis", position = 1, response = ClinicalAnalysis.class)
 //    public Response create(
 //            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-//                    String studyStr,
+//                    String studyId,
 //            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
 //                    ClinicalAnalysisParameters params) {
 //        try {
-//            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, sessionId));
+//            return createOkResponse(clinicalManager.create(studyId, params.toClinicalAnalysis(), queryOptions, sessionId));
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
 //        }
@@ -84,7 +84,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    public Response update(
 //            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
 //            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-//                    String studyStr,
+//                    String studyId,
 //            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
 //                    ClinicalAnalysisParameters params) {
 //        try {
@@ -100,7 +100,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
 //            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
 //
-//            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
+//            return createOkResponse(clinicalManager.update(studyId, clinicalAnalysisStr, parameters, queryOptions, sessionId));
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
 //        }
@@ -113,7 +113,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    public Response interpretationUpdate(
 //            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
 //            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-//                    String studyStr,
+//                    String studyId,
 //            @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
 //                @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
 //            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
@@ -130,7 +130,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            ObjectMap parameters = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(),
 //                    Arrays.asList(getUpdateObjectMapper().writeValueAsString(params.toClinicalInterpretation())));
 //
-//            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
+//            return createOkResponse(clinicalManager.update(studyId, clinicalAnalysisStr, parameters, queryOptions, sessionId));
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
 //        }
@@ -148,7 +148,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100")
 //                             @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
 //                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                         @QueryParam("study") String studyStr,
+//                         @QueryParam("study") String studyId,
 //                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
 //                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
 //                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
@@ -157,7 +157,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            query.remove("clinicalAnalyses");
 //
 //            List<String> analysisList = getIdList(clinicalAnalysisStr);
-//            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
+//            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyId, analysisList, query, queryOptions, silent, sessionId);
 //            return createOkResponse(analysisResult);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
@@ -176,7 +176,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    })
 //    public Response search(
 //            @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
-//            @QueryParam("study") String studyStr,
+//            @QueryParam("study") String studyId,
 //            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
 //            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
 //            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
@@ -199,9 +199,9 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //
 //            QueryResult<ClinicalAnalysis> queryResult;
 //            if (count) {
-//                queryResult = clinicalManager.count(studyStr, query, sessionId);
+//                queryResult = clinicalManager.count(studyId, query, sessionId);
 //            } else {
-//                queryResult = clinicalManager.search(studyStr, query, queryOptions, sessionId);
+//                queryResult = clinicalManager.search(studyId, query, queryOptions, sessionId);
 //            }
 //            return createOkResponse(queryResult);
 //        } catch (Exception e) {
@@ -222,7 +222,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    public Response groupBy(
 //            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
 //            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-//                    String studyStr,
+//                    String studyId,
 //            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
 //            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
 //            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
@@ -237,7 +237,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            query.remove("study");
 //            query.remove("fields");
 //
-//            QueryResult result = clinicalManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+//            QueryResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
 //            return createOkResponse(result);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
@@ -251,14 +251,14 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    public Response getAcls(
 //            @ApiParam(value = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true)
 //                @PathParam("clinicalAnalyses") String clinicalAnalysis,
-//            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+//            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
 //            @ApiParam(value = "User or group id") @QueryParam("member") String member,
 //            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
 //                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
 //                    defaultValue = "false") @QueryParam("silent") boolean silent) {
 //        try {
 //            List<String> idList = getIdList(clinicalAnalysis);
-//            return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, sessionId));
+//            return createOkResponse(clinicalManager.getAcls(studyId, idList, member, silent, sessionId));
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
 //        }
@@ -272,14 +272,14 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @Path("/acl/{members}/update")
 //    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
 //    public Response updateAcl(
-//            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+//            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
 //            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
 //            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAcl params) {
 //        try {
 //            params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAcl());
 //            AclParams clinicalAclParams = new AclParams(params.getPermissions(), params.getAction());
 //            List<String> idList = getIdList(params.clinicalAnalysis);
-//            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, sessionId));
+//            return createOkResponse(clinicalManager.updateAcl(studyId, idList, memberId, clinicalAclParams, sessionId));
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
 //        }

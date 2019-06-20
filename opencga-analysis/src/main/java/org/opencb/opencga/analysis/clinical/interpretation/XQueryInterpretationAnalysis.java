@@ -1,41 +1,54 @@
-package org.opencb.opencga.analysis.clinical;
+/*
+ * Copyright 2015-2017 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.AnalysisResult;
 
 import java.util.List;
 import java.util.Map;
 
-public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
+public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     private BioNetDbManager bioNetDbManager;
 
     private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
 
-    public XQueryAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, String studyStr, Map<String, RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap options,
-                          BioNetDBConfiguration configuration, String opencgaHome, String token) throws BioNetDBException {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, penetrance, options, studyStr, opencgaHome, token);
-
+    public XQueryInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds,
+                                        BioNetDBConfiguration configuration, ObjectMap options, String opencgaHome, String sessionId)
+            throws BioNetDBException {
+        super(clinicalAnalysisId, studyId, diseasePanelIds, options, opencgaHome, sessionId);
         this.bioNetDbManager = new BioNetDbManager(configuration);
     }
 
     @Override
-    public AnalysisResult<Interpretation> execute() throws Exception {
+    public InterpretationResult execute() throws Exception {
 /*
         StopWatch watcher = StopWatch.createStarted();
         // Sanity check
 
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyStr,
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId,
                 clinicalAnalysisId, QueryOptions.empty(), token);
         if (clinicalAnalysisQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyStr);
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
         }
 
         ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
@@ -61,7 +74,7 @@ public class XQueryAnalysis extends FamilyAnalysis<Interpretation> {
         List<Panel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
             List<QueryResult<Panel>> queryResults = catalogManager.getPanelManager()
-                    .get(studyStr, diseasePanelIds, new Query(), QueryOptions.empty(), token);
+                    .get(studyId, diseasePanelIds, new Query(), QueryOptions.empty(), token);
 
             if (queryResults.size() != diseasePanelIds.size()) {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");

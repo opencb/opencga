@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, List<Variant>>> {
+public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<String, List<Variant>>> {
 
     private Query query;
 
@@ -37,14 +37,12 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
     }
 
-    public CompoundHeterozygousAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Query query,
-                                        Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                        Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome,
-                                        String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, null, config, studyStr, opencgaHome, token);
+    public CompoundHeterozygousAnalysis(String clinicalAnalysisId, String studyId, Query query, ObjectMap options, String opencgaHome,
+                                        String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.query = new Query(defaultQuery);
         this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
@@ -65,7 +63,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
 
         // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
-        removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
+        ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
         // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
         // samples easily)
@@ -110,7 +108,7 @@ public class CompoundHeterozygousAnalysis extends FamilyAnalysis<Map<String, Lis
         logger.debug("CH Samples: {}", StringUtils.join(samples, ","));
         logger.debug("CH Proband idx: {}, mother idx: {}, father idx: {}", probandSampleIdx, motherSampleIdx, fatherSampleIdx);
         logger.debug("CH Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
-        VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
+        VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), sessionId);
         Map<String, List<Variant>> variantMap =
                 ModeOfInheritance.compoundHeterozygous(iterator, probandSampleIdx, motherSampleIdx, fatherSampleIdx);
 

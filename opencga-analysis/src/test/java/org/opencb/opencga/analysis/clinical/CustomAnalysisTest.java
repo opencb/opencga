@@ -10,6 +10,9 @@ import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.FamilyInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.InterpretationResult;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.Individual;
@@ -42,27 +45,17 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 //            System.out.println("variant = " + variant.toStringSimple());// + ", ALL:maf = " + variant.getStudies().get(0).getStats("ALL").getMaf());
 //        }
         ObjectMap options = new ObjectMap();
-        String param = FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM;
+        String param = FamilyInterpretationAnalysis.SKIP_UNTIERED_VARIANTS_PARAM;
         options.put(param, false);
 
 //            Query query = new Query();
         //query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
-        CustomAnalysis customAnalysis = new CustomAnalysis(clinicalTest.clinicalAnalysis.getId(), null, clinicalTest.studyFqn, null,
-                null, ClinicalProperty.Penetrance.COMPLETE, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
+        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalTest.clinicalAnalysis.getId(), clinicalTest.studyFqn, null,
+                options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         InterpretationResult execute = customAnalysis.execute();
-        for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
-            System.out.println("variant = " + variant.toStringSimple());
-            System.out.println("\tnum. reported events = " + variant.getEvidences().size());
-            for (ReportedEvent reportedEvent : variant.getEvidences()) {
-                if (CollectionUtils.isEmpty(reportedEvent.getConsequenceTypes())) {
-                    System.out.println("\tnum. ct = EMPTY");
-                } else {
-                    System.out.println("\tnum. ct: " + reportedEvent.getConsequenceTypes().stream().map(SequenceOntologyTerm::getName).collect(Collectors.joining(",")));
-                }
-            }
-        }
-//            System.out.println("Num. variants = " + execute.getResult().size());
+        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
+        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");
     }
 
     @Test
@@ -72,7 +65,7 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 //            System.out.println("variant = " + variant.toStringSimple());// + ", ALL:maf = " + variant.getStudies().get(0).getStats("ALL").getMaf());
 //        }
         ObjectMap options = new ObjectMap();
-        String param = FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM;
+        String param = FamilyInterpretationAnalysis.SKIP_UNTIERED_VARIANTS_PARAM;
         options.put(param, false);
 
         Query query = new Query();
@@ -84,20 +77,10 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         }
         query.put(VariantQueryParam.SAMPLE.key(), samples);
 
-        CustomAnalysis customAnalysis = new CustomAnalysis(null, query, clinicalTest.studyFqn, null,
-                null, ClinicalProperty.Penetrance.COMPLETE, options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
+        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(null, clinicalTest.studyFqn, query,
+                options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         InterpretationResult execute = customAnalysis.execute();
-        for (ReportedVariant variant : execute.getResult().getPrimaryFindings()) {
-            System.out.println("variant = " + variant.toStringSimple());
-            System.out.println("\tnum. reported events = " + variant.getEvidences().size());
-            for (ReportedEvent reportedEvent : variant.getEvidences()) {
-                if (CollectionUtils.isEmpty(reportedEvent.getConsequenceTypes())) {
-                    System.out.println("\tnum. ct = EMPTY");
-                } else {
-                    System.out.println("\tnum. ct: " + reportedEvent.getConsequenceTypes().stream().map(SequenceOntologyTerm::getName).collect(Collectors.joining(",")));
-                }
-            }
-        }
-//            System.out.println("Num. variants = " + execute.getResult().size());
+        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
+        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");
     }
 }

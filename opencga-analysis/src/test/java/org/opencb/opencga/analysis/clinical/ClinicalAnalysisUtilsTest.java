@@ -1,6 +1,10 @@
 package org.opencb.opencga.analysis.clinical;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
@@ -21,6 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ClinicalAnalysisUtilsTest {
 
@@ -59,5 +65,27 @@ public class ClinicalAnalysisUtilsTest {
         variantStorageManager.index(clinicalTest.studyFqn, "family.vcf", outDir.toString(), storageOptions, clinicalTest.token);
 
         return clinicalTest;
+    }
+
+    public static void displayReportedVariants(List<ReportedVariant> reportedVariants, String msg) {
+        System.out.println(msg);
+        if (CollectionUtils.isNotEmpty(reportedVariants)) {
+            System.out.println("\tNum. reported variants = " + reportedVariants.size());
+            for (ReportedVariant variant : reportedVariants) {
+                System.out.println("\t\tReported variant = " + variant.toStringSimple());
+                System.out.println("\t\t\t\tNum. reported events = " + variant.getEvidences().size());
+                for (ReportedEvent reportedEvent : variant.getEvidences()) {
+                    System.out.print("\t\t\t\t\t(Tier, CT) = (" + reportedEvent.getClassification().getTier() + ", ");
+                    if (CollectionUtils.isEmpty(reportedEvent.getConsequenceTypes())) {
+                        System.out.print("EMPTY");
+                    } else {
+                        System.out.print(reportedEvent.getConsequenceTypes().stream().map(SequenceOntologyTerm::getName).collect(Collectors.joining(",")));
+                    }
+                    System.out.println(")");
+                }
+            }
+        } else {
+            System.out.println("\tNum. variants = 0");
+        }
     }
 }

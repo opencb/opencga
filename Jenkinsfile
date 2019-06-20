@@ -1,25 +1,24 @@
 pipeline {
     agent any
     stages {
-         stage ('Validate ARM Templates') {
-            options {
-                timeout(time: 5, unit: 'MINUTES')
-            }
-            steps {
-                sh 'cd opencga-app/app/scripts/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
-            }
-        }
+        stage ('Validate ARM Templates') {
+                   options {
+                       timeout(time: 5, unit: 'MINUTES')
+                   }
+                   steps {
+                       sh 'cd opencga-app/app/scripts/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
+                   }
+               }
 
         stage ('Test ARM Scripts') {
-            options {
-                timeout(time: 5, unit: 'MINUTES')
-            }
-            steps {
-                sh 'cd opencga-app/app/scripts/azure/arm/scripts && docker build .'
-            }
-        }
-
-        stage ('Build') {
+                   options {
+                       timeout(time: 5, unit: 'MINUTES')
+                   }
+                   steps {
+                       sh 'cd opencga-app/app/scripts/azure/arm/scripts && docker build .'
+                   }
+               }
+        stage ('Build With Hadoop Profile') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
             }
@@ -37,7 +36,7 @@ pipeline {
             }
         }
 
-        stage ('Docker Build') {
+        stage ('Build OpenCGA-Hadoop Docker Images') {
             options {
                 timeout(time: 25, unit: 'MINUTES')
             }
@@ -46,7 +45,7 @@ pipeline {
             }
         }
 
-        stage ('Publish Docker Images') {
+        stage ('Publish OpenCGA-Hadoop Docker Images') {
              options {
                     timeout(time: 25, unit: 'MINUTES')
              }
@@ -54,6 +53,43 @@ pipeline {
                 script {
                    def images = ["opencga", "opencga-app", "opencga-daemon", "opencga-init", "opencga-batch"]
                    def tag = sh(returnStdout: true, script: "git log -1 --pretty=%h").trim()
+                   withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
+                       for(int i =0; i < images.size(); i++){
+                           sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
+                           sh "docker push opencb/'${images[i]}':${tag}"
+                       }
+                   }
+                }
+             }
+        }
+
+  stage ('Build With Mongo Profile') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Dopencga.war.name=opencga -Dcheckstyle.skip'
+            }
+        }
+
+        stage ('Build OpenCGA-Mongo Docker Images') {
+            options {
+                timeout(time: 25, unit: 'MINUTES')
+            }
+            steps {
+                sh 'docker build -t opencga-next -f opencga-app/app/scripts/docker/opencga-next/Dockerfile .'
+                sh 'docker build -t opencga-demo -f opencga-app/app/scripts/docker/opencga-demo/Dockerfile .'
+            }
+        }
+
+  stage ('Publish OpenCGA-Mongo Docker Images') {
+             options {
+                    timeout(time: 25, unit: 'MINUTES')
+             }
+             steps {
+                script {
+                   def images = ["opencga-next", "opencga-demo"]
+                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().substring(1)
                    withDockerRegistry([ credentialsId: "wasim-docker-hub", url: "" ]) {
                        for(int i =0; i < images.size(); i++){
                            sh "docker tag '${images[i]}' opencb/'${images[i]}':${tag}"
