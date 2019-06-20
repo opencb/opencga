@@ -33,7 +33,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
 import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
@@ -56,6 +55,9 @@ import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty
 public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     protected ClinicalProperty.Penetrance penetrance;
+
+    private ObjectMap rvCreatorDependencies;
+    private ObjectMap rvCreatorConfig;
 
     private final static Query dominantQuery;
     private final static Query recessiveQuery;
@@ -127,11 +129,24 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         // samples easily)
         Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);
 
-        Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap = new HashMap<>();
-        Map<String, List<Variant>> chVariantMap = new HashMap<>();
+        Map<ClinicalProperty.ModeOfInheritance, List<ReportedVariant>> resultMap = new HashMap<>();
 
-        List<Variant> regionVariants = new ArrayList<>();
 
+        rvCreatorDependencies = new ObjectMap();
+        rvCreatorDependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ACTIONABLE_VARIANT_MANAGER, actionableVariantManager);
+        rvCreatorDependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ROLE_IN_CANCER_MANAGER, roleInCancerManager);
+
+        rvCreatorConfig = new ObjectMap();
+        rvCreatorConfig.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ASSEMBLY, assembly);
+        rvCreatorConfig.put(org.opencb.biodata.tools.clinical.ClinicalUtils.DISORDER, clinicalAnalysis.getDisorder());
+        rvCreatorConfig.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PANELS, diseasePanels);
+        rvCreatorConfig.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PENETRANCE, penetrance);
+        GelBasedTieringCalculator tieringCalculator = new GelBasedTieringCalculator();
+        rvCreatorConfig.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, true);
+        rvCreatorConfig.put(org.opencb.biodata.tools.clinical.ClinicalUtils.TIERING, tieringCalculator);
+
+
+        // Prepare thread pool
         ExecutorService threadPool = Executors.newFixedThreadPool(8);
 
         List<Future<Boolean>> futureList = new ArrayList<>(8);
@@ -147,10 +162,10 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_BIALLELIC, resultMap))));
         futureList.add(threadPool.submit(getNamedThread(MITOCHONDRIAL.name(),
                 () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHONDRIAL, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chVariantMap))));
+        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(resultMap))));
         futureList.add(threadPool.submit(getNamedThread(DE_NOVO.name(), () -> deNovo(resultMap))));
         futureList.add(threadPool.submit(getNamedThread("REGION", () -> region(diseasePanels, sampleMap.values(),
-                assembly, regionVariants))));
+                assembly, resultMap))));
         threadPool.shutdown();
 
         threadPool.awaitTermination(2, TimeUnit.MINUTES);
@@ -160,62 +175,30 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
             }
         }
 
-        List<Variant> variantList = new ArrayList<>();
-        // Add region variants to result map (UNKNOWN as key)
-        for (Variant variant : regionVariants) {
-            if (!resultMap.containsKey(UNKNOWN)) {
-                resultMap.put(UNKNOWN, new ArrayList<>());
-            }
-            resultMap.get(UNKNOWN).add(variant);
-        }
-
-        // Create reported variant creator
-        ObjectMap dependencies = new ObjectMap();
-        dependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ACTIONABLE_VARIANT_MANAGER, actionableVariantManager);
-        dependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ROLE_IN_CANCER_MANAGER, roleInCancerManager);
-
-        ObjectMap config = new ObjectMap();
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ASSEMBLY, assembly);
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.DISORDER, clinicalAnalysis.getDisorder());
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PANELS, diseasePanels);
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PENETRANCE, penetrance);
-        GelBasedTieringCalculator tieringCalculator = new GelBasedTieringCalculator();
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, true);
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.TIERING, tieringCalculator);
-
-        ReportedVariantCreator creator;
-
-        // Primary findings,
-        List<ReportedVariant> primaryFindings = new ArrayList<>();
-
-        for (ClinicalProperty.ModeOfInheritance modeOfInheritance : resultMap.keySet()) {
-            if (modeOfInheritance != COMPOUND_HETEROZYGOUS) {
-                config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, modeOfInheritance);
-                creator = new ReportedVariantCreator(dependencies, config);
-                primaryFindings.addAll(creator.createReportedVariants(resultMap.get(modeOfInheritance)));
-            }
-        }
-
-        // Add compound heterozyous variants
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, COMPOUND_HETEROZYGOUS);
-        creator = new ReportedVariantCreator(dependencies, config);
-        primaryFindings.addAll(getCompoundHeterozygousReportedVariants(chVariantMap, creator));
-
-        // And finally merge reported variants from primary findings
+        // And finally merge reported variants from each MoI to get the primary findings,
+        // we are going to use a map, where key = variant ID, value = reported variant
         Map<String, ReportedVariant> reportedVariantMap = new HashMap<>();
-        for (ReportedVariant reportedVariant : primaryFindings) {
-            if (reportedVariantMap.containsKey(reportedVariant.getId())) {
-                reportedVariantMap.get(reportedVariant.getId()).getEvidences().addAll(reportedVariant.getEvidences());
-            } else {
-                reportedVariantMap.put(reportedVariant.getId(), reportedVariant);
+        for (List<ReportedVariant> reportedVariants : resultMap.values()) {
+            if (CollectionUtils.isNotEmpty(reportedVariants)) {
+                for (ReportedVariant reportedVariant : reportedVariants) {
+                    if (reportedVariantMap.containsKey(reportedVariant.toStringSimple())) {
+                        // Reported variant already processed, we have to add the new reported events
+                        reportedVariantMap.get(reportedVariant.getId()).getEvidences().addAll(reportedVariant.getEvidences());
+                    } else {
+                        // Reported variant not processed yet, add the reported variant to the map
+                        reportedVariantMap.put(reportedVariant.toStringSimple(), reportedVariant);
+                    }
+                }
             }
         }
-        primaryFindings = new ArrayList<>(reportedVariantMap.values());
+
+        List<ReportedVariant> primaryFindings = new ArrayList<>(reportedVariantMap.values());
 
         // Secondary findings
+        ObjectMap config = new ObjectMap(rvCreatorConfig);
         config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, UNKNOWN);
         config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, false);
-        creator = new ReportedVariantCreator(dependencies, config);
+        ReportedVariantCreator creator = new ReportedVariantCreator(rvCreatorDependencies, config);
         List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, new ArrayList<>(sampleMap.keySet()), creator);
 
         logger.debug("Primary findings, size: {}", primaryFindings.size());
@@ -261,14 +244,19 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         };
     }
 
-    private Boolean compoundHeterozygous(Map<String, List<Variant>> resultMap) {
+    private Boolean compoundHeterozygous(Map<ClinicalProperty.ModeOfInheritance, List<ReportedVariant>> resultMap) {
         Query query = new Query(recessiveQuery);
         CompoundHeterozygousAnalysis analysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome,
                 sessionId);
         try {
-            AnalysisResult<Map<String, List<Variant>>> execute = analysis.execute();
-            if (MapUtils.isNotEmpty(execute.getResult())) {
-                resultMap.putAll(execute.getResult());
+            Map<String, List<Variant>> chVariantMap = analysis.execute().getResult();
+            if (MapUtils.isNotEmpty(chVariantMap)) {
+
+                ObjectMap config = new ObjectMap(rvCreatorConfig);
+                config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, COMPOUND_HETEROZYGOUS);
+                ReportedVariantCreator creator = new ReportedVariantCreator(rvCreatorDependencies, config);
+
+                resultMap.put(COMPOUND_HETEROZYGOUS, getCompoundHeterozygousReportedVariants(chVariantMap, creator));
             }
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
@@ -278,13 +266,18 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         return true;
     }
 
-    private Boolean deNovo(Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
+    private Boolean deNovo(Map<ClinicalProperty.ModeOfInheritance, List<ReportedVariant>> resultMap) {
         Query query = new Query(dominantQuery);
         DeNovoAnalysis analysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
         try {
-            AnalysisResult<List<Variant>> execute = analysis.execute();
-            if (ListUtils.isNotEmpty(execute.getResult())) {
-                resultMap.put(DE_NOVO, execute.getResult());
+            List<Variant> variants = analysis.execute().getResult();
+
+            if (ListUtils.isNotEmpty(variants)) {
+                ObjectMap config = new ObjectMap(rvCreatorConfig);
+                config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, DE_NOVO);
+                ReportedVariantCreator creator = new ReportedVariantCreator(rvCreatorDependencies, config);
+
+                resultMap.put(DE_NOVO, creator.createReportedVariants(variants));
             }
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
@@ -294,7 +287,8 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         return true;
     }
 
-    private Boolean region(List<DiseasePanel> diseasePanelList, Collection<String> samples, String assembly, List<Variant> result) {
+    private Boolean region(List<DiseasePanel> diseasePanelList, Collection<String> samples, String assembly,
+                           Map<ClinicalProperty.ModeOfInheritance, List<ReportedVariant>> resultMap) {
         List<Region> regions = new ArrayList<>();
         if (diseasePanelList == null || diseasePanelList.isEmpty()) {
             return true;
@@ -328,7 +322,16 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         logger.debug("Region query: {}", query.safeToString());
 
         try {
-            result.addAll(variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult());
+            List<Variant> variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult();
+
+            if (ListUtils.isNotEmpty(variants)) {
+                ObjectMap config = new ObjectMap(rvCreatorConfig);
+                config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, UNKNOWN);
+                ReportedVariantCreator creator = new ReportedVariantCreator(rvCreatorDependencies, config);
+
+                // In the map<MoI, variant list>, we set moi to UNKNOWN
+                resultMap.put(UNKNOWN, creator.createReportedVariants(variants));
+            }
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
             return false;
@@ -338,7 +341,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
     }
 
     private Boolean query(Pedigree pedigree, Disorder disorder, Map<String, String> sampleMap, ClinicalProperty.ModeOfInheritance moi,
-                          Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
+                          Map<ClinicalProperty.ModeOfInheritance, List<ReportedVariant>> resultMap) {
         Query query;
         Map<String, List<String>> genotypes;
         switch (moi) {
@@ -387,7 +390,15 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
 
         logger.debug("MoI: {}; Query: {}", moi, query.safeToString());
         try {
-            resultMap.put(moi, variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult());
+            // Variant query
+            List<Variant> variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult();
+
+            // Create reported variant creator
+            ObjectMap config = new ObjectMap(rvCreatorConfig);
+            config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, moi);
+            ReportedVariantCreator creator = new ReportedVariantCreator(rvCreatorDependencies, config);
+
+            resultMap.put(moi, creator.createReportedVariants(variants));
         } catch (CatalogException | StorageEngineException | IOException e) {
             logger.error(e.getMessage(), e);
             return false;
