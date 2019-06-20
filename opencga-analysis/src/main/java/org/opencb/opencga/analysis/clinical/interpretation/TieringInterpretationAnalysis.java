@@ -179,7 +179,9 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.DISORDER, clinicalAnalysis.getDisorder());
         config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PANELS, diseasePanels);
         config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PENETRANCE, penetrance);
-        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, false);
+        GelBasedTieringCalculator tieringCalculator = new GelBasedTieringCalculator();
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, true);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.TIERING, tieringCalculator);
 
         ReportedVariantCreator creator;
 
@@ -210,12 +212,14 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         }
         primaryFindings = new ArrayList<>(reportedVariantMap.values());
 
-        // Secondary findings, if clinical consent is TRUE
+        // Secondary findings
         config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, UNKNOWN);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, false);
         creator = new ReportedVariantCreator(dependencies, config);
         List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, new ArrayList<>(sampleMap.keySet()), creator);
 
-        logger.debug("Reported variant size: {}", primaryFindings.size());
+        logger.debug("Primary findings, size: {}", primaryFindings.size());
+        logger.debug("Secondary findings, size: {}", secondaryFindings.size());
 
         // Reported low coverage
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
