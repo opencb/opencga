@@ -17,8 +17,7 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
+import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.variant.Variant;
@@ -27,9 +26,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 
@@ -91,12 +89,31 @@ public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysi
         // Create transcript - reported variant map from transcript - variant
         Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
         for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
-            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
+            reportedVariantMap.put(entry.getKey(), creator.createReportedVariants(entry.getValue()));
         }
-        return creator.groupCHVariants(reportedVariantMap);
+        return groupCHVariants(reportedVariantMap);
     }
 
-    // Family
+    public List<ReportedVariant> groupCHVariants(Map<String, List<ReportedVariant>> reportedVariantMap) {
+        List<ReportedVariant> reportedVariants = new ArrayList<>();
+
+        for (Map.Entry<String, List<ReportedVariant>> entry : reportedVariantMap.entrySet()) {
+            Set<String> variantIds = entry.getValue().stream().map(Variant::toStringSimple).collect(Collectors.toSet());
+            for (ReportedVariant reportedVariant : entry.getValue()) {
+                Set<String> tmpVariantIds = new HashSet<>(variantIds);
+                tmpVariantIds.remove(reportedVariant.toStringSimple());
+
+                for (ReportedEvent reportedEvent : reportedVariant.getEvidences()) {
+                    reportedEvent.setCompoundHeterozygousVariantIds(new ArrayList<>(tmpVariantIds));
+                }
+
+                reportedVariants.add(reportedVariant);
+            }
+        }
+
+        return reportedVariants;
+    }
+
 
 
 

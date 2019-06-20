@@ -21,14 +21,12 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
-import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -39,7 +37,6 @@ import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
 import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
@@ -53,7 +50,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
 
@@ -165,48 +161,58 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         }
 
         List<Variant> variantList = new ArrayList<>();
-        Map<String, List<ClinicalProperty.ModeOfInheritance>> variantMoIMap = new HashMap<>();
-
-        for (Map.Entry<ClinicalProperty.ModeOfInheritance, List<Variant>> entry : resultMap.entrySet()) {
-            logger.debug("MOI: {}; variant size: {}; variant ids: {}", entry.getKey(), entry.getValue().size(),
-                    entry.getValue().stream().map(Variant::toString).collect(Collectors.joining(",")));
-
-            for (Variant variant : entry.getValue()) {
-                if (!variantMoIMap.containsKey(variant.getId())) {
-                    variantMoIMap.put(variant.getId(), new ArrayList<>());
-                    variantList.add(variant);
-                }
-                variantMoIMap.get(variant.getId()).add(entry.getKey());
-            }
-        }
-
-        // Add region variants to variantList and variantMoIMap
+        // Add region variants to result map (UNKNOWN as key)
         for (Variant variant : regionVariants) {
-            if (!variantMoIMap.containsKey(variant.getId())) {
-                variantMoIMap.put(variant.getId(), new ArrayList<>());
-                variantList.add(variant);
+            if (!resultMap.containsKey(UNKNOWN)) {
+                resultMap.put(UNKNOWN, new ArrayList<>());
             }
-            // We add these variants with the ModeOfInheritance UNKNOWN
-            variantMoIMap.get(variant.getId()).add(UNKNOWN);
+            resultMap.get(UNKNOWN).add(variant);
         }
+
+        // Create reported variant creator
+        ObjectMap dependencies = new ObjectMap();
+        dependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ACTIONABLE_VARIANT_MANAGER, actionableVariantManager);
+        dependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ROLE_IN_CANCER_MANAGER, roleInCancerManager);
+
+        ObjectMap config = new ObjectMap();
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ASSEMBLY, assembly);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.DISORDER, clinicalAnalysis.getDisorder());
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PANELS, diseasePanels);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PENETRANCE, penetrance);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, false);
+
+        ReportedVariantCreator creator;
 
         // Primary findings,
-        List<ReportedVariant> primaryFindings;
-        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(diseasePanels, roleInCancerManager.getRoleInCancer(),
-                actionableVariantManager.getActionableVariants(assembly), clinicalAnalysis.getDisorder(), null, penetrance,
-                assembly);
-        try {
-            primaryFindings = creator.create(variantList, variantMoIMap);
-        } catch (InterpretationAnalysisException e) {
-            throw new AnalysisException(e.getMessage(), e);
+        List<ReportedVariant> primaryFindings = new ArrayList<>();
+
+        for (ClinicalProperty.ModeOfInheritance modeOfInheritance : resultMap.keySet()) {
+            if (modeOfInheritance != COMPOUND_HETEROZYGOUS) {
+                config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, modeOfInheritance);
+                creator = new ReportedVariantCreator(dependencies, config);
+                primaryFindings.addAll(creator.createReportedVariants(resultMap.get(modeOfInheritance)));
+            }
         }
 
         // Add compound heterozyous variants
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, COMPOUND_HETEROZYGOUS);
+        creator = new ReportedVariantCreator(dependencies, config);
         primaryFindings.addAll(getCompoundHeterozygousReportedVariants(chVariantMap, creator));
-        primaryFindings = creator.mergeReportedVariants(primaryFindings);
 
+        // And finally merge reported variants from primary findings
+        Map<String, ReportedVariant> reportedVariantMap = new HashMap<>();
+        for (ReportedVariant reportedVariant : primaryFindings) {
+            if (reportedVariantMap.containsKey(reportedVariant.getId())) {
+                reportedVariantMap.get(reportedVariant.getId()).getEvidences().addAll(reportedVariant.getEvidences());
+            } else {
+                reportedVariantMap.put(reportedVariant.getId(), reportedVariant);
+            }
+        }
+        primaryFindings = new ArrayList<>(reportedVariantMap.values());
 
         // Secondary findings, if clinical consent is TRUE
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, UNKNOWN);
+        creator = new ReportedVariantCreator(dependencies, config);
         List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, new ArrayList<>(sampleMap.keySet()), creator);
 
         logger.debug("Reported variant size: {}", primaryFindings.size());

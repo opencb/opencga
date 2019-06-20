@@ -19,18 +19,14 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.commons.Software;
-import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
-import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
@@ -40,12 +36,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.*;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance;
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.DE_NOVO;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
@@ -77,10 +71,21 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         // Get sample names and update proband information (to be able to navigate to the parents and their samples easily)
         List<String> sampleList = getSampleNames(clinicalAnalysis, proband);
 
-        // Reported variant creator
-        TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancerManager.getRoleInCancer(),
-                actionableVariantManager.getActionableVariants(ClinicalUtils.getAssembly(catalogManager, studyId, sessionId)),
-                clinicalAnalysis.getDisorder(), null, Penetrance.COMPLETE);
+        // Create reported variant creator
+        ObjectMap dependencies = new ObjectMap();
+        dependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ACTIONABLE_VARIANT_MANAGER, actionableVariantManager);
+        dependencies.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ROLE_IN_CANCER_MANAGER, roleInCancerManager);
+
+        ObjectMap config = new ObjectMap();
+        String assembly = ClinicalUtils.getAssembly(catalogManager, studyId, sessionId);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.ASSEMBLY, assembly);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.DISORDER, clinicalAnalysis.getDisorder());
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PANELS, diseasePanels);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.MODE_OF_INHERITANCE, moi);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.PENETRANCE, ClinicalProperty.Penetrance.COMPLETE);
+        config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SET_TIER, true);
+
+        ReportedVariantCreator creator = new ReportedVariantCreator(dependencies, config);
 
         // Step 1 - diagnostic variants
         // Get diagnostic variants from panels
@@ -110,7 +115,7 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
             // VUS filter
             //
-            //   Pop. frequncy:
+            //   Pop. frequency:
             //     1kG_phase3:EUR<0.01
             //     1kG_phase3:IBS<0.01
             //     EXAC/gnomAD < 0.01 (ALL ??, GNOMAD_GENOMES and/or GNOMAD_EXOMES ??)
@@ -136,10 +141,20 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
             query.put(VariantQueryParam.ANNOT_CONSERVATION.key(), "gerp>2");
             query.put(VariantQueryParam.ANNOT_FUNCTIONAL_SCORE.key(), "scaled_cadd>15");
 
+            // Overwrite creator to take into account LoF sequence ontology terms
+            config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.SEQUENCE_ONTOLOGY_TERMS, lof);
+            creator = new ReportedVariantCreator(dependencies, config);
+
             primaryFindings = getReportedVariants(query, queryOptions, creator);
 
             if (CollectionUtils.isEmpty(primaryFindings)) {
                 // No loss of function variants, then try with protein_coding and protein substitution scores
+
+                // Overwrite creator to remove LoF sequence ontology terms and to take into account protein coding biotype
+                config.remove(org.opencb.biodata.tools.clinical.ClinicalUtils.SEQUENCE_ONTOLOGY_TERMS);
+                config.put(org.opencb.biodata.tools.clinical.ClinicalUtils.BIOTYPES, proteinCoding);
+                creator = new ReportedVariantCreator(dependencies, config);
+
                 query.remove(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
                 query.put(VariantQueryParam.ANNOT_BIOTYPE.key(), proteinCoding);
                 query.put(VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.05" + VariantQueryUtils.AND + "polyphen>0.91");
@@ -149,6 +164,9 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         }
 
         // Step 3: secondary findings, if clinical consent is TRUE
+        // Overwrite creator to remove LoF sequence ontology terms and protein coding biotype
+        config.remove(org.opencb.biodata.tools.clinical.ClinicalUtils.SEQUENCE_ONTOLOGY_TERMS);
+        config.remove(org.opencb.biodata.tools.clinical.ClinicalUtils.BIOTYPES);
         List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, sampleList, creator);
 
         // Reported low coverages management
@@ -156,7 +174,6 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         if (options.getBoolean(INCLUDE_LOW_COVERAGE_PARAM, false)) {
             reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
         }
-
 
         // Create Interpretation
         Interpretation interpretation = new Interpretation()
@@ -184,19 +201,14 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
                 ""); // error message
     }
 
-    List<ReportedVariant> getReportedVariants(Query query, QueryOptions queryOptions, TeamReportedVariantCreator creator) throws Exception {
+    List<ReportedVariant> getReportedVariants(Query query, QueryOptions queryOptions, ReportedVariantCreator creator) throws Exception {
         List<ReportedVariant> reportedVariants;
-        if (moi != null && (moi == DE_NOVO || moi == COMPOUND_HETEROZYGOUS)) {
-            if (moi == DE_NOVO) {
-                DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
-                reportedVariants = creator.create(deNovoAnalysis.execute().getResult());
-            } else {
-                CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query,
-                        options, opencgaHome, sessionId);
-                reportedVariants = getCompoundHeterozygousReportedVariants(compoundAnalysis.execute().getResult(), creator);
-            }
+        if (moi != null && moi == COMPOUND_HETEROZYGOUS) {
+            CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query,
+                    options, opencgaHome, sessionId);
+            reportedVariants = getCompoundHeterozygousReportedVariants(compoundAnalysis.execute().getResult(), creator);
         } else {
-            reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResult());
+            reportedVariants = creator.createReportedVariants(variantStorageManager.get(query, queryOptions, sessionId).getResult());
         }
         return reportedVariants;
     }

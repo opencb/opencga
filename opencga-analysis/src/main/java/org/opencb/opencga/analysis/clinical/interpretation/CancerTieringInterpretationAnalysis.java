@@ -238,7 +238,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
                             reportedEvent.setConsequenceTypes(somaticSOTerms);
                             VariantClassification classification = new VariantClassification();
                             classification.setTier(TIER_2);
-                            List<String> acmg = calculateAcmgClassification(variant);
+                            List<String> acmg = calculateAcmgClassification(ct, variant.getAnnotation());
                             classification.setAcmg(acmg);
                             classification.setClinicalSignificance(computeClinicalSignificance(acmg));
                             reportedEvent.setClassification(classification);
@@ -435,7 +435,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         reportedEvent.setConsequenceTypes(soTerms);
         VariantClassification classification = new VariantClassification();
         classification.setTier(tier);
-        classification.setAcmg(calculateAcmgClassification(variant));
+        classification.setAcmg(calculateAcmgClassification(consequenceType, variant.getAnnotation()));
         classification.setClinicalSignificance(computeClinicalSignificance(classification.getAcmg()));
         reportedEvent.setClassification(classification);
 

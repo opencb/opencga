@@ -10,6 +10,8 @@ import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.tools.clinical.ActionableVariantManager;
+import org.opencb.biodata.tools.clinical.RoleInCancerManager;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;

@@ -18,9 +18,7 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -56,13 +54,20 @@ public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis<Int
         List<ReportedVariant> secondaryFindings = null;
         if (clinicalAnalysis.getConsent() != null
                 && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-//            List<Variant> findings = ClinicalUtils.secondaryFindings(studyId, sampleNames, actionableVariants.keySet(),
-//                    excludeIds, variantStorageManager, token);
             SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleNames.get(0), clinicalAnalysisId,
                     studyId, null, opencgaHome, sessionId);
             List<Variant> variants = secondaryFindingsAnalysis.execute().getResult();
             if (CollectionUtils.isNotEmpty(variants)) {
-                secondaryFindings = creator.createSecondaryFindings(variants);
+                // Create reported variants for that variants
+                secondaryFindings = creator.createReportedVariants(variants);
+                // Set Tier 3 for all events
+                for (ReportedVariant secondaryFinding : secondaryFindings) {
+                    if (CollectionUtils.isNotEmpty(secondaryFinding.getEvidences())) {
+                        for (ReportedEvent evidence : secondaryFinding.getEvidences()) {
+                            evidence.getClassification().setTier(VariantClassification.TIER_3);
+                        }
+                    }
+                }
             }
         }
         return secondaryFindings;
