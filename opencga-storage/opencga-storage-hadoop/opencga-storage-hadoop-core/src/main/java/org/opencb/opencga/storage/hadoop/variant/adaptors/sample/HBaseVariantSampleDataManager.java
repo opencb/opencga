@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.sample;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,7 +22,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.SampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
@@ -38,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.SAMPLE_DATA_SUFIX;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildStudyColumnsPrefix;
 
 public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
@@ -52,19 +57,28 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
     }
 
     @Override
-    public QueryResult<VariantSampleData> getSampleData(String variantStr, String study, QueryOptions options,
-                                                        List<String> includeSamples,
-                                                        Set<String> genotypes,
-                                                        boolean merge, int sampleLimit) {
-        if (StringUtils.isNotEmpty(options.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))
-                && !VariantQueryUtils.ALL.equals(options.getString(VariantQueryParam.INCLUDE_SAMPLE.key()))) {
-            super.getSampleData(variantStr, study, options);
-        }
+    protected QueryResult<VariantSampleData> getSampleData(String variantStr, String study, QueryOptions options,
+                                                           List<String> includeSamples,
+                                                           boolean studyWithGts, Set<String> genotypes,
+                                                           boolean merge, int sampleLimit) {
         StopWatch stopWatch = StopWatch.createStarted();
 
         Variant variant = new Variant(variantStr);
 
         int studyId = metadataManager.getStudyId(study);
+
+        boolean includeAllSamples = CollectionUtils.isEmpty(includeSamples)
+                || includeSamples.size() == 1 && VariantQueryUtils.ALL.equals(includeSamples.get(0));
+        Set<Integer> includeSampleIds = new HashSet<>();
+        if (!includeAllSamples) {
+            for (String sample : includeSamples) {
+                Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sample, study);
+                }
+                includeSampleIds.add(sampleId);
+            }
+        }
 
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
@@ -80,21 +94,40 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             for (Map.Entry<String, Collection<String>> entry : gtGroups.entrySet()) {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
                 LinkedList<Filter> filters = new LinkedList<>();
-                LinkedList<Filter> genotypeFilters = new LinkedList<>();
 
                 filters.add(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
                         new BinaryPrefixComparator(Bytes.toBytes(buildStudyColumnsPrefix(studyId)))));
+                // Filter columns by sample sufix
+                filters.add(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
+                        new RegexStringComparator(buildStudyColumnsPrefix(studyId) + "[0-9]*" + SAMPLE_DATA_SUFIX)));
 
-                for (String genotype : entry.getValue()) {
-                    byte[] gtBytes = new byte[genotype.length() + 1];
-                    System.arraycopy(Bytes.toBytes(genotype), 0, gtBytes, 0, genotype.length());
-
-                    genotypeFilters.add(new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(gtBytes)));
+                if (studyWithGts) {
+                    LinkedList<Filter> genotypeFilters = new LinkedList<>();
+                    for (String genotype : entry.getValue()) {
+                        byte[] gtBytes;
+                        if (genotype.equals(GenotypeClass.NA_GT_VALUE)) {
+                            gtBytes = new byte[]{0};
+                        } else {
+                            gtBytes = new byte[genotype.length() + 1];
+                            System.arraycopy(Bytes.toBytes(genotype), 0, gtBytes, 0, genotype.length());
+                        }
+                        genotypeFilters.add(new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(gtBytes)));
+                    }
+                    if (genotypeFilters.size() == 1) {
+                        filters.add(genotypeFilters.getFirst());
+                    } else {
+                        filters.add(new FilterList(FilterList.Operator.MUST_PASS_ONE, genotypeFilters));
+                    }
                 }
 
-                filters.add(new FilterList(FilterList.Operator.MUST_PASS_ONE, genotypeFilters));
                 filters.add(new ColumnPaginationFilter(limit, skip));
                 get.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, filters));
+                if (!includeAllSamples) {
+                    for (Integer sampleId : includeSampleIds) {
+                        byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId);
+                        get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), column);
+                    }
+                }
                 sampleGets.add(get);
             }
 
@@ -199,13 +232,15 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             gtGroups.keySet().forEach(gt -> sampleData.put(gt, new ArrayList<>(limit)));
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
                 Map<String, String> map = studyEntry.getSampleDataAsMap(sampleName);
-                String gt = gtGroupsInverse.get(map.get("GT"));
-                // TODO: Support somatic variants
-                if (gt == null) {
-                    continue;
+                String gt = map.get("GT");
+                String groupGt;
+                if (StringUtils.isEmpty(gt) || gt.equals(".")) {
+                    groupGt = GenotypeClass.NA_GT_VALUE;
+                } else {
+                    groupGt = gtGroupsInverse.get(gt);
                 }
                 String fileId = fileNameFromSampleId.get(metadataManager.getSampleId(studyId, sampleName));
-                sampleData.get(gt).add(new SampleData(sampleName, map, fileId));
+                sampleData.get(groupGt).add(new SampleData(sampleName, map, fileId));
             }
             Map<String, FileEntry> files = studyEntry.getFiles().stream().collect(Collectors.toMap(FileEntry::getFileId, f -> f));
 
@@ -226,16 +261,20 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             List<String> allGts = new LinkedList<>();
             for (String genotypeStr : genotypes) {
                 allGts.add(genotypeStr);
-                Genotype genotype = new Genotype(genotypeStr);
-                allGts.addAll(GenotypeClass.getPhasedGenotypes(genotype, loadedGts));
+                if (!genotypeStr.equals(GenotypeClass.NA_GT_VALUE)) {
+                    Genotype genotype = new Genotype(genotypeStr);
+                    allGts.addAll(GenotypeClass.getPhasedGenotypes(genotype, loadedGts));
+                }
             }
             gtGroups.put(VariantQueryUtils.ALL, allGts);
         } else {
             for (String genotypeStr : genotypes) {
                 List<String> allGts = new ArrayList<>(3);
                 allGts.add(genotypeStr);
-                Genotype genotype = new Genotype(genotypeStr);
-                allGts.addAll(GenotypeClass.getPhasedGenotypes(genotype, loadedGts));
+                if (!genotypeStr.equals(GenotypeClass.NA_GT_VALUE)) {
+                    Genotype genotype = new Genotype(genotypeStr);
+                    allGts.addAll(GenotypeClass.getPhasedGenotypes(genotype, loadedGts));
+                }
                 gtGroups.put(genotypeStr, allGts);
             }
         }
