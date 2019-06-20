@@ -551,9 +551,10 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, sessionId);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, String sessionId)
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions inputOptions, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(VariantQueryParam.STUDY.key(), study);
+        QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
         options.remove(QueryOptions.INCLUDE);
         options.remove(QueryOptions.EXCLUDE);
         options.remove(VariantField.SUMMARY);

@@ -10,6 +10,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,15 +52,31 @@ public class VariantSampleDataManager {
             genotypes.add("0/1");
             genotypes.add("1/1");
         }
-        List<String> includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
 
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        boolean studyWithGts = !studyMetadata.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
+
+        if (!studyWithGts) {
+            genotypes = Collections.singleton(GenotypeClass.NA_GT_VALUE);
+        }
+        List<String> loadedGenotypes = studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+        if (loadedGenotypes.size() == 1) {
+            if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE) || loadedGenotypes.contains("-1")) {
+                genotypes = Collections.singleton(GenotypeClass.NA_GT_VALUE);
+            }
+        } else if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE)) {
+            genotypes.add(GenotypeClass.NA_GT_VALUE);
+        }
+
+        List<String> includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
         boolean merge = options.getBoolean(MERGE, false);
 
-        return getSampleData(variant, study, options, includeSamples, genotypes, merge, sampleLimit);
+        return getSampleData(variant, study, options, includeSamples, studyWithGts, genotypes, merge, sampleLimit);
     }
 
     protected QueryResult<VariantSampleData> getSampleData(
-            String variant, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
+            String variant, String study, QueryOptions options, List<String> includeSamples, boolean studyWithGts, Set<String> genotypes,
             boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         int studyId = metadataManager.getStudyId(study);
@@ -82,9 +100,11 @@ public class VariantSampleDataManager {
         while (true) {
             Query query = new Query(VariantQueryParam.ID.key(), variant)
                     .append(VariantQueryParam.STUDY.key(), study)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples) // if empty, will return all
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
                     .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
+            if (includeSamples != null && !includeSamples.isEmpty()) {
+                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples); // if empty, will return all
+            }
             sampleSkip += sampleLimit;
             QueryOptions variantQueryOptions;
             if (stats.isEmpty()) {
@@ -114,6 +134,9 @@ public class VariantSampleDataManager {
                 Map<String, String> sampleDataAsMap = studyEntry.getSampleDataAsMap(sample);
 
                 String gt = normalizeGt(sampleDataAsMap.getOrDefault("GT", GenotypeClass.NA_GT_VALUE));
+                if (gt.equals(".")) {
+                    gt = GenotypeClass.NA_GT_VALUE;
+                }
 
                 if (genotypes.contains(gt)) {
                     // Skip other genotypes
@@ -133,6 +156,9 @@ public class VariantSampleDataManager {
                                 break;
                             }
                             if (fileEntry == null) {
+                                if (gt.equals(GenotypeClass.NA_GT_VALUE)) {
+                                    continue;
+                                }
                                 List<String> fileNames = new LinkedList<>();
                                 for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
                                     fileNames.add(metadataManager.getFileName(studyId, fileId));
