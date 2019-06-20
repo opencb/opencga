@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.core.Exon;
@@ -109,6 +108,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
         Individual proband = clinicalAnalysis.getProband();
 
         String clinicalAnalysisId = clinicalAnalysis.getId();
+
         // Sanity checks
         if (proband == null) {
             throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);

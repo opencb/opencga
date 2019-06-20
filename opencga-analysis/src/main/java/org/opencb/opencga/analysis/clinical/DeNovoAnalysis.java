@@ -1,10 +1,8 @@
 package org.opencb.opencga.analysis.clinical;
 
-import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -37,26 +35,9 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
 
     private Query query;
 
-    private static Query defaultQuery;
-
-    static {
-        defaultQuery = new Query()
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
-                        + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
-                        + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
-                        + "GNOMAD_EXOMES:OTH<0.002")
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
-    }
-
     public DeNovoAnalysis(String clinicalAnalysisId, String studyId, Query query, ObjectMap options, String opencgaHome, String sessionId) {
         super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
-        this.query = new Query(defaultQuery);
-        this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyId)
-                .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
-                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+        this.query = new Query(VariantQueryParam.STUDY.key(), studyId);
 
         if (MapUtils.isNotEmpty(query)) {
             this.query.putAll(query);
@@ -88,22 +69,11 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
             // Mendelian errors are pre-calculated
             query.put(VariantCatalogQueryUtils.FAMILY.key(), clinicalAnalysis.getFamily().getId());
             query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(), "DeNovo");
-//            query.put(VariantQueryUtils.SAM, "DeNovo");
             query.put(INCLUDE_SAMPLE.key(), sampleId);
 
             logger.debug("Query: {}", query.safeToString());
 
             variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult();
-//            if (CollectionUtils.isNotEmpty(mendelianErrorVariants)) {
-//                for (Variant variant : mendelianErrorVariants) {
-//                    if (!GenotypeClass.HOM_REF.test(variant.getStudies().get(0).getSampleData(sampleId, "GT"))) {
-//                        variants.add(variant);
-//                        logger.debug("Variant '{}' added.", variant.toStringSimple());
-//                    } else {
-//                        logger.debug("Variant '{}' discarded. Proband is 0/0", variant.toStringSimple());
-//                    }
-//                }
-//            }
         } else {
             // Get pedigree
             Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
@@ -111,15 +81,14 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
             // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
             ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
-            // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
-            // samples easily)
+            // Get the map<individual ID, sample ID>
+            // and update proband information (to be able to navigate to the parents and their samples easily)
             Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);
             Map<String, List<String>> genotypeMap = ModeOfInheritance.deNovo(pedigree);
             List<String> samples = new ArrayList<>();
             List<String> genotypeList = new ArrayList<>();
             for (Map.Entry<String, List<String>> entry : genotypeMap.entrySet()) {
                 if (sampleMap.containsKey(entry.getKey())) {
-//                samples.add(sampleMap.get(entry.getKey()));
                     genotypeList.add(sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR));
                 }
             }

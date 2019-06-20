@@ -25,11 +25,10 @@ import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Individual;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 
 public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysis {
 
@@ -41,16 +40,6 @@ public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysi
     public final static String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
     public final static String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
 
-//    protected static Set<String> extendedLof;
-//    protected static Set<String> proteinCoding;
-//
-//    static {
-//        proteinCoding = new HashSet<>(Arrays.asList("protein_coding", "IG_C_gene", "IG_D_gene", "IG_J_gene", "IG_V_gene",
-//                "nonsense_mediated_decay", "non_stop_decay", "TR_C_gene", "TR_D_gene", "TR_J_gene", "TR_V_gene"));
-//
-//        extendedLof = new HashSet<>(Arrays.asList("SO:0001893", "SO:0001574", "SO:0001575", "SO:0001587", "SO:0001589", "SO:0001578",
-//                "SO:0001582", "SO:0001889", "SO:0001821", "SO:0001822", "SO:0001583", "SO:0001630", "SO:0001626"));
-//    }
 
     public FamilyInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds, ObjectMap options,
                                         String opencgaHome, String sessionId) {
@@ -58,16 +47,6 @@ public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysi
         this.diseasePanelIds = diseasePanelIds;
     }
 
-//    @Deprecated
-//    public FamilyInterpretationAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Map<String, RoleInCancer> roleInCancer,
-//                                        Map<String, List<String>> actionableVariants, ClinicalProperty.Penetrance penetrance, ObjectMap config,
-//                                        String studyId, String opencgaHome, String token) {
-//        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyId, token);
-//
-//        this.diseasePanelIds = diseasePanelIds;
-//
-//        this.penetrance = penetrance;
-//    }
 
     @Deprecated
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
@@ -81,7 +60,19 @@ public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysi
         return clinicalAnalysis;
     }
 
-    // Family
+    protected Individual getProband(ClinicalAnalysis clinicalAnalysis) throws AnalysisException {
+        Individual proband = super.getProband(clinicalAnalysis);
+
+        // Sanity check
+        if (proband.getSamples().size() > 1) {
+            throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
+                    + clinicalAnalysisId);
+        }
+
+        return proband;
+    }
+
+        // Family
     protected List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
                                                                             ReportedVariantCreator creator)
             throws InterpretationAnalysisException {

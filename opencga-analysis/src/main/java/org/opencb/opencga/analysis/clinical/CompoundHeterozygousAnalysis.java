@@ -1,10 +1,8 @@
 package org.opencb.opencga.analysis.clinical;
 
-import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -29,22 +27,10 @@ public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<St
 
     private Query query;
 
-    private static Query defaultQuery;
-
-    static {
-        defaultQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
-    }
-
     public CompoundHeterozygousAnalysis(String clinicalAnalysisId, String studyId, Query query, ObjectMap options, String opencgaHome,
                                         String sessionId) {
         super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
-        this.query = new Query(defaultQuery);
-        this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyId)
-                .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
-                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+        this.query = new Query(VariantQueryParam.STUDY.key(), studyId);
 
         if (MapUtils.isNotEmpty(query)) {
             this.query.putAll(query);
@@ -65,8 +51,8 @@ public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<St
         // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
         ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
-        // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
-        // samples easily)
+        // Get the map<individual ID, sample ID>
+        // and update proband information (to be able to navigate to the parents and their samples easily)
         Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);
 
         Map<String, List<String>> genotypeMap = ModeOfInheritance.compoundHeterozygous(pedigree);
