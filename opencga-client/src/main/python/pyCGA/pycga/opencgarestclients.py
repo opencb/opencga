@@ -444,12 +444,19 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         options_with_file_id.update(options)
         return self._get('unlink', **options_with_file_id)
 
-    def link(self, study, path, uri, **options):
+    def link(self, study, path, uri, data=None, **options):
         """
         Method to link a particular file/foler
 
-        :param fileId: file Id
         """
+        if data:
+            data.update({
+                'study': study,
+                'path': path,
+                'uri': uri
+            })
+            return self._post('link', data=data, **options)
+
         return self._get('link', study=study, path=path, uri=uri, **options)
 
     def scan_folder(self, folder, **options):
