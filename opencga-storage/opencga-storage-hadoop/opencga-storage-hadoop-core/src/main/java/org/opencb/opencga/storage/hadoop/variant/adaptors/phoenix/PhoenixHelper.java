@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
 import org.apache.phoenix.jdbc.PhoenixDriver;
@@ -27,13 +28,13 @@ import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.TableNotFoundException;
-import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PDataType;
-import org.apache.phoenix.schema.types.PhoenixArray;
+import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -55,9 +56,35 @@ public class PhoenixHelper {
 
     private final Configuration conf;
     private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
+    private static Method positionAtArrayElement;
 
     public PhoenixHelper(Configuration conf) {
         this.conf = conf;
+    }
+
+    static {
+        Class<?> decoder;
+        try {
+            decoder = Class.forName("org.apache.phoenix.schema.types.PArrayDataTypeDecoder");
+        } catch (ClassNotFoundException e) {
+            decoder = PArrayDataType.class;
+        }
+        try {
+            positionAtArrayElement = decoder.getMethod("positionAtArrayElement",
+                    ImmutableBytesWritable.class, Integer.TYPE, PDataType.class, Integer.class);
+        } catch (NoSuchMethodException e) {
+            // This should never happen!
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean positionAtArrayElement(ImmutableBytesWritable ptr, int arrayIndex, PDataType instance, Integer byteSize) {
+//        return PArrayDataTypeDecoder.positionAtArrayElement(ptr, arrayIndex, instance, byteSize);
+        try {
+            return (boolean) positionAtArrayElement.invoke(null, ptr, arrayIndex, instance, byteSize);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean execute(Connection con, String sql) throws SQLException {

@@ -1065,7 +1065,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void testConnection() throws StorageEngineException {
         try {
-            HBaseAdmin.checkHBaseAvailable(getHadoopConfiguration());
+            Configuration conf = getHadoopConfiguration();
+            try {
+                // HBase 2.x
+                HBaseAdmin.class.getMethod("available", Configuration.class).invoke(null, conf);
+//                HBaseAdmin.available(conf);
+            } catch (NoSuchMethodException e) {
+                // HBase 1.x
+                HBaseAdmin.class.getMethod("checkHBaseAvailable", Configuration.class).invoke(null, conf);
+//                HBaseAdmin.checkHBaseAvailable(getHadoopConfiguration());
+            }
         } catch (Exception e) {
             logger.error("Connection to database '{}' failed", dbName);
             throw new StorageEngineException("HBase Database connection test failed");

@@ -455,6 +455,11 @@
                     <artifactId>hbase-shaded-miscellaneous</artifactId>
                     <version>${hbase-thirdparty.version}</version>
                 </dependency>
+                <dependency>
+                    <groupId>org.apache.yetus</groupId>
+                    <artifactId>audience-annotations</artifactId>
+                    <version>0.5.0</version>
+                </dependency>
             </dependencies>
         </profile>
 
