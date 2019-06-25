@@ -42,7 +42,6 @@ migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
 
     for (var i = 0; i < doc.groups.length; i++) {
         doc.groups[i]['id'] = doc.groups[i]['name'];
-        doc.groups[i]['name'] = doc.groups[i]['name'].substring(1);
     }
 
     var params = {
