@@ -357,18 +357,24 @@ public class PanelManager extends ResourceManager<Panel> {
 
                         extractCommonInformationFromPanelApp(panelAppRegion, region);
 
-                        String id = (String) panelAppRegion.get("chromosome");
-
                         List<Integer> coordinateList = null;
                         if (ListUtils.isNotEmpty((Collection<?>) panelAppRegion.get("grch38_coordinates"))) {
                             coordinateList = (List<Integer>) panelAppRegion.get("grch38_coordinates");
                         } else if (ListUtils.isNotEmpty((Collection<?>) panelAppRegion.get("grch37_coordinates"))) {
                             coordinateList = (List<Integer>) panelAppRegion.get("grch37_coordinates");
                         }
-                        if (coordinateList != null && coordinateList.size() == 2) {
-                            id = id + ":" + coordinateList.get(0) + "-" + coordinateList.get(1);
+
+                        String id;
+                        if (panelAppRegion.get("entity_name") != null
+                                && StringUtils.isNotEmpty(String.valueOf(panelAppRegion.get("entity_name")))) {
+                            id = String.valueOf(panelAppRegion.get("entity_name"));
                         } else {
-                            logger.warn("Could not read region coordinates");
+                            id = (String) panelAppRegion.get("chromosome");
+                            if (coordinateList != null && coordinateList.size() == 2) {
+                                id = id + ":" + coordinateList.get(0) + "-" + coordinateList.get(1);
+                            } else {
+                                logger.warn("Could not read region coordinates");
+                            }
                         }
 
                         VariantType variantType = null;
