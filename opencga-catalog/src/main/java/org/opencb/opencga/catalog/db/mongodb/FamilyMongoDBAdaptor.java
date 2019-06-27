@@ -413,6 +413,18 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
+    public void removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException {
+        Bson bson = parseQuery(query, false);
+        Document update = removeMembersFromFamilyDocument(individualUids);
+        familyCollection.update(bson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+    }
+
+    Document removeMembersFromFamilyDocument(List<Long> individualUids) {
+        return new Document("$pull", new Document(QueryParams.MEMBERS.key(),
+                new Document(IndividualDBAdaptor.QueryParams.UID.key(), new Document("$in", individualUids))));
+    }
+
+    @Override
     public void delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         delete(query);

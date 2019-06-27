@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
@@ -1216,7 +1217,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testUpdateIndividuaParents() throws CatalogException {
+    public void testUpdateIndividualParents() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser);
         individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
@@ -1232,6 +1233,39 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         assertEquals("father", individualQueryResult.first().getFather().getId());
         assertEquals(1, individualQueryResult.first().getFather().getVersion());
+    }
+
+    @Test
+    public void testDeleteIndividualWithFamiliesError() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        Individual child = individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser).first();
+        Individual father = individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser).first();
+        Individual mother = individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), sessionIdUser).first();
+
+//        QueryResult<Individual> individualQueryResult = individualManager.update(studyFqn, "child", new ObjectMap()
+//                        .append(IndividualDBAdaptor.QueryParams.FATHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "father"))
+//                        .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "mother")),
+//                QueryOptions.empty(), sessionIdUser);
+
+        FamilyManager familyManager = catalogManager.getFamilyManager();
+        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Arrays.asList(father, child)), QueryOptions.empty(), sessionIdUser);
+        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Arrays.asList(father, mother, child)), QueryOptions.empty(), sessionIdUser);
+
+        WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(), sessionIdUser);
+        assertEquals(0, writeResult.getNumModified());
+        assertTrue(writeResult.getFailed().get(0).getMessage().contains("found in the families"));
+
+        writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(Constants.FORCE, true), sessionIdUser);
+        assertEquals(1, writeResult.getNumModified());
+
+        Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), sessionIdUser).first();
+        Family family2 = familyManager.get(studyFqn, "family2", QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(1, family1.getMembers().size());
+        assertEquals(0, family1.getMembers().stream().filter(i -> i.getId().equals("child")).count());
+
+        assertEquals(2, family2.getMembers().size());
+        assertEquals(0, family2.getMembers().stream().filter(i -> i.getId().equals("child")).count());
     }
 
     @Test
