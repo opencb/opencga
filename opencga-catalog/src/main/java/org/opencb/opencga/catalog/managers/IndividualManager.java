@@ -519,36 +519,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
 
                 // Remove references of the individual in those families
-                for (Family family : familyQueryResult.getResult()) {
-                    List<Individual> members = new ArrayList<>();
-                    for (Individual member : family.getMembers()) {
-                        if (member.getUid() != individual.getUid()) {
-                            members.add(member);
-                        }
-                    }
-
-                    // In theory, the array of member should contain 1 element less than the original one
-                    if (members.size() + 1 == family.getMembers().size()) {
-                        // Remove member from the array of members in the family entry
-                        Query familyQuery = new Query()
-                                .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid())
-                                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                                .append(Constants.ALL_VERSIONS, true);
-                        ObjectMap familyUpdate = new ObjectMap()
-                                .append(FamilyDBAdaptor.UpdateParams.MEMBERS.key(), members);
-
-                        QueryResult<Long> update = familyDBAdaptor.update(familyQuery, familyUpdate, QueryOptions.empty());
-                        if (update.first() == 0) {
-                            throw new CatalogException("Individual could not be extracted from family " + family.getId() + ". "
-                                    + "Individual not deleted");
-                        }
-                    } else {
-                        logger.error("Could not delete individual {}. The family {} that in theory contains that individual has the "
-                                        + "following members: {}", individual.getId(), family.getId(),
-                                family.getMembers().stream().map(Individual::getId).collect(Collectors.toList()));
-                        throw new CatalogException("Internal error: Could not delete individual");
-                    }
-                }
+                familyDBAdaptor.removeMembersFromFamily(tmpQuery, Collections.singletonList(individual.getUid()));
 
                 // Delete the individual
                 Query updateQuery = new Query()
@@ -557,7 +528,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         .append(Constants.ALL_VERSIONS, true);
                 ObjectMap updateParams = new ObjectMap()
                         .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getName() + suffixName);
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId() + suffixName);
                 QueryResult<Long> update = individualDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;

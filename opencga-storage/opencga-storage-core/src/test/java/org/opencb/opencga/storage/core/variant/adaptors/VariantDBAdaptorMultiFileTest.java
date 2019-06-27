@@ -1088,8 +1088,6 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertEquals(1, sampleData.getSamples().get("1/1").size());
         assertEquals(4, sampleData.getFiles().size());
 
-//        System.out.println(new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true).writerWithDefaultPrettyPrinter().writeValueAsString(sampleData));
-
         sampleData = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(QueryOptions.LIMIT, 1)).first();
         assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
         assertEquals(2, sampleData.getSamples().size());
@@ -1111,6 +1109,16 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertEquals(file12879, sampleData.getSamples().get("0/1").get(0).getFileId());
         assertEquals(1, sampleData.getFiles().size());
 
+        sampleData = variantStorageEngine.getSampleData("1:14907:A:G", study1, new QueryOptions(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNA12878 + "," + sampleNA12879)).first();
+        assertNotNull(sampleData.getStats().get(DEFAULT_COHORT));
+        assertEquals(2, sampleData.getSamples().size());
+        assertEquals(1, sampleData.getSamples().get("0/1").size());
+        assertEquals(1, sampleData.getSamples().get("1/1").size());
+        assertEquals(2, sampleData.getFiles().size());
+        assertEquals(sampleNA12879, sampleData.getSamples().get("0/1").get(0).getId());
+        assertEquals(file12879, sampleData.getSamples().get("0/1").get(0).getFileId());
+        assertEquals(sampleNA12878, sampleData.getSamples().get("1/1").get(0).getId());
+        assertEquals(file12878, sampleData.getSamples().get("1/1").get(0).getFileId());
 
         // 0/1 : 77
         sampleData = variantStorageEngine.getSampleData("MT:16184:C:A", study1, new QueryOptions()).first();

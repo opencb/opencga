@@ -192,4 +192,6 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
      * @throws CatalogException if there is any database error.
      */
     void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+
+    void removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
 }

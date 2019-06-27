@@ -73,6 +73,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 
 public class VariantStorageManager extends StorageManager {
@@ -550,11 +551,16 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, sessionId);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, String sessionId)
+    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions inputOptions, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(VariantQueryParam.STUDY.key(), study);
-        return secure(query, options, sessionId, engine -> {
+        QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
+        options.remove(QueryOptions.INCLUDE);
+        options.remove(QueryOptions.EXCLUDE);
+        options.remove(VariantField.SUMMARY);
+        return secure(query, options, sessionId, "sampleData", engine -> {
             String studyFqn = query.getString(STUDY.key());
+            options.putAll(query);
             return engine.getSampleData(variant, studyFqn, options);
         });
     }
@@ -708,7 +714,7 @@ public class VariantStorageManager extends StorageManager {
     }
 
     // package protected for test visibility
-    Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager scm,
+    Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
                                                       String sessionId)
             throws CatalogException {
         final Map<String, List<Sample>> samplesMap = new HashMap<>();
@@ -719,7 +725,7 @@ public class VariantStorageManager extends StorageManager {
         }
 
         if (VariantQueryUtils.isIncludeSamplesDefined(query, returnedFields)) {
-            Map<String, List<String>> samplesToReturn = VariantQueryUtils.getSamplesMetadata(query, queryOptions, scm);
+            Map<String, List<String>> samplesToReturn = VariantQueryUtils.getSamplesMetadata(query, queryOptions, mm);
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
                 String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
@@ -736,27 +742,39 @@ public class VariantStorageManager extends StorageManager {
             }
         } else {
             logger.debug("Missing include samples! Obtaining samples to include from catalog.");
-            List<String> returnedStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, scm)
+            List<String> includeStudies = VariantQueryUtils.getIncludeStudies(query, queryOptions, mm)
                     .stream()
-                    .map(scm.getStudies(null).inverse()::get)
+                    .map(mm::getStudyName)
                     .collect(Collectors.toList());
-            List<Study> studies = catalogManager.getStudyManager().get(returnedStudies,
+            List<Study> studies = catalogManager.getStudyManager().get(includeStudies,
                     new QueryOptions(INCLUDE, FQN.key()), false, sessionId).stream().map(QueryResult::first).collect(Collectors.toList());
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
-                for (String returnedStudy : returnedStudies) {
+                for (String returnedStudy : includeStudies) {
                     samplesMap.put(returnedStudy, Collections.emptyList());
                 }
             } else {
-                List<String> returnedSamples = new LinkedList<>();
+                List<String> includeSamples = new LinkedList<>();
                 for (Study study : studies) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
                             new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true),
                             sessionId);
                     samplesQueryResult.getResult().sort(Comparator.comparing(Sample::getId));
                     samplesMap.put(study.getFqn(), samplesQueryResult.getResult());
-                    samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
+                    int studyId = mm.getStudyId(study.getFqn());
+                    for (Iterator<Sample> iterator = samplesQueryResult.getResult().iterator(); iterator.hasNext();) {
+                        Sample sample = iterator.next();
+                        if (mm.getSampleId(studyId, sample.getId(), true) != null) {
+                            includeSamples.add(sample.getId());
+                        } else {
+                            iterator.remove();
+                        }
+                    }
                 }
-                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), returnedSamples);
+                if (includeSamples.isEmpty()) {
+                    query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), NONE);
+                } else {
+                    query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
+                }
             }
         }
         return samplesMap;

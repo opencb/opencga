@@ -152,19 +152,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
             @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
-            @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
-                    String populationName,
-            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                    String populationSubpopulation,
-            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                    String populationDescription,
+            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    IndividualProperty.KaryotypicSex karyotypicSex,
-            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                    IndividualProperty.LifeStatus lifeStatus,
-            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    IndividualProperty.AffectationStatus affectationStatus,
+            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") String karyotypicSex,
+            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
+            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus") String affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
                 @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")

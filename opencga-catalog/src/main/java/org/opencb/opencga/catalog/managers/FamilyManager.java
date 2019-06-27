@@ -408,7 +408,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         .append(Constants.ALL_VERSIONS, true);
                 ObjectMap updateParams = new ObjectMap()
                         .append(FamilyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getName() + suffixName);
+                        .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getId() + suffixName);
                 QueryResult<Long> update = familyDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
                 if (update.first() > 0) {
                     numModified += 1;
