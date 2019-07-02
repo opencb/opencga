@@ -35,7 +35,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -760,9 +759,6 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             ObjectMap teamAnalysisOptions = getAnalysisOptions(queryOptions);
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
@@ -785,7 +781,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
                 // Execute TEAM analysis
                 TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
-                        actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, sessionId);
+                        actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome.toString(), sessionId);
                 result = teamAnalysis.execute();
             }
             return createAnalysisOkResponse(result);
@@ -817,9 +813,6 @@ public class InterpretationWSService extends AnalysisWSService {
                 penetrance = ClinicalProperty.Penetrance.COMPLETE;
             }
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
@@ -835,7 +828,7 @@ public class InterpretationWSService extends AnalysisWSService {
             } else {
                 // Execute tiering analysis
                 TieringAnalysis tieringAnalysis = new TieringAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
-                        actionableVariantsByAssembly.get(assembly), penetrance, tieringAnalysisOptions, opencgaHome, sessionId);
+                        actionableVariantsByAssembly.get(assembly), penetrance, tieringAnalysisOptions, opencgaHome.toString(), sessionId);
                 result = tieringAnalysis.execute();
             }
 
@@ -950,15 +943,12 @@ public class InterpretationWSService extends AnalysisWSService {
             ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
             customAnalysisOptions.put(FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, false);
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             // Get assembly from study for actionable variants
             String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
 
             // Execute custom analysis
             CustomAnalysis customAnalysis = new CustomAnalysis(clinicalAnalysisId, query, studyStr, roleInCancer,
-                    actionableVariantsByAssembly.get(assembly), penetrance, customAnalysisOptions, opencgaHome, sessionId);
+                    actionableVariantsByAssembly.get(assembly), penetrance, customAnalysisOptions, opencgaHome.toString(), sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
@@ -1049,9 +1039,6 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     private void loadExternalFiles() throws IOException {
-        String dataDir = configuration.getDataDir();
-        String opencgaHome = Paths.get(dataDir).getParent().toString();
-
         roleInCancer = InterpretationAnalysisUtils.getRoleInCancer(opencgaHome);
         actionableVariantsByAssembly = InterpretationAnalysisUtils.getActionableVariantsByAssembly(opencgaHome);
     }
