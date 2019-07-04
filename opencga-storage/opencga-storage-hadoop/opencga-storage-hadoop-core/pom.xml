@@ -19,6 +19,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
@@ -55,9 +56,9 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps</artifactId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
             <version>${opencga-storage-hadoop-deps.version}</version>
-            <classifier>${opencga-storage-hadoop-deps.classifier}-shaded</classifier>
+            <classifier>shaded</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.parquet</groupId>
@@ -119,9 +120,9 @@
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop-deps</artifactId>
+            <artifactId>${opencga-storage-hadoop-deps.artifactId}</artifactId>
             <version>${opencga-storage-hadoop-deps.version}</version>
-            <classifier>${opencga-storage-hadoop-deps.classifier}-tests</classifier>
+            <classifier>tests</classifier>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
