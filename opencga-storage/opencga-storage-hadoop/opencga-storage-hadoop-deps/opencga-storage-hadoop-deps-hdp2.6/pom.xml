@@ -27,11 +27,8 @@
     </parent>
 
     <!--<groupId>org.opencb.opencga</groupId>-->
-<!--    <artifactId>opencga-storage-hadoop-deps-hdp2.6</artifactId>-->
-<!--    <version>1.4.2-dev</version>-->
-    <artifactId>opencga-storage-hadoop-deps</artifactId>
-    <version>${parent.version}-hdp2.6</version>
-
+    <artifactId>opencga-storage-hadoop-deps-hdp2.6</artifactId>
+    <version>1.4.2-dev</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -92,13 +89,13 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-azure</artifactId>
             <version>${hadoop.version}</version>
-            <optional>true</optional>
+<!--            <optional>true</optional>-->
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-azure-datalake</artifactId>
             <version>${hadoop.version}</version>
-            <optional>true</optional>
+<!--            <optional>true</optional>-->
         </dependency>
 
         <!--HBase dependencies-->
