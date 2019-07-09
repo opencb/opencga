@@ -163,9 +163,14 @@ public class JwtManager {
         try {
             return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(token);
         } catch (ExpiredJwtException e) {
+            logger.error("JWT Error: '{}'", e.getMessage(), e);
             throw CatalogAuthenticationException.tokenExpired(token);
         } catch (MalformedJwtException | SignatureException e) {
+            logger.error("JWT Error: '{}'", e.getMessage(), e);
             throw CatalogAuthenticationException.invalidAuthenticationToken(token);
+        } catch (JwtException e) {
+            logger.error("JWT Error: '{}'", e.getMessage(), e);
+            throw CatalogAuthenticationException.unknownJwtException(token);
         }
     }
 

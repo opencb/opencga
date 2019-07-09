@@ -25,6 +25,10 @@ public class CatalogAuthenticationException extends CatalogException {
         return new CatalogAuthenticationException("Invalid authentication token : " + token);
     }
 
+    public static CatalogAuthenticationException unknownJwtException(String token) {
+        return new CatalogAuthenticationException("Unknown Jwt exception: " + token);
+    }
+
     public static CatalogAuthenticationException invalidAuthenticationEncodingToken(String token) {
         return new CatalogAuthenticationException("Invalid authentication token encoding : " + token);
     }
