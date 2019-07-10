@@ -451,11 +451,10 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
         if data:
             data.update({
-                'study': study,
                 'path': path,
                 'uri': uri
             })
-            return self._post('link', data=data, **options)
+            return self._post('link', study=study, data=data, **options)
 
         return self._get('link', study=study, path=path, uri=uri, **options)
 
