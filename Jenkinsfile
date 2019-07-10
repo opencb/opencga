@@ -19,12 +19,30 @@ pipeline {
             }
         }
 
+        stage ('Build HDP2.5') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Popencga-storage-hadoop-deps -Phdp2.5 -Dcheckstyle.skip'
+            }
+        }
+
+        stage ('Build HDP3.1') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Phdp3.1 -Dcheckstyle.skip'
+            }
+        }
+
         stage ('Build') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
             }
             steps {
-                sh 'mvn clean install -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp2.6 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
+                sh 'mvn clean install -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Phdp2.6 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
             }
         }
 
