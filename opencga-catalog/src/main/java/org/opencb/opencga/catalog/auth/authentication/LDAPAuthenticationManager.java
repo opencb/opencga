@@ -73,7 +73,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         try {
             List<Attributes> userInfoFromLDAP = LDAPUtils.getUserInfoFromLDAP(host, Arrays.asList(username), usersSearch);
             if (userInfoFromLDAP == null || userInfoFromLDAP.isEmpty()) {
-                throw new CatalogAuthenticationException("The user id " + username + " could be found in LDAP.");
+                throw new CatalogAuthenticationException("The user id " + username + " could not be found in LDAP.");
             }
 
             String rdn = LDAPUtils.getRDN(userInfoFromLDAP.get(0));

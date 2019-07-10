@@ -2,7 +2,6 @@ package org.opencb.opencga.server.rest.analysis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -11,9 +10,8 @@ import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.clinical.*;
+import org.opencb.opencga.analysis.clinical.SecondaryFindingsAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -26,9 +24,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
@@ -747,9 +743,6 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             ObjectMap teamAnalysisOptions = getAnalysisOptions(queryOptions);
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
@@ -769,7 +762,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
                 // Execute TEAM analysis
                 TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
-                        teamAnalysisOptions, opencgaHome, sessionId);
+                        teamAnalysisOptions, opencgaHome.toString(), sessionId);
                 result = teamAnalysis.execute();
             }
             return createAnalysisOkResponse(result);
@@ -801,9 +794,6 @@ public class InterpretationWSService extends AnalysisWSService {
                 penetrance = ClinicalProperty.Penetrance.COMPLETE;
             }
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
@@ -817,7 +807,7 @@ public class InterpretationWSService extends AnalysisWSService {
             } else {
                 // Execute tiering analysis
                 TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyId, panelList,
-                        penetrance, tieringAnalysisOptions, opencgaHome, sessionId);
+                        penetrance, tieringAnalysisOptions, opencgaHome.toString(), sessionId);
                 result = tieringAnalysis.execute();
             }
 
@@ -929,12 +919,9 @@ public class InterpretationWSService extends AnalysisWSService {
             ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
             customAnalysisOptions.put(FamilyInterpretationAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, false);
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             // Execute custom analysis
             CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, studyId, query,
-                    customAnalysisOptions, opencgaHome, sessionId);
+                    customAnalysisOptions, opencgaHome.toString(), sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {

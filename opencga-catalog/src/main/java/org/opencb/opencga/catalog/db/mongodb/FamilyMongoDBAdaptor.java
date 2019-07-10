@@ -414,7 +414,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public void removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         Document update = removeMembersFromFamilyDocument(individualUids);
         familyCollection.update(bson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
