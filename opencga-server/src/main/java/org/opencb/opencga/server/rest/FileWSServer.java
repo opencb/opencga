@@ -942,7 +942,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/link")
-    @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
+    @ApiOperation(value = "Link an external file into catalog.", response = QueryResponse.class)
     public Response link(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
