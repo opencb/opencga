@@ -437,8 +437,8 @@ public class JobManager extends ResourceManager<Job> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
                         .append(JobDBAdaptor.QueryParams.NAME.key(), job.getName() + suffixName);
-                QueryResult<Long> update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.first() > 0) {
+                WriteResult update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.getNumModified() > 0) {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.job, job.getUid(), userId, null, updateParams, null, null);
                 } else {
@@ -658,13 +658,8 @@ public class JobManager extends ResourceManager<Job> {
 
         switch (aclParams.getAction()) {
             case SET:
-                // Todo: Remove this in 1.4
-                List<String> allJobPermissions = EnumSet.allOf(JobAclEntry.JobPermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(study.getUid(), jobList.stream().map(Job::getUid)
-                                .collect(Collectors.toList()), members, permissions, allJobPermissions, Entity.JOB);
+                                .collect(Collectors.toList()), members, permissions, Entity.JOB);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), jobList.stream().map(Job::getUid)
                                 .collect(Collectors.toList()), members, permissions, Entity.JOB);

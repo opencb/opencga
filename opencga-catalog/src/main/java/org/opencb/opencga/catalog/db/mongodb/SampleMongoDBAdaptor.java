@@ -17,12 +17,13 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -30,6 +31,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
@@ -92,6 +94,52 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     public void nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException {
         Document sampleDocument = getMongoDBDocument(sample, "sample");
         sampleCollection.insert(sampleDocument, null);
+    }
+
+    Sample insert(ClientSession clientSession, long studyId, Sample sample, List<VariableSet> variableSetList) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+
+        if (StringUtils.isEmpty(sample.getId())) {
+            throw new CatalogDBException("Missing sample id");
+        }
+
+        // Check the sample does not exist
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(Filters.eq(QueryParams.ID.key(), sample.getId()));
+        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
+
+        Bson bson = Filters.and(filterList);
+        QueryResult<Long> count = sampleCollection.count(bson);
+        if (count.getResult().get(0) > 0) {
+            throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
+        }
+
+        long sampleId = getNewId(clientSession);
+        sample.setUid(sampleId);
+        sample.setStudyUid(studyId);
+        sample.setVersion(1);
+        if (StringUtils.isEmpty(sample.getUuid())) {
+            sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
+        }
+        if (StringUtils.isEmpty(sample.getCreationDate())) {
+            sample.setCreationDate(TimeUtils.getTime());
+        }
+
+        Document sampleObject = sampleConverter.convertToStorageType(sample, variableSetList);
+
+        // Versioning private parameters
+        sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
+        sampleObject.put(LAST_OF_VERSION, true);
+        sampleObject.put(LAST_OF_RELEASE, true);
+        sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
+        sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+
+        logger.debug("Inserting sample '{}' ({})...", sample.getId(), sample.getUid());
+        sampleCollection.insert(clientSession, sampleObject, null);
+        logger.debug("Sample '{}' successfully inserted", sample.getId());
+
+        return sample;
     }
 
     @Override
@@ -179,8 +227,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     public QueryResult<Sample> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0 && !(parameters.size() <= 2
+        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
+        if (update.getNumModified() != 1 && parameters.size() > 0 && !(parameters.size() <= 2
                 && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key())
                 || parameters.containsKey(AnnotationSetManager.ANNOTATIONS)))) {
             throw new CatalogDBException("Could not update sample with id " + id);
@@ -193,12 +241,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
 
@@ -211,8 +259,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     new Document("$set", sampleParameters), new QueryOptions("multi", true));
 
 //            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
-            return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
+            updateAnnotationSets(null, query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+            return endWrite("Update sample", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
         }
 
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
@@ -220,15 +268,15 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         // Perform the update
-        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+        updateAnnotationSets(null, query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
 
         if (!sampleParameters.isEmpty()) {
             QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query),
                     new Document("$set", sampleParameters), new QueryOptions("multi", true));
-            return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
+            return endWrite("Update sample", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
         }
 
-        return endQuery("Update sample", startTime, new QueryResult<>());
+        return endWrite("Update sample", startTime, -1, -1, null);
     }
 
     /**
@@ -504,18 +552,20 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
+    public WriteResult delete(long id) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        Query query = new Query(QueryParams.UID.key(), id);
+//        delete(query);
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = sampleCollection.remove(parseQuery(query), null);
-
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("Sample");
-        }
+    public WriteResult delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        QueryResult<DeleteResult> remove = sampleCollection.remove(parseQuery(query), null);
+//
+//        if (remove.first().getDeletedCount() == 0) {
+//            throw CatalogDBException.deleteError("Sample");
+//        }
     }
 
     // TODO: Check clean
@@ -1017,7 +1067,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     private void deleteReferencesToSample(long sampleId) throws CatalogDBException {

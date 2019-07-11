@@ -20,8 +20,8 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
@@ -214,8 +215,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public QueryResult<Family> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumTotalResults() != 1 && parameters.size() > 0 && !(parameters.size() <= 2
+        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
+        if (update.getNumModified() != 1 && parameters.size() > 0 && !(parameters.size() <= 2
                 && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key())
                 || parameters.containsKey(AnnotationSetManager.ANNOTATIONS)))) {
             throw new CatalogDBException("Could not update family with id " + id);
@@ -228,12 +229,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
         if (queryOptions.getBoolean(Constants.REFRESH)) {
@@ -248,22 +249,22 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     new Document("$set", familyParameters), new QueryOptions("multi", true));
 
 //            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
-            updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
-            return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
+            updateAnnotationSets(null, query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+            return endWrite("Update family", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
         }
 
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(query);
         }
 
-        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
+        updateAnnotationSets(null, query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
         if (!familyParameters.isEmpty()) {
             QueryResult<UpdateResult> update = familyCollection.update(parseQuery(query),
                     new Document("$set", familyParameters), new QueryOptions("multi", true));
-            return endQuery("Update family", startTime, Collections.singletonList(update.getNumTotalResults()));
+            return endWrite("Update family", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
         }
 
-        return endQuery("Update family", startTime, new QueryResult<>());
+        return endWrite("Update family", startTime, -1, -1, null);
     }
 
     private void updateToLastIndividualVersions(Query query, ObjectMap parameters) throws CatalogDBException {
@@ -349,7 +350,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
     }
 
-    private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
+    Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
         Document familyParameters = new Document();
 
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
@@ -414,29 +415,31 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public void removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
-        Document update = removeMembersFromFamilyDocument(individualUids);
+        Bson bson = parseQuery(query);
+        Document update = getRemoveMembersDocument(individualUids);
         familyCollection.update(bson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
-    Document removeMembersFromFamilyDocument(List<Long> individualUids) {
+    Document getRemoveMembersDocument(List<Long> individualUids) {
         return new Document("$pull", new Document(QueryParams.MEMBERS.key(),
                 new Document(IndividualDBAdaptor.QueryParams.UID.key(), new Document("$in", individualUids))));
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
+    public WriteResult delete(long id) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        Query query = new Query(QueryParams.UID.key(), id);
+//        delete(query);
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = familyCollection.remove(parseQuery(query), null);
-
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("Family");
-        }
+    public WriteResult delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        QueryResult<DeleteResult> remove = familyCollection.remove(parseQuery(query), null);
+//
+//        if (remove.first().getDeletedCount() == 0) {
+//            throw CatalogDBException.deleteError("Family");
+//        }
     }
 
     @Override
@@ -769,14 +772,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     private QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    Bson parseQuery(Query query) throws CatalogDBException {
         return parseQuery(query, null);
     }
 
-    protected Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
+    Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         Document annotationDocument = null;
 

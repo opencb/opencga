@@ -729,8 +729,8 @@ public class PanelManager extends ResourceManager<Panel> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(PanelDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
                         .append(PanelDBAdaptor.QueryParams.ID.key(), panel.getName() + suffixName);
-                QueryResult<Long> update = panelDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.first() > 0) {
+                WriteResult update = panelDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.getNumModified() > 0) {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.panel, panel.getUid(), userId, null, updateParams, null, null);
                 } else {
@@ -877,14 +877,8 @@ public class PanelManager extends ResourceManager<Panel> {
 
         switch (panelAclParams.getAction()) {
             case SET:
-                List<String> allPanelPermissions = EnumSet.allOf(PanelAclEntry.PanelPermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
-                return authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream()
-                                .map(Panel::getUid)
-                                .collect(Collectors.toList()), members, permissions,
-                        allPanelPermissions, Entity.PANEL);
+                return authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream().map(Panel::getUid)
+                                .collect(Collectors.toList()), members, permissions, Entity.PANEL);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), panelQueryResult.getResult().stream()
                         .map(Panel::getUid)

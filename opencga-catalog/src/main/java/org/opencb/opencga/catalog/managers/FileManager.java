@@ -1476,9 +1476,7 @@ public class FileManager extends AnnotationSetManager<File> {
         ObjectMap params = new ObjectMap()
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
 
-        QueryResult<Long> update = fileDBAdaptor.update(query, params, QueryOptions.empty());
-
-        return new WriteResult("trash", update.getDbTime(), update.first(), update.first(), null, null, null);
+        return fileDBAdaptor.update(query, params, QueryOptions.empty()).setId("trash");
     }
 
     private WriteResult unlink(long studyId, File file) throws CatalogDBException {
@@ -2312,13 +2310,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
         switch (fileAclParams.getAction()) {
             case SET:
-                // Todo: Remove this in 1.4
-                List<String> allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(study.getUid(), extendedFileList.stream().map(File::getUid)
-                        .collect(Collectors.toList()), members, permissions, allFilePermissions, Entity.FILE);
+                        .collect(Collectors.toList()), members, permissions, Entity.FILE);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), extendedFileList.stream().map(File::getUid)
                         .collect(Collectors.toList()), members, permissions, Entity.FILE);

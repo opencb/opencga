@@ -865,15 +865,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         switch (clinicalAclParams.getAction()) {
             case SET:
-                // Todo: Remove this in 1.4
-                List<String> allClinicalPermissions = EnumSet.allOf(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(study.getUid(), queryResult.getResult().stream()
                                 .map(ClinicalAnalysis::getUid)
-                                .collect(Collectors.toList()), members, permissions,
-                        allClinicalPermissions, Entity.CLINICAL_ANALYSIS);
+                                .collect(Collectors.toList()), members, permissions, Entity.CLINICAL_ANALYSIS);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), queryResult.getResult().stream()
                         .map(ClinicalAnalysis::getUid)

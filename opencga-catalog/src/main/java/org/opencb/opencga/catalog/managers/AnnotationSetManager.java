@@ -248,6 +248,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 //        return variableTypeMap;
 //    }
 
+    @Deprecated
     protected List<VariableSet> validateNewAnnotationSetsAndExtractVariableSets(long studyId, List<AnnotationSet> annotationSetList)
             throws CatalogException {
         if (annotationSetList == null || annotationSetList.isEmpty()) {
@@ -262,6 +263,21 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
 
         List<VariableSet> variableSetList = studyQueryResult.first().getVariableSets();
+        if (variableSetList == null || variableSetList.isEmpty()) {
+            throw new CatalogException("Impossible annotating variables from a study without VariableSets defined");
+        }
+
+        validateNewAnnotationSets(variableSetList, annotationSetList);
+
+        return variableSetList;
+    }
+
+    protected void validateNewAnnotationSets(List<VariableSet> variableSetList, List<AnnotationSet> annotationSetList)
+            throws CatalogException {
+        if (annotationSetList == null || annotationSetList.isEmpty()) {
+            return;
+        }
+
         if (variableSetList == null || variableSetList.isEmpty()) {
             throw new CatalogException("Impossible annotating variables from a study without VariableSets defined");
         }
@@ -281,7 +297,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
             // Get the variable set
             if (!variableSetMap.containsKey(annotationSet.getVariableSetId())) {
-                throw new CatalogException("VariableSetId " + annotationSet.getVariableSetId() + " not found in study " + studyId);
+                throw new CatalogException("VariableSetId " + annotationSet.getVariableSetId() + " not found in variable set list");
             }
             VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
 
@@ -291,8 +307,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             // Add the annotation to the list of annotations
             consideredAnnotationSetsList.add(annotationSet);
         }
-
-        return variableSetList;
     }
 
     public <T extends Annotable> List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(

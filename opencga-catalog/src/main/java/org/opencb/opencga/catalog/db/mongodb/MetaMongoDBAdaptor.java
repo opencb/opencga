@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
@@ -63,18 +64,21 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     public long getNewAutoIncrementId() {
-        return getNewAutoIncrementId("idCounter"); //, metaCollection
+        return getNewAutoIncrementId(null, "idCounter"); //, metaCollection
     }
 
-    public long getNewAutoIncrementId(String field) { //, MongoDBCollection metaCollection
+    public long getNewAutoIncrementId(ClientSession clientSession) {
+        return getNewAutoIncrementId(clientSession, "idCounter"); //, metaCollection
+    }
+
+    public long getNewAutoIncrementId(ClientSession clientSession, String field) { //, MongoDBCollection metaCollection
         Bson query = METADATA_QUERY;
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1L);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
-        QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
+        QueryResult<Document> result = metaCollection.findAndUpdate(clientSession, query, projection, null, inc, queryOptions);
         return result.getResult().get(0).getLong(field);
     }
-
 
     public void createIndexes() {
         InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");

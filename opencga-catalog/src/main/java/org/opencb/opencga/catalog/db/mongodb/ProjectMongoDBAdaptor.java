@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -251,7 +252,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         Document projectParameters = new Document();
@@ -304,33 +305,35 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             */
             updateResult = userCollection.update(bsonQuery, updates, null);
         }
-        return endQuery("Update project", startTime, Collections.singletonList(updateResult.first().getModifiedCount()));
+        return endWrite("Update project", startTime, (int) updateResult.first().getModifiedCount(),
+                (int) updateResult.first().getModifiedCount(), null);
     }
 
     @Override
     public QueryResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         checkId(id);
-        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
-        if (update.getNumTotalResults() != 1) {
+        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
+        if (update.getNumModified() != 1) {
             throw new CatalogDBException("Could not update project with id " + id);
         }
         return endQuery("Update project", startTime, get(id, null));
     }
 
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-
-        Document pull = new Document("$pull", new Document("projects", new Document(QueryParams.UID.key(), id)));
-        QueryResult<UpdateResult> update = userCollection.update(parseQuery(query), pull, null);
-
-        if (update.first().getModifiedCount() != 1) {
-            throw CatalogDBException.deleteError("Project " + id);
-        }
+    public WriteResult delete(long id) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        Query query = new Query(QueryParams.UID.key(), id);
+//
+//        Document pull = new Document("$pull", new Document("projects", new Document(QueryParams.UID.key(), id)));
+//        QueryResult<UpdateResult> update = userCollection.update(parseQuery(query), pull, null);
+//
+//        if (update.first().getModifiedCount() != 1) {
+//            throw CatalogDBException.deleteError("Project " + id);
+//        }
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
+    public WriteResult delete(Query query) throws CatalogDBException {
         throw new NotImplementedException("Delete not implemented for projects");
     }
 
@@ -381,7 +384,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     private QueryResult<Project>  setStatus(long projectId, String status) throws CatalogDBException {

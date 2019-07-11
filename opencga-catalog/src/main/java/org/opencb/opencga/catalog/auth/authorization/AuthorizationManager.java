@@ -408,14 +408,33 @@ public interface AuthorizationManager {
 
 //    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                              List<String> allPermissions, Entity entity) throws CatalogException;
+    default <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
+                                                                      List<String> permissions, Entity entity) throws CatalogException {
+        return setAcls(studyId, ids, null, members, permissions, entity, null);
+    }
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                              Entity entity) throws CatalogException;
+    <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
+                                                              List<String> permissions, Entity entity1, Entity entity2)
+            throws CatalogException;
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members, @Nullable List<String> permissions,
-                                                                 Entity entity) throws CatalogException;
+    default <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members,
+                                                                      List<String> permissions, Entity entity) throws CatalogException {
+        return addAcls(studyId, ids, null, members, permissions, entity, null);
+    }
+
+    <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
+                                                              List<String> permissions, Entity entity, Entity entity2)
+            throws CatalogException;
+
+    default <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members,
+                                                                         @Nullable List<String> permissions, Entity entity)
+            throws CatalogException {
+        return removeAcls(ids, null, members, permissions, entity, null);
+    }
+
+    <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids1, List<Long> ids2, List<String> members,
+                                                                 @Nullable List<String> permissions, Entity entity, Entity entity2)
+            throws CatalogException;
 
     <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, Entity entity)
             throws CatalogException;

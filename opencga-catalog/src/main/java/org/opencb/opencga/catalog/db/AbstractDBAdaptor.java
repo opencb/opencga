@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db;
 
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.slf4j.Logger;
 
@@ -70,6 +72,16 @@ public abstract class AbstractDBAdaptor {
             throw new CatalogDBException(queryResult.getErrorMsg());
         }
         return queryResult;
+    }
+
+    protected WriteResult endWrite(String id, long startTime, int numMatches, int numModified, List<WriteResult.Fail> failed) {
+        return endWrite(id, startTime, numMatches, numModified, failed, null, null);
+    }
+
+    protected WriteResult endWrite(String id, long startTime, int numMatches, int numModified, List<WriteResult.Fail> failed,
+                                   List<Error> errorList, Error error) {
+        long end = System.currentTimeMillis();
+        return new WriteResult(id, (int) (end - startTime), numMatches, numModified, failed, errorList, error);
     }
 
     protected void checkParameter(Object param, String name) throws CatalogDBException {

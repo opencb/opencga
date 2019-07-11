@@ -83,7 +83,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private final MongoDBConfiguration configuration;
     private final String database;
     //    private final DataStoreServerAddress dataStoreServerAddress;
-    private MongoDataStore db;
+    private MongoDataStore mongoDataStore;
 
     private MongoDBCollection metaCollection;
     private MongoDBCollection userCollection;
@@ -247,7 +247,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     @Override
     public void close() {
-        mongoManager.close(db.getDatabaseName());
+        mongoManager.close(mongoDataStore.getDatabaseName());
     }
 
     @Override
@@ -330,26 +330,30 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         return auditDBAdaptor;
     }
 
+    public MongoDataStore getMongoDataStore() {
+        return mongoDataStore;
+    }
+
     private void connect() throws CatalogDBException {
-        db = mongoManager.get(database, configuration);
-        if (db == null) {
+        mongoDataStore = mongoManager.get(database, configuration);
+        if (mongoDataStore == null) {
             throw new CatalogDBException("Unable to connect to MongoDB");
         }
 
-        metaCollection = db.getCollection(METADATA_COLLECTION);
-        userCollection = db.getCollection(USER_COLLECTION);
-        studyCollection = db.getCollection(STUDY_COLLECTION);
-        fileCollection = db.getCollection(FILE_COLLECTION);
-        sampleCollection = db.getCollection(SAMPLE_COLLECTION);
-        individualCollection = db.getCollection(INDIVIDUAL_COLLECTION);
-        jobCollection = db.getCollection(JOB_COLLECTION);
-        cohortCollection = db.getCollection(COHORT_COLLECTION);
-        datasetCollection = db.getCollection(DATASET_COLLECTION);
-        auditCollection = db.getCollection(AUDIT_COLLECTION);
-        panelCollection = db.getCollection(PANEL_COLLECTION);
-        familyCollection = db.getCollection(FAMILY_COLLECTION);
-        clinicalCollection = db.getCollection(CLINICAL_ANALYSIS_COLLECTION);
-        interpretationCollection = db.getCollection(INTERPRETATION_COLLECTION);
+        metaCollection = mongoDataStore.getCollection(METADATA_COLLECTION);
+        userCollection = mongoDataStore.getCollection(USER_COLLECTION);
+        studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
+        fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
+        sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
+        individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
+        jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
+        cohortCollection = mongoDataStore.getCollection(COHORT_COLLECTION);
+        datasetCollection = mongoDataStore.getCollection(DATASET_COLLECTION);
+        auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
+        panelCollection = mongoDataStore.getCollection(PANEL_COLLECTION);
+        familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
+        clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
+        interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
 
         collections = new HashMap<>();
         collections.put(METADATA_COLLECTION, metaCollection);

@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.Status;
 
 import java.util.*;
 import java.util.stream.Collectors;

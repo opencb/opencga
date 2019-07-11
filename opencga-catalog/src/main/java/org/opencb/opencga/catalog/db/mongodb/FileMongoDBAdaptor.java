@@ -21,8 +21,8 @@ import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -209,7 +210,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Bson query = parseQuery(new Query(QueryParams.UID.key(), id));
         UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
 
-        updateAnnotationSets(id, parameters, variableSetList, queryOptions, false);
+        updateAnnotationSets(null, id, parameters, variableSetList, queryOptions, false);
 
         Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
         if (!updateDocument.isEmpty()) {
@@ -227,7 +228,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
 
@@ -243,7 +244,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Bson queryBson = parseQuery(query);
         UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
 
-        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, false);
+        updateAnnotationSets(null, query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, false);
 
         Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
 
@@ -262,9 +263,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
                 }
             }
-            return endQuery("Update file", startTime, Collections.singletonList(update.getResult().get(0).getModifiedCount()));
+            return endWrite("Update file", startTime, (int) update.getResult().get(0).getModifiedCount(),
+                    (int) update.getResult().get(0).getModifiedCount(), null);
         }
-        return endQuery("Update file", startTime, Collections.singletonList(0L));
+        return endWrite("Update file", startTime, 0, 0, null);
     }
 
     @Override
@@ -273,7 +275,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
@@ -383,18 +385,20 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
+    public WriteResult delete(long id) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        Query query = new Query(QueryParams.UID.key(), id);
+//        delete(query);
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = fileCollection.remove(parseQuery(query), null);
-
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("File");
-        }
+    public WriteResult delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        QueryResult<DeleteResult> remove = fileCollection.remove(parseQuery(query), null);
+//
+//        if (remove.first().getDeletedCount() == 0) {
+//            throw CatalogDBException.deleteError("File");
+//        }
     }
 
     @Override
@@ -952,7 +956,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     @Override

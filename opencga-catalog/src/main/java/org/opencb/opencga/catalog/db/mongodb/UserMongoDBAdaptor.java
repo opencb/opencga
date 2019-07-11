@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -378,7 +379,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
@@ -400,25 +401,27 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         if (!userParameters.isEmpty()) {
             QueryResult<UpdateResult> update = userCollection.update(parseQuery(query),
                     new Document("$set", userParameters), null);
-            return endQuery("Update user", startTime, Arrays.asList(update.getNumTotalResults()));
+            return endWrite("Update user", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
         }
 
-        return endQuery("Update user", startTime, new QueryResult<>());
+        return endWrite("Update user", startTime, 0, 0, null);
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
-        delete(query);
+    public WriteResult delete(long id) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        Query query = new Query(QueryParams.ID.key(), id);
+//        delete(query);
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = userCollection.remove(parseQuery(query), null);
-
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("User");
-        }
+    public WriteResult delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        QueryResult<DeleteResult> remove = userCollection.remove(parseQuery(query), null);
+//
+//        if (remove.first().getDeletedCount() == 0) {
+//            throw CatalogDBException.deleteError("User");
+//        }
     }
 
     @Override
@@ -430,15 +433,17 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         long startTime = startQuery();
         checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId);
-        QueryResult<Long> update = update(query, parameters, QueryOptions.empty());
-        if (update.getResult().isEmpty() || update.first() != 1) {
+        WriteResult update = update(query, parameters, QueryOptions.empty());
+        if (update.getNumModified() != 1) {
             throw new CatalogDBException("Could not update user " + userId);
         }
         return endQuery("Update user", startTime, get(query, null));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {

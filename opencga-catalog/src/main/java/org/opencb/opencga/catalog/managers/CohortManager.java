@@ -411,8 +411,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
                         .append(CohortDBAdaptor.QueryParams.ID.key(), cohort.getId() + suffixName);
-                QueryResult<Long> update = cohortDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.first() > 0) {
+                WriteResult update = cohortDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.getNumModified() > 0) {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.cohort, cohort.getUid(), userId, null, updateParams, null, null);
                 } else {
@@ -750,13 +750,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         switch (aclParams.getAction()) {
             case SET:
-                // Todo: Remove this in 1.4
-                List<String> allCohortPermissions = EnumSet.allOf(CohortAclEntry.CohortPermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(study.getUid(), cohortQueryResult.getResult().stream().map(Cohort::getUid)
-                                .collect(Collectors.toList()), members, permissions, allCohortPermissions, Entity.COHORT);
+                                .collect(Collectors.toList()), members, permissions, Entity.COHORT);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), cohortQueryResult.getResult().stream().map(Cohort::getUid)
                                 .collect(Collectors.toList()), members, permissions, Entity.COHORT);

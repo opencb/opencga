@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -23,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
@@ -80,11 +83,23 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         super(logger);
     }
 
+    protected ClientSession getClientSession() {
+        return dbAdaptorFactory.getMongoDataStore().startSession();
+    }
+
+    protected WriteResult commitTransaction(ClientSession clientSession, TransactionBody<WriteResult> txnBody) {
+        return dbAdaptorFactory.getMongoDataStore().commitSession(clientSession, txnBody);
+    }
+
     protected long getNewId() {
 //        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
+    protected long getNewId(ClientSession clientSession) {
+//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
+        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId(clientSession);
+    }
 
     @Deprecated
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
@@ -366,6 +367,22 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (queryResult.first().getMatchedCount() != 1) {
             throw new CatalogDBException("Unable to set users to group " + groupId + ". The group does not exist.");
+        }
+    }
+
+    void addUsersToGroup(long studyId, String groupId, List<String> members, ClientSession clientSession) throws CatalogDBException {
+        if (ListUtils.isEmpty(members)) {
+            return;
+        }
+
+        Document query = new Document()
+                .append(PRIVATE_UID, studyId)
+                .append(QueryParams.GROUP_ID.key(), groupId);
+        Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
+        QueryResult<UpdateResult> queryResult = studyCollection.update(clientSession, query, update, null);
+
+        if (queryResult.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
     }
 
@@ -1141,7 +1158,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public org.opencb.commons.datastore.core.result.WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException {
         //FIXME: Check the commented code from modifyStudy
         /*
         long startTime = startQuery();
@@ -1216,33 +1234,36 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
             Document updates = new Document("$set", studyParameters);
             Long nModified = studyCollection.update(parseQuery(query), updates, null).getNumTotalResults();
-            return endQuery("Study update", startTime, Collections.singletonList(nModified));
+            return endWrite("Study update", startTime, nModified.intValue(), nModified.intValue(), null);
         }
 
-        return endQuery("Study update", startTime, Collections.singletonList(0L));
+        return endWrite("Study update", startTime, 0, 0, null);
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
+    public org.opencb.commons.datastore.core.result.WriteResult delete(long id) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        Query query = new Query(QueryParams.UID.key(), id);
+//        delete(query);
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query), null);
-
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("Study");
-        }
+    public org.opencb.commons.datastore.core.result.WriteResult delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query), null);
+//
+//        if (remove.first().getDeletedCount() == 0) {
+//            throw CatalogDBException.deleteError("Study");
+//        }
     }
 
     @Override
     public QueryResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
 
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
-        if (update.getNumTotalResults() != 1) {
+        org.opencb.commons.datastore.core.result.WriteResult update =
+                update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
+        if (update.getNumModified() != 1) {
             throw new CatalogDBException("Could not update study with id " + id);
         }
         return endQuery("Update study", startTime, get(id, null));
@@ -1316,7 +1337,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        org.opencb.commons.datastore.core.result.WriteResult update = update(query,
+                new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     QueryResult<Study> setStatus(long studyId, String status) throws CatalogDBException {

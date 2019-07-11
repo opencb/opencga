@@ -194,9 +194,9 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new Sample().setId("sample2").setStatus(new Status()), QueryOptions.empty()).first();
 
         Individual individual = new Individual()
-                .setName("in2")
+                .setId("in2")
                 .setStatus(new Status())
-                .setSamples(Arrays.asList(sample1, sample1, sample2, new Sample().setUid(-1).setStatus(new Status())));
+                .setSamples(Arrays.asList(sample1, sample1, sample2));
         Individual individualStored = catalogIndividualDBAdaptor.insert(studyId, individual, null).first();
         assertEquals(2, individualStored.getSamples().size());
         assertTrue(individualStored.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(

@@ -170,8 +170,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
-    @Override
-    public QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String token) throws CatalogException {
+    void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
         ParamUtils.checkAlias(sample.getId(), "name");
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
@@ -183,16 +182,23 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
         sample.setVersion(1);
+        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
 
+        validateNewAnnotationSets(study.getVariableSets(), sample.getAnnotationSets());
+    }
+
+    @Override
+    public QueryResult<Sample> create(String studyStr, Sample sample, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(study.getUid(), sample.getAnnotationSets());
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         // 1. We check everything can be done
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
+
+        validateNewSample(study, sample, userId);
 
         // We will store the individual information if the individual already exists
         Individual individual = null;
@@ -230,9 +236,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         // 2. We create the sample
-        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
-        sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
-        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, variableSetList, options);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         // 3. We update or create an individual if any..
@@ -549,8 +553,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId() + suffixName);
-                QueryResult<Long> update = sampleDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.first() > 0) {
+                WriteResult update = sampleDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.getNumModified() > 0) {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.sample, sample.getUid(), userId, null, updateParams, null, null);
                 } else {
@@ -1044,14 +1048,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         List<QueryResult<SampleAclEntry>> queryResults;
         switch (sampleAclParams.getAction()) {
             case SET:
-                // Todo: Remove this in 1.4
-                List<String> allSamplePermissions = EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
                 queryResults = authorizationManager.setAcls(study.getUid(), sampleQueryResult.getResult().stream()
-                                .map(Sample::getUid).collect(Collectors.toList()), members, permissions, allSamplePermissions,
-                        Entity.SAMPLE);
+                                .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
                 if (sampleAclParams.isPropagate()) {
                     try {
                         Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),

@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
@@ -27,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.DatasetDBAdaptor;
@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.db.mongodb.converters.DatasetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Dataset;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterOptions;
 
 /**
  * Created by pfurio on 04/05/16.
@@ -180,53 +179,56 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        Map<String, Object> datasetParams = new HashMap<>();
-
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
-        filterStringParams(parameters, datasetParams, acceptedParams);
-
-        String[] acceptedLongListParams = {QueryParams.FILES.key()};
-        filterLongParams(parameters, datasetParams, acceptedLongListParams);
-        if (parameters.containsKey(QueryParams.FILES.key())) {
-            for (Long fileId : parameters.getAsLongList(QueryParams.FILES.key())) {
-                if (!dbAdaptorFactory.getCatalogFileDBAdaptor().exists(fileId)) {
-                    throw CatalogDBException.uidNotFound("File", fileId);
-                }
-            }
-        }
-
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
-        filterMapParams(parameters, datasetParams, acceptedMapParams);
-
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            datasetParams.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
-        }
-
-        if (!datasetParams.isEmpty()) {
-            QueryResult<UpdateResult> update = datasetCollection.update(parseQuery(query), new Document("$set", datasetParams),
-                    null);
-            return endQuery("Update cohort", startTime, Arrays.asList(update.getNumTotalResults()));
-        }
-
-        return endQuery("Update cohort", startTime, new QueryResult<>());
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return null;
+//        long startTime = startQuery();
+//        Map<String, Object> datasetParams = new HashMap<>();
+//
+//        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
+//        filterStringParams(parameters, datasetParams, acceptedParams);
+//
+//        String[] acceptedLongListParams = {QueryParams.FILES.key()};
+//        filterLongParams(parameters, datasetParams, acceptedLongListParams);
+//        if (parameters.containsKey(QueryParams.FILES.key())) {
+//            for (Long fileId : parameters.getAsLongList(QueryParams.FILES.key())) {
+//                if (!dbAdaptorFactory.getCatalogFileDBAdaptor().exists(fileId)) {
+//                    throw CatalogDBException.uidNotFound("File", fileId);
+//                }
+//            }
+//        }
+//
+//        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+//        filterMapParams(parameters, datasetParams, acceptedMapParams);
+//
+//        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+//            datasetParams.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+//            datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+//        }
+//
+//        if (!datasetParams.isEmpty()) {
+//            QueryResult<UpdateResult> update = datasetCollection.update(parseQuery(query), new Document("$set", datasetParams),
+//                    null);
+//            return endQuery("Update cohort", startTime, Arrays.asList(update.getNumTotalResults()));
+//        }
+//
+//        return endQuery("Update cohort", startTime, new QueryResult<>());
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
-        delete(query);
+    public WriteResult delete(long id) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        Query query = new Query(QueryParams.ID.key(), id);
+//        delete(query);
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = datasetCollection.remove(parseQuery(query), null);
-
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("Dataset");
-        }
+    public WriteResult delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException("Delete not implemented");
+//        QueryResult<DeleteResult> remove = datasetCollection.remove(parseQuery(query), null);
+//
+//        if (remove.first().getDeletedCount() == 0) {
+//            throw CatalogDBException.deleteError("Dataset");
+//        }
     }
 
     @Override
@@ -267,7 +269,8 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+//        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return null;
     }
 
     @Override

@@ -409,8 +409,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 ObjectMap updateParams = new ObjectMap()
                         .append(FamilyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
                         .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getId() + suffixName);
-                QueryResult<Long> update = familyDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.first() > 0) {
+                WriteResult update = familyDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
+                if (update.getNumModified() > 0) {
                     numModified += 1;
                     auditManager.recordDeletion(AuditRecord.Resource.family, family.getUid(), userId, null, updateParams, null, null);
                 } else {
@@ -783,14 +783,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         switch (familyAclParams.getAction()) {
             case SET:
-                // Todo: Remove this in 1.4
-                List<String> allFamilyPermissions = EnumSet.allOf(FamilyAclEntry.FamilyPermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(study.getUid(), familyList.stream().map(Family::getUid)
-                                .collect(Collectors.toList()), members, permissions,
-                        allFamilyPermissions, Entity.FAMILY);
+                                .collect(Collectors.toList()), members, permissions, Entity.FAMILY);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), familyList.stream().map(Family::getUid)
                         .collect(Collectors.toList()), members, permissions, Entity.FAMILY);

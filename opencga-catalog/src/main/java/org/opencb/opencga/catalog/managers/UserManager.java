@@ -112,7 +112,7 @@ public class UserManager extends AbstractManager {
 
     static void checkEmail(String email) throws CatalogException {
         if (email == null || !EMAILPATTERN.matcher(email).matches()) {
-            throw new CatalogException("email not valid");
+            throw new CatalogException("Email '" + email + "' not valid");
         }
     }
 
