@@ -449,14 +449,18 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient):
         Method to link a particular file/foler
 
         """
-        if data:
-            data.update({
-                'path': path,
-                'uri': uri
-            })
-            return self._post('link', study=study, data=data, **options)
+        if data is None:
+            data = {}
 
-        return self._get('link', study=study, path=path, uri=uri, **options)
+        if options is not None and 'description' in options:
+            data['description'] = options['description']
+            options.pop('description', None)
+
+        data.update({
+            'path': path,
+            'uri': uri
+        })
+        return self._post('link', study=study, data=data, **options)
 
     def scan_folder(self, folder, **options):
         """
