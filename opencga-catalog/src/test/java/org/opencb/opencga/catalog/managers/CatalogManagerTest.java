@@ -1058,7 +1058,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     /*                    */
 
     @Test
-    public void testDeleteCohort() throws CatalogException, IOException {
+    public void testDeleteCohort() throws CatalogException {
         String studyId = "user@1000G:phase1";
 
         Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),

@@ -471,8 +471,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            logger.error("Delete individual: {}", e.getMessage(), e);
-            writeResult.setError(new Error(-1, null, e.getMessage()));
+            logger.error("No individuals were deleted: {}", e.getMessage(), e);
+            writeResult.setError(new Error(-1, null, "No individuals were deleted: " + e.getMessage()));
             writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
             return writeResult;
         }

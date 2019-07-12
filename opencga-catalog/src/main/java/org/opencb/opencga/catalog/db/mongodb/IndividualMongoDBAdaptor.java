@@ -215,12 +215,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
                 logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());
                 individualCollection.insert(clientSession, individualDocument, null);
-
                 logger.debug("Individual '{}' successfully inserted", individual.getId());
 
                 return endWrite(String.valueOf(individualId), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
-                logger.error("Could not create individual {}: {}", individual.getId(), e.getMessage());
+                logger.error("Could not create individual {}: {}", individual.getId(), e.getMessage(), e);
                 return endWrite(individual.getId(), tmpStartTime, 1, 0,
                         Collections.singletonList(new Fail(individual.getId(), e.getMessage())));
             }
@@ -235,116 +234,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         } else {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
-    }
-
-//    @Override
-//    public QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite)
-//            throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        QueryResult<Long> count = individualCollection.count(
-//                new Document("annotationSets.name", annotationSet.getName()).append(PRIVATE_UID, individualId));
-//
-//        if (overwrite) {
-//            if (count.first() == 0) {
-//                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
-//            }
-//        } else {
-//            if (count.first() > 0) {
-//                throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
-//            }
-//        }
-//
-//        Document document = getMongoDBDocument(annotationSet, "AnnotationSet");
-//
-//        Bson query;
-//        Bson individualQuery = Filters.eq(PRIVATE_UID, individualId);
-//        if (overwrite) {
-////            query.put("annotationSets.id", annotationSet.getId());
-//            query = Filters.and(individualQuery, Filters.eq("annotationSets.name", annotationSet.getName()));
-//        } else {
-////            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
-//            query = Filters.and(individualQuery, Filters.eq("annotationSets.name", new Document("$ne", annotationSet.getName())));
-//        }
-//
-//        Bson update;
-//        if (overwrite) {
-//            update = new Document("$set", new Document("annotationSets.$", document));
-//        } else {
-//            update = new Document("$push", new Document("annotationSets", document));
-//        }
-//
-//        QueryResult<UpdateResult> queryResult = individualCollection.update(query, update, null);
-//
-//        if (queryResult.first().getModifiedCount() != 1) {
-//            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
-//        }
-//
-//        return endQuery("", startTime, Collections.singletonList(annotationSet));
-//    }
-//
-//    @Override
-//    public QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException {
-//
-//        long startTime = startQuery();
-//
-//        Individual individual =
-//                get(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
-//        AnnotationSet annotationSet = null;
-//        for (AnnotationSet as : individual.getAnnotationSets()) {
-//            if (as.getName().equals(annotationId)) {
-//                annotationSet = as;
-//                break;
-//            }
-//        }
-//
-//        if (annotationSet == null) {
-//            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-//        }
-//
-//        Bson eq = Filters.eq(PRIVATE_UID, individualId);
-//        Bson pull = Updates.pull("annotationSets", new Document("name", annotationId));
-//        QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
-//        if (update.first().getModifiedCount() < 1) {
-//            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
-//        }
-//
-//        return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
-//    }
-
-    public void checkInUse(long individualId) throws CatalogDBException {
-        long studyId = getStudyId(individualId);
-        QueryResult<Individual> individuals = get(new Query(QueryParams.FATHER_UID.key(), individualId)
-                .append(QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
-        if (individuals.getNumResults() != 0) {
-            String msg = "Can't delete Individual, still in use as \"fatherId\" of individual : [";
-            for (Individual individual : individuals.getResult()) {
-                msg += " { id: " + individual.getUid() + ", name: \"" + individual.getName() + "\" },";
-            }
-            msg += "]";
-            throw new CatalogDBException(msg);
-        }
-        individuals = get(new Query(QueryParams.MOTHER_UID.key(), individualId)
-                .append(QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
-        if (individuals.getNumResults() != 0) {
-            String msg = "Can't delete Individual, still in use as \"motherId\" of individual : [";
-            for (Individual individual : individuals.getResult()) {
-                msg += " { id: " + individual.getUid() + ", name: \"" + individual.getName() + "\" },";
-            }
-            msg += "]";
-            throw new CatalogDBException(msg);
-        }
-        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
-                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), individualId), new QueryOptions());
-        if (samples.getNumResults() != 0) {
-            String msg = "Can't delete Individual, still in use as \"individualId\" of sample : [";
-            for (Sample sample : samples.getResult()) {
-                msg += " { id: " + sample.getUid() + ", name: \"" + sample.getId() + "\" },";
-            }
-            msg += "]";
-            throw new CatalogDBException(msg);
-        }
-
     }
 
     @Override
@@ -512,12 +401,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         createNewVersion(clientSession, individual.getStudyUid(), individual.getUid());
                     }
 
-                    updateAnnotationSets(clientSession, query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList,
-                            queryOptions, true);
+                    updateAnnotationSets(clientSession, individual.getUid(), parameters, variableSetList, queryOptions, true);
 
                     if (!individualUpdate.isEmpty()) {
                         Query tmpQuery = new Query()
-                                .append(QueryParams.UID.key(), individual.getStudyUid())
+                                .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
                                 .append(QueryParams.UID.key(), individual.getUid());
                         Bson finalQuery = parseQuery(tmpQuery);
 
@@ -582,7 +470,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         Error error = null;
         if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0 ? "None of the " : "Some of the ") + "individuals could not be updated");
+            error = new Error(-1, "update", (numModified == 0
+                    ? "None of the individuals could be updated"
+                    : "Some of the individuals could not be updated"));
         }
 
         return endWrite("update", startTime, numMatches, numModified, failList, null, error);
@@ -710,7 +600,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 throw new CatalogDBException("Update individual: No individual found to be updated");
             }
             if (individualQueryResult.getNumResults() > 1) {
-                throw new CatalogDBException("Update individual: Cannot set the same name parameter for different individuals");
+                throw CatalogDBException.cannotUpdateMultipleEntries(QueryParams.ID.key(), "individual");
             }
 
             // Check that the new individual name is still unique
@@ -722,7 +612,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
             QueryResult<Long> count = count(tmpQuery);
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Cannot set name for individual. A individual with { id: '"
+                throw new CatalogDBException("Cannot set id for individual. A individual with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
@@ -882,6 +772,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         // Mark the individual as deleted
                         ObjectMap updateParams = new ObjectMap()
                                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
                                 .append(QueryParams.ID.key(), tmpIndividual.getId() + deleteSuffix);
 
                         Bson bsonQuery = parseQuery(individualQuery);
@@ -926,7 +817,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         Error error = null;
         if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0 ? "None of the " : "Some of the ") + "individuals could not be deleted");
+            error = new Error(-1, "delete", (numModified == 0
+                    ? "None of the individuals could be deleted"
+                    : "Some of the individuals could not be deleted"));
         }
 
         return endWrite("delete", startTime, numMatches, numModified, failList, null, error);

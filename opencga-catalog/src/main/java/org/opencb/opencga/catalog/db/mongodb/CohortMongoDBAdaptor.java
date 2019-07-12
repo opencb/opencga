@@ -17,18 +17,20 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoWriteException;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.UpdateResult;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
@@ -91,37 +93,52 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public QueryResult<Cohort> insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
-        long startTime = startQuery();
+        long startQuery = startQuery();
 
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        checkCohortIdExists(studyId, cohort.getId());
+        ClientSession clientSession = getClientSession();
+        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+            long startTime = startQuery();
+            try {
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+                checkCohortIdExists(studyId, cohort.getId());
 
-        long newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
-        cohort.setUid(newId);
-        cohort.setStudyUid(studyId);
-        if (StringUtils.isEmpty(cohort.getUuid())) {
-            cohort.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.COHORT));
-        }
+                long newId = getNewId(clientSession);
+                cohort.setUid(newId);
+                cohort.setStudyUid(studyId);
+                if (StringUtils.isEmpty(cohort.getUuid())) {
+                    cohort.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.COHORT));
+                }
+                if (StringUtils.isEmpty(cohort.getCreationDate())) {
+                    cohort.setCreationDate(TimeUtils.getTime());
+                }
 
-        Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
-        if (StringUtils.isNotEmpty(cohort.getCreationDate())) {
-            cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+                Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
+
+                cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+                cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+
+                logger.debug("Inserting cohort '{}' ({})...", cohort.getId(), cohort.getUid());
+                cohortCollection.insert(clientSession, cohortObject, null);
+                logger.debug("Cohort '{}' successfully inserted", cohort.getId());
+
+                return endWrite(String.valueOf(newId), startTime, 1, 1, null);
+            } catch (CatalogDBException e) {
+                logger.error("Could not create cohort '{}': {}", cohort.getId(), e.getMessage(), e);
+                return endWrite(cohort.getId(), startTime, 1, 0,
+                        Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
+            }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 1) {
+            Query query = new Query()
+                    .append(QueryParams.STUDY_UID.key(), studyId)
+                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
+            return endQuery("createIndividual", startQuery, get(query, options));
         } else {
-            cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
-        cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-
-        try {
-            cohortCollection.insert(cohortObject, null);
-        } catch (MongoWriteException e) {
-            throw ifDuplicateKeyException(() -> CatalogDBException.alreadyExists("Cohort", studyId, "name", cohort.getId(), e), e);
-        }
-
-        Query query = new Query()
-                .append(QueryParams.UID.key(), newId)
-                .append(QueryParams.STUDY_UID.key(), studyId);
-
-        return endQuery("createCohort", startTime, get(query, options));
     }
 
     @Override
@@ -237,28 +254,85 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     public WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
-        Map<String, Object> cohortParams = new HashMap<>();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key()};
-        filterStringParams(parameters, cohortParams, acceptedParams);
+        Document cohortUpdate = parseAndValidateUpdateParams(parameters, query).toFinalUpdateDocument();
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
-        filterEnumParams(parameters, cohortParams, acceptedEnums);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<Cohort> iterator = iterator(query, options);
+
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            Cohort cohort = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+                long tmpStartTime = startQuery();
+
+                try {
+                    if (!cohortUpdate.isEmpty()) {
+                        Query tmpQuery = new Query()
+                                .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid())
+                                .append(QueryParams.UID.key(), cohort.getUid());
+                        Bson finalQuery = parseQuery(tmpQuery);
+                        logger.debug("Cohort update: query : {}, update: {}",
+                                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                                cohortUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                        cohortCollection.update(clientSession, finalQuery, cohortUpdate, null);
+                    }
+
+                    updateAnnotationSets(clientSession, cohort.getUid(), parameters, variableSetList, queryOptions, false);
+                } catch (CatalogDBException e) {
+                    logger.error("Error updating cohort {}({}). {}", cohort.getId(), cohort.getUid(), e.getMessage(), e);
+                    return endWrite(cohort.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
+                }
+
+                return endWrite(cohort.getId(), tmpStartTime, 1, 1, null);
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Cohort {} successfully updated", cohort.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not update cohort {}: {}", cohort.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not update cohort {}", cohort.getId());
+                }
+            }
+        }
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "update", (numModified == 0
+                    ? "None of the cohorts could be updated"
+                    : "Some of the cohorts could not be updated"));
+        }
+
+        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+    }
+
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
+        UpdateDocument document = new UpdateDocument();
 
         if (parameters.containsKey(CohortDBAdaptor.QueryParams.ID.key())) {
             // That can only be done to one cohort...
-
             Query tmpQuery = new Query(query);
-            // We take out ALL_VERSION from query just in case we get multiple results...
-            tmpQuery.remove(Constants.ALL_VERSIONS);
 
             QueryResult<Cohort> cohortQueryResult = get(tmpQuery, new QueryOptions());
             if (cohortQueryResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update cohort: No cohort found to be updated");
             }
             if (cohortQueryResult.getNumResults() > 1) {
-                throw new CatalogDBException("Update cohort: Cannot update " + QueryParams.ID.key() + " parameter. More than one cohort "
-                        + "found to be updated.");
+                throw CatalogDBException.cannotUpdateMultipleEntries(QueryParams.ID.key(), "cohort");
             }
 
             // Check that the new sample name is still unique
@@ -273,8 +347,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
             }
 
-            cohortParams.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
+            document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
+
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key()};
+        filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
+        filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         // Check if the samples exist.
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
@@ -289,92 +369,140 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 sampleList.add(sample);
 
             }
-            cohortParams.put(QueryParams.SAMPLES.key(), cohortConverter.convertSamplesToDocument(sampleList));
+            document.getSet().put(QueryParams.SAMPLES.key(), cohortConverter.convertSamplesToDocument(sampleList));
         }
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
-        filterMapParams(parameters, cohortParams, acceptedMapParams);
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         //Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap(QueryParams.STATUS_NAME.key(),
         //        Cohort.CohortStatus.class);
         //filterEnumParams(parameters, cohortParams, acceptedEnumParams);
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            cohortParams.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+            document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
-        if (parameters.containsKey("status")) {
-            throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_NAME.key()
-                    + "\" instead of \"status\"");
+        if (parameters.containsKey(QueryParams.STATUS_MSG.key())) {
+            document.getSet().put(QueryParams.STATUS_MSG.key(), parameters.get(QueryParams.STATUS_MSG.key()));
+            document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        }
+        if (parameters.containsKey(QueryParams.STATUS.key())) {
+            throw new CatalogDBException("Unable to modify cohort. Use parameter '" + QueryParams.STATUS_NAME.key()
+                    + "' instead of '" + QueryParams.STATUS.key() + "'");
         }
 
-//        ObjectMap annotationUpdateMap = prepareAnnotationUpdate(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList);
-
-        if (!cohortParams.isEmpty()) {
+        if (!document.toFinalUpdateDocument().isEmpty()) {
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            cohortParams.put(QueryParams.MODIFICATION_DATE.key(), time);
-            cohortParams.put(PRIVATE_MODIFICATION_DATE, date);
-
-            QueryResult<UpdateResult> update = cohortCollection.update(parseQuery(query), new Document("$set", cohortParams), null);
-            return endWrite("Update cohort", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        updateAnnotationSets(null, query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, false);
-
-        return endWrite("Update cohort", startTime, -1, -1, null);
+        return document;
     }
 
     @Override
     public WriteResult delete(long id) throws CatalogDBException {
-        throw new NotImplementedException("Delete not implemented");
-//        Query query = new Query(QueryParams.UID.key(), id);
-//        delete(query);
-
+        Query query = new Query(QueryParams.UID.key(), id);
+        return delete(query);
     }
 
     @Override
     public WriteResult delete(Query query) throws CatalogDBException {
-        throw new NotImplementedException("Delete not implemented");
-//        QueryResult<DeleteResult> remove = cohortCollection.remove(parseQuery(query), null);
-//
-//        if (remove.first().getDeletedCount() == 0) {
-//            throw CatalogDBException.deleteError("Cohort");
-//        }
-    }
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(), QueryParams.STATUS.key()));
+        DBIterator<Cohort> iterator = iterator(query, options);
 
-    @Override
-    public QueryResult<Cohort> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
 
-        checkId(id);
-        // Check if the cohort is active
-        Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
-            Cohort cohort = get(query, options).first();
-            throw new CatalogDBException("The cohort {" + id + "} was already " + cohort.getStatus().getName());
+        while (iterator.hasNext()) {
+            Cohort cohort = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    logger.info("Deleting cohort {} ({})", cohort.getId(), cohort.getUid());
+
+                    checkCohortCanBeDeleted(cohort);
+
+                    String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+                    Query tmpQuery = new Query()
+                            .append(QueryParams.UID.key(), cohort.getUid())
+                            .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid());
+                    // Mark the cohort as deleted
+                    ObjectMap updateParams = new ObjectMap()
+                            .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                            .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                            .append(QueryParams.ID.key(), cohort.getId() + deleteSuffix);
+
+                    Bson bsonQuery = parseQuery(tmpQuery);
+                    Document updateDocument = parseAndValidateUpdateParams(updateParams, tmpQuery).toFinalUpdateDocument();
+
+                    logger.debug("Delete cohort {} ({}): Query: {}, update: {}", cohort.getId(), cohort.getUid(),
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    UpdateResult cohortResult = cohortCollection.update(clientSession, bsonQuery, updateDocument,
+                            QueryOptions.empty()).first();
+
+                    if (cohortResult.getModifiedCount() == 0) {
+                        logger.error("Cohort {} could not be deleted", cohort.getId());
+                        throw new CatalogDBException("Cohort " + cohort.getId() + " could not be deleted");
+                    }
+
+                    logger.debug("Cohort {} successfully deleted", cohort.getId());
+                    return endWrite(cohort.getId(), tmpStartTime, 1, 1, null);
+
+                } catch (CatalogDBException e) {
+                    logger.error("Error deleting cohort {}({}). {}", cohort.getId(), cohort.getUid(), e.getMessage(), e);
+                    return endWrite(cohort.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Cohort {} successfully deleted", cohort.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not delete cohort {}: {}", cohort.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not delete cohort {}", cohort.getId());
+                }
+            }
         }
 
-        // Change the status of the cohort to deleted
-        setStatus(id, Status.DELETED);
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "delete", (numModified == 0
+                    ? "None of the cohorts could be deleted"
+                    : "Some of the cohorts could not be deleted"));
+        }
 
-        query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-
-        return endQuery("Delete cohort", startTime, get(query, null));
+        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
     }
 
-//    @Override
-//    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-//        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-//        QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
-//        for (Cohort cohort : cohortQueryResult.getResult()) {
-//            delete(cohort.getId(), queryOptions);
-//        }
-//        return endQuery("Delete cohort", startTime, Collections.singletonList(cohortQueryResult.getNumTotalResults()));
-//    }
+    private void checkCohortCanBeDeleted(Cohort cohort) throws CatalogDBException {
+        // Check if the cohort is different from DEFAULT_COHORT
+        if (StudyEntry.DEFAULT_COHORT.equals(cohort.getId())) {
+            throw new CatalogDBException("Cohort " + StudyEntry.DEFAULT_COHORT + " cannot be deleted.");
+        }
+
+        // Check if the cohort can be deleted
+        if (cohort.getStatus() != null && cohort.getStatus().getName() != null
+                && !cohort.getStatus().getName().equals(Cohort.CohortStatus.NONE)) {
+            throw new CatalogDBException("Cohort in use in storage.");
+        }
+    }
+
 
     QueryResult<Cohort> setStatus(long cohortId, String status) throws CatalogDBException {
         return update(cohortId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
