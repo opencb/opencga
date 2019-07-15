@@ -997,6 +997,7 @@ public final class VariantQueryUtils {
         if (samples != null) {
             samples = samples.stream()
                     .map(s -> s.contains(":") ? s.split(":")[1] : s)
+                    .distinct() // Remove possible duplicates
                     .collect(Collectors.toList());
         }
         return samples;
@@ -1132,6 +1133,14 @@ public final class VariantQueryUtils {
                 HashMap<Object, List<String>> genotypeMap = new HashMap<>();
                 samplesOperator = parseGenotypeFilter(query.getString(GENOTYPE.key()), genotypeMap);
                 samples = genotypeMap.keySet().stream().map(Object::toString).collect(Collectors.toList());
+            }
+
+            if (samples.isEmpty()) {
+                samples = getIncludeSamplesList(query);
+                samplesOperator = QueryOperation.OR;
+                if (samples == null) {
+                    samples = Collections.emptyList();
+                }
             }
 
             if (operator == null && samples.size() > 1) {

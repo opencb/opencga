@@ -174,6 +174,9 @@ public class SampleIndexQueryParser {
             }
 
             boolean covered = true;
+            if (isValidParam(query, FORMAT)) {
+                covered = false;
+            }
             for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
                 String sampleName = entry.getKey();
                 if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
@@ -225,7 +228,11 @@ public class SampleIndexQueryParser {
             queryOperation = VariantQueryUtils.checkOperator(samplesStr);
             List<String> samples = VariantQueryUtils.splitValue(samplesStr, queryOperation);
             samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, validGenotypes));
-            query.remove(SAMPLE.key());
+
+            if (!isValidParam(query, FORMAT)) {
+                // Do not remove FORMAT
+                query.remove(SAMPLE.key());
+            }
             //} else if (isValidParam(query, FILE)) {
             // TODO: Add FILEs filter
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
