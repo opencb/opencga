@@ -39,7 +39,7 @@ public class InternalGetQueryResult<T> extends QueryResult<T> {
     }
 
     public List<Missing> getMissing() {
-        return missing;
+        return missing != null ? missing : Collections.emptyList();
     }
 
     public InternalGetQueryResult<T> setMissing(List<Missing> missing) {
@@ -48,7 +48,7 @@ public class InternalGetQueryResult<T> extends QueryResult<T> {
     }
 
     public List<Integer> getGroups() {
-        return groups;
+        return groups != null ? groups : Collections.emptyList();
     }
 
     public InternalGetQueryResult<T> setGroups(List<Integer> groups) {

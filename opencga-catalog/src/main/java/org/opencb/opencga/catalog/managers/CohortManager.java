@@ -497,7 +497,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         parameters = new ObjectMap(parameters);
 
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
         Cohort cohort = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
 
         // Check permissions...
@@ -560,10 +560,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     .collect(Collectors.toList()));
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(study, cohort, parameters, options,
-                VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, user);
+        checkUpdateAnnotations(study, cohort, parameters, options, VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, user);
 
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.update(cohort.getUid(), parameters, variableSetList, options);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohort.getUid(), user, parameters, null, null);
 
         return queryResult;

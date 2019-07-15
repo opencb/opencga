@@ -309,11 +309,11 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
     }
 
-    public <T extends Annotable> List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(
-            Study study, T entry, ObjectMap parameters, QueryOptions options, VariableSet.AnnotableDataModels annotableEntity,
-            AnnotationSetDBAdaptor dbAdaptor, String user) throws CatalogException {
+    public  <T extends Annotable> void checkUpdateAnnotations(Study study, T entry, ObjectMap parameters, QueryOptions options,
+                                       VariableSet.AnnotableDataModels annotableEntity, AnnotationSetDBAdaptor dbAdaptor, String user)
+            throws CatalogException {
 
-        List<VariableSet> variableSetList = null;
+        List<VariableSet> variableSetList = study.getVariableSets();
         boolean confidentialPermissionsChecked = false;
 
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
@@ -333,18 +333,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                     if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
                         /* We need to validate that the new annotationSets are fine to be stored */
 
-                        // Obtain all the variable sets from the study
-                        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(study.getUid(),
-                                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-                        if (studyQueryResult.getNumResults() == 0) {
-                            throw new CatalogException("Internal error: Study " + study.getFqn()
-                                    + " not found. Update could not be performed.");
-                        }
-                        variableSetList = studyQueryResult.first().getVariableSets();
-                        if (variableSetList == null || variableSetList.isEmpty()) {
-                            throw new CatalogException("Cannot annotate anything until at least a VariableSet exists in "
-                                    + "the study");
-                        }
                         // Create a map variableSetId - VariableSet
                         Map<String, VariableSet> variableSetMap = new HashMap<>();
                         for (VariableSet variableSet : variableSetList) {
@@ -499,10 +487,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 if (studyQueryResult.getNumResults() == 0) {
                     throw new CatalogException("Internal error: Study " + study.getFqn() + " not found. Update could not be performed.");
                 }
-                variableSetList = studyQueryResult.first().getVariableSets();
-                if (variableSetList == null || variableSetList.isEmpty()) {
-                    throw new CatalogException("Cannot annotate anything until at least a VariableSet has been defined in the study");
-                }
                 // Create a map variableSetId - VariableSet
                 Map<String, VariableSet> variableSetMap = new HashMap<>();
                 for (VariableSet variableSet : variableSetList) {
@@ -530,8 +514,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 parameters.remove(ANNOTATIONS);
             }
         }
-
-        return variableSetList;
     }
 
     private void applyAnnotationChanges(AnnotationSet targetAnnotationSet, AnnotationSet sourceAnnotationSet, VariableSet variableSet,

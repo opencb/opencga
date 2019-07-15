@@ -1573,7 +1573,7 @@ public class FileManager extends AnnotationSetManager<File> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         File file = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
 
@@ -1623,11 +1623,10 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(study, file, parameters, options,
-                VariableSet.AnnotableDataModels.FILE, fileDBAdaptor, userId);
+        checkUpdateAnnotations(study, file, parameters, options, VariableSet.AnnotableDataModels.FILE, fileDBAdaptor, userId);
 
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
-        fileDBAdaptor.update(file.getUid(), parameters, variableSetList, options);
+        fileDBAdaptor.update(file.getUid(), parameters, study.getVariableSets(), options);
         QueryResult<File> queryResult = fileDBAdaptor.get(file.getUid(), options);
         auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, parameters, null, null);
         userDBAdaptor.updateUserLastModified(ownerId);

@@ -16,9 +16,11 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.*;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.Query;
@@ -29,6 +31,7 @@ import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -459,6 +462,70 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
         collection.update(query, update, new QueryOptions("multi", true));
+    }
+
+    protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, Document document)
+            throws CatalogDBException {
+        Document updateOldVersion = new Document();
+
+        // Current release number
+        int release;
+        List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
+        if (supportedReleases.size() > 1) {
+            release = supportedReleases.get(supportedReleases.size() - 1);
+
+            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+            // current release number out
+            supportedReleases.remove(supportedReleases.size() - 1);
+        } else {
+            release = supportedReleases.get(0);
+
+            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+            // last version of the release
+            updateOldVersion.put(LAST_OF_RELEASE, false);
+        }
+        updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
+        updateOldVersion.put(LAST_OF_VERSION, false);
+
+        // Perform the update on the previous version
+        Document queryDocument = new Document()
+                .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
+                .append(VERSION, document.getInteger(VERSION))
+                .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
+
+        logger.debug("Updating previous version: query : {}, update: {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> updateResult = dbCollection.update(clientSession, queryDocument,
+                new Document("$set", updateOldVersion), null);
+
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Internal error: Could not update previous version");
+        }
+
+        // We update the information for the new version of the document
+        document.put(LAST_OF_RELEASE, true);
+        document.put(LAST_OF_VERSION, true);
+        document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+        document.put(VERSION, document.getInteger(VERSION) + 1);
+
+        logger.debug("Inserting new document version: document: {}",
+                document.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        // Insert the new version document
+        dbCollection.insert(clientSession, document, QueryOptions.empty());
+    }
+
+    protected Document getStudyDocument(ClientSession clientSession, Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(PRIVATE_STUDY_ID));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+                QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(PRIVATE_STUDY_ID) + " not found");
+        }
+        return queryResult.first();
     }
 
     public class UpdateDocument {

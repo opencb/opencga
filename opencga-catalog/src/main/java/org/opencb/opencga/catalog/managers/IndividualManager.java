@@ -75,7 +75,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     public static final QueryOptions INCLUDE_INDIVIDUAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
-            IndividualDBAdaptor.QueryParams.VERSION.key()));
+            IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
+            IndividualDBAdaptor.QueryParams.MOTHER.key()));
 
     private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 
@@ -194,7 +195,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return create(String.valueOf(studyId), individual, options, sessionId);
     }
 
-    void validateNewIndividual(Study study, Individual individual, String userId) throws CatalogException {
+    void validateNewIndividual(Study study, Individual individual, String userId, boolean linkParents) throws CatalogException {
         ParamUtils.checkAlias(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
@@ -206,6 +207,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setAffectationStatus(ParamUtils.defaultObject(individual.getAffectationStatus(),
                 IndividualProperty.AffectationStatus.UNKNOWN));
         individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
+        individual.setDisorders(ParamUtils.defaultObject(individual.getDisorders(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), Collections.emptyList()));
@@ -218,16 +220,17 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         validateNewAnnotationSets(study.getVariableSets(), individual.getAnnotationSets());
         validateSamples(study, individual, userId);
 
-        if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
-            QueryResult<Individual> fatherResult = internalGet(study.getUid(), individual.getFather().getId(), INCLUDE_INDIVIDUAL_IDS,
-                    userId);
-            individual.setFather(fatherResult.first());
-        }
-
-        if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
-            QueryResult<Individual> motherResult = internalGet(study.getUid(), individual.getMother().getId(), INCLUDE_INDIVIDUAL_IDS,
-                    userId);
-            individual.setMother(motherResult.first());
+        if (linkParents) {
+            if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
+                QueryResult<Individual> fatherResult = internalGet(study.getUid(), individual.getFather().getId(), INCLUDE_INDIVIDUAL_IDS,
+                        userId);
+                individual.setFather(fatherResult.first());
+            }
+            if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
+                QueryResult<Individual> motherResult = internalGet(study.getUid(), individual.getMother().getId(), INCLUDE_INDIVIDUAL_IDS,
+                        userId);
+                individual.setMother(motherResult.first());
+            }
         }
     }
 
@@ -290,7 +293,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-        validateNewIndividual(study, individual, userId);
+        validateNewIndividual(study, individual, userId, true);
 
         // Create the individual
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
@@ -600,7 +603,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
         Individual individual = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
         long studyUid = study.getUid();
         long individualId = individual.getUid();
@@ -752,15 +755,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw new CatalogException("Could not update: " + e.getMessage(), e);
         }
 
-        List<VariableSet> variableSetList = checkUpdateAnnotationsAndExtractVariableSets(study, individual, parameters, options,
-                VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor, userId);
+        checkUpdateAnnotations(study, individual, parameters, options, VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor,
+                userId);
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
         }
 
-        QueryResult<Individual> queryResult = individualDBAdaptor.update(individual.getUid(), parameters, variableSetList, options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individual.getUid(), userId, parameters, null, null);
 
         return queryResult;

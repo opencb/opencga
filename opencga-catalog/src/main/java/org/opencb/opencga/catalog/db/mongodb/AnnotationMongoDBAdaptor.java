@@ -297,7 +297,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             // Create or remove a new annotation set
             if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
                 // 1. Check the annotation set ids are not in use
-                validateNewAnnotations(entryId, annotationSetList, variableSetList, isVersioned);
+                validateNewAnnotations(clientSession, entryId, annotationSetList, variableSetList, isVersioned);
 
                 // 2. Obtain the list of documents that need to be inserted
                 List<Document> annotationDocumentList = getNewAnnotationList(annotationSetList, variableSetList);
@@ -482,8 +482,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         }
     }
 
-    private void validateNewAnnotations(long entryId, List<AnnotationSet> annotationSetList, List<VariableSet> variableSetList,
-                                        boolean isVersioned) throws CatalogDBException {
+    private void validateNewAnnotations(ClientSession clientSession, long entryId, List<AnnotationSet> annotationSetList,
+                                        List<VariableSet> variableSetList, boolean isVersioned) throws CatalogDBException {
         // 1. Check for duplicates in the list of annotation sets
         Set<String> annotationSetIds = new HashSet<>();
         for (AnnotationSet annotationSet : annotationSetList) {
@@ -507,7 +507,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 query.put(LAST_OF_VERSION, true);
             }
 
-            QueryResult<Long> count = getCollection().count(query);
+            QueryResult<Long> count = getCollection().count(clientSession, query);
             if (count.first() > 0) {
                 throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
             }
@@ -522,7 +522,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 }
 
                 // Check if the variableSet has been already annotated with a different annotation set
-                count = getCollection().count(query);
+                count = getCollection().count(clientSession, query);
                 if (count.first() > 0) {
                     throw new CatalogDBException("Repeated annotation for a unique VariableSet");
                 }
