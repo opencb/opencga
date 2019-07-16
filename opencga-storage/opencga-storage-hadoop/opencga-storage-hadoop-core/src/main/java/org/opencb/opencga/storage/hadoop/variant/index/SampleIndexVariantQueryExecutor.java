@@ -35,6 +35,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
 
     public static final String SAMPLE_INDEX_INTERSECT = "sample_index_intersect";
     public static final String SAMPLE_INDEX_TABLE_SOURCE = "sample_index_table";
+    public static final int DEFAULT_SAMPLING_SIZE = 200;
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final VariantHadoopDBAdaptor dbAdaptor;
     private Logger logger = LoggerFactory.getLogger(SampleIndexVariantQueryExecutor.class);
@@ -109,20 +110,29 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
         }
     }
 
-    private Object getOrIteratorIntersect(SampleIndexQuery sampleIndexQuery, Query query, QueryOptions options, boolean iterator) {
-        QueryOptions limiteLessOptions = new QueryOptions(options)
+    private Object getOrIteratorIntersect(SampleIndexQuery sampleIndexQuery, Query query, QueryOptions inputOptions, boolean iterator) {
+        QueryOptions limitLessOptions = new QueryOptions(inputOptions)
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.SKIP, -1);
         VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(
-                sampleIndexDBAdaptor.iterator(sampleIndexQuery, limiteLessOptions));
+                sampleIndexDBAdaptor.iterator(sampleIndexQuery, limitLessOptions));
 
-        int batchSize = options.getInt("multiIteratorBatchSize", 200);
+        int batchSize = inputOptions.getInt("multiIteratorBatchSize", 200);
         if (iterator) {
             // SampleIndex iterator will be closed when closing the variants iterator
-            return dbAdaptor.iterator(variants, query, options, batchSize);
+            return dbAdaptor.iterator(variants, query, inputOptions, batchSize);
         } else {
             // Ensure results are sorted
+            QueryOptions options = new QueryOptions(inputOptions);
             options.put(QueryOptions.SORT, true);
+
+            int skip = getSkip(options);
+            int limit = getLimit(options);
+            int samplingSize = getSamplingSize(options, DEFAULT_SAMPLING_SIZE, iterator);
+
+            int tmpLimit = Math.max(limit, samplingSize);
+            options.put(QueryOptions.LIMIT, tmpLimit);
+
             MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(
                     new org.opencb.opencga.storage.core.variant.adaptors.iterators.DelegatedVariantDBIterator(variants) {
                         @Override
@@ -132,7 +142,22 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
                     }, query, options, batchSize);
             VariantQueryResult<Variant> result =
                     addSamplesMetadataIfRequested(variantDBIterator.toQueryResult(), query, options, getMetadataManager());
-            setNumTotalResults(variantDBIterator, variants, result, sampleIndexQuery, query, options);
+
+            if (result.getNumResults() < tmpLimit) {
+                // Not an approximate count!
+                result.setApproximateCount(false);
+                result.setNumTotalResults(result.getNumResults() + skip);
+            } else {
+                // Approximate count
+                setNumTotalResults(variantDBIterator, variants, result, sampleIndexQuery, query, options);
+            }
+
+            // Ensure limit
+            if (result.getNumResults() > limit) {
+                result.setResult(result.getResult().subList(0, limit));
+                result.setNumResults(limit);
+            }
+
             result.setSource(getStorageEngineId() + " + " + SAMPLE_INDEX_TABLE_SOURCE);
 
             try {
