@@ -588,7 +588,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public void addStudyMetadata(StudyMetadata studyMetadata) {
         this.studyMetadatas.put(studyMetadata.getId(), studyMetadata);
-        this.__studySamplesId.put(studyMetadata.getId(), null);
+        this.__studySamplesId.remove(studyMetadata.getId());
 
         Set defGenotypeSet = studyMetadata.getAttributes().get(DEFAULT_GENOTYPE.key(), Set.class);
         if (defGenotypeSet == null) {

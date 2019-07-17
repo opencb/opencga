@@ -79,7 +79,8 @@ public class CellBaseUtils {
         }
         try {
             long ts = System.currentTimeMillis();
-            QueryResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, GENE_QUERY_OPTIONS);
+            QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
+            QueryResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, options);
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
