@@ -127,6 +127,7 @@ public class SampleIndexQueryParser {
         List<String> validGenotypes = allGenotypes.stream().filter(SampleIndexDBLoader::validGenotype).collect(Collectors.toList());
 
         Set<String> mendelianErrorSet = Collections.emptySet();
+        boolean onlyDeNovo = false;
         Map<String, boolean[]> fatherFilterMap = new HashMap<>();
         Map<String, boolean[]> motherFilterMap = new HashMap<>();
 
@@ -236,6 +237,7 @@ public class SampleIndexQueryParser {
             //} else if (isValidParam(query, FILE)) {
             // TODO: Add FILEs filter
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+            onlyDeNovo = false;
             Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_MENDELIAN_ERROR.key()));
             mendelianErrorSet = new HashSet<>(mendelianError.getValue());
             queryOperation = mendelianError.getKey();
@@ -245,12 +247,13 @@ public class SampleIndexQueryParser {
             }
             query.remove(SAMPLE_MENDELIAN_ERROR.key());
         } else if (isValidParam(query, SAMPLE_DE_NOVO)) {
+            onlyDeNovo = true;
             Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_DE_NOVO.key()));
             mendelianErrorSet = new HashSet<>(mendelianError.getValue());
             queryOperation = mendelianError.getKey();
             for (String s : mendelianErrorSet) {
-                // Return any valid genotype
-                samplesMap.put(s, validGenotypes);
+                // Return any genotype
+                samplesMap.put(s, Collections.emptyList());
             }
             query.remove(SAMPLE_DE_NOVO.key());
         } else {
@@ -300,7 +303,7 @@ public class SampleIndexQueryParser {
         }
 
         return new SampleIndexQuery(regions, variantTypes, study, samplesMap, fatherFilterMap, motherFilterMap, fileIndexMap,
-                annotationMask, mendelianErrorSet, queryOperation);
+                annotationMask, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {

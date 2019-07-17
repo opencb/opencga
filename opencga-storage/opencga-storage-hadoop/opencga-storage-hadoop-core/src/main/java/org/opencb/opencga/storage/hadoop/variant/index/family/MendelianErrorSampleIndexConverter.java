@@ -45,6 +45,7 @@ public class MendelianErrorSampleIndexConverter {
         private final int size;
         private Variant next;
         private int nextIndex;
+        private int nextCode;
         private String nextGt;
 
         public MendelianErrorSampleIndexVariantIterator(byte[] value, int offset, int length) {
@@ -66,6 +67,13 @@ public class MendelianErrorSampleIndexConverter {
                 fetchNext();
             }
             return nextGt;
+        }
+
+        public int nextCode() {
+            if (next == null) {
+                fetchNext();
+            }
+            return nextCode;
         }
 
         @Override
@@ -108,6 +116,9 @@ public class MendelianErrorSampleIndexConverter {
                 nextIndex = i == StringUtils.INDEX_NOT_FOUND
                         ? Integer.valueOf(idxCode)
                         : Integer.valueOf(idxCode.substring(0, i));
+                nextCode = i == StringUtils.INDEX_NOT_FOUND
+                        ? 0
+                        : Integer.valueOf(idxCode.substring(i + 1));
                 next = new Variant(variantStr);
             } else {
                 next = null;
