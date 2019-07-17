@@ -322,6 +322,22 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     }
     /* end uid and uuid migration: #819 */
 
+    // Check related files
+    if (isNotEmptyArray(doc.relatedFiles)) {
+        var relatedFiles = [];
+
+        for (var i = 0; i < doc.relatedFiles.length; i++) {
+            relatedFiles.push({
+                "relation": doc.relatedFiles[i].relation,
+                "file": {
+                    "id": doc.relatedFiles[i].fileId,
+                }
+            });
+        }
+
+        setChanges["relatedFiles"] = relatedFiles;
+    }
+
     haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
 
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
