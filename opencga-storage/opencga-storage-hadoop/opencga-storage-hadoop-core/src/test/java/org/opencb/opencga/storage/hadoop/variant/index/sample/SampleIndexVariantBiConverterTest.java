@@ -7,14 +7,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created on 11/04/19.
@@ -31,44 +29,75 @@ public class SampleIndexVariantBiConverterTest {
     }
 
     @Test
-    public void testConvertSNV() {
-        testConvertVariant("A", "C");
+    public void testConvertSNV() throws Exception {
+        testConvertVariant("A", "C", false, 3);
     }
 
     @Test
-    public void testConvertINDEL() {
-        testConvertVariant("A", "");
-        testConvertVariant("", "C");
+    public void testConvertSNVBackwardCompatibility() {
+        byte[] bytes = {
+                0x05, 0x46, 0x4E, 'A', 0x00, 'C',
+                0x00,
+                0x05, 0x46, 0x4E, 'A', 0x00, 'C',};
+
+        List<Variant> variants = converter.toVariants("1", 12000000, bytes, 0, bytes.length);
+        assertEquals(new Variant("1:12345678:A:C"), variants.get(0));
+        assertEquals(new Variant("1:12345678:A:C"), variants.get(0));
     }
 
     @Test
-    public void testConvertMNV() {
-        testConvertVariant("A", "CT");
+    public void testConvertINDEL() throws Exception {
+        testConvertVariant("A", "", true, 5);
+        testConvertVariant("", "C", true, 5);
     }
 
     @Test
-    public void testConvertSYMBOLIC() {
-        testConvertVariant("1:12345678<12345678<12345678-12345800<12345800<12345800:-:<DEL>");
+    public void testConvertMNV() throws Exception {
+        testConvertVariant("A", "CT", true, 7);
     }
 
-    protected void testConvertVariant(final String ref, final String alt) {
-        testConvertVariant("1:12345678:" + ref + ":" + alt);
+    @Test
+    public void testConvertSYMBOLIC() throws Exception {
+        testConvertVariant("1:12345678<12345678<12345678-12345800<12345800<12345800:-:<DEL>", true, null);
     }
 
-    protected void testConvertVariant(String variantString) {
-        Variant variant = new Variant(variantString);
-        int batchStart = variant.getStart() - variant.getStart() % SampleIndexSchema.BATCH_SIZE;
+    protected void testConvertVariant(final String ref, final String alt, boolean withSeparator, Integer expectedLength) throws Exception {
+        testConvertVariant("1:12345678:" + ref + ":" + alt, withSeparator, expectedLength);
+    }
 
+    protected void testConvertVariant(String variantString, boolean withSeparator, final Integer expectedLength) throws Exception {
+        final Variant variant = new Variant(variantString);
+        final int batchStart = variant.getStart() - variant.getStart() % SampleIndexSchema.BATCH_SIZE;
+        final String chromosome = "1";
+
+        // Test single variant convert
         byte[] bytes = converter.toBytes(variant);
-//        System.out.println("bytes = " + bytesToString(bytes));
-        assertEquals(variant, converter.toVariant("1", batchStart, bytes));
+        assertEquals(variant, converter.toVariant(chromosome, batchStart, bytes));
 
+        final int actualLength = bytes.length;
+        if (expectedLength != null) {
+            assertEquals(expectedLength.intValue(), actualLength);
+        }
 
-        int offset = 7;
+        // Test convert in byte array
+        final int offset = 7;
         bytes = new byte[200];
-        converter.toBytes(variant, bytes, offset);
-//        System.out.println("bytes = " + bytesToString(bytes));
-        assertEquals(variant, converter.toVariant("1", batchStart, bytes, offset));
+        converter.toBytes(Arrays.asList(variant, variant), bytes, offset);
+        List<Variant> variants = converter.toVariants(chromosome, batchStart, bytes, offset, actualLength * 2 + (withSeparator ? 1 : 0));
+        assertEquals(variant, variants.get(0));
+        assertEquals(variant, variants.get(1));
+
+        // Test convert in byte stream
+        ByteArrayOutputStream os = new ByteArrayOutputStream(200);
+        os.write(new byte[offset]); // add offset
+        converter.toBytes(variant, os);
+        converter.toBytes(variant, os);
+        bytes = os.toByteArray();
+        assertEquals(bytes.length, offset + (actualLength + (withSeparator ? 1 : 0)) * 2);
+        variants = converter.toVariants(chromosome, batchStart, bytes, offset, os.size() - offset);
+        assertEquals(variant, variants.get(0));
+        assertEquals(variant, variants.get(1));
+
     }
 
     protected String bytesToString(byte[] bytes) {
