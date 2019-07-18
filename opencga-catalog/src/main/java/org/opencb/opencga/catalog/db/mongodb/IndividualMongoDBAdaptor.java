@@ -44,6 +44,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -180,7 +181,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
     }
 
-    public Individual insert(ClientSession clientSession, long studyId, Individual individual, List<VariableSet> variableSetList)
+    Individual insert(ClientSession clientSession, long studyId, Individual individual, List<VariableSet> variableSetList)
             throws CatalogDBException {
         // First we check if we need to create any samples and update current list of samples with the ones created
         if (individual.getSamples() != null && !individual.getSamples().isEmpty()) {
@@ -686,7 +687,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             numMatches += 1;
 
             ClientSession clientSession = getClientSession();
-            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+            TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
                     logger.info("Deleting individual {} ({})", individual.getId(), individual.getUid());
@@ -1272,6 +1273,29 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         } else {
             return new Document();
         }
+    }
+
+    void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {
+        Document bsonQuery = new Document()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.SAMPLE_UIDS.key(), sampleUid);
+
+        ObjectMap params = new ObjectMap()
+                .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
+        // Add the the Remove action for the sample provided
+        QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
+                new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name()));
+
+        Bson update = parseAndValidateUpdateParams(params, null, queryOptions).toFinalUpdateDocument();
+
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+
+        logger.debug("Sample references extraction. Query: {}, update: {}",
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        UpdateResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi).first();
+        logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getModifiedCount() + " out of "
+                + updateResult.getMatchedCount() + " individuals");
     }
 
     public MongoDBCollection getIndividualCollection() {

@@ -53,13 +53,13 @@ public class MongoDBAdaptorTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    UserDBAdaptor catalogUserDBAdaptor;
-    ProjectDBAdaptor catalogProjectDBAdaptor;
-    FileDBAdaptor catalogFileDBAdaptor;
-    JobDBAdaptor catalogJobDBAdaptor;
-    StudyDBAdaptor catalogStudyDBAdaptor;
-    IndividualDBAdaptor catalogIndividualDBAdaptor;
-    PanelDBAdaptor catalogPanelDBAdaptor;
+    UserMongoDBAdaptor catalogUserDBAdaptor;
+    ProjectMongoDBAdaptor catalogProjectDBAdaptor;
+    FileMongoDBAdaptor catalogFileDBAdaptor;
+    JobMongoDBAdaptor catalogJobDBAdaptor;
+    StudyMongoDBAdaptor catalogStudyDBAdaptor;
+    IndividualMongoDBAdaptor catalogIndividualDBAdaptor;
+    PanelMongoDBAdaptor catalogPanelDBAdaptor;
 
     private Configuration configuration;
 

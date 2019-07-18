@@ -536,7 +536,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
                             + "\"");
                 case Cohort.CohortStatus.READY:
-                    parameters.putIfAbsent("status.name", Cohort.CohortStatus.INVALID);
+                    parameters.putIfAbsent(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.INVALID);
                     break;
                 case Cohort.CohortStatus.NONE:
                 case Cohort.CohortStatus.INVALID:
@@ -546,18 +546,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
 
             List<String> sampleStringList = parameters.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key());
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
             InternalGetQueryResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(), sampleStringList,
-                    queryOptions, user, false);
+                    SampleManager.INCLUDE_SAMPLE_IDS, user, false);
 
             if (sampleResult.getNumResults() != sampleStringList.size()) {
                 throw new CatalogException("Could not find all the samples introduced. Update was not performed.");
             }
 
-            // Override sample list of ids with sample uids
-            parameters.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleResult.getResult().stream()
-                    .map(Sample::getUid)
-                    .collect(Collectors.toList()));
+            // Override sample list of ids with sample list
+            parameters.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleResult.getResult());
+            // TODO: Until we support "action" in the cohort WS, the action behaviour will always be SET
+            options.put(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name()));
         }
 
         checkUpdateAnnotations(study, cohort, parameters, options, VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, user);

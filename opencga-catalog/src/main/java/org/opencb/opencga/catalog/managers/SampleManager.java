@@ -48,8 +48,6 @@ import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
@@ -200,74 +198,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         validateNewSample(study, sample, userId);
 
-        // We will store the individual information if the individual already exists
-        Individual individual = null;
-
-        // if 0, it means there is no individual passed with the sample.
-        // if 1, it means there is an individual that already exists, and we will need to update the sample array.
-        // if 2, it means the individual does not exist and we will have to create it from scratch containing the current sample.
-        int individualInfo = 0;
-
-        if (sample.getIndividual() != null && StringUtils.isNotEmpty(sample.getIndividual().getId())) {
-            try {
-                QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(studyStr,
-                        sample.getIndividual().getId(),
-                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                                IndividualDBAdaptor.QueryParams.UID.key(),
-                                IndividualDBAdaptor.QueryParams.SAMPLES.key())),
-                        token);
-
-                // Check if the user can update the individual
-                authorizationManager.checkIndividualPermission(study.getUid(), individualQueryResult.first().getUid(), userId,
-                        IndividualAclEntry.IndividualPermissions.UPDATE);
-
-                individual = individualQueryResult.first();
-                individualInfo = 1;
-
-            } catch (CatalogException e) {
-                if (e instanceof CatalogAuthorizationException) {
-                    throw e;
-                }
-
-                // The individual does not exist so we check if the user will be able to create it
-                authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-                individualInfo = 2;
-            }
-        }
-
-        // 2. We create the sample
+        // We create the sample
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
-
-        // 3. We update or create an individual if any..
-        // We check if we have to update or create a new individual containing the sample
-        if (individualInfo > 0) {
-            if (individualInfo == 1) { // Update individual info
-                List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() + 1);
-                sampleList.addAll(individual.getSamples());
-                sampleList.add(queryResult.first());
-
-                ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
-                try {
-                    individualDBAdaptor.update(individual.getUid(), params, QueryOptions.empty());
-                } catch (CatalogDBException e) {
-                    logger.error("Internal error. The sample was created but the sample could not be associated to the individual. {}",
-                            e.getMessage(), e);
-                    queryResult.setErrorMsg("Internal error. The sample was created but the sample could not be associated to the "
-                            + "individual. " + e.getMessage());
-                }
-            } else { // = 2 - Create new individual
-                sample.getIndividual().setSamples(Collections.singletonList(queryResult.first()));
-                try {
-                    catalogManager.getIndividualManager().create(studyStr, sample.getIndividual(), QueryOptions.empty(),
-                            token);
-                } catch (CatalogException e) {
-                    logger.error("Internal error. The sample was created but the individual could not be created. {}", e.getMessage(), e);
-                    queryResult.setErrorMsg("Internal error. The sample was created but the individual could not be created. "
-                            + e.getMessage());
-                }
-            }
-        }
 
         return queryResult;
     }
@@ -396,17 +329,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // We try to get an iterator containing all the samples to be deleted
         DBIterator<Sample> iterator;
         try {
-            if (StringUtils.isNotEmpty(params.getString(Constants.EMPTY_FILES_ACTION))) {
-                // Validate the action
-                String filesAction = params.getString(Constants.EMPTY_FILES_ACTION);
-                params.put(Constants.EMPTY_FILES_ACTION, filesAction.toUpperCase());
-                if (!"NONE".equals(filesAction) && !"TRASH".equals(filesAction) && !"DELETE".equals(filesAction)) {
-                    throw new CatalogException("Unrecognised " + Constants.EMPTY_FILES_ACTION + " value. Accepted actions are NONE, TRASH,"
-                            + " DELETE");
-                }
-            } else {
-                params.put(Constants.EMPTY_FILES_ACTION, "NONE");
-            }
+            // TODO: Propagation of delete to orphan files and cohorts need to be implemented in the dbAdaptor layer
+//            if (StringUtils.isNotEmpty(params.getString(Constants.EMPTY_FILES_ACTION))) {
+//                // Validate the action
+//                String filesAction = params.getString(Constants.EMPTY_FILES_ACTION);
+//                params.put(Constants.EMPTY_FILES_ACTION, filesAction.toUpperCase());
+//                if (!"NONE".equals(filesAction) && !"TRASH".equals(filesAction) && !"DELETE".equals(filesAction)) {
+//                    throw new CatalogException("Unrecognised " + Constants.EMPTY_FILES_ACTION + " value. Accepted actions are NONE,TRASH,"
+//                            + " DELETE");
+//                }
+//            } else {
+//                params.put(Constants.EMPTY_FILES_ACTION, "NONE");
+//            }
 
             userId = catalogManager.getUserManager().getUserId(sessionId);
             study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
@@ -415,7 +349,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = sampleDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = sampleDBAdaptor.iterator(finalQuery, INCLUDE_SAMPLE_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -426,16 +360,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             return writeResult;
         }
 
-        long numMatches = 0;
-        long numModified = 0;
-        List<WriteResult.Fail> failedList = new ArrayList<>();
-
-        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-        List<Error> warningList = new ArrayList<>();
-
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
-            numMatches += 1;
 
             try {
                 if (checkPermissions) {
@@ -446,134 +372,124 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Check if the sample can be deleted
                 checkSampleCanBeDeleted(study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
 
-                // Update the files
-                Query auxQuery = new Query()
-                        .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
-                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                DBIterator<File> fileIterator = fileDBAdaptor.iterator(auxQuery, QueryOptions.empty());
-                while (fileIterator.hasNext()) {
-                    File file = fileIterator.next();
+//                // Update the files
+//                Query auxQuery = new Query()
+//                        .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
+//                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+//                DBIterator<File> fileIterator = fileDBAdaptor.iterator(auxQuery, QueryOptions.empty());
+//                while (fileIterator.hasNext()) {
+//                    File file = fileIterator.next();
+//
+//                    // Remove the sample from the file
+//                    List<Sample> remainingSampleList = new ArrayList<>();
+//                    for (Sample sampleInFile : file.getSamples()) {
+//                        if (sampleInFile.getUid() != sample.getUid()) {
+//                            remainingSampleList.add(sampleInFile);
+//                        }
+//                    }
+//
+//                    ObjectMap fileUpdateParams = new ObjectMap()
+//                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
+//                    catalogManager.getFileManager().unsafeUpdate(study, file, fileUpdateParams, QueryOptions.empty(), userId);
+//
+//                    // If the file has been left orphan, are we intended to delete it as well?
+//                    if (remainingSampleList.isEmpty() && !"NONE".equals(params.getString(Constants.EMPTY_FILES_ACTION))) {
+//                        Query fileQuery = new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
+//                        ObjectMap fileParams = new ObjectMap();
+//                        if ("DELETE".equals(params.getString(Constants.EMPTY_FILES_ACTION))) {
+//                            fileParams.put(FileManager.SKIP_TRASH, true);
+//                        }
+//
+//                        WriteResult delete = catalogManager.getFileManager().delete(studyStr, fileQuery, fileParams, sessionId);
+//                        if (delete.getWarning() != null || delete.getError() != null) {
+//                            logger.warn("File {} could not be deleted after extracting the sample {}. WriteResult: {}",
+//                                    file.getId(), sample.getId(), delete);
+//                            warningList.add(new Error(-1, "", "File " + file.getId() + " could not be deleted after extracting the "
+//                                    + "sample."));
+//                        }
+//                    }
+//                }
+//
+//                // Update the cohorts
+//                auxQuery = new Query()
+//                        .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
+//                        .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+//                DBIterator<Cohort> cohortIterator = cohortDBAdaptor.iterator(auxQuery, QueryOptions.empty());
+//                while (cohortIterator.hasNext()) {
+//                    Cohort cohort = cohortIterator.next();
+//
+//                    // Remove the sample from the cohort
+//                    List<Sample> remainingSampleList = new ArrayList<>();
+//                    for (Sample sampleInCohort : cohort.getSamples()) {
+//                        if (sampleInCohort.getUid() != sample.getUid()) {
+//                            remainingSampleList.add(sampleInCohort);
+//                        }
+//                    }
+//
+//                    ObjectMap cohortUpdateParams = new ObjectMap()
+//                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
+//                    catalogManager.getCohortManager().unsafeUpdate(study, cohort, cohortUpdateParams, false, QueryOptions.empty(),
+//                            userId);
+//
+//                    // If the cohort has been left orphan, are we intended to delete it as well?
+//                    if (remainingSampleList.isEmpty() && params.getBoolean(Constants.DELETE_EMPTY_COHORTS)) {
+//                        Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid());
+//                        WriteResult delete = catalogManager.getCohortManager().delete(studyStr, cohortQuery, new ObjectMap(), sessionId);
+//                        if (delete.getWarning() != null || delete.getError() != null) {
+//                            logger.warn("Cohort {} could not be deleted after extracting the sample {}. WriteResult: {}",
+//                                    cohort.getId(), sample.getId(), delete);
+//                            warningList.add(new Error(-1, "", "Cohort " + cohort.getId() + "could not be deleted after extracting the "
+//                                    + "sample."));
+//                        }
+//                    }
+//                }
+//
+//                // Update the individual
+//                auxQuery = new Query()
+//                        .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
+//                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+//                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(auxQuery, QueryOptions.empty());
+//                if (individualQueryResult.getNumResults() > 0) {
+//                    if (individualQueryResult.getNumResults() > 1) {
+//                        logger.error("Critical error: More than one individual detected pointing to sample {}. The list of individual ids"
+//                                        + "are: {}", sample.getId(),
+//                                individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList()));
+//                    }
+//                    for (Individual individual : individualQueryResult.getResult()) {
+//                        // Remove the sample from the individual
+//                        List<Sample> remainingSampleList = new ArrayList<>();
+//                        for (Sample sampleInIndividual : individual.getSamples()) {
+//                            if (sampleInIndividual.getUid() != sample.getUid()) {
+//                                remainingSampleList.add(sampleInIndividual);
+//                            }
+//                        }
+//
+//                        ObjectMap individualUpdateParams = new ObjectMap()
+//                                .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
+//                        catalogManager.getIndividualManager().unsafeUpdate(study, individual, individualUpdateParams,
+//                                QueryOptions.empty(), userId);
+//                    }
+//                }
 
-                    // Remove the sample from the file
-                    List<Sample> remainingSampleList = new ArrayList<>();
-                    for (Sample sampleInFile : file.getSamples()) {
-                        if (sampleInFile.getUid() != sample.getUid()) {
-                            remainingSampleList.add(sampleInFile);
-                        }
-                    }
+//                // Delete the sample
+//                Query updateQuery = new Query()
+//                        .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid())
+//                        .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+//                ObjectMap updateParams = new ObjectMap()
+//                        .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
+//                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId() + suffixName);
+//                WriteResult update = sampleDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
 
-                    ObjectMap fileUpdateParams = new ObjectMap()
-                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
-                    catalogManager.getFileManager().unsafeUpdate(study, file, fileUpdateParams, QueryOptions.empty(), userId);
-
-                    // If the file has been left orphan, are we intended to delete it as well?
-                    if (remainingSampleList.isEmpty() && !"NONE".equals(params.getString(Constants.EMPTY_FILES_ACTION))) {
-                        Query fileQuery = new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
-                        ObjectMap fileParams = new ObjectMap();
-                        if ("DELETE".equals(params.getString(Constants.EMPTY_FILES_ACTION))) {
-                            fileParams.put(FileManager.SKIP_TRASH, true);
-                        }
-
-                        WriteResult delete = catalogManager.getFileManager().delete(studyStr, fileQuery, fileParams, sessionId);
-                        if (delete.getWarning() != null || delete.getError() != null) {
-                            logger.warn("File {} could not be deleted after extracting the sample {}. WriteResult: {}",
-                                    file.getId(), sample.getId(), delete);
-                            warningList.add(new Error(-1, "", "File " + file.getId() + " could not be deleted after extracting the "
-                                    + "sample."));
-                        }
-                    }
-                }
-
-                // Update the cohorts
-                auxQuery = new Query()
-                        .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
-                        .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                DBIterator<Cohort> cohortIterator = cohortDBAdaptor.iterator(auxQuery, QueryOptions.empty());
-                while (cohortIterator.hasNext()) {
-                    Cohort cohort = cohortIterator.next();
-
-                    // Remove the sample from the cohort
-                    List<Sample> remainingSampleList = new ArrayList<>();
-                    for (Sample sampleInCohort : cohort.getSamples()) {
-                        if (sampleInCohort.getUid() != sample.getUid()) {
-                            remainingSampleList.add(sampleInCohort);
-                        }
-                    }
-
-                    ObjectMap cohortUpdateParams = new ObjectMap()
-                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
-                    catalogManager.getCohortManager().unsafeUpdate(study, cohort, cohortUpdateParams, false, QueryOptions.empty(),
-                            userId);
-
-                    // If the cohort has been left orphan, are we intended to delete it as well?
-                    if (remainingSampleList.isEmpty() && params.getBoolean(Constants.DELETE_EMPTY_COHORTS)) {
-                        Query cohortQuery = new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid());
-                        WriteResult delete = catalogManager.getCohortManager().delete(studyStr, cohortQuery, new ObjectMap(), sessionId);
-                        if (delete.getWarning() != null || delete.getError() != null) {
-                            logger.warn("Cohort {} could not be deleted after extracting the sample {}. WriteResult: {}",
-                                    cohort.getId(), sample.getId(), delete);
-                            warningList.add(new Error(-1, "", "Cohort " + cohort.getId() + "could not be deleted after extracting the "
-                                    + "sample."));
-                        }
-                    }
-                }
-
-                // Update the individual
-                auxQuery = new Query()
-                        .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
-                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(auxQuery, QueryOptions.empty());
-                if (individualQueryResult.getNumResults() > 0) {
-                    if (individualQueryResult.getNumResults() > 1) {
-                        logger.error("Critical error: More than one individual detected pointing to sample {}. The list of individual ids "
-                                        + "are: {}", sample.getId(),
-                                individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList()));
-                    }
-                    for (Individual individual : individualQueryResult.getResult()) {
-                        // Remove the sample from the individual
-                        List<Sample> remainingSampleList = new ArrayList<>();
-                        for (Sample sampleInIndividual : individual.getSamples()) {
-                            if (sampleInIndividual.getUid() != sample.getUid()) {
-                                remainingSampleList.add(sampleInIndividual);
-                            }
-                        }
-
-                        ObjectMap individualUpdateParams = new ObjectMap()
-                                .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), remainingSampleList);
-                        catalogManager.getIndividualManager().unsafeUpdate(study, individual, individualUpdateParams,
-                                QueryOptions.empty(), userId);
-                    }
-                }
-
-                // Delete the sample
-                Query updateQuery = new Query()
-                        .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid())
-                        .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                ObjectMap updateParams = new ObjectMap()
-                        .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId() + suffixName);
-                WriteResult update = sampleDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.getNumModified() > 0) {
-                    numModified += 1;
-                    auditManager.recordDeletion(AuditRecord.Resource.sample, sample.getUid(), userId, null, updateParams, null, null);
-                } else {
-                    failedList.add(new WriteResult.Fail(sample.getId(), "Unknown reason"));
-                }
+                    // Add the results to the current write result
+                    writeResult.concat(sampleDBAdaptor.delete(sample.getUid()));
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(sample.getId(), e.getMessage()));
+                writeResult.getFailed().add(new WriteResult.Fail(sample.getId(), e.getMessage()));
                 logger.debug("Cannot delete sample {}: {}", sample.getId(), e.getMessage(), e);
             }
         }
 
-        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
-        writeResult.setNumMatches(numMatches);
-        writeResult.setNumModified(numModified);
-        writeResult.setFailed(failedList);
-        if (!failedList.isEmpty()) {
-            warningList.add(new Error(-1, null, "There are samples that could not be deleted"));
-        }
-        if (!warningList.isEmpty()) {
-            writeResult.setWarning(warningList);
+        if (!writeResult.getFailed().isEmpty()) {
+            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are samples that could not be deleted")));
         }
 
         return writeResult;
@@ -756,83 +672,83 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             ParamUtils.checkAlias(parameters.getString(SampleDBAdaptor.UpdateParams.ID.key()), SampleDBAdaptor.UpdateParams.ID.key());
         }
 
-        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
-            Individual individual = null;
-
-            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-
-            // Look for the individual where the sample is assigned
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions indOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key()));
-            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, indOptions);
-
-            if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
-                // Take out sample from individual
-
-                if (individualQueryResult.getNumResults() == 1) {
-                    individual = individualQueryResult.first();
-
-                    authorizationManager.checkIndividualPermission(study.getUid(), individual.getUid(), userId,
-                            IndividualAclEntry.IndividualPermissions.UPDATE);
-
-                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() - 1);
-                    for (Sample tmpSample : individual.getSamples()) {
-                        if (tmpSample.getUid() != sample.getUid()) {
-                            sampleList.add(tmpSample);
-                        }
-                    }
-
-                    individual.setSamples(sampleList);
-                } // else - nothing to do
-
-            } else {
-                // Obtain the individual where the sample is intended to be associated to
-                QueryResult<Individual> newIndividualQueryResult = catalogManager.getIndividualManager().get(studyStr, individualStr,
-                        indOptions, token);
-
-                if (newIndividualQueryResult.getNumResults() == 0) {
-                    throw new CatalogException("Individual " + individualStr + " not found");
-                }
-
-                // Check if the sample is not already assigned to other individual
-                if (individualQueryResult.getNumResults() == 1) {
-                    if (individualQueryResult.first().getUid() != newIndividualQueryResult.first().getUid()) {
-                        throw new CatalogException("Cannot update sample. The sample is already associated to other individual ("
-                                + individualQueryResult.first().getUid() + "). Please, first remove the sample from the individual.");
-                    }
-                } else {
-                    individual = newIndividualQueryResult.first();
-
-                    authorizationManager.checkIndividualPermission(study.getUid(), individual.getUid(), userId,
-                            IndividualAclEntry.IndividualPermissions.UPDATE);
-
-                    // We can freely assign the sample to the individual
-                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() + 1);
-                    sampleList.addAll(individual.getSamples());
-
-                    // Add current sample
-                    sampleList.add(sample);
-
-                    individual.setSamples(sampleList);
-                }
-            }
-
-            if (individual != null) {
-                // We need to update the sample array from the individual
-                ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
-                try {
-                    individualDBAdaptor.update(individual.getUid(), params, QueryOptions.empty());
-                } catch (CatalogDBException e) {
-                    logger.error("Could not update sample information: {}", e.getMessage(), e);
-                    throw new CatalogException("Could not update sample information: " + e.getMessage());
-                }
-            }
-
-            parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-        }
+//        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
+//            Individual individual = null;
+//
+//            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+//
+//            // Look for the individual where the sample is assigned
+//            Query query = new Query()
+//                    .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
+//                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+//            QueryOptions indOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+//                    IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key()));
+//            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, indOptions);
+//
+//            if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
+//                // Take out sample from individual
+//
+//                if (individualQueryResult.getNumResults() == 1) {
+//                    individual = individualQueryResult.first();
+//
+//                    authorizationManager.checkIndividualPermission(study.getUid(), individual.getUid(), userId,
+//                            IndividualAclEntry.IndividualPermissions.UPDATE);
+//
+//                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() - 1);
+//                    for (Sample tmpSample : individual.getSamples()) {
+//                        if (tmpSample.getUid() != sample.getUid()) {
+//                            sampleList.add(tmpSample);
+//                        }
+//                    }
+//
+//                    individual.setSamples(sampleList);
+//                } // else - nothing to do
+//
+//            } else {
+//                // Obtain the individual where the sample is intended to be associated to
+//                QueryResult<Individual> newIndividualQueryResult = catalogManager.getIndividualManager().get(studyStr, individualStr,
+//                        indOptions, token);
+//
+//                if (newIndividualQueryResult.getNumResults() == 0) {
+//                    throw new CatalogException("Individual " + individualStr + " not found");
+//                }
+//
+//                // Check if the sample is not already assigned to other individual
+//                if (individualQueryResult.getNumResults() == 1) {
+//                    if (individualQueryResult.first().getUid() != newIndividualQueryResult.first().getUid()) {
+//                        throw new CatalogException("Cannot update sample. The sample is already associated to other individual ("
+//                                + individualQueryResult.first().getUid() + "). Please, first remove the sample from the individual.");
+//                    }
+//                } else {
+//                    individual = newIndividualQueryResult.first();
+//
+//                    authorizationManager.checkIndividualPermission(study.getUid(), individual.getUid(), userId,
+//                            IndividualAclEntry.IndividualPermissions.UPDATE);
+//
+//                    // We can freely assign the sample to the individual
+//                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() + 1);
+//                    sampleList.addAll(individual.getSamples());
+//
+//                    // Add current sample
+//                    sampleList.add(sample);
+//
+//                    individual.setSamples(sampleList);
+//                }
+//            }
+//
+//            if (individual != null) {
+//                // We need to update the sample array from the individual
+//                ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
+//                try {
+//                    individualDBAdaptor.update(individual.getUid(), params, QueryOptions.empty());
+//                } catch (CatalogDBException e) {
+//                    logger.error("Could not update sample information: {}", e.getMessage(), e);
+//                    throw new CatalogException("Could not update sample information: " + e.getMessage());
+//                }
+//            }
+//
+//            parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
+//        }
 
         checkUpdateAnnotations(study, sample, parameters, options, VariableSet.AnnotableDataModels.SAMPLE, sampleDBAdaptor, userId);
 
@@ -1043,76 +959,47 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         checkMembers(study.getUid(), members);
 
+        List<Long> sampleUids = sampleQueryResult.getResult().stream().map(Sample::getUid).collect(Collectors.toList());
+
+        Entity entity2 = null;
+        List<Long> individualUids = null;
+        if (sampleAclParams.isPropagate()) {
+            entity2 = Entity.INDIVIDUAL;
+            individualUids = getIndividualsUidsFromSampleUids(study.getUid(), sampleUids);
+        }
+
         List<QueryResult<SampleAclEntry>> queryResults;
         switch (sampleAclParams.getAction()) {
             case SET:
-                queryResults = authorizationManager.setAcls(study.getUid(), sampleQueryResult.getResult().stream()
-                                .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
-                if (sampleAclParams.isPropagate()) {
-                    try {
-                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                                AclParams.Action.SET, StringUtils.join(sampleQueryResult.getResult().stream().map(Sample::getId)
-                                .collect(Collectors.toList()), ","), false);
-
-                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
-                    } catch (CatalogException e) {
-                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
-                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
-                    }
-                }
+                queryResults = authorizationManager.setAcls(study.getUid(), sampleUids, individualUids, members, permissions,
+                        Entity.SAMPLE, entity2);
                 break;
             case ADD:
-                queryResults = authorizationManager.addAcls(study.getUid(), sampleQueryResult.getResult().stream()
-                        .map(Sample::getUid).collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
-                if (sampleAclParams.isPropagate()) {
-                    try {
-                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                                AclParams.Action.ADD, StringUtils.join(sampleQueryResult.getResult().stream().map(Sample::getId)
-                                .collect(Collectors.toList()), ","), false);
-                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
-                    } catch (CatalogException e) {
-                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
-                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
-                    }
-                }
+                queryResults = authorizationManager.addAcls(study.getUid(), sampleUids, individualUids, members, permissions, Entity.SAMPLE,
+                        entity2);
                 break;
             case REMOVE:
-                queryResults = authorizationManager.removeAcls(sampleQueryResult.getResult().stream().map(Sample::getUid)
-                        .collect(Collectors.toList()), members, permissions, Entity.SAMPLE);
-                if (sampleAclParams.isPropagate()) {
-                    try {
-                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                                AclParams.Action.REMOVE, StringUtils.join(sampleQueryResult.getResult().stream().map(Sample::getId)
-                                .collect(Collectors.toList()), ","), false);
-
-                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
-                    } catch (CatalogException e) {
-                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
-                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
-                    }
-                }
+                queryResults = authorizationManager.removeAcls(sampleUids, individualUids, members, permissions, Entity.SAMPLE, entity2);
                 break;
             case RESET:
-                queryResults = authorizationManager.removeAcls(sampleQueryResult.getResult().stream().map(Sample::getUid)
-                        .collect(Collectors.toList()), members, null, Entity.SAMPLE);
-                if (sampleAclParams.isPropagate()) {
-                    try {
-                        Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(sampleAclParams.getPermissions(),
-                                AclParams.Action.RESET, StringUtils.join(sampleQueryResult.getResult().stream().map(Sample::getId)
-                                .collect(Collectors.toList()), ","), false);
-
-                        catalogManager.getIndividualManager().updateAcl(studyStr, null, memberIds, aclParams, sessionId);
-                    } catch (CatalogException e) {
-                        logger.warn("Error propagating permissions to individual: {}", e.getMessage(), e);
-                        queryResults.get(0).setWarningMsg("Error propagating permissions to individual: " + e.getMessage());
-                    }
-                }
+                queryResults = authorizationManager.removeAcls(sampleUids, individualUids, members, null, Entity.SAMPLE, entity2);
                 break;
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
 
         return queryResults;
+    }
+
+    private List<Long> getIndividualsUidsFromSampleUids(long studyUid, List<Long> sampleUids) throws CatalogDBException {
+        // Look for all the individuals owning the samples
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
+
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, IndividualManager.INCLUDE_INDIVIDUAL_IDS);
+
+        return individualQueryResult.getResult().stream().map(Individual::getUid).collect(Collectors.toList());
     }
 
     public FacetQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
@@ -1138,80 +1025,4 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
 
-    // **************************   Private methods  ******************************** //
-
-    void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {
-        for (Long sampleId : resources.getResourceIds()) {
-            authorizationManager.checkSamplePermission(resources.getStudyId(), sampleId, resources.getUser(),
-                    SampleAclEntry.SamplePermissions.DELETE);
-        }
-
-        // Check that the samples are not being used in cohorts
-        Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), resources.getStudyId())
-                .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), resources.getResourceIds())
-                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        long count = cohortDBAdaptor.count(query).first();
-        if (count > 0) {
-            if (resources.getResourceIds().size() == 1) {
-                throw new CatalogException("The sample " + resources.getResourceIds().get(0) + " is part of " + count + " cohorts. Please, "
-                        + "first update or delete the cohorts");
-            } else {
-                throw new CatalogException("Some samples are part of " + count + " cohorts. Please, first update or delete the cohorts");
-            }
-        }
-    }
-
-//    private void addIndividualInformation(QueryResult<Sample> sampleQueryResult, String sessionId) {
-//        if (sampleQueryResult.getNumResults() == 0) {
-//            return;
-//        }
-//        String individualIdList = sampleQueryResult.getResult().stream()
-//                .map(Sample::getIndividual).filter(Objects::nonNull)
-//                .map(Individual::getId).filter(id -> id > 0)
-//                .map(String::valueOf)
-//                .collect(Collectors.joining(","));
-//        if (StringUtils.isEmpty(individualIdList)) {
-//            return;
-//        }
-//        try {
-//            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(null, individualIdList,
-//                    QueryOptions.empty(), sessionId);
-//
-//            // We create a map of individualId - Individual
-//            Map<Long, Individual> individualMap = new HashMap<>();
-//            for (Individual individual : individualQueryResult.getResult()) {
-//                individualMap.put(individual.getId(), individual);
-//            }
-//
-//            // And set the individual information in the sample result
-//            for (Sample sample : sampleQueryResult.getResult()) {
-//                if (sample.getIndividual() != null && sample.getIndividual().getId() > 0) {
-//                    sample.setIndividual(individualMap.get(sample.getIndividual().getId()));
-//                }
-//            }
-//
-//        } catch (CatalogException e) {
-//            logger.warn("Could not retrieve individual information to complete sample object, {}", e.getMessage(), e);
-//            sampleQueryResult.setWarningMsg("Could not retrieve individual information to complete sample object" + e.getMessage());
-//        }
-//    }
-
-    private long getSampleId(boolean silent, String sampleStrAux) throws CatalogException {
-        long sampleId = Long.parseLong(sampleStrAux);
-        try {
-            sampleDBAdaptor.checkId(sampleId);
-        } catch (CatalogException e) {
-            if (silent) {
-                return -1L;
-            } else {
-                throw e;
-            }
-        }
-        return sampleId;
-    }
-
-    public DBIterator<Sample> indexSolr(Query query) throws CatalogException {
-        return sampleDBAdaptor.iterator(query, null, null);
-    }
 }

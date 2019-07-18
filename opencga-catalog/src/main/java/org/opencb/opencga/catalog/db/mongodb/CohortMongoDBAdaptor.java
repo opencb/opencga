@@ -44,6 +44,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -255,7 +256,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throws CatalogDBException {
         long startTime = startQuery();
 
-        Document cohortUpdate = parseAndValidateUpdateParams(parameters, query).toFinalUpdateDocument();
+        Document cohortUpdate = parseAndValidateUpdateParams(parameters, query, queryOptions).toFinalUpdateDocument();
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
@@ -320,7 +321,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         return endWrite("update", startTime, numMatches, numModified, failList, null, error);
     }
 
-    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
+            throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         if (parameters.containsKey(CohortDBAdaptor.QueryParams.ID.key())) {
@@ -356,21 +358,25 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
-        // Check if the samples exist.
-        if (parameters.containsKey(QueryParams.SAMPLES.key())) {
-            List<Long> objectSampleList = parameters.getAsLongList(QueryParams.SAMPLES.key());
-            List<Sample> sampleList = new ArrayList<>();
-            for (Long sampleId : objectSampleList) {
-                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists((sampleId))) {
-                    throw CatalogDBException.uidNotFound("Sample", (sampleId));
-                }
-                Sample sample = new Sample();
-                sample.setUid(sampleId);
-                sampleList.add(sample);
-
-            }
-            document.getSet().put(QueryParams.SAMPLES.key(), cohortConverter.convertSamplesToDocument(sampleList));
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+        String operation = (String) actionMap.getOrDefault(UpdateParams.SAMPLES.key(), "ADD");
+        String[] acceptedObjectParams = new String[]{UpdateParams.SAMPLES.key()};
+        switch (operation) {
+            case "SET":
+                filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+                cohortConverter.validateSamplesToUpdate(document.getSet());
+                break;
+            case "REMOVE":
+                filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
+                cohortConverter.validateSamplesToUpdate(document.getPullAll());
+                break;
+            case "ADD":
+            default:
+                filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
+                cohortConverter.validateSamplesToUpdate(document.getAddToSet());
+                break;
         }
+
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
@@ -439,7 +445,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                             .append(QueryParams.ID.key(), cohort.getId() + deleteSuffix);
 
                     Bson bsonQuery = parseQuery(tmpQuery);
-                    Document updateDocument = parseAndValidateUpdateParams(updateParams, tmpQuery).toFinalUpdateDocument();
+                    Document updateDocument = parseAndValidateUpdateParams(updateParams, tmpQuery, QueryOptions.empty())
+                            .toFinalUpdateDocument();
 
                     logger.debug("Delete cohort {} ({}): Query: {}, update: {}", cohort.getId(), cohort.getUid(),
                             bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
@@ -939,6 +946,31 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     Collections.singletonList(updateQueryResult.first().getModifiedCount()));
         }
         return endQuery("Extract samples from cohorts", startTime, Collections.singletonList(0L));
+    }
+
+    void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {
+        Document bsonQuery = new Document()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.SAMPLE_UIDS.key(), sampleUid);
+
+        // We set the status of all the matching cohorts to INVALID and add the sample to be removed
+        ObjectMap params = new ObjectMap()
+                .append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.INVALID)
+                .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
+        // Add the the Remove action for the sample provided
+        QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
+                new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name()));
+
+        Bson update = parseAndValidateUpdateParams(params, null, queryOptions).toFinalUpdateDocument();
+
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+
+        logger.debug("Sample references extraction. Query: {}, update: {}",
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        UpdateResult updateResult = cohortCollection.update(clientSession, bsonQuery, update, multi).first();
+        logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getModifiedCount() + " out of "
+                + updateResult.getMatchedCount() + " cohorts");
     }
 
     private boolean excludeSamples(QueryOptions options) {

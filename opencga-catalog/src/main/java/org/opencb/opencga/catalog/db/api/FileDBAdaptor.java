@@ -257,16 +257,6 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
     QueryResult<File> rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
 
     /**
-     * Extract the sampleIds given from the files that matching the query.
-     *
-     * @param query query.
-     * @param sampleIds sample ids.
-     * @return A queryResult object containing the number of files matching the query.
-     * @throws CatalogDBException CatalogDBException.
-     */
-    QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
-
-    /**
      * Add the samples to the array of samples in the file entry.
      *
      * @param fileId file id corresponding to the file being updated.

@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -274,7 +275,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 .removeAnnotationSet(studyFqn, s_1, "annotation2", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, sampleQueryResult.first().getAnnotationSets().size());
 
-        thrown.expect(CatalogException.class);
+        thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
         catalogManager.getSampleManager().removeAnnotationSet(studyFqn, s_1, "non_existing", QueryOptions.empty(), sessionIdUser);
     }
@@ -1319,8 +1320,8 @@ public class SampleManagerTest extends AbstractManagerTest {
     // Two samples, one related to one individual and the other does not have any individual associated
     @Test
     public void testAssignPermissionsWithPropagationWithIndividualAndNoIndividual() throws CatalogException {
-        Sample sample = new Sample().setId("sample").setIndividual(new Individual().setId("individual"));
-        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), sessionIdUser);
+        Individual individual = new Individual().setId("individual").setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, QueryOptions.empty(), sessionIdUser);
 
         Sample sample2 = new Sample().setId("sample2");
         catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), sessionIdUser);

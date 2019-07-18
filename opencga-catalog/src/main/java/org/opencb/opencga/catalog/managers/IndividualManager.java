@@ -459,8 +459,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         DBIterator<Individual> iterator;
         try {
             userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                    StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+            study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
             // Fix query if it contains any annotation
             fixQuery(study, finalQuery, userId);
@@ -469,7 +468,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = individualDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = individualDBAdaptor.iterator(finalQuery, INCLUDE_INDIVIDUAL_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -923,14 +922,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         checkMembers(study.getUid(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
+        List<Long> individualUids = individualQueryResult.getResult().stream().map(Individual::getUid).collect(Collectors.toList());
+
         Entity entity2 = null;
         List<Long> sampleUids = null;
         if (aclParams.isPropagate()) {
             entity2 = Entity.SAMPLE;
-            sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualQueryResult.getResult());
+            sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
         }
-
-        List<Long> individualUids = individualQueryResult.getResult().stream().map(Individual::getUid).collect(Collectors.toList());
 
         List<QueryResult<IndividualAclEntry>> queryResults;
         switch (aclParams.getAction()) {
@@ -980,12 +979,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     // **************************   Private methods  ******************************** //
 
-    private List<Long> getSampleUidsFromIndividuals(long studyUid, List<Individual> individualList) throws CatalogDBException {
+    private List<Long> getSampleUidsFromIndividuals(long studyUid, List<Long> individualUidList) throws CatalogDBException {
         // Look for all the samples belonging to the individual
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(IndividualDBAdaptor.QueryParams.UID.key(), individualList.stream().map(Individual::getUid)
-                        .collect(Collectors.toList()));
+                .append(IndividualDBAdaptor.QueryParams.UID.key(), individualUidList);
 
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query,
                 new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key()));

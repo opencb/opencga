@@ -333,12 +333,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
         }
 
-//        if (queryOptions.getBoolean(Constants.REFRESH)) {
-//            getLastVersionOfMembers(query, parameters);
-//        }
-//
-//        Document familyUpdate = parseAndValidateUpdateParams(parameters, query).toFinalUpdateDocument();
-
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Family> iterator = iterator(query, options);
@@ -352,7 +346,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             numMatches += 1;
 
             ClientSession clientSession = getClientSession();
-            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+            TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
                     Query tmpQuery = new Query()
