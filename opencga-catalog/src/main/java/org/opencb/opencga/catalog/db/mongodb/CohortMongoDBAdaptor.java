@@ -97,7 +97,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         long startQuery = startQuery();
 
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
@@ -125,6 +125,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 return endWrite(String.valueOf(newId), startTime, 1, 1, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create cohort '{}': {}", cohort.getId(), e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite(cohort.getId(), startTime, 1, 0,
                         Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
             }
@@ -271,7 +272,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             numMatches += 1;
 
             ClientSession clientSession = getClientSession();
-            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+            TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
 
                 try {
@@ -289,6 +290,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     updateAnnotationSets(clientSession, cohort.getUid(), parameters, variableSetList, queryOptions, false);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating cohort {}({}). {}", cohort.getId(), cohort.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(cohort.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
                 }
@@ -426,7 +428,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             numMatches += 1;
 
             ClientSession clientSession = getClientSession();
-            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+            TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
                     logger.info("Deleting cohort {} ({})", cohort.getId(), cohort.getUid());
@@ -464,6 +466,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting cohort {}({}). {}", cohort.getId(), cohort.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(cohort.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
                 }

@@ -427,7 +427,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     public void setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
                              List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
 
             try {
@@ -445,6 +445,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
@@ -460,7 +461,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public void setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
 
             try {
@@ -472,6 +473,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
@@ -532,7 +534,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     public void addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
                              List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
 
             try {
@@ -548,6 +550,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 setMembersHaveInternalPermissionsDefined(studyId, members, permissionList, entity.name(), clientSession);
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
@@ -593,7 +596,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public void addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
 
             try {
@@ -605,6 +608,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
@@ -637,7 +641,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
 
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
 
             try {
@@ -648,6 +652,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 }
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 

@@ -149,7 +149,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long startQuery = startQuery();
 
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
 
             logger.debug("Starting sample insert transaction for sample id '{}'", sample.getId());
@@ -160,6 +160,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 return endWrite(String.valueOf(createdSample.getUid()), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create sample {}: {}", sample.getId(), e.getMessage());
+                clientSession.abortTransaction();
                 return endWrite(sample.getId(), tmpStartTime, 1, 0,
                         Collections.singletonList(new WriteResult.Fail(sample.getId(), e.getMessage())));
             }
@@ -289,6 +290,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     return endWrite(sample.getId(), tmpStartTime, 1, 1, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating sample {}({}). {}", sample.getId(), sample.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(sample.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(sample.getId(), e.getMessage())));
                 }
@@ -631,6 +633,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting sample {}({}). {}", sample.getId(), sample.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(sample.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(sample.getId(), e.getMessage())));
                 }

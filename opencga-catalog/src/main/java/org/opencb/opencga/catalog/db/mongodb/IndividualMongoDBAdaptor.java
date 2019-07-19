@@ -151,7 +151,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         long startQuery = startQuery();
 
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
 
             logger.debug("Starting individual insert transaction for individual id '{}'", individual.getId());
@@ -165,6 +165,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 return endWrite(String.valueOf(newIndividual.getUid()), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create individual {}: {}", individual.getId(), e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite(individual.getId(), tmpStartTime, 1, 0,
                         Collections.singletonList(new Fail(individual.getId(), e.getMessage())));
             }
@@ -404,7 +405,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             numMatches += 1;
 
             ClientSession clientSession = getClientSession();
-            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+            TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
                     if (queryOptions.getBoolean(Constants.REFRESH)) {
@@ -467,6 +468,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     return endWrite(individual.getId(), tmpStartTime, 1, 1, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating individual {}({}). {}", individual.getId(), individual.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(individual.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new Fail(individual.getId(), e.getMessage())));
                 }
@@ -776,6 +778,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     return endWrite(individual.getId(), tmpStartTime, 1, 1, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting individual {}({}). {}", individual.getId(), individual.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(individual.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new Fail(individual.getId(), e.getMessage())));
                 }

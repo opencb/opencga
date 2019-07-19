@@ -97,7 +97,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         long startQuery = startQuery();
 
         ClientSession clientSession = getClientSession();
-        TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+        TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
 
             logger.debug("Starting family insert transaction for family id '{}'", family.getId());
@@ -108,6 +108,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 return endWrite(String.valueOf(newFamily.getUid()), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create family {}: {}", family.getId(), e.getMessage(), e);
+                clientSession.abortTransaction();
                 return endWrite(family.getId(), tmpStartTime, 1, 0,
                         Collections.singletonList(new WriteResult.Fail(family.getId(), e.getMessage())));
             }
@@ -376,6 +377,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     return endWrite(family.getId(), tmpStartTime, 1, 1, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating family {}({}). {}", family.getId(), family.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(family.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(family.getId(), e.getMessage())));
                 }
@@ -548,7 +550,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             numMatches += 1;
 
             ClientSession clientSession = getClientSession();
-            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+            TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
                     logger.info("Deleting family {} ({})", family.getId(), family.getUid());
@@ -596,6 +598,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     return endWrite(family.getId(), tmpStartTime, 1, 1, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting family {}({}). {}", family.getId(), family.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(family.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(family.getId(), e.getMessage())));
                 }

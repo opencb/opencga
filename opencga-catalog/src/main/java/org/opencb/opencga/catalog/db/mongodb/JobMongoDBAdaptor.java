@@ -132,6 +132,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 return endWrite(String.valueOf(jobUid), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create job {}: {}", job.getId(), e.getMessage());
+                clientSession.abortTransaction();
                 return endWrite(job.getId(), tmpStartTime, 1, 0,
                         Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
             }
@@ -275,6 +276,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     return endWrite(job.getId(), tmpStartTime, 1, 1, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating job {}({}). {}", job.getId(), job.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(job.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
                 }
@@ -361,6 +363,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting job {}({}). {}", job.getId(), job.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
                     return endWrite(job.getId(), tmpStartTime, 1, 0,
                             Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
                 }
