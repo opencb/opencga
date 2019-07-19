@@ -167,7 +167,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             throw CatalogDBException.alreadyExists("Family", "id", family.getId());
         }
 
-        long familyUid = getNewId(clientSession);
+        long familyUid = getNewUid(clientSession);
 
         family.setUid(familyUid);
         family.setStudyUid(studyId);

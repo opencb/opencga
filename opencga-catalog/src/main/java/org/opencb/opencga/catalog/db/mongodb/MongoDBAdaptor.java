@@ -94,12 +94,12 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return dbAdaptorFactory.getMongoDataStore().commitSession(clientSession, txnBody);
     }
 
-    protected long getNewId() {
+    protected long getNewUid() {
 //        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
-    protected long getNewId(ClientSession clientSession) {
+    protected long getNewUid(ClientSession clientSession) {
 //        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId(clientSession);
     }

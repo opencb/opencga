@@ -45,7 +45,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
@@ -412,15 +411,8 @@ public class JobManager extends ResourceManager<Job> {
             return writeResult;
         }
 
-        long numMatches = 0;
-        long numModified = 0;
-        List<WriteResult.Fail> failedList = new ArrayList<>();
-
-        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-
         while (iterator.hasNext()) {
             Job job = iterator.next();
-            numMatches += 1;
 
             try {
                 if (checkPermissions) {
@@ -430,32 +422,14 @@ public class JobManager extends ResourceManager<Job> {
                 // Check if the job can be deleted
                 checkJobCanBeDeleted(job);
 
-                // Delete the job
-                Query updateQuery = new Query()
-                        .append(JobDBAdaptor.QueryParams.UID.key(), job.getUid())
-                        .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                ObjectMap updateParams = new ObjectMap()
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(JobDBAdaptor.QueryParams.NAME.key(), job.getName() + suffixName);
-                WriteResult update = jobDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.getNumModified() > 0) {
-                    numModified += 1;
-                    auditManager.recordDeletion(AuditRecord.Resource.job, job.getUid(), userId, null, updateParams, null, null);
-                } else {
-                    failedList.add(new WriteResult.Fail(job.getId(), "Unknown reason"));
-                }
+                writeResult.concat(jobDBAdaptor.delete(job.getUid()));
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(job.getId(), e.getMessage()));
+                writeResult.getFailed().add(new WriteResult.Fail(job.getId(), e.getMessage()));
                 logger.debug("Cannot delete job {}: {}", job.getId(), e.getMessage(), e);
             }
         }
 
-        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
-        writeResult.setNumMatches(numMatches);
-        writeResult.setNumModified(numModified);
-        writeResult.setFailed(failedList);
-
-        if (!failedList.isEmpty()) {
+        if (!writeResult.getFailed().isEmpty()) {
             writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are jobs that could not be deleted")));
         }
 

@@ -79,7 +79,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public void insert(Panel panel, boolean overwrite) throws CatalogDBException {
         //new Panel Id
-        long newPanelId = getNewId();
+        long newPanelId = getNewUid();
         panel.setUid(newPanelId);
         panel.setStudyUid(-1);
 
@@ -136,7 +136,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         //new Panel Id
-        long newPanelId = getNewId();
+        long newPanelId = getNewUid();
         panel.setUid(newPanelId);
         panel.setStudyUid(studyId);
         if (StringUtils.isEmpty(panel.getUuid())) {

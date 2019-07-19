@@ -115,7 +115,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         //new File Id
-        long newFileId = getNewId();
+        long newFileId = getNewUid();
         file.setUid(newFileId);
         file.setStudyUid(studyId);
         if (StringUtils.isEmpty(file.getUuid())) {

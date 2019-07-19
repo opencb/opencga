@@ -500,7 +500,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     + clinicalAnalysis.getId() + "'} already exists.");
         }
 
-        long clinicalAnalysisId = getNewId();
+        long clinicalAnalysisId = getNewUid();
         clinicalAnalysis.setUid(clinicalAnalysisId);
         clinicalAnalysis.setStudyUid(studyId);
         if (StringUtils.isEmpty(clinicalAnalysis.getUuid())) {

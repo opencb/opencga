@@ -103,7 +103,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
                 checkCohortIdExists(studyId, cohort.getId());
 
-                long newId = getNewId(clientSession);
+                long newId = getNewUid(clientSession);
                 cohort.setUid(newId);
                 cohort.setStudyUid(studyId);
                 if (StringUtils.isEmpty(cohort.getUuid())) {

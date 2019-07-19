@@ -123,7 +123,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         //Set new ID
-        long newId = getNewId();
+        long newId = getNewUid();
         study.setUid(newId);
 
         if (StringUtils.isEmpty(study.getUuid())) {
@@ -634,7 +634,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getId() + "'} already exists.");
         }
 
-        long variableSetId = getNewId();
+        long variableSetId = getNewUid();
         variableSet.setUid(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
         object.put(PRIVATE_UID, variableSetId);

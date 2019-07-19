@@ -86,7 +86,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
                     + " }.");
         }
 
-        long newId = getNewId();
+        long newId = getNewUid();
         dataset.setId(newId);
 
         Document datasetObject = datasetConverter.convertToStorageType(dataset);
