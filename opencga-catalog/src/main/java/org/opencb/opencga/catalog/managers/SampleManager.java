@@ -480,8 +480,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId() + suffixName);
 //                WriteResult update = sampleDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
 
-                    // Add the results to the current write result
-                    writeResult.concat(sampleDBAdaptor.delete(sample.getUid()));
+                // Add the results to the current write result
+                writeResult.concat(sampleDBAdaptor.delete(sample.getUid()));
             } catch (Exception e) {
                 writeResult.getFailed().add(new WriteResult.Fail(sample.getId(), e.getMessage()));
                 logger.debug("Cannot delete sample {}: {}", sample.getId(), e.getMessage(), e);
@@ -540,7 +540,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public QueryResult<Sample> updateAnnotations(String studyStr, String sampleStr, String annotationSetId, Map<String, Object> annotations,
-                                  ParamUtils.CompleteUpdateAction action, QueryOptions options, String token) throws CatalogException {
+                                                 ParamUtils.CompleteUpdateAction action, QueryOptions options, String token)
+            throws CatalogException {
         if (annotations == null || annotations.isEmpty()) {
             return new QueryResult<>(sampleStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
         }

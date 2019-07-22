@@ -702,15 +702,8 @@ public class PanelManager extends ResourceManager<Panel> {
             return writeResult;
         }
 
-        long numMatches = 0;
-        long numModified = 0;
-        List<WriteResult.Fail> failedList = new ArrayList<>();
-
-        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-
         while (iterator.hasNext()) {
             Panel panel = iterator.next();
-            numMatches += 1;
 
             try {
                 if (checkPermissions) {
@@ -722,32 +715,14 @@ public class PanelManager extends ResourceManager<Panel> {
                 // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
 
                 // Delete the panel
-                Query updateQuery = new Query()
-                        .append(PanelDBAdaptor.QueryParams.UID.key(), panel.getUid())
-                        .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                        .append(Constants.ALL_VERSIONS, true);
-                ObjectMap updateParams = new ObjectMap()
-                        .append(PanelDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(PanelDBAdaptor.QueryParams.ID.key(), panel.getName() + suffixName);
-                WriteResult update = panelDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.getNumModified() > 0) {
-                    numModified += 1;
-                    auditManager.recordDeletion(AuditRecord.Resource.panel, panel.getUid(), userId, null, updateParams, null, null);
-                } else {
-                    failedList.add(new WriteResult.Fail(panel.getId(), "Unknown reason"));
-                }
+                writeResult.concat(panelDBAdaptor.delete(panel.getUid()));
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(panel.getId(), e.getMessage()));
+                writeResult.getFailed().add(new WriteResult.Fail(panel.getId(), e.getMessage()));
                 logger.debug("Cannot delete panel {}: {}", panel.getId(), e.getMessage(), e);
             }
         }
 
-        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
-        writeResult.setNumMatches(numMatches);
-        writeResult.setNumModified(numModified);
-        writeResult.setFailed(failedList);
-
-        if (!failedList.isEmpty()) {
+        if (!writeResult.getFailed().isEmpty()) {
             writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are panels that could not be deleted")));
         }
 

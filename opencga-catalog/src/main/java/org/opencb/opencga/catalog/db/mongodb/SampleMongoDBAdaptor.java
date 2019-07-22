@@ -328,7 +328,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         QueryResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
 
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not find family '" + sampleUid + "'");
+            throw new CatalogDBException("Could not find sample '" + sampleUid + "'");
         }
 
         createNewVersion(clientSession, sampleCollection, queryResult.first());
