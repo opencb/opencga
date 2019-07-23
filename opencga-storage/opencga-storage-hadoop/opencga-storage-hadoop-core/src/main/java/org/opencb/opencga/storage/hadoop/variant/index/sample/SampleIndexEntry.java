@@ -77,6 +77,9 @@ public class SampleIndexEntry {
         private SampleIndexVariantBiConverter.SampleIndexVariantIterator variants;
         private byte[] fileIndexGt;
         private byte[] annotationIndexGt;
+        private byte[] consequenceTypeIndexGt;
+        private byte[] biotypeIndexGt;
+        private byte[] populationFrequencyIndexGt;
         private int[] annotationCounts;
         private byte[] parentsGt;
 

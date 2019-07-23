@@ -35,11 +35,20 @@ public final class SampleIndexSchema {
     static final byte[] PARENTS_PREFIX_BYTES = Bytes.toBytes(PARENTS_PREFIX);
     static final String FILE_PREFIX = META_PREFIX + "F_";
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
-    static final String ANNOTATION_PREFIX = META_PREFIX + "A_";
-    static final byte[] ANNOTATION_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_PREFIX);
-    static final String ANNOTATION_COUNT_PREFIX = META_PREFIX + "AC_";
-    static final byte[] ANNOTATION_COUNT_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_COUNT_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
+
+    static final String ANNOTATION_SUMMARY_PREFIX = META_PREFIX + "A_";
+    static final byte[] ANNOTATION_SUMMARY_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_SUMMARY_PREFIX);
+    static final String ANNOTATION_SUMMARY_COUNT_PREFIX = META_PREFIX + "AC_";
+    static final byte[] ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_SUMMARY_COUNT_PREFIX);
+
+    static final String ANNOTATION_CT_PREFIX = META_PREFIX + "CT_";
+    static final byte[] ANNOTATION_CT_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CT_PREFIX);
+    static final String ANNOTATION_BT_PREFIX = META_PREFIX + "BT_";
+    static final byte[] ANNOTATION_BT_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_BT_PREFIX);
+    static final String ANNOTATION_POP_FREQ_PREFIX = META_PREFIX + "PF_";
+    static final byte[] ANNOTATION_POP_FREQ_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_POP_FREQ_PREFIX);
+
     static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
     static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);
 
@@ -122,11 +131,23 @@ public final class SampleIndexSchema {
     }
 
     public static byte[] toAnnotationIndexColumn(String genotype) {
-        return Bytes.toBytes(ANNOTATION_PREFIX + genotype);
+        return Bytes.toBytes(ANNOTATION_SUMMARY_PREFIX + genotype);
     }
 
     public static byte[] toAnnotationIndexCountColumn(String genotype) {
-        return Bytes.toBytes(ANNOTATION_COUNT_PREFIX + genotype);
+        return Bytes.toBytes(ANNOTATION_SUMMARY_COUNT_PREFIX + genotype);
+    }
+
+    public static byte[] toAnnotationConsequenceTypeIndexColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_CT_PREFIX + genotype);
+    }
+
+    public static byte[] toAnnotationBiotypeIndexColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_BT_PREFIX + genotype);
+    }
+
+    public static byte[] toAnnotationPopFreqIndexColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_POP_FREQ_PREFIX + genotype);
     }
 
     public static byte[] toFileIndexColumn(String genotype) {

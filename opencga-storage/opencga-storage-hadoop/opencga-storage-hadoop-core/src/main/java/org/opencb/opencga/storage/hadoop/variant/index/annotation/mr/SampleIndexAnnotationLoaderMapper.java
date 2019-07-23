@@ -12,13 +12,13 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,8 +33,10 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     private static final String HAS_GENOTYPE = "SampleIndexAnnotationLoaderMapper.hasGenotype";
     private byte[] family;
     private GenomeHelper helper;
-    private Map<Integer, Map<String, ByteArrayOutputStream>> annotationIndices = new HashMap<>();
+    private Map<Integer, Map<String, AnnotationIndexPutBuilder>> annotationIndices = new HashMap<>();
+
     private boolean hasGenotype;
+    private AnnotationIndexConverter converter;
 
     public static void setHasGenotype(Job job, boolean hasGenotype) {
         job.getConfiguration().setBoolean(HAS_GENOTYPE, hasGenotype);
@@ -45,14 +47,15 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         helper = new GenomeHelper(context.getConfiguration());
         family = helper.getColumnFamily();
         hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
+        converter = new AnnotationIndexConverter();
     }
 
     @Override
     protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
         HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter(helper, 0);
 
-        byte index = new AnnotationIndexConverter().convert(annotationConverter.convert(result));
-                // TODO Get stats given index values
+        AnnotationIndexEntry indexEntry = converter.convert(annotationConverter.convert(result));
+        // TODO Get stats given index values
 
         for (Cell cell : result.rawCells()) {
             if (VariantPhoenixHelper.isSampleCell(cell)) {
@@ -82,7 +85,8 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
                 if (validGt) {
                     annotationIndices
                             .computeIfAbsent(sampleId, k -> new HashMap<>())
-                            .computeIfAbsent(gt, k -> new ByteArrayOutputStream(50)).write(index);
+                            .computeIfAbsent(gt, k -> new AnnotationIndexPutBuilder()).add(indexEntry);
+
                 }
 
             }
@@ -96,20 +100,15 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     }
 
     protected void writeIndices(Context context, String chromosome, int position) throws IOException, InterruptedException {
-
         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "write_indices").increment(1);
-        for (Map.Entry<Integer, Map<String, ByteArrayOutputStream>> entry : annotationIndices.entrySet()) {
+        for (Map.Entry<Integer, Map<String, AnnotationIndexPutBuilder>> entry : annotationIndices.entrySet()) {
             Integer sampleId = entry.getKey();
             Put put = new Put(SampleIndexSchema.toRowKey(sampleId, chromosome, position));
-            for (Map.Entry<String, ByteArrayOutputStream> e : entry.getValue().entrySet()) {
+            for (Map.Entry<String, AnnotationIndexPutBuilder> e : entry.getValue().entrySet()) {
                 String gt = e.getKey();
-                ByteArrayOutputStream value = e.getValue();
-                if (value.size() > 0) {
-                    // Copy byte array, as the ByteArrayOutputStream will be reset and reused!
-                    byte[] annotationIndex = value.toByteArray();
-                    put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotationIndex);
-                    put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
-                            IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotationIndex)));
+                AnnotationIndexPutBuilder value = e.getValue();
+                if (!value.isEmpty()) {
+                    value.buildAndReset(put, gt, family);
                 }
             }
 
@@ -120,7 +119,5 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "put_empty").increment(1);
             }
         }
-
-        annotationIndices.values().forEach(map -> map.values().forEach(ByteArrayOutputStream::reset));
     }
 }

@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 
@@ -25,7 +26,14 @@ public class AnnotationIndexConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        converter = new AnnotationIndexConverter();
+        converter = new AnnotationIndexConverter(Arrays.asList(
+                "STUDY:POP_1",
+                "STUDY:POP_2",
+                "STUDY:POP_3",
+                "STUDY:POP_4",
+                "STUDY:POP_5",
+                "STUDY:POP_6"
+        ));
     }
 
 //    @After
@@ -36,57 +44,73 @@ public class AnnotationIndexConverterTest {
     @Test
     public void testLof() {
         assertEquals(LOF_MASK | LOF_EXTENDED_MASK | POP_FREQ_ANY_001_MASK,
-                b = converter.convert(annot(ct("stop_lost"))));
+                b = converter.convert(annot(ct("stop_lost"))).getSummaryIndex());
     }
 
     @Test
     public void testLofe() {
         assertEquals(LOF_EXTENDED_MASK | POP_FREQ_ANY_001_MASK,
-                b = converter.convert(annot(ct("missense_variant"))));
+                b = converter.convert(annot(ct("missense_variant"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProtein() {
         assertEquals(LOF_MASK | LOF_EXTENDED_MASK | LOFE_PROTEIN_CODING_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
-                b = converter.convert(annot(ct("stop_lost", "protein_coding"))));
+                b = converter.convert(annot(ct("stop_lost", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofeProtein() {
         assertEquals(LOF_EXTENDED_MASK | LOFE_PROTEIN_CODING_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
-                b = converter.convert(annot(ct("missense_variant", "protein_coding"))));
+                b = converter.convert(annot(ct("missense_variant", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProteinDifferentTranscript() {
         assertEquals(LOF_MASK | LOF_EXTENDED_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
-                b = converter.convert(annot(ct("stop_lost", "other"), ct("other", "protein_coding"))));
+                b = converter.convert(annot(ct("stop_lost", "other"), ct("other", "protein_coding"))).getSummaryIndex());
 
     }
 
     @Test
     public void testLofeProteinDifferentTranscript() {
         assertEquals(LOF_EXTENDED_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
-                b = converter.convert(annot(ct("missense_variant", "other"), ct("other", "protein_coding"))));
+                b = converter.convert(annot(ct("missense_variant", "other"), ct("other", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testPopFreq() {
-        assertEquals(POP_FREQ_ANY_001_MASK,
-                b = converter.convert(new VariantAnnotation()));
+        assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
+                b = converter.convert(new VariantAnnotation()).getSummaryIndex());
     }
 
     @Test
     public void testPopFreqAny() {
-        assertEquals(POP_FREQ_ANY_001_MASK,
-                b = converter.convert(annot(pf(GNOMAD_GENOMES, "ALL", 0.3))));
+        assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
+                b = converter.convert(annot(pf(GNOMAD_GENOMES, "ALL", 0.3))).getSummaryIndex());
     }
 
     @Test
     public void testPopFreqNone() {
-        assertEquals(0,
-                b = converter.convert(annot(pf(GNOMAD_GENOMES, "ALL", 0.3), pf(K_GENOMES, "ALL", 0.3))));
+        assertEquals(INTERGENIC_MASK,
+                b = converter.convert(annot(pf(GNOMAD_GENOMES, "ALL", 0.3), pf(K_GENOMES, "ALL", 0.3))).getSummaryIndex());
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDuplicatedPopulations() {
+        new AnnotationIndexConverter(Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL"));
+    }
+
+    @Test
+    public void testPopFreqMulti() {
+        assertArrayEquals(new byte[]{0b00_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b00_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(K_GENOMES, "ALL", 0.3))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b00_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0))).getPopFreqIndex());
+
+        assertArrayEquals(new byte[]{0b10_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0.005))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{(byte) 0b11_00_00_11, 0b00_11}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.5), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
+    }
+
 
     protected VariantAnnotation annot(ConsequenceType... value) {
         VariantAnnotation variantAnnotation = new VariantAnnotation();
@@ -112,12 +136,16 @@ public class AnnotationIndexConverterTest {
 
     public ConsequenceType ct(String ct, String biotype) {
         ConsequenceType consequenceType = ct(ct);
+        consequenceType.setGeneName("Gene");
+        consequenceType.setEnsemblGeneId("ENSEMBL_GENE");
         consequenceType.setBiotype(biotype);
         return consequenceType;
     }
 
     public ConsequenceType ct(String ct) {
-        ConsequenceType consequenceType = new ConsequenceType();
+        ConsequenceType consequenceType = new ConsequenceType();;
+        consequenceType.setGeneName("Gene");
+        consequenceType.setEnsemblGeneId("ENSEMBL_GENE");
         consequenceType.setSequenceOntologyTerms(Collections.singletonList(new SequenceOntologyTerm(ct, ct)));
         return consequenceType;
     }

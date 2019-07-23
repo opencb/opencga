@@ -62,11 +62,11 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
 
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, META_PREFIX_BYTES)) {
-                if (columnStartsWith(cell, ANNOTATION_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_PREFIX_BYTES), SampleIndexGtEntry::new)
+                if (columnStartsWith(cell, ANNOTATION_SUMMARY_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, ANNOTATION_SUMMARY_PREFIX_BYTES), SampleIndexGtEntry::new)
                             .setAnnotationIndexGt(CellUtil.cloneValue(cell));
-                } else if (columnStartsWith(cell, ANNOTATION_COUNT_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_COUNT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                } else if (columnStartsWith(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES), SampleIndexGtEntry::new)
                             .setAnnotationCounts(IndexUtils.countPerBitToObject(CellUtil.cloneValue(cell)));
                 } else if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
                     gts.computeIfAbsent(getGt(cell, FILE_PREFIX_BYTES), SampleIndexGtEntry::new)
