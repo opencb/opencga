@@ -305,7 +305,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
         }
 
-        List<File> parents = getParents(false, INCLUDE_FILE_URI_PATH, filePath, studyId).getResult();
+        List<File> parents = getParents(studyId, filePath, false, INCLUDE_FILE_URI_PATH).getResult();
 
         for (File parent : parents) {
             if (parent.getUri() != null) {
@@ -348,7 +348,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         for (File transformedFile : transformedFiles) {
             authorizationManager.checkFilePermission(study.getUid(), transformedFile.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-            String variantPathName = getOriginalFile(transformedFile.getPath());
+            String variantPathName = getMainVariantFile(transformedFile.getPath());
             if (variantPathName == null) {
                 // Skip the file.
                 logger.debug("The file {} is not a variant transformed file", transformedFile.getName());
@@ -366,7 +366,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
             if (fileList.isEmpty()) {
                 // Search by name in the whole study
-                String variantFileName = getOriginalFile(transformedFile.getName());
+                String variantFileName = getMainVariantFile(transformedFile.getName());
                 logger.info("Looking for vcf file by name {}", variantFileName);
                 query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
@@ -399,7 +399,7 @@ public class FileManager extends AnnotationSetManager<File> {
             File vcf = fileList.get(0);
 
             // Look for the json file. It should be in the same directory where the transformed file is.
-            String jsonPathName = getMetaFile(transformedFile.getPath());
+            String jsonPathName = getVariantMetadataFile(transformedFile.getPath());
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(FileDBAdaptor.QueryParams.PATH.key(), jsonPathName)
@@ -531,7 +531,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(sessionId);
         authorizationManager.checkFilePermission(fileQueryResult.first().getStudyUid(), fileId, userId, FileAclEntry.FilePermissions.VIEW);
 
-        return getParents(true, options, fileQueryResult.first().getPath(), fileQueryResult.first().getStudyUid());
+        return getParents(fileQueryResult.first().getStudyUid(), fileQueryResult.first().getPath(), true, options);
     }
 
     public QueryResult<File> createFolder(String studyStr, String path, File.FileStatus status, boolean parents, String description,
@@ -552,8 +552,8 @@ public class FileManager extends AnnotationSetManager<File> {
         QueryResult<File> fileQueryResult;
         switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
-                fileQueryResult = create(studyStr, File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path, null,
-                        description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
+                fileQueryResult = create(studyStr, File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path,
+                        description, status, 0, null, -1, null, null, parents, null, options, sessionId);
                 break;
             case DIRECTORY_EXISTS:
                 Query query = new Query()
@@ -584,8 +584,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
         switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
-                return create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, path, null, description,
-                        new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, parents, content, new QueryOptions(),
+                return create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, path, description,
+                        new File.FileStatus(File.FileStatus.READY), 0, null, -1, null, null, parents, content, new QueryOptions(),
                         sessionId);
             case FILE_EXISTS:
             case DIRECTORY_EXISTS:
@@ -595,10 +595,9 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public QueryResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                    String creationDate, String description, File.FileStatus status, long size, long experimentId,
-                                    List<Sample> samples, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
-                                    boolean parents, String content, QueryOptions options, String sessionId)
-            throws CatalogException {
+                                    String description, File.FileStatus status, long size, List<Sample> samples, long jobId,
+                                    Map<String, Object> stats, Map<String, Object> attributes, boolean parents, String content,
+                                    QueryOptions options, String sessionId) throws CatalogException {
         File file = new File(type, format, bioformat, path, description, status, size, samples, jobId, null, stats, attributes);
         return create(studyStr, file, parents, content, options, sessionId);
     }
@@ -611,15 +610,11 @@ public class FileManager extends AnnotationSetManager<File> {
     public QueryResult<File> create(String studyStr, File file, boolean parents, String content, QueryOptions options, String sessionId)
             throws CatalogException {
         String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
         return create(study, file, parents, content, options, sessionId);
     }
 
-    public QueryResult<File> register(Study study, File file, boolean parents, QueryOptions options, String sessionId)
-            throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-        long studyId = study.getUid();
-
+    void validateNewFile(Study study, File file, String userId) throws CatalogException {
         /** Check and set all the params and create a File object **/
         ParamUtils.checkObj(file, "File");
         ParamUtils.checkPath(file.getPath(), "path");
@@ -628,9 +623,14 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setBioformat(ParamUtils.defaultObject(file.getBioformat(), File.Bioformat.NONE));
         file.setDescription(ParamUtils.defaultString(file.getDescription(), ""));
         file.setRelatedFiles(ParamUtils.defaultObject(file.getRelatedFiles(), ArrayList::new));
+        file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList::new));
         file.setCreationDate(TimeUtils.getTime());
         file.setModificationDate(file.getCreationDate());
+        file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
+        file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
+
         if (file.getType() == File.Type.FILE) {
+            // TODO: If we are always creating it first in disk, then we won't need the stage status anymore
             file.setStatus(ParamUtils.defaultObject(file.getStatus(), new File.FileStatus(File.FileStatus.STAGE)));
         } else {
             file.setStatus(ParamUtils.defaultObject(file.getStatus(), new File.FileStatus(File.FileStatus.READY)));
@@ -638,22 +638,18 @@ public class FileManager extends AnnotationSetManager<File> {
         if (file.getSize() < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
         }
-//        if (file.getExperiment().getId() > 0 && !jobDBAdaptor.experimentExists(file.getExperiment().getId())) {
-//            throw new CatalogException("Experiment { id: " + file.getExperiment().getId() + "} does not exist.");
-//        }
-
-        file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList::new));
         for (Sample sample : file.getSamples()) {
+            // TODO: Check if we know the sample ids or why we are supposing we already have the uids
             if (sample.getUid() <= 0 || !sampleDBAdaptor.exists(sample.getUid())) {
                 throw new CatalogException("Sample { id: " + sample.getUid() + "} does not exist.");
             }
         }
+        // TODO: Check why we suppose we have job uids
         if (file.getJob() != null && file.getJob().getUid() > 0 && !jobDBAdaptor.exists(file.getJob().getUid())) {
             throw new CatalogException("Job { id: " + file.getJob().getUid() + "} does not exist.");
         }
-        file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
-        file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
 
+        // Fix path
         if (file.getType() == File.Type.DIRECTORY && !file.getPath().endsWith("/")) {
             file.setPath(file.getPath() + "/");
         }
@@ -665,37 +661,54 @@ public class FileManager extends AnnotationSetManager<File> {
         URI uri;
         try {
             if (file.getType() == File.Type.DIRECTORY) {
-                uri = getFileUri(studyId, file.getPath(), true);
+                uri = getFileUri(study.getUid(), file.getPath(), true);
             } else {
-                uri = getFileUri(studyId, file.getPath(), false);
+                uri = getFileUri(study.getUid(), file.getPath(), false);
             }
         } catch (URISyntaxException e) {
             throw new CatalogException(e);
         }
         file.setUri(uri);
 
-        // FIXME: Why am I doing this? Why am I not throwing an exception if it already exists?
         // Check if it already exists
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
                         + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
         if (fileDBAdaptor.count(query).first() > 0) {
-            logger.warn("The file {} already exists in catalog", file.getPath());
+            logger.warn("The file '{}' already exists in catalog", file.getPath());
+            throw new CatalogException("The file '" + file.getPath() + "' already exists in catalog");
         }
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(FileDBAdaptor.QueryParams.URI.key(), uri)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
                         + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
-        if (fileDBAdaptor.count(query).first() > 0) {
-            logger.warn("The uri {} of the file is already in catalog but on a different path", uri);
+        QueryResult<File> fileResult = fileDBAdaptor.get(query,
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));
+        if (fileResult.getNumResults() > 0) {
+            logger.warn("The uri '{}' of the file is already in catalog but in path '{}'.", uri, fileResult.first().getPath());
+            throw new CatalogException("The uri '" + uri + "' of the file is already in catalog but in path '"
+                    + fileResult.first().getPath() + "'");
         }
 
         boolean external = isExternal(study, file.getPath(), uri);
         file.setExternal(external);
         file.setRelease(studyManager.getCurrentRelease(study, userId));
+
+        validateNewAnnotationSets(study.getVariableSets(), file.getAnnotationSets());
+
+        file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
+    }
+
+    public QueryResult<File> register(Study study, File file, boolean parents, QueryOptions options, String sessionId)
+            throws CatalogException {
+        String userId = userManager.getUserId(sessionId);
+        long studyId = study.getUid();
+
+        validateNewFile(study, file, userId);
 
         //Find parent. If parents == true, create folders.
         String parentPath = getParentPath(file.getPath());
@@ -724,11 +737,7 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
 
-        List<VariableSet> variableSetList = validateNewAnnotationSetsAndExtractVariableSets(study.getUid(), file.getAnnotationSets());
-
-        file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
-        checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
-        QueryResult<File> queryResult = fileDBAdaptor.insert(studyId, file, variableSetList, options);
+        QueryResult<File> queryResult = fileDBAdaptor.insert(studyId, file, study.getVariableSets(), options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
         // Propagate ACLs
@@ -831,21 +840,14 @@ public class FileManager extends AnnotationSetManager<File> {
             file.setName(Paths.get(file.getPath()).toFile().getName());
         }
 
-        QueryResult<Study> studyQueryResult = studyManager.get(studyStr,
-                new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(),
-                        StudyDBAdaptor.QueryParams.ATTRIBUTES.key())), sessionId);
-        if (studyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Study " + studyStr + " not found");
-        }
-        Study study = studyQueryResult.first();
+        String userId = userManager.getUserId(sessionId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        QueryResult<File> parentFolders = getParents(false, QueryOptions.empty(), file.getPath(), study.getUid());
+        QueryResult<File> parentFolders = getParents(study.getUid(), file.getPath(), false, QueryOptions.empty());
         if (parentFolders.getNumResults() == 0) {
             // There always must be at least the root folder
             throw new CatalogException("Unexpected error happened.");
         }
-
-        String userId = userManager.getUserId(sessionId);
 
         // Check permissions over the most internal path
         authorizationManager.checkFilePermission(study.getUid(), parentFolders.first().getUid(), userId,
@@ -2371,7 +2373,7 @@ public class FileManager extends AnnotationSetManager<File> {
         return fileListCopy;
     }
 
-    private List<String> getParentPaths(String filePath) {
+    private List<String> calculateAllPossiblePaths(String filePath) {
         String path = "";
         String[] split = filePath.split("/");
         List<String> paths = new ArrayList<>(split.length + 1);
@@ -2389,10 +2391,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     //FIXME: This should use org.opencb.opencga.storage.core.variant.io.VariantReaderUtils
-    private String getOriginalFile(String name) {
-        if (name.endsWith(".variants.avro.gz")
-                || name.endsWith(".variants.proto.gz")
-                || name.endsWith(".variants.json.gz")) {
+    private String getMainVariantFile(String name) {
+        if (name.endsWith(".variants.avro.gz") || name.endsWith(".variants.proto.gz") || name.endsWith(".variants.json.gz")) {
             int idx = name.lastIndexOf(".variants.");
             return name.substring(0, idx);
         } else {
@@ -2401,11 +2401,11 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     private boolean isTransformedFile(String name) {
-        return getOriginalFile(name) != null;
+        return getMainVariantFile(name) != null;
     }
 
-    private String getMetaFile(String path) {
-        String file = getOriginalFile(path);
+    private String getVariantMetadataFile(String path) {
+        String file = getMainVariantFile(path);
         if (file != null) {
             return file + ".file.json.gz";
         } else {
@@ -2413,11 +2413,11 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, long studyId) throws CatalogException {
-        List<String> paths = getParentPaths(filePath);
+    private QueryResult<File> getParents(long studyUid, String filePath, boolean rootFirst, QueryOptions options) throws CatalogException {
+        List<String> paths = calculateAllPossiblePaths(filePath);
 
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), paths);
-        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
         QueryResult<File> result = fileDBAdaptor.get(query, options);
         result.getResult().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
         return result;
@@ -2445,7 +2445,7 @@ public class FileManager extends AnnotationSetManager<File> {
      */
     private URI getFileUri(long studyId, String path, boolean directory) throws CatalogException, URISyntaxException {
         // Get the closest existing parent. If parents == true, may happen that the parent is not registered in catalog yet.
-        File existingParent = getParents(false, null, path, studyId).first();
+        File existingParent = getParents(studyId, path, false, null).first();
 
         //Relative path to the existing parent
         String relativePath = Paths.get(existingParent.getPath()).relativize(Paths.get(path)).toString();

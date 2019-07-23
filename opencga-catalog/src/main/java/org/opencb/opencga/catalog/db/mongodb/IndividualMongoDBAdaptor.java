@@ -98,53 +98,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualCollection.insert(document, null);
     }
 
-//    @Override
-//    public QueryResult<Individual> insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
-//            throws CatalogDBException {
-//        long startQuery = startQuery();
-//
-//        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-//        if (!get(new Query(QueryParams.ID.key(), individual.getId())
-//                .append(QueryParams.STUDY_UID.key(), studyId), new QueryOptions()).getResult().isEmpty()) {
-//            throw CatalogDBException.alreadyExists("Individual", "id", individual.getId());
-//        }
-//        if (individual.getFather() != null && individual.getFather().getUid() > 0 && !exists(individual.getFather().getUid())) {
-//            throw CatalogDBException.idNotFound("Individual", individual.getFather().getId());
-//        }
-//        if (individual.getMother() != null && individual.getMother().getUid() > 0 && !exists(individual.getMother().getUid())) {
-//            throw CatalogDBException.idNotFound("Individual", individual.getMother().getId());
-//        }
-//
-//        long individualId = getNewUid();
-//
-//        individual.setUid(individualId);
-//        individual.setStudyUid(studyId);
-//        individual.setVersion(1);
-//        if (StringUtils.isEmpty(individual.getUuid())) {
-//            individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
-//        }
-//
-//        Document individualDocument = individualConverter.convertToStorageType(individual, variableSetList);
-//
-//        // Versioning private parameters
-//        individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(individual.getRelease()));
-//        individualDocument.put(LAST_OF_VERSION, true);
-//        individualDocument.put(LAST_OF_RELEASE, true);
-//        if (StringUtils.isNotEmpty(individual.getCreationDate())) {
-//            individualDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(individual.getCreationDate()));
-//        } else {
-//            individualDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
-//        }
-//        individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-//
-//        individualCollection.insert(individualDocument, null);
-//
-//        Query query = new Query()
-//                .append(QueryParams.STUDY_UID.key(), studyId)
-//                .append(QueryParams.UID.key(), individualId);
-//        return endQuery("createIndividual", startQuery, get(query, options));
-//    }
-
     @Override
     public QueryResult<Individual> insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
@@ -249,10 +202,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public long getStudyId(long individualId) throws CatalogDBException {
         QueryResult<Document> result =
-                individualCollection.find(new Document(PRIVATE_UID, individualId), new Document(PRIVATE_STUDY_ID, 1), null);
+                individualCollection.find(new Document(PRIVATE_UID, individualId), new Document(PRIVATE_STUDY_UID, 1), null);
 
         if (!result.getResult().isEmpty()) {
-            return (long) result.getResult().get(0).get(PRIVATE_STUDY_ID);
+            return (long) result.getResult().get(0).get(PRIVATE_STUDY_UID);
         } else {
             throw CatalogDBException.uidNotFound("Individual", individualId);
         }
@@ -389,6 +342,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throws CatalogDBException {
         long startTime = startQuery();
 
+        if (parameters.containsKey(QueryParams.ID.key())) {
+            // We need to check that the update is only performed over 1 single individual
+            if (count(query).first() != 1) {
+                throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key()
+                        + "' can only be updated for one individual");
+            }
+        }
+
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Individual> iterator = iterator(query, options);
@@ -408,9 +369,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
+                    Query tmpQuery = new Query()
+                            .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
+                            .append(QueryParams.UID.key(), individual.getUid());
+
                     if (queryOptions.getBoolean(Constants.REFRESH)) {
                         // Add the latest sample versions in the parameters object
-                        updateToLastSampleVersions(clientSession, query, parameters, queryOptions);
+                        updateToLastSampleVersions(clientSession, tmpQuery, parameters, queryOptions);
                     }
 
                     if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
@@ -419,12 +384,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
                     updateAnnotationSets(clientSession, individual.getUid(), parameters, variableSetList, queryOptions, true);
 
-                    Document individualUpdate = parseAndValidateUpdateParams(parameters, query, queryOptions).toFinalUpdateDocument();
+                    Document individualUpdate = parseAndValidateUpdateParams(parameters, tmpQuery, queryOptions).toFinalUpdateDocument();
 
                     if (!individualUpdate.isEmpty()) {
-                        Query tmpQuery = new Query()
-                                .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
-                                .append(QueryParams.UID.key(), individual.getUid());
                         Bson finalQuery = parseQuery(tmpQuery);
 
                         logger.debug("Individual update: query : {}, update: {}",
@@ -984,7 +946,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     DBIterator<Individual> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new IndividualMongoDBIterator<>(mongoCursor, individualConverter, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID),
+        return new IndividualMongoDBIterator<>(mongoCursor, individualConverter, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_UID),
                 null, options);
     }
 
@@ -998,7 +960,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new IndividualMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), null, options);
+        return new IndividualMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_UID), null, options);
     }
 
     @Override
@@ -1016,7 +978,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
         return new IndividualMongoDBIterator<>(mongoCursor, individualConverter, iteratorFilter, dbAdaptorFactory,
-                query.getLong(PRIVATE_STUDY_ID), user, options);
+                query.getLong(PRIVATE_STUDY_UID), user, options);
     }
 
     @Override
@@ -1036,7 +998,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new IndividualMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_ID), user,
+        return new IndividualMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory, query.getLong(PRIVATE_STUDY_UID), user,
                 options);
     }
 
@@ -1183,7 +1145,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);

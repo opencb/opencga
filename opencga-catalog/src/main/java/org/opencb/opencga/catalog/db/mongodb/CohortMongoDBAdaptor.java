@@ -100,8 +100,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
             try {
-                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-                checkCohortIdExists(studyId, cohort.getId());
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+                checkCohortIdExists(clientSession, studyId, cohort.getId());
 
                 long newId = getNewUid(clientSession);
                 cohort.setUid(newId);
@@ -193,11 +193,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     public long getStudyId(long cohortId) throws CatalogDBException {
         checkId(cohortId);
         QueryResult queryResult = nativeGet(new Query(QueryParams.UID.key(), cohortId),
-                new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID));
+                new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_UID));
         if (queryResult.getResult().isEmpty()) {
             throw CatalogDBException.uidNotFound("Cohort", cohortId);
         } else {
-            return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_ID);
+            return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_UID);
         }
     }
 
@@ -208,12 +208,22 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
+        return count(null, query);
+    }
+
+    QueryResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         long startTime = startQuery();
-        return endQuery("Count cohort", startTime, cohortCollection.count(parseQuery(query)));
+        return endQuery("Count cohort", startTime, cohortCollection.count(clientSession, parseQuery(query)));
     }
 
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return count(null, query, user, studyPermissions);
+    }
+
+    QueryResult<Long> count(ClientSession clientSession, final Query query, final String user,
+                            final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         filterOutDeleted(query);
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
@@ -227,7 +237,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 studyPermission.getCohortPermission().name(), Entity.COHORT.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Cohort count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return cohortCollection.count(bson);
+        return cohortCollection.count(clientSession, bson);
     }
 
     private void filterOutDeleted(Query query) {
@@ -257,7 +267,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throws CatalogDBException {
         long startTime = startQuery();
 
-        Document cohortUpdate = parseAndValidateUpdateParams(parameters, query, queryOptions).toFinalUpdateDocument();
+        if (parameters.containsKey(QueryParams.ID.key())) {
+            // We need to check that the update is only performed over 1 single family
+            if (count(query).first() != 1) {
+                throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one cohort");
+            }
+        }
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
@@ -276,18 +291,22 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 long tmpStartTime = startQuery();
 
                 try {
+                    Query tmpQuery = new Query()
+                            .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid())
+                            .append(QueryParams.UID.key(), cohort.getUid());
+
+                    updateAnnotationSets(clientSession, cohort.getUid(), parameters, variableSetList, queryOptions, false);
+
+                    Document cohortUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions)
+                            .toFinalUpdateDocument();
+
                     if (!cohortUpdate.isEmpty()) {
-                        Query tmpQuery = new Query()
-                                .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid())
-                                .append(QueryParams.UID.key(), cohort.getUid());
                         Bson finalQuery = parseQuery(tmpQuery);
                         logger.debug("Cohort update: query : {}, update: {}",
                                 finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                                 cohortUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
                         cohortCollection.update(clientSession, finalQuery, cohortUpdate, null);
                     }
-
-                    updateAnnotationSets(clientSession, cohort.getUid(), parameters, variableSetList, queryOptions, false);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating cohort {}({}). {}", cohort.getId(), cohort.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
@@ -323,15 +342,15 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         return endWrite("update", startTime, numMatches, numModified, failList, null, error);
     }
 
-    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
-            throws CatalogDBException {
+    private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query,
+                                                        QueryOptions queryOptions) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         if (parameters.containsKey(CohortDBAdaptor.QueryParams.ID.key())) {
             // That can only be done to one cohort...
             Query tmpQuery = new Query(query);
 
-            QueryResult<Cohort> cohortQueryResult = get(tmpQuery, new QueryOptions());
+            QueryResult<Cohort> cohortQueryResult = get(clientSession, tmpQuery, new QueryOptions());
             if (cohortQueryResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update cohort: No cohort found to be updated");
             }
@@ -345,7 +364,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            QueryResult<Long> count = count(tmpQuery);
+            QueryResult<Long> count = count(clientSession, tmpQuery);
             if (count.getResult().get(0) > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Cohort "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
@@ -447,7 +466,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                             .append(QueryParams.ID.key(), cohort.getId() + deleteSuffix);
 
                     Bson bsonQuery = parseQuery(tmpQuery);
-                    Document updateDocument = parseAndValidateUpdateParams(updateParams, tmpQuery, QueryOptions.empty())
+                    Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, tmpQuery, QueryOptions.empty())
                             .toFinalUpdateDocument();
 
                     logger.debug("Delete cohort {} ({}): Query: {}, update: {}", cohort.getId(), cohort.getUid(),
@@ -569,10 +588,15 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public QueryResult<Cohort> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return get(null, query, options, user);
+    }
+
+    QueryResult<Cohort> get(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Cohort> documentList = new ArrayList<>();
         QueryResult<Cohort> queryResult;
-        try (DBIterator<Cohort> dbIterator = iterator(query, options, user)) {
+        try (DBIterator<Cohort> dbIterator = iterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -585,7 +609,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
+            QueryResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -593,9 +617,13 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public QueryResult<Cohort> get(Query query, QueryOptions options) throws CatalogDBException {
+        return get(null, query, options);
+    }
+
+    QueryResult<Cohort> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Cohort> documentList = new ArrayList<>();
-        try (DBIterator<Cohort> dbIterator = iterator(query, options)) {
+        try (DBIterator<Cohort> dbIterator = iterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -608,7 +636,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            QueryResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -664,9 +692,13 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public DBIterator<Cohort> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new CohortMongoDBIterator(mongoCursor, cohortConverter, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), null, options);
+        return iterator(null, query, options);
+    }
+
+    DBIterator<Cohort> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
+        return new CohortMongoDBIterator(mongoCursor, clientSession, cohortConverter, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_UID), null, options);
     }
 
     @Override
@@ -674,21 +706,26 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new CohortMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), null, options);
+        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions);
+        return new CohortMongoDBIterator(mongoCursor, null, null, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_UID), null, options);
     }
 
     @Override
     public DBIterator<Cohort> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return iterator(null, query, options, user);
+    }
+
+    DBIterator<Cohort> iterator(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
-        return new CohortMongoDBIterator<>(mongoCursor, cohortConverter, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), user, options);
+        return new CohortMongoDBIterator<>(mongoCursor, clientSession, cohortConverter, iteratorFilter,
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), user, options);
     }
 
     @Override
@@ -698,26 +735,26 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         queryOptions.put(NATIVE_QUERY, true);
 
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
-        return new CohortMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                query.getLong(PRIVATE_STUDY_ID), user, options);
+        return new CohortMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+                query.getLong(PRIVATE_STUDY_UID), user, options);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> documentMongoCursor;
         try {
-            documentMongoCursor = getMongoCursor(query, options, null, null);
+            documentMongoCursor = getMongoCursor(clientSession, query, options, null, null);
         } catch (CatalogAuthorizationException e) {
             throw new CatalogDBException(e);
         }
         return documentMongoCursor;
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, Document studyDocument, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, Document studyDocument,
+                                                 String user) throws CatalogDBException, CatalogAuthorizationException {
         Document queryForAuthorisedEntries = null;
         if (studyDocument != null && user != null) {
             // Get the document query needed to check the permissions as well
@@ -739,7 +776,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
 
         logger.debug("Cohort query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return cohortCollection.nativeQuery().find(bson, qOptions).iterator();
+        return cohortCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
     }
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
@@ -819,9 +856,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
     }
 
-    private void checkCohortIdExists(long studyId, String cohortId) throws CatalogDBException {
-        QueryResult<Long> count = cohortCollection.count(Filters.and(
-                Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.eq(QueryParams.ID.key(), cohortId)));
+    private void checkCohortIdExists(ClientSession clientSession, long studyId, String cohortId) throws CatalogDBException {
+        QueryResult<Long> count = cohortCollection.count(clientSession, Filters.and(
+                Filters.eq(PRIVATE_STUDY_UID, studyId), Filters.eq(QueryParams.ID.key(), cohortId)));
         if (count.getResult().get(0) > 0) {
             throw CatalogDBException.alreadyExists("Cohort", "id", cohortId);
         }
@@ -856,7 +893,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
@@ -964,7 +1001,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
                 new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name()));
 
-        Bson update = parseAndValidateUpdateParams(params, null, queryOptions).toFinalUpdateDocument();
+        Bson update = parseAndValidateUpdateParams(clientSession, params, null, queryOptions).toFinalUpdateDocument();
 
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
 

@@ -139,7 +139,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
                 List<Bson> filterList = new ArrayList<>();
                 filterList.add(Filters.eq(QueryParams.ID.key(), panel.getId()));
-                filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyUid));
+                filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
                 filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
                 Bson bson = Filters.and(filterList);
@@ -319,11 +319,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public long getStudyId(long panelUid) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, panelUid);
-        Bson projection = Projections.include(PRIVATE_STUDY_ID);
+        Bson projection = Projections.include(PRIVATE_STUDY_UID);
         QueryResult<Document> queryResult = panelCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
-            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
+            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.uidNotFound("Panel", panelUid);
@@ -863,7 +863,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);

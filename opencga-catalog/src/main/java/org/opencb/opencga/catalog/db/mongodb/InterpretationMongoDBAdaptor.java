@@ -63,7 +63,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
@@ -101,11 +101,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public long getStudyId(long interpretationId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, interpretationId);
-        Bson projection = Projections.include(PRIVATE_STUDY_ID);
+        Bson projection = Projections.include(PRIVATE_STUDY_UID);
         QueryResult<Document> queryResult = interpretationCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
-            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
+            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.uidNotFound("Interpretation", interpretationId);
@@ -320,7 +320,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
             // Perform the update on the previous version
             Document queryDocument = new Document()
-                    .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
+                    .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
                     .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
                     .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
             QueryResult<UpdateResult> updateResult = interpretationCollection.update(queryDocument, new Document("$set", updateOldVersion),
@@ -463,7 +463,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);

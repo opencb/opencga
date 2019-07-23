@@ -99,10 +99,10 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     public long getStudyIdByDatasetId(long datasetId) throws CatalogDBException {
         checkId(datasetId);
         Query query = new Query(QueryParams.ID.key(), datasetId);
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID);
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_UID);
         Document dataset = (Document) nativeGet(query, queryOptions).first();
 
-        return dataset.getLong(PRIVATE_STUDY_ID);
+        return dataset.getLong(PRIVATE_STUDY_UID);
     }
 
     @Override
@@ -431,7 +431,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
                         addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_ID:
-                        addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addOrQuery(PRIVATE_STUDY_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);

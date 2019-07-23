@@ -96,7 +96,7 @@ public class FileMetadataReader {
         }
 
         QueryResult<File> fileResult = catalogManager.getFileManager().create(studyId, type, format, bioformat, path,
-                null, description, new File.FileStatus(File.FileStatus.STAGE), (long) 0, (long) -1, null, (long) -1, null, null, parents,
+                description, new File.FileStatus(File.FileStatus.STAGE), (long) 0, null, (long) -1, null, null, parents,
                 null, options, sessionId);
 
         File modifiedFile = null;

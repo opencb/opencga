@@ -312,8 +312,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private long getDiskUsageByStudy(int studyId) {
 
         List<Bson> operations = new ArrayList<>();
-        operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId)));
-        operations.add(Aggregates.group("$" + PRIVATE_STUDY_ID, Accumulators.sum("size", "$diskUsage")));
+        operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_UID, studyId)));
+        operations.add(Aggregates.group("$" + PRIVATE_STUDY_UID, Accumulators.sum("size", "$diskUsage")));
 
         QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection()
                 .aggregate(operations, null);
@@ -1335,7 +1335,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
             // Delete the active studies (if any)
-            query = new Query(PRIVATE_STUDY_ID, id);
+            query = new Query(PRIVATE_STUDY_UID, id);
             dbAdaptorFactory.getCatalogFileDBAdaptor().setStatus(query, Status.DELETED);
             dbAdaptorFactory.getCatalogJobDBAdaptor().setStatus(query, Status.DELETED);
             dbAdaptorFactory.getCatalogSampleDBAdaptor().setStatus(query, Status.DELETED);
@@ -1382,7 +1382,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
      */
     private void checkCanDelete(long studyId) throws CatalogDBException {
         checkId(studyId);
-        Query query = new Query(PRIVATE_STUDY_ID, studyId)
+        Query query = new Query(PRIVATE_STUDY_UID, studyId)
                 .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
         Long count = dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first();
@@ -1424,7 +1424,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
      * @throws CatalogDBException when there exists active files, samples, cohorts...
      */
     private void checkEmptyStudy(long studyId) throws CatalogDBException {
-        Query query = new Query(PRIVATE_STUDY_ID, studyId)
+        Query query = new Query(PRIVATE_STUDY_UID, studyId)
                 .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
         // Check files
@@ -1804,15 +1804,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     /***
      * This method is called every time a file has been inserted, modified or deleted to keep track of the current study size.
      *
+     * @param clientSession Client session.
      * @param studyId   Study Identifier
      * @param size disk usage of a new created, updated or deleted file belonging to studyId. This argument
      *                  will be > 0 to increment the size field in the study collection or < 0 to decrement it.
      * @throws CatalogDBException An exception is launched when the update crashes.
      */
-    public void updateDiskUsage(long studyId, long size) throws CatalogDBException {
+    public void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException {
         Bson query = new Document(QueryParams.UID.key(), studyId);
         Bson update = Updates.inc(QueryParams.SIZE.key(), size);
-        if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {
+        if (studyCollection.update(clientSession, query, update, null).getNumTotalResults() == 0) {
             throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the size field of"
                     + " the study " + studyId);
         }

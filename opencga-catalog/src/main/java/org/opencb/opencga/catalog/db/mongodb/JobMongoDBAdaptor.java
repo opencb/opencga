@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
@@ -41,6 +42,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -80,6 +82,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return jobCollection;
     }
 
+    public boolean exists(ClientSession clientSession, long jobUid) throws CatalogDBException {
+        return count(clientSession, new Query(QueryParams.UID.key(), jobUid)).first() > 0;
+    }
+
     @Override
     public void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(job, "job");
@@ -101,7 +107,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
                 List<Bson> filterList = new ArrayList<>();
                 filterList.add(Filters.eq(QueryParams.ID.key(), job.getId()));
-                filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+                filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
                 filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
                 Bson bson = Filters.and(filterList);
@@ -168,11 +174,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public long getStudyId(long jobId) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), jobId);
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID);
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_UID);
         QueryResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {
-            Object id = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
+            Object id = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
             return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
             throw CatalogDBException.uidNotFound("Job", jobId);
@@ -186,8 +192,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
+        return count(null, query);
+    }
+
+    QueryResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query);
-        return jobCollection.count(bsonDocument);
+        return jobCollection.count(clientSession, bsonDocument);
     }
 
 
@@ -745,6 +755,56 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
     }
 
+    void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document file) {
+        UpdateDocument document = new UpdateDocument();
+
+        String prefix = QueryParams.ATTRIBUTES.key() + "." + Constants.PRIVATE_OPENCGA_ATTRIBUTES + ".";
+
+        // INPUT
+        Document query = new Document()
+                .append(PRIVATE_STUDY_UID, studyUid)
+                .append(QueryParams.INPUT_UID.key(), fileUid);
+        document.getPullAll().put(QueryParams.INPUT.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid));
+        document.getPush().put(prefix + Constants.JOB_DELETED_INPUT_FILES, file);
+        Document updateDocument = document.toFinalUpdateDocument();
+
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.INPUT.key(),
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        QueryResult<UpdateResult> result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+
+        // OUTPUT
+        query = new Document()
+                .append(PRIVATE_STUDY_UID, studyUid)
+                .append(QueryParams.OUTPUT_UID.key(), fileUid);
+        document = new UpdateDocument();
+        document.getPullAll().put(QueryParams.OUTPUT.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid));
+        document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_FILES, file);
+        updateDocument = document.toFinalUpdateDocument();
+
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUTPUT.key(),
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+
+        // OUT DIR
+        query = new Document()
+                .append(PRIVATE_STUDY_UID, studyUid)
+                .append(QueryParams.OUT_DIR_UID.key(), fileUid);
+        document = new UpdateDocument();
+        document.getPullAll().put(QueryParams.OUT_DIR.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid));
+        document.getSet().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, file);
+        updateDocument = document.toFinalUpdateDocument();
+
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUT_DIR.key(),
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+    }
+
     private Bson parseQuery(Query query) throws CatalogDBException {
         return parseQuery(query, null);
     }
@@ -771,7 +831,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);

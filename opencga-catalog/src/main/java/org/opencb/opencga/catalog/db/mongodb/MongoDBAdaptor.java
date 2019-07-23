@@ -53,7 +53,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
-    static final String PRIVATE_STUDY_ID = "studyUid";
+    static final String PRIVATE_STUDY_UID = "studyUid";
     private static final String VERSION = "version";
 
     static final String FILTER_ROUTE_PROJECTS = "projects.";
@@ -457,7 +457,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
-                .append(PRIVATE_STUDY_ID, studyId)
+                .append(PRIVATE_STUDY_UID, studyId)
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
@@ -489,7 +489,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         // Perform the update on the previous version
         Document queryDocument = new Document()
-                .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
+                .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
                 .append(VERSION, document.getInteger(VERSION))
                 .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
 
@@ -519,11 +519,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected Document getStudyDocument(ClientSession clientSession, Query query) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(PRIVATE_STUDY_ID));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(PRIVATE_STUDY_UID));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
                 QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(PRIVATE_STUDY_ID) + " not found");
+            throw new CatalogDBException("Study " + query.getLong(PRIVATE_STUDY_UID) + " not found");
         }
         return queryResult.first();
     }

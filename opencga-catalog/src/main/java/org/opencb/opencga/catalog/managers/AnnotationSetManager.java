@@ -229,49 +229,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 Collections.emptyList());
     }
 
-    //    private Map<String, Map<String, QueryParam.Type>> getVariableTypeMap(long studyId) throws CatalogDBException {
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
-//        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(studyId, options);
-//
-//        if (studyQueryResult.getNumResults() == 0) {
-//            throw new CatalogDBException("Unexpected error: Study id " + studyId + " not found");
-//        }
-//
-//        Map<String, Map<String, QueryParam.Type>> variableTypeMap = new HashMap<>();
-//        List<VariableSet> variableSets = studyQueryResult.first().getVariableSets();
-//        if (variableSets != null) {
-//            for (VariableSet variableSet : variableSets) {
-//                variableTypeMap.put(String.valueOf(variableSet.getId()), getVariableMap(variableSet));
-//            }
-//        }
-//
-//        return variableTypeMap;
-//    }
-
-    @Deprecated
-    protected List<VariableSet> validateNewAnnotationSetsAndExtractVariableSets(long studyId, List<AnnotationSet> annotationSetList)
-            throws CatalogException {
-        if (annotationSetList == null || annotationSetList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // Get all variableSets
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(studyId,
-                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-        if (studyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Unexpected error: Study " + studyId + " not found");
-        }
-
-        List<VariableSet> variableSetList = studyQueryResult.first().getVariableSets();
-        if (variableSetList == null || variableSetList.isEmpty()) {
-            throw new CatalogException("Impossible annotating variables from a study without VariableSets defined");
-        }
-
-        validateNewAnnotationSets(variableSetList, annotationSetList);
-
-        return variableSetList;
-    }
-
     protected void validateNewAnnotationSets(List<VariableSet> variableSetList, List<AnnotationSet> annotationSetList)
             throws CatalogException {
         if (annotationSetList == null || annotationSetList.isEmpty()) {

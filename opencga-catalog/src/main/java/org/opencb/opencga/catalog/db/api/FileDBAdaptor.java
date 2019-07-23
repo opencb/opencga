@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -274,5 +275,25 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @throws CatalogException if there is any database error.
      */
     void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+
+    /**
+     * Delete file.
+     *
+     * @param fileUid Delete the file.
+     * @param status Deletion status we want to set.
+     * @return a WriteResult object.
+     * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
+     */
+    WriteResult delete(long fileUid, String status) throws CatalogDBException;
+
+    /**
+     * Delete file.
+     *
+     * @param query Delete all the files matching the query.
+     * @param status Deletion status we want to set.
+     * @return a WriteResult object.
+     * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
+     */
+    WriteResult delete(Query query, String status) throws CatalogDBException;
 
 }

@@ -411,7 +411,7 @@ public class FileUtils {
                 //only related to the main folder creation.
                 if (!pathFileMap.containsKey(entry.getValue())) {
                     File newFile = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, null, null,
-                            relativePath, null, "", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionId).first();
+                            relativePath, "", null, 0, null, (long) -1, null, null, true, null, null, sessionId).first();
                     upload(uri, newFile, null, sessionId, false, false, false, calculateChecksum);
                 }
             }

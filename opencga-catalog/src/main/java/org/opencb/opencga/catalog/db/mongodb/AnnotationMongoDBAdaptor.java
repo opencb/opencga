@@ -712,7 +712,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         long startTime = startQuery();
 
         List<Bson> aggregation = new ArrayList<>(6);
-        aggregation.add(new Document("$match", new Document(PRIVATE_STUDY_ID, studyId)));
+        aggregation.add(new Document("$match", new Document(PRIVATE_STUDY_UID, studyId)));
         aggregation.add(new Document("$project", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), 1)));
         aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS.key()));
 //        aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS.key()));
