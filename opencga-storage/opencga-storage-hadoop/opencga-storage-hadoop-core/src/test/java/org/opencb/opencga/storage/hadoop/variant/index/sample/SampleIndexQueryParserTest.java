@@ -14,6 +14,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.OR;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseAnnotationMask;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseFileMask;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.*;
@@ -28,24 +29,24 @@ public class SampleIndexQueryParserTest {
     @Test
     public void validSampleIndexQueryTest() {
         // Single sample
-        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(SAMPLE.key(), "S1")));
-        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1")));
-        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./1")));
-        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,0/1")));
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:!1/1"))); // Negated
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:0/0")));
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./0")));
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./.")));
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.")));
+        assertTrue(validSampleIndexQuery(new Query(SAMPLE.key(), "S1")));
+        assertTrue(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1")));
+        assertTrue(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./1")));
+        assertTrue(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,0/1")));
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:!1/1"))); // Negated
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:0/0")));
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./0")));
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:./.")));
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.")));
 
         // ALL samples (and)
-        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:0/1"))); // Any valid
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:./.")));
+        assertTrue(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:0/1"))); // Any valid
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.;S2:./.")));
 
         // ANY sample (or)
-        assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,S2:0/1"))); // all must be valid
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:0/1")));
-        assertFalse(SampleIndexQueryParser.validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:./.")));
+        assertTrue(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,S2:0/1"))); // all must be valid
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:0/1")));
+        assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:./.")));
 
     }
 
@@ -106,26 +107,26 @@ public class SampleIndexQueryParserTest {
     @Test
     public void parseAnnotationMaskTest() {
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query()));
-        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(TYPE.key(), VariantType.SNV)));
-        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(TYPE.key(), VariantType.SNP)));
-        assertEquals(EMPTY_MASK /*UNUSED_6_MASK*/, parseAnnotationMask(new Query(TYPE.key(), VariantType.INDEL)));
-        assertEquals(EMPTY_MASK /*UNUSED_6_MASK*/, parseAnnotationMask(new Query(TYPE.key(), VariantType.INSERTION)));
-        assertEquals(EMPTY_MASK /*UNUSED_6_MASK*/, parseAnnotationMask(new Query(TYPE.key(), VariantType.DELETION)));
+        for (VariantType value : VariantType.values()) {
+            assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(TYPE.key(), value)));
+        }
 
-        assertEquals(BIOTYPE_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "protein_coding")));
-        assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "other_than_protein_coding")));
-        assertEquals(LOF_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.1")));
+        assertEquals(INTERGENIC_MASK | PROTEIN_CODING_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "protein_coding")));
+        assertEquals(INTERGENIC_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA"))); // Do not use PROTEIN_CODING_MASK when filtering by other biotypes
+        assertEquals(INTERGENIC_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "other_than_protein_coding")));
+        assertEquals(LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.1")));
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<<0.1")));
 
-        assertEquals(LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")));
-        assertEquals(LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant")));
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")));
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")));
+        assertEquals(INTERGENIC_MASK | MISSENSE_VARIANT_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")));
+        assertEquals(INTERGENIC_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant"))); // Do not use MISSENSE_VARIANT_MASK when filtering by other CTs
+        assertEquals(INTERGENIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant"))); // Do not use LOF_MASK  nor LOF_EXTENDED_MASK when filtering by other CTs
+        assertEquals(INTERGENIC_MASK | LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")));
+        assertEquals(INTERGENIC_MASK | LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")));
 
-        assertEquals(LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost,stop_gained")
-                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")
-                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
+//        assertEquals(INTERGENIC_MASK | LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost,stop_gained")
+//                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
+//        assertEquals(INTERGENIC_MASK | LOF_MASK | LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")
+//                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
 
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.01")));
         assertEquals(POP_FREQ_ANY_001_MASK, parseAnnotationMask(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001")));
@@ -202,6 +203,79 @@ public class SampleIndexQueryParserTest {
     }
 
     @Test
+    public void parseIntergenicTest() {
+        checkIntergenic(null, new Query());
+
+        checkIntergenic(false, new Query(ANNOT_BIOTYPE.key(), "protein_coding"));
+        checkIntergenic(false, new Query(ANNOT_BIOTYPE.key(), "miRNA"));
+
+        checkIntergenic(false, new Query(GENE.key(), "BRCA2"));
+        checkIntergenic(false, new Query(ANNOT_XREF.key(), "BRCA2"));
+        checkIntergenic(false, new Query(ANNOT_XREF.key(), "ENSG000000"));
+        checkIntergenic(false, new Query(ANNOT_XREF.key(), "ENST000000"));
+
+        checkIntergenic(null, new Query(ANNOT_XREF.key(), "1:1234:A:C"));
+        checkIntergenic(null, new Query(ANNOT_XREF.key(), "rs12345"));
+        checkIntergenic(null, new Query(ID.key(), "1:1234:A:C"));
+        checkIntergenic(null, new Query(ID.key(), "rs12345"));
+
+        checkIntergenic(null, new Query(GENE.key(), "BRCA2").append(REGION.key(), "1:123-1234"));
+        checkIntergenic(null, new Query(GENE.key(), "BRCA2").append(ID.key(), "rs12345"));
+        checkIntergenic(false, new Query(GENE.key(), "BRCA2").append(REGION.key(), "1:123-1234").append(ANNOT_BIOTYPE.key(), "protein_coding"));
+        checkIntergenic(false, new Query(GENE.key(), "BRCA2").append(ID.key(), "rs12345").append(ANNOT_BIOTYPE.key(), "protein_coding"));
+
+        checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
+        checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,synonymous_variant"));
+        checkIntergenic(true, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
+        checkIntergenic(null, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,intergenic_variant"));
+        checkIntergenic(null, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant,missense_variant"));
+
+        // Nonsense combination
+        checkIntergenic(false, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant").append(ANNOT_BIOTYPE.key(), "protein_coding"));
+    }
+
+    private void checkIntergenic(Boolean intergenic, Query query) {
+        SampleIndexQuery.SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query);
+        if (intergenic == null) {
+            assertEquals(EMPTY_MASK, INTERGENIC_MASK & annotationIndexQuery.getAnnotationIndexMask());
+        } else {
+            assertEquals(INTERGENIC_MASK, INTERGENIC_MASK & annotationIndexQuery.getAnnotationIndexMask());
+            if (intergenic) {
+                assertEquals(INTERGENIC_MASK, INTERGENIC_MASK & annotationIndexQuery.getAnnotationIndex());
+            } else {
+                assertEquals(EMPTY_MASK, INTERGENIC_MASK & annotationIndexQuery.getAnnotationIndex());
+            }
+        }
+    }
+
+    @Test
+    public void parseConsequenceTypeMaskTest() {
+        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "synonymous_variant")).getConsequenceTypeMask());
+        assertEquals(CT_MISSENSE_VARIANT_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")).getConsequenceTypeMask());
+        assertEquals(CT_START_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "start_lost")).getConsequenceTypeMask());
+        assertEquals(CT_STOP_GAINED_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained")).getConsequenceTypeMask());
+        assertEquals(CT_STOP_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")).getConsequenceTypeMask());
+        assertEquals(CT_STOP_GAINED_MASK | CT_STOP_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained,stop_lost")).getConsequenceTypeMask());
+
+        assertEquals(CT_MISSENSE_VARIANT_MASK | CT_STOP_LOST_MASK | CT_UTR_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant")).getConsequenceTypeMask());
+        assertEquals(INTERGENIC_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant")).getAnnotationIndexMask());
+    }
+
+    @Test
+    public void parseBiotypeTypeMaskTest() {
+        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype")).getBiotypeMask());
+        assertEquals(BT_PROTEIN_CODING_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding")).getBiotypeMask());
+        assertEquals(BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "miRNA")).getBiotypeMask());
+        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA")).getBiotypeMask());
+        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lincRNA")).getBiotypeMask());
+        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA,lincRNA")).getBiotypeMask());
+
+        // Ensure PROTEIN_CODING_MASK is not added to the summary
+        assertEquals(INTERGENIC_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getAnnotationIndexMask());
+        assertEquals(BT_PROTEIN_CODING_MASK | BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getBiotypeMask());
+    }
+
+    @Test
     public void testCoveredQuery() {
         Query query;
 
@@ -233,13 +307,9 @@ public class SampleIndexQueryParserTest {
         parseAnnotationMask(query, true);
         assertFalse(query.isEmpty());
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), BIOTYPE_SET);
-        parseAnnotationMask(query, true);
-        assertTrue(query.isEmpty());
-
         query = new Query().append(ANNOT_BIOTYPE.key(), "protein_coding");
         parseAnnotationMask(query, true);
-        assertFalse(query.isEmpty());
+        assertTrue(query.isEmpty());
 
 
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))

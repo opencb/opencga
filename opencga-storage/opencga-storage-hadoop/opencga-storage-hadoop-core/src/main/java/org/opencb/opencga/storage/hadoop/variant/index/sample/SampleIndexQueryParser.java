@@ -6,6 +6,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -18,6 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SampleAnnotationIndexQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,8 +290,8 @@ public class SampleIndexQueryParser {
         } else {
             allSamplesAnnotated = false;
         }
-        byte annotationMask = parseAnnotationMask(query, allSamplesAnnotated);
 
+        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query, allSamplesAnnotated);
         Set<VariantType> variantTypes = null;
         if (isValidParam(query, TYPE)) {
             List<String> typesStr = query.getAsStringList(VariantQueryParam.TYPE.key());
@@ -303,7 +305,8 @@ public class SampleIndexQueryParser {
         }
 
         return new SampleIndexQuery(regions, variantTypes, study, samplesMap, fatherFilterMap, motherFilterMap, fileIndexMap,
-                annotationMask, mendelianErrorSet, onlyDeNovo, queryOperation);
+                annotationIndexQuery,
+                mendelianErrorSet, onlyDeNovo, queryOperation);
     }
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {
@@ -499,54 +502,80 @@ public class SampleIndexQueryParser {
     }
 
     protected static byte parseAnnotationMask(Query query, boolean allSamplesAnnotated) {
+        return parseAnnotationIndexQuery(query, allSamplesAnnotated).getAnnotationIndexMask();
+    }
+
+    protected static SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
+        return parseAnnotationIndexQuery(query, false);
+    }
+
+    protected static SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean allSamplesAnnotated) {
         // TODO: Allow skip using annotation mask
 
-        byte b = 0;
+        byte annotationIndex = 0;
+        byte biotypeMask = 0;
+        short consequenceTypeMask = 0;
 
-        boolean transcriptFlagBasic = false;
-        if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
-            transcriptFlagBasic = query.getString(ANNOT_TRANSCRIPT_FLAG.key()).equals(TRANSCRIPT_FLAG_BASIC);
+        Boolean intergenic = null;
+
+        if (!isValidParam(query, REGION)) {
+            VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
+            if (!variantQueryXref.getGenes().isEmpty()
+                    && variantQueryXref.getIds().isEmpty()
+                    && variantQueryXref.getOtherXrefs().isEmpty()
+                    && variantQueryXref.getVariants().isEmpty()) {
+                // If only filtering by genes, is not intergenic.
+                intergenic = false;
+            }
         }
 
         BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query);
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-            List<String> cts = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
-            cts = cts.stream()
+            List<String> soNames = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
+            soNames = soNames.stream()
                     .map(ct -> ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)))
                     .collect(Collectors.toList());
-            if (LOF_SET.containsAll(cts)) {
-                b |= LOF_MASK;
-                if (transcriptFlagBasic) {
-                    b |= LOF_EXTENDED_BASIC_MASK;
-                }
+            if (!soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)) {
+                // All ct values bit "intergenic_variant" are in genes (i.e. non-intergenic)
+                intergenic = false;
+            } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)) {
+                intergenic = true;
+            }
+            if (LOF_SET.containsAll(soNames)) {
+                annotationIndex |= LOF_MASK;
                 // If all present, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_SET.size() == cts.size()) {
+                if (allSamplesAnnotated && LOF_SET.size() == soNames.size()) {
                     // Ensure not filtering by gene, and not combining with other params
                     if (!isValidParam(query, GENE) && combination.numParams() == 1) {
                         query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                     }
                 }
             }
-            if (LOF_EXTENDED_SET.containsAll(cts)) {
-                b |= LOF_EXTENDED_MASK;
-                if (transcriptFlagBasic) {
-                    b |= LOF_EXTENDED_BASIC_MASK;
-                }
+            if (LOF_EXTENDED_SET.containsAll(soNames)) {
+                annotationIndex |= LOF_EXTENDED_MASK;
                 // If all present, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == cts.size() && !isValidParam(query, GENE)) {
+                if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == soNames.size() && !isValidParam(query, GENE)) {
                     // Ensure not filtering by gene, and not combining with other params
                     if (!isValidParam(query, GENE) && combination.numParams() == 1) {
                         query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                     }
                 }
+            }
+            if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
+                annotationIndex |= MISSENSE_VARIANT_MASK;
+            }
+            for (String soName : soNames) {
+                consequenceTypeMask |= getMaskFromSoName(soName);
             }
         }
 
         if (isValidParam(query, ANNOT_BIOTYPE)) {
+            // All biotype values are in genes (i.e. non-intergenic)
+            intergenic = false;
             List<String> biotypes = query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
             if (BIOTYPE_SET.containsAll(biotypes)) {
-                b |= BIOTYPE_MASK;
+                annotationIndex |= PROTEIN_CODING_MASK;
                 // If all present, remove biotype filter
                 if (allSamplesAnnotated && BIOTYPE_SET.size() == biotypes.size()) {
                     // Ensure not filtering by gene, and not combining with other params
@@ -555,6 +584,9 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+            for (String biotype : biotypes) {
+                biotypeMask |= getMaskFromBiotype(biotype);
+            }
         }
 
         // If filter by proteinSubstitution, without filter << or >>, add ProteinCodingMask
@@ -562,7 +594,7 @@ public class SampleIndexQueryParser {
         if (StringUtils.isNotEmpty(proteinSubstitution)
                 && !proteinSubstitution.contains("<<")
                 && !proteinSubstitution.contains(">>")) {
-            b |= LOF_MASK;
+            annotationIndex |= LOF_EXTENDED_MASK;
         }
 
         // TODO: This will skip filters ANNOT_POPULATION_REFERENCE_FREQUENCY and ANNOT_POPULATION_MINNOR_ALLELE_FREQUENCY
@@ -586,13 +618,13 @@ public class SampleIndexQueryParser {
                 if (QueryOperation.OR.equals(op)) {
                     // With OR, the query MUST contain ALL popFreq
                     if (popFreqLessThan001.containsAll(POP_FREQ_ANY_001_SET)) {
-                        b |= POP_FREQ_ANY_001_MASK;
+                        annotationIndex |= POP_FREQ_ANY_001_MASK;
                     }
                 } else {
                     // With AND, the query MUST contain ANY popFreq
                     for (String s : POP_FREQ_ANY_001_SET) {
                         if (popFreqLessThan001.contains(s)) {
-                            b |= POP_FREQ_ANY_001_MASK;
+                            annotationIndex |= POP_FREQ_ANY_001_MASK;
                         }
                     }
                 }
@@ -606,7 +638,21 @@ public class SampleIndexQueryParser {
             }
         }
 
-        return b;
+        byte annotationIndexMask = annotationIndex;
+        if (intergenic != null) {
+            annotationIndexMask |= INTERGENIC_MASK;
+            if (intergenic) {
+                annotationIndex |= INTERGENIC_MASK;
+            }
+        }
+
+        if (intergenic == null || intergenic) {
+            // If intergenic is undefined, or true, CT and BT filters can not be used.
+            consequenceTypeMask = IndexUtils.EMPTY_MASK;
+            biotypeMask = IndexUtils.EMPTY_MASK;
+        }
+
+        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex}, consequenceTypeMask, biotypeMask);
     }
 
     private static List<String> getAllLoadedGenotypes(StudyMetadata studyMetadata) {

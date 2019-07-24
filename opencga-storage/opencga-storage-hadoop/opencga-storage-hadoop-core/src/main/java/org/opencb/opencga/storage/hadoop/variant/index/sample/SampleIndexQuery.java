@@ -34,20 +34,21 @@ public class SampleIndexQuery {
     private final Map<String, boolean[]> fatherFilter;
     private final Map<String, boolean[]> motherFilter;
     private final Map<String, byte[]> fileFilterMap; // byte[] = {mask , index}
-    private final byte annotationIndexMask;
+    private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
     private final boolean onlyDeNovo;
     private final VariantQueryUtils.QueryOperation queryOperation;
 
     public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
-        this(regions, null, study, samplesMap, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), EMPTY_MASK,
-                Collections.emptySet(), false, queryOperation);
+        this(regions, null, study, samplesMap, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
+                new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
     }
 
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
                             Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
-                            Map<String, byte[]> fileFilterMap, byte annotationIndexMask, Set<String> mendelianErrorSet,
-                            boolean onlyDeNovo, QueryOperation queryOperation) {
+                            Map<String, byte[]> fileFilterMap,
+                            SampleAnnotationIndexQuery annotationIndexQuery,
+                            Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
         this.regions = regions;
         this.variantTypes = variantTypes;
         this.study = study;
@@ -55,10 +56,46 @@ public class SampleIndexQuery {
         this.fatherFilter = fatherFilter;
         this.motherFilter = motherFilter;
         this.fileFilterMap = fileFilterMap;
-        this.annotationIndexMask = annotationIndexMask;
+        this.annotationIndexQuery = annotationIndexQuery;
         this.mendelianErrorSet = mendelianErrorSet;
         this.onlyDeNovo = onlyDeNovo;
         this.queryOperation = queryOperation;
+    }
+
+    public static class SampleAnnotationIndexQuery {
+        private final byte[] annotationIndexMask; // byte[] = {mask , index}
+        private final short consequenceTypeMask;
+        private final byte biotypeMask;
+//    private final byte[] popFreqAnnotationIndexMask;
+
+
+        public SampleAnnotationIndexQuery() {
+            this.annotationIndexMask = new byte[]{0, 0};
+            this.consequenceTypeMask = 0;
+            this.biotypeMask = 0;
+        }
+
+        public SampleAnnotationIndexQuery(byte[] annotationIndexMask, short consequenceTypeMask, byte biotypeMask) {
+            this.annotationIndexMask = annotationIndexMask;
+            this.consequenceTypeMask = consequenceTypeMask;
+            this.biotypeMask = biotypeMask;
+        }
+
+        public byte getAnnotationIndexMask() {
+            return annotationIndexMask[0];
+        }
+
+        public byte getAnnotationIndex() {
+            return annotationIndexMask[1];
+        }
+
+        public short getConsequenceTypeMask() {
+            return consequenceTypeMask;
+        }
+
+        public byte getBiotypeMask() {
+            return biotypeMask;
+        }
     }
 
     public List<Region> getRegions() {
@@ -106,11 +143,19 @@ public class SampleIndexQuery {
     }
 
     public byte getAnnotationIndexMask() {
-        return annotationIndexMask;
+        return annotationIndexQuery.getAnnotationIndexMask();
+    }
+
+    public byte getAnnotationIndex() {
+        return annotationIndexQuery.getAnnotationIndex();
     }
 
     public boolean emptyAnnotationIndex() {
-        return annotationIndexMask == EMPTY_MASK;
+        return getAnnotationIndexMask() == EMPTY_MASK;
+    }
+
+    public SampleAnnotationIndexQuery getAnnotationIndexQuery() {
+        return annotationIndexQuery;
     }
 
     public VariantQueryUtils.QueryOperation getQueryOperation() {
@@ -163,7 +208,7 @@ public class SampleIndexQuery {
                     query.fatherFilter,
                     query.motherFilter,
                     query.fileFilterMap,
-                    query.annotationIndexMask,
+                    query.annotationIndexQuery,
                     query.mendelianErrorSet,
                     query.onlyDeNovo,
                     query.queryOperation);
