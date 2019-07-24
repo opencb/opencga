@@ -47,7 +47,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         assertTrue(studyId >= 0);
         File file;
-        file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", "",
+        file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
         LinkedList<FileAclEntry> acl = new LinkedList<>();
         acl.push(new FileAclEntry("jcoll", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
@@ -55,13 +55,13 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileAclEntry.FilePermissions.DELETE.name())));
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
-        file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", "",
+        file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
-        file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", "",
+        file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
-        file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", "",
+        file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
 
         try {

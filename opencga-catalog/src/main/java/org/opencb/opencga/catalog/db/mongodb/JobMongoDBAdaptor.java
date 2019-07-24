@@ -93,7 +93,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> insert(long studyId, Job job, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 
         ClientSession clientSession = getClientSession();
@@ -105,35 +105,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
 
-                List<Bson> filterList = new ArrayList<>();
-                filterList.add(Filters.eq(QueryParams.ID.key(), job.getId()));
-                filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
-                filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
-
-                Bson bson = Filters.and(filterList);
-                QueryResult<Long> count = jobCollection.count(clientSession, bson);
-
-                if (count.first() > 0) {
-                    throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
-                }
-
-                long jobUid = getNewUid(clientSession);
-                job.setUid(jobUid);
-                job.setStudyUid(studyId);
-                if (StringUtils.isEmpty(job.getUuid())) {
-                    job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
-                }
-                if (StringUtils.isEmpty(job.getCreationDate())) {
-                    job.setCreationDate(TimeUtils.getTime());
-                }
-
-                Document jobObject = jobConverter.convertToStorageType(job);
-                jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
-                jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-
-                logger.debug("Inserting job '{}' ({})...", job.getId(), job.getUid());
-                jobCollection.insert(clientSession, jobObject, null);
-                logger.debug("Job '{}' successfully inserted", job.getId());
+                long jobUid = insert(clientSession, studyId, job);
 
                 return endWrite(String.valueOf(jobUid), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
@@ -154,6 +126,39 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+    }
+
+    long insert(ClientSession clientSession, long studyId, Job job) throws CatalogDBException {
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(Filters.eq(QueryParams.ID.key(), job.getId()));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
+        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
+
+        Bson bson = Filters.and(filterList);
+        QueryResult<Long> count = jobCollection.count(clientSession, bson);
+
+        if (count.first() > 0) {
+            throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
+        }
+
+        long jobUid = getNewUid(clientSession);
+        job.setUid(jobUid);
+        job.setStudyUid(studyId);
+        if (StringUtils.isEmpty(job.getUuid())) {
+            job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
+        }
+        if (StringUtils.isEmpty(job.getCreationDate())) {
+            job.setCreationDate(TimeUtils.getTime());
+        }
+
+        Document jobObject = jobConverter.convertToStorageType(job);
+        jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
+        jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+
+        logger.debug("Inserting job '{}' ({})...", job.getId(), job.getUid());
+        jobCollection.insert(clientSession, jobObject, null);
+        logger.debug("Job '{}' successfully inserted", job.getId());
+        return jobUid;
     }
 
     @Override

@@ -28,7 +28,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -139,9 +138,9 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 Arrays.asList(new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(),
                                 "", 0, "", Arrays.asList(new Group("@members", Collections.emptyList())), Collections.<Experiment>emptyList(),
                                 Arrays.asList(
-                                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", "",
+                                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
                                                 new File.FileStatus(File.FileStatus.READY), 1000, 1),
-                                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", "",
+                                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
                                                 new File.FileStatus(File.FileStatus.READY), 1000, 1)
                                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                                         Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(),
@@ -158,15 +157,15 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "",
                                         Arrays.asList(new Group("@members", Collections.emptyList())), null, Arrays.asList(
                                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                                        "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
+                                                        null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", "Description",
+                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100, 1),
                                                 new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file2.txt", "Description2",
+                                                        File.Bioformat.NONE, "data/file2.txt", null, "Description2",
                                                         new File.FileStatus(File.FileStatus.READY), 100, 1),
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", "Tophat alignment file",
+                                                        "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
                                                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
@@ -176,12 +175,12 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         Arrays.asList(new Group("@members", Collections.emptyList())), null,
                                         Arrays.asList(
                                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                                        "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
+                                                        null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", "Description",
+                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100, 1),
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", "Tophat alignment file",
+                                                        "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
                                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,

@@ -45,13 +45,13 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setId("jobName1");
-        System.out.println(catalogJobDBAdaptor.insert(job, studyId, null));
+        System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
 //        long analysisId = catalogDBAdaptor.getAnalysisId(studyId, "analysis1Alias");
 
         job.setId("jobName2");
-        System.out.println(catalogJobDBAdaptor.insert(job, studyId, null));
+        System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
         try {
-            catalogJobDBAdaptor.insert(job, -1, null);
+            catalogJobDBAdaptor.insert(-1, job, null);
             fail("error: expected exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -62,8 +62,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1),
-                studyId, null).first();
+        Job job = catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1),
+                null).first();
         long jobId = job.getUid();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
         catalogJobDBAdaptor.delete(jobId);
@@ -85,8 +85,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1),
-                studyId, null).first();
+        Job job = catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1),
+                null).first();
         long jobId = job.getUid();
 
         job = catalogJobDBAdaptor.get(jobId, null).first();
@@ -104,8 +104,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void SetVisitedJob() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Job jobBefore = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", new File().setUid(4),
-                        Collections.emptyList(), 1), studyId, null).first();
+        Job jobBefore = catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4),
+                        Collections.emptyList(), 1), null).first();
         long jobId = jobBefore.getUid();
         assertTrue(!jobBefore.isVisited());
 
@@ -138,8 +138,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .setStatus(new Job.JobStatus());
 
         // We create the jobs
-        catalogJobDBAdaptor.insert(job1, studyId, new QueryOptions());
-        catalogJobDBAdaptor.insert(job2, studyId, new QueryOptions());
+        catalogJobDBAdaptor.insert(studyId, job1, new QueryOptions());
+        catalogJobDBAdaptor.insert(studyId, job2, new QueryOptions());
 
         // Obtain the jobs in descending order
         QueryOptions queryOptions = new QueryOptions()
@@ -170,7 +170,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .setStatus(new Job.JobStatus());
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setName("jobName1");
-        QueryResult<Job> insert = catalogJobDBAdaptor.insert(job, studyId, null);
+        QueryResult<Job> insert = catalogJobDBAdaptor.insert(studyId, job, null);
 
         List<File> fileInput = Arrays.asList(
                 new File().setUid(5L).setName("file1").setStatus(new File.FileStatus()),

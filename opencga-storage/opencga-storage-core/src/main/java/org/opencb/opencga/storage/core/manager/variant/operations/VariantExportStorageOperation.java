@@ -300,7 +300,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                             .collect(Collectors.toList());
 
                     File file = new File(fileName, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, fileName,
-                            "File imported from " + source, null, 0, 0);
+                            null, "File imported from " + source, null, 0, 0);
                     file.setIndex(new FileIndex("", "", new FileIndex.IndexStatus(Status.READY, ""), -1, Collections.emptyMap()));
                     file.setSamples(samples);
 

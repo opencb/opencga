@@ -137,24 +137,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
-                List<Bson> filterList = new ArrayList<>();
-                filterList.add(Filters.eq(QueryParams.ID.key(), panel.getId()));
-                filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
-                filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
-
-                Bson bson = Filters.and(filterList);
-                QueryResult<Long> count = panelCollection.count(bson);
-
-                if (count.first() > 0) {
-                    throw CatalogDBException.alreadyExists("panel", QueryParams.ID.key(), panel.getId());
-                }
-
-                logger.debug("Inserting new panel '" + panel.getId() + "'");
-
-                Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
-                panelCollection.insert(clientSession, panelDocument, null);
-
-                logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
+                insert(clientSession, studyUid, panel);
 
                 return endWrite(String.valueOf(panel.getUid()), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
@@ -175,6 +158,27 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         } else {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+    }
+
+    void insert(ClientSession clientSession, long studyUid, Panel panel) throws CatalogDBException {
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(Filters.eq(QueryParams.ID.key(), panel.getId()));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
+        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
+
+        Bson bson = Filters.and(filterList);
+        QueryResult<Long> count = panelCollection.count(bson);
+
+        if (count.first() > 0) {
+            throw CatalogDBException.alreadyExists("panel", QueryParams.ID.key(), panel.getId());
+        }
+
+        logger.debug("Inserting new panel '" + panel.getId() + "'");
+
+        Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
+        panelCollection.insert(clientSession, panelDocument, null);
+
+        logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
 
     Document getPanelDocumentForInsertion(ClientSession clientSession, Panel panel, long studyUid) {

@@ -118,32 +118,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
 
-                if (filePathExists(clientSession, studyId, file.getPath())) {
-                    throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
-                }
-
-                //new file uid
-                long fileUid = getNewUid(clientSession);
-                file.setUid(fileUid);
-                file.setStudyUid(studyId);
-                if (StringUtils.isEmpty(file.getUuid())) {
-                    file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
-                }
-                if (StringUtils.isEmpty(file.getCreationDate())) {
-                    file.setCreationDate(TimeUtils.getTime());
-                }
-
-                Document fileDocument = fileConverter.convertToStorageType(file, variableSetList);
-
-                fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-                fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
-
-                fileCollection.insert(clientSession, fileDocument, null);
-
-                // Update the size field from the study collection
-                if (!file.isExternal()) {
-                    dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, studyId, file.getSize());
-                }
+                long fileUid = insert(clientSession, studyId, file, variableSetList);
 
                 return endWrite(String.valueOf(fileUid), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
@@ -163,6 +138,37 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         } else {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+    }
+
+    long insert(ClientSession clientSession, long studyId, File file, List<VariableSet> variableSetList) throws CatalogDBException {
+        if (filePathExists(clientSession, studyId, file.getPath())) {
+            throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
+        }
+
+        //new file uid
+        long fileUid = getNewUid(clientSession);
+        file.setUid(fileUid);
+        file.setStudyUid(studyId);
+        if (StringUtils.isEmpty(file.getUuid())) {
+            file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        }
+        if (StringUtils.isEmpty(file.getCreationDate())) {
+            file.setCreationDate(TimeUtils.getTime());
+        }
+
+        Document fileDocument = fileConverter.convertToStorageType(file, variableSetList);
+
+        fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+        fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
+
+        fileCollection.insert(clientSession, fileDocument, null);
+
+        // Update the size field from the study collection
+        if (!file.isExternal()) {
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, studyId, file.getSize());
+        }
+
+        return fileUid;
     }
 
     @Override

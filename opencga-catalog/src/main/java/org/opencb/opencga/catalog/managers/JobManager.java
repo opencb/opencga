@@ -280,7 +280,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
-        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, study.getUid(), options);
+        QueryResult<Job> queryResult = jobDBAdaptor.insert(study.getUid(), job, options);
         auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;

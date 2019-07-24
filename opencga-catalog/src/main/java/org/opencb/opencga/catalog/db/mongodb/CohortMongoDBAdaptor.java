@@ -101,26 +101,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             long startTime = startQuery();
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                checkCohortIdExists(clientSession, studyId, cohort.getId());
-
-                long newId = getNewUid(clientSession);
-                cohort.setUid(newId);
-                cohort.setStudyUid(studyId);
-                if (StringUtils.isEmpty(cohort.getUuid())) {
-                    cohort.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.COHORT));
-                }
-                if (StringUtils.isEmpty(cohort.getCreationDate())) {
-                    cohort.setCreationDate(TimeUtils.getTime());
-                }
-
-                Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
-
-                cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
-                cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-
-                logger.debug("Inserting cohort '{}' ({})...", cohort.getId(), cohort.getUid());
-                cohortCollection.insert(clientSession, cohortObject, null);
-                logger.debug("Cohort '{}' successfully inserted", cohort.getId());
+                long newId = insert(clientSession, studyId, cohort, variableSetList);
 
                 return endWrite(String.valueOf(newId), startTime, 1, 1, null);
             } catch (CatalogDBException e) {
@@ -141,6 +122,30 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         } else {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+    }
+
+    long insert(ClientSession clientSession, long studyId, Cohort cohort, List<VariableSet> variableSetList) throws CatalogDBException {
+        checkCohortIdExists(clientSession, studyId, cohort.getId());
+
+        long newId = getNewUid(clientSession);
+        cohort.setUid(newId);
+        cohort.setStudyUid(studyId);
+        if (StringUtils.isEmpty(cohort.getUuid())) {
+            cohort.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.COHORT));
+        }
+        if (StringUtils.isEmpty(cohort.getCreationDate())) {
+            cohort.setCreationDate(TimeUtils.getTime());
+        }
+
+        Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
+
+        cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+        cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+
+        logger.debug("Inserting cohort '{}' ({})...", cohort.getId(), cohort.getUid());
+        cohortCollection.insert(clientSession, cohortObject, null);
+        logger.debug("Cohort '{}' successfully inserted", cohort.getId());
+        return newId;
     }
 
     @Override

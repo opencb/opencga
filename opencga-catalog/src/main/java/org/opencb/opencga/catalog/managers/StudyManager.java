@@ -251,9 +251,9 @@ public class StudyManager extends AbstractManager {
         } else {
             uriScheme = catalogIOManagerFactory.getDefaultCatalogScheme();
         }
-        datastores = ParamUtils.defaultObject(datastores, HashMap<File.Bioformat, DataStore>::new);
-        stats = ParamUtils.defaultObject(stats, HashMap<String, Object>::new);
-        attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
+        datastores = ParamUtils.defaultObject(datastores, HashMap::new);
+        stats = ParamUtils.defaultObject(stats, HashMap::new);
+        attributes = ParamUtils.defaultObject(attributes, HashMap::new);
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
@@ -265,22 +265,25 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
         }
 
-        LinkedList<File> files = new LinkedList<>();
-        LinkedList<Experiment> experiments = new LinkedList<>();
-        LinkedList<Job> jobs = new LinkedList<>();
-
-        File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", "study root folder",
-                new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
-        rootFile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
-        files.add(rootFile);
-
         // We set all the permissions for the owner of the study.
         // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
 
+        if (uri == null) {
+            try {
+                uri = catalogIOManager.getStudyURI(userId, project.getId(), id);
+            } catch (CatalogIOException e) {
+                throw new CatalogException("Cannot create study: " + e.getMessage(), e);
+            }
+        }
+
+        LinkedList<File> files = new LinkedList<>();
+        File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", uri, "study root folder",
+                new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
+        files.add(rootFile);
+
         Study study = new Study(id, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())),
-                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                Collections.emptyList(), new LinkedList<>(), null, null, datastores, project.getCurrentRelease(), stats,
+                null, files, null, null, null, null, null, null, null, null, uri, datastores, project.getCurrentRelease(), stats,
                 attributes);
 
         /* CreateStudy */
@@ -291,24 +294,21 @@ public class StudyManager extends AbstractManager {
         //URI studyUri;
         if (uri == null) {
             try {
-                uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getUid()));
+                catalogIOManager.createStudy(uri);
             } catch (CatalogIOException e) {
                 try {
                     studyDBAdaptor.delete(study.getUid());
                 } catch (Exception e1) {
-                    logger.error("Can't delete study after failure creating study", e1);
+                    logger.error("Can't delete study from DB -> {}, after failure creating study directories -> {}", e1.getMessage(),
+                            e.getMessage(), e);
+                    throw new CatalogException("Can't delete study from DB -> " + e1.getMessage() + ", after failure creating study "
+                            + "directories -> " + e.getMessage(), e);
                 }
                 throw e;
             }
         }
 
-        study = studyDBAdaptor.update(study.getUid(), new ObjectMap("uri", uri), QueryOptions.empty()).first();
         auditManager.recordCreation(AuditRecord.Resource.study, study.getUid(), userId, study, null, null);
-
-        long rootFileId = fileDBAdaptor.getId(study.getUid(), "");    //Set studyUri to the root folder too
-        rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty()).first();
-        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getUid(), userId, rootFile, null, null);
-
         userDBAdaptor.updateUserLastModified(userId);
 
         result.setResult(Arrays.asList(study));
