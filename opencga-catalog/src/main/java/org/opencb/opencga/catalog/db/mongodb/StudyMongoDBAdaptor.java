@@ -1174,8 +1174,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions)
-            throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         Document updateParams = getDocumentUpdateParams(parameters);
@@ -1203,8 +1202,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 long tmpStartTime = startQuery();
                 try {
                     Query tmpQuery = new Query(QueryParams.UID.key(), study.getUid());
+                    Bson finalQuery = parseQuery(tmpQuery);
 
-                    studyCollection.update(parseQuery(tmpQuery), updates, null);
+                    logger.debug("Update study. Query: {}, update: {}",
+                            finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    studyCollection.update(clientSession, finalQuery, updates, null);
 
                     return endWrite(study.getId(), tmpStartTime, 1, 1, null);
                 } catch (CatalogDBException e) {
@@ -1305,23 +1308,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
                     // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
 
-                    String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-
-                    Query studyQuery = new Query(QueryParams.UID.key(), study.getUid());
-                    // Mark the study as deleted
-                    ObjectMap updateParams = new ObjectMap()
-                            .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                            .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                            .append(QueryParams.ID.key(), study.getId() + deleteSuffix);
-
-                    Bson bsonQuery = parseQuery(studyQuery);
-                    Document updateDocument = getDocumentUpdateParams(updateParams);
-
-                    logger.debug("Delete study {}: Query: {}, update: {}", study.getId(),
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    UpdateResult updateResult = studyCollection.update(clientSession, bsonQuery, updateDocument,
-                            QueryOptions.empty()).first();
+                    UpdateResult updateResult = delete(clientSession, study);
                     if (updateResult.getModifiedCount() == 1) {
                         logger.debug("Study {} successfully deleted", study.getId());
                         return endWrite(study.getId(), tmpStartTime, 1, 1, null);
@@ -1360,6 +1347,26 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+    }
+
+    UpdateResult delete(ClientSession clientSession, Study study) throws CatalogDBException {
+        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        Query studyQuery = new Query(QueryParams.UID.key(), study.getUid());
+        // Mark the study as deleted
+        ObjectMap updateParams = new ObjectMap()
+                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                .append(QueryParams.ID.key(), study.getId() + deleteSuffix);
+
+        Bson bsonQuery = parseQuery(studyQuery);
+        Document updateDocument = getDocumentUpdateParams(updateParams);
+
+        logger.debug("Delete study {}: Query: {}, update: {}", study.getId(),
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return studyCollection.update(clientSession, bsonQuery, updateDocument,
+                QueryOptions.empty()).first();
     }
 
     @Override
