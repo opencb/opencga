@@ -31,36 +31,36 @@ public class AnnotationIndexConverter {
     public static final String K_GENOMES = "1kG_phase3";
 
     public static final double POP_FREQ_THRESHOLD_001 = 0.001;
-    public static final Set<String> BIOTYPE_SET = new HashSet<>();
+    public static final Set<String> BIOTYPE_SET;
     public static final Set<String> POP_FREQ_ANY_001_SET = new HashSet<>();
     public static final Set<String> POP_FREQ_ANY_001_FILTERS = new HashSet<>();
 
-    public static final byte BIOTYPE_MASK =                      (byte) (1 << 0);
-    public static final byte POP_FREQ_ANY_001_MASK =             (byte) (1 << 1);
-    public static final byte LOFE_PROTEIN_CODING_MASK =          (byte) (1 << 2);
-    public static final byte LOF_EXTENDED_MASK =                 (byte) (1 << 3);
-    public static final byte LOF_MASK =                          (byte) (1 << 4);
-    public static final byte CLINICAL_MASK =                     (byte) (1 << 5);
-    public static final byte LOF_EXTENDED_BASIC_MASK =           (byte) (1 << 6);
+    public static final byte PROTEIN_CODING_MASK =               (byte) (1 << 0);
+    public static final byte LOF_MASK =                          (byte) (1 << 1);
+    public static final byte MISSENSE_VARIANT_MASK =             (byte) (1 << 2);
+    public static final byte LOFE_PROTEIN_CODING_MASK =          (byte) (1 << 3);
+    public static final byte LOF_EXTENDED_MASK =                 (byte) (1 << 4);
+    public static final byte POP_FREQ_ANY_001_MASK =             (byte) (1 << 5);
+    public static final byte CLINICAL_MASK =                     (byte) (1 << 6);
     public static final byte INTERGENIC_MASK =                   (byte) (1 << 7);
 
 
-    public static final short CT_FRAMESHIFT_VARIANT_MASK =       (short) (1 << 0);
-    public static final short CT_INFRAME_DELETION_MASK =         (short) (1 << 1);
-    public static final short CT_INFRAME_INSERTION_MASK =        (short) (1 << 2);
-    public static final short CT_START_LOST_MASK =               (short) (1 << 3);
-    public static final short CT_STOP_GAINED_MASK =              (short) (1 << 4);
-    public static final short CT_STOP_LOST_MASK =                (short) (1 << 5);
-    public static final short CT_SPLICE_ACCEPTOR_VARIANT_MASK =  (short) (1 << 6);
-    public static final short CT_SPLICE_DONOR_VARIANT_MASK =     (short) (1 << 7);
-    public static final short CT_TRANSCRIPT_ABLATION_MASK =      (short) (1 << 8);
-    public static final short CT_TRANSCRIPT_AMPLIFICATION_MASK = (short) (1 << 9);
-    public static final short CT_MIRNA_MASK =                    (short) (1 << 10);
-    public static final short CT_REGULATORY_MASK =               (short) (1 << 11);
-    public static final short CT_TFBS_MASK =                     (short) (1 << 12);
-    public static final short CT_UTR_MASK =                      (short) (1 << 13);
-    public static final short CT_UPSTREAM_MASK =                 (short) (1 << 14);
-    public static final short CT_DOWNSTREAM_MASK =               (short) (1 << 15);
+    public static final short CT_MISSENSE_VARIANT_MASK =         (short) (1 << 0);
+    public static final short CT_FRAMESHIFT_VARIANT_MASK =       (short) (1 << 1);
+    public static final short CT_INFRAME_DELETION_MASK =         (short) (1 << 2);
+    public static final short CT_INFRAME_INSERTION_MASK =        (short) (1 << 3);
+    public static final short CT_START_LOST_MASK =               (short) (1 << 4);
+    public static final short CT_STOP_GAINED_MASK =              (short) (1 << 5);
+    public static final short CT_STOP_LOST_MASK =                (short) (1 << 6);
+    public static final short CT_SPLICE_ACCEPTOR_VARIANT_MASK =  (short) (1 << 7);
+    public static final short CT_SPLICE_DONOR_VARIANT_MASK =     (short) (1 << 8);
+    public static final short CT_TRANSCRIPT_ABLATION_MASK =      (short) (1 << 9);
+    public static final short CT_TRANSCRIPT_AMPLIFICATION_MASK = (short) (1 << 10);
+    public static final short CT_MIRNA_MASK =                    (short) (1 << 11);
+    public static final short CT_REGULATORY_MASK =               (short) (1 << 12);
+    public static final short CT_TFBS_MASK =                     (short) (1 << 13);
+    public static final short CT_UTR_MASK =                      (short) (1 << 14);
+    public static final short CT_UPSTREAM_DOWNSTREAM_MASK =      (short) (1 << 15);
 
 
     public static final byte BT_NONSENSE_MEDIATED_DECAY_MASK =   (byte) (1 << 0);
@@ -70,7 +70,7 @@ public class AnnotationIndexConverter {
     public static final byte BT_SNRNA_MASK =                     (byte) (1 << 4);
     public static final byte BT_SNORNA_MASK =                    (byte) (1 << 5);
     public static final byte BT_NON_STOP_DECAY_MASK =            (byte) (1 << 6);
-    public static final byte BT_PSEUDOGENE_MASK =                (byte) (1 << 7);
+    public static final byte BT_PROTEIN_CODING_MASK =            (byte) (1 << 7);
 
     public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
     public static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
@@ -80,17 +80,18 @@ public class AnnotationIndexConverter {
     public static final String LNCRNA = "lncRNA";
 
     static {
-        BIOTYPE_SET.add(PROTEIN_CODING);
-        BIOTYPE_SET.add(IG_C_GENE);
-        BIOTYPE_SET.add(IG_D_GENE);
-        BIOTYPE_SET.add(IG_J_GENE);
-        BIOTYPE_SET.add(IG_V_GENE);
-        BIOTYPE_SET.add(NONSENSE_MEDIATED_DECAY);
-        BIOTYPE_SET.add(NON_STOP_DECAY);
-        BIOTYPE_SET.add(TR_C_GENE);
-        BIOTYPE_SET.add(TR_D_GENE);
-        BIOTYPE_SET.add(TR_J_GENE);
-        BIOTYPE_SET.add(TR_V_GENE);
+        BIOTYPE_SET = Collections.singleton(PROTEIN_CODING);
+//        BIOTYPE_SET.add(PROTEIN_CODING);
+//        BIOTYPE_SET.add(IG_C_GENE);
+//        BIOTYPE_SET.add(IG_D_GENE);
+//        BIOTYPE_SET.add(IG_J_GENE);
+//        BIOTYPE_SET.add(IG_V_GENE);
+//        BIOTYPE_SET.add(NONSENSE_MEDIATED_DECAY);
+//        BIOTYPE_SET.add(NON_STOP_DECAY);
+//        BIOTYPE_SET.add(TR_C_GENE);
+//        BIOTYPE_SET.add(TR_D_GENE);
+//        BIOTYPE_SET.add(TR_J_GENE);
+//        BIOTYPE_SET.add(TR_V_GENE);
 
         POP_FREQ_ANY_001_SET.add("1kG_phase3:ALL");
         POP_FREQ_ANY_001_SET.add("GNOMAD_GENOMES:ALL");
@@ -141,12 +142,10 @@ public class AnnotationIndexConverter {
                     intergenic = false;
                 }
                 if (BIOTYPE_SET.contains(ct.getBiotype())) {
-                    b |= BIOTYPE_MASK;
+                    b |= PROTEIN_CODING_MASK;
                 }
                 btIndex |= getMaskFromBiotype(ct.getBiotype());
                 boolean proteinCoding = PROTEIN_CODING.equals(ct.getBiotype());
-                boolean basic = ct.getTranscriptAnnotationFlags() != null && ct.getTranscriptAnnotationFlags()
-                        .contains(TRANSCRIPT_FLAG_BASIC);
                 for (SequenceOntologyTerm sequenceOntologyTerm : ct.getSequenceOntologyTerms()) {
                     String soName = sequenceOntologyTerm.getName();
 
@@ -155,17 +154,12 @@ public class AnnotationIndexConverter {
                     if (VariantQueryUtils.LOF_SET.contains(soName)) {
                         b |= LOF_MASK;
                         b |= LOF_EXTENDED_MASK;
-                        if (basic) {
-                            b |= LOF_EXTENDED_BASIC_MASK;
-                        }
                         if (proteinCoding) {
                             b |= LOFE_PROTEIN_CODING_MASK;
                         }
                     } else if (MISSENSE_VARIANT.equals(soName)) {
+                        b |= MISSENSE_VARIANT_MASK;
                         b |= LOF_EXTENDED_MASK;
-                        if (basic) {
-                            b |= LOF_EXTENDED_BASIC_MASK;
-                        }
                         if (proteinCoding) {
                             b |= LOFE_PROTEIN_CODING_MASK;
                         }
@@ -238,13 +232,15 @@ public class AnnotationIndexConverter {
         return put;
     }
 
-    private static short getMaskFromSoName(String soName) {
+    public static short getMaskFromSoName(String soName) {
         if (soName == null) {
             return 0;
         }
 
         switch (soName) {
             // Coding
+            case MISSENSE_VARIANT:
+                return CT_MISSENSE_VARIANT_MASK;
             case FRAMESHIFT_VARIANT:
                 return CT_FRAMESHIFT_VARIANT_MASK;
             case INFRAME_DELETION:
@@ -290,11 +286,11 @@ public class AnnotationIndexConverter {
             case UPSTREAM_GENE_VARIANT:
             case TWOKB_UPSTREAM_VARIANT:
             case "5KB_upstream_variant":
-                return CT_UPSTREAM_MASK;
+
             case DOWNSTREAM_GENE_VARIANT:
             case TWOKB_DOWNSTREAM_VARIANT:
             case "5KB_downstream_variant":
-                return CT_DOWNSTREAM_MASK;
+                return CT_UPSTREAM_DOWNSTREAM_MASK;
 
             //case INTERGENIC_VARIANT:
             //case CODING_SEQUENCE_VARIANT:
@@ -318,7 +314,7 @@ public class AnnotationIndexConverter {
         }
     }
 
-    private static short getMaskFromBiotype(String biotype) {
+    public static short getMaskFromBiotype(String biotype) {
         if (biotype == null) {
             return 0;
         }
@@ -343,8 +339,8 @@ public class AnnotationIndexConverter {
                 return BT_SNORNA_MASK;
             case NON_STOP_DECAY:
                 return BT_NON_STOP_DECAY_MASK;
-            case PSEUDOGENE:
-                return BT_PSEUDOGENE_MASK;
+            case PROTEIN_CODING:
+                return BT_PROTEIN_CODING_MASK;
             default:
                 return 0;
         }

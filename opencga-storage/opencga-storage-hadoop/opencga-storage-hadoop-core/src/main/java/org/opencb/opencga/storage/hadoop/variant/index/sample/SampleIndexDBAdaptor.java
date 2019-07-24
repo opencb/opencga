@@ -418,7 +418,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 //        logger.info("Filters = " + scan.getFilter());
 //        logger.info("Batch = " + scan.getBatch());
         logger.info("Caching = " + scan.getCaching());
-        logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), (byte) 0xFF));
+        logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), query.getAnnotationIndex()));
         logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), query.getFileIndex()));
         if (query.hasFatherFilter()) {
             logger.info("FatherFilter       = " + IndexUtils.parentFilterToString(query.getFatherFilter()));

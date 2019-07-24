@@ -49,32 +49,32 @@ public class AnnotationIndexConverterTest {
 
     @Test
     public void testLofe() {
-        assertEquals(LOF_EXTENDED_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProtein() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | LOFE_PROTEIN_CODING_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofeProtein() {
-        assertEquals(LOF_EXTENDED_MASK | LOFE_PROTEIN_CODING_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProteinDifferentTranscript() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost", "other"), ct("other", "protein_coding"))).getSummaryIndex());
 
     }
 
     @Test
     public void testLofeProteinDifferentTranscript() {
-        assertEquals(LOF_EXTENDED_MASK | BIOTYPE_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant", "other"), ct("other", "protein_coding"))).getSummaryIndex());
     }
 
@@ -103,12 +103,12 @@ public class AnnotationIndexConverterTest {
 
     @Test
     public void testPopFreqMulti() {
-        assertArrayEquals(new byte[]{0b00_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b00_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(K_GENOMES, "ALL", 0.3))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b00_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(K_GENOMES, "ALL", 0.3))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0))).getPopFreqIndex());
 
-        assertArrayEquals(new byte[]{0b10_11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0.005))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{(byte) 0b11_00_00_11, 0b00_11}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.5), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0b10, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0.005))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0b11, 0b11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.5), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
     }
 
 
