@@ -79,6 +79,19 @@ public class AnnotationIndexConverterTest {
     }
 
     @Test
+    public void testIntergenic() {
+        assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
+                b = converter.convert(annot(ct("intergenic_variant"))).getSummaryIndex());
+    }
+
+    @Test
+    public void testNonIntergenic() {
+        // Only full intergenic variants should be marked as intergenic
+        assertEquals(POP_FREQ_ANY_001_MASK | MISSENSE_VARIANT_MASK | LOF_EXTENDED_MASK,
+                b = converter.convert(annot(ct("intergenic_variant"), ct("missense_variant"))).getSummaryIndex());
+    }
+
+    @Test
     public void testPopFreq() {
         assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
                 b = converter.convert(new VariantAnnotation()).getSummaryIndex());
@@ -136,8 +149,6 @@ public class AnnotationIndexConverterTest {
 
     public ConsequenceType ct(String ct, String biotype) {
         ConsequenceType consequenceType = ct(ct);
-        consequenceType.setGeneName("Gene");
-        consequenceType.setEnsemblGeneId("ENSEMBL_GENE");
         consequenceType.setBiotype(biotype);
         return consequenceType;
     }

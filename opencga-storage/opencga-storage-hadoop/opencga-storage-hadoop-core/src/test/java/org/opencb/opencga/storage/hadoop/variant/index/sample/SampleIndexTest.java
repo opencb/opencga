@@ -166,8 +166,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryAnnotationIndex(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated"));
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001"));
 
-        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
+//        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained,mature_miRNA_variant"));
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
@@ -214,7 +215,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("query = " + annotationQuery.toJson());
         System.out.println("annotationIndex    = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask(), indexQuery.getAnnotationIndex()));
         System.out.println("biotypeMask        = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getBiotypeMask()));
-//        System.out.println("ctMask             = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getConsequenceTypeMask()));
+        System.out.println("ctMask             = " + IndexUtils.shortToString(indexQuery.getAnnotationIndexQuery().getConsequenceTypeMask()));
         for (String sample : indexQuery.getSamplesMap().keySet()) {
             System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.getFileIndex(sample)));
         }

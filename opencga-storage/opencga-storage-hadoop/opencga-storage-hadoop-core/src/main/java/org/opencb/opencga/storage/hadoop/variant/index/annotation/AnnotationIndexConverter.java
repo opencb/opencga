@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -42,7 +41,7 @@ public class AnnotationIndexConverter {
     public static final byte LOF_EXTENDED_MASK =                 (byte) (1 << 4);
     public static final byte POP_FREQ_ANY_001_MASK =             (byte) (1 << 5);
     public static final byte CLINICAL_MASK =                     (byte) (1 << 6);
-    public static final byte INTERGENIC_MASK =                   (byte) (1 << 7);
+    public static final byte INTERGENIC_MASK =                   (byte) (1 << 7);  // ONLY INTERGENIC!!
 
 
     public static final short CT_MISSENSE_VARIANT_MASK =         (short) (1 << 0);
@@ -138,9 +137,6 @@ public class AnnotationIndexConverter {
         boolean intergenic = true;
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
-                if (intergenic && (StringUtils.isNotEmpty(ct.getGeneName()) || StringUtils.isNotEmpty(ct.getEnsemblGeneId()))) {
-                    intergenic = false;
-                }
                 if (BIOTYPE_SET.contains(ct.getBiotype())) {
                     b |= PROTEIN_CODING_MASK;
                 }
@@ -148,7 +144,9 @@ public class AnnotationIndexConverter {
                 boolean proteinCoding = PROTEIN_CODING.equals(ct.getBiotype());
                 for (SequenceOntologyTerm sequenceOntologyTerm : ct.getSequenceOntologyTerms()) {
                     String soName = sequenceOntologyTerm.getName();
-
+                    if (intergenic && !INTERGENIC_VARIANT.equals(soName)) {
+                        intergenic = false;
+                    }
                     ctIndex |= getMaskFromSoName(soName);
 
                     if (VariantQueryUtils.LOF_SET.contains(soName)) {
@@ -314,7 +312,7 @@ public class AnnotationIndexConverter {
         }
     }
 
-    public static short getMaskFromBiotype(String biotype) {
+    public static byte getMaskFromBiotype(String biotype) {
         if (biotype == null) {
             return 0;
         }

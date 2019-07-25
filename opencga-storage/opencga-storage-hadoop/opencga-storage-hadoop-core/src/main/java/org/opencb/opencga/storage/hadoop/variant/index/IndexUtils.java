@@ -20,11 +20,19 @@ public final class IndexUtils {
     }
 
     public static String byteToString(byte b) {
-        String str = Integer.toBinaryString(b);
-        if (str.length() > 8) {
-            str = str.substring(str.length() - 8);
+        return binaryToString(b, Byte.SIZE);
+    }
+
+    public static String shortToString(short s) {
+        return binaryToString(s, Short.SIZE);
+    }
+
+    protected static String binaryToString(int number, int i) {
+        String str = Integer.toBinaryString(number);
+        if (str.length() > i) {
+            str = str.substring(str.length() - i);
         }
-        return StringUtils.leftPad(str, 8, '0');
+        return StringUtils.leftPad(str, i, '0');
     }
 
     public static String maskToString(byte[] maskAndIndex) {
@@ -72,6 +80,14 @@ public final class IndexUtils {
 
     public static boolean testIndex(byte indexValue, byte indexMask, byte indexFilter) {
         return (indexValue & indexMask) == indexFilter;
+    }
+
+    public static boolean testIndexAny(byte indexValue, byte indexMask) {
+        return (indexValue & indexMask) != 0;
+    }
+
+    public static boolean testIndexAny(byte[] index, int indexPosition, short indexMask) {
+        return (Bytes.toShort(index, indexPosition * Short.BYTES, Short.BYTES) & indexMask) != 0;
     }
 
     /**
