@@ -4,14 +4,14 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testIndex;
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testParentsGenotypeCode;
+import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
 /**
@@ -55,7 +55,7 @@ public class SampleIndexEntryFilter {
         this.query = query;
         this.regionFilter = regionFilter;
 
-        int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndexMask()});
+        int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndex()});
 
         annotationIndexPositions = new ArrayList<>(8);
         for (int i = 0; i < countsPerBit.length; i++) {
@@ -156,27 +156,55 @@ public class SampleIndexEntryFilter {
 
         // Test annotation index (if any)
         if (gtEntry.getAnnotationIndexGt() == null
-                || testIndex(gtEntry.getAnnotationIndexGt()[idx], query.getAnnotationIndexMask(), query.getAnnotationIndexMask())) {
+                || testIndex(gtEntry.getAnnotationIndexGt()[idx], query.getAnnotationIndexMask(), query.getAnnotationIndex())) {
             expectedResultsFromAnnotation.decrement();
 
-            // Test file index (if any)
-            if (gtEntry.getFileIndexGt() == null
-                    || testIndex(gtEntry.getFileIndexGt()[idx], query.getFileIndexMask(), query.getFileIndex())) {
+            if (filterOtherAnnotFields(gtEntry, variants)) {
 
-                // Test parents filter (if any)
-                if (gtEntry.getParentsGt() == null
-                        || testParentsGenotypeCode(gtEntry.getParentsGt()[idx], query.getFatherFilter(), query.getMotherFilter())) {
+                // Test file index (if any)
+                if (gtEntry.getFileIndexGt() == null
+                        || testIndex(gtEntry.getFileIndexGt()[idx], query.getFileIndexMask(), query.getFileIndex())) {
 
-                    // Only at this point, get the variant.
-                    Variant variant = variants.next();
+                    // Test parents filter (if any)
+                    if (gtEntry.getParentsGt() == null
+                            || testParentsGenotypeCode(gtEntry.getParentsGt()[idx], query.getFatherFilter(), query.getMotherFilter())) {
 
-                    // Apply rest of filters
-                    return filter(variant);
+                        // Only at this point, get the variant.
+                        Variant variant = variants.next();
+
+                        // Apply rest of filters
+                        return filter(variant);
+                    }
                 }
             }
+
+
         }
         variants.skip();
         return null;
+    }
+
+    protected static boolean isNonIntergenic(byte[] annotationIndex, int idx) {
+        return IndexUtils.testIndex(annotationIndex[idx], AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
+    }
+
+    private boolean filterOtherAnnotFields(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
+        int nonIntergenicIndex = variants.nextNonIntergenicIndex();
+        if (nonIntergenicIndex < 0) {
+            // unable to filter by this field
+            return true;
+        }
+        if (gtEntry.getBiotypeIndexGt() == null || testIndexAny(gtEntry.getBiotypeIndexGt()[nonIntergenicIndex],
+                query.getAnnotationIndexQuery().getBiotypeMask())) {
+
+            if (gtEntry.getConsequenceTypeIndexGt() == null || testIndexAny(gtEntry.getConsequenceTypeIndexGt(), nonIntergenicIndex,
+                    query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
+
+                // TODO: Check PopFreq
+                return true;
+            }
+        }
+        return false;
     }
 
     private Variant filter(Variant variant) {

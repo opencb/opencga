@@ -395,6 +395,12 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
                 }
+                if (query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
+                }
+                if (query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
+                }
                 if (query.getFileIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
@@ -419,6 +425,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 //        logger.info("Batch = " + scan.getBatch());
         logger.info("Caching = " + scan.getCaching());
         logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), query.getAnnotationIndex()));
+        logger.info("BiotypeIndex    = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getBiotypeMask()));
+        logger.info("CTIndex         = " + IndexUtils.shortToString(query.getAnnotationIndexQuery().getConsequenceTypeMask()));
         logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), query.getFileIndex()));
         if (query.hasFatherFilter()) {
             logger.info("FatherFilter       = " + IndexUtils.parentFilterToString(query.getFatherFilter()));

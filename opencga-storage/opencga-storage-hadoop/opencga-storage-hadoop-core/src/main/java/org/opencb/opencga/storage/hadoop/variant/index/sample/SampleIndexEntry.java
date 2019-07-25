@@ -77,10 +77,10 @@ public class SampleIndexEntry {
         private SampleIndexVariantBiConverter.SampleIndexVariantIterator variants;
         private byte[] fileIndexGt;
         private byte[] annotationIndexGt;
+        private int[] annotationCounts;
         private byte[] consequenceTypeIndexGt;
         private byte[] biotypeIndexGt;
         private byte[] populationFrequencyIndexGt;
-        private int[] annotationCounts;
         private byte[] parentsGt;
 
         public SampleIndexGtEntry(String gt) {
@@ -116,6 +116,9 @@ public class SampleIndexEntry {
 
         public SampleIndexGtEntry setVariants(SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
             this.variants = variants;
+            if (annotationIndexGt != null) {
+                variants.setAnnotationIndex(annotationIndexGt);
+            }
             return this;
         }
 
@@ -134,6 +137,9 @@ public class SampleIndexEntry {
 
         public SampleIndexGtEntry setAnnotationIndexGt(byte[] annotationIndexGt) {
             this.annotationIndexGt = annotationIndexGt;
+            if (annotationIndexGt != null && variants != null) {
+                variants.setAnnotationIndex(annotationIndexGt);
+            }
             return this;
         }
 
@@ -143,6 +149,33 @@ public class SampleIndexEntry {
 
         public SampleIndexGtEntry setAnnotationCounts(int[] annotationCounts) {
             this.annotationCounts = annotationCounts;
+            return this;
+        }
+
+        public byte[] getConsequenceTypeIndexGt() {
+            return consequenceTypeIndexGt;
+        }
+
+        public SampleIndexGtEntry setConsequenceTypeIndexGt(byte[] consequenceTypeIndexGt) {
+            this.consequenceTypeIndexGt = consequenceTypeIndexGt;
+            return this;
+        }
+
+        public byte[] getBiotypeIndexGt() {
+            return biotypeIndexGt;
+        }
+
+        public SampleIndexGtEntry setBiotypeIndexGt(byte[] biotypeIndexGt) {
+            this.biotypeIndexGt = biotypeIndexGt;
+            return this;
+        }
+
+        public byte[] getPopulationFrequencyIndexGt() {
+            return populationFrequencyIndexGt;
+        }
+
+        public SampleIndexGtEntry setPopulationFrequencyIndexGt(byte[] populationFrequencyIndexGt) {
+            this.populationFrequencyIndexGt = populationFrequencyIndexGt;
             return this;
         }
 

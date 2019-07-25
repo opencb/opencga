@@ -40,7 +40,7 @@ public class MendelianErrorSampleIndexConverter {
         return new MendelianErrorSampleIndexVariantIterator(bytes, offset, length);
     }
 
-    public static class MendelianErrorSampleIndexVariantIterator implements SampleIndexVariantIterator {
+    public static class MendelianErrorSampleIndexVariantIterator extends SampleIndexVariantIterator {
         private final ListIterator<String> variants;
         private final int size;
         private Variant next;
@@ -60,6 +60,11 @@ public class MendelianErrorSampleIndexConverter {
                 fetchNext();
             }
             return nextIndex;
+        }
+
+        @Override
+        public int nextNonIntergenicIndex() {
+            return -1;
         }
 
         public String nextGenotype() {

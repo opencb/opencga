@@ -161,46 +161,72 @@ public class SampleIndexVariantBiConverter {
         }
     }
 
-    public interface SampleIndexVariantIterator extends Iterator<Variant> {
+    public abstract static class SampleIndexVariantIterator implements Iterator<Variant> {
+
+        private byte[] annotationIndex;
+        private int nonIntergenicCount = 0;
+
+        public SampleIndexVariantIterator setAnnotationIndex(byte[] annotationIndex) {
+            this.annotationIndex = annotationIndex;
+            return this;
+        }
+
         /**
          * @return the index of the element that would be returned by a
          * subsequent call to {@code next}.
          */
-        int nextIndex();
+        public abstract int nextIndex();
+
+        public int nextNonIntergenicIndex() {
+            return nonIntergenicCount;
+        }
 
         /**
          * @return {@code true} if the iteration has more elements
          */
-        boolean hasNext();
+        public abstract boolean hasNext();
 
         /**
          * Skip next element. Avoid conversion.
          */
-        void skip();
+        public abstract void skip();
 
         /**
          * @return next variant
          */
-        Variant next();
+        public abstract Variant next();
 
-        int getApproxSize();
+        public abstract int getApproxSize();
 
-        static SampleIndexVariantIterator emptyIterator() {
+        public static SampleIndexVariantIterator emptyIterator() {
             return EmptySampleIndexVariantIterator.EMPTY_ITERATOR;
+        }
+
+        protected void increaseNonIntergenicCounter() {
+            // If the variant to be returned is non-intergenic, increase the number of non-intergenic variants.
+            if (annotationIndex != null) {
+                if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, nextIndex())) {
+                    nonIntergenicCount++;
+                }
+            }
         }
     }
 
-    private static final class EmptySampleIndexVariantIterator implements SampleIndexVariantIterator {
+    private static final class EmptySampleIndexVariantIterator extends SampleIndexVariantIterator {
 
         private EmptySampleIndexVariantIterator() {
         }
 
         private static final EmptySampleIndexVariantIterator EMPTY_ITERATOR = new EmptySampleIndexVariantIterator();
 
-
         @Override
         public int nextIndex() {
             return 0;
+        }
+
+        @Override
+        public int nextNonIntergenicIndex() {
+            return -1;
         }
 
         @Override
@@ -222,7 +248,7 @@ public class SampleIndexVariantBiConverter {
         }
     }
 
-    private static class StringSampleIndexVariantIterator implements SampleIndexVariantIterator {
+    private static class StringSampleIndexVariantIterator extends SampleIndexVariantIterator {
         private final ListIterator<String> variants;
         private final int size;
 
@@ -244,11 +270,13 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public void skip() {
+            increaseNonIntergenicCounter();
             variants.next();
         }
 
         @Override
         public Variant next() {
+            increaseNonIntergenicCounter();
             return new Variant(variants.next());
         }
 
@@ -272,7 +300,7 @@ public class SampleIndexVariantBiConverter {
         }
     }
 
-    private class ByteSampleIndexVariantIterator implements SampleIndexVariantIterator {
+    private class ByteSampleIndexVariantIterator extends SampleIndexVariantIterator {
         private final String chromosome;
         private final int batchStart;
         private final byte[] bytes;
@@ -312,6 +340,7 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public Variant next() {
+            increaseNonIntergenicCounter();
             Variant variant;
             if (encodedRefAlt) {
                 variant = toVariantEncodedAlleles(chromosome, batchStart, bytes, currentOffset);
@@ -324,6 +353,7 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public void skip() {
+            increaseNonIntergenicCounter();
             movePointer();
         }
 

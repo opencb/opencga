@@ -74,6 +74,15 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 } else if (columnStartsWith(cell, PARENTS_PREFIX_BYTES)) {
                     gts.computeIfAbsent(getGt(cell, PARENTS_PREFIX_BYTES), SampleIndexGtEntry::new)
                             .setParentsGt(CellUtil.cloneValue(cell));
+                } else if (columnStartsWith(cell, ANNOTATION_CT_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, ANNOTATION_CT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                            .setConsequenceTypeIndexGt(CellUtil.cloneValue(cell));
+                } else if (columnStartsWith(cell, ANNOTATION_BT_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, ANNOTATION_BT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                            .setBiotypeIndexGt(CellUtil.cloneValue(cell));
+                } else if (columnStartsWith(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES)) {
+                    gts.computeIfAbsent(getGt(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES), SampleIndexGtEntry::new)
+                            .setPopulationFrequencyIndexGt(CellUtil.cloneValue(cell));
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
