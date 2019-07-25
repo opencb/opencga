@@ -104,7 +104,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
 
-            logger.debug("Starting study insert transaction for project id '{}'", project.getId());
+            logger.debug("Starting project insert transaction for project id '{}'", project.getId());
 
             try {
                 Project createdProject = insert(clientSession, project, userId);
@@ -127,7 +127,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }
     }
 
-    private Project insert(ClientSession clientSession, Project project, String userId) throws CatalogDBException {
+    Project insert(ClientSession clientSession, Project project, String userId) throws CatalogDBException {
         List<Study> studies = project.getStudies();
         if (studies == null) {
             studies = Collections.emptyList();
@@ -402,7 +402,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
-        return delete(query);
+        WriteResult delete = delete(query);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete project. Uid " + id + " not found.");
+        } else if (delete.getNumModified() == 0) {
+            throw new CatalogDBException("Could not delete project. " + delete.getFailed().get(0).getMessage());
+        }
+        return delete;
 
 //        Query query = new Query(QueryParams.UID.key(), id);
 //

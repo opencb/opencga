@@ -352,9 +352,8 @@ public class SampleMongoDBAdaptorTest {
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getUid());
 
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("does not exist");
-        catalogSampleDBAdaptor.get(createResult.first().getUid(), QueryOptions.empty());
+        QueryResult<Sample> sampleQueryResult = catalogSampleDBAdaptor.get(createResult.first().getUid(), QueryOptions.empty());
+        assertEquals(0, sampleQueryResult.getNumResults());
     }
 
     @Test

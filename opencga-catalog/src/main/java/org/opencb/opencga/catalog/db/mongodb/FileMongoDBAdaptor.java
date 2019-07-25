@@ -465,7 +465,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public WriteResult delete(long fileUid, String status) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), fileUid);
-        return delete(query, status);
+        WriteResult delete = delete(query, status);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete file. Uid " + fileUid + " not found.");
+        } else if (delete.getNumModified() == 0) {
+            throw new CatalogDBException("Could not delete file. " + delete.getFailed().get(0).getMessage());
+        }
+        return delete;
     }
 
     @Override

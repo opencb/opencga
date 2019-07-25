@@ -69,7 +69,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogJobDBAdaptor.delete(jobId);
 
         thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("not exist");
+        thrown.expectMessage("not found");
         catalogJobDBAdaptor.get(jobId, QueryOptions.empty());
     }
 
