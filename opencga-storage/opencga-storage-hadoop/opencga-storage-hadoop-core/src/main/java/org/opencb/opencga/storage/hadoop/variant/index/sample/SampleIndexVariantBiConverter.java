@@ -167,6 +167,9 @@ public class SampleIndexVariantBiConverter {
         private int nonIntergenicCount = 0;
 
         public SampleIndexVariantIterator setAnnotationIndex(byte[] annotationIndex) {
+            if (nextIndex() != 0) {
+                throw new IllegalStateException("Can not change annotation index after moving the iterator!");
+            }
             this.annotationIndex = annotationIndex;
             return this;
         }
@@ -178,7 +181,13 @@ public class SampleIndexVariantBiConverter {
         public abstract int nextIndex();
 
         public int nextNonIntergenicIndex() {
-            return nonIntergenicCount;
+            if (annotationIndex == null) {
+                return -1;
+            } else if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, nextIndex())) {
+                return nonIntergenicCount;
+            } else {
+                throw new IllegalStateException("Next variant is not intergenic!");
+            }
         }
 
         /**

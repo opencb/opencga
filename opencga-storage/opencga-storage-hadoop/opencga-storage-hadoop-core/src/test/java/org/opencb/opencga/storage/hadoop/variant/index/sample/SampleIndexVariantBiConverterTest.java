@@ -6,11 +6,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
@@ -120,26 +122,56 @@ public class SampleIndexVariantBiConverterTest {
         }
 
         byte[] bytes = converter.toBytes(variants);
-        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytes, 0, bytes.length));
+        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytes, 0, bytes.length));
 
         int bytes3offset = bytes.length + 10;
         byte[] bytes3 = new byte[bytes.length + bytes3offset];
         int length = converter.toBytes(variants, bytes3, bytes3offset);
-        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytes3, bytes3offset, length));
+        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytes3, bytes3offset, length));
 
 
         byte[] bytesOld = converter.toBytesSimpleString(variants);
-        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytesOld, 0, bytesOld.length));
+        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytesOld, 0, bytesOld.length));
 
         byte[] bytesOldOffset = new byte[bytesOld.length + 10];
         System.arraycopy(bytesOld, 0, bytesOldOffset, 10, bytesOld.length);
-        checkIterator(numVariants, variants, converter.toVariantsIterator("1", batchStart, bytesOldOffset, 10, bytesOld.length));
+        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytesOldOffset, 10, bytesOld.length));
     }
 
-    private void checkIterator(int numVariants, List<Variant> variants, SampleIndexVariantBiConverter.SampleIndexVariantIterator iterator) {
+    private void checkIterator(int numVariants, List<Variant> variants, Supplier<SampleIndexVariantBiConverter.SampleIndexVariantIterator> factory) {
+        checkIterator(numVariants, variants, factory.get(), false);
+        checkIterator(numVariants, variants, factory.get(), true);
+    }
+
+    private void checkIterator(int numVariants, List<Variant> variants, SampleIndexVariantBiConverter.SampleIndexVariantIterator iterator, boolean annotated) {
+        if (annotated) {
+            byte[] annot = new byte[numVariants];
+            for (int i = 0; i < numVariants; i++) {
+                if (i % 3 != 0) {
+                    annot[i] = AnnotationIndexConverter.INTERGENIC_MASK;
+                }
+            }
+            iterator.setAnnotationIndex(annot);
+        }
+
         int i = 0;
+        int nonIntergenicIndex = 0;
         while (iterator.hasNext()) {
             assertEquals(i, iterator.nextIndex());
+            if (annotated) {
+                if (i % 3 == 0) {
+                    assertEquals(nonIntergenicIndex++, iterator.nextNonIntergenicIndex());
+                } else {
+                    try {
+                        iterator.nextNonIntergenicIndex();
+                        fail("Expect IllegalStateException!");
+                    } catch (IllegalStateException e) {
+                        assertEquals("Next variant is not intergenic!", e.getMessage());
+                    }
+                }
+            } else {
+                assertEquals(-1, iterator.nextNonIntergenicIndex());
+            }
             if (i % 2 == 0) {
                 iterator.skip();
             } else {
