@@ -199,27 +199,12 @@ public class AnnotationIndexConverter {
     protected void addPopFreqIndex(byte[] popFreqIndex, PopulationFrequency populationFrequency) {
         Integer idx = populations.get(populationFrequency.getStudy() + ":" + populationFrequency.getPopulation());
         if (idx != null) {
-            byte popFreqInterval = getPopFreqCode(populationFrequency.getAltAlleleFreq(), popFreqRanges);
+            byte popFreqInterval = IndexUtils.getRangeCode(populationFrequency.getAltAlleleFreq(), popFreqRanges);
 //            int byteIdx = (idx * POP_FREQ_SIZE) / Byte.SIZE;
 //            int bitIdx = (idx * POP_FREQ_SIZE) % Byte.SIZE;
 //            popFreqIndex[byteIdx] |= popFreqInterval << bitIdx;
             popFreqIndex[idx] = popFreqInterval;
         }
-    }
-
-    public static byte getPopFreqCodeExclusive(double altAlleleFreq, double[] popFreqRanges) {
-        return (byte) (1 + getPopFreqCode(altAlleleFreq - IndexUtils.DELTA, popFreqRanges));
-    }
-
-    public static byte getPopFreqCode(double altAlleleFreq, double[] popFreqRanges) {
-        byte popFreqInterval = 3;
-        for (byte i = 0; i < popFreqRanges.length; i++) {
-            if (altAlleleFreq < popFreqRanges[i]) {
-                popFreqInterval = i;
-                break;
-            }
-        }
-        return popFreqInterval;
     }
 
     public List<Put> convertToPut(List<VariantAnnotation> variantAnnotations) {

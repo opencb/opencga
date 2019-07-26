@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,7 +53,7 @@ public class SampleIndexQueryParserTest {
         return sampleIndexQueryParser.parseAnnotationIndexQuery(query, allSamplesAnnotated).getAnnotationIndexMask();
     }
 
-    private SampleIndexQuery.SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
+    private SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
         return sampleIndexQueryParser.parseAnnotationIndexQuery(query);
     }
 
@@ -265,7 +266,7 @@ public class SampleIndexQueryParserTest {
     }
 
     private void checkIntergenic(Boolean intergenic, Query query) {
-        SampleIndexQuery.SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query);
+        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query);
         if (intergenic == null) {
             assertEquals(EMPTY_MASK, INTERGENIC_MASK & annotationIndexQuery.getAnnotationIndexMask());
         } else {
@@ -318,7 +319,7 @@ public class SampleIndexQueryParserTest {
     public void parsePopFreqQueryTest() {
         double[] default_ranges = SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_RANGES;
         for (int i = 0; i < default_ranges.length; i++) {
-            SampleIndexQuery.SampleAnnotationIndexQuery.PopulationFrequencyQuery q;
+            SampleAnnotationIndexQuery.PopulationFrequencyQuery q;
             double r = default_ranges[i];
 //            System.out.println("--------------");
 //            System.out.println(r);
@@ -393,7 +394,7 @@ public class SampleIndexQueryParserTest {
             assertEquals(i % 4 + 1 + 1, q.getPosition());
 
         }
-        SampleIndexQuery.SampleAnnotationIndexQuery q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s8:NONE>0.1"));
+        SampleAnnotationIndexQuery q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s8:NONE>0.1"));
         assertEquals(0, q.getPopulationFrequencyQueries().size());
 
         q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL>0.1;s8:NONE>0.1"));

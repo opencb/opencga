@@ -8,12 +8,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SampleAnnotationIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -113,8 +114,8 @@ public class SampleIndexEntryFilterTest {
     private PopulationFrequencyQuery buildPopulationFrequencyQuery(String study, double minFreqInclusive, double maxFreqExclusive) {
         return new PopulationFrequencyQuery(Integer.valueOf(study.substring(1)) - 1, study, "ALL",
                 minFreqInclusive, maxFreqExclusive,
-                AnnotationIndexConverter.getPopFreqCode(minFreqInclusive, PopulationFrequencyRange.DEFAULT_RANGES),
-                AnnotationIndexConverter.getPopFreqCodeExclusive(maxFreqExclusive, PopulationFrequencyRange.DEFAULT_RANGES));
+                IndexUtils.getRangeCode(minFreqInclusive, PopulationFrequencyRange.DEFAULT_RANGES),
+                IndexUtils.getRangeCodeExclusive(maxFreqExclusive, PopulationFrequencyRange.DEFAULT_RANGES));
     }
 
     private SampleIndexQuery.SingleSampleIndexQuery getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation op,

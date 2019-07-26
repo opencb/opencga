@@ -9,10 +9,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
 import java.util.Collections;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by jacobo on 21/03/19.

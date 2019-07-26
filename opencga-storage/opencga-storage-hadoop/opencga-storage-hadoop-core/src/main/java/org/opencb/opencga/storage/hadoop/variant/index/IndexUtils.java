@@ -220,4 +220,19 @@ public final class IndexUtils {
         }
         return counts;
     }
+
+    public static byte getRangeCodeExclusive(double value, double[] ranges) {
+        return (byte) (1 + getRangeCode(value - DELTA, ranges));
+    }
+
+    public static byte getRangeCode(double value, double[] ranges) {
+        byte code = (byte) (ranges.length - 1);
+        for (byte i = 0; i < ranges.length; i++) {
+            if (value < ranges[i]) {
+                code = i;
+                break;
+            }
+        }
+        return code;
+    }
 }
