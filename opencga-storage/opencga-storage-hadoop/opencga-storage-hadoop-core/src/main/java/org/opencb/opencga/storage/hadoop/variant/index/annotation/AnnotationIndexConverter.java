@@ -14,6 +14,8 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
 
 import java.util.*;
 
@@ -101,24 +103,22 @@ public class AnnotationIndexConverter {
     }
 
     private final Map<String, Integer> populations;
-    private final float[] popFreqThresholds;
+    private final double[] popFreqRanges;
 
     @Deprecated
     public AnnotationIndexConverter() {
-        this(Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL"));
+        this(SampleIndexConfiguration.defaultConfiguration());
     }
 
-    public AnnotationIndexConverter(List<String> populations) {
-        this.populations = new HashMap<>();
+    public AnnotationIndexConverter(SampleIndexConfiguration configuration) {
+        this.populations = new HashMap<>(configuration.getPopulationRanges().size());
         int i = 0;
-        for (String population : populations) {
-            if (this.populations.put(population, i++) != null) {
-                throw new IllegalArgumentException("Duplicated population '" + population + "' in " + populations);
+        for (SampleIndexConfiguration.PopulationFrequencyRange population : configuration.getPopulationRanges()) {
+            if (this.populations.put(population.getStudyAndPopulation(), i++) != null) {
+                throw new IllegalArgumentException("Duplicated population '" + population.getStudyAndPopulation() + "' in " + populations);
             }
         }
-
-//        numPopFreqBytes = (int) Math.round(Math.ceil(populations.size() / ((double) Byte.SIZE / POP_FREQ_SIZE)));
-        popFreqThresholds = new float[]{0.001f, 0.005f, 0.01f};
+        popFreqRanges = SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_RANGES;
     }
 
     public static Pair<Variant, Byte> getVariantBytePair(Result result) {
@@ -199,18 +199,27 @@ public class AnnotationIndexConverter {
     protected void addPopFreqIndex(byte[] popFreqIndex, PopulationFrequency populationFrequency) {
         Integer idx = populations.get(populationFrequency.getStudy() + ":" + populationFrequency.getPopulation());
         if (idx != null) {
-            byte popFreqInterval = 3;
-            for (byte i = 0; i < popFreqThresholds.length; i++) {
-                if (populationFrequency.getAltAlleleFreq() < popFreqThresholds[i]) {
-                    popFreqInterval = i;
-                    break;
-                }
-            }
+            byte popFreqInterval = getPopFreqCode(populationFrequency.getAltAlleleFreq(), popFreqRanges);
 //            int byteIdx = (idx * POP_FREQ_SIZE) / Byte.SIZE;
 //            int bitIdx = (idx * POP_FREQ_SIZE) % Byte.SIZE;
 //            popFreqIndex[byteIdx] |= popFreqInterval << bitIdx;
             popFreqIndex[idx] = popFreqInterval;
         }
+    }
+
+    public static byte getPopFreqCodeExclusive(double altAlleleFreq, double[] popFreqRanges) {
+        return (byte) (1 + getPopFreqCode(altAlleleFreq - IndexUtils.DELTA, popFreqRanges));
+    }
+
+    public static byte getPopFreqCode(double altAlleleFreq, double[] popFreqRanges) {
+        byte popFreqInterval = 3;
+        for (byte i = 0; i < popFreqRanges.length; i++) {
+            if (altAlleleFreq < popFreqRanges[i]) {
+                popFreqInterval = i;
+                break;
+            }
+        }
+        return popFreqInterval;
     }
 
     public List<Put> convertToPut(List<VariantAnnotation> variantAnnotations) {

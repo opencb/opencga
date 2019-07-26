@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 public final class IndexUtils {
 
     public static final byte EMPTY_MASK = 0;
-    private static final double DELTA = 0.000001;
+    public static final double DELTA = 0.0000001;
 
     private IndexUtils() {
     }
@@ -152,6 +152,36 @@ public final class IndexUtils {
                 } else {
                     return null;
                 }
+            default:
+                throw new VariantQueryException("Unknown query operator" + op);
+        }
+    }
+
+    public static double[] queryRange(String op, double value) {
+        return queryRange(op, value, Double.MIN_VALUE, Double.MAX_VALUE);
+    }
+
+    public static double[] queryRange(String op, double value, double min, double max) {
+        switch (op) {
+            case "":
+            case "=":
+            case "==":
+                return new double[]{value, ((float) (value + DELTA))};
+            case "<=":
+            case "<<=":
+                // Range is with exclusive end. For inclusive "<=" operator, need to add a DELTA to the value
+                value += DELTA;
+            case "<":
+            case "<<":
+                return new double[]{min, value};
+
+            case ">":
+            case ">>":
+                // Range is with inclusive start. For exclusive ">" operator, need to add a DELTA to the value
+                value += DELTA;
+            case ">=":
+            case ">>=":
+                return new double[]{value, max};
             default:
                 throw new VariantQueryException("Unknown query operator" + op);
         }

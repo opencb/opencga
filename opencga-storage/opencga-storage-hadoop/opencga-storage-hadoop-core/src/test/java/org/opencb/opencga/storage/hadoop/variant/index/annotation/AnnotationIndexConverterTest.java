@@ -6,9 +6,12 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -26,14 +29,18 @@ public class AnnotationIndexConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        converter = new AnnotationIndexConverter(Arrays.asList(
+        List<String> populations = Arrays.asList(
                 "STUDY:POP_1",
                 "STUDY:POP_2",
                 "STUDY:POP_3",
                 "STUDY:POP_4",
                 "STUDY:POP_5",
                 "STUDY:POP_6"
-        ));
+        );
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
+                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
+
+        converter = new AnnotationIndexConverter(configuration);
     }
 
 //    @After
@@ -111,17 +118,25 @@ public class AnnotationIndexConverterTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testDuplicatedPopulations() {
-        new AnnotationIndexConverter(Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL"));
+        List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
+                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
+        new AnnotationIndexConverter(configuration);
     }
 
     @Test
     public void testPopFreqMulti() {
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(K_GENOMES, "ALL", 0.3))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0},
+                converter.convert(annot(pf("STUDY", "POP_1", 0.5))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0},
+                converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(K_GENOMES, "ALL", 0.3))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0},
+                converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0))).getPopFreqIndex());
 
-        assertArrayEquals(new byte[]{0b11, 0b10, 0, 0, 0, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0.005))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0b11, 0b11, 0}, converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.5), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0b10, 0, 0, 0, 0},
+                converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0.00501))).getPopFreqIndex());
+        assertArrayEquals(new byte[]{0b11, 0, 0, 0b01, 0b11, 0},
+                converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.001), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
     }
 
 

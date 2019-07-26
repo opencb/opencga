@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -7,17 +8,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.function.Function;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseAnnotationMask;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.parseFileMask;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.validSampleIndexQuery;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.*;
 
 /**
@@ -26,6 +25,36 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleIndexQueryParserTest {
+
+    private SampleIndexQueryParser sampleIndexQueryParser;
+
+    @Before
+    public void setUp() throws Exception {
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration()
+                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("1kG_phase3", "ALL"))
+                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("GNOMAD_GENOMES", "ALL"))
+                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s1", "ALL"))
+                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s2", "ALL"))
+                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s3", "ALL"))
+                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s4", "ALL"));
+        sampleIndexQueryParser = new SampleIndexQueryParser(null, configuration);
+    }
+
+    private byte[] parseFileMask(Query query, String sample, Function<String, Collection<String>> filesFromSample) {
+        return sampleIndexQueryParser.parseFileMask(query, sample, filesFromSample);
+    }
+
+    private byte parseAnnotationMask(Query query) {
+        return sampleIndexQueryParser.parseAnnotationIndexQuery(query).getAnnotationIndexMask();
+    }
+
+    private byte parseAnnotationMask(Query query, boolean allSamplesAnnotated) {
+        return sampleIndexQueryParser.parseAnnotationIndexQuery(query, allSamplesAnnotated).getAnnotationIndexMask();
+    }
+
+    private SampleIndexQuery.SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
+        return sampleIndexQueryParser.parseAnnotationIndexQuery(query);
+    }
 
     @Test
     public void validSampleIndexQueryTest() {
@@ -283,6 +312,105 @@ public class SampleIndexQueryParserTest {
 
         // Biotype Filter covered by summary
         assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding")).getBiotypeMask());
+    }
+
+    @Test
+    public void parsePopFreqQueryTest() {
+        double[] default_ranges = SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_RANGES;
+        for (int i = 0; i < default_ranges.length; i++) {
+            SampleIndexQuery.SampleAnnotationIndexQuery.PopulationFrequencyQuery q;
+            double r = default_ranges[i];
+//            System.out.println("--------------");
+//            System.out.println(r);
+
+            final double d = 0.00001;
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r - d))).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(0, q.getMinCodeInclusive());
+            assertEquals(i + 1, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + (r - d))).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(0, q.getMinCodeInclusive());
+            assertEquals(i + 1, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + r)).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(0, q.getMinCodeInclusive());
+            assertEquals(i + 1, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + r)).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(0, q.getMinCodeInclusive());
+            assertEquals(i + 2, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r + d))).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(0, q.getMinCodeInclusive());
+            assertEquals(i + 2, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + r)).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(i + 1, q.getMinCodeInclusive());
+            assertEquals(4, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + r)).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(i + 1, q.getMinCodeInclusive());
+            assertEquals(4, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r + d))).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(i + 1, q.getMinCodeInclusive());
+            assertEquals(4, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r + d))).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(i + 1, q.getMinCodeInclusive());
+            assertEquals(4, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r - d))).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(i, q.getMinCodeInclusive());
+            assertEquals(4, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r - d))).getPopulationFrequencyQueries().get(0);
+//            System.out.println(q);
+            assertEquals(i, q.getMinCodeInclusive());
+            assertEquals(4, q.getMaxCodeExclusive());
+            assertEquals(i % 4 + 1 + 1, q.getPosition());
+
+        }
+        SampleIndexQuery.SampleAnnotationIndexQuery q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s8:NONE>0.1"));
+        assertEquals(0, q.getPopulationFrequencyQueries().size());
+
+        q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL>0.1;s8:NONE>0.1"));
+        assertEquals(1, q.getPopulationFrequencyQueries().size());
+        assertEquals(QueryOperation.AND, q.getPopulationFrequencyQueryOperator());
+        assertEquals(true, q.isPopulationFrequencyQueryPartial());
+
+        // Partial OR queries can not be used
+        q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL>0.1,s8:NONE>0.1"));
+        assertEquals(0, q.getPopulationFrequencyQueries().size());
+        assertEquals(QueryOperation.OR, q.getPopulationFrequencyQueryOperator());
+        assertEquals(true, q.isPopulationFrequencyQueryPartial());
+
+        q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL>0.1,s3:ALL>0.1"));
+        assertEquals(2, q.getPopulationFrequencyQueries().size());
+        assertEquals(QueryOperation.OR, q.getPopulationFrequencyQueryOperator());
+        assertEquals(false, q.isPopulationFrequencyQueryPartial());
     }
 
     @Test

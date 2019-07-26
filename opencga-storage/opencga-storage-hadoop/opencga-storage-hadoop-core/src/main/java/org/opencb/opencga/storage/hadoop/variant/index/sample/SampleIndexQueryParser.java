@@ -19,7 +19,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SampleAnnotationIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,17 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
  */
 public class SampleIndexQueryParser {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexQueryParser.class);
+    private final SampleIndexConfiguration configuration;
+    private final VariantStorageMetadataManager metadataManager;
+
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager) {
+        this(metadataManager, SampleIndexConfiguration.defaultConfiguration());
+    }
+
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexConfiguration configuration) {
+        this.configuration = configuration;
+        this.metadataManager = metadataManager;
+    }
 
     /**
      * Determine if a given query can be used to query with the SampleIndex.
@@ -94,11 +107,10 @@ public class SampleIndexQueryParser {
      * Assumes that the query is valid.
      *
      * @param query           Input query. Will be modified.
-     * @param metadataManager VariantStorageMetadataManager
      * @return Valid SampleIndexQuery
      * @see SampleIndexQueryParser#validSampleIndexQuery(Query)
      */
-    public static SampleIndexQuery parseSampleIndexQuery(Query query, VariantStorageMetadataManager metadataManager) {
+    public SampleIndexQuery parse(Query query) {
         //
         // Extract regions
         List<Region> regions = new ArrayList<>();
@@ -331,7 +343,7 @@ public class SampleIndexQueryParser {
      * @param parentsMap Parents map
      * @return Set with all children from the query
      */
-    protected static Set<String> findChildren(Map<String, List<String>> gtMap, QueryOperation queryOperation,
+    protected Set<String> findChildren(Map<String, List<String>> gtMap, QueryOperation queryOperation,
                                               Map<String, List<String>> parentsMap) {
         Set<String> childrenSet = new HashSet<>(parentsMap.size());
         for (Map.Entry<String, List<String>> entry : parentsMap.entrySet()) {
@@ -380,7 +392,7 @@ public class SampleIndexQueryParser {
         return true;
     }
 
-    protected static byte[] parseFileMask(Query query, String sample, Function<String, Collection<String>> filesFromSample) {
+    protected byte[] parseFileMask(Query query, String sample, Function<String, Collection<String>> filesFromSample) {
         byte fileIndexMask = 0;
         byte fileIndex = 0;
 
@@ -497,19 +509,11 @@ public class SampleIndexQueryParser {
         return new byte[]{fileIndexMask, fileIndex};
     }
 
-    protected static byte parseAnnotationMask(Query query) {
-        return parseAnnotationMask(query, false);
-    }
-
-    protected static byte parseAnnotationMask(Query query, boolean allSamplesAnnotated) {
-        return parseAnnotationIndexQuery(query, allSamplesAnnotated).getAnnotationIndexMask();
-    }
-
-    protected static SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
+    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
         return parseAnnotationIndexQuery(query, false);
     }
 
-    protected static SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean allSamplesAnnotated) {
+    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean allSamplesAnnotated) {
         // TODO: Allow skip using annotation mask
 
         byte annotationIndex = 0;
@@ -621,35 +625,66 @@ public class SampleIndexQueryParser {
             annotationIndex |= LOF_EXTENDED_MASK;
         }
 
+        List<PopulationFrequencyQuery> popFreqQuery = new ArrayList<>();
+        QueryOperation popFreqOp = QueryOperation.AND;
+        boolean popFreqPartial = false;
         // TODO: This will skip filters ANNOT_POPULATION_REFERENCE_FREQUENCY and ANNOT_POPULATION_MINNOR_ALLELE_FREQUENCY
         if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
             String value = query.getString(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(value);
-            QueryOperation op = pair.getKey();
+            popFreqOp = pair.getKey();
 
             Set<String> popFreqLessThan001 = new HashSet<>();
 
             for (String popFreq : pair.getValue()) {
                 String[] keyOpValue = VariantQueryUtils.splitOperator(popFreq);
                 String studyPop = keyOpValue[0];
-                Double freqFilter = Double.valueOf(keyOpValue[2]);
+                double freqFilter = Double.valueOf(keyOpValue[2]);
                 if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<<")) {
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
                         popFreqLessThan001.add(studyPop);
                     }
                 }
 
-                if (QueryOperation.OR.equals(op)) {
-                    // With OR, the query MUST contain ALL popFreq
-                    if (popFreqLessThan001.containsAll(POP_FREQ_ANY_001_SET)) {
-                        annotationIndex |= POP_FREQ_ANY_001_MASK;
+                boolean populationInSampleIndex = false;
+                int popFreqIdx = 0;
+                for (PopulationFrequencyRange populationRange : configuration.getPopulationRanges()) {
+                    if (populationRange.getStudyAndPopulation().equals(studyPop)) {
+                        populationInSampleIndex = true;
+                        double[] range = IndexUtils.queryRange(keyOpValue[1], freqFilter, 0, 1.00001);
+
+                        double minFreqInclusive = range[0];
+                        double maxFreqExclusive = range[1];
+                        popFreqQuery.add(new PopulationFrequencyQuery(
+                                popFreqIdx, populationRange.getStudy(),
+                                populationRange.getPopulation(),
+                                minFreqInclusive, maxFreqExclusive,
+                                getPopFreqCode(minFreqInclusive, populationRange.getRanges()),
+                                getPopFreqCodeExclusive(maxFreqExclusive, populationRange.getRanges())));
                     }
-                } else {
-                    // With AND, the query MUST contain ANY popFreq
-                    for (String s : POP_FREQ_ANY_001_SET) {
-                        if (popFreqLessThan001.contains(s)) {
-                            annotationIndex |= POP_FREQ_ANY_001_MASK;
-                        }
+                    popFreqIdx++;
+                }
+
+                if (!populationInSampleIndex) {
+                    // If there is any populationFrequency from the query not in the SampleIndex, mark as partial
+                    popFreqPartial = true;
+                }
+            }
+            if (QueryOperation.OR.equals(popFreqOp)) {
+                // With OR, the query MUST contain ALL popFreq
+                if (popFreqLessThan001.containsAll(POP_FREQ_ANY_001_SET)) {
+                    annotationIndex |= POP_FREQ_ANY_001_MASK;
+                }
+                if (popFreqPartial) {
+                    // Can not use the index with partial OR queries.
+                    popFreqQuery.clear();
+                }
+            } else {
+                popFreqOp = QueryOperation.AND; // it could be null
+                // With AND, the query MUST contain ANY popFreq
+                for (String s : POP_FREQ_ANY_001_SET) {
+                    if (popFreqLessThan001.contains(s)) {
+                        annotationIndex |= POP_FREQ_ANY_001_MASK;
                     }
                 }
             }
@@ -677,11 +712,9 @@ public class SampleIndexQueryParser {
             biotypeMask = IndexUtils.EMPTY_MASK;
         }
 
-        // TODO
-        List<SampleAnnotationIndexQuery.PopulationFrequencyQuery> popFreqAnnotationIndexMask = Collections.emptyList();
 
-        return new SampleAnnotationIndexQuery(
-                new byte[]{annotationIndexMask, annotationIndex}, consequenceTypeMask, biotypeMask, popFreqAnnotationIndexMask);
+        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex}, consequenceTypeMask, biotypeMask,
+                popFreqOp, popFreqQuery, popFreqPartial);
     }
 
     private static List<String> getAllLoadedGenotypes(StudyMetadata studyMetadata) {

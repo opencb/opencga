@@ -67,7 +67,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
 
     @Override
     protected long primaryCount(Query query, QueryOptions options) {
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
         return sampleIndexDBAdaptor.count(sampleIndexQuery);
     }
 
@@ -83,7 +83,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     @Override
     protected Object getOrIterator(Query inputQuery, QueryOptions options, boolean iterator) {
         Query query = new Query(inputQuery);
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
 
         if (isFullyCoveredQuery(query, options)) {
             logger.info("HBase SampleIndex, skip variants table");

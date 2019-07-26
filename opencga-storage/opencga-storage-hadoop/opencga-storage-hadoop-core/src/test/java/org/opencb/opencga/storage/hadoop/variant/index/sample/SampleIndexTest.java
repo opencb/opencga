@@ -165,6 +165,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained"));
         testQueryAnnotationIndex(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated"));
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0.005"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0.008"));
+        testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0.005,GNOMAD_GENOMES:ALL>0.005"));
 
 //        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained"));
@@ -172,7 +175,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
-        assertFalse(testQueryIndex(annotationQuery).emptyAnnotationIndex());
+        SampleIndexQuery sampleIndexQuery = testQueryIndex(annotationQuery);
+        assertTrue(!sampleIndexQuery.emptyAnnotationIndex() || !sampleIndexQuery.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty());
     }
 
     public void testQueryFileIndex(Query annotationQuery) throws Exception {
@@ -199,10 +203,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Query SampleIndex
         System.out.println("Query SampleIndex");
-        SampleIndexQuery indexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), variantStorageEngine.getMetadataManager());
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query));
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         int onlyIndex = sampleIndexDBAdaptor.iterator(indexQuery).toQueryResult().getResult().size();
 
         // Query SampleIndex+DBAdaptor

@@ -27,7 +27,7 @@ public class AnnotationIndexPutBuilder {
         numVariants = 0;
     }
 
-    public void add(AnnotationIndexEntry indexEntry) {
+    public AnnotationIndexPutBuilder add(AnnotationIndexEntry indexEntry) {
         numVariants++;
         annotation.write(indexEntry.getSummaryIndex());
 
@@ -44,13 +44,14 @@ public class AnnotationIndexPutBuilder {
                 partialPopFreq = 0;
             }
         }
+        return this;
     }
 
     public boolean isEmpty() {
         return numVariants == 0;
     }
 
-    public void buildAndReset(Put put, String gt, byte[] family) {
+    public Put buildAndReset(Put put, String gt, byte[] family) {
         // Copy byte array, as the ByteArrayOutputStream could be reset and reused!
         byte[] annotationIndex = annotation.toByteArray();
         put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotationIndex);
@@ -66,6 +67,7 @@ public class AnnotationIndexPutBuilder {
         }
         put.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt), popFreq.toByteArray());
         reset();
+        return put;
     }
 
     public void reset() {

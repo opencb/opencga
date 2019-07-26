@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -50,6 +51,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     private final VariantStorageMetadataManager metadataManager;
     private final byte[] family;
     private static Logger logger = LoggerFactory.getLogger(SampleIndexDBAdaptor.class);
+    private SampleIndexQueryParser parser;
+    private final SampleIndexConfiguration configuration;
 
     public SampleIndexDBAdaptor(GenomeHelper helper, HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
                                 VariantStorageMetadataManager metadataManager) {
@@ -57,11 +60,14 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         this.tableNameGenerator = tableNameGenerator;
         this.metadataManager = metadataManager;
         family = helper.getColumnFamily();
+        // TODO: Read configuration from metadata manager
+        configuration = SampleIndexConfiguration.defaultConfiguration();
+        parser = new SampleIndexQueryParser(metadataManager, configuration);
     }
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        return iterator(SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager));
+        return iterator(parser.parse(query));
     }
 
     public VariantDBIterator iterator(SampleIndexQuery query) {
@@ -279,7 +285,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                                 throw VariantQueryException.internalException(e);
                             }
                         } else {
-                            SampleIndexEntryFilter filter = new SampleIndexEntryFilter(sampleIndexQuery, subRegion);
+                            SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(sampleIndexQuery, subRegion);
                             Scan scan = parse(sampleIndexQuery, subRegion, false);
                             try {
                                 ResultScanner scanner = table.getScanner(scan);
@@ -300,6 +306,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    public SampleIndexQueryParser getSampleIndexQueryParser() {
+        return parser;
     }
 
     protected int toStudyId(String study) {
@@ -368,6 +378,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return region.getEnd() + 1 % SampleIndexSchema.BATCH_SIZE == 0;
     }
 
+    public SampleIndexEntryFilter buildSampleIndexEntryFilter(SingleSampleIndexQuery query, Region region) {
+        return new SampleIndexEntryFilter(query, configuration, region);
+    }
+
     public Scan parse(SingleSampleIndexQuery query, Region region, boolean count) {
 
         Scan scan = new Scan();
@@ -401,6 +415,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
                 }
+                if (!query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty()) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
+                }
                 if (query.getFileIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
@@ -427,6 +444,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), query.getAnnotationIndex()));
         logger.info("BiotypeIndex    = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getBiotypeMask()));
         logger.info("CTIndex         = " + IndexUtils.shortToString(query.getAnnotationIndexQuery().getConsequenceTypeMask()));
+        for (PopulationFrequencyQuery pf : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
+            logger.info("PopFreq         = " + pf);
+        }
         logger.info("FileIndex       = " + IndexUtils.maskToString(query.getFileIndexMask(), query.getFileIndex()));
         if (query.hasFatherFilter()) {
             logger.info("FatherFilter       = " + IndexUtils.parentFilterToString(query.getFatherFilter()));

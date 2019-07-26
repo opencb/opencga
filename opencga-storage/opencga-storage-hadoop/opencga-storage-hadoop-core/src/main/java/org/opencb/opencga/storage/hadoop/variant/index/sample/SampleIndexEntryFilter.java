@@ -7,10 +7,13 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 
 import java.util.*;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.OR;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
@@ -25,6 +28,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
 public class SampleIndexEntryFilter {
 
     private SingleSampleIndexQuery query;
+    private final SampleIndexConfiguration configuration;
     private Region regionFilter;
 
     private final List<Integer> annotationIndexPositions;
@@ -47,12 +51,13 @@ public class SampleIndexEntryFilter {
 
     };
 
-    public SampleIndexEntryFilter(SingleSampleIndexQuery query) {
-        this(query, null);
+    public SampleIndexEntryFilter(SingleSampleIndexQuery query, SampleIndexConfiguration configuration) {
+        this(query, configuration, null);
     }
 
-    public SampleIndexEntryFilter(SingleSampleIndexQuery query, Region regionFilter) {
+    public SampleIndexEntryFilter(SingleSampleIndexQuery query, SampleIndexConfiguration configuration, Region regionFilter) {
         this.query = query;
+        this.configuration = configuration;
         this.regionFilter = regionFilter;
 
         int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndex()});
@@ -159,7 +164,7 @@ public class SampleIndexEntryFilter {
                 || testIndex(gtEntry.getAnnotationIndexGt()[idx], query.getAnnotationIndexMask(), query.getAnnotationIndex())) {
             expectedResultsFromAnnotation.decrement();
 
-            if (filterOtherAnnotFields(gtEntry, variants)) {
+            if (filterOtherAnnotFields(gtEntry, variants) && filterPopFreq(gtEntry, idx)) {
 
                 // Test file index (if any)
                 if (gtEntry.getFileIndexGt() == null
@@ -188,6 +193,44 @@ public class SampleIndexEntryFilter {
         return IndexUtils.testIndex(annotationIndex[idx], AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
     }
 
+    private boolean filterPopFreq(SampleIndexGtEntry gtEntry, int idx) {
+        if (query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty() || gtEntry.getPopulationFrequencyIndexGt() == null) {
+            return true;
+        }
+        for (PopulationFrequencyQuery q : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
+            int popFreqPosition = (q.getPosition() + idx * configuration.getPopulationRanges().size())
+                    * AnnotationIndexConverter.POP_FREQ_SIZE;
+            int byteIdx = popFreqPosition / Byte.SIZE;
+            int bitIdx = popFreqPosition % Byte.SIZE;
+
+            int code = (gtEntry.getPopulationFrequencyIndexGt()[byteIdx] >>> bitIdx) & 0b11;
+            if (q.getMinCodeInclusive() <= code && code < q.getMaxCodeExclusive()) {
+                if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(OR)) {
+                    // Require ANY match
+                    // If any match, SUCCESS
+                    return true;
+                }
+            } else {
+                if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(AND)) {
+                    // Require ALL matches.
+                    // If any fail, FAIL
+                    return false;
+                }
+            }
+        }
+
+        if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(AND)) {
+            // Require ALL matches.
+            // If no fails, SUCCESS
+            return true;
+        } else {
+            // Require ANY match.
+            // If no matches, and partial, UNKNOWN. If unknown, SUCCESS
+            // If no matches, and fully covered, FAIL
+            return query.getAnnotationIndexQuery().isPopulationFrequencyQueryPartial();
+        }
+    }
+
     private boolean filterOtherAnnotFields(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
         int nonIntergenicIndex = variants.nextNonIntergenicIndex();
         if (nonIntergenicIndex < 0) {
@@ -200,7 +243,6 @@ public class SampleIndexEntryFilter {
             if (gtEntry.getConsequenceTypeIndexGt() == null || testIndexAny(gtEntry.getConsequenceTypeIndexGt(), nonIntergenicIndex,
                     query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
 
-                // TODO: Check PopFreq
                 return true;
             }
         }
