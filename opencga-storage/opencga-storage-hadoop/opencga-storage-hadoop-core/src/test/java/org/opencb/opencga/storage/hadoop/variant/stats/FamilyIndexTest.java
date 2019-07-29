@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntryFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
@@ -84,9 +85,10 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             Genotype fatherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(father, "GT"));
             Genotype motherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(mother, "GT"));
             Genotype childGenotype = new Genotype(variant.getStudies().get(0).getSampleData(child, "GT"));
-            if (MendelianError.compute(fatherGenotype, motherGenotype, childGenotype, variant.getChromosome()) != 0) {
+            int meCode = MendelianError.compute(fatherGenotype, motherGenotype, childGenotype, variant.getChromosome());
+            if (meCode != 0) {
                 mendelianErrorVariants.add(variant.toString());
-                if (!GenotypeClass.HOM_REF.test(childGenotype.toString())) {
+                if (SampleIndexEntryFilter.isDeNovo(meCode)) {
                     deNovoVariants.add(variant.toString());
                 }
             }

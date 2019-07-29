@@ -56,8 +56,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -114,6 +114,8 @@ public class OpenCGAWSServer {
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
     protected static AtomicBoolean initialized;
+
+    protected static java.nio.file.Path opencgaHome;
 
     protected static Configuration configuration;
     protected static CatalogManager catalogManager;
@@ -210,7 +212,9 @@ public class OpenCGAWSServer {
 
         // Check and execute the init methods
         java.nio.file.Path configDirPath = Paths.get(configDirString);
-        if (configDirPath != null && Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
+        opencgaHome = configDirPath.getParent();
+
+        if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
 
@@ -219,8 +223,8 @@ public class OpenCGAWSServer {
 //            Config.setOpenCGAHome(configDirPath.getParent().toString());
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
-            logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
-            initLogger(configDirPath.getParent().resolve("logs"));
+            logger.info("|  * Server logfile: " + opencgaHome.resolve("logs").resolve("server.log"));
+            initLogger(opencgaHome.resolve("logs"));
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
             logger.error(errorMessage);

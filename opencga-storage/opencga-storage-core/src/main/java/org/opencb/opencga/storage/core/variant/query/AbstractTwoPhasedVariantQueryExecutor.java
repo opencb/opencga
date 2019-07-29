@@ -126,6 +126,14 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
         return !iterator && (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false));
     }
 
+    protected int getLimit(QueryOptions options) {
+        return Math.max(0, options.getInt(QueryOptions.LIMIT));
+    }
+
+    protected int getSkip(QueryOptions options) {
+        return Math.max(0, options.getInt(QueryOptions.SKIP));
+    }
+
     protected int getSamplingSize(QueryOptions inputOptions, int defaultSamplingSize, boolean iterator) {
         int samplingSize;
         if (shouldGetApproximateCount(inputOptions, iterator)) {

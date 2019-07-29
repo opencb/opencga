@@ -29,6 +29,24 @@ public class SampleIndexEntryFilter {
 
     private final List<Integer> annotationIndexPositions;
 
+    private static final boolean[] DE_NOVO_MENDELIAN_ERROR_CODES = new boolean[]{
+                   /* | Code  |   Dad  | Mother | Kid  |  deNovo | */
+            true,  /* |   0   |        |        |      |         | */
+            false, /* |   1   |   1/1  |  1/1   | 0/1  |         | */
+            true,  /* |   2   |   0/0  |  0/0   | 0/1  |   true  | */
+            true,  /* |   3   |   0/0  | !0/0   | 1/1  |   true  | */
+            true,  /* |   4   |  !0/0  |  0/0   | 1/1  |   true  | */
+            true,  /* |   5   |   0/0  |  0/0   | 1/1  |   true  | */
+            false, /* |   6   |   1/1  | !1/1   | 0/0  |         | */
+            false, /* |   7   |  !1/1  |  1/1   | 0/0  |         | */
+            false, /* |   8   |   1/1  |  1/1   | 0/0  |         | */
+            false, /* |   9   |        |  1/1   | 0/0  |         | */
+            true,  /* |  10   |        |  0/0   | 1/1  |   true  | */
+            false, /* |  11   |   1/1  |        | 0/0  |         | */
+            true,  /* |  12   |   0/0  |        | 1/1  |   true  | */
+
+    };
+
     public SampleIndexEntryFilter(SingleSampleIndexQuery query) {
         this(query, null);
     }
@@ -62,18 +80,23 @@ public class SampleIndexEntryFilter {
         if (iterator != null) {
             while (iterator.hasNext()) {
                 String gt = iterator.nextGenotype();
-                if (query.getGenotypes().isEmpty() || query.getGenotypes().contains(gt)) {
+                int mendelianErrorCode = iterator.nextCode();
+                if (query.isOnlyDeNovo() && !isDeNovo(mendelianErrorCode)) {
+                    iterator.skip();
+                } else {
                     SampleIndexGtEntry gtEntry = gts.computeIfAbsent(gt, SampleIndexGtEntry::new);
                     Variant variant = filter(gtEntry, iterator);
                     if (variant != null) {
                         variants.add(variant);
                     }
-                } else {
-                    iterator.skip();
                 }
             }
         }
         return variants;
+    }
+
+    public static boolean isDeNovo(int mendelianErrorCode) {
+        return DE_NOVO_MENDELIAN_ERROR_CODES[mendelianErrorCode];
     }
 
     private Collection<Variant> filter(Map<String, SampleIndexGtEntry> gts) {
