@@ -24,11 +24,16 @@ class OpenCGAClient(object):
         :param on_retry: callback to be called with client retries an operation.
             It must accept parameters: client, exc_type, exc_val, exc_tb, call
         """
+
         self.auto_refresh = auto_refresh
         self.configuration = ConfigClient(configuration, on_retry)
         self.on_retry = on_retry
         self.clients = []
         self.user_id = user  # if user and session_id are supplied, we can log out
+
+        if not user and not pwd and not session_id:
+            anonymous = True
+
         if anonymous:
             self._login_handler = None
             self.session_id = None
