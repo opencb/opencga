@@ -43,7 +43,6 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.FamilyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
@@ -305,10 +304,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             throws CatalogDBException {
         long startTime = startQuery();
         WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumModified() != 1 && parameters.size() > 0 && !(parameters.size() <= 2
-                && (parameters.containsKey(QueryParams.ANNOTATION_SETS.key())
-                || parameters.containsKey(AnnotationSetManager.ANNOTATIONS)))) {
-            throw new CatalogDBException("Could not update family with id " + id);
+        if (update.getNumModified() != 1) {
+            throw new CatalogDBException("Could not update family with id " + id + ": " + update.getFailed().get(0).getMessage());
         }
         Query query = new Query()
                 .append(QueryParams.UID.key(), id)

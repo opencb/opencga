@@ -309,17 +309,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
     private void printSamples(List<Sample> samples, StringBuilder sb, String format) {
         // # name	id	source	description	status	individualName	individualID
         for (Sample sample : samples) {
-            String individualName = "NA";
-            String individualId = "NA";
-            if (sample.getIndividual() != null) {
-                individualId = StringUtils.defaultIfEmpty(sample.getIndividual().getId(), "-");
-                individualName = StringUtils.defaultIfEmpty(sample.getIndividual().getName(), "-");
-            }
-            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\n", format, StringUtils.defaultIfEmpty(sample.getId(), "-"),
+            String individualId = StringUtils.defaultIfEmpty(sample.getIndividualId(), "-");
+            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\n", format, StringUtils.defaultIfEmpty(sample.getId(), "-"),
                     StringUtils.defaultIfEmpty(sample.getId(), "-"), StringUtils.defaultIfEmpty(sample.getSource(), "-"),
                     StringUtils.defaultIfEmpty(sample.getDescription(), "-"),
-                    sample.getStatus() != null ? StringUtils.defaultIfEmpty(sample.getStatus().getName(), "-") : "-", individualId,
-                            individualName));
+                    sample.getStatus() != null ? StringUtils.defaultIfEmpty(sample.getStatus().getName(), "-") : "-", individualId));
         }
     }
 

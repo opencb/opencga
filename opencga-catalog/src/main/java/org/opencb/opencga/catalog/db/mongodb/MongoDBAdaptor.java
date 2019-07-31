@@ -23,10 +23,7 @@ import com.mongodb.client.model.*;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
@@ -535,12 +532,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         private Document pull;
         private Document pullAll;
 
+        private ObjectMap attributes;
+
         public UpdateDocument() {
             this.set = new Document();
             this.addToSet = new Document();
             this.push = new Document();
             this.pull = new Document();
             this.pullAll = new Document();
+            this.attributes = new ObjectMap();
         }
 
         public Document toFinalUpdateDocument() {
@@ -624,6 +624,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         public UpdateDocument setPullAll(Document pullAll) {
             this.pullAll = pullAll;
+            return this;
+        }
+
+        public ObjectMap getAttributes() {
+            return attributes;
+        }
+
+        public UpdateDocument setAttributes(ObjectMap attributes) {
+            this.attributes = attributes;
             return this;
         }
     }

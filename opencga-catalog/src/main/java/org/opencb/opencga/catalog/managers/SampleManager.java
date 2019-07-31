@@ -173,6 +173,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
+        sample.setIndividualId(ParamUtils.defaultObject(sample.getIndividualId(), ""));
         sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
         sample.setStats(ParamUtils.defaultObject(sample.getStats(), Collections.emptyMap()));
@@ -182,6 +183,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
         sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
+
+        if (StringUtils.isNotEmpty(sample.getIndividualId())) {
+            // Check individual exists
+            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                    sample.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
+            if (individualQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Individual '" + sample.getIndividualId() + "' not found.");
+            }
+
+            // Just in case the user provided a uuid or other kind of individual identifier, we set again the id value
+            sample.setIndividualId(individualQueryResult.first().getId());
+        }
 
         validateNewAnnotationSets(study.getVariableSets(), sample.getAnnotationSets());
     }
@@ -203,21 +216,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
-    }
-
-    @Deprecated
-    public QueryResult<Sample> create(String studyStr, String name, String source, String description, String type, boolean somatic,
-                                      Individual individual, Map<String, Object> stats, Map<String, Object> attributes,
-                                      QueryOptions options, String sessionId)
-            throws CatalogException {
-        Sample sample = new Sample(name, source, individual, null, null, -1, 1, description, type, somatic, Collections.emptyList(),
-                Collections.emptyList(), attributes).setStats(stats);
-        return create(studyStr, sample, options, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult<Sample> get(Long sampleId, QueryOptions options, String sessionId) throws CatalogException {
-        return get(null, String.valueOf(sampleId), options, sessionId);
     }
 
     @Override
@@ -673,83 +671,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             ParamUtils.checkAlias(parameters.getString(SampleDBAdaptor.UpdateParams.ID.key()), SampleDBAdaptor.UpdateParams.ID.key());
         }
 
-//        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
-//            Individual individual = null;
-//
-//            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-//
-//            // Look for the individual where the sample is assigned
-//            Query query = new Query()
-//                    .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sample.getUid())
-//                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-//            QueryOptions indOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//                    IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.SAMPLES.key()));
-//            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, indOptions);
-//
-//            if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
-//                // Take out sample from individual
-//
-//                if (individualQueryResult.getNumResults() == 1) {
-//                    individual = individualQueryResult.first();
-//
-//                    authorizationManager.checkIndividualPermission(study.getUid(), individual.getUid(), userId,
-//                            IndividualAclEntry.IndividualPermissions.UPDATE);
-//
-//                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() - 1);
-//                    for (Sample tmpSample : individual.getSamples()) {
-//                        if (tmpSample.getUid() != sample.getUid()) {
-//                            sampleList.add(tmpSample);
-//                        }
-//                    }
-//
-//                    individual.setSamples(sampleList);
-//                } // else - nothing to do
-//
-//            } else {
-//                // Obtain the individual where the sample is intended to be associated to
-//                QueryResult<Individual> newIndividualQueryResult = catalogManager.getIndividualManager().get(studyStr, individualStr,
-//                        indOptions, token);
-//
-//                if (newIndividualQueryResult.getNumResults() == 0) {
-//                    throw new CatalogException("Individual " + individualStr + " not found");
-//                }
-//
-//                // Check if the sample is not already assigned to other individual
-//                if (individualQueryResult.getNumResults() == 1) {
-//                    if (individualQueryResult.first().getUid() != newIndividualQueryResult.first().getUid()) {
-//                        throw new CatalogException("Cannot update sample. The sample is already associated to other individual ("
-//                                + individualQueryResult.first().getUid() + "). Please, first remove the sample from the individual.");
-//                    }
-//                } else {
-//                    individual = newIndividualQueryResult.first();
-//
-//                    authorizationManager.checkIndividualPermission(study.getUid(), individual.getUid(), userId,
-//                            IndividualAclEntry.IndividualPermissions.UPDATE);
-//
-//                    // We can freely assign the sample to the individual
-//                    List<Sample> sampleList = new ArrayList<>(individual.getSamples().size() + 1);
-//                    sampleList.addAll(individual.getSamples());
-//
-//                    // Add current sample
-//                    sampleList.add(sample);
-//
-//                    individual.setSamples(sampleList);
-//                }
-//            }
-//
-//            if (individual != null) {
-//                // We need to update the sample array from the individual
-//                ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
-//                try {
-//                    individualDBAdaptor.update(individual.getUid(), params, QueryOptions.empty());
-//                } catch (CatalogDBException e) {
-//                    logger.error("Could not update sample information: {}", e.getMessage(), e);
-//                    throw new CatalogException("Could not update sample information: " + e.getMessage());
-//                }
-//            }
-//
-//            parameters.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-//        }
+        String individualId = parameters.getString(SampleDBAdaptor.UpdateParams.INDIVIDUAL_ID.key());
+        if (StringUtils.isNotEmpty(individualId)) {
+            // Check individual id exists
+            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().internalGet(study.getUid(), individualId,
+                    IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
+            if (individualQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Individual '" + individualId + "' not found.");
+            }
+
+            // Overwrite individual id parameter just in case the user used a uuid or other individual identifier
+            parameters.put(SampleDBAdaptor.UpdateParams.INDIVIDUAL_ID.key(), individualQueryResult.first().getId());
+        }
 
         checkUpdateAnnotations(study, sample, parameters, options, VariableSet.AnnotableDataModels.SAMPLE, sampleDBAdaptor, userId);
 

@@ -27,16 +27,20 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.PermissionRule;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -76,7 +80,7 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", "", new Individual(), null, null, 1, 1,
+        s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", "", null, null, null, 1, 1,
                 "", "", false, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), QueryOptions.empty()).first();
         acl_s1_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s1_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
@@ -226,7 +230,7 @@ public class AuthorizationMongoDBAdaptorTest {
     @Test
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
-        Sample s2 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", "", new Individual(), null, null,
+        Sample s2 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", "", null, null, null,
                 1, 1, "", "", false, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), QueryOptions.empty()).first();
 
         // We create a new permission rule

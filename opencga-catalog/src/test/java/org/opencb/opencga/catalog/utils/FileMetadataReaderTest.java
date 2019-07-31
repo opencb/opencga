@@ -173,8 +173,7 @@ public class FileMetadataReaderTest {
     public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException, FileNotFoundException {
         //Create the samples in the same order than in the file
         for (String sampleName : expectedSampleNames) {
-            catalogManager.getSampleManager().create(study.getFqn(), sampleName, "", "", null, false, null, new HashMap<>(), Collections
-                    .emptyMap(), new QueryOptions(), sessionIdUser);
+            catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleName), new QueryOptions(), sessionIdUser);
         }
         testGetMetadataFromVcf();
     }
@@ -182,12 +181,11 @@ public class FileMetadataReaderTest {
     @Test
     public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException, FileNotFoundException {
         //Create samples in a different order than the file order
-        catalogManager.getSampleManager().create(study.getFqn(), expectedSampleNames.get(2), "", "", null, false, null, new
-                HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(), sessionIdUser);
 
-        catalogManager.getSampleManager().create(study.getFqn(), expectedSampleNames.get(0), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(study.getFqn(), expectedSampleNames.get(3), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
-        catalogManager.getSampleManager().create(study.getFqn(), expectedSampleNames.get(1), "", "", null, false, null, new HashMap<>(), Collections.emptyMap(), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(3)), new QueryOptions(), sessionIdUser);
+        catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(1)), new QueryOptions(), sessionIdUser);
 
         testGetMetadataFromVcf();
     }

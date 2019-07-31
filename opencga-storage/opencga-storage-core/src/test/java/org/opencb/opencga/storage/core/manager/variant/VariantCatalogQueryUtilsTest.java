@@ -113,7 +113,7 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static void createSample(String name, String individualName) throws CatalogException {
-        samples.add(catalog.getSampleManager().create("s1", name, null, null, null, false, new Individual(individualName, individualName, null, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, null, null, sessionId).first());
+        samples.add(catalog.getSampleManager().create("s1", new Sample().setId(name).setIndividualId(individualName), null, sessionId).first());
     }
 
     public static File createFile(String path) throws CatalogException {

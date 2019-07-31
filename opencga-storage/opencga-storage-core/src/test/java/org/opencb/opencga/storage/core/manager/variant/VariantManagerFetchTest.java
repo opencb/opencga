@@ -93,7 +93,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
         Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
 
-        catalogManager.getSampleManager().create(studyFqn, "newSample", "", "", "", false, null, Collections.emptyMap(), Collections.emptyMap(), new QueryOptions(), sessionId);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("newSample"), new QueryOptions(), sessionId);
 
         queryOptions = new QueryOptions();
         query = new Query();

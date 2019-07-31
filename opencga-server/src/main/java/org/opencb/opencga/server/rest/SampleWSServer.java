@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -25,7 +24,9 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.*;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -103,7 +104,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
-            @ApiParam(value = "Individual id or name to whom the sample will correspond.") @QueryParam("individual") String individual,
+            @ApiParam(value = "DEPRECATED: It should be passed in the body.") @QueryParam("individual") String individual,
             @ApiParam(value = "JSON containing sample information", required = true) CreateSamplePOST params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
@@ -112,11 +113,15 @@ public class SampleWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
 
-            Sample sample = params.toSample(studyStr, catalogManager.getStudyManager(), sessionId);
-            Individual tmpIndividual = sample.getIndividual();
-            if (StringUtils.isNotEmpty(individual)) {
-                tmpIndividual = new Individual().setName(individual);
+            Sample sample = params.toSample();
+            if (StringUtils.isNotEmpty(individual) && StringUtils.isNotEmpty(sample.getIndividualId())) {
+                throw new CatalogParameterException("Found both individual and individualId as a query parameter and in the body. Please, "
+                        + "only pass individualId in the body");
             }
+            if (StringUtils.isNotEmpty(individual)) {
+                sample.setIndividualId(individual);
+            }
+
             return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -254,7 +259,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") UpdateSamplePOST parameters) {
+            @ApiParam(value = "params") SamplePOST parameters) {
         try {
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
             params.putIfNotNull(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), parameters.annotationSets);
@@ -266,13 +271,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
-
-            if (params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
-                if (!params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), params.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
-                }
-                params.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
-            }
 
             if (params.size() == 0) {
                 throw new CatalogException("Missing parameters to update.");
@@ -750,6 +748,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
         public String type;
+        public String individualId;
         public SampleProcessing processing;
         public SampleCollection collection;
         public String source;
@@ -761,16 +760,8 @@ public class SampleWSServer extends OpenCGAWSServer {
         public Map<String, Object> attributes;
     }
 
-    public static class UpdateSamplePOST extends SamplePOST {
-        @JsonProperty("individual.id")
-        public String individualId;
-        public String individual;
-    }
-
     public static class CreateSamplePOST extends SamplePOST {
-        public IndividualWSServer.IndividualPOST individual;
-
-        public Sample toSample(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
+        public Sample toSample() {
 //            List<AnnotationSet> annotationSetList = new ArrayList<>();
 //            if (annotationSets != null) {
 //                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
@@ -782,8 +773,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             String sampleId = StringUtils.isEmpty(id) ? name : id;
             String sampleName = StringUtils.isEmpty(name) ? sampleId : name;
-            return new Sample(sampleId, source, individual != null ? individual.toIndividual(studyStr, studyManager, sessionId) : null,
-                    processing, collection, 1, 1, description, type, somatic, phenotypes, annotationSets, attributes)
+            return new Sample(sampleId, source, individualId, processing, collection, 1, 1, description, type, somatic, phenotypes,
+                    annotationSets, attributes)
                     .setName(sampleName).setStats(stats);
         }
     }

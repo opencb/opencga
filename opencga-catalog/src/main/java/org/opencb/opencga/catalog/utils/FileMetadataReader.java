@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -361,7 +360,7 @@ public class FileMetadataReader {
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
-                            sampleList.add(new Sample(sampleName, file.getName(), new Individual(), null, 1));
+                            sampleList.add(new Sample(sampleName, file.getName(), null, null, 1));
                         } else {
                             try {
                                 sampleList.add(catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleName)

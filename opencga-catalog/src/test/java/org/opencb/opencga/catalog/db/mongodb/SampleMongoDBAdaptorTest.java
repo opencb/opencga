@@ -38,7 +38,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created on 24/08/15
@@ -77,9 +78,9 @@ public class SampleMongoDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        s1 = catalogSampleDBAdaptor.insert(studyId, new Sample("s1", "", new Individual(), null, null, 1, 1, "", "", false,
+        s1 = catalogSampleDBAdaptor.insert(studyId, new Sample("s1", "", null, null, null, 1, 1, "", "", false,
                 Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), null).first();
-        s2 = catalogSampleDBAdaptor.insert(studyId, new Sample("s2", "", new Individual(), null, null, 1, 1, "", "", false,
+        s2 = catalogSampleDBAdaptor.insert(studyId, new Sample("s2", "", null, null, null, 1, 1, "", "", false,
                 Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), null).first();
     }
 
@@ -254,7 +255,7 @@ public class SampleMongoDBAdaptorTest {
     public void createSampleTest() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Sample hg0097 = new Sample("HG0097", "1000g", new Individual(), "A description", 1);
+        Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
         QueryResult<Sample> result = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
 
         assertEquals(hg0097.getId(), result.first().getId());
@@ -269,11 +270,11 @@ public class SampleMongoDBAdaptorTest {
         // We create two samples "created" in different years
         Calendar calendar = Calendar.getInstance();
         calendar.set(2004, Calendar.MARCH, 24);
-        Sample sample1 = new Sample("sample1", "1000g", new Individual(), "A description", 1)
+        Sample sample1 = new Sample("sample1", "1000g", null, "A description", 1)
                 .setCreationDate(TimeUtils.getTime(calendar.getTime()));
 
         calendar.set(2016, Calendar.DECEMBER, 17);
-        Sample sample2 = new Sample("sample2", "1000g", new Individual(), "A description", 1)
+        Sample sample2 = new Sample("sample2", "1000g", null, "A description", 1)
                 .setCreationDate(TimeUtils.getTime(calendar.getTime()));
 
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample1, null);
@@ -348,7 +349,7 @@ public class SampleMongoDBAdaptorTest {
     public void deleteSampleTest() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Sample hg0097 = new Sample("HG0097", "1000g", new Individual(), "A description", 1);
+        Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getUid());
 
@@ -369,7 +370,7 @@ public class SampleMongoDBAdaptorTest {
         long fileId = dbAdaptorFactory.getCatalogFileDBAdaptor().getId(user3.getProjects().get(0).getStudies().get(0).getUid(),
                 "data/file.vcf");
 
-        Sample hg0097 = new Sample("HG0097", "1000g", new Individual(), "A description", 1);
+        Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
         dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
                 createResult.first().getUid()), QueryOptions.empty());
@@ -383,7 +384,7 @@ public class SampleMongoDBAdaptorTest {
     public void deleteSampleFail3Test() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Sample hg0097 = new Sample("HG0097", "1000g", new Individual(), "A description", 1);
+        Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort("Cohort", Study.Type.COLLECTION, "", "",
                 Collections.singletonList(createResult.first()), 1, null), null);
