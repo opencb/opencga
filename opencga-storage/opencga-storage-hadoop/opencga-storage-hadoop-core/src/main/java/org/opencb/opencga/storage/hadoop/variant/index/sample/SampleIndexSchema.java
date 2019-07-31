@@ -1,14 +1,22 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
 /**
  * Define RowKey and column names.
@@ -168,4 +176,24 @@ public final class SampleIndexSchema {
     public static byte[] toParentsGTColumn(String genotype) {
         return Bytes.toBytes(PARENTS_PREFIX + genotype);
     }
+
+    public static boolean createTableIfNeeded(String sampleIndexTable, HBaseManager hBaseManager, ObjectMap options) {
+        int files = options.getInt(EXPECTED_FILES_NUMBER, DEFAULT_EXPECTED_FILES_NUMBER);
+        int preSplitSize = options.getInt(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE, DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE);
+
+        int splits = files / preSplitSize;
+        ArrayList<byte[]> preSplits = new ArrayList<>(splits);
+        for (int i = 0; i < splits; i++) {
+            preSplits.add(toRowKey(i * preSplitSize));
+        }
+
+        try {
+            byte[] columnFamily = new GenomeHelper(hBaseManager.getConf()).getColumnFamily();
+            return hBaseManager.createTableIfNeeded(sampleIndexTable, columnFamily, preSplits, Compression.getCompressionAlgorithmByName(
+                    options.getString(SAMPLE_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
 }

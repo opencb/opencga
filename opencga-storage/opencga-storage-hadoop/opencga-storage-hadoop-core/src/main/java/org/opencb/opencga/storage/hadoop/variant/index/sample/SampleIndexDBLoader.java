@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -14,7 +13,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
 /**
@@ -71,22 +69,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     @Override
     public boolean open() {
         super.open();
+        SampleIndexSchema.createTableIfNeeded(tableName, hBaseManager, options);
 
-        try {
-            int files = options.getInt(EXPECTED_FILES_NUMBER, DEFAULT_EXPECTED_FILES_NUMBER);
-            int preSplitSize = options.getInt(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE, DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE);
-
-            int splits = files / preSplitSize;
-            ArrayList<byte[]> preSplits = new ArrayList<>(splits);
-            for (int i = 0; i < splits; i++) {
-                preSplits.add(toRowKey(i * preSplitSize));
-            }
-
-            hBaseManager.createTableIfNeeded(tableName, family, preSplits, Compression.getCompressionAlgorithmByName(
-                    options.getString(SAMPLE_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
         return true;
     }
 
