@@ -109,7 +109,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             if (!entry.getValue().isEmpty() && gts.isEmpty()) {
                 // If empty, should find none. Add empty iterator for this sample
                 iterators.add(VariantDBIterator.emptyIterator());
-            } else if (gts.stream().allMatch(SampleIndexDBLoader::validGenotype)) {
+            } else if (gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
                 iterators.add(internalIterator(query.forSample(sample, gts)));
             } else {
                 if (operation.equals(QueryOperation.OR)) {

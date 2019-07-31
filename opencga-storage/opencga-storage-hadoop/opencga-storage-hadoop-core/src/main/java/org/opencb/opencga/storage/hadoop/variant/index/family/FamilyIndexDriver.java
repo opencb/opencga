@@ -265,7 +265,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
 
                 int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
 
-                if (SampleIndexDBLoader.validGenotype(childGtStr)) {
+                if (SampleIndexSchema.validGenotype(childGtStr)) {
                     parentsGTMap.get(child)
                             .computeIfAbsent(childGtStr, gt -> new ByteArrayOutputStream())
                             .write(GenotypeCodec.encode(fatherGtStr, motherGtStr));

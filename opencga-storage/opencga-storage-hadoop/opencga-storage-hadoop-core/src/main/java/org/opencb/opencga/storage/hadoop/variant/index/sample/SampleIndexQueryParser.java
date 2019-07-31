@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -34,6 +35,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter.*;
 
 /**
  * Created by jacobo on 06/01/19.
@@ -74,7 +76,7 @@ public class SampleIndexQueryParser {
                 for (String gt : gts) {
                     // Despite invalid genotypes (i.e. genotypes not in the index) can be used to filter within AND queries,
                     // we require at least one sample where all the genotypes are valid
-                    valid &= SampleIndexDBLoader.validGenotype(gt);
+                    valid &= SampleIndexSchema.validGenotype(gt);
                     valid &= !isNegated(gt);
                 }
                 anyValid |= valid;
@@ -138,7 +140,8 @@ public class SampleIndexQueryParser {
         int studyId = defaultStudy.getId();
 
         List<String> allGenotypes = getAllLoadedGenotypes(defaultStudy);
-        List<String> validGenotypes = allGenotypes.stream().filter(SampleIndexDBLoader::validGenotype).collect(Collectors.toList());
+        List<String> validGenotypes = allGenotypes.stream().filter(SampleIndexSchema::validGenotype).collect(Collectors.toList());
+        List<String> mainGenotypes = GenotypeClass.MAIN_ALT.filter(validGenotypes);
 
         Set<String> mendelianErrorSet = Collections.emptySet();
         boolean onlyDeNovo = false;
@@ -229,7 +232,7 @@ public class SampleIndexQueryParser {
                     covered = false;
                 }
                 // If not all genotypes are valid, query is not covered
-                if (!entry.getValue().stream().allMatch(SampleIndexDBLoader::validGenotype)) {
+                if (!entry.getValue().stream().allMatch(SampleIndexSchema::validGenotype)) {
                     covered = false;
                 }
             }
@@ -242,7 +245,7 @@ public class SampleIndexQueryParser {
             String samplesStr = query.getString(SAMPLE.key());
             queryOperation = VariantQueryUtils.checkOperator(samplesStr);
             List<String> samples = VariantQueryUtils.splitValue(samplesStr, queryOperation);
-            samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, validGenotypes));
+            samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, mainGenotypes));
 
             if (!isValidParam(query, FORMAT)) {
                 // Do not remove FORMAT
@@ -324,7 +327,7 @@ public class SampleIndexQueryParser {
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {
         boolean valid = true;
         for (String gt : gts) {
-            if (queryOperation == QueryOperation.OR && !SampleIndexDBLoader.validGenotype(gt)) {
+            if (queryOperation == QueryOperation.OR && !SampleIndexSchema.validGenotype(gt)) {
                 // Invalid genotypes (i.e. genotypes not in the index) are not allowed in OR queries
                 throw new IllegalStateException("Genotype '" + gt + "' not in the SampleIndex.");
             }

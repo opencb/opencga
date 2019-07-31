@@ -15,7 +15,6 @@ import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVa
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
@@ -75,7 +74,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
                         validGt = true;
                     } else {
                         gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-                        validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                        validGt = SampleIndexSchema.isAnnotatedGenotype(gt);
                     }
                 } else {
                     gt = GenotypeClass.NA_GT_VALUE;

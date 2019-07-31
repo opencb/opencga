@@ -4,7 +4,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -266,20 +265,7 @@ public class VariantQueryParser {
                     || defaultStudy.getAttributes().getBoolean(EXCLUDE_GENOTYPES.key(), EXCLUDE_GENOTYPES.defaultValue())) {
                 genotypes = GenotypeClass.NA_GT_VALUE;
             } else {
-                genotypes = loadedGenotypes.stream().filter(gt -> {
-                    Genotype genotype;
-                    try {
-                        genotype = new Genotype(gt);
-                    } catch (IllegalArgumentException e) {
-                        return false;
-                    }
-                    for (int i : genotype.getAllelesIdx()) {
-                        if (i == 1) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }).collect(Collectors.joining(","));
+                genotypes = String.join(",", GenotypeClass.MAIN_ALT.filter(loadedGenotypes));
             }
 
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(query.getString(SAMPLE.key()));

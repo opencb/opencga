@@ -220,7 +220,7 @@ public class SampleIndexAnnotationLoader {
         for (Map.Entry<String, List<Variant>> entry : sampleIndex.entrySet()) {
             String gt = entry.getKey();
             List<Variant> variantsToAnnotate = entry.getValue();
-            if (!isAnnotatedGenotype(gt)) {
+            if (!SampleIndexSchema.isAnnotatedGenotype(gt)) {
                 continue;
             }
 
@@ -280,10 +280,6 @@ public class SampleIndexAnnotationLoader {
                 return sampleMetadata;
             });
         }
-    }
-
-    public static boolean isAnnotatedGenotype(String gt) {
-        return gt.contains("1");
     }
 
 

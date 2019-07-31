@@ -7,6 +7,7 @@ import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
@@ -196,4 +197,35 @@ public final class SampleIndexSchema {
         }
     }
 
+    public static boolean isAnnotatedGenotype(String gt) {
+        return GenotypeClass.MAIN_ALT.test(gt);
+    }
+
+    /**
+     * Genotypes HOM_REF and MISSING are not loaded in the SampleIndexTable.
+     *
+     * @param gt genotype
+     * @return is valid genotype
+     */
+    public static boolean validGenotype(String gt) {
+//        return gt != null && gt.contains("1");
+        if (gt != null) {
+            switch (gt) {
+                case "" :
+                case "0" :
+                case "0/0" :
+                case "./0" :
+                case "0|0" :
+                case "0|." :
+                case ".|0" :
+                case "./." :
+                case ".|." :
+                case "." :
+                    return false;
+                default:
+                    return true;
+            }
+        }
+        return false;
+    }
 }

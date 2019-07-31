@@ -430,7 +430,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             validGt = true;
                         } else {
                             gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-                            validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                            validGt = SampleIndexSchema.isAnnotatedGenotype(gt);
                         }
                     } else {
                         gt = GenotypeClass.NA_GT_VALUE;
