@@ -543,8 +543,10 @@ public class SampleIndexQueryParser {
             soNames = soNames.stream()
                     .map(ct -> ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)))
                     .collect(Collectors.toList());
-            if (!soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)) {
-                // All ct values bit "intergenic_variant" are in genes (i.e. non-intergenic)
+            if (!soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)
+                    && !soNames.contains(VariantAnnotationUtils.REGULATORY_REGION_VARIANT)
+                    && !soNames.contains(VariantAnnotationUtils.TF_BINDING_SITE_VARIANT)) {
+                // All ct values but "intergenic_variant" and "regulatory_region_variant" are in genes (i.e. non-intergenic)
                 intergenic = false;
             } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)) {
                 intergenic = true;
@@ -702,11 +704,10 @@ public class SampleIndexQueryParser {
 
         byte annotationIndexMask = annotationIndex;
         if (intergenic != null) {
-            if (!intergenic) {
-                annotationIndexMask |= INTERGENIC_MASK;
+            annotationIndexMask |= INTERGENIC_MASK;
+            if (intergenic) {
+                annotationIndex |= INTERGENIC_MASK;
             }
-            // We can not use the intergenic mask in positive, as it only covers variants exclusively intergenic
-            // It may left out some "regulatory_region_variant" or "TF_binding_site_variant"
         }
 
         if (intergenic == null || intergenic) {

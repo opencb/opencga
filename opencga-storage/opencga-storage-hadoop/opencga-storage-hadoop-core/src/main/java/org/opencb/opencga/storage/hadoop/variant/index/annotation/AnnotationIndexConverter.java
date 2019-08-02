@@ -57,11 +57,11 @@ public class AnnotationIndexConverter {
     public static final short CT_SPLICE_DONOR_VARIANT_MASK =     (short) (1 << 8);
     public static final short CT_TRANSCRIPT_ABLATION_MASK =      (short) (1 << 9);
     public static final short CT_TRANSCRIPT_AMPLIFICATION_MASK = (short) (1 << 10);
-    public static final short CT_MIRNA_MASK =                    (short) (1 << 11);
-    public static final short CT_REGULATORY_MASK =               (short) (1 << 12);
-    public static final short CT_TFBS_MASK =                     (short) (1 << 13);
+    public static final short CT_INITIATOR_CODON_VARIANT_MASK =  (short) (1 << 11);
+    public static final short CT_SPLICE_REGION_VARIANT_MASK =    (short) (1 << 12);
+    public static final short CT_INCOMPLETE_TERMINAL_CODON_VARIANT_MASK = (short) (1 << 13);
     public static final short CT_UTR_MASK =                      (short) (1 << 14);
-    public static final short CT_UPSTREAM_DOWNSTREAM_MASK =      (short) (1 << 15);
+    public static final short CT_MIRNA_TFBS_MASK =               (short) (1 << 15);
 
 
     public static final byte BT_NONSENSE_MEDIATED_DECAY_MASK =   (byte) (1 << 0);
@@ -134,7 +134,7 @@ public class AnnotationIndexConverter {
         byte btIndex = 0;
         byte[] popFreqIndex = new byte[populations.size()];
 
-        boolean intergenic = true;
+        boolean intergenic = false;
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
                 if (BIOTYPE_SET.contains(ct.getBiotype())) {
@@ -144,8 +144,8 @@ public class AnnotationIndexConverter {
                 boolean proteinCoding = PROTEIN_CODING.equals(ct.getBiotype());
                 for (SequenceOntologyTerm sequenceOntologyTerm : ct.getSequenceOntologyTerms()) {
                     String soName = sequenceOntologyTerm.getName();
-                    if (intergenic && !INTERGENIC_VARIANT.equals(soName)) {
-                        intergenic = false;
+                    if (!intergenic && INTERGENIC_VARIANT.equals(soName)) {
+                        intergenic = true;
                     }
                     ctIndex |= getMaskFromSoName(soName);
 
@@ -245,6 +245,12 @@ public class AnnotationIndexConverter {
                 return CT_STOP_GAINED_MASK;
             case STOP_LOST:
                 return CT_STOP_LOST_MASK;
+            case INITIATOR_CODON_VARIANT:
+                return CT_INITIATOR_CODON_VARIANT_MASK;
+            case SPLICE_REGION_VARIANT:
+                return CT_SPLICE_REGION_VARIANT_MASK;
+            case INCOMPLETE_TERMINAL_CODON_VARIANT:
+                return CT_INCOMPLETE_TERMINAL_CODON_VARIANT_MASK;
 
             // Splice
             case SPLICE_ACCEPTOR_VARIANT:
@@ -258,38 +264,36 @@ public class AnnotationIndexConverter {
                 return CT_TRANSCRIPT_AMPLIFICATION_MASK;
 
             // Regulatory
-            case MATURE_MIRNA_VARIANT:
-                return CT_MIRNA_MASK;
-            case "regulatory_region_ablation":
-            case "regulatory_region_amplification":
-            case REGULATORY_REGION_VARIANT:
-                return CT_REGULATORY_MASK;
+//            case "regulatory_region_ablation":
+//            case "regulatory_region_amplification":
+//            case REGULATORY_REGION_VARIANT:
+//                return CT_REGULATORY_MASK;
+
             case TF_BINDING_SITE_VARIANT:
-            case "TFBS_ablation":
-            case "TFBS_amplification":
-                return CT_TFBS_MASK;
+//            case "TFBS_ablation":
+//            case "TFBS_amplification":
+            case MATURE_MIRNA_VARIANT:
+                return CT_MIRNA_TFBS_MASK;
 
             // NonCoding
             case THREE_PRIME_UTR_VARIANT:
             case FIVE_PRIME_UTR_VARIANT:
                 return CT_UTR_MASK;
 
-            // Intergenic
-            case UPSTREAM_GENE_VARIANT:
-            case TWOKB_UPSTREAM_VARIANT:
-            case "5KB_upstream_variant":
-
-            case DOWNSTREAM_GENE_VARIANT:
-            case TWOKB_DOWNSTREAM_VARIANT:
-            case "5KB_downstream_variant":
-                return CT_UPSTREAM_DOWNSTREAM_MASK;
+//            // Intergenic
+//            case UPSTREAM_GENE_VARIANT:
+//            case TWOKB_UPSTREAM_VARIANT:
+//            case "5KB_upstream_variant":
+//
+//            case DOWNSTREAM_GENE_VARIANT:
+//            case TWOKB_DOWNSTREAM_VARIANT:
+//            case "5KB_downstream_variant":
+//                return CT_UPSTREAM_DOWNSTREAM_MASK;
 
             //case INTERGENIC_VARIANT:
             //case CODING_SEQUENCE_VARIANT:
             //case FEATURE_TRUNCATION:
-            //case INCOMPLETE_TERMINAL_CODON_VARIANT:
             //case INFRAME_VARIANT:
-            //case INITIATOR_CODON_VARIANT:
             //case MISSENSE_VARIANT:
             //case NMD_TRANSCRIPT_VARIANT:
             //case STOP_RETAINED_VARIANT:
@@ -300,7 +304,6 @@ public class AnnotationIndexConverter {
             //case INTRON_VARIANT:
             //case NON_CODING_TRANSCRIPT_EXON_VARIANT:
             //case NON_CODING_TRANSCRIPT_VARIANT:
-            //case SPLICE_REGION_VARIANT:
             default:
                 return 0;
         }

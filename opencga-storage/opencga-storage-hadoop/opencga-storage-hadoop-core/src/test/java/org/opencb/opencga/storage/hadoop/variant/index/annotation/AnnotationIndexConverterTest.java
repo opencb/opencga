@@ -93,15 +93,18 @@ public class AnnotationIndexConverterTest {
 
     @Test
     public void testNonIntergenic() {
-        // Only full intergenic variants should be marked as intergenic
-        assertEquals(POP_FREQ_ANY_001_MASK | MISSENSE_VARIANT_MASK | LOF_EXTENDED_MASK,
+        // Intergenic and regulatory variants should be marked as intergenic
+        assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
+                b = converter.convert(annot(ct("intergenic_variant"), ct("regulatory_region_variant"))).getSummaryIndex());
+
+        assertEquals(POP_FREQ_ANY_001_MASK | MISSENSE_VARIANT_MASK | LOF_EXTENDED_MASK | INTERGENIC_MASK,
                 b = converter.convert(annot(ct("intergenic_variant"), ct("missense_variant"))).getSummaryIndex());
     }
 
     @Test
     public void testPopFreq() {
         assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
-                b = converter.convert(new VariantAnnotation()).getSummaryIndex());
+                b = converter.convert(annot()).getSummaryIndex());
     }
 
     @Test
@@ -139,6 +142,11 @@ public class AnnotationIndexConverterTest {
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.001), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
     }
 
+    protected VariantAnnotation annot() {
+        VariantAnnotation variantAnnotation = new VariantAnnotation();
+        variantAnnotation.setConsequenceTypes(Arrays.asList(ct("intergenic_variant")));
+        return variantAnnotation;
+    }
 
     protected VariantAnnotation annot(ConsequenceType... value) {
         VariantAnnotation variantAnnotation = new VariantAnnotation();
@@ -149,6 +157,7 @@ public class AnnotationIndexConverterTest {
     protected VariantAnnotation annot(PopulationFrequency... value) {
         VariantAnnotation variantAnnotation = new VariantAnnotation();
         variantAnnotation.setPopulationFrequencies(Arrays.asList(value));
+        variantAnnotation.setConsequenceTypes(Arrays.asList(ct("intergenic_variant")));
         return variantAnnotation;
     }
 
