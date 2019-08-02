@@ -40,7 +40,7 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
         Iterator<Iterator<Variant>> iterators = regions.stream()
                 .map(region -> {
                     // One scan per region
-                    Scan scan = dbAdaptor.parse(query, region, false);
+                    Scan scan = dbAdaptor.parse(query, region);
                     HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
                     SampleIndexEntryFilter filter = dbAdaptor.buildSampleIndexEntryFilter(query, region);
                     try {

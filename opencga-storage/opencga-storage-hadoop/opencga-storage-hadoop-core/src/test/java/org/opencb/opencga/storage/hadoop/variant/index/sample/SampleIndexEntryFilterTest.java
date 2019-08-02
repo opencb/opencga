@@ -42,16 +42,25 @@ public class SampleIndexEntryFilterTest {
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, true, buildPopulationFrequencyQuery("s2", 0, 0.001));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T", "1:30:A:T", "1:40:A:T", "1:50:A:T"), result);
+        Assert.assertEquals(5, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry()));
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, false, buildPopulationFrequencyQuery("s2", 0, 0.001));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
+        Assert.assertEquals(1, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry()));
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, false,
                 buildPopulationFrequencyQuery("s2", 0, 0.006),
                 buildPopulationFrequencyQuery("s3", 0, 0.006));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T", "1:30:A:T", "1:50:A:T"), result);
+        Assert.assertEquals(4, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry()));
+
+        SampleIndexEntry e = getSampleIndexEntry();
+        for (SampleIndexEntry.SampleIndexGtEntry value : e.getGts().values()) {
+            value.setVariants(new SampleIndexVariantBiConverter().toVariantsCountIterator(value.getCount()));
+        }
+        Assert.assertEquals(4, new SampleIndexEntryFilter(query, configuration).filterAndCount(e));
     }
 
     @Test
@@ -97,6 +106,7 @@ public class SampleIndexEntryFilterTest {
 
         return new SampleIndexEntry("1", 0, Collections.singletonMap("S1", new SampleIndexEntry.SampleIndexGtEntry("0/1")
                 .setPopulationFrequencyIndexGt(pf)
+                .setCount(5)
                 .setVariants(buildIterator(
                         "1:10:A:T",
                         "1:20:A:T",

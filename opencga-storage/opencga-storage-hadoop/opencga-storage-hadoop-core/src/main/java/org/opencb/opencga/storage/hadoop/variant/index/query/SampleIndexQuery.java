@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -76,6 +77,26 @@ public class SampleIndexQuery {
 
     public Map<String, List<String>> getSamplesMap() {
         return samplesMap;
+    }
+
+    public boolean emptyOrRegionFilter() {
+        if (!CollectionUtils.isEmpty(variantTypes)) {
+            return false;
+        }
+        if (!emptyFileIndex()) {
+            return false;
+        }
+        if (getFatherFilterMap() != null && !getFatherFilterMap().isEmpty()) {
+            return false;
+        }
+        if (getMotherFilterMap() != null && !getMotherFilterMap().isEmpty()) {
+            return false;
+        }
+        if (!getAnnotationIndexQuery().isEmpty()) {
+            return false;
+        }
+
+        return true;
     }
 
     public Map<String, boolean[]> getFatherFilterMap() {

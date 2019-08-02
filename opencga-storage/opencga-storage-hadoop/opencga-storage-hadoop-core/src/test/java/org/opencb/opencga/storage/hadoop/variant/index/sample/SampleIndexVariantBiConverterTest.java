@@ -136,6 +136,13 @@ public class SampleIndexVariantBiConverterTest {
         byte[] bytesOldOffset = new byte[bytesOld.length + 10];
         System.arraycopy(bytesOld, 0, bytesOldOffset, 10, bytesOld.length);
         checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytesOldOffset, 10, bytesOld.length));
+
+
+        List<Variant> dummyVariants = new ArrayList<>(numVariants);
+        for (int i = 0; i < numVariants; i++) {
+            dummyVariants.add(new Variant("1:10:A:T"));
+        }
+        checkIterator(numVariants, dummyVariants, () -> converter.toVariantsCountIterator(variants.size()));
     }
 
     private void checkIterator(int numVariants, List<Variant> variants, Supplier<SampleIndexVariantBiConverter.SampleIndexVariantIterator> factory) {

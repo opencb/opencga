@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -121,5 +123,12 @@ public class SampleAnnotationIndexQuery {
 
     public boolean isPopulationFrequencyQueryPartial() {
         return populationFrequencyQueryPartial;
+    }
+
+    public boolean isEmpty() {
+        return getAnnotationIndexMask() == IndexUtils.EMPTY_MASK
+                && biotypeMask == IndexUtils.EMPTY_MASK
+                && consequenceTypeMask == IndexUtils.EMPTY_MASK
+                && CollectionUtils.isEmpty(populationFrequencyQueries);
     }
 }

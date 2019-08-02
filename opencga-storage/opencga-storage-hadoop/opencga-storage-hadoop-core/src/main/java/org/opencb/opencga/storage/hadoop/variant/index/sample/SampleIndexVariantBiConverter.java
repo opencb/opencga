@@ -161,6 +161,10 @@ public class SampleIndexVariantBiConverter {
         }
     }
 
+    public SampleIndexVariantIterator toVariantsCountIterator(int count) {
+        return new CountSampleIndexVariantIterator(count);
+    }
+
     public abstract static class SampleIndexVariantIterator implements Iterator<Variant> {
 
         private byte[] annotationIndex;
@@ -306,6 +310,46 @@ public class SampleIndexVariantBiConverter {
                 }
             }
             return false;
+        }
+    }
+
+    private static final class CountSampleIndexVariantIterator extends SampleIndexVariantIterator {
+
+        private final int count;
+        private int i;
+        private static final Variant DUMMY_VARIANT = new Variant("1:10:A:T");
+
+        CountSampleIndexVariantIterator(int count) {
+            this.count = count;
+            i = 0;
+        }
+
+        @Override
+        public int nextIndex() {
+            return i;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return i != count;
+        }
+
+        @Override
+        public void skip() {
+            increaseNonIntergenicCounter();
+            i++;
+        }
+
+        @Override
+        public Variant next() {
+            increaseNonIntergenicCounter();
+            i++;
+            return DUMMY_VARIANT;
+        }
+
+        @Override
+        public int getApproxSize() {
+            return count;
         }
     }
 

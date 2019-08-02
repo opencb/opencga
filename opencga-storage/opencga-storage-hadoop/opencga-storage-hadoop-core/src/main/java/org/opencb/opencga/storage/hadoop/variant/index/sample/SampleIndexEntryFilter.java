@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -74,7 +75,15 @@ public class SampleIndexEntryFilter {
         if (query.getMendelianError()) {
             return filterMendelian(sampleIndexEntry.getGts(), sampleIndexEntry.getMendelianVariants());
         } else {
-            return filter(sampleIndexEntry.getGts());
+            return filter(sampleIndexEntry.getGts(), false);
+        }
+    }
+
+    public int filterAndCount(SampleIndexEntry sampleIndexEntry) {
+        if (query.getMendelianError()) {
+            return filterMendelian(sampleIndexEntry.getGts(), sampleIndexEntry.getMendelianVariants()).size();
+        } else {
+            return filter(sampleIndexEntry.getGts(), true).size();
         }
     }
 
@@ -104,10 +113,12 @@ public class SampleIndexEntryFilter {
         return DE_NOVO_MENDELIAN_ERROR_CODES[mendelianErrorCode];
     }
 
-    private Collection<Variant> filter(Map<String, SampleIndexGtEntry> gts) {
+    private Collection<Variant> filter(Map<String, SampleIndexGtEntry> gts, boolean count) {
+
         List<List<Variant>> variantsByGt = new ArrayList<>(gts.size());
         int numVariants = 0;
         for (SampleIndexGtEntry gtEntry : gts.values()) {
+
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
 
             ArrayList<Variant> variants = new ArrayList<>(gtEntry.getVariants().getApproxSize());
@@ -130,8 +141,12 @@ public class SampleIndexEntryFilter {
         for (List<Variant> variantList : variantsByGt) {
             variants.addAll(variantList);
         }
-        // List.sort is much faster than a TreeSet
-        variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+
+        // Only sort if not counting
+        if (!count) {
+            // List.sort is much faster than a TreeSet
+            variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+        }
 
         return variants;
     }
@@ -254,7 +269,7 @@ public class SampleIndexEntryFilter {
         if (regionFilter == null || regionFilter.contains(variant.getChromosome(), variant.getStart())) {
 
             // Test type filter (if any)
-            if (query.getVariantTypes() == null || query.getVariantTypes().contains(variant.getType())) {
+            if (CollectionUtils.isEmpty(query.getVariantTypes()) || query.getVariantTypes().contains(variant.getType())) {
                 return variant;
             }
         }

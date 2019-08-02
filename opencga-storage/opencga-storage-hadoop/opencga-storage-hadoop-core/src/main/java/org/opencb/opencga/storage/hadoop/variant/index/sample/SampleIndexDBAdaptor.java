@@ -10,7 +10,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -26,8 +25,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -230,19 +229,19 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public long count(List<Region> regions, String study, String sample, List<String> gts) {
-        return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null), sample);
+        return count(new SampleIndexQuery(regions, study, Collections.singletonMap(sample, gts), null).forSample(sample));
     }
 
     public long count(SampleIndexQuery query) {
         if (query.getSamplesMap().size() == 1) {
             String sample = query.getSamplesMap().keySet().iterator().next();
-            return count(query, sample);
+            return count(query.forSample(sample));
         } else {
             return Iterators.size(iterator(query));
         }
     }
 
-    public long count(SampleIndexQuery query, String sample) {
+    public long count(SingleSampleIndexQuery query) {
         List<Region> regionsList;
         if (CollectionUtils.isEmpty(query.getRegions())) {
             // If no regions are defined, get a list of one null element to initialize the stream.
@@ -251,17 +250,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             regionsList = VariantQueryUtils.mergeRegions(query.getRegions());
         }
 
-        List<String> allGts = getAllLoadedGenotypes(query.getStudy());
-        List<String> gts = query.getSamplesMap().get(sample);
-        if (CollectionUtils.isEmpty(gts)) {
-            gts = allGts;
-        } else {
-            gts = GenotypeClass.filter(gts, allGts);
-        }
-
         String tableName = tableNameGenerator.getSampleIndexTableName(toStudyId(query.getStudy()));
 
-        List<String> finalGts = gts;
         try {
             return hBaseManager.act(tableName, table -> {
                 long count = 0;
@@ -269,36 +259,46 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     // Split region in countable regions
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
-                        SingleSampleIndexQuery sampleIndexQuery = query.forSample(sample, finalGts);
                         HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
-                        if (query.emptyAnnotationIndex() && query.emptyFileIndex()
-                                && (query.getVariantTypes() == null || query.getVariantTypes().size() == VariantType.values().length)
-                                && (subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion))) {
-                            Scan scan = parse(sampleIndexQuery, subRegion, true);
-                            try {
+                        boolean noRegionFilter = subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion);
+                        boolean simpleCount = CollectionUtils.isEmpty(query.getVariantTypes()) && noRegionFilter;
+                        try {
+                            if (query.emptyOrRegionFilter() && simpleCount) {
+                                // Directly sum counters
+                                Scan scan = parseCount(query, null);
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
                                 while (result != null) {
                                     count += converter.convertToCount(result);
                                     result = scanner.next();
                                 }
-                            } catch (IOException e) {
-                                throw VariantQueryException.internalException(e);
-                            }
-                        } else {
-                            SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(sampleIndexQuery, subRegion);
-                            Scan scan = parse(sampleIndexQuery, subRegion, false);
-                            try {
+                            } else if (simpleCount) {
+                                // Fast filter and count
+                                SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(query, subRegion);
+                                Scan scan = parseCountAndFilter(query, subRegion);
+
+                                ResultScanner scanner = table.getScanner(scan);
+                                Result result = scanner.next();
+                                while (result != null) {
+                                    SampleIndexEntry sampleIndexEntry = converter.convertCountersOnly(result);
+                                    count += filter.filterAndCount(sampleIndexEntry);
+                                    result = scanner.next();
+                                }
+                            } else {
+                                // Parse, filter and count
+                                SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(query, subRegion);
+                                Scan scan = parse(query, subRegion);
+
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
                                 while (result != null) {
                                     SampleIndexEntry sampleIndexEntry = converter.convert(result);
-                                    count += filter.filter(sampleIndexEntry).size();
+                                    count += filter.filterAndCount(sampleIndexEntry);
                                     result = scanner.next();
                                 }
-                            } catch (IOException e) {
-                                throw VariantQueryException.internalException(e);
                             }
+                        } catch (IOException e) {
+                            throw VariantQueryException.internalException(e);
                         }
                     }
                 }
@@ -383,7 +383,19 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return new SampleIndexEntryFilter(query, configuration, region);
     }
 
-    public Scan parse(SingleSampleIndexQuery query, Region region, boolean count) {
+    public Scan parse(SingleSampleIndexQuery query, Region region) {
+        return parse(query, region, false, false);
+    }
+
+    public Scan parseCount(SingleSampleIndexQuery query, Region region) {
+        return parse(query, region, true, true);
+    }
+
+    public Scan parseCountAndFilter(SingleSampleIndexQuery query, Region region) {
+        return parse(query, region, false, true);
+    }
+
+    private Scan parse(SingleSampleIndexQuery query, Region region, boolean onlyCount, boolean skipGtColumn) {
 
         Scan scan = new Scan();
         int studyId = toStudyId(query.getStudy());
@@ -398,13 +410,14 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
         // If genotypes are not defined, return ALL columns
         for (String gt : query.getGenotypes()) {
-            if (count) {
-                scan.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt));
-            } else {
+            scan.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt));
+            if (!onlyCount) {
                 if (query.getMendelianError()) {
                     scan.addColumn(family, SampleIndexSchema.toMendelianErrorColumn());
                 } else {
-                    scan.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt));
+                    if (!skipGtColumn) {
+                        scan.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt));
+                    }
                 }
                 if (query.getAnnotationIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));

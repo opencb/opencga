@@ -36,7 +36,7 @@ public class SampleIndexDBAdaptorTest {
 
         SampleIndexQuery query = new SampleIndexQuery(Collections.emptyList(), "ST",
                 Collections.singletonMap(sampleName, Collections.singletonList("0/1")), VariantQueryUtils.QueryOperation.AND);
-        new SampleIndexDBAdaptor(new GenomeHelper(new Configuration()), new HBaseManager(new Configuration()), null, metadataManager).parse(query.forSample(sampleName), null, false);
+        new SampleIndexDBAdaptor(new GenomeHelper(new Configuration()), new HBaseManager(new Configuration()), null, metadataManager).parse(query.forSample(sampleName), null);
     }
 
 

@@ -53,6 +53,14 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
 
     @Override
     public SampleIndexEntry convert(Result result) {
+        return convert(result, false);
+    }
+
+    public SampleIndexEntry convertCountersOnly(Result result) {
+        return convert(result, true);
+    }
+
+    private SampleIndexEntry convert(Result result, boolean countOnly) {
         final Map<String, SampleIndexGtEntry> gts = new HashMap<>();
         MendelianErrorSampleIndexVariantIterator mendelianIterator = null;
 
@@ -62,7 +70,14 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
 
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, META_PREFIX_BYTES)) {
-                if (columnStartsWith(cell, ANNOTATION_SUMMARY_PREFIX_BYTES)) {
+                if (columnStartsWith(cell, GENOTYPE_COUNT_PREFIX_BYTES)) {
+                    SampleIndexGtEntry gtEntry = gts.computeIfAbsent(getGt(cell, GENOTYPE_COUNT_PREFIX_BYTES), SampleIndexGtEntry::new);
+                    gtEntry.setCount(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
+                    if (countOnly && !gtEntry.getVariants().hasNext()) {
+                        // By default, gtEntry has an empty iterator. If so, use the counter.
+                        gtEntry.setVariants(converter.toVariantsCountIterator(gtEntry.getCount()));
+                    }
+                } else if (columnStartsWith(cell, ANNOTATION_SUMMARY_PREFIX_BYTES)) {
                     gts.computeIfAbsent(getGt(cell, ANNOTATION_SUMMARY_PREFIX_BYTES), SampleIndexGtEntry::new)
                             .setAnnotationIndexGt(CellUtil.cloneValue(cell));
                 } else if (columnStartsWith(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES)) {

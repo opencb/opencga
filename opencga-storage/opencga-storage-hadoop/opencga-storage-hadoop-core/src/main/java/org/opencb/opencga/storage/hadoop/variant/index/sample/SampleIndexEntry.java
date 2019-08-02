@@ -74,6 +74,7 @@ public class SampleIndexEntry {
     public static class SampleIndexGtEntry {
         private String gt;
 
+        private int count;
         private SampleIndexVariantBiConverter.SampleIndexVariantIterator variants;
         private byte[] fileIndexGt;
         private byte[] annotationIndexGt;
@@ -95,6 +96,7 @@ public class SampleIndexEntry {
             this.setAnnotationIndexGt(annotationIndexGt);
             this.setAnnotationCounts(annotationCounts);
             this.setParentsGt(parentsGt);
+            this.count = -1;
         }
 
         public String getGt() {
@@ -106,8 +108,21 @@ public class SampleIndexEntry {
             return this;
         }
 
+        public int getCount() {
+            return count;
+        }
+
+        public SampleIndexGtEntry setCount(int count) {
+            this.count = count;
+            return this;
+        }
+
         public int getApproxNumVariants() {
-            return variants.getApproxSize();
+            if (count > 0) {
+                return count;
+            } else {
+                return variants.getApproxSize();
+            }
         }
 
         public SampleIndexVariantBiConverter.SampleIndexVariantIterator getVariants() {

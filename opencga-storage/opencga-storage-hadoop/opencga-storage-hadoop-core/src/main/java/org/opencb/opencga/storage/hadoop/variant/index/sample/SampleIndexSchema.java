@@ -45,6 +45,7 @@ public final class SampleIndexSchema {
     static final String FILE_PREFIX = META_PREFIX + "F_";
     static final byte[] FILE_PREFIX_BYTES = Bytes.toBytes(FILE_PREFIX);
     static final String GENOTYPE_COUNT_PREFIX = META_PREFIX + "C_";
+    static final byte[] GENOTYPE_COUNT_PREFIX_BYTES = Bytes.toBytes(GENOTYPE_COUNT_PREFIX);
 
     static final String ANNOTATION_SUMMARY_PREFIX = META_PREFIX + "A_";
     static final byte[] ANNOTATION_SUMMARY_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_SUMMARY_PREFIX);
