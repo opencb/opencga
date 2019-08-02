@@ -226,7 +226,7 @@ public final class IndexUtils {
     }
 
     public static byte getRangeCode(double value, double[] ranges) {
-        byte code = (byte) (ranges.length - 1);
+        byte code = (byte) (ranges.length);
         for (byte i = 0; i < ranges.length; i++) {
             if (value < ranges[i]) {
                 code = i;

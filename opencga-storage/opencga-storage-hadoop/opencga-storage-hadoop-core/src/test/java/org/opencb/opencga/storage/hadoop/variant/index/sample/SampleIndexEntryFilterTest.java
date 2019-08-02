@@ -8,15 +8,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SampleIndexEntryFilterTest {
@@ -39,19 +41,19 @@ public class SampleIndexEntryFilterTest {
         SampleIndexQuery.SingleSampleIndexQuery query;
 
         // Partial OR query should always return ALL values
-        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, true, buildPopulationFrequencyQuery("s2", 0, 0.001));
+        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, true, buildPopulationFrequencyQuery("s2", 0, 1));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T", "1:30:A:T", "1:40:A:T", "1:50:A:T"), result);
         Assert.assertEquals(5, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry()));
 
-        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, false, buildPopulationFrequencyQuery("s2", 0, 0.001));
+        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, false, buildPopulationFrequencyQuery("s2", 0, 1));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
         Assert.assertEquals(1, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry()));
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, false,
-                buildPopulationFrequencyQuery("s2", 0, 0.006),
-                buildPopulationFrequencyQuery("s3", 0, 0.006));
+                buildPopulationFrequencyQuery("s2", 0, 3),
+                buildPopulationFrequencyQuery("s3", 0, 3));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T", "1:30:A:T", "1:50:A:T"), result);
         Assert.assertEquals(4, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry()));
@@ -67,26 +69,26 @@ public class SampleIndexEntryFilterTest {
     public void testPopFreqQueryAND() {
         SampleIndexQuery.SingleSampleIndexQuery query;
         List<String> result;
-        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, true, buildPopulationFrequencyQuery("s2", 0, 0.001));
+        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, true, buildPopulationFrequencyQuery("s2", 0, 1));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
 
 
-        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, false, buildPopulationFrequencyQuery("s2", 0, 0.001));
+        query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, false, buildPopulationFrequencyQuery("s2", 0, 1));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
 
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, false,
-                buildPopulationFrequencyQuery("s2", 0.006, 1),
-                buildPopulationFrequencyQuery("s3", 0.006, 1));
+                buildPopulationFrequencyQuery("s2",  2, 4),
+                buildPopulationFrequencyQuery("s3",  2, 4));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:30:A:T", "1:40:A:T"), result);
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, false,
-                buildPopulationFrequencyQuery("s2", 0, 1),
-                buildPopulationFrequencyQuery("s3", 0.002, 1),
-                buildPopulationFrequencyQuery("s4", 0.006, 1));
+                buildPopulationFrequencyQuery("s2", 0, 4),
+                buildPopulationFrequencyQuery("s3", 1, 4),
+                buildPopulationFrequencyQuery("s4", 2, 4));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:20:A:T", "1:40:A:T"), result);
     }
@@ -121,11 +123,11 @@ public class SampleIndexEntryFilterTest {
         return new SampleIndexVariantBiConverter().toVariantsIterator("1", 0, Bytes.toBytes(str), 0, str.length());
     }
 
-    private PopulationFrequencyQuery buildPopulationFrequencyQuery(String study, double minFreqInclusive, double maxFreqExclusive) {
+    private PopulationFrequencyQuery buildPopulationFrequencyQuery(String study, int minFreqInclusive, int maxFreqExclusive) {
         return new PopulationFrequencyQuery(Integer.valueOf(study.substring(1)) - 1, study, "ALL",
-                minFreqInclusive, maxFreqExclusive,
-                IndexUtils.getRangeCode(minFreqInclusive, PopulationFrequencyRange.DEFAULT_RANGES),
-                IndexUtils.getRangeCodeExclusive(maxFreqExclusive, PopulationFrequencyRange.DEFAULT_RANGES));
+                -1, -1,
+                (byte) minFreqInclusive,
+                (byte) maxFreqExclusive);
     }
 
     private SampleIndexQuery.SingleSampleIndexQuery getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation op,
