@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntryFilter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,6 +48,7 @@ public class MendelianErrorSampleIndexConverter {
         private int nextIndex;
         private int nextCode;
         private String nextGt;
+        private int lastNonIntergenicVariantIdx = -1;
 
         public MendelianErrorSampleIndexVariantIterator(byte[] value, int offset, int length) {
             List<String> values = split(value, offset, length);
@@ -64,7 +66,34 @@ public class MendelianErrorSampleIndexConverter {
 
         @Override
         public int nextNonIntergenicIndex() {
-            return -1;
+            if (annotationIndex == null) {
+                return -1;
+            } else {
+                int idx = nextIndex();
+
+                if (lastNonIntergenicVariantIdx == idx) {
+                    // nonIntergenicCount includes next variant
+                    return nonIntergenicCount - 1;
+                } else if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, idx)) {
+
+                    // Loop from next of lastNonIntergenic variant to prev of nextVariant
+                    // Do not check if the next variant is intergenic or not. Already checked.
+                    for (int i = lastNonIntergenicVariantIdx + 1; i < nextIndex - 1; i++) {
+                        if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, i)) {
+                            nonIntergenicCount++;
+                        }
+                    }
+
+                    // Next variant is intergenic. Checked in if condition
+                    nonIntergenicCount++;
+
+                    lastNonIntergenicVariantIdx = idx;
+                    // nonIntergenicCount includes next variant
+                    return nonIntergenicCount - 1;
+                } else {
+                    throw new IllegalStateException("Next variant is not intergenic!");
+                }
+            }
         }
 
         public String nextGenotype() {

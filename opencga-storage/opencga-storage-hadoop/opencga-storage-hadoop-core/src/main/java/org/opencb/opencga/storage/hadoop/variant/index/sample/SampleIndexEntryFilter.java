@@ -212,7 +212,7 @@ public class SampleIndexEntryFilter {
         return query.getSampleFileIndexQuery().getValidFileIndex()[gtEntry.getFileIndexGt()[idx] & query.getFileIndexMask()];
     }
 
-    protected static boolean isNonIntergenic(byte[] annotationIndex, int idx) {
+    public static boolean isNonIntergenic(byte[] annotationIndex, int idx) {
         return IndexUtils.testIndex(annotationIndex[idx], AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
     }
 
