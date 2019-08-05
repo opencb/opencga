@@ -405,7 +405,7 @@ public class VariantHbaseTestUtils {
 
             try (PrintStream out = new PrintStream(new FileOutputStream(outDir.resolve("annotation_index.txt").toFile()))) {
                 annotationIndexDBAdaptor.iterator().forEachRemaining(pair -> {
-                    out.println(pair.getKey() + " -> " + IndexUtils.byteToString(pair.getValue()));
+                    out.println(pair.getKey() + " -> " + pair.getValue());
                 });
             }
         }

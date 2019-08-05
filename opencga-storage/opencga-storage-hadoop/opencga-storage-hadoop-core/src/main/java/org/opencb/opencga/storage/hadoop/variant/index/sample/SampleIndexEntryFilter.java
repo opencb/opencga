@@ -6,10 +6,11 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
 
 import java.util.*;
 
@@ -176,6 +177,7 @@ public class SampleIndexEntryFilter {
 
         // Test annotation index (if any)
         if (gtEntry.getAnnotationIndexGt() == null
+                || gtEntry.getAnnotationIndexGt()[idx] == AnnotationIndexEntry.MISSING_ANNOTATION
                 || testIndex(gtEntry.getAnnotationIndexGt()[idx], query.getAnnotationIndexMask(), query.getAnnotationIndex())) {
             expectedResultsFromAnnotation.decrement();
 
@@ -253,6 +255,10 @@ public class SampleIndexEntryFilter {
     }
 
     private boolean filterOtherAnnotFields(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
+        if (gtEntry.getAnnotationIndexGt() == null
+                || gtEntry.getAnnotationIndexGt()[variants.nextIndex()] == AnnotationIndexEntry.MISSING_ANNOTATION) {
+            return true;
+        }
         int nonIntergenicIndex = variants.nextNonIntergenicIndex();
         if (nonIntergenicIndex < 0) {
             // unable to filter by this field

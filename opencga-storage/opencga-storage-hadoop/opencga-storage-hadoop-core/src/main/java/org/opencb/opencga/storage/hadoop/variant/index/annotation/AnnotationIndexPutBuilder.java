@@ -18,10 +18,14 @@ public class AnnotationIndexPutBuilder {
     private int numVariants;
 
     public AnnotationIndexPutBuilder() {
-        this.annotation = new ByteArrayOutputStream(50);
-        this.biotype = new ByteArrayOutputStream(20);
-        this.ct = new ByteArrayOutputStream(30);
-        this.popFreq = new ByteArrayOutputStream(10);
+        this(50);
+    }
+
+    public AnnotationIndexPutBuilder(int size) {
+        this.annotation = new ByteArrayOutputStream(size);
+        this.biotype = new ByteArrayOutputStream(size / 4);
+        this.ct = new ByteArrayOutputStream(size / 2);
+        this.popFreq = new ByteArrayOutputStream(size / 2);
         partialPopFreq = 0;
         partialPopFreqIdx = 0;
         numVariants = 0;

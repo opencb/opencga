@@ -89,9 +89,9 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
 
         if (hasGenotype) {
-            LOGGER.info("Study with genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study with genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
         } else {
-            LOGGER.info("Study without genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study without genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
         }
 
         region = getParam(VariantQueryParam.REGION.key(), "");

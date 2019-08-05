@@ -124,23 +124,39 @@ public class AnnotationIndexConverter {
         popFreqRanges = SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_THRESHOLDS;
     }
 
-    public static Pair<Variant, Byte> getVariantBytePair(Result result) {
+    public static Pair<Variant, AnnotationIndexEntry> getAnnotationIndexEntryPair(Result result) {
         Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
-        Cell cell = result.getColumnLatestCell(COLUMN_FMAILY, VALUE_COLUMN);
-        byte[] value = CellUtil.cloneValue(cell);
-        return Pair.of(variant, value[0]);
+        byte summary = 0;
+        short ct = 0;
+        byte bt = 0;
+        byte[] pf = null;
+
+        for (Cell cell : result.rawCells()) {
+            if (CellUtil.matchingQualifier(cell, VALUE_COLUMN)) {
+                summary = cell.getValueArray()[cell.getValueOffset()];
+            } else if (CellUtil.matchingQualifier(cell, CT_VALUE_COLUMN)) {
+                ct = Bytes.toShort(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+            } else if (CellUtil.matchingQualifier(cell, BT_VALUE_COLUMN)) {
+                bt = cell.getValueArray()[cell.getValueOffset()];
+            } else if (CellUtil.matchingQualifier(cell, POP_FREQ_VALUE_COLUMN)) {
+                pf = CellUtil.cloneValue(cell);
+            }
+        }
+
+        return Pair.of(variant,
+                new AnnotationIndexEntry(summary, IndexUtils.testIndex(summary, INTERGENIC_MASK, INTERGENIC_MASK), ct, bt, pf));
     }
 
     public AnnotationIndexEntry convert(VariantAnnotation variantAnnotation) {
+        if (variantAnnotation == null) {
+            return AnnotationIndexEntry.empty(populations.size());
+        }
         byte b = 0;
         short ctIndex = 0;
         byte btIndex = 0;
         byte[] popFreqIndex = new byte[populations.size()];
 
         boolean intergenic = false;
-        if (variantAnnotation == null) {
-            return new AnnotationIndexEntry(b, intergenic, ctIndex, btIndex, popFreqIndex);
-        }
 
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {

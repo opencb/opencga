@@ -29,31 +29,31 @@ public class AnnotationIndexDBAdaptor {
         this.tableName = tableName;
     }
 
-    public List<Pair<Variant, Byte>> get(String chromosome, int start, int end) throws IOException {
-        Iterator<Pair<Variant, Byte>> iterator = nativeIterator(new Scan(
+    public List<Pair<Variant, AnnotationIndexEntry>> get(String chromosome, int start, int end) throws IOException {
+        Iterator<Pair<Variant, AnnotationIndexEntry>> iterator = nativeIterator(new Scan(
                 VariantPhoenixKeyFactory.generateVariantRowKey(chromosome, start),
                 VariantPhoenixKeyFactory.generateVariantRowKey(chromosome, end)));
-        List<Pair<Variant, Byte>> list = new LinkedList<>();
+        List<Pair<Variant, AnnotationIndexEntry>> list = new LinkedList<>();
         while (iterator.hasNext()) {
             list.add(iterator.next());
         }
         return list;
     }
 
-    public Iterator<Pair<Variant, Byte>> iterator() throws IOException {
+    public Iterator<Pair<Variant, AnnotationIndexEntry>> iterator() throws IOException {
         return nativeIterator(new Scan());
     }
 
-    public Iterator<Pair<Variant, Byte>> iterator(Region region) throws IOException {
+    public Iterator<Pair<Variant, AnnotationIndexEntry>> iterator(Region region) throws IOException {
         Scan scan = new Scan();
         scan.setStartRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getStart()));
         scan.setStopRow(VariantPhoenixKeyFactory.generateVariantRowKey(region.getChromosome(), region.getEnd()));
         return nativeIterator(scan);
     }
 
-    private Iterator<Pair<Variant, Byte>> nativeIterator(Scan scan) throws IOException {
+    private Iterator<Pair<Variant, AnnotationIndexEntry>> nativeIterator(Scan scan) throws IOException {
         return hBaseManager.act(tableName, table -> {
-            return Iterators.transform(table.getScanner(scan).iterator(), AnnotationIndexConverter::getVariantBytePair);
+            return Iterators.transform(table.getScanner(scan).iterator(), AnnotationIndexConverter::getAnnotationIndexEntryPair);
         });
     }
 
