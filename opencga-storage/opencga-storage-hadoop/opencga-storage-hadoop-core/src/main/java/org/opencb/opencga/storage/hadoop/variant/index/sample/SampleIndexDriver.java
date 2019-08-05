@@ -121,7 +121,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
-        outputTable = getParam(OUTPUT);
         study = getStudyId();
         if (study < 0) {
             BiMap<String, Integer> map = getMetadataManager().getStudies();
@@ -132,6 +131,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 throw new IllegalArgumentException("Select one study from " + map.keySet());
             }
         }
+        outputTable = getParam(OUTPUT);
         if (outputTable == null || outputTable.isEmpty()) {
             outputTable = getTableNameGenerator().getSampleIndexTableName(study);
         }
@@ -341,7 +341,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private Set<Integer> samplesSet;
         private Set<Integer> samplesToCount;
         private SampleIndexVariantBiConverter variantsConverter;
-        private SampleIndexToHBaseConverter putConverter;
+        private VariantFileIndexConverter fileIndexConverter;
         private List<String> fixedAttributes;
         private Map<Integer, List<Integer>> sampleIdToFileIdMap;
         private boolean hasGenotype;
@@ -354,6 +354,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         protected void setup(Context context) throws IOException, InterruptedException {
             family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
+            fileIndexConverter = new VariantFileIndexConverter();
 
             int[] samples = context.getConfiguration().getInts(SAMPLES);
             if (samples == null || samples.length == 0) {
@@ -372,7 +373,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 }
             }
             byte[] family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
-            putConverter = new SampleIndexToHBaseConverter(family);
             variantsConverter = new SampleIndexVariantBiConverter();
 
             String[] strings = context.getConfiguration().getStrings(FIXED_ATTRIBUTES);
@@ -407,7 +407,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                     Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn, fixedAttributes);
 
-                    byte fileIndexValue = putConverter.createFileIndexValue(variant.getType(), fileAttributes, null);
+                    byte fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), fileAttributes, null);
 
                     fileIndexMap.put(fileId, fileIndexValue);
                 }

@@ -75,6 +75,9 @@ public class AnnotationIndexConverter {
 
     public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
     public static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
+    public static final byte[] CT_VALUE_COLUMN = Bytes.toBytes("ct");
+    public static final byte[] BT_VALUE_COLUMN = Bytes.toBytes("bt");
+    public static final byte[] POP_FREQ_VALUE_COLUMN = Bytes.toBytes("pf");
     public static final int VALUE_LENGTH = 1;
     public static final String TRANSCRIPT_FLAG_BASIC = "basic";
     public static final int POP_FREQ_SIZE = 2;
@@ -118,7 +121,7 @@ public class AnnotationIndexConverter {
                 throw new IllegalArgumentException("Duplicated population '" + population.getStudyAndPopulation() + "' in " + populations);
             }
         }
-        popFreqRanges = SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_RANGES;
+        popFreqRanges = SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_THRESHOLDS;
     }
 
     public static Pair<Variant, Byte> getVariantBytePair(Result result) {
@@ -135,6 +138,10 @@ public class AnnotationIndexConverter {
         byte[] popFreqIndex = new byte[populations.size()];
 
         boolean intergenic = false;
+        if (variantAnnotation == null) {
+            return new AnnotationIndexEntry(b, intergenic, ctIndex, btIndex, popFreqIndex);
+        }
+
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
                 if (BIOTYPE_SET.contains(ct.getBiotype())) {
@@ -216,11 +223,13 @@ public class AnnotationIndexConverter {
     }
 
     public Put convertToPut(VariantAnnotation variantAnnotation) {
-        // FIXME
         byte[] bytesRowKey = generateVariantRowKey(variantAnnotation);
         Put put = new Put(bytesRowKey);
         AnnotationIndexEntry value = convert(variantAnnotation);
         put.addColumn(COLUMN_FMAILY, VALUE_COLUMN, new byte[]{value.getSummaryIndex()});
+        put.addColumn(COLUMN_FMAILY, CT_VALUE_COLUMN, Bytes.toBytes(value.getCtIndex()));
+        put.addColumn(COLUMN_FMAILY, BT_VALUE_COLUMN, new byte[]{value.getBtIndex()});
+        put.addColumn(COLUMN_FMAILY, POP_FREQ_VALUE_COLUMN, value.getPopFreqIndex());
         return put;
     }
 

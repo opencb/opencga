@@ -489,10 +489,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
                 Object o = method.invoke(clazz.newInstance(), args, conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());
-                return ((Number) o).intValue();
+                int exitCode = ((Number) o).intValue();
+                if (exitCode != 0) {
+                    throw new StorageEngineException("Error executing MapReduce. Exit code: " + o);
+                }
+                return exitCode;
             } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
+                throw new StorageEngineException("Error executing MapReduce.", e);
             }
         }
 

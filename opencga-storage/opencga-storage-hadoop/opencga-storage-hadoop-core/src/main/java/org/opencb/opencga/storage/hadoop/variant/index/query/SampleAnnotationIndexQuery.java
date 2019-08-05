@@ -15,26 +15,18 @@ public class SampleAnnotationIndexQuery {
     private final VariantQueryUtils.QueryOperation populationFrequencyQueryOperator;
     private final boolean populationFrequencyQueryPartial;
 
-    public static class PopulationFrequencyQuery {
+    public static class PopulationFrequencyQuery extends RangeQuery {
         private final int position;
         private final String study;
         private final String population;
 
-        private final double minFreqInclusive;
-        private final double maxFreqExclusive;
-        private final byte minCodeInclusive;
-        private final byte maxCodeExclusive;
-
         public PopulationFrequencyQuery(int position, String study, String population,
                                         double minFreqInclusive, double maxFreqExclusive,
                                         byte minCodeInclusive, byte maxCodeExclusive) {
+            super(minFreqInclusive, maxFreqExclusive, minCodeInclusive, maxCodeExclusive);
             this.position = position;
             this.study = study;
             this.population = population;
-            this.minFreqInclusive = minFreqInclusive;
-            this.maxFreqExclusive = maxFreqExclusive;
-            this.minCodeInclusive = minCodeInclusive;
-            this.maxCodeExclusive = maxCodeExclusive;
         }
 
         public int getPosition() {
@@ -49,27 +41,11 @@ public class SampleAnnotationIndexQuery {
             return population;
         }
 
-        public double getMinFreqInclusive() {
-            return minFreqInclusive;
-        }
-
-        public double getMaxFreqExclusive() {
-            return maxFreqExclusive;
-        }
-
-        public byte getMinCodeInclusive() {
-            return minCodeInclusive;
-        }
-
-        public byte getMaxCodeExclusive() {
-            return maxCodeExclusive;
-        }
-
         @Override
         public String toString() {
             return "PopulationFrequencyQuery{"
                     + "[" + position + "] population='" + study + ':' + population + '\''
-                    + ", query [" + minFreqInclusive + ", " + maxFreqExclusive + ")"
+                    + ", query [" + minValueInclusive + ", " + maxValueExclusive + ")"
                     + ", code [" + minCodeInclusive + ", " + maxCodeExclusive + ")"
                     + '}';
         }

@@ -6,6 +6,9 @@ import java.util.Objects;
 
 public class SampleIndexConfiguration {
 
+    public static final double[] QUAL_THRESHOLDS = new double[]{10, 20, 30};
+    public static final double[] DP_THRESHOLDS = new double[]{5, 15, 30};
+
     private List<PopulationFrequencyRange> populationRanges;
 
     public SampleIndexConfiguration() {
@@ -40,10 +43,10 @@ public class SampleIndexConfiguration {
     }
 
     public static class PopulationFrequencyRange {
-        public static final double[] DEFAULT_RANGES = new double[]{0.001, 0.005, 0.01};
+        public static final double[] DEFAULT_THRESHOLDS = new double[]{0.001, 0.005, 0.01};
         private String study;
         private String population;
-//        private float[] ranges; // TODO: Make this configurable
+//        private float[] thresholds; // TODO: Make this configurable
 
         public PopulationFrequencyRange(String studyPopulation) {
             this.study = studyPopulation.split(":")[0];
@@ -77,8 +80,8 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public double[] getRanges() {
-            return DEFAULT_RANGES;
+        public double[] getThresholds() {
+            return DEFAULT_THRESHOLDS;
         }
 
         @Override

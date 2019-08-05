@@ -1,6 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Lists;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
@@ -31,9 +36,9 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -125,7 +130,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void regenerateSampleIndex() throws Exception {
 
-        String copy = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(1) + "_copy";
+        String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(1);
+        String copy = orig + "_copy";
 
         dbAdaptor.getHBaseManager().createTableIfNeeded(copy, Bytes.toBytes(GenomeHelper.DEFAULT_COLUMN_FAMILY),
                 Compression.Algorithm.NONE);
@@ -139,7 +145,38 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 1,
                 Collections.emptySet(), options), options);
 
-        VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), copy);
+        new TestMRExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
+                dbAdaptor.getArchiveTableName(1),
+                dbAdaptor.getVariantTable(),
+                1,
+                Collections.emptySet(), options), options);
+
+
+        Connection c = dbAdaptor.getHBaseManager().getConnection();
+
+        ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
+        ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
+        while (true) {
+            Result origValue = origScanner.next();
+            Result copyValue = copyScanner.next();
+            if (origValue == null) {
+                assertNull(copyValue);
+                break;
+            }
+            NavigableMap<byte[], byte[]> origFamily = origValue.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily());
+            NavigableMap<byte[], byte[]> copyFamily = copyValue.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily());
+
+            assertEquals(origFamily.keySet().stream().map(Bytes::toString).collect(toList()), copyFamily.keySet().stream().map(Bytes::toString).collect(toList()));
+            assertEquals(origFamily.size(), copyFamily.size());
+
+            for (byte[] key : origFamily.keySet()) {
+                assertArrayEquals(Bytes.toString(key), origFamily.get(key), copyFamily.get(key));
+            }
+        }
+
+
+
+//        VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), copy);
 
     }
 
@@ -153,7 +190,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void testQueryFileIndex() throws Exception {
         testQueryFileIndex(new Query(TYPE.key(), "SNV"));
+        testQueryFileIndex(new Query(TYPE.key(), "SNP"));
         testQueryFileIndex(new Query(TYPE.key(), "INDEL"));
+        testQueryFileIndex(new Query(TYPE.key(), "SNV,INDEL"));
+        testQueryFileIndex(new Query(FILTER.key(), "PASS"));
+        testQueryFileIndex(new Query(TYPE.key(), "INDEL").append(FILTER.key(), "PASS"));
+        testQueryFileIndex(new Query(QUAL.key(), ">30").append(FILTER.key(), "PASS"));
+        testQueryFileIndex(new Query(QUAL.key(), ">10").append(FILTER.key(), "PASS"));
     }
 
     @Test
@@ -191,10 +234,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     public SampleIndexQuery testQueryIndex(Query annotationQuery, Query query) throws Exception {
-//        System.out.println("----------------------------------------------------------");
-//        queryResult = query(query, new QueryOptions());
-//        int numResultsSample = queryResult.getNumResults();
-//        System.out.println("Sample query: " + numResultsSample);
+        System.out.println("----------------------------------------------------------");
 
         // Query DBAdaptor
         System.out.println("Query DBAdaptor");
@@ -209,6 +249,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
         int onlyIndex = sampleIndexDBAdaptor.iterator(indexQuery).toQueryResult().getResult().size();
+        int onlyIndexCount = (int) sampleIndexDBAdaptor.count(indexQuery);
 
         // Query SampleIndex+DBAdaptor
         System.out.println("Query SampleIndex+DBAdaptor");
@@ -216,17 +257,18 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         int indexAndDBAdaptor = queryResult.getNumResults();
         System.out.println("queryResult.source = " + queryResult.getSource());
 
-        System.out.println("----------------------------------------------------------");
+        System.out.println("--------");
         System.out.println("query = " + annotationQuery.toJson());
         System.out.println("annotationIndex    = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask(), indexQuery.getAnnotationIndex()));
         System.out.println("biotypeMask        = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getBiotypeMask()));
         System.out.println("ctMask             = " + IndexUtils.shortToString(indexQuery.getAnnotationIndexQuery().getConsequenceTypeMask()));
-        for (String sample : indexQuery.getSamplesMap().keySet()) {
-            System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.getFileIndex(sample)));
-        }
-        System.out.println("Query ONLY_INDEX = " + onlyIndex         + "\t = SampleIndex");
-        System.out.println("Query NO_INDEX   = " + onlyDBAdaptor     + "\t = DBAdaptor");
-        System.out.println("Query INDEX      = " + indexAndDBAdaptor + "\t = SampleIndex+DBAdaptor");
+//        for (String sample : indexQuery.getSamplesMap().keySet()) {
+//            System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.getFileIndex(sample)));
+//        }
+        System.out.println("Query SampleIndex             = " + onlyIndex);
+        System.out.println("Query DBAdaptor               = " + onlyDBAdaptor);
+        System.out.println("Query SampleIndex+DBAdaptor   = " + indexAndDBAdaptor);
+        System.out.println("--------");
 
         if (onlyDBAdaptor != indexAndDBAdaptor) {
             queryResult = variantStorageEngine.get(query, new QueryOptions());
@@ -236,18 +278,19 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             for (String s : indexAndDB) {
                 if (!noIndex.contains(s)) {
-                    System.out.println("From IndexAndDB, not in NoIndex = " + s);
+                    System.out.println("From SampleIndex+DB, not in DBAdaptor = " + s);
                 }
             }
 
             for (String s : noIndex) {
                 if (!indexAndDB.contains(s)) {
-                    System.out.println("From NoIndex, not in IndexAndDB = " + s);
+                    System.out.println("From DBAdaptor, not in SampleIndex+DB = " + s);
                 }
             }
         }
         assertEquals(onlyDBAdaptor, indexAndDBAdaptor);
         assertThat(queryResult, numResults(lte(onlyIndex)));
+        assertEquals(onlyIndex, onlyIndexCount);
         assertThat(queryResult, numResults(gt(0)));
         return indexQuery;
     }

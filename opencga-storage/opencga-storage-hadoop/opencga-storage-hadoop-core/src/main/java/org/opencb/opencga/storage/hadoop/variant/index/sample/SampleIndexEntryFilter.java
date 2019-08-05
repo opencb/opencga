@@ -182,8 +182,7 @@ public class SampleIndexEntryFilter {
             if (filterOtherAnnotFields(gtEntry, variants) && filterPopFreq(gtEntry, idx)) {
 
                 // Test file index (if any)
-                if (gtEntry.getFileIndexGt() == null
-                        || testIndex(gtEntry.getFileIndexGt()[idx], query.getFileIndexMask(), query.getFileIndex())) {
+                if (filterFile(gtEntry, idx)) {
 
                     // Test parents filter (if any)
                     if (gtEntry.getParentsGt() == null
@@ -202,6 +201,13 @@ public class SampleIndexEntryFilter {
         }
         variants.skip();
         return null;
+    }
+
+    private boolean filterFile(SampleIndexGtEntry gtEntry, int idx) {
+        if (query.getFileIndexMask() == EMPTY_MASK || gtEntry.getFileIndexGt() == null) {
+            return true;
+        }
+        return query.getSampleFileIndexQuery().getValidFileIndex()[gtEntry.getFileIndexGt()[idx] & query.getFileIndexMask()];
     }
 
     protected static boolean isNonIntergenic(byte[] annotationIndex, int idx) {

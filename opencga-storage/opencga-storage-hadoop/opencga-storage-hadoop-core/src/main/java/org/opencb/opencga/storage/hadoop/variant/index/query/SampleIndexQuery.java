@@ -34,7 +34,7 @@ public class SampleIndexQuery {
     private final Map<String, List<String>> samplesMap;
     private final Map<String, boolean[]> fatherFilter;
     private final Map<String, boolean[]> motherFilter;
-    private final Map<String, byte[]> fileFilterMap; // byte[] = {mask , index}
+    private final Map<String, SampleFileIndexQuery> fileFilterMap;
     private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
     private final boolean onlyDeNovo;
@@ -47,7 +47,7 @@ public class SampleIndexQuery {
 
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
                             Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
-                            Map<String, byte[]> fileFilterMap,
+                            Map<String, SampleFileIndexQuery> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
         this.regions = regions;
@@ -115,16 +115,23 @@ public class SampleIndexQuery {
         return motherFilter.getOrDefault(sample, EMPTY_PARENT_FILTER);
     }
 
-    public byte getFileIndexMask(String sample) {
-        return fileFilterMap.getOrDefault(sample, EMPTY_INDEX_MASK)[0];
+    public SampleFileIndexQuery getSampleFileIndexQuery(String sample) {
+        SampleFileIndexQuery sampleFileIndexQuery = fileFilterMap.get(sample);
+        return sampleFileIndexQuery == null ? new SampleFileIndexQuery(sample) : sampleFileIndexQuery;
     }
 
-    public byte getFileIndex(String sample) {
-        return fileFilterMap.getOrDefault(sample, EMPTY_INDEX_MASK)[1];
+    public byte getFileIndexMask(String sample) {
+        SampleFileIndexQuery q = getSampleFileIndexQuery(sample);
+        return q == null ? EMPTY_MASK : q.getFileIndexMask();
     }
+
+//    public byte getFileIndex(String sample) {
+//        SampleFileIndexQuery q = getSampleFileIndexQuery(sample);
+//        return q == null ? EMPTY_MASK : q.getFileIndex();
+//    }
 
     public boolean emptyFileIndex() {
-        return fileFilterMap.isEmpty() || fileFilterMap.values().stream().allMatch(fileIndex -> fileIndex[0] == EMPTY_MASK);
+        return fileFilterMap.isEmpty() || fileFilterMap.values().stream().allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
     }
 
     public byte getAnnotationIndexMask() {
@@ -175,8 +182,7 @@ public class SampleIndexQuery {
 
         private final String sample;
         private final List<String> gts;
-        private final byte fileIndexMask;
-        private final byte fileIndex;
+        private final SampleFileIndexQuery sampleFileIndexQuery;
         private final boolean[] fatherFilter;
         private final boolean[] motherFilter;
         private final boolean mendelianError;
@@ -201,14 +207,13 @@ public class SampleIndexQuery {
             this.gts = gts;
             fatherFilter = getFatherFilter(sample);
             motherFilter = getMotherFilter(sample);
-            fileIndexMask = getFileIndexMask(sample);
-            fileIndex = getFileIndex(sample);
+            sampleFileIndexQuery = getSampleFileIndexQuery(sample);
             mendelianError = query.mendelianErrorSet.contains(sample);
         }
 
         @Override
         public boolean emptyFileIndex() {
-            return fileIndexMask == EMPTY_MASK;
+            return sampleFileIndexQuery.getFileIndexMask() == EMPTY_MASK;
         }
 
         public String getSample() {
@@ -236,11 +241,11 @@ public class SampleIndexQuery {
         }
 
         public byte getFileIndexMask() {
-            return fileIndexMask;
+            return sampleFileIndexQuery.getFileIndexMask();
         }
 
-        public byte getFileIndex() {
-            return fileIndex;
+        public SampleFileIndexQuery getSampleFileIndexQuery() {
+            return sampleFileIndexQuery;
         }
 
         public boolean getMendelianError() {

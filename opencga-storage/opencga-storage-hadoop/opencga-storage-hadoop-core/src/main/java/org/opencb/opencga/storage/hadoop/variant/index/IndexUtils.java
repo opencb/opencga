@@ -166,7 +166,7 @@ public final class IndexUtils {
             case "":
             case "=":
             case "==":
-                return new double[]{value, ((float) (value + DELTA))};
+                return new double[]{value, value + DELTA};
             case "<=":
             case "<<=":
                 // Range is with exclusive end. For inclusive "<=" operator, need to add a DELTA to the value
@@ -221,14 +221,30 @@ public final class IndexUtils {
         return counts;
     }
 
-    public static byte getRangeCodeExclusive(double value, double[] ranges) {
-        return (byte) (1 + getRangeCode(value - DELTA, ranges));
+    public static byte[] getRangeCodes(double[] queryRange, double[] thresholds) {
+        return new byte[]{getRangeCode(queryRange[0], thresholds), getRangeCodeExclusive(queryRange[1], thresholds)};
     }
 
-    public static byte getRangeCode(double value, double[] ranges) {
-        byte code = (byte) (ranges.length);
-        for (byte i = 0; i < ranges.length; i++) {
-            if (value < ranges[i]) {
+    public static byte getRangeCodeExclusive(double queryValue, double[] thresholds) {
+        return (byte) (1 + getRangeCode(queryValue - DELTA, thresholds));
+    }
+
+    /**
+     * Gets the range code given a value and a list of ranges.
+     * Each point in the array indicates a range threshold.
+     *
+     * range 1 = ( -inf , th[0] )       ~   value < th[0]
+     * range 2 = [ th[0] , th[1] )      ~   value >= th[0] && value < th[1]
+     * range n = [ th[n-1] , +inf )     ~   value >= th[n-1]
+     *
+     * @param value     Value to convert
+     * @param thresholds    List of thresholds
+     * @return range code
+     */
+    public static byte getRangeCode(double value, double[] thresholds) {
+        byte code = (byte) (thresholds.length);
+        for (byte i = 0; i < thresholds.length; i++) {
+            if (value < thresholds[i]) {
                 code = i;
                 break;
             }
