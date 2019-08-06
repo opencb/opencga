@@ -167,8 +167,8 @@ public class SampleIndexVariantBiConverter {
 
     public abstract static class SampleIndexVariantIterator implements Iterator<Variant> {
 
-        protected byte[] annotationIndex;
-        protected int nonIntergenicCount = 0;
+        private byte[] annotationIndex;
+        private int nonIntergenicCount = 0;
 
         public SampleIndexVariantIterator setAnnotationIndex(byte[] annotationIndex) {
             if (nextIndex() != 0) {

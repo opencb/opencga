@@ -249,7 +249,11 @@ public class SampleIndexQueryParser {
             String samplesStr = query.getString(SAMPLE.key());
             queryOperation = VariantQueryUtils.checkOperator(samplesStr);
             List<String> samples = VariantQueryUtils.splitValue(samplesStr, queryOperation);
-            samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, mainGenotypes));
+            for (String s : samples) {
+                if (!isNegated(s)) {
+                    samplesMap.put(s, mainGenotypes);
+                }
+            }
 
             if (!isValidParam(query, FORMAT)) {
                 // Do not remove FORMAT
@@ -264,7 +268,7 @@ public class SampleIndexQueryParser {
             queryOperation = mendelianError.getKey();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
-                samplesMap.put(s, Collections.emptyList());
+                samplesMap.put(s, mainGenotypes);
             }
             query.remove(SAMPLE_MENDELIAN_ERROR.key());
             // Reading any MendelianError could return variants from GT=0/0, which is not annotated in the SampleIndex,
@@ -277,7 +281,7 @@ public class SampleIndexQueryParser {
             queryOperation = mendelianError.getKey();
             for (String s : mendelianErrorSet) {
                 // Return any genotype
-                samplesMap.put(s, Collections.emptyList());
+                samplesMap.put(s, mainGenotypes);
             }
             query.remove(SAMPLE_DE_NOVO.key());
         } else {

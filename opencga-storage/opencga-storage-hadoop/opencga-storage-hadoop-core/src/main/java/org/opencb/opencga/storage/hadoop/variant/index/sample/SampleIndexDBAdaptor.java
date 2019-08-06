@@ -233,7 +233,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public long count(SampleIndexQuery query) {
-        if (query.getSamplesMap().size() == 1) {
+        if (query.getSamplesMap().size() == 1 && query.getMendelianErrorSet().isEmpty()) {
             String sample = query.getSamplesMap().keySet().iterator().next();
             return count(query.forSample(sample));
         } else {
@@ -241,7 +241,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
     }
 
-    public long count(SingleSampleIndexQuery query) {
+    private long count(SingleSampleIndexQuery query) {
         List<Region> regionsList;
         if (CollectionUtils.isEmpty(query.getRegions())) {
             // If no regions are defined, get a list of one null element to initialize the stream.

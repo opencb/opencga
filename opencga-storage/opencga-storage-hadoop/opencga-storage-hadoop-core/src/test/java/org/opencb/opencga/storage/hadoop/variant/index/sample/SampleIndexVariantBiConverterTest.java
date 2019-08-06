@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -146,13 +145,6 @@ public class SampleIndexVariantBiConverterTest {
         }
         checkIterator(numVariants, dummyVariants, () -> converter.toVariantsCountIterator(variants.size()));
 
-        // Check mendelian errors iterator
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        int i = 0;
-        for (Variant variant : variants) {
-            MendelianErrorSampleIndexConverter.toBytes(stream, variant, "0/1", i++, 0);
-        }
-        checkIterator(numVariants, variants, () -> MendelianErrorSampleIndexConverter.toVariants(stream.toByteArray(), 0, stream.size()));
     }
 
     private void checkIterator(int numVariants, List<Variant> variants, Supplier<SampleIndexVariantBiConverter.SampleIndexVariantIterator> factory) {

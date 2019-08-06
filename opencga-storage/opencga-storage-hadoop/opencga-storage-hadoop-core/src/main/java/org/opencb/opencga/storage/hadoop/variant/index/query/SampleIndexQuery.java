@@ -154,6 +154,10 @@ public class SampleIndexQuery {
         return queryOperation;
     }
 
+    public Set<String> getMendelianErrorSet() {
+        return mendelianErrorSet;
+    }
+
     public boolean isOnlyDeNovo() {
         return onlyDeNovo;
     }

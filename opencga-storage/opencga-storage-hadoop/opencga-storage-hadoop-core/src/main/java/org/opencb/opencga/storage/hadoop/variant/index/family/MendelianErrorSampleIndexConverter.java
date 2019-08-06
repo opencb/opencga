@@ -7,11 +7,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntryFi
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter.SampleIndexVariantIterator;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter.split;
 
 /**
  * Created on 11/04/19.
@@ -48,7 +47,18 @@ public class MendelianErrorSampleIndexConverter {
         private int nextIndex;
         private int nextCode;
         private String nextGt;
-        private int lastNonIntergenicVariantIdx = -1;
+        private Map<String, NonIntergenicCount> gtIntergenicCount = Collections.emptyMap();
+
+        private static class NonIntergenicCount {
+            // Annotation index itself
+            private byte[] annotationIndex;
+            private int nonIntergenicCount = 0;
+            private int lastNonIntergenicVariantIdx = -1;
+
+            NonIntergenicCount(byte[] annotationIndex) {
+                this.annotationIndex = annotationIndex;
+            }
+        }
 
         public MendelianErrorSampleIndexVariantIterator(byte[] value, int offset, int length) {
             List<String> values = split(value, offset, length);
@@ -64,32 +74,40 @@ public class MendelianErrorSampleIndexConverter {
             return nextIndex;
         }
 
+        private NonIntergenicCount getNonIntergenicCount() {
+            if (gtIntergenicCount == null) {
+                return null;
+            }
+            return gtIntergenicCount.get(nextGenotype());
+        }
+
         @Override
         public int nextNonIntergenicIndex() {
-            if (annotationIndex == null) {
+            NonIntergenicCount count = getNonIntergenicCount();
+            if (count == null) {
                 return -1;
             } else {
                 int idx = nextIndex();
 
-                if (lastNonIntergenicVariantIdx == idx) {
+                if (count.lastNonIntergenicVariantIdx == idx) {
                     // nonIntergenicCount includes next variant
-                    return nonIntergenicCount - 1;
-                } else if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, idx)) {
+                    return count.nonIntergenicCount - 1;
+                } else if (SampleIndexEntryFilter.isNonIntergenic(count.annotationIndex, idx)) {
 
                     // Loop from next of lastNonIntergenic variant to prev of nextVariant
                     // Do not check if the next variant is intergenic or not. Already checked.
-                    for (int i = lastNonIntergenicVariantIdx + 1; i < nextIndex - 1; i++) {
-                        if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, i)) {
-                            nonIntergenicCount++;
+                    for (int i = count.lastNonIntergenicVariantIdx + 1; i < nextIndex - 1; i++) {
+                        if (SampleIndexEntryFilter.isNonIntergenic(count.annotationIndex, i)) {
+                            count.nonIntergenicCount++;
                         }
                     }
 
                     // Next variant is intergenic. Checked in if condition
-                    nonIntergenicCount++;
+                    count.nonIntergenicCount++;
 
-                    lastNonIntergenicVariantIdx = idx;
+                    count.lastNonIntergenicVariantIdx = idx;
                     // nonIntergenicCount includes next variant
-                    return nonIntergenicCount - 1;
+                    return count.nonIntergenicCount - 1;
                 } else {
                     throw new IllegalStateException("Next variant is not intergenic!");
                 }
@@ -161,7 +179,12 @@ public class MendelianErrorSampleIndexConverter {
             }
         }
 
-
+        public void addAnnotationIndex(String gt, byte[] annotationIndex) {
+            if (gtIntergenicCount == Collections.EMPTY_MAP) {
+                gtIntergenicCount = new HashMap<>();
+            }
+            gtIntergenicCount.put(gt, new NonIntergenicCount(annotationIndex));
+        }
     }
 
 }

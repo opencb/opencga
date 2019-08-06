@@ -114,6 +114,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
             }
         }
 
+        if (mendelianIterator != null) {
+            for (SampleIndexGtEntry gtEntry : gts.values()) {
+                mendelianIterator.addAnnotationIndex(gtEntry.getGt(), gtEntry.getAnnotationIndexGt());
+            }
+        }
+
         return new SampleIndexEntry(chromosome, batchStart, gts, mendelianIterator);
     }
 
