@@ -31,12 +31,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.*;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -145,9 +143,12 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromVcf() throws CatalogException, FileNotFoundException {
-        File file = catalogManager.getFileManager().upload(study.getFqn(), vcfFileUri,
-                new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, sessionIdUser).first();
+    public void testGetMetadataFromVcf() throws CatalogException, IOException {
+        File file;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
+        }
 
         assertTrue(file.getSize() > 0);
 
@@ -170,7 +171,7 @@ public class FileMetadataReaderTest {
 
 
     @Test
-    public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException, FileNotFoundException {
+    public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException, IOException {
         //Create the samples in the same order than in the file
         for (String sampleName : expectedSampleNames) {
             catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(sampleName), new QueryOptions(), sessionIdUser);
@@ -179,7 +180,7 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException, FileNotFoundException {
+    public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException, IOException {
         //Create samples in a different order than the file order
         catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(), sessionIdUser);
 
@@ -191,7 +192,7 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException, FileNotFoundException {
+    public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException, IOException {
         catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(2)), new QueryOptions(),
                 sessionIdUser);
         catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId(expectedSampleNames.get(0)), new QueryOptions(),
@@ -201,9 +202,12 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testDoNotOverwriteSampleIds() throws CatalogException, FileNotFoundException {
-        File file = catalogManager.getFileManager().upload(study.getFqn(), vcfFileUri,
-                new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, sessionIdUser).first();
+    public void testDoNotOverwriteSampleIds() throws CatalogException, IOException {
+        File file;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(vcfFileUri)))) {
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
+        }
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
@@ -222,11 +226,12 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromBam()
-            throws CatalogException, FileNotFoundException {
-
-        File file = catalogManager.getFileManager().upload(study.getFqn(), bamFileUri,
-                new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, sessionIdUser).first();
+    public void testGetMetadataFromBam() throws CatalogException, IOException {
+        File file;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(bamFileUri)))) {
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + BAM_FILE_NAME), false, false, false, sessionIdUser).first();
+        }
 
         assertTrue(file.getSize() > 0);
 

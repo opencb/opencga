@@ -202,7 +202,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
-        cohort.setRelease(studyManager.getCurrentRelease(study, userId));
+        cohort.setRelease(studyManager.getCurrentRelease(study));
         cohort.setStats(ParamUtils.defaultObject(cohort.getStats(), Collections::emptyMap));
         cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), Cohort.CohortStatus::new));
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));

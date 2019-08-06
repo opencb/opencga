@@ -182,7 +182,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Check all the panel fields
         ParamUtils.checkAlias(panel.getId(), "id");
         panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
-        panel.setRelease(studyManager.getCurrentRelease(study, userId));
+        panel.setRelease(studyManager.getCurrentRelease(study));
         panel.setVersion(1);
         panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
         panel.setCreationDate(TimeUtils.getTime());
@@ -257,7 +257,7 @@ public class PanelManager extends ResourceManager<Panel> {
             throws CatalogException {
         diseasePanel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
         diseasePanel.setCreationDate(TimeUtils.getTime());
-        diseasePanel.setRelease(studyManager.getCurrentRelease(study, userId));
+        diseasePanel.setRelease(studyManager.getCurrentRelease(study));
         diseasePanel.setVersion(1);
 
         // Install the current diseasePanel
@@ -567,7 +567,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         QueryResult<Panel> queryResult = panelDBAdaptor.update(panel.getUid(), parameters, options);

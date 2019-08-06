@@ -775,7 +775,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document query = new Document()
                 .append(PRIVATE_STUDY_UID, studyUid)
                 .append(QueryParams.INPUT_UID.key(), fileUid);
-        document.getPullAll().put(QueryParams.INPUT.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid));
+        document.getPullAll().put(QueryParams.INPUT.key(),
+                Collections.singletonList(new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid)));
         document.getPush().put(prefix + Constants.JOB_DELETED_INPUT_FILES, file);
         Document updateDocument = document.toFinalUpdateDocument();
 
@@ -790,7 +791,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 .append(PRIVATE_STUDY_UID, studyUid)
                 .append(QueryParams.OUTPUT_UID.key(), fileUid);
         document = new UpdateDocument();
-        document.getPullAll().put(QueryParams.OUTPUT.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid));
+        document.getPullAll().put(QueryParams.OUTPUT.key(),
+                Collections.singletonList(new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid)));
         document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_FILES, file);
         updateDocument = document.toFinalUpdateDocument();
 
@@ -805,7 +807,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 .append(PRIVATE_STUDY_UID, studyUid)
                 .append(QueryParams.OUT_DIR_UID.key(), fileUid);
         document = new UpdateDocument();
-        document.getPullAll().put(QueryParams.OUT_DIR.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid));
+        document.getSet().put(QueryParams.OUT_DIR.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), -1));
         document.getSet().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, file);
         updateDocument = document.toFinalUpdateDocument();
 

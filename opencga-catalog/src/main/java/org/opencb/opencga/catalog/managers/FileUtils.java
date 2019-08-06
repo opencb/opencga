@@ -260,6 +260,55 @@ public class FileUtils {
                 File.FileStatus.READY), sessionId);
     }
 
+    /**
+     * Upload file to a created entry file in Catalog.
+     *
+     * @param sourceUri         File URI to be moved into Catalog workspace.
+     * @param targetUri         File URI where the sourceURI file will be moved to.
+     * @param overwrite         Overwrite target file.
+     * @param calculateChecksum Boolean indicating whether to check the checksum during the operation.
+     * @return Checksum of file if calculateChecksum flag is activated, null otherwise.
+     * @throws CatalogException CatalogException
+     */
+    public String move(URI sourceUri, URI targetUri, boolean overwrite, boolean calculateChecksum) throws CatalogException {
+        //If the source is equals to the target, calculate checksum (if needed) and exit
+        if (sourceUri.equals(targetUri)) {
+            if (calculateChecksum) {
+                return catalogManager.getCatalogIOManagerFactory().get(sourceUri.getScheme()).calculateChecksum(sourceUri);
+            } else {
+                return null;
+            }
+        }
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(sourceUri.getScheme());
+
+        //Check if there is any file in target
+        if (!overwrite && ioManager.exists(targetUri)) {
+            throw new CatalogIOException("A file already exists in " + targetUri);
+        }
+
+        String sourceChecksum = null;
+        if (calculateChecksum) {
+            sourceChecksum = ioManager.calculateChecksum(sourceUri);
+        }
+
+        try {
+            ioManager.moveFile(sourceUri, targetUri);
+            if (calculateChecksum) {
+                String targetChecksum = ioManager.calculateChecksum(targetUri);
+
+                if (!sourceChecksum.equals(targetChecksum)) {
+                    throw new CatalogIOException("Checksum does not match between " + sourceUri + " and " + targetUri
+                            + " after moving the file");
+                }
+            }
+        } catch (IOException e) {
+            throw new CatalogIOException("Error moving file from " + sourceUri + " to " + targetUri);
+        }
+
+        return sourceChecksum;
+    }
+
 
     @Deprecated
     /**

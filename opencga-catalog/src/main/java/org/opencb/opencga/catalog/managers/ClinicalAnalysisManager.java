@@ -255,7 +255,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         } else {
             clinicalAnalysis.setStatus(new ClinicalAnalysis.ClinicalStatus());
         }
-        clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
         clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), ClinicalAnalysis.Priority.MEDIUM));

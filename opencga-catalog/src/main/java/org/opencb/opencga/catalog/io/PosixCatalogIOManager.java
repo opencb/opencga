@@ -115,6 +115,21 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
     }
 
+    @Override
+    public void checkWritableUri(URI uri) throws CatalogIOException {
+        if (uri == null) {
+            throw new CatalogIOException("URI is null");
+        } else {
+            Path path = Paths.get(uri.getPath());
+            if (!Files.exists(path)) {
+                throw new CatalogIOException("Path '" + uri.toString() + "' does not exist");
+            }
+            if (!Files.isWritable(path)) {
+                throw new CatalogIOException("Path '" + uri.toString() + "' is not writable");
+            }
+        }
+    }
+
     private void checkDirectoryPath(Path path, boolean writable) throws CatalogIOException {
         if (path == null || !Files.exists(path) || !Files.isDirectory(path)) {
             throw new CatalogIOException("Path '" + String.valueOf(path) + "' is null, it does not exist or it's not a directory");

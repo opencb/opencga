@@ -559,61 +559,37 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testCreateAndUpload() throws Exception {
-        FileUtils catalogFileUtils = new FileUtils(catalogManager);
-
-        java.io.File fileTest;
-
+    public void testCreate() throws Exception {
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        QueryResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN,
-                File.Bioformat.VARIANT, "data/" + fileName, "description", null, 0, null, (long) -1, null, null, true, null,
-                null, sessionIdUser);
-
-        fileTest = createDebugFile();
-        catalogFileUtils.upload(fileTest.toURI(), fileResult.first(), null, sessionIdUser, false, false, true, true);
-        assertTrue("File deleted", !fileTest.exists());
+        QueryResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT,
+                "data/" + fileName, "description", null, 0, null, (long) -1, null, null, true, getDummyVCFContent(), null, sessionIdUser);
+        assertEquals(3, fileResult.first().getSamples().size());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT,
-                "data/" + fileName, "description", null, 0, null, (long) -1, null, null, true, null, null, sessionIdUser);
-        fileTest = createDebugFile();
-        catalogFileUtils.upload(fileTest.toURI(), fileResult.first(), null, sessionIdUser, false, false, false, true);
-        assertTrue("File not deleted", fileTest.exists());
-        assertTrue(fileTest.delete());
+        fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", null, 0,
+                null, (long) -1, null, null, true, getDummyVCFContent(), null, sessionIdUser);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         QueryResult<File> queryResult = fileManager.create(studyFqn, new File().setPath("data/" + fileName), false,
                 StringUtils.randomString(200), null, sessionIdUser);
-        assertTrue("", queryResult.first().getStatus().getName().equals(File.FileStatus.READY));
-        assertTrue("", queryResult.first().getSize() == 200);
+        assertEquals(File.FileStatus.READY, queryResult.first().getStatus().getName());
+        assertEquals(200, queryResult.first().getSize());
 
-        fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
-        fileTest = createDebugFile();
-        fileManager.upload(studyFqn, fileTest.toURI(),
-                new File().setPath("data/deletable/folder/" + fileName), false, true, sessionIdUser);
+        fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/deletable/folder/item." + TimeUtils.getTimeMillis() + ".txt",
+                "description", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, sessionIdUser);
 
-        fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
-        fileTest = createDebugFile();
-        QueryResult<File> fileQueryResult = fileManager.upload(studyFqn2, fileTest.toURI(),
-                new File().setPath("data/deletable/" + fileName), false, true, false, false, sessionIdUser);
-        assertTrue(fileTest.delete());
-        assertEquals(1, fileQueryResult.getNumResults());
+        fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/deletable/item." + TimeUtils.getTimeMillis() + ".txt",
+                "description", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, sessionIdUser);
 
-        fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
-        fileTest = createDebugFile();
-        fileQueryResult = fileManager.upload(studyFqn2, fileTest.toURI(),
-                new File().setPath(fileName).setDescription("file at root"), false, true, false, false, sessionIdUser);
-        assertEquals(1, fileQueryResult.getNumResults());
-        assertTrue(fileTest.delete());
+        fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt",
+                "file at root", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, sessionIdUser);
 
-        fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
-        fileTest = createDebugFile();
-        long size = Files.size(fileTest.toPath());
-        fileManager.upload(studyFqn2, fileTest.toURI(),
-                new File().setPath(fileName).setDescription("file at root"), false, true, sessionIdUser);
+        fileName =  "item." + TimeUtils.getTimeMillis() + ".txt";
+        fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, fileName,
+                "file at root", null, 0, null, (long) -1, null, null, true, createRandomString(200), null, sessionIdUser);
 
-        fileQueryResult = fileManager.get(studyFqn2, fileName, null, sessionIdUser);
-        assertEquals(size, fileQueryResult.first().getSize());
+        QueryResult<File> fileQueryResult = fileManager.get(studyFqn2, fileName, null, sessionIdUser);
+        assertTrue(fileQueryResult.first().getSize() > 0);
     }
 
     @Test
@@ -635,20 +611,14 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testDownloadAndHeadFile() throws CatalogException, IOException, InterruptedException {
-        FileUtils catalogFileUtils = new FileUtils(catalogManager);
-
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        java.io.File fileTest;
-        InputStream is = new FileInputStream(fileTest = createDebugFile());
-        File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat
-                .VARIANT, "data/" + fileName, "description", null, 0, null, (long) -1, null, null, true, null, null, sessionIdUser).first();
-        catalogFileUtils.upload(is, file, sessionIdUser, false, false, true);
-        is.close();
 
+        File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName,
+                "description", null, 0, null, (long) -1, null, null, true, getDummyVCFContent(), null, sessionIdUser).first();
 
         byte[] bytes = new byte[100];
         byte[] bytesOrig = new byte[100];
-        DataInputStream fis = new DataInputStream(new FileInputStream(fileTest));
+        DataInputStream fis = new DataInputStream(new FileInputStream(file.getUri().getPath()));
         DataInputStream dis = fileManager.download(studyFqn, file.getPath(), -1, -1, sessionIdUser);
         fis.read(bytesOrig, 0, 100);
         dis.read(bytes, 0, 100);
@@ -656,11 +626,10 @@ public class FileManagerTest extends AbstractManagerTest {
         dis.close();
         assertArrayEquals(bytesOrig, bytes);
 
-
-        int offset = 5;
-        int limit = 30;
+        int offset = 1;
+        int limit = 10;
         dis = fileManager.download(studyFqn, file.getPath(), offset, limit, sessionIdUser);
-        fis = new DataInputStream(new FileInputStream(fileTest));
+        fis = new DataInputStream(new FileInputStream(file.getUri().getPath()));
         for (int i = 0; i < offset; i++) {
             fis.readLine();
         }
@@ -678,8 +647,6 @@ public class FileManagerTest extends AbstractManagerTest {
 
         fis.close();
         dis.close();
-        fileTest.delete();
-
     }
 
     @Test

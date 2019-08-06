@@ -208,7 +208,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
         family.setStatus(new Family.FamilyStatus());
         family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
-        family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        family.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         family.setVersion(1);
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
@@ -606,7 +606,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         QueryResult<Family> queryResult = familyDBAdaptor.update(storedFamily.getUid(), parameters, study.getVariableSets(), options);

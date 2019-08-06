@@ -133,6 +133,8 @@ public abstract class CatalogIOManager {
 
     public abstract void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException;
 
+    public abstract void checkWritableUri(URI uri) throws CatalogIOException;
+
     public abstract boolean exists(URI uri);
 
     public abstract URI createDirectory(URI uri, boolean parents) throws CatalogIOException;

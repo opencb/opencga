@@ -122,6 +122,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 return endWrite(String.valueOf(fileUid), tmpStartTime, 1, 1, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create file {}: {}", file.getId(), e.getMessage());
+                clientSession.abortTransaction();
                 return endWrite(file.getId(), tmpStartTime, 1, 0,
                         Collections.singletonList(new WriteResult.Fail(file.getId(), e.getMessage())));
             }
@@ -143,6 +144,25 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (filePathExists(clientSession, studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
         }
+
+        // First we check if we need to create any samples and update current list of samples with the ones created
+        if (file.getSamples() != null && !file.getSamples().isEmpty()) {
+            List<Sample> sampleList = new ArrayList<>(file.getSamples().size());
+            for (Sample sample : file.getSamples()) {
+                if (sample.getUid() <= 0) {
+                    logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
+                    // Sample needs to be created
+                    Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample,
+                            variableSetList);
+                    sampleList.add(newSample);
+                } else {
+                    logger.debug("Sample '{}' was already registered. No need to create it.", sample.getId());
+                    sampleList.add(sample);
+                }
+                file.setSamples(sampleList);
+            }
+        }
+
 
         //new file uid
         long fileUid = getNewUid(clientSession);

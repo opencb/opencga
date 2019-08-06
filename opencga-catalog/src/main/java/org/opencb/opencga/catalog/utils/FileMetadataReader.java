@@ -28,8 +28,10 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
@@ -108,6 +110,61 @@ public class FileMetadataReader {
         fileResult.setResult(Collections.singletonList(modifiedFile));
 
         return fileResult;
+    }
+
+    public void addMetadataInformation(Study study, File file, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(file.getUri(), "uri");
+
+        if (file.getType() == File.Type.DIRECTORY) {
+            return;
+        }
+
+        File.Format format = FileUtils.detectFormat(file.getUri());
+        File.Bioformat bioformat = FileUtils.detectBioformat(file.getUri());
+
+        if (format != File.Format.UNKNOWN && !format.equals(file.getFormat())) {
+            file.setFormat(format);
+        }
+        if (bioformat != File.Bioformat.NONE && !bioformat.equals(file.getBioformat())) {
+            file.setBioformat(bioformat);
+        }
+
+        switch (bioformat) {
+            case ALIGNMENT: {
+                AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, file.getUri());
+                if (alignmentHeader != null) {
+                    file.getAttributes().put("alignmentHeader", alignmentHeader);
+                }
+                break;
+            }
+            case VARIANT: {
+                VariantFileMetadata fileMetadata;
+                try {
+                    fileMetadata = readVariantFileMetadata(file, file.getUri());
+                } catch (IOException e) {
+                    throw new CatalogIOException("Unable to read VariantSource", e);
+                }
+                if (fileMetadata != null) {
+                    try {
+                        Map<String, Object> fileMetadataMap = JacksonUtils.getDefaultObjectMapper()
+                                .readValue(JacksonUtils.getDefaultObjectMapper().writeValueAsString(fileMetadata), Map.class);
+                        file.getAttributes().put(VARIANT_FILE_METADATA, fileMetadataMap);
+                    } catch (IOException e) {
+                        file.getAttributes().put(VARIANT_FILE_METADATA, fileMetadata);
+                        logger.warn("Could not parse Avro content into Map");
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+        }
+
+        List<String> sampleList = getFileSamples(file);
+        file.setSamples(sampleList.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()));
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri().getScheme());
+        file.setSize(ioManager.getFileSize(file.getUri()));
     }
 
     /**
@@ -235,6 +292,57 @@ public class FileMetadataReader {
         }
 
         return file;
+    }
+
+    /**
+     * Get samples from file header.
+     *
+     * @param file                  File from which read samples.
+     * @return                      List of samples in the given file
+     */
+    public List<String> getFileSamples(File file) {
+        //Read samples from file
+        List<String> sortedSampleNames = null;
+        switch (file.getBioformat()) {
+            case VARIANT: {
+                if (file.getAttributes().containsKey(VARIANT_FILE_METADATA)) {
+                    Object variantSourceObj = file.getAttributes().get(VARIANT_FILE_METADATA);
+
+                    if (variantSourceObj instanceof VariantFileMetadata) {
+                        sortedSampleNames = ((VariantFileMetadata) variantSourceObj).getSampleIds();
+                    } else if (variantSourceObj instanceof Map) {
+                        sortedSampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("sampleIds");
+                    } else {
+                        logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}",
+                                variantSourceObj.getClass(), VariantFileMetadata.class, Map.class);
+                    }
+                }
+                break;
+            }
+            case ALIGNMENT: {
+                if (file.getAttributes().containsKey("alignmentHeader")) {
+                    Object alignmentHeaderObj = file.getAttributes().get("alignmentHeader");
+
+                    if (alignmentHeaderObj instanceof AlignmentHeader) {
+                        sortedSampleNames = getSampleFromAlignmentHeader(((AlignmentHeader) alignmentHeaderObj));
+                    } else if (alignmentHeaderObj instanceof Map) {
+                        sortedSampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
+                    } else {
+                        logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {} or {}",
+                                alignmentHeaderObj.getClass(), AlignmentHeader.class, Map.class);
+                    }
+                }
+                break;
+            }
+            default:
+                return new LinkedList<>();
+        }
+
+        if (sortedSampleNames == null || sortedSampleNames.isEmpty()) {
+            return new LinkedList<>();
+        }
+
+        return sortedSampleNames;
     }
 
     /**
@@ -378,7 +486,7 @@ public class FileMetadataReader {
                         }
                     }
                 } else {
-                    throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
+                    throw new CatalogException("Can not find samples " + set + " in catalog");
                 }
             }
 
@@ -424,6 +532,17 @@ public class FileMetadataReader {
                 .collect(Collectors.toSet());
         sampleNames = new LinkedList<>(sampleSet);
         return sampleNames;
+    }
+
+    public static VariantFileMetadata readVariantFileMetadata(File file) throws IOException {
+        File.Format format = file.getFormat();
+        if (format == File.Format.VCF || format == File.Format.GVCF || format == File.Format.BCF) {
+            VariantFileMetadata metadata = new VariantFileMetadata(String.valueOf(file.getUid()), file.getName());
+            metadata.setId(String.valueOf(file.getUid()));
+            return VariantMetadataUtils.readVariantFileMetadata(Paths.get(file.getUri().getPath()), metadata);
+        } else {
+            return null;
+        }
     }
 
     public static VariantFileMetadata readVariantFileMetadata(File file, URI fileUri)

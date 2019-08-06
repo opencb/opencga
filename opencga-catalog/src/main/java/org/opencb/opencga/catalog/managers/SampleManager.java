@@ -181,7 +181,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setStatus(new Status());
         sample.setCreationDate(TimeUtils.getTime());
         sample.setVersion(1);
-        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
 
         if (StringUtils.isNotEmpty(sample.getIndividualId())) {
@@ -688,7 +688,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         QueryResult<Sample> queryResult = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);

@@ -614,7 +614,7 @@ public class FileManager extends AnnotationSetManager<File> {
         return create(study, file, parents, content, options, sessionId);
     }
 
-    void validateNewFile(Study study, File file, String userId) throws CatalogException {
+    void validateNewFile(Study study, File file, String sessionId, boolean overwrite) throws CatalogException {
         /** Check and set all the params and create a File object **/
         ParamUtils.checkObj(file, "File");
         ParamUtils.checkPath(file.getPath(), "path");
@@ -626,23 +626,14 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList::new));
         file.setCreationDate(TimeUtils.getTime());
         file.setModificationDate(file.getCreationDate());
+        file.setStatus(ParamUtils.defaultObject(file.getStatus(), new File.FileStatus(File.FileStatus.READY)));
         file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
         file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
 
-        if (file.getType() == File.Type.FILE) {
-            // TODO: If we are always creating it first in disk, then we won't need the stage status anymore
-            file.setStatus(ParamUtils.defaultObject(file.getStatus(), new File.FileStatus(File.FileStatus.STAGE)));
-        } else {
-            file.setStatus(ParamUtils.defaultObject(file.getStatus(), new File.FileStatus(File.FileStatus.READY)));
-        }
+        validateNewSamples(study, file, sessionId);
+
         if (file.getSize() < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
-        }
-        for (Sample sample : file.getSamples()) {
-            // TODO: Check if we know the sample ids or why we are supposing we already have the uids
-            if (sample.getUid() <= 0 || !sampleDBAdaptor.exists(sample.getUid())) {
-                throw new CatalogException("Sample { id: " + sample.getUid() + "} does not exist.");
-            }
         }
         // TODO: Check why we suppose we have job uids
         if (file.getJob() != null && file.getJob().getUid() > 0 && !jobDBAdaptor.exists(file.getJob().getUid())) {
@@ -670,32 +661,34 @@ public class FileManager extends AnnotationSetManager<File> {
         }
         file.setUri(uri);
 
-        // Check if it already exists
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
-                        + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
-        if (fileDBAdaptor.count(query).first() > 0) {
-            logger.warn("The file '{}' already exists in catalog", file.getPath());
-            throw new CatalogException("The file '" + file.getPath() + "' already exists in catalog");
-        }
-        query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                .append(FileDBAdaptor.QueryParams.URI.key(), uri)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
-                        + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
-        QueryResult<File> fileResult = fileDBAdaptor.get(query,
-                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));
-        if (fileResult.getNumResults() > 0) {
-            logger.warn("The uri '{}' of the file is already in catalog but in path '{}'.", uri, fileResult.first().getPath());
-            throw new CatalogException("The uri '" + uri + "' of the file is already in catalog but in path '"
-                    + fileResult.first().getPath() + "'");
+        if (!overwrite) {
+            // Check if it already exists
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
+                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED
+                            + ";!=" + File.FileStatus.DELETING + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.REMOVED);
+            if (fileDBAdaptor.count(query).first() > 0) {
+                logger.warn("The file '{}' already exists in catalog", file.getPath());
+                throw new CatalogException("The file '" + file.getPath() + "' already exists in catalog");
+            }
+            query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(FileDBAdaptor.QueryParams.URI.key(), uri)
+                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED
+                            + ";!=" + File.FileStatus.DELETING + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.REMOVED);
+            QueryResult<File> fileResult = fileDBAdaptor.get(query,
+                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));
+            if (fileResult.getNumResults() > 0) {
+                logger.warn("The uri '{}' of the file is already in catalog but in path '{}'.", uri, fileResult.first().getPath());
+                throw new CatalogException("The uri '" + uri + "' of the file is already in catalog but in path '"
+                        + fileResult.first().getPath() + "'");
+            }
         }
 
         boolean external = isExternal(study, file.getPath(), uri);
         file.setExternal(external);
-        file.setRelease(studyManager.getCurrentRelease(study, userId));
+        file.setRelease(studyManager.getCurrentRelease(study));
 
         validateNewAnnotationSets(study.getVariableSets(), file.getAnnotationSets());
 
@@ -708,7 +701,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(sessionId);
         long studyId = study.getUid();
 
-        validateNewFile(study, file, userId);
+//        validateNewFile(study, file, sessionId);
 
         //Find parent. If parents == true, create folders.
         String parentPath = getParentPath(file.getPath());
@@ -721,6 +714,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
                         new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, null, Collections.emptyMap(),
                         Collections.emptyMap());
+                validateNewFile(study, parentFile, sessionId, false);
                 parentFileId = register(study, parentFile, parents, options, sessionId).first().getUid();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
@@ -753,7 +747,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
     private QueryResult<File> create(Study study, File file, boolean parents, String content, QueryOptions options, String sessionId)
             throws CatalogException {
-        QueryResult<File> queryResult = register(study, file, parents, options, sessionId);
+        validateNewFile(study, file, sessionId, false);
 
         if (file.getType() == File.Type.FILE && StringUtils.isNotEmpty(content)) {
             CatalogIOManager ioManager = catalogIOManagerFactory.getDefault();
@@ -763,14 +757,44 @@ public class FileManager extends AnnotationSetManager<File> {
             InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
             ioManager.createFile(file.getUri(), inputStream);
 
-            // Update file parameters
-            ObjectMap params = new ObjectMap()
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY)
-                    .append(FileDBAdaptor.QueryParams.SIZE.key(), ioManager.getFileSize(file.getUri()));
-            queryResult = fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
+            new FileMetadataReader(catalogManager).addMetadataInformation(study, file, sessionId);
+            validateNewSamples(study, file, sessionId);
         }
 
-        return queryResult;
+        QueryResult<File> result;
+        try {
+            result = register(study, file, parents, options, sessionId);
+        } catch (CatalogException e) {
+            if (file.getType() == File.Type.FILE && StringUtils.isNotEmpty(content)) {
+                CatalogIOManager ioManager = catalogIOManagerFactory.getDefault();
+                ioManager.deleteFile(file.getUri());
+            }
+            throw CatalogException.appendMessage(e, "Error registering file: ");
+        }
+
+        return result;
+    }
+
+    private void validateNewSamples(Study study, File file, String sessionId) throws CatalogException {
+        if (file.getSamples() == null || file.getSamples().isEmpty()) {
+            return;
+        }
+
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+
+        List<String> sampleIdList = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        InternalGetQueryResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIdList,
+                SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
+
+        List<Sample> sampleList = new ArrayList<>(file.getSamples().size());
+        sampleList.addAll(sampleResult.getResult());
+        for (InternalGetQueryResult<Sample>.Missing missing : sampleResult.getMissing()) {
+            Sample sample = new Sample().setId(missing.getId());
+            catalogManager.getSampleManager().validateNewSample(study, sample, userId);
+            sampleList.add(sample);
+        }
+
+        file.setSamples(sampleList);
     }
 
     /**
@@ -781,14 +805,146 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param file            File object containing at least the basic metadata necessary for a successful upload: path
      * @param overwrite       Overwrite the current file if any.
      * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
      * @param sessionId       session id of the user performing the upload.
      * @return a QueryResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public QueryResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                    String sessionId) throws CatalogException {
-        ParamUtils.checkObj(fileInputStream, "file input stream");
-        return upload(studyStr, null, fileInputStream, file, overwrite, parents, true, true, sessionId);
+                                    boolean calculateChecksum, String sessionId) throws CatalogException {
+        // Check basic parameters
+        ParamUtils.checkObj(fileInputStream, "fileInputStream");
+
+        String userId = userManager.getUserId(sessionId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        validateNewFile(study, file, sessionId, overwrite);
+
+        File overwrittenFile = null;
+        Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
+        if (fileQueryResult.getNumResults() > 0) {
+            if (overwrite) {
+                overwrittenFile = fileQueryResult.first();
+            } else {
+                throw new CatalogException("Path " + file.getPath() + " already in use");
+            }
+        }
+
+        QueryResult<File> parentFolders = getParents(study.getUid(), file.getPath(), false, QueryOptions.empty());
+        if (parentFolders.getNumResults() == 0) {
+            // There always must be at least the root folder
+            throw new CatalogException("Unexpected error happened.");
+        }
+
+        // Check permissions over the most internal path
+        authorizationManager.checkFilePermission(study.getUid(), parentFolders.first().getUid(), userId,
+                FileAclEntry.FilePermissions.UPLOAD);
+        authorizationManager.checkFilePermission(study.getUid(), parentFolders.first().getUid(), userId,
+                FileAclEntry.FilePermissions.WRITE);
+
+        // We obtain the basic studyPath where we will upload the file temporarily
+        java.nio.file.Path studyPath = Paths.get(study.getUri());
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        // We attempt to create it first because it may be that the parent directories were not created because they don't contain any
+        // files yet
+
+        if (parentFolders.first().getType() == File.Type.FILE && !overwrite) {
+            throw new CatalogException("Cannot upload file in '" + file.getPath() + "'. " + parentFolders.first().getPath()
+                    + "' is already an existing file path.");
+        } else if (parentFolders.first().getType() == File.Type.DIRECTORY) {
+            ioManager.createDirectory(parentFolders.first().getUri(), true);
+        }
+        ioManager.checkWritableUri(parentFolders.first().getUri());
+
+        java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + file.getName()).resolve(file.getName());
+        URI tempDirectory = tempFilePath.getParent().toUri();
+        logger.info("Uploading file... Temporal file path: {}", tempFilePath.toString());
+
+        // Create the temporal directory and upload the file
+        try {
+            if (!Files.exists(tempFilePath.getParent())) {
+                logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
+                ioManager.createDirectory(tempDirectory, true);
+            }
+
+            // Start uploading the file to the temporal directory
+            // Upload the file to a temporary folder
+            Files.copy(fileInputStream, tempFilePath);
+        } catch (Exception e) {
+            logger.error("Error uploading file {}", file.getName(), e);
+
+            // Clean temporal directory
+            ioManager.deleteDirectory(tempDirectory);
+
+            throw new CatalogException("Error uploading file " + file.getName(), e);
+        }
+        URI sourceUri = tempFilePath.toUri();
+
+        // Move the file from the temporal directory
+        try {
+            // Create the directories where the file will be placed (if they weren't created before)
+            ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
+
+            // Move the file to the final directory
+            String checksum = new org.opencb.opencga.catalog.managers.FileUtils(catalogManager).move(sourceUri, file.getUri(), overwrite,
+                    calculateChecksum);
+            file.setChecksum(checksum);
+
+            // Improve metadata information and extract samples if any
+            new FileMetadataReader(catalogManager).addMetadataInformation(study, file, sessionId);
+            validateNewSamples(study, file, sessionId);
+        } catch (CatalogException e) {
+            ioManager.deleteDirectory(tempDirectory);
+            logger.error("Upload file: {}", e.getMessage(), e);
+            throw new CatalogException("Upload file failed. Could not move the content to " + file.getUri() + ": " + e.getMessage());
+        }
+
+        // Register the file in catalog
+        try {
+            if (overwrittenFile != null) {
+                // We need to update the existing file document
+                ObjectMap params = new ObjectMap();
+                QueryOptions queryOptions = new QueryOptions();
+
+                params.put(FileDBAdaptor.QueryParams.SIZE.key(), file.getSize());
+                params.put(FileDBAdaptor.QueryParams.URI.key(), file.getUri());
+                params.put(FileDBAdaptor.QueryParams.EXTERNAL.key(), file.isExternal());
+                params.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                params.put(FileDBAdaptor.QueryParams.CHECKSUM.key(), file.getChecksum());
+
+                if (file.getSamples() != null && !file.getSamples().isEmpty()) {
+                    params.put(FileDBAdaptor.QueryParams.SAMPLES.key(), file.getSamples());
+
+                    // Set new samples
+                    Map<String, Object> actionMap = new HashMap<>();
+                    actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name());
+                    queryOptions.put(Constants.ACTIONS, actionMap);
+                }
+                if (!file.getAttributes().isEmpty()) {
+                    Map<String, Object> attributes = overwrittenFile.getAttributes();
+                    attributes.putAll(file.getAttributes());
+                    params.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+                }
+                if (!file.getStats().isEmpty()) {
+                    Map<String, Object> stats = overwrittenFile.getStats();
+                    stats.putAll(file.getStats());
+                    params.put(FileDBAdaptor.QueryParams.STATS.key(), stats);
+                }
+
+                fileQueryResult = fileDBAdaptor.update(overwrittenFile.getUid(), params, null, queryOptions);
+            } else {
+                // We need to register a new file
+                fileQueryResult = register(study, file, parents, QueryOptions.empty(), sessionId);
+            }
+        } catch (CatalogException e) {
+            ioManager.deleteFile(file.getUri());
+            logger.error("Upload file: {}", e.getMessage(), e);
+            throw new CatalogException("Upload file failed. Could not register the file in the DB: " + e.getMessage());
+        }
+
+        return fileQueryResult;
     }
 
     /**
@@ -803,6 +959,7 @@ public class FileManager extends AnnotationSetManager<File> {
      * @return a QueryResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
+    @Deprecated
     public QueryResult<File> upload(String studyStr, URI sourceUri, File file, boolean overwrite, boolean parents, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(sourceUri, "source uri");
@@ -823,14 +980,15 @@ public class FileManager extends AnnotationSetManager<File> {
      * @return a QueryResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
+    @Deprecated
     public QueryResult<File> upload(String studyStr, URI sourceUri, File file, boolean overwrite, boolean parents,
                                     boolean calculateChecksum, boolean deleteSource, String sessionId) throws CatalogException {
         ParamUtils.checkObj(sourceUri, "source uri");
         return upload(studyStr, sourceUri, null, file, overwrite, parents, calculateChecksum, deleteSource, sessionId);
     }
 
-    private QueryResult<File> upload(String studyStr, URI sourceUri, InputStream fileInputStream, File file,
-                                     boolean overwrite, boolean parents, boolean calculateChecksum, boolean deleteSource, String sessionId)
+    private QueryResult<File> upload(String studyStr, URI sourceUri, InputStream fileInputStream, File file, boolean overwrite,
+                                     boolean parents, boolean calculateChecksum, boolean deleteSource, String sessionId)
             throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(file, "file");
@@ -859,12 +1017,13 @@ public class FileManager extends AnnotationSetManager<File> {
         java.nio.file.Path studyPath = Paths.get(study.getUri());
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        ioManager.checkDirectoryUri(parentFolders.first().getUri(), true);
+
         URI tempDirectory = null;
         if (fileInputStream != null) {
             java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + file.getName()).resolve(file.getName());
             tempDirectory = tempFilePath.getParent().toUri();
             logger.info("Uploading file... Temporal file path: {}", tempFilePath.toString());
-
 
             // Create the temporal directory and upload the file
             try {
@@ -1163,25 +1322,25 @@ public class FileManager extends AnnotationSetManager<File> {
                     authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
                 }
 
-                // Check if the file can be deleted
+                // Check if the file or the folder plus any nested files/folders can be deleted
                 List<File> fileList = checkCanDeleteFile(studyStr, file, physicalDelete, userId);
 
                 // Remove job references
-                try {
-                    removeJobReferences(study.getUid(), fileList);
-                } catch (CatalogException e) {
-                    logger.error("Could not remove job references: {}", e.getMessage(), e);
-                    throw new CatalogException("Could not remove job references: " + e.getMessage(), e);
-                }
+//                try {
+//                    removeJobReferences(study.getUid(), fileList);
+//                } catch (CatalogException e) {
+//                    logger.error("Could not remove job references: {}", e.getMessage(), e);
+//                    throw new CatalogException("Could not remove job references: " + e.getMessage(), e);
+//                }
 
 
                 // Remove the index references in case it is a transformed file or folder
-                try {
-                    updateIndexStatusAfterDeletionOfTransformedFile(study.getUid(), file);
-                } catch (CatalogException e) {
-                    logger.error("Could not remove relation references: {}", e.getMessage(), e);
-                    throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
-                }
+//                try {
+//                    updateIndexStatusAfterDeletionOfTransformedFile(study.getUid(), file);
+//                } catch (CatalogException e) {
+//                    logger.error("Could not remove relation references: {}", e.getMessage(), e);
+//                    throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
+//                }
 
                 if (file.isExternal()) {
                     // unlink
@@ -1303,232 +1462,240 @@ public class FileManager extends AnnotationSetManager<File> {
      * @return a WriteResult object.
      */
     private WriteResult physicalDelete(long studyId, File file, boolean forceDelete) throws CatalogException {
-        StopWatch watch = StopWatch.createStarted();
+//        StopWatch watch = StopWatch.createStarted();
 
         String currentStatus = file.getStatus().getName();
         if (File.FileStatus.DELETED.equals(currentStatus)) {
             throw new CatalogException("The file was already deleted");
         }
-        if (File.FileStatus.PENDING_DELETE.equals(currentStatus) && !forceDelete) {
+//        if (File.FileStatus.PENDING_DELETE.equals(currentStatus) && !forceDelete) {
+        if (File.FileStatus.PENDING_DELETE.equals(currentStatus)) {
             throw new CatalogException("The file was already pending for deletion");
         }
         if (File.FileStatus.DELETING.equals(currentStatus)) {
             throw new CatalogException("The file is already being deleted");
         }
 
-        URI fileUri = getUri(file);
-        CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
+        return fileDBAdaptor.delete(file.getUid(), File.FileStatus.PENDING_DELETE);
 
-        // Set the path suffix to DELETED
-        String suffixName = INTERNAL_DELIMITER + File.FileStatus.DELETED + "_" + TimeUtils.getTime();
 
-        long numMatched = 0;
-        long numModified = 0;
-        List<WriteResult.Fail> failedList = new ArrayList<>();
-
-        if (file.getType() == File.Type.FILE) {
-            logger.debug("Deleting physical file {}" + file.getPath());
-
-            numMatched += 1;
-
-            try {
-                // 1. Set the file status to deleting
-                ObjectMap update = new ObjectMap()
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING)
-                        .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath() + suffixName);
-
-                fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
-
-                // 2. Delete the file from disk
-                try {
-                    Files.delete(Paths.get(fileUri));
-                } catch (IOException e) {
-                    logger.error("{}", e.getMessage(), e);
-
-                    // We rollback and leave the file/folder in PENDING_DELETE status
-                    update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
-                    fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
-
-                    throw new CatalogException("Could not delete physical file/folder: " + e.getMessage(), e);
-                }
-
-                // 3. Update the file status in the database. Set to delete
-                update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
-                fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
-
-                numModified += 1;
-            } catch (CatalogException e) {
-                failedList.add(new WriteResult.Fail(file.getId(), e.getMessage()));
-            }
-        } else {
-            logger.debug("Starting physical deletion of folder {}", file.getId());
-
-            // Rename the directory in the filesystem.
-            URI newURI;
-            String basePath = Paths.get(file.getPath()).toString();
-            String suffixedPath;
-
-            if (!File.FileStatus.PENDING_DELETE.equals(currentStatus)) {
-                try {
-                    newURI = UriUtils.createDirectoryUri(Paths.get(fileUri).toString() + suffixName);
-                } catch (URISyntaxException e) {
-                    logger.error("URI exception: {}", e.getMessage(), e);
-                    throw new CatalogException("URI exception: " + e.getMessage(), e);
-                }
-
-                logger.debug("Renaming {} to {}", fileUri.toString(), newURI.toString());
-                ioManager.rename(fileUri, newURI);
-
-                suffixedPath = basePath + suffixName;
-            } else {
-                // newURI is actually = to fileURI
-                newURI = fileUri;
-
-                // suffixedPath = basePath
-                suffixedPath = basePath;
-            }
-
-            // Obtain all files and folders within the folder
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
-            logger.debug("Looking for files and folders inside {} to mark as {}", file.getPath(), forceDelete
-                    ? File.FileStatus.DELETED : File.FileStatus.PENDING_DELETE);
-
-            QueryOptions options = new QueryOptions();
-            if (forceDelete) {
-                options.append(QueryOptions.SORT, FileDBAdaptor.QueryParams.PATH.key())
-                        .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
-            }
-            DBIterator<File> iterator = fileDBAdaptor.iterator(query, options);
-
-            while (iterator.hasNext()) {
-                File auxFile = iterator.next();
-                numMatched += 1;
-
-                String newPath;
-                String newUri;
-
-                if (!File.FileStatus.PENDING_DELETE.equals(currentStatus)) {
-                    // Edit the PATH
-                    newPath = auxFile.getPath().replaceFirst(basePath, suffixedPath);
-                    newUri = auxFile.getUri().toString().replaceFirst(fileUri.toString(), newURI.toString());
-                } else {
-                    newPath = auxFile.getPath();
-                    newUri = auxFile.getUri().toString();
-                }
-
-                try {
-                    if (!forceDelete) {
-                        // Deferred deletion
-                        logger.debug("Replacing old uri {} for {}, old path {} for {}, and setting the status to {}",
-                                auxFile.getUri().toString(), newUri, auxFile.getPath(), newPath, File.FileStatus.PENDING_DELETE);
-
-                        ObjectMap updateParams = new ObjectMap()
-                                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
-                                .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
-                                .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
-                        fileDBAdaptor.update(auxFile.getUid(), updateParams, QueryOptions.empty());
-                    } else {
-                        // We delete the files and folders now
-
-                        // 1. Set the file status to deleting
-                        ObjectMap update = new ObjectMap()
-                                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING)
-                                .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
-                                .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
-                        fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
-
-                        // 2. Delete the file from disk
-                        try {
-                            Files.delete(Paths.get(newUri.replaceFirst("file://", "")));
-                        } catch (IOException e) {
-                            logger.error("{}", e.getMessage(), e);
-
-                            // We rollback and leave the file/folder in PENDING_DELETE status
-                            update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
-                            fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
-
-                            throw new CatalogException("Could not delete physical file/folder: " + e.getMessage(), e);
-                        }
-
-                        // 3. Update the file status in the database. Set to delete
-                        update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
-                        fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
-                    }
-                    numModified += 1;
-                } catch (CatalogException e) {
-                    failedList.add(new WriteResult.Fail(auxFile.getId(), e.getMessage()));
-                }
-            }
-        }
-
-        return new WriteResult("delete", (int) watch.getTime(TimeUnit.MILLISECONDS), numMatched, numModified, failedList, null, null);
+//        URI fileUri = getUri(file);
+//        CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
+//
+//        // Set the path suffix to DELETED
+//        String suffixName = INTERNAL_DELIMITER + File.FileStatus.DELETED + "_" + TimeUtils.getTime();
+//
+//        long numMatched = 0;
+//        long numModified = 0;
+//        List<WriteResult.Fail> failedList = new ArrayList<>();
+//
+//        if (file.getType() == File.Type.FILE) {
+//            logger.debug("Deleting physical file {}" + file.getPath());
+//
+//            numMatched += 1;
+//
+//            try {
+//                // 1. Set the file status to deleting
+//                ObjectMap update = new ObjectMap()
+//                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING)
+//                        .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath() + suffixName);
+//
+//                fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
+//
+//                // 2. Delete the file from disk
+//                try {
+//                    Files.delete(Paths.get(fileUri));
+//                } catch (IOException e) {
+//                    logger.error("{}", e.getMessage(), e);
+//
+//                    // We rollback and leave the file/folder in PENDING_DELETE status
+//                    update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
+//                    fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
+//
+//                    throw new CatalogException("Could not delete physical file/folder: " + e.getMessage(), e);
+//                }
+//
+//                // 3. Update the file status in the database. Set to delete
+//                update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
+//                fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
+//
+//                numModified += 1;
+//            } catch (CatalogException e) {
+//                failedList.add(new WriteResult.Fail(file.getId(), e.getMessage()));
+//            }
+//        } else {
+//            logger.debug("Starting physical deletion of folder {}", file.getId());
+//
+//            // Rename the directory in the filesystem.
+//            URI newURI;
+//            String basePath = Paths.get(file.getPath()).toString();
+//            String suffixedPath;
+//
+//            if (!File.FileStatus.PENDING_DELETE.equals(currentStatus)) {
+//                try {
+//                    newURI = UriUtils.createDirectoryUri(Paths.get(fileUri).toString() + suffixName);
+//                } catch (URISyntaxException e) {
+//                    logger.error("URI exception: {}", e.getMessage(), e);
+//                    throw new CatalogException("URI exception: " + e.getMessage(), e);
+//                }
+//
+//                logger.debug("Renaming {} to {}", fileUri.toString(), newURI.toString());
+//                ioManager.rename(fileUri, newURI);
+//
+//                suffixedPath = basePath + suffixName;
+//            } else {
+//                // newURI is actually = to fileURI
+//                newURI = fileUri;
+//
+//                // suffixedPath = basePath
+//                suffixedPath = basePath;
+//            }
+//
+//            // Obtain all files and folders within the folder
+//            Query query = new Query()
+//                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+//                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+//                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
+//            logger.debug("Looking for files and folders inside {} to mark as {}", file.getPath(), forceDelete
+//                    ? File.FileStatus.DELETED : File.FileStatus.PENDING_DELETE);
+//
+//            QueryOptions options = new QueryOptions();
+//            if (forceDelete) {
+//                options.append(QueryOptions.SORT, FileDBAdaptor.QueryParams.PATH.key())
+//                        .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
+//            }
+//            DBIterator<File> iterator = fileDBAdaptor.iterator(query, options);
+//
+//            while (iterator.hasNext()) {
+//                File auxFile = iterator.next();
+//                numMatched += 1;
+//
+//                String newPath;
+//                String newUri;
+//
+//                if (!File.FileStatus.PENDING_DELETE.equals(currentStatus)) {
+//                    // Edit the PATH
+//                    newPath = auxFile.getPath().replaceFirst(basePath, suffixedPath);
+//                    newUri = auxFile.getUri().toString().replaceFirst(fileUri.toString(), newURI.toString());
+//                } else {
+//                    newPath = auxFile.getPath();
+//                    newUri = auxFile.getUri().toString();
+//                }
+//
+//                try {
+//                    if (!forceDelete) {
+//                        // Deferred deletion
+//                        logger.debug("Replacing old uri {} for {}, old path {} for {}, and setting the status to {}",
+//                                auxFile.getUri().toString(), newUri, auxFile.getPath(), newPath, File.FileStatus.PENDING_DELETE);
+//
+//                        ObjectMap updateParams = new ObjectMap()
+//                                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
+//                                .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
+//                                .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
+//                        fileDBAdaptor.update(auxFile.getUid(), updateParams, QueryOptions.empty());
+//                    } else {
+//                        // We delete the files and folders now
+//
+//                        // 1. Set the file status to deleting
+//                        ObjectMap update = new ObjectMap()
+//                                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING)
+//                                .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
+//                                .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
+//                        fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
+//
+//                        // 2. Delete the file from disk
+//                        try {
+//                            Files.delete(Paths.get(newUri.replaceFirst("file://", "")));
+//                        } catch (IOException e) {
+//                            logger.error("{}", e.getMessage(), e);
+//
+//                            // We rollback and leave the file/folder in PENDING_DELETE status
+//                            update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
+//                            fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
+//
+//                            throw new CatalogException("Could not delete physical file/folder: " + e.getMessage(), e);
+//                        }
+//
+//                        // 3. Update the file status in the database. Set to delete
+//                        update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
+//                        fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
+//                    }
+//                    numModified += 1;
+//                } catch (CatalogException e) {
+//                    failedList.add(new WriteResult.Fail(auxFile.getId(), e.getMessage()));
+//                }
+//            }
+//        }
+//
+//        return new WriteResult("delete", (int) watch.getTime(TimeUnit.MILLISECONDS), numMatched, numModified, failedList, null, null);
     }
 
     private WriteResult sendToTrash(long studyId, File file) throws CatalogDBException {
         // It doesn't really matter if file is a file or a directory. I can directly set the status of the file or the directory +
         // subfiles and subdirectories doing a single query as I don't need to rename anything
         // Obtain all files within the folder
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
-        ObjectMap params = new ObjectMap()
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-
-        return fileDBAdaptor.update(query, params, QueryOptions.empty()).setId("trash");
+//        Query query = new Query()
+//                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+//                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+//                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
+//        ObjectMap params = new ObjectMap()
+//                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+//
+//        return fileDBAdaptor.update(query, params, QueryOptions.empty()).setId("trash");
+        return fileDBAdaptor.delete(file.getUid(), File.FileStatus.TRASHED);
     }
 
     private WriteResult unlink(long studyId, File file) throws CatalogDBException {
-        StopWatch watch = StopWatch.createStarted();
+//        StopWatch watch = StopWatch.createStarted();
 
-        String suffixName = INTERNAL_DELIMITER + File.FileStatus.REMOVED + "_" + TimeUtils.getTime();
+        WriteResult unlink = fileDBAdaptor.delete(file.getUid(), File.FileStatus.REMOVED);
+        return unlink;
 
-        // Set the new path
-        String basePath = Paths.get(file.getPath()).toString();
-        String suffixedPath = basePath + suffixName;
-
-        long numMatched = 0;
-        long numModified = 0;
-
-        if (file.getType() == File.Type.FILE) {
-            numMatched += 1;
-
-            ObjectMap params = new ObjectMap()
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath().replaceFirst(basePath, suffixedPath))
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
-
-            logger.debug("Unlinking file {}", file.getPath());
-            fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
-
-            numModified += 1;
-        } else {
-            // Obtain all files within the folder
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
-
-            logger.debug("Looking for files and folders inside {} to unlink", file.getPath());
-            DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions());
-
-            while (iterator.hasNext()) {
-                File auxFile = iterator.next();
-                numMatched += 1;
-
-                ObjectMap updateParams = new ObjectMap()
-                        .append(FileDBAdaptor.QueryParams.PATH.key(), auxFile.getPath().replaceFirst(basePath, suffixedPath))
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
-
-                fileDBAdaptor.update(auxFile.getUid(), updateParams, QueryOptions.empty());
-
-                numModified += 1;
-            }
-        }
-
-        return new WriteResult("unlink", (int) watch.getTime(TimeUnit.MILLISECONDS), numMatched, numModified, null, null, null);
+//        String suffixName = INTERNAL_DELIMITER + File.FileStatus.REMOVED + "_" + TimeUtils.getTime();
+//
+//        // Set the new path
+//        String basePath = Paths.get(file.getPath()).toString();
+//        String suffixedPath = basePath + suffixName;
+//
+//        long numMatched = 0;
+//        long numModified = 0;
+//
+//        if (file.getType() == File.Type.FILE) {
+//            numMatched += 1;
+//
+//            ObjectMap params = new ObjectMap()
+//                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath().replaceFirst(basePath, suffixedPath))
+//                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
+//
+//            logger.debug("Unlinking file {}", file.getPath());
+//            fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
+//
+//            numModified += 1;
+//        } else {
+//            // Obtain all files within the folder
+//            Query query = new Query()
+//                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+//                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+//                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
+//
+//            logger.debug("Looking for files and folders inside {} to unlink", file.getPath());
+//            DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions());
+//
+//            while (iterator.hasNext()) {
+//                File auxFile = iterator.next();
+//                numMatched += 1;
+//
+//                ObjectMap updateParams = new ObjectMap()
+//                        .append(FileDBAdaptor.QueryParams.PATH.key(), auxFile.getPath().replaceFirst(basePath, suffixedPath))
+//                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
+//
+//                fileDBAdaptor.update(auxFile.getUid(), updateParams, QueryOptions.empty());
+//
+//                numModified += 1;
+//            }
+//        }
+//
+//        return new WriteResult("unlink", (int) watch.getTime(TimeUnit.MILLISECONDS), numMatched, numModified, null, null, null);
     }
 
     private boolean subpathInPath(String subpath, Set<String> pathSet) {
@@ -2831,7 +2998,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY), false, 0, null,
                 new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null,
-                studyManager.getCurrentRelease(study, userId), Collections.emptyList(), null, null);
+                studyManager.getCurrentRelease(study), Collections.emptyList(), null, null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
@@ -2988,7 +3155,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 File subfile = new File(externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, checksum, TimeUtils.getTime(), TimeUtils.getTime(),
                         description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
-                        Collections.emptyList(), new Job(), relatedFiles, null, studyManager.getCurrentRelease(study, userId),
+                        Collections.emptyList(), new Job(), relatedFiles, null, studyManager.getCurrentRelease(study),
                         Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
                 subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                 checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
@@ -3062,7 +3229,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
                                     TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
                                     new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
-                                    null, studyManager.getCurrentRelease(study, userId), Collections.emptyList(),
+                                    null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                     Collections.emptyMap(), Collections.emptyMap());
                             folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
@@ -3114,7 +3281,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
                                     TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
                                     new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
-                                    null, studyManager.getCurrentRelease(study, userId), Collections.emptyList(),
+                                    null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                     Collections.emptyMap(), Collections.emptyMap());
                             subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);

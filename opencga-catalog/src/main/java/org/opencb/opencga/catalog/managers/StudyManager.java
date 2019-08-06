@@ -315,8 +315,16 @@ public class StudyManager extends AbstractManager {
         return result;
     }
 
-    int getCurrentRelease(Study study, String userId) throws CatalogException {
-        return catalogManager.getProjectManager().resolveId(StringUtils.split(study.getFqn(), ":")[0], userId).getCurrentRelease();
+    public int getCurrentRelease(Study study, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        authorizationManager.checkCanViewStudy(study.getUid(), userId);
+        return getCurrentRelease(study);
+    }
+
+    int getCurrentRelease(Study study) throws CatalogException {
+        String[] split = StringUtils.split(study.getFqn(), ":");
+        String userId = StringUtils.split(split[0], "@")[0];
+        return catalogManager.getProjectManager().resolveId(split[0], userId).getCurrentRelease();
     }
 
     public MyResourceId getVariableSetId(String variableStr, @Nullable String studyStr, String sessionId) throws CatalogException {
@@ -1034,7 +1042,7 @@ public class StudyManager extends AbstractManager {
         }
 
         VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variablesSet, entities,
-                getCurrentRelease(study, userId), attributes);
+                getCurrentRelease(study), attributes);
         AnnotationUtils.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);

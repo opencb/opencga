@@ -240,7 +240,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setResourceManagerAttributes(ParamUtils.defaultObject(job.getResourceManagerAttributes(), HashMap::new));
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
         job.setUserId(userId);
-        job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
 
         // FIXME check inputFiles? is a null conceptually valid?

@@ -213,7 +213,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), Collections.emptyList()));
         individual.setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
-        individual.setRelease(studyManager.getCurrentRelease(study, userId));
+        individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
         individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
 
@@ -759,7 +759,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         QueryResult<Individual> queryResult = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
