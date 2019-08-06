@@ -17,11 +17,11 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoWriteException;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -30,6 +30,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -41,6 +43,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -103,42 +106,88 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public QueryResult<File> insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
-        long startTime = startQuery();
+        long startQuery = startQuery();
 
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+        ClientSession clientSession = getClientSession();
+        TransactionBody<WriteResult> txnBody = () -> {
+            long tmpStartTime = startQuery();
 
-        if (filePathExists(studyId, file.getPath())) {
+            logger.debug("Starting file insert transaction for file id '{}'", file.getId());
+
+            try {
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+
+                long fileUid = insert(clientSession, studyId, file, variableSetList);
+
+                return endWrite(String.valueOf(fileUid), tmpStartTime, 1, 1, null);
+            } catch (CatalogDBException e) {
+                logger.error("Could not create file {}: {}", file.getId(), e.getMessage());
+                clientSession.abortTransaction();
+                return endWrite(file.getId(), tmpStartTime, 1, 0,
+                        Collections.singletonList(new WriteResult.Fail(file.getId(), e.getMessage())));
+            }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 1) {
+            Query query = new Query()
+                    .append(QueryParams.STUDY_UID.key(), studyId)
+                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
+            return endQuery("Create file", startQuery, get(query, options));
+        } else {
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
+        }
+    }
+
+    long insert(ClientSession clientSession, long studyId, File file, List<VariableSet> variableSetList) throws CatalogDBException {
+        if (filePathExists(clientSession, studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
         }
 
-        //new File Id
-        long newFileId = getNewId();
-        file.setUid(newFileId);
+        // First we check if we need to create any samples and update current list of samples with the ones created
+        if (file.getSamples() != null && !file.getSamples().isEmpty()) {
+            List<Sample> sampleList = new ArrayList<>(file.getSamples().size());
+            for (Sample sample : file.getSamples()) {
+                if (sample.getUid() <= 0) {
+                    logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
+                    // Sample needs to be created
+                    Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample,
+                            variableSetList);
+                    sampleList.add(newSample);
+                } else {
+                    logger.debug("Sample '{}' was already registered. No need to create it.", sample.getId());
+                    sampleList.add(sample);
+                }
+                file.setSamples(sampleList);
+            }
+        }
+
+
+        //new file uid
+        long fileUid = getNewUid(clientSession);
+        file.setUid(fileUid);
         file.setStudyUid(studyId);
         if (StringUtils.isEmpty(file.getUuid())) {
             file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         }
+        if (StringUtils.isEmpty(file.getCreationDate())) {
+            file.setCreationDate(TimeUtils.getTime());
+        }
 
         Document fileDocument = fileConverter.convertToStorageType(file, variableSetList);
-        if (StringUtils.isNotEmpty(file.getCreationDate())) {
-            fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
-        } else {
-            fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
-        }
-        fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
-        try {
-            fileCollection.insert(fileDocument, null);
-        } catch (MongoWriteException e) {
-            throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath(), e);
-        }
+        fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+        fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
+
+        fileCollection.insert(clientSession, fileDocument, null);
 
         // Update the size field from the study collection
         if (!file.isExternal()) {
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, studyId, file.getSize());
         }
 
-        return endQuery("Create file", startTime, get(newFileId, options));
+        return fileUid;
     }
 
     @Override
@@ -159,7 +208,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public QueryResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.regex("path", "^" + path + "[^/]+/?$"));
+        Bson query = Filters.and(Filters.eq(PRIVATE_STUDY_UID, studyId), Filters.regex("path", "^" + path + "[^/]+/?$"));
         List<File> fileResults = fileCollection.find(query, fileConverter, null).getResult();
         return endQuery("Get all files", startTime, fileResults);
     }
@@ -172,7 +221,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         QueryResult queryResult = nativeGet(query, null);
 
         if (!queryResult.getResult().isEmpty()) {
-            return (long) ((Document) queryResult.getResult().get(0)).get(PRIVATE_STUDY_ID);
+            return (long) ((Document) queryResult.getResult().get(0)).get(PRIVATE_STUDY_UID);
         } else {
             throw CatalogDBException.uidNotFound("File", fileId);
         }
@@ -206,65 +255,96 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public QueryResult<File> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.UID.key(), id));
-        UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
-
-        updateAnnotationSets(id, parameters, variableSetList, queryOptions, false);
-
-        Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
-        if (!updateDocument.isEmpty()) {
-            logger.debug("Update file. Query: {}, Update: {}", query.toBsonDocument(Document.class,
-                    MongoClient.getDefaultCodecRegistry()), updateDocument);
-
-            QueryResult<UpdateResult> update = fileCollection.update(query, updateDocument, new QueryOptions("multi", true));
-            if (update.first().getMatchedCount() == 0) {
-                throw new CatalogDBException("File " + id + " not found.");
-            }
+        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
+        if (update.getNumModified() != 1) {
+            throw new CatalogDBException("Could not update file with id " + id + ": " + update.getFailed().get(0).getMessage());
         }
-
-        QueryResult<File> queryResult = fileCollection.find(query, fileConverter, QueryOptions.empty());
-        return endQuery("Update file", startTime, queryResult);
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), getStudyIdByFileId(id))
+                .append(QueryParams.UID.key(), id)
+                .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
+        return endQuery("Update file", startTime, get(query, queryOptions));
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
 
-        // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
-        QueryResult fileQueryResult = null;
-        if (parameters.containsKey(QueryParams.SIZE.key())) {
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    FILTER_ROUTE_FILES + QueryParams.SIZE.key(), FILTER_ROUTE_FILES + PRIVATE_STUDY_ID));
-            fileQueryResult = nativeGet(query, options);
-        }
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.SIZE.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<File> iterator = iterator(query, options);
 
-        // We perform the update.
-        Bson queryBson = parseQuery(query);
-        UpdateDocument tmpUpdateDocument = getValidatedUpdateParams(parameters, queryOptions);
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
 
-        updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, false);
+        while (iterator.hasNext()) {
+            File file = iterator.next();
+            numMatches += 1;
 
-        Document updateDocument = tmpUpdateDocument.toFinalUpdateDocument();
+            ClientSession clientSession = getClientSession();
+            TransactionBody txnBody = (TransactionBody<WriteResult>) () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    Query tmpQuery = new Query()
+                            .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
+                            .append(QueryParams.UID.key(), file.getUid());
 
-        if (!updateDocument.isEmpty()) {
-            logger.debug("Update file. Query: {}, Update: {}",
-                    queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), updateDocument);
+                    // We perform the update.
+                    Bson queryBson = parseQuery(tmpQuery);
+                    updateAnnotationSets(clientSession, file.getUid(), parameters, variableSetList, queryOptions, false);
 
-            QueryResult<UpdateResult> update = fileCollection.update(queryBson, updateDocument, new QueryOptions("multi", true));
+                    Document updateDocument = getValidatedUpdateParams(clientSession, parameters, queryOptions).toFinalUpdateDocument();
 
-            // If the size of some of the files have been changed, notify to the correspondent study
-            if (fileQueryResult != null) {
-                long newDiskUsage = parameters.getLong(QueryParams.SIZE.key());
-                for (Document file : (List<Document>) fileQueryResult.getResult()) {
-                    long difDiskUsage = newDiskUsage - Long.parseLong(file.get(QueryParams.SIZE.key()).toString());
-                    long studyId = (long) file.get(PRIVATE_STUDY_ID);
-                    dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
+                    if (!updateDocument.isEmpty()) {
+                        logger.debug("Update file. Query: {}, Update: {}",
+                                queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+                        QueryResult<UpdateResult> update = fileCollection.update(clientSession, queryBson, updateDocument,
+                                new QueryOptions("multi", true));
+
+                        // If the size of some of the files have been changed, notify to the correspondent study
+                        if (parameters.containsKey(QueryParams.SIZE.key())) {
+                            long newDiskUsage = parameters.getLong(QueryParams.SIZE.key());
+                            long difDiskUsage = newDiskUsage - file.getSize();
+                            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, file.getStudyUid(), difDiskUsage);
+                        }
+                        return endWrite("Update file", startTime, (int) update.getResult().get(0).getModifiedCount(),
+                                (int) update.getResult().get(0).getModifiedCount(), null);
+                    }
+
+                    return endWrite(file.getId(), tmpStartTime, 1, 1, null);
+                } catch (CatalogDBException e) {
+                    logger.error("Error updating file {}({}). {}", file.getId(), file.getUid(), e.getMessage(), e);
+                    return endWrite(file.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(file.getId(), e.getMessage())));
+                }
+            };
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("File {} successfully updated", file.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not update file {}: {}", file.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not update file {}", file.getId());
                 }
             }
-            return endQuery("Update file", startTime, Collections.singletonList(update.getResult().get(0).getModifiedCount()));
         }
-        return endQuery("Update file", startTime, Collections.singletonList(0L));
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "update", (numModified == 0
+                    ? "None of the files could be updated"
+                    : "Some of the files could not be updated"));
+        }
+
+        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
     }
 
     @Override
@@ -273,11 +353,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
-    private UpdateDocument getValidatedUpdateParams(ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    private UpdateDocument getValidatedUpdateParams(ClientSession clientSession, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
@@ -287,7 +368,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        if (document.getSet().containsKey(QueryParams.PATH.key())) {
+        if (parameters.containsKey(QueryParams.PATH.key())) {
+            // Check the path is not in use
+            Query query = new Query(QueryParams.PATH.key(), parameters.getString(QueryParams.PATH.key()));
+            if (count(clientSession, query).first() > 0) {
+                throw new CatalogDBException("Path " + parameters.getString(QueryParams.PATH.key()) + " already in use");
+            }
+
             // We also update the ID replacing the / for :
             String path = parameters.getString(QueryParams.PATH.key());
             document.getSet().put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
@@ -327,7 +414,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         // Check if the job exists.
         if (parameters.containsKey(QueryParams.JOB_UID.key()) && parameters.getLong(QueryParams.JOB_UID.key()) > 0) {
-            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(parameters.getLong(QueryParams.JOB_UID.key()))) {
+            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().exists(clientSession, parameters.getLong(QueryParams.JOB_UID.key()))) {
                 throw CatalogDBException.uidNotFound("Job", parameters.getLong(QueryParams.JOB_UID.key()));
             }
         }
@@ -338,7 +425,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             List<Sample> sampleList = new ArrayList<>();
             for (Object sample : objectSampleList) {
                 if (sample instanceof Sample) {
-                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(((Sample) sample).getUid())) {
+                    if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().exists(clientSession, ((Sample) sample).getUid())) {
                         throw CatalogDBException.uidNotFound("Sample", ((Sample) sample).getUid());
                     }
                     sampleList.add((Sample) sample);
@@ -383,18 +470,132 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
+    public WriteResult delete(long id) throws CatalogDBException {
+        throw new UnsupportedOperationException("Use delete passing status field.");
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = fileCollection.remove(parseQuery(query), null);
+    public WriteResult delete(Query query) throws CatalogDBException {
+        throw new UnsupportedOperationException("Use delete passing status field.");
+    }
 
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("File");
+    @Override
+    public WriteResult delete(long fileUid, String status) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), fileUid);
+        WriteResult delete = delete(query, status);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete file. Uid " + fileUid + " not found.");
+        } else if (delete.getNumModified() == 0) {
+            throw new CatalogDBException("Could not delete file. " + delete.getFailed().get(0).getMessage());
         }
+        return delete;
+    }
+
+    @Override
+    public WriteResult delete(Query query, String status) throws CatalogDBException {
+        switch (status) {
+            case File.FileStatus.TRASHED:
+            case File.FileStatus.REMOVED:
+            case File.FileStatus.PENDING_DELETE:
+            case File.FileStatus.DELETING:
+            case File.FileStatus.DELETED:
+                break;
+            default:
+                throw new CatalogDBException("Invalid status '" + status + "' for deletion of file.");
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.UID.key(), QueryParams.EXTERNAL.key(),
+                        QueryParams.STATUS.key(), QueryParams.STUDY_UID.key(), QueryParams.TYPE.key()));
+        DBIterator<File> iterator = iterator(query, options);
+
+        long startTime = startQuery();
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            File file = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody<WriteResult> txnBody = () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    logger.info("Deleting file {} ({})", file.getPath(), file.getUid());
+
+                    dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, file.getStudyUid(), file.getUid(),
+                            fileConverter.convertToStorageType(file, null));
+
+                    String deleteSuffix = "";
+                    if (File.FileStatus.PENDING_DELETE.equals(status)) {
+                        deleteSuffix = INTERNAL_DELIMITER + File.FileStatus.DELETED + "_" + TimeUtils.getTime();
+                    } else if (File.FileStatus.REMOVED.equals(status)) {
+                        deleteSuffix = INTERNAL_DELIMITER + File.FileStatus.REMOVED + "_" + TimeUtils.getTime();
+                    }
+
+                    Query fileQuery = new Query()
+                            .append(QueryParams.UID.key(), file.getUid())
+                            .append(QueryParams.STUDY_UID.key(), file.getStudyUid());
+                    // Mark the file as deleted
+                    UpdateDocument document = new UpdateDocument();
+                    document.getSet().put(QueryParams.STATUS_NAME.key(), status);
+                    document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+                    document.getSet().put(QueryParams.ID.key(), file.getId() + deleteSuffix);
+                    if (file.getType() == File.Type.DIRECTORY && file.getPath().endsWith("/")) {
+                        // Remove the last /
+                        document.getSet().put(QueryParams.PATH.key(), file.getPath().substring(0, file.getPath().length() - 1)
+                                + deleteSuffix);
+                    } else {
+                        document.getSet().put(QueryParams.PATH.key(), file.getPath() + deleteSuffix);
+                    }
+
+                    Bson bsonQuery = parseQuery(fileQuery);
+                    Document updateDocument = document.toFinalUpdateDocument();
+
+                    logger.debug("Delete file '{}': Query: {}, update: {}", file.getPath(),
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    UpdateResult fileResult = fileCollection.update(clientSession, bsonQuery, updateDocument,
+                            QueryOptions.empty()).first();
+                    if (fileResult.getModifiedCount() == 1) {
+                        logger.info("File {}({}) deleted", file.getPath(), file.getUid());
+                    } else {
+                        logger.info("File {}({}) could not be deleted", file.getPath(), file.getUid());
+                    }
+
+                    return endWrite(file.getPath(), tmpStartTime, 1, 1, null);
+                } catch (CatalogDBException e) {
+                    logger.error("Error deleting file {}({}). {}", file.getId(), file.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
+                    return endWrite(file.getPath(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(file.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("File {} successfully deleted", file.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not delete file {}: {}", file.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not delete file {}", file.getId());
+                }
+            }
+        }
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "delete", (numModified == 0
+                    ? "None of the files could be deleted"
+                    : "Some of the files could not be deleted"));
+        }
+
+        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
     }
 
     @Override
@@ -414,7 +615,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             filePath += filePath.endsWith("/") ? "" : "/";
         }
 
-        long studyId = (long) fileDoc.get(PRIVATE_STUDY_ID);
+        long studyId = (long) fileDoc.get(PRIVATE_STUDY_UID);
         long collisionFileId = getId(studyId, filePath);
         if (collisionFileId >= 0) {
             throw new CatalogDBException("Can not rename: " + filePath + " already exists");
@@ -476,8 +677,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
+        return count(null, query);
+    }
+
+    QueryResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return fileCollection.count(bson);
+        return fileCollection.count(clientSession, bson);
     }
 
     @Override
@@ -499,7 +704,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getFilePermission().name(), Entity.FILE.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
-        logger.debug("File count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("File count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return fileCollection.count(bson);
     }
 
@@ -623,7 +828,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), null, options);
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), null, options);
     }
 
     @Override
@@ -633,7 +838,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
         return new FileMongoDBIterator<>(mongoCursor, null, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), null, queryOptions);
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), null, queryOptions);
     }
 
     @Override
@@ -647,7 +852,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileMongoDBIterator<>(mongoCursor, fileConverter, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), user, options);
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), user, options);
     }
 
     @Override
@@ -664,7 +869,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileMongoDBIterator<>(mongoCursor, null, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_ID), user, options);
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -826,7 +1031,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), myQuery, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case DIRECTORY:
                         // We add the regex in order to look for all the files under the given directory
@@ -941,9 +1146,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
     }
 
-    private boolean filePathExists(long studyId, String path) {
-        Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
-        QueryResult<Long> count = fileCollection.count(query);
+    private boolean filePathExists(ClientSession clientSession, long studyId, String path) {
+        Document query = new Document(PRIVATE_STUDY_UID, studyId).append(QueryParams.PATH.key(), path);
+        QueryResult<Long> count = fileCollection.count(clientSession, query);
         return count.getResult().get(0) != 0;
     }
 
@@ -952,18 +1157,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    @Override
-    public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
-        long startTime = startQuery();
-        Bson bsonQuery = parseQuery(query);
-        Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(), new Document(PRIVATE_UID,
-                new Document("$in", sampleIds))));
-        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-        QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
-        return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     @Override
@@ -979,5 +1175,28 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         unmarkPermissionRule(fileCollection, studyId, permissionRuleId);
+    }
+
+    void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {
+        Document bsonQuery = new Document()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.SAMPLE_UIDS.key(), sampleUid);
+
+        ObjectMap params = new ObjectMap()
+                .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
+        // Add the the Remove action for the sample provided
+        QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
+                new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name()));
+
+        Bson update = getValidatedUpdateParams(clientSession, params, queryOptions).toFinalUpdateDocument();
+
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+
+        logger.debug("Sample references extraction. Query: {}, update: {}",
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        UpdateResult updateResult = fileCollection.update(clientSession, bsonQuery, update, multi).first();
+        logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getModifiedCount() + " out of "
+                + updateResult.getMatchedCount() + " files");
     }
 }

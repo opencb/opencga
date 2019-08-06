@@ -47,7 +47,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         assertTrue(studyId >= 0);
         File file;
-        file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", "",
+        file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
         LinkedList<FileAclEntry> acl = new LinkedList<>();
         acl.push(new FileAclEntry("jcoll", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
@@ -55,13 +55,13 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 FileAclEntry.FilePermissions.DELETE.name())));
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
-        file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", "",
+        file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
-        file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", "",
+        file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null));
-        file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", "",
+        file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000, 1);
 
         try {
@@ -335,17 +335,29 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 QueryOptions.empty()).first();
         Sample sample3 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
                 QueryOptions.empty()).first();
-        File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
+        List<File> files = user3.getProjects().get(0).getStudies().get(0).getFiles();
+        File file = files.get(0);
+        File file2 = files.get(1);
         catalogFileDBAdaptor.addSamplesToFile(file.getUid(), Arrays.asList(sample1, sample2, sample3));
+        catalogFileDBAdaptor.addSamplesToFile(file2.getUid(), Arrays.asList(sample1, sample2, sample3));
 
         QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileQueryResult.first().getSamples().size());
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid())
                 .containsAll(fileQueryResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
 
-        catalogFileDBAdaptor.extractSampleFromFiles(new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()),
-                Arrays.asList(sample1.getUid(), sample3.getUid()));
+        fileQueryResult = catalogFileDBAdaptor.get(file2.getUid(), QueryOptions.empty());
+        assertEquals(3, fileQueryResult.first().getSamples().size());
+        assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid(), sample3.getUid())
+                .containsAll(fileQueryResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
+
+        catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample1.getUid());
+        catalogFileDBAdaptor.removeSampleReferences(null, studyUid, sample3.getUid());
         fileQueryResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
+        assertEquals(1, fileQueryResult.first().getSamples().size());
+        assertTrue(fileQueryResult.first().getSamples().get(0).getUid() == sample2.getUid());
+
+        fileQueryResult = catalogFileDBAdaptor.get(file2.getUid(), QueryOptions.empty());
         assertEquals(1, fileQueryResult.first().getSamples().size());
         assertTrue(fileQueryResult.first().getSamples().get(0).getUid() == sample2.getUid());
     }

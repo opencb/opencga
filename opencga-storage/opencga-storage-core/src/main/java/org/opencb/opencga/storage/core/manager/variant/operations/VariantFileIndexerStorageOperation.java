@@ -296,12 +296,12 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             boolean saveIntermediateFiles = catalogOutDirId != null;
+            updateFileInfo(study, filesToIndex, variantStorageEngine.getVariantReaderUtils(),
+                    storagePipelineResults, outdir, release, saveIntermediateFiles, options, sessionId);
             if (saveIntermediateFiles) {
                 // Copy results to catalog
                 copyResults(outdir, studyFQNByInputFileId, catalogOutDirId, sessionId);
             }
-            updateFileInfo(study, filesToIndex, variantStorageEngine.getVariantReaderUtils(),
-                    storagePipelineResults, outdir, release, saveIntermediateFiles, options, sessionId);
             // Restore previous cohort status. Cohort status will be read from StudyConfiguration.
             if (calculateStats && exception != null) {
                 updateDefaultCohortStatus(study, prevDefaultCohortStatus, sessionId);

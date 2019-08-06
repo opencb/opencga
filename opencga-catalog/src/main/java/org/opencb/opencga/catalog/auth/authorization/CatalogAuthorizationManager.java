@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -50,8 +49,8 @@ import java.util.stream.Collectors;
  */
 public class CatalogAuthorizationManager implements AuthorizationManager {
 
-    private static final String MEMBERS_GROUP = "@members";
-    private static final String ADMINS_GROUP = "@admins";
+    public static final String MEMBERS_GROUP = "@members";
+    public static final String ADMINS_GROUP = "@admins";
     private static final String ADMIN = "admin";
 
     private final Logger logger;
@@ -86,7 +85,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogDBException, CatalogAuthorizationException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
         this.auditManager = auditManager;
-        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
+        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory);
 
         this.openRegister = configuration.isOpenRegister();
 
@@ -850,41 +849,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        // We obtain which of those members are actually users to add them to the @members group automatically
-        List<String> userList = members.stream()
-                .filter(member -> !member.startsWith("@"))
-                .collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(userList)) {
-            // We first add the member to the @members group in case they didn't belong already
-            for (Long studyId : studyIds) {
-                studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
-            }
-        }
-
-        // Todo: Remove this in 1.4
-        List<String> allStudyPermissions = EnumSet.allOf(StudyAclEntry.StudyPermissions.class)
-                .stream()
-                .map(String::valueOf)
-                .collect(Collectors.toList());
-
-        aclDBAdaptor.setToMembers(studyIds, members, permissions, allStudyPermissions, Entity.STUDY);
+        aclDBAdaptor.setToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
     public List<QueryResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
-        // We obtain which of those members are actually users to add them to the @members group automatically
-        List<String> userList = members.stream()
-                .filter(member -> !member.startsWith("@"))
-                .collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(userList)) {
-            // We first add the member to the @members group in case they didn't belong already
-            for (Long studyId : studyIds) {
-                studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
-            }
-        }
-        aclDBAdaptor.addToMembers(studyIds, members, permissions, Entity.STUDY);
+        aclDBAdaptor.addToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
@@ -900,75 +872,38 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return aclDBAdaptor.get(ids, members, entity);
     }
 
-    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
-                                                                     List<String> permissions, List<String> allPermissions, Entity entity)
+    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+                                                                     List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
             return Collections.emptyList();
         }
 
-        // We obtain which of those members are actually users to add them to the @members group automatically
-        List<String> userList = members.stream()
-                .filter(member -> !member.startsWith("@"))
-                .collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(userList)) {
-            // We first add the member to the @members group in case they didn't belong already
-            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
-        }
-
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.setToMembers(ids, members, permissions, allPermissions, entity);
-        int dbTime = (int) (System.currentTimeMillis() - startTime);
+        aclDBAdaptor.setToMembers(studyId, ids, ids2, members, permissions, entity, entity2);
 
-        // We store that those members have internal permissions
-        aclDBAdaptor.setMembersHaveInternalPermissionsDefined(studyId, members, permissions, entity.name());
-
-        List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
-
-        for (QueryResult<E> aclEntryQueryResult : aclResultList) {
-            aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
-        }
-
-        return aclResultList;
+        return getAclResultList(ids, members, entity, startTime);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members,
-                                                                     List<String> permissions, Entity entity) throws CatalogException {
+    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+                                                                     List<String> permissions, Entity entity, Entity entity2)
+            throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to add acls");
             return Collections.emptyList();
         }
 
-        // We obtain which of those members are actually users to add them to the @members group automatically
-        List<String> userList = members.stream()
-                .filter(member -> !member.startsWith("@"))
-                .collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(userList)) {
-            // We first add the member to the @members group in case they didn't belong already
-            studyDBAdaptor.addUsersToGroup(studyId, MEMBERS_GROUP, userList);
-        }
-
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.addToMembers(ids, members, permissions, entity);
-        int dbTime = (int) (System.currentTimeMillis() - startTime);
+        aclDBAdaptor.addToMembers(studyId, ids, ids2, members, permissions, entity, entity2);
 
-        // We store that those members have internal permissions
-        aclDBAdaptor.setMembersHaveInternalPermissionsDefined(studyId, members, permissions, entity.name());
-
-        List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
-
-        for (QueryResult<E> aclEntryQueryResult : aclResultList) {
-            aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
-        }
-
-        return aclResultList;
+        return getAclResultList(ids, members, entity, startTime);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members,
-                                                                        @Nullable List<String> permissions, Entity entity)
+    public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
+                                                                        @Nullable List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to remove acls");
@@ -976,12 +911,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         long startTime = System.currentTimeMillis();
-        aclDBAdaptor.removeFromMembers(ids, members, permissions, entity);
+        aclDBAdaptor.removeFromMembers(ids, ids2, members, permissions, entity, entity2);
 
+        return getAclResultList(ids, members, entity, startTime);
+    }
+
+    <E extends AbstractAclEntry> List<QueryResult<E>> getAclResultList(List<Long> ids, List<String> members, Entity entity, long startTime)
+            throws CatalogException {
         int dbTime = (int) (System.currentTimeMillis() - startTime);
+
         List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
 
-        // Update dbTime
         for (QueryResult<E> aclEntryQueryResult : aclResultList) {
             aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
         }

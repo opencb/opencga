@@ -66,12 +66,35 @@ public interface AuthorizationDBAdaptor {
      */
     void removeFromStudy(long studyId, String member, Entity entry) throws CatalogException;
 
-    void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, List<String> allPermissions, Entity entity)
-            throws CatalogDBException;
+    default void setToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+            throws CatalogDBException {
+        setToMembers(studyId, resourceIds, null, members, permissions, entity, null);
+    }
 
-    void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entry) throws CatalogDBException;
+    void setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
+                      Entity entity, Entity entity2) throws CatalogDBException;
 
-    void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity) throws CatalogDBException;
+    // Special method only to set acls in study
+    void setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
+
+    default void addToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+            throws CatalogDBException {
+        addToMembers(studyId, resourceIds, null, members, permissions, entity, null);
+    }
+
+    void addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
+                      Entity entity, Entity entity2) throws CatalogDBException;
+
+    // Special method only to add acls in study
+    void addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
+
+    default void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+            throws CatalogDBException {
+        removeFromMembers(resourceIds, null, members, permissions, entity, null);
+    }
+
+    void removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions, Entity entity,
+                           Entity entity2) throws CatalogDBException;
 
     void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
 

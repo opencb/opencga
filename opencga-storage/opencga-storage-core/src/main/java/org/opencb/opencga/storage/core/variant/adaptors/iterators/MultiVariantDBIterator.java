@@ -300,9 +300,6 @@ public class MultiVariantDBIterator extends VariantDBIterator {
                     + " matchProbability = " + matchProbability
                     + " batchSize = " + batchSize);
 
-            totalBatchSizeCount += batchSize;
-            lastBatchSize = batchSize;
-
             return next(batchSize);
         }
 
@@ -321,6 +318,8 @@ public class MultiVariantDBIterator extends VariantDBIterator {
             } while (variantsIterator.hasNext() && variants.size() < batchSize);
             newQuery.append(VariantQueryParam.ID.key(), variants);
             lastBatch = variants;
+            totalBatchSizeCount += variants.size();
+            lastBatchSize = variants.size();
             logger.info("Get next query: " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
             return newQuery;
         }

@@ -17,8 +17,9 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
-import com.mongodb.WriteResult;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -30,6 +31,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.*;
@@ -77,13 +80,25 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         this.variableSetConverter = new VariableSetConverter();
     }
 
-    private boolean studyIdExists(long projectId, String studyId) throws CatalogDBException {
+    public void checkId(ClientSession clientSession, long studyId) throws CatalogDBException {
+        if (studyId < 0) {
+            throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
+        }
+        Long count = count(clientSession, new Query(QueryParams.UID.key(), studyId)).first();
+        if (count <= 0) {
+            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
+        } else if (count > 1) {
+            throw CatalogDBException.newInstance("'{}' documents found with the Study id '{}'", count, studyId);
+        }
+    }
+
+    private boolean studyIdExists(ClientSession clientSession, long projectId, String studyId) throws CatalogDBException {
         if (projectId < 0) {
             throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
         }
 
         Query query = new Query(QueryParams.PROJECT_ID.key(), projectId).append(QueryParams.ID.key(), studyId);
-        QueryResult<Long> count = count(query);
+        QueryResult<Long> count = count(clientSession, query);
         return count.first() != 0;
     }
 
@@ -96,7 +111,36 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
+        long startQuery = startQuery();
+
+        ClientSession clientSession = getClientSession();
+        TransactionBody<WriteResult> txnBody = () -> {
+            long tmpStartTime = startQuery();
+
+            logger.debug("Starting study insert transaction for study id '{}'", study.getId());
+
+            try {
+                Study createdStudy = insert(clientSession, project, study);
+                return endWrite(String.valueOf(createdStudy.getUid()), tmpStartTime, 1, 1, null);
+            } catch (CatalogDBException e) {
+                logger.error("Could not create study {}: {}", study.getId(), e.getMessage());
+                clientSession.abortTransaction();
+                return endWrite(study.getId(), tmpStartTime, 1, 0,
+                        Collections.singletonList(new WriteResult.Fail(study.getId(), e.getMessage())));
+            }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 1) {
+            Query query = new Query(QueryParams.UID.key(), Long.parseLong(result.getId()));
+            return endQuery("createdStudy", startQuery, get(query, options));
+        } else {
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
+        }
+    }
+
+    Study insert(ClientSession clientSession, Project project, Study study) throws CatalogDBException {
         if (project.getUid() < 0) {
             throw CatalogDBException.uidNotFound("Project", project.getUid());
         }
@@ -105,16 +149,19 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Check if study.id already exists.
-        if (studyIdExists(project.getUid(), study.getId())) {
+        if (studyIdExists(clientSession, project.getUid(), study.getId())) {
             throw new CatalogDBException("Study {id:\"" + study.getId() + "\"} already exists");
         }
 
         //Set new ID
-        long newId = getNewId();
-        study.setUid(newId);
+        long studyUid = getNewUid(clientSession);
+        study.setUid(studyUid);
 
         if (StringUtils.isEmpty(study.getUuid())) {
             study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
+        }
+        if (StringUtils.isEmpty(study.getCreationDate())) {
+            study.setCreationDate(TimeUtils.getTime());
         }
 
         //Empty nested fields
@@ -127,9 +174,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Cohort> cohorts = study.getCohorts();
         study.setCohorts(Collections.emptyList());
 
-        List<Dataset> datasets = study.getDatasets();
-        study.setDatasets(Collections.emptyList());
-
         List<Panel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
@@ -137,7 +181,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         //Create DBObject
         Document studyObject = studyConverter.convertToStorageType(study);
-        studyObject.put(PRIVATE_UID, newId);
+        studyObject.put(PRIVATE_UID, studyUid);
 
         //Set ProjectId
         studyObject.put(PRIVATE_PROJECT, new Document()
@@ -147,58 +191,27 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         );
         studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
-        if (StringUtils.isNotEmpty(study.getCreationDate())) {
-            studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
-        } else {
-            studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
-        }
+        studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
 
-        //Insert
-        QueryResult<WriteResult> updateResult = studyCollection.insert(studyObject, null);
-
-        String errorMsg = updateResult.getErrorMsg() != null ? updateResult.getErrorMsg() : "";
+        studyCollection.insert(clientSession, studyObject, null);
 
         for (File file : files) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogFileDBAdaptor().insert(study.getUid(), file, Collections.emptyList(), options)
-                    .getErrorMsg();
-            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += file.getName() + ":" + fileErrorMsg + ", ";
-            }
+            dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList());
         }
 
         for (Job job : jobs) {
-//            String jobErrorMsg = createAnalysis(study.getId(), analysis).getErrorMsg();
-            String jobErrorMsg = dbAdaptorFactory.getCatalogJobDBAdaptor().insert(job, study.getUid(), options).getErrorMsg();
-            if (jobErrorMsg != null && !jobErrorMsg.isEmpty()) {
-                errorMsg += job.getName() + ":" + jobErrorMsg + ", ";
-            }
+            dbAdaptorFactory.getCatalogJobDBAdaptor().insert(clientSession, study.getUid(), job);
         }
 
         for (Cohort cohort : cohorts) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(study.getUid(), cohort, options).getErrorMsg();
-            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += cohort.getId() + ":" + fileErrorMsg + ", ";
-            }
-        }
-
-        for (Dataset dataset : datasets) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogDatasetDBAdaptor().insert(dataset, study.getUid(), options).getErrorMsg();
-            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += dataset.getName() + ":" + fileErrorMsg + ", ";
-            }
+            dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
         }
 
         for (Panel panel : panels) {
-            String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(study.getUid(), panel, options).getErrorMsg();
-            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg += panel.getName() + ":" + fileErrorMsg + ", ";
-            }
+            dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
         }
 
-        QueryResult<Study> result = get(study.getUid(), options);
-        List<Study> studyList = result.getResult();
-        return endQuery("Create Study", startTime, studyList, errorMsg, null);
-
+        return study;
     }
 
     @Override
@@ -299,8 +312,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private long getDiskUsageByStudy(int studyId) {
 
         List<Bson> operations = new ArrayList<>();
-        operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId)));
-        operations.add(Aggregates.group("$" + PRIVATE_STUDY_ID, Accumulators.sum("size", "$diskUsage")));
+        operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_UID, studyId)));
+        operations.add(Aggregates.group("$" + PRIVATE_STUDY_UID, Accumulators.sum("size", "$diskUsage")));
 
         QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection()
                 .aggregate(operations, null);
@@ -366,6 +379,22 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (queryResult.first().getMatchedCount() != 1) {
             throw new CatalogDBException("Unable to set users to group " + groupId + ". The group does not exist.");
+        }
+    }
+
+    void addUsersToGroup(long studyId, String groupId, List<String> members, ClientSession clientSession) throws CatalogDBException {
+        if (ListUtils.isEmpty(members)) {
+            return;
+        }
+
+        Document query = new Document()
+                .append(PRIVATE_UID, studyId)
+                .append(QueryParams.GROUP_ID.key(), groupId);
+        Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
+        QueryResult<UpdateResult> queryResult = studyCollection.update(clientSession, query, update, null);
+
+        if (queryResult.first().getMatchedCount() != 1) {
+            throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
     }
 
@@ -605,7 +634,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getId() + "'} already exists.");
         }
 
-        long variableSetId = getNewId();
+        long variableSetId = getNewUid();
         variableSet.setUid(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
         object.put(PRIVATE_UID, variableSetId);
@@ -1120,8 +1149,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
+        return count(null, query);
+    }
+
+    public QueryResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return studyCollection.count(bson);
+        return studyCollection.count(clientSession, bson);
     }
 
     @Override
@@ -1141,47 +1174,76 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        //FIXME: Check the commented code from modifyStudy
-        /*
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        checkStudyId(studyId);
-//        BasicDBObject studyParameters = new BasicDBObject();
-        Document studyParameters = new Document();
+        Document updateParams = getDocumentUpdateParams(parameters);
 
-        String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastModified", "cipher"};
-        filterStringParams(parameters, studyParameters, acceptedParams);
-
-        String[] acceptedLongParams = {"size"};
-        filterLongParams(parameters, parameters, acceptedLongParams);
-
-        String[] acceptedMapParams = {"attributes", "stats"};
-        filterMapParams(parameters, studyParameters, acceptedMapParams);
-
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
-        filterEnumParams(parameters, studyParameters, acceptedEnums);
-
-        if (parameters.containsKey("uri")) {
-            URI uri = parameters.get("uri", URI.class);
-            studyParameters.put("uri", uri.toString());
+        if (updateParams.isEmpty()) {
+            throw new CatalogDBException("Nothing to update");
         }
 
-        if (!studyParameters.isEmpty()) {
-//            BasicDBObject query = new BasicDBObject(PRIVATE_UID, studyId);
-            Bson eq = Filters.eq(PRIVATE_UID, studyId);
-            BasicDBObject updates = new BasicDBObject("$set", studyParameters);
+        Document updates = new Document("$set", updateParams);
 
-//            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
-            QueryResult<UpdateResult> updateResult = studyCollection.update(eq, updates, null);
-            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("Study", studyId);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.PROJECT_UID.key()));
+        DBIterator<Study> iterator = iterator(query, options);
+
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            Study study = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody<WriteResult> txnBody = () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    Query tmpQuery = new Query(QueryParams.UID.key(), study.getUid());
+                    Bson finalQuery = parseQuery(tmpQuery);
+
+                    logger.debug("Update study. Query: {}, update: {}",
+                            finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    studyCollection.update(clientSession, finalQuery, updates, null);
+
+                    return endWrite(study.getId(), tmpStartTime, 1, 1, null);
+                } catch (CatalogDBException e) {
+                    logger.error("Error updating study {}({}). {}", study.getId(), study.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
+                    return endWrite(study.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(study.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Study {} successfully updated", study.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not update study {}: {}", study.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not update study {}", study.getId());
+                }
             }
         }
-        return endQuery("Modify study", startTime, getStudy(studyId, null));
-        * */
 
-        long startTime = startQuery();
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "update", (numModified == 0
+                    ? "None of the studies could be updated"
+                    : "Some of the studies could not be updated"));
+        }
+
+        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+    }
+
+    Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document studyParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
@@ -1213,36 +1275,113 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             Date date = TimeUtils.toDate(time);
             studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
             studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
-
-            Document updates = new Document("$set", studyParameters);
-            Long nModified = studyCollection.update(parseQuery(query), updates, null).getNumTotalResults();
-            return endQuery("Study update", startTime, Collections.singletonList(nModified));
         }
-
-        return endQuery("Study update", startTime, Collections.singletonList(0L));
+        return studyParameters;
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
+    public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
+        WriteResult delete = delete(query);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete study. Uid " + id + " not found.");
+        } else if (delete.getNumModified() == 0) {
+            throw new CatalogDBException("Could not delete study. " + delete.getFailed().get(0).getMessage());
+        }
+        return delete;
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query), null);
+    public WriteResult delete(Query query) throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
+        DBIterator<Study> iterator = iterator(query, options);
 
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("Study");
+        long startTime = startQuery();
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            Study study = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody<WriteResult> txnBody = () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    logger.info("Deleting study {} ({})", study.getId(), study.getUid());
+
+                    // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
+
+                    UpdateResult updateResult = delete(clientSession, study);
+                    if (updateResult.getModifiedCount() == 1) {
+                        logger.debug("Study {} successfully deleted", study.getId());
+                        return endWrite(study.getId(), tmpStartTime, 1, 1, null);
+                    } else {
+                        logger.error("Study {} could not be deleted", study.getId());
+                        throw new CatalogDBException("Study " + study.getId() + " could not be deleted");
+                    }
+                } catch (CatalogDBException e) {
+                    logger.error("Error deleting study {}({}). {}", study.getId(), study.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
+                    return endWrite(study.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(study.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Study {} successfully deleted", study.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not delete study {}: {}", study.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not delete study {}", study.getId());
+                }
+            }
         }
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "delete", (numModified == 0
+                    ? "None of the studies could be deleted"
+                    : "Some of the studies could not be deleted"));
+        }
+
+        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+    }
+
+    UpdateResult delete(ClientSession clientSession, Study study) throws CatalogDBException {
+        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        Query studyQuery = new Query(QueryParams.UID.key(), study.getUid());
+        // Mark the study as deleted
+        ObjectMap updateParams = new ObjectMap()
+                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                .append(QueryParams.ID.key(), study.getId() + deleteSuffix);
+
+        Bson bsonQuery = parseQuery(studyQuery);
+        Document updateDocument = getDocumentUpdateParams(updateParams);
+
+        logger.debug("Delete study {}: Query: {}, update: {}", study.getId(),
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return studyCollection.update(clientSession, bsonQuery, updateDocument,
+                QueryOptions.empty()).first();
     }
 
     @Override
     public QueryResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
 
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
-        if (update.getNumTotalResults() != 1) {
+        WriteResult update =
+                update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
+        if (update.getNumModified() != 1) {
             throw new CatalogDBException("Could not update study with id " + id);
         }
         return endQuery("Update study", startTime, get(id, null));
@@ -1298,7 +1437,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
             // Delete the active studies (if any)
-            query = new Query(PRIVATE_STUDY_ID, id);
+            query = new Query(PRIVATE_STUDY_UID, id);
             dbAdaptorFactory.getCatalogFileDBAdaptor().setStatus(query, Status.DELETED);
             dbAdaptorFactory.getCatalogJobDBAdaptor().setStatus(query, Status.DELETED);
             dbAdaptorFactory.getCatalogSampleDBAdaptor().setStatus(query, Status.DELETED);
@@ -1316,7 +1455,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        WriteResult update = update(query,
+                new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     QueryResult<Study> setStatus(long studyId, String status) throws CatalogDBException {
@@ -1342,7 +1484,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
      */
     private void checkCanDelete(long studyId) throws CatalogDBException {
         checkId(studyId);
-        Query query = new Query(PRIVATE_STUDY_ID, studyId)
+        Query query = new Query(PRIVATE_STUDY_UID, studyId)
                 .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
         Long count = dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first();
@@ -1384,7 +1526,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
      * @throws CatalogDBException when there exists active files, samples, cohorts...
      */
     private void checkEmptyStudy(long studyId) throws CatalogDBException {
-        Query query = new Query(PRIVATE_STUDY_ID, studyId)
+        Query query = new Query(PRIVATE_STUDY_UID, studyId)
                 .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
 
         // Check files
@@ -1501,9 +1643,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        return nativeGet(null, query, options);
+    }
+
+    QueryResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -1513,9 +1659,14 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+        return nativeGet(null, query, options, user);
+    }
+
+    QueryResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -1525,22 +1676,26 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options);
         return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
+        return nativeIterator(null, query, options);
+    }
+
+    DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         return new StudyMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
         return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
     }
@@ -1548,14 +1703,20 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return nativeIterator(null, query, options, user);
+    }
+
+
+    public DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
         return new StudyMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryOptions qOptions = new QueryOptions(options);
         if (qOptions.containsKey(QueryOptions.INCLUDE)) {
@@ -1574,7 +1735,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        return studyCollection.nativeQuery().find(bson, qOptions).iterator();
+        return studyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
     }
 
     @Override
@@ -1745,15 +1906,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     /***
      * This method is called every time a file has been inserted, modified or deleted to keep track of the current study size.
      *
+     * @param clientSession Client session.
      * @param studyId   Study Identifier
      * @param size disk usage of a new created, updated or deleted file belonging to studyId. This argument
      *                  will be > 0 to increment the size field in the study collection or < 0 to decrement it.
      * @throws CatalogDBException An exception is launched when the update crashes.
      */
-    public void updateDiskUsage(long studyId, long size) throws CatalogDBException {
+    public void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException {
         Bson query = new Document(QueryParams.UID.key(), studyId);
         Bson update = Updates.inc(QueryParams.SIZE.key(), size);
-        if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {
+        if (studyCollection.update(clientSession, query, update, null).getNumTotalResults() == 0) {
             throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the size field of"
                     + " the study " + studyId);
         }

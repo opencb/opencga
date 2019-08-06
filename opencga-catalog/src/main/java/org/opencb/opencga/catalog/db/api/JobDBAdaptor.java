@@ -17,10 +17,12 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Job;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,7 +49,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
-    QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> insert(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
     default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
@@ -59,7 +61,9 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
     }
 
     default QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
+        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
+                "", Collections.singletonList(update.getNumModified()));
     }
 
     default QueryResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {

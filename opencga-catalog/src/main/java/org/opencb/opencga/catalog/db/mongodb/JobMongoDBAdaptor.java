@@ -17,7 +17,9 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -28,8 +30,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
@@ -37,6 +42,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -76,6 +82,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return jobCollection;
     }
 
+    public boolean exists(ClientSession clientSession, long jobUid) throws CatalogDBException {
+        return count(clientSession, new Query(QueryParams.UID.key(), jobUid)).first() > 0;
+    }
+
     @Override
     public void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(job, "job");
@@ -83,40 +93,72 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
+    public QueryResult<Job> insert(long studyId, Job job, QueryOptions options) throws CatalogDBException {
+        long startQuery = startQuery();
 
-        this.dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+        ClientSession clientSession = getClientSession();
+        TransactionBody<WriteResult> txnBody = () -> {
+            long tmpStartTime = startQuery();
+
+            logger.debug("Starting job insert transaction for job id '{}'", job.getId());
+
+            try {
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+
+                long jobUid = insert(clientSession, studyId, job);
+
+                return endWrite(String.valueOf(jobUid), tmpStartTime, 1, 1, null);
+            } catch (CatalogDBException e) {
+                logger.error("Could not create job {}: {}", job.getId(), e.getMessage());
+                clientSession.abortTransaction();
+                return endWrite(job.getId(), tmpStartTime, 1, 0,
+                        Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
+            }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 1) {
+            Query query = new Query()
+                    .append(QueryParams.STUDY_UID.key(), studyId)
+                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
+            return endQuery("Create Job", startQuery, get(query, options));
+        } else {
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
+        }
+    }
+
+    long insert(ClientSession clientSession, long studyId, Job job) throws CatalogDBException {
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), job.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
-        QueryResult<Long> count = jobCollection.count(bson);
+        QueryResult<Long> count = jobCollection.count(clientSession, bson);
 
-        if (count.getResult().get(0) > 0) {
+        if (count.first() > 0) {
             throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
         }
 
-        long jobId = getNewId();
-        job.setUid(jobId);
+        long jobUid = getNewUid(clientSession);
+        job.setUid(jobUid);
         job.setStudyUid(studyId);
         if (StringUtils.isEmpty(job.getUuid())) {
             job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
         }
-
-        Document jobObject = jobConverter.convertToStorageType(job);
-        if (StringUtils.isNotEmpty(job.getCreationDate())) {
-            jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
-        } else {
-            jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
+        if (StringUtils.isEmpty(job.getCreationDate())) {
+            job.setCreationDate(TimeUtils.getTime());
         }
 
+        Document jobObject = jobConverter.convertToStorageType(job);
+        jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
         jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-        jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
 
-        return endQuery("Create Job", startTime, get(jobId, filterOptions(options, FILTER_ROUTE_JOBS)));
+        logger.debug("Inserting job '{}' ({})...", job.getId(), job.getUid());
+        jobCollection.insert(clientSession, jobObject, null);
+        logger.debug("Job '{}' successfully inserted", job.getId());
+        return jobUid;
     }
 
     @Override
@@ -137,11 +179,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public long getStudyId(long jobId) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), jobId);
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID);
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_UID);
         QueryResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {
-            Object id = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
+            Object id = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
             return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
             throw CatalogDBException.uidNotFound("Job", jobId);
@@ -155,8 +197,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
+        return count(null, query);
+    }
+
+    QueryResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query);
-        return jobCollection.count(bsonDocument);
+        return jobCollection.count(clientSession, bsonDocument);
     }
 
 
@@ -201,57 +247,190 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Map<String, Object> jobParameters = getValidatedUpdateParams(parameters);
 
-        if (!jobParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query), new Document("$set", jobParameters), null);
-            return endQuery("Update job", startTime, Arrays.asList(update.getNumTotalResults()));
+        if (parameters.containsKey(QueryParams.ID.key())) {
+            // We need to check that the update is only performed over 1 single job
+            if (count(query).first() != 1) {
+                throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one job");
+            }
         }
-        return endQuery("Update job", startTime, new QueryResult<Long>());
+
+        Document jobParameters = getValidatedUpdateParams(parameters);
+        if (jobParameters.isEmpty()) {
+            throw new CatalogDBException("Nothing to update. Empty 'parameters' object");
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<Job> iterator = iterator(query, options);
+
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            Job job = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody<WriteResult> txnBody = () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    Query tmpQuery = new Query()
+                            .append(QueryParams.STUDY_UID.key(), job.getStudyUid())
+                            .append(QueryParams.UID.key(), job.getUid());
+                    Bson finalQuery = parseQuery(tmpQuery);
+
+                    logger.debug("Job update: query : {}, update: {}",
+                            finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            jobParameters.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    jobCollection.update(parseQuery(query), new Document("$set", jobParameters), null);
+
+                    return endWrite(job.getId(), tmpStartTime, 1, 1, null);
+                } catch (CatalogDBException e) {
+                    logger.error("Error updating job {}({}). {}", job.getId(), job.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
+                    return endWrite(job.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Job {} successfully updated", job.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not update job {}: {}", job.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not update job {}", job.getId());
+                }
+            }
+        }
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "update", (numModified == 0
+                    ? "None of the jobs could be updated"
+                    : "Some of the jobs could not be updated"));
+        }
+
+        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
+    public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
+        WriteResult delete = delete(query);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete job. Uid " + id + " not found.");
+        } else if (delete.getNumModified() == 0) {
+            throw new CatalogDBException("Could not delete job. " + delete.getFailed().get(0).getMessage());
+        }
+        return delete;
     }
 
     @Override
-    public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query), null);
+    public WriteResult delete(Query query) throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<Job> iterator = iterator(query, options);
 
-        if (remove.first().getDeletedCount() == 0) {
-            throw CatalogDBException.deleteError("Job");
+        long startTime = startQuery();
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            Job job = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody<WriteResult> txnBody = () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    logger.info("Deleting job {} ({})", job.getId(), job.getUid());
+
+                    String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+                    Query tmpQuery = new Query()
+                            .append(QueryParams.UID.key(), job.getUid())
+                            .append(QueryParams.STUDY_UID.key(), job.getStudyUid());
+                    // Mark the job as deleted
+                    ObjectMap updateParams = new ObjectMap()
+                            .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                            .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                            .append(QueryParams.ID.key(), job.getId() + deleteSuffix);
+
+                    Bson bsonQuery = parseQuery(tmpQuery);
+                    Document updateDocument = getValidatedUpdateParams(updateParams);
+
+                    logger.debug("Delete job {}: Query: {}, update: {}", job.getId(),
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    UpdateResult jobResult = jobCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
+                            QueryOptions.empty()).first();
+                    if (jobResult.getModifiedCount() == 1) {
+                        logger.info("Job {}({}) deleted", job.getId(), job.getUid());
+                    } else {
+                        logger.error("Job '{}' successfully deleted", job.getId());
+                    }
+
+                    return endWrite(job.getId(), tmpStartTime, 1, 1, null);
+
+                } catch (CatalogDBException e) {
+                    logger.error("Error deleting job {}({}). {}", job.getId(), job.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
+                    return endWrite(job.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Job {} successfully deleted", job.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not delete job {}: {}", job.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not delete job {}", job.getId());
+                }
+            }
         }
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "delete", (numModified == 0
+                    ? "None of the jobs could be deleted"
+                    : "Some of the jobs could not be deleted"));
+        }
+
+        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
     }
 
     @Override
     public QueryResult<Job> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Bson query = parseQuery(new Query(QueryParams.UID.key(), id));
-        Map<String, Object> myParams = getValidatedUpdateParams(parameters);
-
-        if (myParams.isEmpty()) {
-            logger.debug("The map of parameters to update the job is empty. It originally contained {}", parameters.safeToString());
-            throw new CatalogDBException("Nothing to update");
+        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, queryOptions);
+        if (update.getNumModified() != 1) {
+            throw new CatalogDBException("Could not update job id '" + id + "'");
         }
-
-        logger.debug("Update job. Query: {}, Update: {}",
-                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), myParams);
-
-        QueryResult<UpdateResult> update = jobCollection.update(query, new Document("$set", myParams), new QueryOptions("multi", true));
-        if (update.first().getMatchedCount() == 0) {
-            throw new CatalogDBException("Job " + id + " not found.");
-        }
-
-        QueryResult<Job> queryResult = jobCollection.find(query, jobConverter, QueryOptions.empty());
-        return endQuery("Update job", startTime, queryResult);
+        Query query = new Query()
+                .append(QueryParams.UID.key(), id)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(id))
+                .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
+        return endQuery("Update job", startTime, get(query, queryOptions));
     }
 
-    private Map<String, Object> getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
-        Map<String, Object> jobParameters = new HashMap<>();
+    private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
+        Document jobParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
                 QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(),
@@ -587,6 +766,58 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
     }
 
+    void removeFileReferences(ClientSession clientSession, long studyUid, long fileUid, Document file) {
+        UpdateDocument document = new UpdateDocument();
+
+        String prefix = QueryParams.ATTRIBUTES.key() + "." + Constants.PRIVATE_OPENCGA_ATTRIBUTES + ".";
+
+        // INPUT
+        Document query = new Document()
+                .append(PRIVATE_STUDY_UID, studyUid)
+                .append(QueryParams.INPUT_UID.key(), fileUid);
+        document.getPullAll().put(QueryParams.INPUT.key(),
+                Collections.singletonList(new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid)));
+        document.getPush().put(prefix + Constants.JOB_DELETED_INPUT_FILES, file);
+        Document updateDocument = document.toFinalUpdateDocument();
+
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.INPUT.key(),
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        QueryResult<UpdateResult> result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+
+        // OUTPUT
+        query = new Document()
+                .append(PRIVATE_STUDY_UID, studyUid)
+                .append(QueryParams.OUTPUT_UID.key(), fileUid);
+        document = new UpdateDocument();
+        document.getPullAll().put(QueryParams.OUTPUT.key(),
+                Collections.singletonList(new Document(FileDBAdaptor.QueryParams.UID.key(), fileUid)));
+        document.getPush().put(prefix + Constants.JOB_DELETED_OUTPUT_FILES, file);
+        updateDocument = document.toFinalUpdateDocument();
+
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUTPUT.key(),
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+
+        // OUT DIR
+        query = new Document()
+                .append(PRIVATE_STUDY_UID, studyUid)
+                .append(QueryParams.OUT_DIR_UID.key(), fileUid);
+        document = new UpdateDocument();
+        document.getSet().put(QueryParams.OUT_DIR.key(), new Document(FileDBAdaptor.QueryParams.UID.key(), -1));
+        document.getSet().put(prefix + Constants.JOB_DELETED_OUTPUT_DIRECTORY, file);
+        updateDocument = document.toFinalUpdateDocument();
+
+        logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.OUT_DIR.key(),
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+    }
+
     private Bson parseQuery(Query query) throws CatalogDBException {
         return parseQuery(query, null);
     }
@@ -613,7 +844,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);

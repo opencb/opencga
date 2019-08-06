@@ -36,8 +36,7 @@ public class Sample extends Annotable {
     private String source;
     private SampleProcessing processing;
     private SampleCollection collection;
-    @Deprecated
-    private Individual individual;
+    private String individualId;
 
     private int release;
     private int version;
@@ -57,12 +56,12 @@ public class Sample extends Annotable {
     public Sample() {
     }
 
-    public Sample(String id, String source, Individual individual, String description, int release) {
-        this(id, source, individual, null, null, release, 1, description, "", false, new LinkedList<>(), new ArrayList<>(),
+    public Sample(String id, String source, String individualId, String description, int release) {
+        this(id, source, individualId, null, null, release, 1, description, "", false, new LinkedList<>(), new ArrayList<>(),
                 new HashMap<>());
     }
 
-    public Sample(String id, String source, Individual individual, SampleProcessing processing, SampleCollection collection, int release,
+    public Sample(String id, String source, String individualId, SampleProcessing processing, SampleCollection collection, int release,
                   int version, String description, String type, boolean somatic, List<Phenotype> phenotypes,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
@@ -80,7 +79,7 @@ public class Sample extends Annotable {
         this.annotationSets = annotationSets;
         this.attributes = attributes;
         this.stats = new HashMap<>();
-        this.individual = individual;
+        this.individualId = individualId;
     }
 
     @Override
@@ -125,7 +124,7 @@ public class Sample extends Annotable {
                 .append(source, sample.source)
                 .append(processing, sample.processing)
                 .append(collection, sample.collection)
-                .append(individual, sample.individual)
+                .append(individualId, sample.individualId)
                 .append(creationDate, sample.creationDate)
                 .append(modificationDate, sample.modificationDate)
                 .append(status, sample.status)
@@ -146,7 +145,7 @@ public class Sample extends Annotable {
                 .append(source)
                 .append(processing)
                 .append(collection)
-                .append(individual)
+                .append(individualId)
                 .append(release)
                 .append(version)
                 .append(creationDate)
@@ -229,12 +228,12 @@ public class Sample extends Annotable {
         return this;
     }
 
-    public Individual getIndividual() {
-        return individual;
+    public String getIndividualId() {
+        return individualId;
     }
 
-    public Sample setIndividual(Individual individual) {
-        this.individual = individual;
+    public Sample setIndividualId(String individualId) {
+        this.individualId = individualId;
         return this;
     }
 

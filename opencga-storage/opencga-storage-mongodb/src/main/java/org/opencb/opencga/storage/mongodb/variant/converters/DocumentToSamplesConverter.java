@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
@@ -112,13 +113,13 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
      * Create a converter from a Map of samples to Document entities.
      **/
     DocumentToSamplesConverter() {
-        studyMetadatas = new HashMap<>();
-        __studySamplesId = new HashMap<>();
-        __samplesPosition = new HashMap<>();
-        __sampleNames = new HashMap<>();
-        __sampleIds = new HashMap<>();
-        __samplesInFile = new HashMap<>();
-        studyDefaultGenotypeSet = new HashMap<>();
+        studyMetadatas = new ConcurrentHashMap<>();
+        __studySamplesId = new ConcurrentHashMap<>();
+        __samplesPosition = new ConcurrentHashMap<>();
+        __sampleNames = new ConcurrentHashMap<>();
+        __sampleIds = new ConcurrentHashMap<>();
+        __samplesInFile = new ConcurrentHashMap<>();
+        studyDefaultGenotypeSet = new ConcurrentHashMap<>();
         includeSamples = Collections.emptyMap();
         metadataManager = null;
         unknownGenotype = UNKNOWN_GENOTYPE;
@@ -587,7 +588,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public void addStudyMetadata(StudyMetadata studyMetadata) {
         this.studyMetadatas.put(studyMetadata.getId(), studyMetadata);
-        this.__studySamplesId.put(studyMetadata.getId(), null);
+        this.__studySamplesId.remove(studyMetadata.getId());
 
         Set defGenotypeSet = studyMetadata.getAttributes().get(DEFAULT_GENOTYPE.key(), Set.class);
         if (defGenotypeSet == null) {

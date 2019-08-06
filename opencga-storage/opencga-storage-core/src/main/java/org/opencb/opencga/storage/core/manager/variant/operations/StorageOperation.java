@@ -183,14 +183,14 @@ public abstract class StorageOperation {
             Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
-            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, fileStatusFilter, -1,
+            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,
                     sessionId);
 
             // TODO: Check whether we want to store the logs as well. At this point, we are also storing them.
             // Do not execute checksum for log files! They may not be closed yet
             fileStatusFilter = uri -> uri.getPath().endsWith(OUT_LOG_EXTENSION) || uri.getPath().endsWith(ERR_LOG_EXTENSION);
             files.addAll(fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, false,
-                    fileStatusFilter, -1, sessionId));
+                    fileStatusFilter, sessionId));
 
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
@@ -373,7 +373,7 @@ public abstract class StorageOperation {
     }
 
     private static boolean isVcfFormat(File.Format format) {
-        return format.equals(File.Format.VCF) || format.equals(File.Format.BCF);
+        return format.equals(File.Format.VCF) || format.equals(File.Format.GVCF) || format.equals(File.Format.BCF);
     }
 
 }

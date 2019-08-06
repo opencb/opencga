@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -26,15 +27,13 @@ import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * Created by imedina on 03/06/16.
@@ -241,12 +240,12 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 samplesCommandOptions.groupByCommandOptions.fields, params);
     }
 
-    private QueryResponse<Individual> getIndividuals() throws CatalogException, IOException {
+    private QueryResponse<Individual> getIndividuals() throws IOException {
         logger.debug("Getting individuals of sample(s)");
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.individualCommandOptions.study));
-        params.put("lazy", false); // Obtain the whole individual entity
+        params.put("includeIndividual", true); // Obtain the whole individual entity
         params.putIfNotNull(QueryOptions.INCLUDE, samplesCommandOptions.individualCommandOptions.dataModelOptions.include);
         params.putIfNotNull(QueryOptions.EXCLUDE, samplesCommandOptions.individualCommandOptions.dataModelOptions.exclude);
 
@@ -259,10 +258,15 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         }
 
         // We get the individuals from the sample response
-        List<Individual> individualList = sampleQueryResponse.allResults()
-                .stream()
-                .map(Sample::getIndividual)
-                .collect(Collectors.toCollection(LinkedList::new));
+        List<Individual> individualList = new ArrayList<>();
+        for (Sample sample : sampleQueryResponse.allResults()) {
+            Map<String, Object> attributes = sample.getAttributes();
+            ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
+            if (attributes != null && attributes.containsKey("OPENCGA_INDIVIDUAL")) {
+                String individualStr = objectMapper.writeValueAsString(attributes.get("OPENCGA_INDIVIDUAL"));
+                individualList.add(objectMapper.readValue(individualStr, Individual.class));
+            }
+        }
 
         return new QueryResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarning(),
                 sampleQueryResponse.getError(), sampleQueryResponse.getQueryOptions(),

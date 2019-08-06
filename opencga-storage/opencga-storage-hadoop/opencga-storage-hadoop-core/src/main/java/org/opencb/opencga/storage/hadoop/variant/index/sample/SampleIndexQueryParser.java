@@ -127,6 +127,7 @@ public class SampleIndexQueryParser {
         List<String> validGenotypes = allGenotypes.stream().filter(SampleIndexDBLoader::validGenotype).collect(Collectors.toList());
 
         Set<String> mendelianErrorSet = Collections.emptySet();
+        boolean onlyDeNovo = false;
         Map<String, boolean[]> fatherFilterMap = new HashMap<>();
         Map<String, boolean[]> motherFilterMap = new HashMap<>();
 
@@ -174,6 +175,9 @@ public class SampleIndexQueryParser {
             }
 
             boolean covered = true;
+            if (isValidParam(query, FORMAT)) {
+                covered = false;
+            }
             for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
                 String sampleName = entry.getKey();
                 if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
@@ -225,10 +229,15 @@ public class SampleIndexQueryParser {
             queryOperation = VariantQueryUtils.checkOperator(samplesStr);
             List<String> samples = VariantQueryUtils.splitValue(samplesStr, queryOperation);
             samples.stream().filter(s -> !isNegated(s)).forEach(sample -> samplesMap.put(sample, validGenotypes));
-            query.remove(SAMPLE.key());
+
+            if (!isValidParam(query, FORMAT)) {
+                // Do not remove FORMAT
+                query.remove(SAMPLE.key());
+            }
             //} else if (isValidParam(query, FILE)) {
             // TODO: Add FILEs filter
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
+            onlyDeNovo = false;
             Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_MENDELIAN_ERROR.key()));
             mendelianErrorSet = new HashSet<>(mendelianError.getValue());
             queryOperation = mendelianError.getKey();
@@ -238,12 +247,13 @@ public class SampleIndexQueryParser {
             }
             query.remove(SAMPLE_MENDELIAN_ERROR.key());
         } else if (isValidParam(query, SAMPLE_DE_NOVO)) {
+            onlyDeNovo = true;
             Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_DE_NOVO.key()));
             mendelianErrorSet = new HashSet<>(mendelianError.getValue());
             queryOperation = mendelianError.getKey();
             for (String s : mendelianErrorSet) {
-                // Return any valid genotype
-                samplesMap.put(s, validGenotypes);
+                // Return any genotype
+                samplesMap.put(s, Collections.emptyList());
             }
             query.remove(SAMPLE_DE_NOVO.key());
         } else {
@@ -293,7 +303,7 @@ public class SampleIndexQueryParser {
         }
 
         return new SampleIndexQuery(regions, variantTypes, study, samplesMap, fatherFilterMap, motherFilterMap, fileIndexMap,
-                annotationMask, mendelianErrorSet, queryOperation);
+                annotationMask, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {

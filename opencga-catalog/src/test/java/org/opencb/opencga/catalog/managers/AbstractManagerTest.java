@@ -230,4 +230,30 @@ public class AbstractManagerTest extends GenericTest {
         return Paths.get(fileTestName).toFile();
     }
 
+    public static String createRandomString(int lines) {
+        StringBuilder stringBuilder = new StringBuilder(lines);
+        for (int i = 0; i < 100; i++) {
+            stringBuilder.append(i + ", ");
+        }
+        for (int i = 0; i < lines; i++) {
+            stringBuilder.append(StringUtils.randomString(500));
+            stringBuilder.append("\n");
+        }
+        return stringBuilder.toString();
+    }
+
+    public static String getDummyVCFContent() {
+        return "##fileformat=VCFv4.0\n" +
+                "##fileDate=20090805\n" +
+                "##source=myImputationProgramV3.1\n" +
+                "##reference=1000GenomesPilot-NCBI36\n" +
+                "##phasing=partial\n" +
+                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNA00001\tNA00002\tNA00003\n" +
+                "20\t14370\trs6054257\tG\tA\t29\tPASS\tNS=3;DP=14;AF=0.5;DB;H2\tGT:GQ:DP:HQ\t0|0:48:1:51,51\t1|0:48:8:51,51\t1/1:43:5:.,.\n" +
+                "20\t17330\t.\tT\tA\t3\tq10\tNS=3;DP=11;AF=0.017\tGT:GQ:DP:HQ\t0|0:49:3:58,50\t0|1:3:5:65,3\t0/0:41:3\n" +
+                "20\t1110696\trs6040355\tA\tG,T\t67\tPASS\tNS=2;DP=10;AF=0.333,0.667;AA=T;DB\tGT:GQ:DP:HQ\t1|2:21:6:23,27\t2|1:2:0:18,2\t2/2:35:4\n" +
+                "20\t1230237\t.\tT\t.\t47\tPASS\tNS=3;DP=13;AA=T\tGT:GQ:DP:HQ\t0|0:54:7:56,60\t0|0:48:4:51,51\t0/0:61:2\n" +
+                "20\t1234567\tmicrosat1\tGTCT\tG,GTACT\t50\tPASS\tNS=3;DP=9;AA=G\tGT:GQ:DP\t0/1:35:4\t0/2:17:2\t1/1:40:3";
+    }
+
 }

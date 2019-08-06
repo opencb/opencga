@@ -40,4 +40,15 @@ public class CatalogException extends Exception {
     public static CatalogException notFound(String entity, List<String> entries) {
         return new CatalogException("Missing " + entity + ": " + StringUtils.join(entries, ", ") + " not found.");
     }
+
+    public static CatalogException appendMessage(CatalogException e, String message) {
+        String fullMessage = message + e.getMessage();
+        if (e instanceof CatalogAuthorizationException) {
+            return new CatalogAuthorizationException(fullMessage, e.getCause());
+        } else if (e instanceof CatalogAuthenticationException) {
+            return new CatalogAuthenticationException(fullMessage, e.getCause());
+        } else {
+            return new CatalogException(fullMessage, e.getCause());
+        }
+    }
 }

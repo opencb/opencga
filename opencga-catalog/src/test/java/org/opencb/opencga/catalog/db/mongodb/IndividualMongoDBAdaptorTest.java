@@ -46,7 +46,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testCreateIndividual() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual(), null);
+        catalogIndividualDBAdaptor.insert(studyId, new Individual().setId("individual"), null);
     }
 
     @Test
@@ -153,11 +153,12 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testModifyIndividualBadFatherId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", IndividualProperty.Sex
-                .UNKNOWN, "", null, 1, Collections.emptyList(), null), null).first().getUid();
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", IndividualProperty.Sex.UNKNOWN, "",
+                null, 1, Collections.emptyList(), null), null).first().getUid();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("fatherId", 4000), QueryOptions.empty());
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap(IndividualDBAdaptor.UpdateParams.FATHER_ID.key(), 4000),
+                QueryOptions.empty());
     }
 
     @Test
@@ -194,9 +195,9 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new Sample().setId("sample2").setStatus(new Status()), QueryOptions.empty()).first();
 
         Individual individual = new Individual()
-                .setName("in2")
+                .setId("in2")
                 .setStatus(new Status())
-                .setSamples(Arrays.asList(sample1, sample1, sample2, new Sample().setUid(-1).setStatus(new Status())));
+                .setSamples(Arrays.asList(sample1, sample1, sample2));
         Individual individualStored = catalogIndividualDBAdaptor.insert(studyId, individual, null).first();
         assertEquals(2, individualStored.getSamples().size());
         assertTrue(individualStored.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(
@@ -289,7 +290,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetStudyIdByIndividualId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual().setStatus(new Status()), null).first().getUid();
+        long individualId = catalogIndividualDBAdaptor.insert(studyId, new Individual().setId("individual").setStatus(new Status()), null).first().getUid();
         long studyIdByIndividualId = catalogIndividualDBAdaptor.getStudyId(individualId);
         assertEquals(studyId, studyIdByIndividualId);
     }

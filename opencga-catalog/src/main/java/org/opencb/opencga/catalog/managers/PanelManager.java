@@ -182,7 +182,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Check all the panel fields
         ParamUtils.checkAlias(panel.getId(), "id");
         panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
-        panel.setRelease(studyManager.getCurrentRelease(study, userId));
+        panel.setRelease(studyManager.getCurrentRelease(study));
         panel.setVersion(1);
         panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
         panel.setCreationDate(TimeUtils.getTime());
@@ -257,7 +257,7 @@ public class PanelManager extends ResourceManager<Panel> {
             throws CatalogException {
         diseasePanel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
         diseasePanel.setCreationDate(TimeUtils.getTime());
-        diseasePanel.setRelease(studyManager.getCurrentRelease(study, userId));
+        diseasePanel.setRelease(studyManager.getCurrentRelease(study));
         diseasePanel.setVersion(1);
 
         // Install the current diseasePanel
@@ -357,18 +357,24 @@ public class PanelManager extends ResourceManager<Panel> {
 
                         extractCommonInformationFromPanelApp(panelAppRegion, region);
 
-                        String id = (String) panelAppRegion.get("chromosome");
-
                         List<Integer> coordinateList = null;
                         if (ListUtils.isNotEmpty((Collection<?>) panelAppRegion.get("grch38_coordinates"))) {
                             coordinateList = (List<Integer>) panelAppRegion.get("grch38_coordinates");
                         } else if (ListUtils.isNotEmpty((Collection<?>) panelAppRegion.get("grch37_coordinates"))) {
                             coordinateList = (List<Integer>) panelAppRegion.get("grch37_coordinates");
                         }
-                        if (coordinateList != null && coordinateList.size() == 2) {
-                            id = id + ":" + coordinateList.get(0) + "-" + coordinateList.get(1);
+
+                        String id;
+                        if (panelAppRegion.get("entity_name") != null
+                                && StringUtils.isNotEmpty(String.valueOf(panelAppRegion.get("entity_name")))) {
+                            id = String.valueOf(panelAppRegion.get("entity_name"));
                         } else {
-                            logger.warn("Could not read region coordinates");
+                            id = (String) panelAppRegion.get("chromosome");
+                            if (coordinateList != null && coordinateList.size() == 2) {
+                                id = id + ":" + coordinateList.get(0) + "-" + coordinateList.get(1);
+                            } else {
+                                logger.warn("Could not read region coordinates");
+                            }
                         }
 
                         VariantType variantType = null;
@@ -561,7 +567,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         if (options.getBoolean(Constants.INCREMENT_VERSION)) {
             // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study, userId));
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         QueryResult<Panel> queryResult = panelDBAdaptor.update(panel.getUid(), parameters, options);
@@ -696,15 +702,8 @@ public class PanelManager extends ResourceManager<Panel> {
             return writeResult;
         }
 
-        long numMatches = 0;
-        long numModified = 0;
-        List<WriteResult.Fail> failedList = new ArrayList<>();
-
-        String suffixName = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-
         while (iterator.hasNext()) {
             Panel panel = iterator.next();
-            numMatches += 1;
 
             try {
                 if (checkPermissions) {
@@ -716,32 +715,14 @@ public class PanelManager extends ResourceManager<Panel> {
                 // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
 
                 // Delete the panel
-                Query updateQuery = new Query()
-                        .append(PanelDBAdaptor.QueryParams.UID.key(), panel.getUid())
-                        .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                        .append(Constants.ALL_VERSIONS, true);
-                ObjectMap updateParams = new ObjectMap()
-                        .append(PanelDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED)
-                        .append(PanelDBAdaptor.QueryParams.ID.key(), panel.getName() + suffixName);
-                QueryResult<Long> update = panelDBAdaptor.update(updateQuery, updateParams, QueryOptions.empty());
-                if (update.first() > 0) {
-                    numModified += 1;
-                    auditManager.recordDeletion(AuditRecord.Resource.panel, panel.getUid(), userId, null, updateParams, null, null);
-                } else {
-                    failedList.add(new WriteResult.Fail(panel.getId(), "Unknown reason"));
-                }
+                writeResult.concat(panelDBAdaptor.delete(panel.getUid()));
             } catch (Exception e) {
-                failedList.add(new WriteResult.Fail(panel.getId(), e.getMessage()));
+                writeResult.getFailed().add(new WriteResult.Fail(panel.getId(), e.getMessage()));
                 logger.debug("Cannot delete panel {}: {}", panel.getId(), e.getMessage(), e);
             }
         }
 
-        writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
-        writeResult.setNumMatches(numMatches);
-        writeResult.setNumModified(numModified);
-        writeResult.setFailed(failedList);
-
-        if (!failedList.isEmpty()) {
+        if (!writeResult.getFailed().isEmpty()) {
             writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are panels that could not be deleted")));
         }
 
@@ -871,14 +852,8 @@ public class PanelManager extends ResourceManager<Panel> {
 
         switch (panelAclParams.getAction()) {
             case SET:
-                List<String> allPanelPermissions = EnumSet.allOf(PanelAclEntry.PanelPermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
-                return authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream()
-                                .map(Panel::getUid)
-                                .collect(Collectors.toList()), members, permissions,
-                        allPanelPermissions, Entity.PANEL);
+                return authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream().map(Panel::getUid)
+                                .collect(Collectors.toList()), members, permissions, Entity.PANEL);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), panelQueryResult.getResult().stream()
                         .map(Panel::getUid)

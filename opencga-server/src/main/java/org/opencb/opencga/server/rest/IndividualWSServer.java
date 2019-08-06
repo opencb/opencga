@@ -795,7 +795,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (samples != null) {
                 sampleList = new ArrayList<>(samples.size());
                 for (SampleWSServer.CreateSamplePOST sample : samples) {
-                    sampleList.add(sample.toSample(studyStr, studyManager, sessionId));
+                    sampleList.add(sample.toSample());
                 }
             }
 

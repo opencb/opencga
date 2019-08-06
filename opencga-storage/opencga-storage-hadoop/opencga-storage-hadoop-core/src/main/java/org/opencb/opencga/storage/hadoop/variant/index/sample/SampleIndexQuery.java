@@ -36,17 +36,18 @@ public class SampleIndexQuery {
     private final Map<String, byte[]> fileFilterMap; // byte[] = {mask , index}
     private final byte annotationIndexMask;
     private final Set<String> mendelianErrorSet;
+    private final boolean onlyDeNovo;
     private final VariantQueryUtils.QueryOperation queryOperation;
 
     public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
         this(regions, null, study, samplesMap, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), EMPTY_MASK,
-                Collections.emptySet(), queryOperation);
+                Collections.emptySet(), false, queryOperation);
     }
 
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
                             Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, byte[]> fileFilterMap, byte annotationIndexMask, Set<String> mendelianErrorSet,
-                            QueryOperation queryOperation) {
+                            boolean onlyDeNovo, QueryOperation queryOperation) {
         this.regions = regions;
         this.variantTypes = variantTypes;
         this.study = study;
@@ -56,6 +57,7 @@ public class SampleIndexQuery {
         this.fileFilterMap = fileFilterMap;
         this.annotationIndexMask = annotationIndexMask;
         this.mendelianErrorSet = mendelianErrorSet;
+        this.onlyDeNovo = onlyDeNovo;
         this.queryOperation = queryOperation;
     }
 
@@ -115,6 +117,9 @@ public class SampleIndexQuery {
         return queryOperation;
     }
 
+    public boolean isOnlyDeNovo() {
+        return onlyDeNovo;
+    }
     /**
      * Create a SingleSampleIndexQuery.
      *
@@ -160,6 +165,7 @@ public class SampleIndexQuery {
                     query.fileFilterMap,
                     query.annotationIndexMask,
                     query.mendelianErrorSet,
+                    query.onlyDeNovo,
                     query.queryOperation);
             this.sample = sample;
             this.gts = gts;

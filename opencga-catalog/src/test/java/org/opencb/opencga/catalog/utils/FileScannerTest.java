@@ -32,7 +32,10 @@ import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.*;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -102,10 +105,12 @@ public class FileScannerTest {
 
     @Test
     public void testDeleteExisting() throws IOException, CatalogException {
+        QueryResult<File> queryResult;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
+        }
 
-        QueryResult<File> queryResult = catalogManager.getFileManager().upload(study.getFqn(),
-                CatalogManagerTest.createDebugFile().toURI(), new File().setPath(folder.getPath() + "file1.txt"), false,
-                false, sessionIdUser);
         File file = queryResult.first();
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
@@ -125,9 +130,11 @@ public class FileScannerTest {
 
     @Test
     public void testDeleteTrashed() throws IOException, CatalogException {
-        QueryResult<File> queryResult = catalogManager.getFileManager().upload(study.getFqn(),
-                CatalogManagerTest.createDebugFile().toURI(), new File().setPath(folder.getPath() + "file1.txt"), false,
-                false, sessionIdUser);
+        QueryResult<File> queryResult;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
+        }
         File file = queryResult.first();
         catalogManager.getFileManager().delete(study.getFqn(),
                 new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), new QueryOptions(), sessionIdUser);
@@ -144,10 +151,15 @@ public class FileScannerTest {
     @Test
     public void testReplaceExisting() throws IOException, CatalogException {
         // Create and register file1.txt and s/file2.txt
-        File file = catalogManager.getFileManager().upload(study.getFqn(), CatalogManagerTest.createDebugFile().toURI(),
-                new File().setPath(folder.getPath() + "file1.txt"), false, false, true, true, sessionIdUser).first();
-        catalogManager.getFileManager().upload(study.getFqn(), CatalogManagerTest.createDebugFile().toURI(),
-                new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, true, sessionIdUser).first();
+        File file;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, true, true, sessionIdUser).first();
+        }
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, sessionIdUser).first();
+        }
 
         // Create same file structure, and replace
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
@@ -182,7 +194,7 @@ public class FileScannerTest {
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        List<File> files = fileScanner.registerFiles(this.folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionIdUser);
         Predicate<URI> uriPredicate = uri -> uri.getPath().endsWith("file1.txt") || uri.getPath().endsWith("file2.txt");
-        List<File> files = fileScanner.scan(this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, -1, sessionIdUser);
+        List<File> files = fileScanner.scan(this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, sessionIdUser);
 
         assertEquals(2, files.size());
         for (File file : files) {

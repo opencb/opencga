@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.managers;
 import com.mongodb.BasicDBObject;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -28,6 +30,7 @@ import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
@@ -383,7 +386,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")),
                 catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser)
-                .getResult().stream().map(Study::getId).collect(Collectors.toSet()));
+                        .getResult().stream().map(Study::getId).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")),
                 catalogManager.getStudyManager().get(new Query(), null, sessionIdUser).getResult().stream().map(Study::getId)
                         .collect(Collectors.toSet()));
@@ -472,7 +475,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         QueryResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", Study.Type
-        .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
+                .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         try {
             studyManager.resolveIds(Collections.emptyList(), "*");
             fail("This should throw an exception. No studies should be found for user anonymous");
@@ -1055,7 +1058,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     /*                    */
 
     @Test
-    public void testDeleteCohort() throws CatalogException, IOException {
+    public void testDeleteCohort() throws CatalogException {
         String studyId = "user@1000G:phase1";
 
         Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
@@ -1122,15 +1125,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
         String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
         String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
-                        .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
+                .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
 
         catalogManager.getIndividualManager().update(studyFqn, individualId1, new ObjectMap()
@@ -1183,7 +1186,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUpdateIndividualInfo() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         QueryResult<Individual> individualQueryResult = individualManager.create(studyFqn, new Individual().setId("Test")
-                        .setDateOfBirth("19870214"), QueryOptions.empty(), sessionIdUser);
+                .setDateOfBirth("19870214"), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, individualQueryResult.getNumResults());
         assertEquals("Test", individualQueryResult.first().getId());
         assertEquals("19870214", individualQueryResult.first().getDateOfBirth());
@@ -1216,7 +1219,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testUpdateIndividuaParents() throws CatalogException {
+    public void testUpdateIndividualParents() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser);
         individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
@@ -1235,10 +1238,60 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testDeleteIndividualWithFamilies() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        Individual child = individualManager.create(studyFqn, new Individual()
+                        .setId("child")
+                        .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype1")))
+                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder1"))),
+                QueryOptions.empty(), sessionIdUser).first();
+        Individual father = individualManager.create(studyFqn, new Individual()
+                        .setId("father")
+                        .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype2")))
+                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder2"))),
+                QueryOptions.empty(), sessionIdUser).first();
+        Individual mother = individualManager.create(studyFqn, new Individual()
+                        .setId("mother")
+                        .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype3")))
+                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder3"))),
+                QueryOptions.empty(), sessionIdUser).first();
+
+        FamilyManager familyManager = catalogManager.getFamilyManager();
+        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Arrays.asList(father, child)), QueryOptions.empty(), sessionIdUser);
+        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Arrays.asList(father, mother, child)), QueryOptions.empty(), sessionIdUser);
+
+        WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(), sessionIdUser);
+        assertEquals(0, writeResult.getNumModified());
+        assertTrue(writeResult.getFailed().get(0).getMessage().contains("found in the families"));
+
+        writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(Constants.FORCE, true), sessionIdUser);
+        assertEquals(1, writeResult.getNumModified());
+
+        Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), sessionIdUser).first();
+        Family family2 = familyManager.get(studyFqn, "family2", QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(1, family1.getMembers().size());
+        assertEquals(0, family1.getMembers().stream().filter(i -> i.getId().equals("child")).count());
+        assertEquals(1, family1.getDisorders().size());
+        assertEquals(0, family1.getDisorders().stream().filter(d -> d.getId().equals("disorder1")).count());
+        assertEquals(1, family1.getPhenotypes().size());
+        assertEquals(0, family1.getPhenotypes().stream().filter(d -> d.getId().equals("phenotype1")).count());
+
+        assertEquals(2, family2.getMembers().size());
+        assertEquals(0, family2.getMembers().stream().filter(i -> i.getId().equals("child")).count());
+        assertEquals(2, family2.getDisorders().size());
+        assertEquals(0, family2.getDisorders().stream().filter(d -> d.getId().equals("disorder1")).count());
+        assertEquals(2, family2.getPhenotypes().size());
+        assertEquals(0, family2.getPhenotypes().stream().filter(d -> d.getId().equals("phenotype1")).count());
+
+        System.out.println(writeResult.getDbTime());
+    }
+
+    @Test
     public void testGetIndividualWithSamples() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         individualManager.create(studyFqn, new Individual().setId("individual1")
-                .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"), new Sample().setId("sample3"))),
+                        .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"), new Sample().setId("sample3"))),
                 QueryOptions.empty(), sessionIdUser);
         individualManager.create(studyFqn, new Individual().setId("individual2")
                         .setSamples(Arrays.asList(new Sample().setId("sample4"), new Sample().setId("sample5"), new Sample().setId("sample6"))),

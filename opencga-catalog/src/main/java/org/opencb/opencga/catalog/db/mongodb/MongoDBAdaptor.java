@@ -16,16 +16,19 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.*;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -47,7 +50,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
-    static final String PRIVATE_STUDY_ID = "studyUid";
+    static final String PRIVATE_STUDY_UID = "studyUid";
     private static final String VERSION = "version";
 
     static final String FILTER_ROUTE_PROJECTS = "projects.";
@@ -80,11 +83,23 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         super(logger);
     }
 
-    protected long getNewId() {
+    protected ClientSession getClientSession() {
+        return dbAdaptorFactory.getMongoDataStore().startSession();
+    }
+
+    protected WriteResult commitTransaction(ClientSession clientSession, TransactionBody<WriteResult> txnBody) {
+        return dbAdaptorFactory.getMongoDataStore().commitSession(clientSession, txnBody);
+    }
+
+    protected long getNewUid() {
 //        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
+    protected long getNewUid(ClientSession clientSession) {
+//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
+        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId(clientSession);
+    }
 
     @Deprecated
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
@@ -439,11 +454,75 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
-                .append(PRIVATE_STUDY_ID, studyId)
+                .append(PRIVATE_STUDY_UID, studyId)
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
         collection.update(query, update, new QueryOptions("multi", true));
+    }
+
+    protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, Document document)
+            throws CatalogDBException {
+        Document updateOldVersion = new Document();
+
+        // Current release number
+        int release;
+        List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
+        if (supportedReleases.size() > 1) {
+            release = supportedReleases.get(supportedReleases.size() - 1);
+
+            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+            // current release number out
+            supportedReleases.remove(supportedReleases.size() - 1);
+        } else {
+            release = supportedReleases.get(0);
+
+            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+            // last version of the release
+            updateOldVersion.put(LAST_OF_RELEASE, false);
+        }
+        updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
+        updateOldVersion.put(LAST_OF_VERSION, false);
+
+        // Perform the update on the previous version
+        Document queryDocument = new Document()
+                .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
+                .append(VERSION, document.getInteger(VERSION))
+                .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
+
+        logger.debug("Updating previous version: query : {}, update: {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> updateResult = dbCollection.update(clientSession, queryDocument,
+                new Document("$set", updateOldVersion), null);
+
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Internal error: Could not update previous version");
+        }
+
+        // We update the information for the new version of the document
+        document.put(LAST_OF_RELEASE, true);
+        document.put(LAST_OF_VERSION, true);
+        document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+        document.put(VERSION, document.getInteger(VERSION) + 1);
+
+        logger.debug("Inserting new document version: document: {}",
+                document.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        // Insert the new version document
+        dbCollection.insert(clientSession, document, QueryOptions.empty());
+    }
+
+    protected Document getStudyDocument(ClientSession clientSession, Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(PRIVATE_STUDY_UID));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+                QueryOptions.empty());
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(PRIVATE_STUDY_UID) + " not found");
+        }
+        return queryResult.first();
     }
 
     public class UpdateDocument {
@@ -453,12 +532,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         private Document pull;
         private Document pullAll;
 
+        private ObjectMap attributes;
+
         public UpdateDocument() {
             this.set = new Document();
             this.addToSet = new Document();
             this.push = new Document();
             this.pull = new Document();
             this.pullAll = new Document();
+            this.attributes = new ObjectMap();
         }
 
         public Document toFinalUpdateDocument() {
@@ -542,6 +624,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         public UpdateDocument setPullAll(Document pullAll) {
             this.pullAll = pullAll;
+            return this;
+        }
+
+        public ObjectMap getAttributes() {
+            return attributes;
+        }
+
+        public UpdateDocument setAttributes(ObjectMap attributes) {
+            this.attributes = attributes;
             return this;
         }
     }

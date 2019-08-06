@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -96,11 +97,11 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<T> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    void delete(long id) throws CatalogDBException;
+    WriteResult delete(long id) throws CatalogDBException;
 
-    void delete(Query query) throws CatalogDBException;
+    WriteResult delete(Query query) throws CatalogDBException;
 
     default QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");

@@ -19,17 +19,15 @@ package org.opencb.opencga.server.rest;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
-import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
@@ -99,27 +97,27 @@ public class SampleWSServerTest {
 //        queryResult = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0);
     }
 
-    @Test
-    public void updateGet() throws IOException {
-        String json = webTarget.path("samples").path(Long.toString(s1)).path("update")
-                .queryParam("individualId", in1).queryParam("sid", sessionId).request().get(String.class);
-
-        Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(in1, sample.getIndividual().getUid());
-    }
-
-    @Test
-    public void updatePost() throws IOException {
-        SampleWSServer.UpdateSamplePOST entity = new SampleWSServer.UpdateSamplePOST();
-        entity.individualId = Long.toString(in1);
-        entity.attributes = Collections.singletonMap("key", "value");
-        String json = webTarget.path("samples").path(Long.toString(s1)).path("update").queryParam("sid", sessionId)
-                .request().post(Entity.json(entity), String.class);
-
-        Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(entity.individualId, sample.getIndividual().getUid());
-        assertEquals(entity.attributes, sample.getAttributes());
-    }
+//    @Test
+//    public void updateGet() throws IOException {
+//        String json = webTarget.path("samples").path(Long.toString(s1)).path("update")
+//                .queryParam("individualId", in1).queryParam("sid", sessionId).request().get(String.class);
+//
+//        Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
+//        assertEquals(in1, sample.getIndividual().getUid());
+//    }
+//
+//    @Test
+//    public void updatePost() throws IOException {
+//        SampleWSServer.UpdateSamplePOST entity = new SampleWSServer.UpdateSamplePOST();
+//        entity.individualId = Long.toString(in1);
+//        entity.attributes = Collections.singletonMap("key", "value");
+//        String json = webTarget.path("samples").path(Long.toString(s1)).path("update").queryParam("sid", sessionId)
+//                .request().post(Entity.json(entity), String.class);
+//
+//        Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
+//        assertEquals(entity.individualId, sample.getIndividual().getUid());
+//        assertEquals(entity.attributes, sample.getAttributes());
+//    }
 
     /*       COHORT TESTS !!        */
     @Test

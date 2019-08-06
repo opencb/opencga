@@ -16,13 +16,12 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoWriteException;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -31,6 +30,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
@@ -77,69 +78,119 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public void insert(Panel panel, boolean overwrite) throws CatalogDBException {
-        //new Panel Id
-        long newPanelId = getNewId();
-        panel.setUid(newPanelId);
-        panel.setStudyUid(-1);
+        ClientSession clientSession = getClientSession();
+        TransactionBody<WriteResult> txnBody = () -> {
+            long tmpStartTime = startQuery();
 
-        Document panelDocument = panelConverter.convertToStorageType(panel);
-        // Versioning private parameters
-        panelDocument.put(RELEASE_FROM_VERSION, Arrays.asList(panel.getRelease()));
-        panelDocument.put(LAST_OF_VERSION, true);
-        panelDocument.put(LAST_OF_RELEASE, true);
+            logger.debug("Starting insert transaction of global panel id '{}'", panel.getId());
 
-        if (StringUtils.isNotEmpty(panel.getCreationDate())) {
-            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
-        } else {
-            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
-        }
-        panelDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-
-        try {
-            panelCollection.insert(panelDocument, null);
-        } catch (MongoWriteException e) {
-            if (overwrite) {
-                // Delete the current document
+            try {
+                // Check the panel id does not exist
                 Query query = new Query()
                         .append(QueryParams.STUDY_UID.key(), -1)
                         .append(QueryParams.ID.key(), panel.getId());
-                try {
-                    delete(query);
-                } catch (CatalogDBException e1) {
-                    throw new CatalogDBException("Could not overwrite disease panel " + panel.getId(), e1);
+
+                if (count(clientSession, query).first() > 0) {
+                    if (overwrite) {
+                        // Delete the panel id
+                        logger.debug("Global panel '" + panel.getId() + "' already existed. Replacing panel...");
+
+                        Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, -1);
+                        panelCollection.update(clientSession, parseQuery(query), new Document("$set", panelDocument), null);
+                    } else {
+                        throw CatalogDBException.alreadyExists("panel", QueryParams.ID.key(), panel.getId());
+                    }
+                } else {
+                    logger.debug("Inserting new global panel '" + panel.getId() + "'");
+
+                    Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, -1);
+                    panelCollection.insert(clientSession, panelDocument, null);
                 }
 
-                // Insert again
-                panelCollection.insert(panelDocument, null);
-            } else {
-                throw CatalogDBException.alreadyExists("Panel", "id", panel.getId());
+                logger.info("Global panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
+
+                return endWrite(String.valueOf(panel.getUid()), tmpStartTime, 1, 1, null);
+            } catch (CatalogDBException e) {
+                logger.error("Could not create global panel {}: {}", panel.getId(), e.getMessage());
+                clientSession.abortTransaction();
+                return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                        Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
             }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 0) {
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
     }
 
     @Override
-    public QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Panel> insert(long studyUid, Panel panel, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
+        ClientSession clientSession = getClientSession();
+        TransactionBody<WriteResult> txnBody = () -> {
+            long tmpStartTime = startQuery();
+
+            logger.debug("Starting insert transaction of panel id '{}'", panel.getId());
+
+            try {
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
+                insert(clientSession, studyUid, panel);
+
+                return endWrite(String.valueOf(panel.getUid()), tmpStartTime, 1, 1, null);
+            } catch (CatalogDBException e) {
+                logger.error("Could not create panel {}: {}", panel.getId(), e.getMessage());
+                clientSession.abortTransaction();
+                return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                        Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
+            }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 1) {
+            Query query = new Query()
+                    .append(QueryParams.STUDY_UID.key(), studyUid)
+                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
+            return endQuery("Create panel", startTime, get(query, options));
+        } else {
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
+        }
+    }
+
+    void insert(ClientSession clientSession, long studyUid, Panel panel) throws CatalogDBException {
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), panel.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
         filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
         QueryResult<Long> count = panelCollection.count(bson);
 
-        if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Panel { id: '" + panel.getId() + "'} already exists.");
+        if (count.first() > 0) {
+            throw CatalogDBException.alreadyExists("panel", QueryParams.ID.key(), panel.getId());
         }
 
+        logger.debug("Inserting new panel '" + panel.getId() + "'");
+
+        Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
+        panelCollection.insert(clientSession, panelDocument, null);
+
+        logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
+    }
+
+    Document getPanelDocumentForInsertion(ClientSession clientSession, Panel panel, long studyUid) {
         //new Panel Id
-        long newPanelId = getNewId();
-        panel.setUid(newPanelId);
-        panel.setStudyUid(studyId);
+        long panelUid = getNewUid(clientSession);
+        panel.setUid(panelUid);
+        panel.setStudyUid(studyUid);
         if (StringUtils.isEmpty(panel.getUuid())) {
             panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+        }
+        if (StringUtils.isEmpty(panel.getCreationDate())) {
+            panel.setCreationDate(TimeUtils.getTime());
         }
 
         Document panelDocument = panelConverter.convertToStorageType(panel);
@@ -147,21 +198,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         panelDocument.put(RELEASE_FROM_VERSION, Arrays.asList(panel.getRelease()));
         panelDocument.put(LAST_OF_VERSION, true);
         panelDocument.put(LAST_OF_RELEASE, true);
-
-        if (StringUtils.isNotEmpty(panel.getCreationDate())) {
-            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
-        } else {
-            panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
-        }
+        panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
         panelDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-
-        try {
-            panelCollection.insert(panelDocument, null);
-        } catch (DuplicateKeyException e) {
-            throw CatalogDBException.alreadyExists("Panel", studyId, "id", panel.getId());
-        }
-
-        return endQuery("Create disease panel", startTime, get(newPanelId, options));
+        return panelDocument;
     }
 
     @Override
@@ -175,10 +214,15 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public QueryResult<Panel> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return get(null, query, options, user);
+    }
+
+    QueryResult<Panel> get(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Panel> documentList = new ArrayList<>();
         QueryResult<Panel> queryResult;
-        try (DBIterator<Panel> dbIterator = iterator(query, options, user)) {
+        try (DBIterator<Panel> dbIterator = iterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -191,7 +235,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+            QueryResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_PANELS);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -199,9 +243,13 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public QueryResult<Panel> get(Query query, QueryOptions options) throws CatalogDBException {
+        return get(null, query, options);
+    }
+
+    QueryResult<Panel> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Panel> documentList = new ArrayList<>();
-        try (DBIterator<Panel> dbIterator = iterator(query, options)) {
+        try (DBIterator<Panel> dbIterator = iterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -214,7 +262,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            QueryResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -222,10 +270,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public QueryResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        return nativeGet(null, query, options);
+    }
+
+    QueryResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         QueryResult<Document> queryResult;
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -238,7 +290,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            QueryResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -271,11 +323,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public long getStudyId(long panelUid) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, panelUid);
-        Bson projection = Projections.include(PRIVATE_STUDY_ID);
+        Bson projection = Projections.include(PRIVATE_STUDY_UID);
         QueryResult<Document> queryResult = panelCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
-            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
+            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.uidNotFound("Panel", panelUid);
@@ -284,12 +336,22 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
+        return count(null, query);
+    }
+
+    QueryResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return panelCollection.count(bson);
+        return panelCollection.count(clientSession, bson);
     }
 
     @Override
     public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
+            throws CatalogDBException, CatalogAuthorizationException {
+        return count(null, query, user, studyPermissions);
+    }
+
+    QueryResult<Long> count(ClientSession clientSession, final Query query, final String user,
+                            final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         filterOutDeleted(query);
 
@@ -298,7 +360,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -307,8 +369,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getPanelPermission().name(), Entity.PANEL.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
-        logger.debug("Panel count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return panelCollection.count(bson);
+        logger.debug("Panel count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return panelCollection.count(clientSession, bson);
     }
 
     @Override
@@ -324,96 +386,115 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public QueryResult<Panel> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> update = update(new Query(QueryParams.UID.key(), id), parameters, queryOptions);
-        if (update.getNumTotalResults() != 1) {
-            throw new CatalogDBException("Could not update panel");
+        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, queryOptions);
+        if (update.getNumModified() != 1) {
+            throw new CatalogDBException("Could not update panel with id " + id);
         }
         Query query = new Query()
                 .append(QueryParams.UID.key(), id)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(id))
                 .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
         return endQuery("Update panel", startTime, get(query, queryOptions));
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        Document panelParameters = parseAndValidateUpdateParams(parameters, query);
-
-        if (panelParameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.put(Constants.ALL_VERSIONS, true);
-            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query),
-                    new Document("$set", panelParameters), new QueryOptions("multi", true));
-
-            return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
+        if (parameters.containsKey(QueryParams.ID.key())) {
+            // We need to check that the update is only performed over 1 single panel
+            if (count(query).first() != 1) {
+                throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one panel");
+            }
         }
 
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            createNewVersion(query);
-        }
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<Panel> iterator = iterator(query, options);
 
-        if (!panelParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query),
-                    new Document("$set", panelParameters), new QueryOptions("multi", true));
-            return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
-        }
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
 
-        return endQuery("Update panel", startTime, new QueryResult<>());
-    }
+        while (iterator.hasNext()) {
+            Panel panel = iterator.next();
+            numMatches += 1;
 
-    /**
-     * Creates a new version for all the disease panels matching the query.
-     *
-     * @param query Query object.
-     */
-    private void createNewVersion(Query query) throws CatalogDBException {
-        QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+            ClientSession clientSession = getClientSession();
+            TransactionBody<WriteResult> txnBody = () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    Query tmpQuery = new Query()
+                            .append(QueryParams.STUDY_UID.key(), panel.getStudyUid())
+                            .append(QueryParams.UID.key(), panel.getUid());
 
-        for (Document document : queryResult.getResult()) {
-            Document updateOldVersion = new Document();
+                    if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+                        createNewVersion(clientSession, panel.getStudyUid(), panel.getUid());
+                    }
 
-            // Current release number
-            int release;
-            List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
-            if (supportedReleases.size() > 1) {
-                release = supportedReleases.get(supportedReleases.size() - 1);
+                    Document panelUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
 
-                // If it contains several releases, it means this is the first update on the current release, so we just need to take the
-                // current release number out
-                supportedReleases.remove(supportedReleases.size() - 1);
+                    if (!panelUpdate.isEmpty()) {
+                        Bson finalQuery = parseQuery(tmpQuery);
+
+                        logger.debug("Panel update: query : {}, update: {}",
+                                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                                panelUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+                        panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),
+                                new QueryOptions("multi", true));
+                    }
+
+                    return endWrite(panel.getId(), tmpStartTime, 1, 1, null);
+                } catch (CatalogDBException e) {
+                    logger.error("Error updating panel {}({}). {}", panel.getId(), panel.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
+                    return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Panel {} successfully updated", panel.getId());
+                numModified += 1;
             } else {
-                release = supportedReleases.get(0);
-
-                // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
-                // last version of the release
-                updateOldVersion.put(LAST_OF_RELEASE, false);
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not update panel {}: {}", panel.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not update panel {}", panel.getId());
+                }
             }
-            updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
-            updateOldVersion.put(LAST_OF_VERSION, false);
-
-            // Perform the update on the previous version
-            Document queryDocument = new Document()
-                    .append(PRIVATE_STUDY_ID, document.getLong(PRIVATE_STUDY_ID))
-                    .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
-                    .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
-            QueryResult<UpdateResult> updateResult = panelCollection.update(queryDocument, new Document("$set", updateOldVersion),
-                    null);
-            if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogDBException("Internal error: Could not update disease panel");
-            }
-
-            // We update the information for the new version of the document
-            document.put(LAST_OF_RELEASE, true);
-            document.put(LAST_OF_VERSION, true);
-            document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
-            document.put(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()) + 1);
-
-            // Insert the new version document
-            panelCollection.insert(document, QueryOptions.empty());
         }
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "update", (numModified == 0
+                    ? "None of the panels could be updated"
+                    : "Some of the panels could not be updated"));
+        }
+
+        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
     }
 
-    private Document parseAndValidateUpdateParams(ObjectMap parameters, Query query) throws CatalogDBException {
+    private void createNewVersion(ClientSession clientSession, long studyUid, long panelUid) throws CatalogDBException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.UID.key(), panelUid);
+        QueryResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not find panel '" + panelUid + "'");
+        }
+
+        createNewVersion(clientSession, panelCollection, queryResult.first());
+    }
+
+
+    private Document parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
+            throws CatalogDBException {
         Document panelParameters = new Document();
 
         final String[] acceptedParams = {UpdateParams.NAME.key(), UpdateParams.DESCRIPTION.key(), UpdateParams.AUTHOR.key()};
@@ -436,7 +517,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             // We take out ALL_VERSION from query just in case we get multiple results...
             tmpQuery.remove(Constants.ALL_VERSIONS);
 
-            QueryResult<Panel> panelQueryResult = get(tmpQuery, new QueryOptions());
+            QueryResult<Panel> panelQueryResult = get(clientSession, tmpQuery, new QueryOptions());
             if (panelQueryResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update panel: No panel found to be updated");
             }
@@ -451,7 +532,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            QueryResult<Long> count = count(tmpQuery);
+            QueryResult<Long> count = count(clientSession, tmpQuery);
             if (count.getResult().get(0) > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Panel "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
@@ -477,28 +558,96 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public void delete(long id) throws CatalogDBException {
+    public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
-        delete(query);
-    }
-
-    @Override
-    public void delete(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query);
-        QueryResult<DeleteResult> remove = panelCollection.remove(bson, QueryOptions.empty());
-        if (remove.getNumResults() == 0 || remove.first().getDeletedCount() == 0) {
-            throw new CatalogDBException("Could not delete disease panel(s)");
+        WriteResult delete = delete(query);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete panel. Uid " + id + " not found.");
+        } else if (delete.getNumModified() == 0) {
+            throw new CatalogDBException("Could not delete panel. " + delete.getFailed().get(0).getMessage());
         }
+        return delete;
     }
 
     @Override
-    public QueryResult<Panel> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
-    }
+    public WriteResult delete(Query query) throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<Panel> iterator = iterator(query, options);
 
-    @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
+        long startTime = startQuery();
+        int numMatches = 0;
+        int numModified = 0;
+        List<WriteResult.Fail> failList = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            Panel panel = iterator.next();
+            numMatches += 1;
+
+            ClientSession clientSession = getClientSession();
+            TransactionBody<WriteResult> txnBody = () -> {
+                long tmpStartTime = startQuery();
+                try {
+                    logger.info("Deleting panel {} ({})", panel.getId(), panel.getUid());
+
+                    String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+                    Query panelQuery = new Query()
+                            .append(QueryParams.UID.key(), panel.getUid())
+                            .append(QueryParams.VERSION.key(), panel.getVersion())
+                            .append(QueryParams.STUDY_UID.key(), panel.getStudyUid());
+                    // Mark the panel as deleted
+                    ObjectMap updateParams = new ObjectMap()
+                            .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                            .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                            .append(QueryParams.ID.key(), panel.getId() + deleteSuffix);
+
+                    Bson bsonQuery = parseQuery(panelQuery);
+                    Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, panelQuery);
+
+                    logger.debug("Delete panel '{}': Query: {}, update: {}", panel.getId(),
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                    UpdateResult panelResult = panelCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
+                            QueryOptions.empty()).first();
+                    if (panelResult.getModifiedCount() == 1) {
+                        logger.info("Panel {}({}) deleted", panel.getId(), panel.getUid());
+                        return endWrite(panel.getId(), tmpStartTime, 1, 1, null);
+                    } else {
+                        logger.error("Panel {}({}) could not be deleted", panel.getId(), panel.getUid());
+                        return endWrite(panel.getId(), tmpStartTime, 1, 0, null);
+                    }
+                } catch (CatalogDBException e) {
+                    logger.error("Error deleting panel {}({}). {}", panel.getId(), panel.getUid(), e.getMessage(), e);
+                    clientSession.abortTransaction();
+                    return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                            Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
+                }
+            };
+
+            WriteResult result = commitTransaction(clientSession, txnBody);
+
+            if (result.getNumModified() == 1) {
+                logger.info("Panel {} successfully deleted", panel.getId());
+                numModified += 1;
+            } else {
+                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
+                    logger.error("Could not delete panel {}: {}", panel.getId(), result.getFailed().get(0).getMessage());
+                    failList.addAll(result.getFailed());
+                } else {
+                    logger.error("Could not delete panel {}", panel.getId());
+                }
+            }
+        }
+
+        Error error = null;
+        if (!failList.isEmpty()) {
+            error = new Error(-1, "delete", (numModified == 0
+                    ? "None of the panels could be deleted"
+                    : "Some of the panels could not be deleted"));
+        }
+
+        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
     }
 
     @Override
@@ -523,24 +672,37 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public DBIterator<Panel> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
+        return iterator(null, query, options);
+    }
+
+    DBIterator<Panel> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
         return new MongoDBIterator<>(mongoCursor, panelConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
+        return nativeIterator(null, query, options);
+    }
+
+    DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         return new MongoDBIterator(mongoCursor);
     }
 
     @Override
     public DBIterator<Panel> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
+        return iterator(null, query, options, user);
+    }
+
+    DBIterator<Panel> iterator(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options, studyDocument, user);
         return new MongoDBIterator<>(mongoCursor, panelConverter);
     }
 
@@ -551,23 +713,23 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         queryOptions.put(NATIVE_QUERY, true);
 
         Document studyDocument = getStudyDocument(query);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions, studyDocument, user);
         return new MongoDBIterator<>(mongoCursor);
     }
 
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> documentMongoCursor;
         try {
-            documentMongoCursor = getMongoCursor(query, options, null, null);
+            documentMongoCursor = getMongoCursor(clientSession, query, options, null, null);
         } catch (CatalogAuthorizationException e) {
             throw new CatalogDBException(e);
         }
         return documentMongoCursor;
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, Document studyDocument, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, Document studyDocument,
+                                                 String user) throws CatalogDBException, CatalogAuthorizationException {
         Document queryForAuthorisedEntries = null;
         if (studyDocument != null && user != null) {
             // Get the document query needed to check the permissions as well
@@ -587,7 +749,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         Bson bson = parseQuery(finalQuery, queryForAuthorisedEntries);
         logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return panelCollection.nativeQuery().find(bson, qOptions).iterator();
+        return panelCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
     }
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
@@ -711,7 +873,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_ID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);

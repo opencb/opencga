@@ -221,7 +221,7 @@ public class ProjectManager extends AbstractManager {
         project = queryResult.getResult().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getUid()));
+            catalogIOManagerFactory.getDefault().createProject(userId, project.getId());
         } catch (CatalogIOException e) {
             try {
                 projectDBAdaptor.delete(project.getUid());

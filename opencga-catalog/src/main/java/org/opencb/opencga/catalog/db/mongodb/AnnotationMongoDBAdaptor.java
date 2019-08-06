@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -280,8 +281,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 annotableList);
     }
 
-    public void updateAnnotationSets(long entryId, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions options,
-                                     boolean isVersioned) throws CatalogDBException {
+    public void updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters, List<VariableSet> variableSetList,
+                                     QueryOptions options, boolean isVersioned) throws CatalogDBException {
         if (parameters.containsKey(ANNOTATION_SETS)) {
             List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
 
@@ -296,21 +297,21 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             // Create or remove a new annotation set
             if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
                 // 1. Check the annotation set ids are not in use
-                validateNewAnnotations(entryId, annotationSetList, variableSetList, isVersioned);
+                validateNewAnnotations(clientSession, entryId, annotationSetList, variableSetList, isVersioned);
 
                 // 2. Obtain the list of documents that need to be inserted
                 List<Document> annotationDocumentList = getNewAnnotationList(annotationSetList, variableSetList);
 
                 if (action == ParamUtils.UpdateAction.SET) {
                     // 2.1 Remove all the existing annotations
-                    removeAllAnnotationSets(entryId, isVersioned);
+                    removeAllAnnotationSets(clientSession, entryId, isVersioned);
                 }
 
                 // 3. Insert the list of documents
-                addNewAnnotations(entryId, annotationDocumentList, isVersioned);
+                addNewAnnotations(clientSession, entryId, annotationDocumentList, isVersioned);
 
                 // 4. Set variable set map uid - id
-                addPrivateVariableMap(entryId, getPrivateVariableMapToSet(annotationSetList, variableSetList), isVersioned);
+                addPrivateVariableMap(clientSession, entryId, getPrivateVariableMapToSet(annotationSetList, variableSetList), isVersioned);
             } else if (action == ParamUtils.UpdateAction.REMOVE) {
                 // Action = REMOVE
 
@@ -347,7 +348,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     }
 
                     // 1. Remove annotationSet
-                    removeAnnotationSet(entryId, annotationSet.getId(), isVersioned);
+                    removeAnnotationSet(clientSession, entryId, annotationSet.getId(), isVersioned);
 
                     String variableSetId = annotationSetIdVariableSetUidMap.get(annotationSet.getId());
                     // Remove the annotation set from the variableSetAnnotationsets
@@ -358,7 +359,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                         // 2. Unset variable set map uid - id
                         Map<String, String> variableSetMapToRemove = new HashMap<>();
                         variableSetMapToRemove.put(variableSetId, null);
-                        removePrivateVariableMap(entryId, variableSetMapToRemove, isVersioned);
+                        removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned);
                     }
                 }
 
@@ -371,15 +372,15 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             List<Document> annotationDocumentList = getNewAnnotationList(Collections.singletonList(annotationSet), variableSetList);
 
             // 2. Remove all the existing annotations of the annotation set
-            removeAnnotationSet(entryId, annotationSet.getId(), isVersioned);
+            removeAnnotationSet(clientSession, entryId, annotationSet.getId(), isVersioned);
 
             // 3. Add new list of annotations
-            addNewAnnotations(entryId, annotationDocumentList, isVersioned);
+            addNewAnnotations(clientSession, entryId, annotationDocumentList, isVersioned);
         }
     }
 
-    private void removePrivateVariableMap(long entryId, Map<String, String> privateVariableMapToSet, boolean isVersioned)
-            throws CatalogDBException {
+    private void removePrivateVariableMap(ClientSession clientSession, long entryId, Map<String, String> privateVariableMapToSet,
+                                          boolean isVersioned) throws CatalogDBException {
         Document queryDocument = new Document(PRIVATE_UID, entryId);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
@@ -391,14 +392,15 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
             Bson unset = Updates.unset(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + entry.getKey());
 
-            QueryResult<UpdateResult> update = getCollection().update(queryDocument, unset, new QueryOptions());
+            QueryResult<UpdateResult> update = getCollection().update(clientSession, queryDocument, unset, new QueryOptions());
             if (update.first().getModifiedCount() < 1 && update.first().getMatchedCount() == 1) {
                 throw new CatalogDBException("Could not remove private map information");
             }
         }
     }
 
-    private void addPrivateVariableMap(long entryId, Map<String, String> variableMap, boolean isVersioned) throws CatalogDBException {
+    private void addPrivateVariableMap(ClientSession clientSession, long entryId, Map<String, String> variableMap, boolean isVersioned)
+            throws CatalogDBException {
         Document queryDocument = new Document(PRIVATE_UID, entryId);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
@@ -409,7 +411,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             setMap.add(Updates.set(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + entry.getKey(), entry.getValue()));
         }
 
-        QueryResult<UpdateResult> update = getCollection().update(queryDocument, Updates.combine(setMap), new QueryOptions("multi", true));
+        QueryResult<UpdateResult> update = getCollection().update(clientSession, queryDocument, Updates.combine(setMap),
+                new QueryOptions("multi", true));
         if (update.first().getModifiedCount() < 1 && update.first().getMatchedCount() == 0) {
             throw new CatalogDBException("Could not add new private map information");
         }
@@ -430,7 +433,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         return privateVariableMap;
     }
 
-    private void removeAllAnnotationSets(long entryId, boolean isVersioned) throws CatalogDBException {
+    private void removeAllAnnotationSets(ClientSession clientSession, long entryId, boolean isVersioned) throws CatalogDBException {
         Document queryDocument = new Document(PRIVATE_UID, entryId);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
@@ -442,13 +445,14 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 Updates.set(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key(), Collections.emptyMap())
         );
 
-        QueryResult<UpdateResult> update = getCollection().update(queryDocument, bsonUpdate, new QueryOptions());
+        QueryResult<UpdateResult> update = getCollection().update(clientSession, queryDocument, bsonUpdate, new QueryOptions());
         if (update.first().getModifiedCount() < 1 && update.first().getMatchedCount() == 0) {
             throw new CatalogDBException("Could not remove all annotationSets");
         }
     }
 
-    private void addNewAnnotations(long entryId, List<Document> annotationDocumentList, boolean isVersioned) throws CatalogDBException {
+    private void addNewAnnotations(ClientSession clientSession, long entryId, List<Document> annotationDocumentList, boolean isVersioned)
+            throws CatalogDBException {
         Document queryDocument = new Document(PRIVATE_UID, entryId);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
@@ -456,13 +460,14 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
         Bson push = Updates.addEachToSet(AnnotationSetParams.ANNOTATION_SETS.key(), annotationDocumentList);
 
-        QueryResult<UpdateResult> update = getCollection().update(queryDocument, push, new QueryOptions("multi", true));
+        QueryResult<UpdateResult> update = getCollection().update(clientSession, queryDocument, push, new QueryOptions("multi", true));
         if (update.first().getModifiedCount() < 1) {
             throw new CatalogDBException("Could not add new annotations");
         }
     }
 
-    private void removeAnnotationSet(long entryId, String annotationSetId, boolean isVersioned) throws CatalogDBException {
+    private void removeAnnotationSet(ClientSession clientSession, long entryId, String annotationSetId, boolean isVersioned)
+            throws CatalogDBException {
         Document queryDocument = new Document(PRIVATE_UID, entryId);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
@@ -471,14 +476,14 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         Bson pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(),
                 new Document(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSetId));
 
-        QueryResult<UpdateResult> update = getCollection().update(queryDocument, pull, new QueryOptions("multi", true));
+        QueryResult<UpdateResult> update = getCollection().update(clientSession, queryDocument, pull, new QueryOptions("multi", true));
         if (update.first().getModifiedCount() < 1) {
             throw new CatalogDBException("Could not delete the annotation set");
         }
     }
 
-    private void validateNewAnnotations(long entryId, List<AnnotationSet> annotationSetList, List<VariableSet> variableSetList,
-                                        boolean isVersioned) throws CatalogDBException {
+    private void validateNewAnnotations(ClientSession clientSession, long entryId, List<AnnotationSet> annotationSetList,
+                                        List<VariableSet> variableSetList, boolean isVersioned) throws CatalogDBException {
         // 1. Check for duplicates in the list of annotation sets
         Set<String> annotationSetIds = new HashSet<>();
         for (AnnotationSet annotationSet : annotationSetList) {
@@ -502,7 +507,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 query.put(LAST_OF_VERSION, true);
             }
 
-            QueryResult<Long> count = getCollection().count(query);
+            QueryResult<Long> count = getCollection().count(clientSession, query);
             if (count.first() > 0) {
                 throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
             }
@@ -517,7 +522,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 }
 
                 // Check if the variableSet has been already annotated with a different annotation set
-                count = getCollection().count(query);
+                count = getCollection().count(clientSession, query);
                 if (count.first() > 0) {
                     throw new CatalogDBException("Repeated annotation for a unique VariableSet");
                 }
@@ -707,7 +712,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         long startTime = startQuery();
 
         List<Bson> aggregation = new ArrayList<>(6);
-        aggregation.add(new Document("$match", new Document(PRIVATE_STUDY_ID, studyId)));
+        aggregation.add(new Document("$match", new Document(PRIVATE_STUDY_UID, studyId)));
         aggregation.add(new Document("$project", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), 1)));
         aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS.key()));
 //        aggregation.add(new Document("$unwind", "$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS.key()));

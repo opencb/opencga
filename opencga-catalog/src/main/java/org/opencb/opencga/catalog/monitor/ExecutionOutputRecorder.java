@@ -146,7 +146,7 @@ public class ExecutionOutputRecorder {
         List<File> files;
         try {
             logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
-            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getUid(),
+            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true,
                     sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
@@ -239,7 +239,7 @@ public class ExecutionOutputRecorder {
         List<File> files;
         try {
             logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
-            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getUid(),
+            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true,
                     sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());

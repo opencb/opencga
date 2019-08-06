@@ -255,7 +255,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         } else {
             clinicalAnalysis.setStatus(new ClinicalAnalysis.ClinicalStatus());
         }
-        clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study, userId));
+        clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
         clinicalAnalysis.setInterpretations(ParamUtils.defaultObject(clinicalAnalysis.getInterpretations(), ArrayList::new));
         clinicalAnalysis.setPriority(ParamUtils.defaultObject(clinicalAnalysis.getPriority(), ClinicalAnalysis.Priority.MEDIUM));
@@ -865,15 +865,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         switch (clinicalAclParams.getAction()) {
             case SET:
-                // Todo: Remove this in 1.4
-                List<String> allClinicalPermissions = EnumSet.allOf(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class)
-                        .stream()
-                        .map(String::valueOf)
-                        .collect(Collectors.toList());
                 return authorizationManager.setAcls(study.getUid(), queryResult.getResult().stream()
                                 .map(ClinicalAnalysis::getUid)
-                                .collect(Collectors.toList()), members, permissions,
-                        allClinicalPermissions, Entity.CLINICAL_ANALYSIS);
+                                .collect(Collectors.toList()), members, permissions, Entity.CLINICAL_ANALYSIS);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), queryResult.getResult().stream()
                         .map(ClinicalAnalysis::getUid)

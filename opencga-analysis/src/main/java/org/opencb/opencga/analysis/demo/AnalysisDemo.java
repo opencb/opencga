@@ -16,19 +16,10 @@
 
 package org.opencb.opencga.analysis.demo;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.old.AnalysisExecutionException;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -49,7 +40,7 @@ public class AnalysisDemo {
         String path = "data/peds";
         URI sourceUri = inputFile.toUri();
         File file = catalogManager.getFileManager().upload("user1@default:study1", new FileInputStream(new java.io.File(sourceUri)),
-                new File().setPath(Paths.get(path, inputFile.getFileName().toString()).toString()), false, true, sessionId).first();
+                new File().setPath(Paths.get(path, inputFile.getFileName().toString()).toString()), false, true, false, sessionId).first();
 
         // Load samples using the pedigree file
         CatalogSampleAnnotationsLoader catalogSampleAnnotationsLoader = new CatalogSampleAnnotationsLoader(catalogManager);

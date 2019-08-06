@@ -1,11 +1,13 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -24,7 +26,7 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private long studyUid;
     private String user;
 
-    private SampleDBAdaptor sampleDBAdaptor;
+    private SampleMongoDBAdaptor sampleDBAdaptor;
     private QueryOptions sampleQueryOptions;
 
     private Queue<Document> cohortListBuffer;
@@ -33,10 +35,10 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     private static final int BUFFER_SIZE = 100;
 
-    public CohortMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                     Function<Document, Document> filter, SampleDBAdaptor sampleMongoDBAdaptor,
-                                 long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, converter, filter, options);
+    public CohortMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, SampleMongoDBAdaptor sampleMongoDBAdaptor, long studyUid, String user,
+                                 QueryOptions options) {
+        super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
@@ -118,9 +120,9 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions, user).getResult();
                 } else {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResult();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the samples associated to the cohorts: {}", e.getMessage(), e);

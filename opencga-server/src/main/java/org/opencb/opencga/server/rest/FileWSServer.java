@@ -286,7 +286,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     IOUtils.deleteDirectory(folderPath);
                     try {
                         QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyStr, File.Type.FILE,
-                                fileFormat, bioformat, relativeFilePath, null, description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
+                                fileFormat, bioformat, relativeFilePath, description, new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, parents, null, null, sessionId);
                         new FileUtils(catalogManager).upload(completedFilePath.toUri(), queryResult1.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
                         QueryResult<File> queryResult = catalogManager.getFileManager().get(queryResult1.first().getUid(), null, sessionId);
                         File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
@@ -317,7 +317,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setFormat(fileFormat)
                     .setBioformat(bioformat);
             try {
-                return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, sessionId));
+                return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, sessionId));
             } catch (Exception e) {
                 return createErrorResponse("Upload file", e.getMessage());
             }
@@ -942,7 +942,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/link")
-    @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
+    @ApiOperation(value = "Link an external file into catalog.", response = QueryResponse.class)
     public Response link(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,

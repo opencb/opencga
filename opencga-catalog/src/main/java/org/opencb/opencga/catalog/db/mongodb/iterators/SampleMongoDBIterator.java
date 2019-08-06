@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
@@ -25,7 +26,7 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private long studyUid;
     private String user;
 
-    private IndividualDBAdaptor individualDBAdaptor;
+    private IndividualMongoDBAdaptor individualDBAdaptor;
     private QueryOptions individualQueryOptions;
 
     private Queue<Document> sampleListBuffer;
@@ -34,10 +35,10 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     private static final int BUFFER_SIZE = 100;
 
-    public SampleMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                 Function<Document, Document> filter, IndividualDBAdaptor individualDBAdaptor,
+    public SampleMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, IndividualMongoDBAdaptor individualDBAdaptor,
                                  long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, converter, filter, options);
+        super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
@@ -56,29 +57,6 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         if (filter != null) {
             next = filter.apply(next);
         }
-
-//        Document attributes = (Document) next.get(SampleDBAdaptor.QueryParams.ATTRIBUTES.key());
-//        if (attributes != null) {
-//            Object individual = attributes.get(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-//
-//            // individual might be a list of individuals sometimes. In those case, we will only take the latest individual (higher
-//            // version)
-//            if (individual instanceof List) {
-//                Document myIndividual = null;
-//                int version = 0;
-//                for (Document ind : (List<Document>) individual) {
-//                    if (ind != null && !ind.isEmpty() && ind.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()) > version) {
-//                        myIndividual = ind;
-//                        version = ind.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key());
-//                    }
-//                }
-//                if (myIndividual != null) {
-//                    attributes.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), myIndividual);
-//                } else {
-//                    attributes.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-//                }
-//            }
-//        }
 
         addAclInformation(next, options);
 
@@ -125,9 +103,9 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> individualList;
             try {
                 if (user != null) {
-                    individualList = individualDBAdaptor.nativeGet(query, individualQueryOptions, user).getResult();
+                    individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResult();
                 } else {
-                    individualList = individualDBAdaptor.nativeGet(query, individualQueryOptions).getResult();
+                    individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResult();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the individuals containing the samples: {}", e.getMessage(), e);
