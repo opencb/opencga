@@ -150,6 +150,8 @@ public class SampleIndexQueryParser {
         Map<String, boolean[]> fatherFilterMap = new HashMap<>();
         Map<String, boolean[]> motherFilterMap = new HashMap<>();
 
+        boolean partialIndex = false;
+
         // Extract sample and genotypes to filter
         QueryOperation queryOperation;
         Map<String, List<String>> samplesMap = new HashMap<>();
@@ -265,6 +267,9 @@ public class SampleIndexQueryParser {
                 samplesMap.put(s, Collections.emptyList());
             }
             query.remove(SAMPLE_MENDELIAN_ERROR.key());
+            // Reading any MendelianError could return variants from GT=0/0, which is not annotated in the SampleIndex,
+            // so the index is partial.
+            partialIndex = true;
         } else if (isValidParam(query, SAMPLE_DE_NOVO)) {
             onlyDeNovo = true;
             Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_DE_NOVO.key()));
@@ -309,7 +314,8 @@ public class SampleIndexQueryParser {
             allSamplesAnnotated = false;
         }
 
-        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query, allSamplesAnnotated);
+        boolean completeIndex = allSamplesAnnotated && !partialIndex;
+        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query, completeIndex);
         Set<VariantType> variantTypes = null;
         if (isValidParam(query, TYPE)) {
             List<String> typesStr = query.getAsStringList(VariantQueryParam.TYPE.key());
@@ -472,7 +478,7 @@ public class SampleIndexQueryParser {
                 String[] split = VariantQueryUtils.splitOperator(qualValue);
                 String op = split[1];
                 double value = Double.valueOf(split[2]);
-                qualQuery = getRangeQuery(op, value, SampleIndexConfiguration.QUAL_THRESHOLDS);
+                qualQuery = getRangeQuery(op, value, SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
                 fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
             }
         }
@@ -491,7 +497,7 @@ public class SampleIndexQueryParser {
                         if (split[0].equals(VCFConstants.DEPTH_KEY)) {
                             String op = split[1];
                             double dpValue = Double.parseDouble(split[2]);
-                            dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS);
+                            dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
                             fileIndexMask |= VariantFileIndexConverter.DP_MASK;
                         }
                     }
@@ -509,7 +515,7 @@ public class SampleIndexQueryParser {
                     if (split[0].equals(VCFConstants.DEPTH_KEY)) {
                         String op = split[1];
                         double dpValue = Double.parseDouble(split[2]);
-                        dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS);
+                        dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
                         fileIndexMask |= VariantFileIndexConverter.DP_MASK;
                     }
                 }
@@ -560,9 +566,14 @@ public class SampleIndexQueryParser {
         return parseAnnotationIndexQuery(query, false);
     }
 
-    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean allSamplesAnnotated) {
-        // TODO: Allow skip using annotation mask
-
+    /**
+     * Builds the SampleAnnotationIndexQuery given a VariantQuery.
+     *
+     * @param query Input VariantQuery. If the index is complete, covered filters could be removed from here.
+     * @param completeIndex Indicates if the index is complete for the samples in the query.
+     * @return SampleAnnotationIndexQuery
+     */
+    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
         byte annotationIndex = 0;
         byte biotypeMask = 0;
         short consequenceTypeMask = 0;
@@ -600,22 +611,31 @@ public class SampleIndexQueryParser {
                 ctFilterCoveredBySummary = soNames.size() == LOF_SET.size();
                 annotationIndex |= LOF_MASK;
                 // If all present, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_SET.size() == soNames.size()) {
+                if (completeIndex && LOF_SET.size() == soNames.size()) {
                     // Ensure not filtering by gene, and not combining with other params
-                    if (!isValidParam(query, GENE) && combination.numParams() == 1) {
+                    if (!isValidParam(query, GENE) && simpleCombination(combination)) {
                         query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                     }
                 }
             }
             if (LOF_EXTENDED_SET.containsAll(soNames)) {
+                boolean proteinCodingOnly = query.getString(ANNOT_BIOTYPE.key()).equals(VariantAnnotationUtils.PROTEIN_CODING);
                 ctFilterCoveredBySummary = soNames.size() == LOF_EXTENDED_SET.size();
                 annotationIndex |= LOF_EXTENDED_MASK;
                 // If all present, remove consequenceType filter
-                if (allSamplesAnnotated && LOF_EXTENDED_SET.size() == soNames.size() && !isValidParam(query, GENE)) {
+                if (LOF_EXTENDED_SET.size() == soNames.size()) {
                     // Ensure not filtering by gene, and not combining with other params
-                    if (!isValidParam(query, GENE) && combination.numParams() == 1) {
-                        query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                    if (completeIndex && !isValidParam(query, GENE)) {
+                        if (simpleCombination(combination)) {
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                        } else if (proteinCodingOnly) {
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                            query.remove(ANNOT_BIOTYPE.key());
+                        }
                     }
+                }
+                if (proteinCodingOnly) {
+                    annotationIndex |= LOFE_PROTEIN_CODING_MASK;
                 }
             }
             if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
@@ -625,14 +645,24 @@ public class SampleIndexQueryParser {
 
             // Do not use ctIndex if the CT filter is covered by the summary
             if (!ctFilterCoveredBySummary) {
+                boolean ctCovered = completeIndex;
                 for (String soName : soNames) {
                     short mask = getMaskFromSoName(soName);
                     if (mask == IndexUtils.EMPTY_MASK) {
                         // If any element is not in the index, do not use this filter
                         consequenceTypeMask = IndexUtils.EMPTY_MASK;
+                        ctCovered = false;
                         break;
                     }
                     consequenceTypeMask |= mask;
+                    // Some CT filter values are not precise, so the query is not covered.
+                    ctCovered &= !isImpreciseCtMask(mask);
+                }
+                // ConsequenceType filter is covered by index
+                if (ctCovered) {
+                    if (!isValidParam(query, GENE) && simpleCombination(combination)) {
+                        query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                    }
                 }
             }
         }
@@ -646,22 +676,32 @@ public class SampleIndexQueryParser {
                 biotypeFilterCoveredBySummary = BIOTYPE_SET.size() == biotypes.size();
                 annotationIndex |= PROTEIN_CODING_MASK;
                 // If all present, remove biotype filter
-                if (allSamplesAnnotated && BIOTYPE_SET.size() == biotypes.size()) {
+                if (completeIndex && BIOTYPE_SET.size() == biotypes.size()) {
                     // Ensure not filtering by gene, and not combining with other params
-                    if (!isValidParam(query, GENE) && combination.numParams() == 1) {
+                    if (!isValidParam(query, GENE) && simpleCombination(combination)) {
                         query.remove(ANNOT_BIOTYPE.key());
                     }
                 }
             }
             if (!biotypeFilterCoveredBySummary) {
+                boolean btCovered = completeIndex;
                 for (String biotype : biotypes) {
                     byte mask = getMaskFromBiotype(biotype);
                     if (mask == IndexUtils.EMPTY_MASK) {
                         // If any element is not in the index, do not use this filter
                         biotypeMask = IndexUtils.EMPTY_MASK;
+                        btCovered = false;
                         break;
                     }
                     biotypeMask |= mask;
+                    // Some CT filter values are not precise, so the query is not covered.
+                    btCovered &= !isImpreciseBtMask(mask);
+                }
+                // Biotype filter is covered by index
+                if (btCovered) {
+                    if (!isValidParam(query, GENE) && simpleCombination(combination)) {
+                        query.remove(ANNOT_BIOTYPE.key());
+                    }
                 }
             }
         }
@@ -683,11 +723,14 @@ public class SampleIndexQueryParser {
             Pair<QueryOperation, List<String>> pair = VariantQueryUtils.splitValue(value);
             popFreqOp = pair.getKey();
 
+            Set<String> studyPops = new HashSet<>();
             Set<String> popFreqLessThan001 = new HashSet<>();
+            List<String> filtersNotCoveredByPopFreqQuery = new ArrayList<>(pair.getValue().size());
 
             for (String popFreq : pair.getValue()) {
                 String[] keyOpValue = VariantQueryUtils.splitOperator(popFreq);
                 String studyPop = keyOpValue[0];
+                studyPops.add(studyPop);
                 double freqFilter = Double.valueOf(keyOpValue[2]);
                 if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<<")) {
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
@@ -696,20 +739,18 @@ public class SampleIndexQueryParser {
                 }
 
                 boolean populationInSampleIndex = false;
+                boolean populationFilterFullyCovered = false;
                 int popFreqIdx = 0;
                 for (PopulationFrequencyRange populationRange : configuration.getPopulationRanges()) {
                     if (populationRange.getStudyAndPopulation().equals(studyPop)) {
                         populationInSampleIndex = true;
-                        double[] range = IndexUtils.queryRange(keyOpValue[1], freqFilter, 0, 1.00001);
+                        RangeQuery rangeQuery = getRangeQuery(keyOpValue[1], freqFilter, populationRange.getThresholds(),
+                                0, 1 + IndexUtils.DELTA);
 
-                        double minFreqInclusive = range[0];
-                        double maxFreqExclusive = range[1];
-                        popFreqQuery.add(new PopulationFrequencyQuery(
+                        popFreqQuery.add(new PopulationFrequencyQuery(rangeQuery,
                                 popFreqIdx, populationRange.getStudy(),
-                                populationRange.getPopulation(),
-                                minFreqInclusive, maxFreqExclusive,
-                                IndexUtils.getRangeCode(minFreqInclusive, populationRange.getThresholds()),
-                                IndexUtils.getRangeCodeExclusive(maxFreqExclusive, populationRange.getThresholds())));
+                                populationRange.getPopulation()));
+                        populationFilterFullyCovered |= rangeQuery.isExactQuery();
                     }
                     popFreqIdx++;
                 }
@@ -717,32 +758,54 @@ public class SampleIndexQueryParser {
                 if (!populationInSampleIndex) {
                     // If there is any populationFrequency from the query not in the SampleIndex, mark as partial
                     popFreqPartial = true;
+                    filtersNotCoveredByPopFreqQuery.add(popFreq);
+                } else if (!populationFilterFullyCovered) {
+                    filtersNotCoveredByPopFreqQuery.add(popFreq);
                 }
             }
             if (QueryOperation.OR.equals(popFreqOp)) {
-                // With OR, the query MUST contain ALL popFreq
-                if (popFreqLessThan001.containsAll(POP_FREQ_ANY_001_SET)) {
+                // Should use summary popFreq mask?
+                if (POP_FREQ_ANY_001_SET.containsAll(popFreqLessThan001) && studyPops.equals(popFreqLessThan001)) {
+
                     annotationIndex |= POP_FREQ_ANY_001_MASK;
+
+                    if (POP_FREQ_ANY_001_SET.size() == pair.getValue().size()) {
+                        // Do not filter using the PopFreq index, as the summary bit covers the filter
+                        popFreqQuery.clear();
+
+                        // If the index is complete for all samples, remove the filter from main query
+                        if (completeIndex) {
+                            query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
+                        }
+                    }
                 }
                 if (popFreqPartial) {
                     // Can not use the index with partial OR queries.
                     popFreqQuery.clear();
+                } else if (filtersNotCoveredByPopFreqQuery.isEmpty()) {
+                    // If all filters are covered, remove filter form query.
+                    if (completeIndex) {
+                        query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
+                    }
                 }
+
             } else {
                 popFreqOp = QueryOperation.AND; // it could be null
                 // With AND, the query MUST contain ANY popFreq
                 for (String s : POP_FREQ_ANY_001_SET) {
                     if (popFreqLessThan001.contains(s)) {
                         annotationIndex |= POP_FREQ_ANY_001_MASK;
+                        break;
                     }
                 }
-            }
-
-            if (allSamplesAnnotated
-                    && pair.getKey() == QueryOperation.OR
-                    && POP_FREQ_ANY_001_FILTERS.size() == pair.getValue().size()
-                    && POP_FREQ_ANY_001_FILTERS.containsAll(pair.getValue())) {
-                query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
+                if (completeIndex) {
+                    if (filtersNotCoveredByPopFreqQuery.isEmpty()) {
+                        query.remove(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
+                    } else {
+                        query.put(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+                                String.join(popFreqOp.separator(), filtersNotCoveredByPopFreqQuery));
+                    }
+                }
             }
         }
 
@@ -765,14 +828,40 @@ public class SampleIndexQueryParser {
                 popFreqOp, popFreqQuery, popFreqPartial);
     }
 
-    private RangeQuery getRangeQuery(String op, double value, double[] thresholds) {
-        double[] range = IndexUtils.queryRange(op, value);
+    private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {
+        return combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE)
+                || combination.equals(BiotypeConsquenceTypeFlagCombination.CT);
+    }
+
+    protected RangeQuery getRangeQuery(String op, double value, double[] thresholds) {
+        return getRangeQuery(op, value, thresholds, Double.MIN_VALUE, Double.MAX_VALUE);
+    }
+
+    protected RangeQuery getRangeQuery(String op, double value, double[] thresholds, double min, double max) {
+        double[] range = IndexUtils.queryRange(op, value, min, max);
+        return getRangeQuery(range, thresholds, min, max);
+    }
+
+    private RangeQuery getRangeQuery(double[] range, double[] thresholds, double min, double max) {
         byte[] rangeCode = IndexUtils.getRangeCodes(range, thresholds);
+        boolean exactQuery;
+        if (rangeCode[0] == 0) {
+            if (rangeCode[1] - 1 == thresholds.length) {
+                exactQuery = IndexUtils.equalsTo(range[0], min) && IndexUtils.equalsTo(range[1], max);
+            } else {
+                exactQuery = IndexUtils.equalsTo(range[1], thresholds[rangeCode[1] - 1]) && IndexUtils.equalsTo(range[0], min);
+            }
+        } else if (rangeCode[1] - 1 == thresholds.length) {
+            exactQuery = IndexUtils.equalsTo(range[0], thresholds[rangeCode[0] - 1]) && IndexUtils.equalsTo(range[1], max);
+        } else {
+            exactQuery = false;
+        }
         return new RangeQuery(
                 range[0],
                 range[1],
                 rangeCode[0],
-                rangeCode[1]
+                rangeCode[1],
+                exactQuery
         );
     }
 

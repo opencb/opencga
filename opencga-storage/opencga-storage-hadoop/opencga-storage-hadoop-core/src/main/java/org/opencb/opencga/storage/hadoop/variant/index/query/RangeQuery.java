@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+
 import java.util.Objects;
 
 public class RangeQuery {
@@ -8,12 +10,19 @@ public class RangeQuery {
     protected final double maxValueExclusive;
     protected final byte minCodeInclusive;
     protected final byte maxCodeExclusive;
+    protected final boolean exactQuery;
 
     public RangeQuery(double minValueInclusive, double maxValueExclusive, byte minCodeInclusive, byte maxCodeExclusive) {
+        this(minValueInclusive, maxValueExclusive, minCodeInclusive, maxCodeExclusive, false);
+    }
+
+    public RangeQuery(
+            double minValueInclusive, double maxValueExclusive, byte minCodeInclusive, byte maxCodeExclusive, boolean exactQuery) {
         this.minValueInclusive = minValueInclusive;
         this.maxValueExclusive = maxValueExclusive;
         this.minCodeInclusive = minCodeInclusive;
         this.maxCodeExclusive = maxCodeExclusive;
+        this.exactQuery = exactQuery;
     }
 
 
@@ -33,6 +42,10 @@ public class RangeQuery {
         return maxCodeExclusive;
     }
 
+    public boolean isExactQuery() {
+        return exactQuery;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -42,8 +55,8 @@ public class RangeQuery {
             return false;
         }
         RangeQuery that = (RangeQuery) o;
-        return Double.compare(that.minValueInclusive, minValueInclusive) == 0
-                && Double.compare(that.maxValueExclusive, maxValueExclusive) == 0
+        return IndexUtils.equalsTo(that.minValueInclusive, minValueInclusive)
+                && IndexUtils.equalsTo(that.maxValueExclusive, maxValueExclusive)
                 && minCodeInclusive == that.minCodeInclusive
                 && maxCodeExclusive == that.maxCodeExclusive;
     }

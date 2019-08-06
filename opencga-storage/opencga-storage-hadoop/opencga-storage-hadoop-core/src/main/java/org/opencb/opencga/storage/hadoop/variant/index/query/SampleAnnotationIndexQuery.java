@@ -20,6 +20,15 @@ public class SampleAnnotationIndexQuery {
         private final String study;
         private final String population;
 
+        public PopulationFrequencyQuery(RangeQuery rangeQuery, int position, String study, String population) {
+            super(rangeQuery.minValueInclusive, rangeQuery.maxValueExclusive,
+                    rangeQuery.minCodeInclusive, rangeQuery.maxCodeExclusive,
+                    rangeQuery.exactQuery);
+            this.position = position;
+            this.study = study;
+            this.population = population;
+        }
+
         public PopulationFrequencyQuery(int position, String study, String population,
                                         double minFreqInclusive, double maxFreqExclusive,
                                         byte minCodeInclusive, byte maxCodeExclusive) {
@@ -39,6 +48,10 @@ public class SampleAnnotationIndexQuery {
 
         public String getPopulation() {
             return population;
+        }
+
+        public String getStudyPopulation() {
+            return study + ":" + population;
         }
 
         @Override

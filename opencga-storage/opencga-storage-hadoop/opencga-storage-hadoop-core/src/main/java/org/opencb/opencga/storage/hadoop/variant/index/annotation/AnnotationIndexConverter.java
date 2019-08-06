@@ -249,6 +249,10 @@ public class AnnotationIndexConverter {
         return put;
     }
 
+    public static boolean isImpreciseCtMask(short ctMask) {
+        return ctMask == CT_MIRNA_TFBS_MASK || ctMask == CT_UTR_MASK;
+    }
+
     public static short getMaskFromSoName(String soName) {
         if (soName == null) {
             return 0;
@@ -332,6 +336,10 @@ public class AnnotationIndexConverter {
             default:
                 return 0;
         }
+    }
+
+    public static boolean isImpreciseBtMask(short btMask) {
+        return btMask == BT_LNCRNA_MASK;
     }
 
     public static byte getMaskFromBiotype(String biotype) {

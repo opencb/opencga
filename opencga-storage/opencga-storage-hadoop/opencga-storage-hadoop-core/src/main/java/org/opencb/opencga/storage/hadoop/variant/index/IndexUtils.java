@@ -15,6 +15,7 @@ public final class IndexUtils {
 
     public static final byte EMPTY_MASK = 0;
     public static final double DELTA = 0.0000001;
+    public static final int MAX = 500000;
 
     private IndexUtils() {
     }
@@ -244,11 +245,20 @@ public final class IndexUtils {
     public static byte getRangeCode(double value, double[] thresholds) {
         byte code = (byte) (thresholds.length);
         for (byte i = 0; i < thresholds.length; i++) {
-            if (value < thresholds[i]) {
+            if (lessThan(value, thresholds[i])) {
                 code = i;
                 break;
             }
         }
         return code;
     }
+
+    public static boolean lessThan(double a, double b) {
+        return a < b && !equalsTo(a, b);
+    }
+
+    public static boolean equalsTo(double a, double b) {
+        return Math.abs(a - b) < (DELTA / 10);
+    }
+
 }
