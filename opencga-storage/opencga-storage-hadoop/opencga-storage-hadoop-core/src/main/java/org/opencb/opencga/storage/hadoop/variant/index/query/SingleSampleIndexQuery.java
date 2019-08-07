@@ -25,6 +25,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
                 query.getVariantTypes() == null ? null : new HashSet<>(query.getVariantTypes()),
                 query.getStudy(),
                 Collections.singletonMap(sample, gts),
+                query.getNegatedSamples(),
                 query.getFatherFilterMap(),
                 query.getMotherFilterMap(),
                 query.getSampleFileIndexQueryMap(),
@@ -51,6 +52,10 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
 
     public List<String> getGenotypes() {
         return gts;
+    }
+
+    public boolean isNegated() {
+        return super.isNegated(sample);
     }
 
     public boolean[] getFatherFilter() {

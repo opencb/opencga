@@ -32,7 +32,11 @@ public class SampleIndexQuery {
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
+    /** Samples that should be subtracted from the final result. **/
+    private final Set<String> negatedSamples;
+    /** For each sample with father filter, indicates all the valid GTs codes. **/
     private final Map<String, boolean[]> fatherFilter;
+    /** For each sample with mother filter, indicates all the valid GTs codes. **/
     private final Map<String, boolean[]> motherFilter;
     private final Map<String, SampleFileIndexQuery> fileFilterMap;
     private final SampleAnnotationIndexQuery annotationIndexQuery;
@@ -41,12 +45,12 @@ public class SampleIndexQuery {
     private final VariantQueryUtils.QueryOperation queryOperation;
 
     public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
-        this(regions, null, study, samplesMap, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
+        this(regions, null, study, samplesMap, null, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
                 new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
     }
 
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
-                            Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
+                            Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, SampleFileIndexQuery> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
@@ -54,6 +58,7 @@ public class SampleIndexQuery {
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
+        this.negatedSamples = negatedSamples;
         this.fatherFilter = fatherFilter;
         this.motherFilter = motherFilter;
         this.fileFilterMap = fileFilterMap;
@@ -97,6 +102,15 @@ public class SampleIndexQuery {
         }
 
         return true;
+    }
+
+    public Set<String> getNegatedSamples() {
+        return negatedSamples;
+    }
+
+
+    public boolean isNegated(String sample) {
+        return getNegatedSamples().contains(sample);
     }
 
     public Map<String, boolean[]> getFatherFilterMap() {

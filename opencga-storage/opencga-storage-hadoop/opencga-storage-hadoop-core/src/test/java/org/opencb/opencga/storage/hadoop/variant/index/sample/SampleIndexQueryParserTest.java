@@ -11,11 +11,13 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.RangeQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
@@ -72,6 +74,7 @@ public class SampleIndexQueryParserTest {
 
         mm.updateStudyMetadata("study", studyMetadata -> {
             studyMetadata.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("FORMAT", "DP", "", "1", "", Collections.emptyMap()));
+            studyMetadata.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), "./.,0/0,0/1,1/1");
             return studyMetadata;
         });
     }
@@ -125,6 +128,43 @@ public class SampleIndexQueryParserTest {
         assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:0/1")));
         assertFalse(validSampleIndexQuery(new Query(GENOTYPE.key(), "S1:1/1,./.,S2:./.")));
 
+    }
+
+    @Test
+    public void parseSampleIndexQuery() {
+        Query query;
+        SampleIndexQuery indexQuery;
+        Map<String, List<String>> gtMap;
+
+        query = new Query(GENOTYPE.key(), "S1:1/1,0/1");
+        indexQuery = parse(query);
+        gtMap = Collections.singletonMap("S1", Arrays.asList("1/1", "0/1"));
+        assertEquals(gtMap, indexQuery.getSamplesMap());
+        assertFalse(query.containsKey(GENOTYPE.key()));
+
+        query = new Query(GENOTYPE.key(), "S1:1/1,0/1;S2:0/0");
+        indexQuery = parse(query);
+        gtMap = new HashMap<>();
+        gtMap.put("S1", Arrays.asList("1/1", "0/1"));
+        gtMap.put("S2", Arrays.asList("0/1", "1/1"));
+        assertEquals(gtMap, indexQuery.getSamplesMap());
+        assertTrue(query.containsKey(GENOTYPE.key()));
+
+        query = new Query(GENOTYPE.key(), "S1:1/1,0/1;S2:0/0,0/1");
+        indexQuery = parse(query);
+        gtMap = new HashMap<>();
+        gtMap.put("S1", Arrays.asList("1/1", "0/1"));
+        gtMap.put("S2", Arrays.asList("1/1"));
+        assertEquals(gtMap, indexQuery.getSamplesMap());
+        assertTrue(query.containsKey(GENOTYPE.key()));
+
+        query = new Query(GENOTYPE.key(), "S1:1/1,0/1;S2:0/0,0/1,1/1");
+        indexQuery = parse(query);
+        gtMap = new HashMap<>();
+        gtMap.put("S1", Arrays.asList("1/1", "0/1"));
+        gtMap.put("S2", Collections.emptyList());
+        assertEquals(gtMap, indexQuery.getSamplesMap());
+        assertTrue(query.containsKey(GENOTYPE.key()));
     }
 
     @Test
@@ -361,6 +401,8 @@ public class SampleIndexQueryParserTest {
         indexQuery = parse(query);
         assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HOM_REF_UNPHASED]);
+        assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HET_REF_UNPHASED]);
 
         // Can not use family query with OR operator
         query = new Query(SAMPLE.key(), "fam1_child,fam1_father,fam1_mother");
@@ -371,6 +413,9 @@ public class SampleIndexQueryParserTest {
         query = new Query(GENOTYPE.key(), "fam1_child:0/0;fam1_father:0/1;fam1_mother:0/1");
         indexQuery = parse(query);
         assertEquals(3, indexQuery.getSamplesMap().size());
+        assertTrue(indexQuery.isNegated("fam1_child"));
+        assertFalse(indexQuery.isNegated("fam1_father"));
+        assertFalse(indexQuery.isNegated("fam1_mother"));
     }
 
     @Test

@@ -153,7 +153,7 @@ public class SampleIndexQueryParser {
         // Map from all samples to query to its list of genotypes.
         Map<String, List<String>> samplesMap = new HashMap<>();
         // Samples that are querying
-        List<String> negatedSamples = new LinkedList<>();
+        Set<String> negatedSamples = new HashSet<>();
         // Samples from the query that can not be used to filter. e.g. samples with invalid or negated genotypes
         // If any, the query is not covered.
         List<String> negatedGenotypesSamples = new LinkedList<>();
@@ -184,7 +184,8 @@ public class SampleIndexQueryParser {
 
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
 
-                if (entry.getValue().stream().allMatch(SampleIndexSchema::validGenotype)) {
+                List<String> gts = GenotypeClass.filter(entry.getValue(), allGenotypes);
+                if (gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
                     if (sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY) {
                         String fatherName = null;
                         if (sampleMetadata.getFather() != null) {
@@ -202,8 +203,7 @@ public class SampleIndexQueryParser {
                     negatedSamples.add(sampleMetadata.getName());
                 }
 
-
-                gtMap.put(sampleMetadata.getName(), entry.getValue());
+                gtMap.put(sampleMetadata.getName(), gts);
             }
 
             // Determine which samples are parents, and which are children
@@ -223,9 +223,14 @@ public class SampleIndexQueryParser {
                     // Parents filter can only be used when intersecting (AND) with child
                     logger.debug("Discard parent {}", sampleName);
                     parentsInQuery.add(sampleName);
+
+                    // Remove from negatedSamples (if present)
+                    negatedSamples.remove(sampleName);
+
                     continue;
                 }
                 if (hasNegatedGenotypeFilter(queryOperation, entry.getValue())) {
+                    // Discard samples with negated genotypes
                     negatedGenotypesSamples.add(sampleName);
                     partialIndex = true;
                     partialGtIndex = true;
@@ -254,9 +259,15 @@ public class SampleIndexQueryParser {
                     }
                 }
                 // If not all genotypes are valid, query is not covered
-                if (!entry.getValue().stream().allMatch(SampleIndexSchema::validGenotype)) {
+                if (!negatedSamples.isEmpty()) {
                     partialGtIndex = true;
                 }
+            }
+
+            for (String negatedSample : negatedSamples) {
+                List<String> negatedGenotypes = new ArrayList<>(validGenotypes);
+                negatedGenotypes.removeAll(samplesMap.get(negatedSample));
+                samplesMap.put(negatedSample, negatedGenotypes);
             }
 
             if (!partialGtIndex) {
@@ -394,9 +405,8 @@ public class SampleIndexQueryParser {
             }
         }
 
-        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, fatherFilterMap, motherFilterMap, fileIndexMap,
-                annotationIndexQuery,
-                mendelianErrorSet, onlyDeNovo, queryOperation);
+        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, negatedSamples, fatherFilterMap, motherFilterMap,
+                fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {

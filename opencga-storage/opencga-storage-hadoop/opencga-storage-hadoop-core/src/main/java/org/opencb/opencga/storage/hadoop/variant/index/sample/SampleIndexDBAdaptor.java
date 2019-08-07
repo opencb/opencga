@@ -14,7 +14,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -75,26 +74,23 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public VariantDBIterator iterator(SampleIndexQuery query, QueryOptions options) {
-        String study = query.getStudy();
         Map<String, List<String>> samples = query.getSamplesMap();
 
         if (samples.isEmpty()) {
             throw new VariantQueryException("At least one sample expected to query SampleIndex!");
         }
-        List<String> allGts = getAllLoadedGenotypes(study);
         QueryOperation operation = query.getQueryOperation();
 
         if (samples.size() == 1) {
             String sample = samples.entrySet().iterator().next().getKey();
             List<String> gts = query.getSamplesMap().get(sample);
-            List<String> filteredGts = GenotypeClass.filter(gts, allGts);
 
-            if (!gts.isEmpty() && filteredGts.isEmpty()) {
+            if (gts.isEmpty()) {
                 // If empty, should find none. Return empty iterator
                 return VariantDBIterator.emptyIterator();
             } else {
                 logger.info("Single sample indexes iterator");
-                SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, filteredGts));
+                SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, gts));
                 return applyLimitSkip(iterator, options);
             }
         }
@@ -104,23 +100,20 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
         for (Map.Entry<String, List<String>> entry : samples.entrySet()) {
             String sample = entry.getKey();
-            List<String> gts = GenotypeClass.filter(entry.getValue(), allGts);
-            if (!entry.getValue().isEmpty() && gts.isEmpty()) {
-                // If empty, should find none. Add empty iterator for this sample
-                iterators.add(VariantDBIterator.emptyIterator());
-            } else if (gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
-                iterators.add(internalIterator(query.forSample(sample, gts)));
-            } else {
-                if (operation.equals(QueryOperation.OR)) {
-                    throw new IllegalArgumentException("Unable to query by REF or MISS genotypes!");
-                }
-                List<String> queryGts = new ArrayList<>(allGts);
-                queryGts.removeAll(gts);
+            List<String> gts = entry.getValue();
 
+            if (query.isNegated(sample)) {
+                if (!gts.isEmpty()) {
+                    negatedIterators.add(internalIterator(query.forSample(sample, gts)));
+                }
                 // Skip if GTs to query is empty!
                 // Otherwise, it will return ALL genotypes instead of none
-                if (!queryGts.isEmpty()) {
-                    negatedIterators.add(internalIterator(query.forSample(sample, queryGts)));
+            } else {
+                if (gts.isEmpty()) {
+                    // If empty, should find none. Add empty iterator for this sample
+                    iterators.add(VariantDBIterator.emptyIterator());
+                } else {
+                    iterators.add(internalIterator(query.forSample(sample, gts)));
                 }
             }
         }
