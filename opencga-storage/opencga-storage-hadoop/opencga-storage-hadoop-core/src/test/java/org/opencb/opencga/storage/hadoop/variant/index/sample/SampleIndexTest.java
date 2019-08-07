@@ -78,7 +78,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
                 .append(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
+//                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                 .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 
@@ -196,8 +196,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryFileIndex(new Query(TYPE.key(), "SNV,INDEL"));
         testQueryFileIndex(new Query(FILTER.key(), "PASS"));
         testQueryFileIndex(new Query(TYPE.key(), "INDEL").append(FILTER.key(), "PASS"));
-        testQueryFileIndex(new Query(QUAL.key(), ">30").append(FILTER.key(), "PASS"));
-        testQueryFileIndex(new Query(QUAL.key(), ">10").append(FILTER.key(), "PASS"));
+        testQueryFileIndex(new Query(QUAL.key(), ">=30").append(FILTER.key(), "PASS"));
+        testQueryFileIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"));
+        testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(SAMPLE.key(), "NA19600,NA19661"));
+        testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
     }
 
     @Test

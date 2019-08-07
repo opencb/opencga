@@ -5,12 +5,15 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.query.RangeQuery;
@@ -18,10 +21,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationInd
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
@@ -40,6 +40,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
 public class SampleIndexQueryParserTest {
 
     private SampleIndexQueryParser sampleIndexQueryParser;
+    private VariantStorageMetadataManager mm;
+    private int studyId;
 
     @Before
     public void setUp() throws Exception {
@@ -51,14 +53,38 @@ public class SampleIndexQueryParserTest {
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s3", "ALL"))
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s4", "ALL"));
         DummyVariantStorageMetadataDBAdaptorFactory.clear();
-        VariantStorageMetadataManager mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         sampleIndexQueryParser = new SampleIndexQueryParser(mm, configuration);
-        StudyMetadata study = mm.createStudy("study");
-        mm.registerFile(study.getId(), "F1", Arrays.asList("S1", "S2", "S3"));
+        studyId = mm.createStudy("study").getId();
+        mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "F1", Arrays.asList("S1", "S2", "S3"))));
+
+        mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam1", Arrays.asList("fam1_child", "fam1_father", "fam1_mother"))));
+        mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam2_child", Arrays.asList("fam2_child"))));
+        mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam2_father", Arrays.asList("fam2_father"))));
+        mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam2_mother", Arrays.asList("fam2_mother"))));
+        for (String family : Arrays.asList("fam1", "fam2")) {
+            mm.updateSampleMetadata(studyId, mm.getSampleId(studyId, family + "_child"),
+                    sampleMetadata -> sampleMetadata
+                            .setFamilyIndexStatus(TaskMetadata.Status.READY)
+                            .setFather(mm.getSampleId(studyId, family + "_father"))
+                            .setMother(mm.getSampleId(studyId, family + "_mother")));
+        }
+
+        mm.updateStudyMetadata("study", studyMetadata -> {
+            studyMetadata.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("FORMAT", "DP", "", "1", "", Collections.emptyMap()));
+            return studyMetadata;
+        });
+    }
+
+    private SampleIndexQuery parse(final Query query) {
+        Query newQuery = new VariantQueryParser(null, mm).preProcessQuery(query, new QueryOptions());
+        query.clear();
+        query.putAll(newQuery);
+        return sampleIndexQueryParser.parse(query);
     }
 
     private SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, Collection<String>> filesFromSample) {
-        return sampleIndexQueryParser.parseFileQuery(query, sample, filesFromSample);
+        return sampleIndexQueryParser.parseFileQuery(query, sample, filesFromSample, false);
     }
 
     private byte parseAnnotationMask(Query query) {
@@ -103,54 +129,53 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parseVariantTpeQuery() {
-
         Query q;
         SampleIndexQuery sampleIndexQuery;
 
         q = new Query(TYPE.key(), "INDEL").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "INDEL,SNV,INSERTION,DELETION,CNV,BREAKEND,MNV").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "INDEL,SNV").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "SNV").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "SNV,SNP").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "SNP").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         // Filter by SNV, as it can not filter by SNP
         assertEquals(Collections.singleton(VariantType.SNV), sampleIndexQuery.getVariantTypes());
         assertEquals(VariantType.SNP.name(), q.getString(TYPE.key()));
 
 
         q = new Query(TYPE.key(), "MNV").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "MNV,MNP").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "MNP").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = sampleIndexQueryParser.parse(q);
+        sampleIndexQuery = parse(q);
         // Filter by MNV, as it can not filter by MNP
         assertEquals(Collections.singleton(VariantType.MNV), sampleIndexQuery.getVariantTypes());
         assertEquals(VariantType.MNP.name(), q.getString(TYPE.key()));
@@ -159,19 +184,20 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parseFileFilterTest() {
-        testFilter("PASS", true);
-        testFilter("!PASS", false);
-        testFilter("LowQual", false);
-        testFilter("!LowQual", null);
-        testFilter( "LowGQX,LowQual", false);
-        testFilter( "LowGQX;LowQual", false);
-        testFilter( "PASS,LowQual", null);
-        testFilter( "PASS;LowQual", null);
-        testFilter("!LowGQX;!LowQual", null);
+        testFilter("PASS", true, true);
+        testFilter("!PASS", false, true);
+        testFilter("LowQual", false, false);
+        testFilter("!LowQual", null, false);
+        testFilter( "LowGQX,LowQual", false, false);
+        testFilter( "LowGQX;LowQual", false, false);
+        testFilter( "PASS,LowQual", null, false);
+        testFilter( "PASS;LowQual", null, false);
+        testFilter("!LowGQX;!LowQual", null, false);
     }
 
-    private void testFilter(String value, Boolean pass) {
-        SampleFileIndexQuery q = parseFileQuery(new Query(FILTER.key(), value), "", null);
+    private void testFilter(String value, Boolean pass, boolean covered) {
+        Query query = new Query(FILTER.key(), value);
+        SampleFileIndexQuery q = parseFileQuery(query, "", null);
         if (pass == null) {
             assertEquals(EMPTY_MASK, q.getFileIndexMask());
         } else {
@@ -182,56 +208,81 @@ public class SampleIndexQueryParserTest {
                 assertFalse(q.getValidFileIndex()[VariantFileIndexConverter.FILTER_PASS_MASK]);
             }
         }
+        assertEquals(!covered, isValidParam(query, FILTER));
     }
 
     @Test
     public void parseFileQualTest() {
 
-        for (Double qual : Arrays.asList(5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0)) {
+        int qualThresholdMatches = 0;
+        for (Double qual : Arrays.asList(0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0)) {
+            Query query;
             SampleFileIndexQuery fileQuery;
 
-            fileQuery = parseFileQuery(new Query(QUAL.key(), "=" + qual), "", null);
+            query = new Query(QUAL.key(), "=" + qual);
+            fileQuery = parseFileQuery(query, "", null);
             assertEquals("=" + qual, new RangeQuery(qual, qual + DELTA,
                             IndexUtils.getRangeCode(qual, SampleIndexConfiguration.QUAL_THRESHOLDS),
                             IndexUtils.getRangeCodeExclusive(qual + DELTA, SampleIndexConfiguration.QUAL_THRESHOLDS)),
                     fileQuery.getQualQuery());
             assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            assertTrue(isValidParam(query, QUAL));
 
-            fileQuery = parseFileQuery(new Query(QUAL.key(), "<=" + qual), "", null);
+            query = new Query(QUAL.key(), "<=" + qual);
+            fileQuery = parseFileQuery(query, "", null);
             assertEquals("<=" + qual, new RangeQuery(Double.MIN_VALUE, qual + DELTA,
                             (byte) 0,
                             IndexUtils.getRangeCodeExclusive(qual + DELTA, SampleIndexConfiguration.QUAL_THRESHOLDS)),
                     fileQuery.getQualQuery());
             assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            assertTrue(isValidParam(query, QUAL));
 
-            fileQuery = parseFileQuery(new Query(QUAL.key(), "<" + qual), "", null);
+            query = new Query(QUAL.key(), "<" + qual);
+            fileQuery = parseFileQuery(query, "", null);
             assertEquals("<" + qual, new RangeQuery(Double.MIN_VALUE, qual,
                             (byte) 0,
                             IndexUtils.getRangeCodeExclusive(qual, SampleIndexConfiguration.QUAL_THRESHOLDS)),
                     fileQuery.getQualQuery());
             assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            if (Arrays.binarySearch(SampleIndexConfiguration.QUAL_THRESHOLDS, qual) >= 0) {
+                assertFalse(isValidParam(query, QUAL));
+                qualThresholdMatches++;
+            } else {
+                assertTrue(isValidParam(query, QUAL));
+            }
 
-            fileQuery = parseFileQuery(new Query(QUAL.key(), ">=" + qual), "", null);
+            query = new Query(QUAL.key(), ">=" + qual);
+            fileQuery = parseFileQuery(query, "", null);
             assertEquals(">=" + qual, new RangeQuery(qual, IndexUtils.MAX,
                             IndexUtils.getRangeCode(qual, SampleIndexConfiguration.QUAL_THRESHOLDS),
                             (byte) 4),
                     fileQuery.getQualQuery());
             assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            if (qual == 0 || Arrays.binarySearch(SampleIndexConfiguration.QUAL_THRESHOLDS, qual) >= 0) {
+                assertFalse(isValidParam(query, QUAL));
+            } else {
+                assertTrue(isValidParam(query, QUAL));
+            }
 
-            fileQuery = parseFileQuery(new Query(QUAL.key(), ">" + qual), "", null);
+            query = new Query(QUAL.key(), ">" + qual);
+            fileQuery = parseFileQuery(query, "", null);
             assertEquals(">" + qual, new RangeQuery(qual + DELTA, IndexUtils.MAX,
                             IndexUtils.getRangeCode(qual + DELTA, SampleIndexConfiguration.QUAL_THRESHOLDS),
                             (byte) 4),
                     fileQuery.getQualQuery());
             assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            assertTrue(isValidParam(query, QUAL));
         }
+        assertEquals(SampleIndexConfiguration.QUAL_THRESHOLDS.length, qualThresholdMatches);
     }
 
     @Test
     public void parseFileDPTest() {
+        SampleFileIndexQuery fileQuery;
         for (Double dp : Arrays.asList(3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 35.0)) {
             for (Pair<String, String> pair : Arrays.asList(Pair.of(INFO.key(), "F1"), Pair.of(FORMAT.key(), "S1"))) {
-                SampleFileIndexQuery fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP=" + dp), "S1", n -> Collections.singleton("F1"));
+                fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP=" + dp), "S1", n -> Collections.singleton("F1"));
                 assertEquals("=" + dp, new RangeQuery(dp, dp + DELTA,
                                 IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS),
                                 IndexUtils.getRangeCodeExclusive(dp + DELTA, SampleIndexConfiguration.DP_THRESHOLDS)),
@@ -264,9 +315,98 @@ public class SampleIndexQueryParserTest {
                                 IndexUtils.getRangeCode(dp + DELTA, SampleIndexConfiguration.DP_THRESHOLDS),
                                 (byte) 4),
                         fileQuery.getDpQuery());
-                assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());}
-
+                assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
+            }
         }
+
+
+        Query query = new Query(FORMAT.key(), "S1:DP>=15");
+        fileQuery = parseFileQuery(query, "S1", n -> Collections.singleton("F1"));
+        assertTrue(fileQuery.getDpQuery().isExactQuery());
+        assertFalse(isValidParam(query, FORMAT));
+
+        query = new Query(FORMAT.key(), "S1:DP>=15;S2:DP>34");
+        fileQuery = parseFileQuery(query, "S1", n -> Collections.singleton("F1"));
+        assertTrue(fileQuery.getDpQuery().isExactQuery());
+        fileQuery = parseFileQuery(query, "S2", n -> Collections.singleton("F1"));
+        assertFalse(fileQuery.getDpQuery().isExactQuery());
+        assertEquals("S2:DP>34", query.getString(FORMAT.key()));
+
+        query = new Query(FORMAT.key(), "S1:DP>=15,S2:DP>34");
+        fileQuery = parseFileQuery(query, "S1", n -> Collections.singleton("F1"));
+        assertNull(fileQuery.getDpQuery());
+        fileQuery = parseFileQuery(query, "S2", n -> Collections.singleton("F1"));
+        assertNull(fileQuery.getDpQuery());
+        assertEquals("S1:DP>=15,S2:DP>34", query.getString(FORMAT.key()));
+
+        query = new Query(FORMAT.key(), "S2:DP>34;S1:DP>=15;S3:DP>16");
+        fileQuery = parseFileQuery(query, "S2", n -> Collections.singleton("F1"));
+        assertFalse(fileQuery.getDpQuery().isExactQuery());
+        fileQuery = parseFileQuery(query, "S1", n -> Collections.singleton("F1"));
+        assertTrue(fileQuery.getDpQuery().isExactQuery());
+        assertEquals("S2:DP>34;S3:DP>16", query.getString(FORMAT.key()));
+    }
+
+    @Test
+    public void parseFamilyQuery() {
+        Query query;
+        SampleIndexQuery indexQuery;
+
+        query = new Query(SAMPLE.key(), "fam1_child;fam1_father;fam1_mother");
+        indexQuery = parse(query);
+        assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+
+        query = new Query(GENOTYPE.key(), "fam1_child:0/1;fam1_father:0/1;fam1_mother:0/1,0/0");
+        indexQuery = parse(query);
+        assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+
+        // Can not use family query with OR operator
+        query = new Query(SAMPLE.key(), "fam1_child,fam1_father,fam1_mother");
+        indexQuery = parse(query);
+        assertEquals(3, indexQuery.getSamplesMap().size());
+
+        // Can not use family query with non valid genotypes in the child
+        query = new Query(GENOTYPE.key(), "fam1_child:0/0;fam1_father:0/1;fam1_mother:0/1");
+        indexQuery = parse(query);
+        assertEquals(3, indexQuery.getSamplesMap().size());
+    }
+
+    @Test
+    public void parseFamilyQuery_filter() {
+        Query query;
+        SampleIndexQuery indexQuery;
+
+        query = new Query(SAMPLE.key(), "fam1_child;fam1_father;fam1_mother").append(FILTER.key(), "PASS");
+        indexQuery = parse(query);
+        assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertFalse(query.containsKey(FILTER.key()));
+
+        // Samples from family2 are not in the same file, so we can not remove the FILTER parameter
+        query = new Query(SAMPLE.key(), "fam2_child;fam2_father;fam2_mother").append(FILTER.key(), "PASS");
+        indexQuery = parse(query);
+        assertEquals(Collections.singleton("fam2_child"), indexQuery.getSamplesMap().keySet());
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertTrue(query.containsKey(FILTER.key()));
+    }
+
+    @Test
+    public void parseFamilyQuery_dp() {
+        Query query;
+        SampleIndexQuery indexQuery;
+
+        query = new Query()
+                .append(SAMPLE.key(), "fam1_child;fam1_father;fam1_mother")
+                .append(FORMAT.key(), "fam1_father:DP>15;fam1_child:DP>=15;fam1_mother:DP>15");
+        indexQuery = parse(query);
+
+        assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").getDpQuery().isExactQuery());
+        assertEquals("fam1_father:DP>15;fam1_mother:DP>15", query.getString(FORMAT.key()));
+
     }
 
     @Test

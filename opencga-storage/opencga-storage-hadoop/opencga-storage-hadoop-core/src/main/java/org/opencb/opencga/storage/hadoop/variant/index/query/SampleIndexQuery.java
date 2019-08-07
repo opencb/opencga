@@ -115,6 +115,10 @@ public class SampleIndexQuery {
         return motherFilter.getOrDefault(sample, EMPTY_PARENT_FILTER);
     }
 
+    public Map<String, SampleFileIndexQuery> getSampleFileIndexQueryMap() {
+        return fileFilterMap;
+    }
+
     public SampleFileIndexQuery getSampleFileIndexQuery(String sample) {
         SampleFileIndexQuery sampleFileIndexQuery = fileFilterMap.get(sample);
         return sampleFileIndexQuery == null ? new SampleFileIndexQuery(sample) : sampleFileIndexQuery;
@@ -182,78 +186,4 @@ public class SampleIndexQuery {
         return new SingleSampleIndexQuery(this, sample);
     }
 
-    public static class SingleSampleIndexQuery extends SampleIndexQuery {
-
-        private final String sample;
-        private final List<String> gts;
-        private final SampleFileIndexQuery sampleFileIndexQuery;
-        private final boolean[] fatherFilter;
-        private final boolean[] motherFilter;
-        private final boolean mendelianError;
-
-        protected SingleSampleIndexQuery(SampleIndexQuery query, String sample) {
-            this(query, sample, query.getSamplesMap().get(sample));
-        }
-
-        protected SingleSampleIndexQuery(SampleIndexQuery query, String sample, List<String> gts) {
-            super(query.regions == null ? null : new ArrayList<>(query.regions),
-                    query.variantTypes == null ? null : new HashSet<>(query.variantTypes),
-                    query.study,
-                    Collections.singletonMap(sample, gts),
-                    query.fatherFilter,
-                    query.motherFilter,
-                    query.fileFilterMap,
-                    query.annotationIndexQuery,
-                    query.mendelianErrorSet,
-                    query.onlyDeNovo,
-                    query.queryOperation);
-            this.sample = sample;
-            this.gts = gts;
-            fatherFilter = getFatherFilter(sample);
-            motherFilter = getMotherFilter(sample);
-            sampleFileIndexQuery = getSampleFileIndexQuery(sample);
-            mendelianError = query.mendelianErrorSet.contains(sample);
-        }
-
-        @Override
-        public boolean emptyFileIndex() {
-            return sampleFileIndexQuery.getFileIndexMask() == EMPTY_MASK;
-        }
-
-        public String getSample() {
-            return sample;
-        }
-
-        public List<String> getGenotypes() {
-            return gts;
-        }
-
-        public boolean[] getFatherFilter() {
-            return fatherFilter;
-        }
-
-        public boolean hasFatherFilter() {
-            return fatherFilter != EMPTY_PARENT_FILTER;
-        }
-
-        public boolean[] getMotherFilter() {
-            return motherFilter;
-        }
-
-        public boolean hasMotherFilter() {
-            return motherFilter != EMPTY_PARENT_FILTER;
-        }
-
-        public byte getFileIndexMask() {
-            return sampleFileIndexQuery.getFileIndexMask();
-        }
-
-        public SampleFileIndexQuery getSampleFileIndexQuery() {
-            return sampleFileIndexQuery;
-        }
-
-        public boolean getMendelianError() {
-            return mendelianError;
-        }
-    }
 }

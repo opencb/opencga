@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.stats;
+package org.opencb.opencga.storage.hadoop.variant.index.family;
 
 import org.junit.Before;
 import org.junit.ClassRule;

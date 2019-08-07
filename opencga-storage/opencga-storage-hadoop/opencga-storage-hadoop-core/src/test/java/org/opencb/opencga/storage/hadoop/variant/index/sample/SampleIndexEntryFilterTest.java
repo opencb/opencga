@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationInd
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
 
 import java.util.Arrays;
@@ -39,7 +40,7 @@ public class SampleIndexEntryFilterTest {
     @Test
     public void testPopFreqQueryOR() {
         List<String> result;
-        SampleIndexQuery.SingleSampleIndexQuery query;
+        SingleSampleIndexQuery query;
 
         // Partial OR query should always return ALL values
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, true, buildPopulationFrequencyQuery("s2", 0, 1));
@@ -68,7 +69,7 @@ public class SampleIndexEntryFilterTest {
 
     @Test
     public void testPopFreqQueryAND() {
-        SampleIndexQuery.SingleSampleIndexQuery query;
+        SingleSampleIndexQuery query;
         List<String> result;
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, true, buildPopulationFrequencyQuery("s2", 0, 1));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry()).stream().map(Variant::toString).collect(Collectors.toList());
@@ -131,9 +132,9 @@ public class SampleIndexEntryFilterTest {
                 (byte) maxFreqExclusive);
     }
 
-    private SampleIndexQuery.SingleSampleIndexQuery getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation op,
-                                                                              boolean partial,
-                                                                              PopulationFrequencyQuery... frequencyQuery) {
+    private SingleSampleIndexQuery getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation op,
+                                                             boolean partial,
+                                                             PopulationFrequencyQuery... frequencyQuery) {
         SampleAnnotationIndexQuery annotationIndexQuery = new SampleAnnotationIndexQuery(new byte[2], (short) 0, (byte) 0,
                 op,
                 Arrays.asList(frequencyQuery),
@@ -141,15 +142,15 @@ public class SampleIndexEntryFilterTest {
         return getSingleSampleIndexQuery(annotationIndexQuery);
     }
 
-    private SampleIndexQuery.SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery) {
+    private SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery) {
         return getSingleSampleIndexQuery(annotationIndexQuery, Collections.emptyMap());
     }
 
-    private SampleIndexQuery.SingleSampleIndexQuery getSingleSampleIndexQuery(Map<String, SampleFileIndexQuery> fileFilterMap) {
+    private SingleSampleIndexQuery getSingleSampleIndexQuery(Map<String, SampleFileIndexQuery> fileFilterMap) {
         return getSingleSampleIndexQuery(null, fileFilterMap);
     }
 
-    private SampleIndexQuery.SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery, Map<String, SampleFileIndexQuery> fileFilterMap) {
+    private SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery, Map<String, SampleFileIndexQuery> fileFilterMap) {
         return new SampleIndexQuery(
                 Collections.emptyList(), null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), false, VariantQueryUtils.QueryOperation.AND)
                 .forSample("S1");

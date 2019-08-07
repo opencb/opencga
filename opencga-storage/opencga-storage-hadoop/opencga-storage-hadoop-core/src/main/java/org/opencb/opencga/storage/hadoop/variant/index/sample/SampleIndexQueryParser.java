@@ -21,11 +21,11 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.RangeQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,22 +140,35 @@ public class SampleIndexQueryParser {
             throw VariantQueryException.missingStudyForSample("", metadataManager.getStudyNames());
         }
         int studyId = defaultStudy.getId();
+        String study = defaultStudy.getName();
 
         List<String> allGenotypes = getAllLoadedGenotypes(defaultStudy);
         List<String> validGenotypes = allGenotypes.stream().filter(SampleIndexSchema::validGenotype).collect(Collectors.toList());
         List<String> mainGenotypes = GenotypeClass.MAIN_ALT.filter(validGenotypes);
 
-        Set<String> mendelianErrorSet = Collections.emptySet();
-        boolean onlyDeNovo = false;
-        Map<String, boolean[]> fatherFilterMap = new HashMap<>();
-        Map<String, boolean[]> motherFilterMap = new HashMap<>();
 
         boolean partialIndex = false;
 
-        // Extract sample and genotypes to filter
         QueryOperation queryOperation;
+        // Map from all samples to query to its list of genotypes.
         Map<String, List<String>> samplesMap = new HashMap<>();
-        List<String> otherSamples = new LinkedList<>();
+        // Samples that are querying
+        List<String> negatedSamples = new LinkedList<>();
+        // Samples from the query that can not be used to filter. e.g. samples with invalid or negated genotypes
+        // If any, the query is not covered.
+        List<String> negatedGenotypesSamples = new LinkedList<>();
+        // Samples from the query that are parents of any other sample in the query, with the FamilyIndex calculated.
+        // These samples are excluded form the smaplesMap
+        Set<String> parentsInQuery = new HashSet<>();
+
+        // Father/Mother filters
+        Map<String, boolean[]> fatherFilterMap = new HashMap<>();
+        Map<String, boolean[]> motherFilterMap = new HashMap<>();
+
+        Set<String> mendelianErrorSet = new HashSet<>();
+        boolean onlyDeNovo = false;
+
+        // Extract sample and genotypes to filter
         if (isValidParam(query, GENOTYPE)) {
             // Get samples with non negated genotypes
 
@@ -168,21 +181,27 @@ public class SampleIndexQueryParser {
             for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
                 Object sample = entry.getKey();
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
+
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
 
-                if (sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY) {
-                    String fatherName = null;
-                    if (sampleMetadata.getFather() != null) {
-                        fatherName = metadataManager.getSampleName(studyId, sampleMetadata.getFather());
+                if (entry.getValue().stream().allMatch(SampleIndexSchema::validGenotype)) {
+                    if (sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY) {
+                        String fatherName = null;
+                        if (sampleMetadata.getFather() != null) {
+                            fatherName = metadataManager.getSampleName(studyId, sampleMetadata.getFather());
+                        }
+                        String motherName = null;
+                        if (sampleMetadata.getMother() != null) {
+                            motherName = metadataManager.getSampleName(studyId, sampleMetadata.getMother());
+                        }
+                        if (fatherName != null || motherName != null) {
+                            parentsMap.put(sampleMetadata.getName(), Arrays.asList(fatherName, motherName));
+                        }
                     }
-                    String motherName = null;
-                    if (sampleMetadata.getMother() != null) {
-                        motherName = metadataManager.getSampleName(studyId, sampleMetadata.getMother());
-                    }
-                    if (fatherName != null || motherName != null) {
-                        parentsMap.put(sampleMetadata.getName(), Arrays.asList(fatherName, motherName));
-                    }
+                } else {
+                    negatedSamples.add(sampleMetadata.getName());
                 }
+
 
                 gtMap.put(sampleMetadata.getName(), entry.getValue());
             }
@@ -195,10 +214,7 @@ public class SampleIndexQueryParser {
                 parentsSet.addAll(parentsMap.get(child));
             }
 
-            boolean covered = true;
-            if (isValidParam(query, FORMAT)) {
-                covered = false;
-            }
+            boolean partialGtIndex = false;
             for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
                 String sampleName = entry.getKey();
                 if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
@@ -206,9 +222,14 @@ public class SampleIndexQueryParser {
                     // Discard parents that are not children of another sample
                     // Parents filter can only be used when intersecting (AND) with child
                     logger.debug("Discard parent {}", sampleName);
+                    parentsInQuery.add(sampleName);
                     continue;
                 }
                 if (hasNegatedGenotypeFilter(queryOperation, entry.getValue())) {
+                    negatedGenotypesSamples.add(sampleName);
+                    partialIndex = true;
+                    partialGtIndex = true;
+                } else {
                     samplesMap.put(sampleName, entry.getValue());
                     if (queryOperation != QueryOperation.OR && childrenSet.contains(sampleName)) {
                         // Parents filter can only be used when intersecting (AND) with child
@@ -219,30 +240,30 @@ public class SampleIndexQueryParser {
                         if (father != null) {
                             boolean[] filter = buildParentGtFilter(gtMap.get(father));
                             if (!isFullyCoveredParentFilter(filter)) {
-                                covered = false;
+                                partialGtIndex = true;
                             }
                             fatherFilterMap.put(sampleName, filter);
                         }
                         if (mother != null) {
                             boolean[] filter = buildParentGtFilter(gtMap.get(mother));
                             if (!isFullyCoveredParentFilter(filter)) {
-                                covered = false;
+                                partialGtIndex = true;
                             }
                             motherFilterMap.put(sampleName, filter);
                         }
                     }
-                } else {
-                    otherSamples.add(sampleName);
-                    covered = false;
                 }
                 // If not all genotypes are valid, query is not covered
                 if (!entry.getValue().stream().allMatch(SampleIndexSchema::validGenotype)) {
-                    covered = false;
+                    partialGtIndex = true;
                 }
             }
 
-            if (covered) {
-                query.remove(GENOTYPE.key());
+            if (!partialGtIndex) {
+                // Do not remove genotypes list if FORMAT is present.
+                if (!isValidParam(query, FORMAT)) {
+                    query.remove(GENOTYPE.key());
+                }
             }
         } else if (isValidParam(query, SAMPLE)) {
             // Filter by all non negated samples
@@ -259,8 +280,6 @@ public class SampleIndexQueryParser {
                 // Do not remove FORMAT
                 query.remove(SAMPLE.key());
             }
-            //} else if (isValidParam(query, FILE)) {
-            // TODO: Add FILEs filter
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
             onlyDeNovo = false;
             Pair<QueryOperation, List<String>> mendelianError = splitValue(query.getString(SAMPLE_MENDELIAN_ERROR.key()));
@@ -284,28 +303,59 @@ public class SampleIndexQueryParser {
                 samplesMap.put(s, mainGenotypes);
             }
             query.remove(SAMPLE_DE_NOVO.key());
+        //} else if (isValidParam(query, FILE)) {
+            // Add FILEs filter ?
         } else {
             throw new IllegalStateException("Unable to query SamplesIndex");
         }
 
-        String study = defaultStudy.getName();
+        boolean partialFilesIndex = false;
+        if (!negatedGenotypesSamples.isEmpty() || !parentsInQuery.isEmpty()) {
+            Set<Integer> sampleFiles = new HashSet<>(samplesMap.size());
+            for (String sample : samplesMap.keySet()) {
+                Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                sampleFiles.addAll(metadataManager.getSampleMetadata(studyId, sampleId).getFiles());
+            }
 
+            // If the file of any other sample is not between the files of the samples in the query, mark as partial
+            for (String sample : negatedGenotypesSamples) {
+                Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                for (Integer file : metadataManager.getSampleMetadata(studyId, sampleId).getFiles()) {
+                    if (!sampleFiles.contains(file)) {
+                        partialFilesIndex = true;
+                        break;
+                    }
+                }
+            }
+            // If the file of any parent is not between the files of the samples in the query, mark as partial
+            for (String sample : parentsInQuery) {
+                Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                for (Integer file : metadataManager.getSampleMetadata(studyId, sampleId).getFiles()) {
+                    if (!sampleFiles.contains(file)) {
+                        partialFilesIndex = true;
+                        break;
+                    }
+                }
+            }
+
+        }
         Map<String, SampleFileIndexQuery> fileIndexMap = new HashMap<>(samplesMap.size());
-        for (String sample : samplesMap.keySet()) {
-            SampleFileIndexQuery fileIndexQuery = parseFileQuery(query, sample, s -> {
-                Integer sampleId = metadataManager.getSampleId(studyId, s);
-                Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId));
+        for (String sample1 : samplesMap.keySet()) {
+            SampleFileIndexQuery fileIndexQuery = parseFileQuery(query, sample1, s -> {
+                Integer sampleId1 = metadataManager.getSampleId(studyId, s);
+                Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId1));
                 List<String> fileNames = new ArrayList<>(fileIds.size());
                 for (Integer fileId : fileIds) {
                     fileNames.add(metadataManager.getFileName(studyId, fileId));
                 }
                 return fileNames;
-            });
+            }, partialFilesIndex);
 
-            fileIndexMap.put(sample, fileIndexQuery);
+            fileIndexMap.put(sample1, fileIndexQuery);
         }
+
         boolean allSamplesAnnotated = true;
-        if (otherSamples.isEmpty()) {
+        if (negatedGenotypesSamples.isEmpty()) {
             for (String sample : samplesMap.keySet()) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
@@ -350,15 +400,15 @@ public class SampleIndexQueryParser {
     }
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {
-        boolean valid = true;
+        boolean anyNegated = false;
         for (String gt : gts) {
             if (queryOperation == QueryOperation.OR && !SampleIndexSchema.validGenotype(gt)) {
                 // Invalid genotypes (i.e. genotypes not in the index) are not allowed in OR queries
                 throw new IllegalStateException("Genotype '" + gt + "' not in the SampleIndex.");
             }
-            valid &= !isNegated(gt);
+            anyNegated |= isNegated(gt);
         }
-        return valid;
+        return anyNegated;
     }
 
     /**
@@ -378,7 +428,7 @@ public class SampleIndexQueryParser {
             String child = entry.getKey();
             List<String> parents = entry.getValue();
 
-            if (!hasNegatedGenotypeFilter(queryOperation, gtMap.get(child))) {
+            if (hasNegatedGenotypeFilter(queryOperation, gtMap.get(child))) {
                 // Discard children with negated iterators
                 continue;
             }
@@ -420,7 +470,9 @@ public class SampleIndexQueryParser {
         return true;
     }
 
-    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, Collection<String>> filesFromSample) {
+
+    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, Collection<String>> filesFromSample,
+                                                  boolean partialFilesIndex) {
         byte fileIndexMask = 0;
 
         Set<Integer> typeCodes = Collections.emptySet();
@@ -445,6 +497,7 @@ public class SampleIndexQueryParser {
         }
 
         boolean filterPass = false;
+        boolean filterPassCovered = false;
         if (isValidParam(query, FILTER)) {
             List<String> filterValues = splitValue(query.getString(FILTER.key())).getRight();
 
@@ -453,9 +506,11 @@ public class SampleIndexQueryParser {
                     // PASS
                     fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
                     filterPass = true;
+                    filterPassCovered = true;
                 } else if (filterValues.get(0).equals(VariantQueryUtils.NOT + VCFConstants.PASSES_FILTERS_v4)) {
                     // !PASS
                     fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
+                    filterPassCovered = true;
                 } else if (!isNegated(filterValues.get(0))) {
                     // Non negated filter, other than PASS
                     fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
@@ -468,6 +523,9 @@ public class SampleIndexQueryParser {
                     }
                 } // else --> Mix PASS and other filters. Can not use index
             }
+        }
+        if (filterPassCovered && !partialFilesIndex) {
+            query.remove(FILTER.key());
         }
 
         RangeQuery qualQuery = null;
@@ -484,25 +542,32 @@ public class SampleIndexQueryParser {
                 double value = Double.valueOf(split[2]);
                 qualQuery = getRangeQuery(op, value, SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
                 fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
+
+                if (qualQuery.isExactQuery() && !partialFilesIndex) {
+                    query.remove(QUAL.key());
+                }
             }
         }
 
         RangeQuery dpQuery = null;
         if (isValidParam(query, INFO)) {
-            Map<String, String> infoMap = VariantQueryUtils.parseInfo(query).getValue();
-            // Lazy get files from sample
-            Collection<String> files = filesFromSample.apply(sample);
-            for (String file : files) {
-                String values = infoMap.get(file);
+            Pair<QueryOperation, Map<String, String>> pair = parseInfo(query);
+            if (pair.getKey() != QueryOperation.OR) {
+                Map<String, String> infoMap = pair.getValue();
+                // Lazy get files from sample
+                Collection<String> files = filesFromSample.apply(sample);
+                for (String file : files) {
+                    String values = infoMap.get(file);
 
-                if (StringUtils.isNotEmpty(values)) {
-                    for (String value : VariantQueryUtils.splitValue(values).getValue()) {
-                        String[] split = VariantQueryUtils.splitOperator(value);
-                        if (split[0].equals(VCFConstants.DEPTH_KEY)) {
-                            String op = split[1];
-                            double dpValue = Double.parseDouble(split[2]);
-                            dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
-                            fileIndexMask |= VariantFileIndexConverter.DP_MASK;
+                    if (StringUtils.isNotEmpty(values)) {
+                        for (String value : VariantQueryUtils.splitValue(values).getValue()) {
+                            String[] split = VariantQueryUtils.splitOperator(value);
+                            if (split[0].equals(VCFConstants.DEPTH_KEY)) {
+                                String op = split[1];
+                                double dpValue = Double.parseDouble(split[2]);
+                                dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
+                                fileIndexMask |= VariantFileIndexConverter.DP_MASK;
+                            }
                         }
                     }
                 }
@@ -510,22 +575,40 @@ public class SampleIndexQueryParser {
         }
 
         if (isValidParam(query, FORMAT)) {
-            Map<String, String> format = VariantQueryUtils.parseFormat(query).getValue();
+            Pair<QueryOperation, Map<String, String>> pair = parseFormat(query);
+            QueryOperation formatOp = pair.getKey();
+            Map<String, String> format = pair.getValue();
             String values = format.get(sample);
 
-            if (StringUtils.isNotEmpty(values)) {
-                for (String value : VariantQueryUtils.splitValue(values).getValue()) {
+            if (StringUtils.isNotEmpty(values) && formatOp != QueryOperation.OR) {
+                List<String> sampleFormatFilters = splitValue(values).getValue();
+                for (String value : sampleFormatFilters) {
                     String[] split = VariantQueryUtils.splitOperator(value);
                     if (split[0].equals(VCFConstants.DEPTH_KEY)) {
                         String op = split[1];
                         double dpValue = Double.parseDouble(split[2]);
                         dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
                         fileIndexMask |= VariantFileIndexConverter.DP_MASK;
+                        if (dpQuery.isExactQuery() && !partialFilesIndex) {
+                            if (sampleFormatFilters.size() == 1) {
+                                format.remove(sample);
+                                if (format.isEmpty()) {
+                                    query.remove(FORMAT.key());
+                                } else {
+                                    String newFormatFilter = format.entrySet()
+                                            .stream()
+                                            .map(e -> e.getKey() + IS + e.getValue())
+                                            .collect(Collectors.joining(formatOp.separator()));
+                                    query.put(FORMAT.key(), newFormatFilter);
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
+        // Build validFileIndex array
         boolean[] validFileIndex = new boolean[1 << Byte.SIZE];
 
         if (fileIndexMask != IndexUtils.EMPTY_MASK) {
