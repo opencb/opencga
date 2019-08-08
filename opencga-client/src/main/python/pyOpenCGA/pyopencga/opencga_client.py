@@ -16,19 +16,32 @@ from pyopencga.rest_clients.meta_client import Meta
 from pyopencga.rest_clients.admin_client import Admin
 from pyopencga.rest_clients.panel_client import Panels
 from pyopencga.rest_clients.tool_client import Tool
+import json
+import yaml
+import os
 
 class OpenCGAClient(object):
-    def __init__(self, configuration, user=None, pwd=None, session_id=None,
-                 anonymous=False, on_retry=None, auto_refresh=True):
+    def __init__(self, configuration, user=None, pwd=None, session_id=None, anonymous=False,
+                 use_session=False, session_file=None, on_retry=None, auto_refresh=True):
         """
         :param on_retry: callback to be called with client retries an operation.
             It must accept parameters: client, exc_type, exc_val, exc_tb, call
         """
+
         self.auto_refresh = auto_refresh
         self.configuration = ConfigClient(configuration, on_retry)
         self.on_retry = on_retry
         self.clients = []
         self.user_id = user  # if user and session_id are supplied, we can log out
+
+        if use_session or session_file:
+            if session_file:
+                self._load_session_from_file(session_file)
+            else:
+                self._load_session_from_file()
+        elif not user and not pwd and not session_id:
+            anonymous = True
+
         if anonymous:
             self._login_handler = None
             self.session_id = None
@@ -97,6 +110,32 @@ class OpenCGAClient(object):
             # only retry the ones with objects (instantiated clients)
             if client is not None:
                 client.on_retry = self.on_retry
+
+    def _load_session_from_file(self, session_fpath=None):
+        """
+        Loads the session_id from session_path or ~/.opencga/session.<yml|json>
+        """
+
+        if not session_fpath:
+            dir_path = os.path.dirname(os.path.realpath('~/.opencga/'))
+            for root, dirs, files in os.walk(dir_path):
+                for file in files:
+                    if file in ['session.yaml','session.yml', 'session.json']:
+                        session_fpath = '/'.join([root, str(file)])
+
+        try:
+            with open(session_fpath) as session_fhand:
+                yaml_exts = ('.yml','.yaml') #[NOTE] endswith needs a tuple
+                if session_fpath.endswith(yaml_exts):
+                    self.session_id = yaml.safe_load(session_fhand)['token']
+                elif session_fpath.endswith('.json'):
+                    self.session_id = json.loads(session_fhand.read())['token']
+        except: #[TODO] Improve error handling
+            if session_fpath:
+                msg = 'Unable to read file {}'.format(session_fpath)
+            else:
+                msg = 'No session file available at {}'.format(str(dir_path))
+            raise IOError(msg)
 
     def _make_login_handler(self, user, pwd):
         """
