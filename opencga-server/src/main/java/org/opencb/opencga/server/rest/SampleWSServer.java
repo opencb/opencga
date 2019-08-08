@@ -95,7 +95,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/create")
-    @ApiOperation(value = "Create sample", position = 2, response = Sample.class,
+    @ApiOperation(value = "Create sample", response = Sample.class,
             notes = "WARNING: The Individual object in the body is deprecated and will be completely removed in a future release. From"
                     + " that moment on it will not be possible to create an individual when creating a new sample. To do that you must "
                     + "use the individual/create web service, this web service allows now to create a new individual with its samples. "

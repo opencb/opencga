@@ -182,20 +182,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    @Deprecated
-    public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId,
-                                          IndividualProperty.Sex sex, String ethnicity, String populationName,
-                                          String populationSubpopulation, String populationDescription, String dateOfBirth,
-                                          IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
-                                          IndividualProperty.AffectationStatus affectationStatus, QueryOptions options, String sessionId)
+    void validateNewIndividual(Study study, Individual individual, List<String> samples, String userId, boolean linkParents)
             throws CatalogException {
-        Individual individual = new Individual(name, name, null, null, null, null, sex, karyotypicSex,
-                ethnicity, new Individual.Population(populationName, populationSubpopulation, populationDescription), dateOfBirth, -1, 1,
-                null, null, lifeStatus, affectationStatus, null, null, null, false, null, null);
-        return create(String.valueOf(studyId), individual, options, sessionId);
-    }
-
-    void validateNewIndividual(Study study, Individual individual, String userId, boolean linkParents) throws CatalogException {
         ParamUtils.checkAlias(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
@@ -210,15 +198,23 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setDisorders(ParamUtils.defaultObject(individual.getDisorders(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
-        individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), Collections.emptyList()));
+        individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), new ArrayList<>()));
         individual.setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
         individual.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INDIVIDUAL));
 
+        // Check the id is not in use
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId());
+        if (individualDBAdaptor.count(query).first() > 0) {
+            throw new CatalogException("Individual '" + individual.getId() + "' already exists.");
+        }
+
         validateNewAnnotationSets(study.getVariableSets(), individual.getAnnotationSets());
-        validateSamples(study, individual, userId);
+        validateSamples(study, individual, samples, userId);
 
         if (linkParents) {
             if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
@@ -234,66 +230,53 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    private void validateSamples(Study study, Individual individual, String userId) throws CatalogException {
-        if (individual.getSamples() == null || individual.getSamples().isEmpty()) {
-            return;
-        }
+    private void validateSamples(Study study, Individual individual, List<String> samples, String userId) throws CatalogException {
+        List<Sample> sampleList = new ArrayList<>();
 
-        // Check samples exist and can be used or can be created by the user
-        Set<Long> existingSampleIds = new HashSet<>();
-        List<Sample> nonExistingSamples = new ArrayList<>();
-        for (Sample sample : individual.getSamples()) {
-            try {
-                QueryResult<Sample> queryResult = catalogManager.getSampleManager().internalGet(study.getUid(), sample.getId(),
-                        SampleManager.INCLUDE_SAMPLE_IDS, userId);
-                existingSampleIds.add(queryResult.first().getUid());
-            } catch (CatalogException e) {
-                // Sample does not exist so we need to check if the user has permissions to create the samples
-                nonExistingSamples.add(sample);
-            }
-        }
-
-        if (!existingSampleIds.isEmpty()) {
-            checkSamplesNotInUseInOtherIndividual(existingSampleIds, study.getUid(), null);
-        }
-        if (!nonExistingSamples.isEmpty()) {
+        if (individual.getSamples() != null && !individual.getSamples().isEmpty()) {
             // Check the user can create new samples
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
-        }
 
-        // Fetch the sample id and version necessary to point the individual to the proper samples
-        List<Sample> sampleList = new ArrayList<>(existingSampleIds.size() + nonExistingSamples.size());
-        if (!existingSampleIds.isEmpty()) {
-            // We need to obtain the latest version of the samples
-            Query sampleQuery = new Query().append(SampleDBAdaptor.QueryParams.UID.key(), existingSampleIds);
-            QueryOptions sampleOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.VERSION.key()));
-
-            QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleQuery, sampleOptions);
-            if (sampleQueryResult.getNumResults() < existingSampleIds.size()) {
-                throw new CatalogException("Internal error. Could not obtain the current version of all the existing samples.");
-            }
-            sampleList.addAll(sampleQueryResult.getResult());
-        }
-        if (!nonExistingSamples.isEmpty()) {
-            for (Sample sample : nonExistingSamples) {
+            // Validate the samples can be created and are valid
+            for (Sample sample : individual.getSamples()) {
                 catalogManager.getSampleManager().validateNewSample(study, sample, userId);
                 sampleList.add(sample);
             }
         }
+
+        if (samples != null && !samples.isEmpty()) {
+            // We remove any possible duplicate
+            ArrayList<String> deduplicatedSampleIds = new ArrayList<>(new HashSet<>(samples));
+
+            InternalGetQueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                    deduplicatedSampleIds, SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
+
+            // Check the samples are not attached to other individual
+            Set<Long> sampleUidSet = sampleQueryResult.getResult().stream().map(Sample::getUid).collect(Collectors.toSet());
+
+            checkSamplesNotInUseInOtherIndividual(sampleUidSet, study.getUid(), null);
+
+            sampleList.addAll(sampleQueryResult.getResult());
+        }
+
         individual.setSamples(sampleList);
     }
 
     @Override
     public QueryResult<Individual> create(String studyStr, Individual individual, QueryOptions options, String token)
             throws CatalogException {
+        return create(studyStr, individual, null, options, token);
+    }
+
+    public QueryResult<Individual> create(String studyStr, Individual individual, List<String> sampleIds, QueryOptions options,
+                                          String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-        validateNewIndividual(study, individual, userId, true);
+        validateNewIndividual(study, individual, sampleIds, userId, true);
 
         // Create the individual
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);

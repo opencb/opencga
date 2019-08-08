@@ -75,6 +75,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
+            @ApiParam(value = "Comma separated list of sample ids to be associated to the created individual") @QueryParam("samples")
+                    String samples,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreatePOST params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new IndividualCreatePOST());
@@ -85,7 +87,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             return createOkResponse(
                     individualManager.create(studyStr, params.toIndividual(studyStr, catalogManager.getStudyManager(), sessionId),
-                            queryOptions, sessionId));
+                            getIdList(samples), queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

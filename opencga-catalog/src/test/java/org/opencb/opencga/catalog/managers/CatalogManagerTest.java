@@ -1245,22 +1245,23 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype1")))
                         .setDisorders(Collections.singletonList(new Disorder().setId("disorder1"))),
                 QueryOptions.empty(), sessionIdUser).first();
-        Individual father = individualManager.create(studyFqn, new Individual()
+        Individual father = new Individual()
                         .setId("father")
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype2")))
-                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder2"))),
-                QueryOptions.empty(), sessionIdUser).first();
-        Individual mother = individualManager.create(studyFqn, new Individual()
+                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+        Individual mother = new Individual()
                         .setId("mother")
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype3")))
-                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder3"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder3")));
 
         FamilyManager familyManager = catalogManager.getFamilyManager();
-        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Arrays.asList(father, child)), QueryOptions.empty(), sessionIdUser);
-        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Arrays.asList(father, mother, child)), QueryOptions.empty(), sessionIdUser);
+        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Collections.singletonList(father)),
+                Collections.singletonList(child.getId()), QueryOptions.empty(), sessionIdUser);
+        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Collections.singletonList(mother)),
+                Arrays.asList(father.getId(), child.getId()), QueryOptions.empty(), sessionIdUser);
 
-        WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(), sessionIdUser);
+        WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
+                new ObjectMap(), sessionIdUser);
         assertEquals(0, writeResult.getNumModified());
         assertTrue(writeResult.getFailed().get(0).getMessage().contains("found in the families"));
 

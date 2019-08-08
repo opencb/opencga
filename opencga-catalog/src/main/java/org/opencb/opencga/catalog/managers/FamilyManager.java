@@ -174,26 +174,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    private long getFamilyId(boolean silent, String familyStrAux) throws CatalogException {
-        long familyId = Long.parseLong(familyStrAux);
-        try {
-            familyDBAdaptor.checkId(familyId);
-        } catch (CatalogException e) {
-            if (silent) {
-                return -1L;
-            } else {
-                throw e;
-            }
-        }
-        return familyId;
-    }
-
     @Override
     public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         return null;
     }
 
+    @Override
     public QueryResult<Family> create(String studyStr, Family family, QueryOptions options, String token) throws CatalogException {
+        return create(studyStr, family, null, options, token);
+    }
+
+    public QueryResult<Family> create(String studyStr, Family family, List<String> members, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
@@ -212,9 +204,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         family.setVersion(1);
         family.setAttributes(ParamUtils.defaultObject(family.getAttributes(), Collections.emptyMap()));
 
+        // Check the id is not in use
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getId());
+        if (familyDBAdaptor.count(query).first() > 0) {
+            throw new CatalogException("Family '" + family.getId() + "' already exists.");
+        }
+
         validateNewAnnotationSets(study.getVariableSets(), family.getAnnotationSets());
 
-        autoCompleteFamilyMembers(family, study, userId);
+        autoCompleteFamilyMembers(study, family, members, userId);
         validateFamily(family);
         validateMultiples(family);
         validatePhenotypes(family);
@@ -568,7 +568,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 family.setMembers(storedFamily.getMembers());
             } else {
                 // We will need to complete the individual information provided
-                autoCompleteFamilyMembers(family, study, userId);
+                List<String> memberList = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+                family.setMembers(null);
+                autoCompleteFamilyMembers(study, family, memberList, userId);
             }
             if (family.getPhenotypes() == null || family.getMembers().isEmpty()) {
                 family.setPhenotypes(storedFamily.getPhenotypes());
@@ -829,50 +831,41 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     /**
-     * Looks for all the members in the database. If they exist, the data will be overriden. It also fetches the parents individuals if they
-     * haven't been provided.
+     * Validate the list of members provided in the members list already exists (and retrieves their information).
+     * It also makes sure the members provided inside the family object are valid and can be successfully created.
+     * It merges all those members inside the family object afterwards.
      *
-     * @param family    family object.
      * @param study     study.
+     * @param family    family object.
+     * @param members   Already existing members.
      * @param userId    user id.
      * @throws CatalogException if there is any kind of error.
      */
-    private void autoCompleteFamilyMembers(Family family, Study study, String userId) throws CatalogException {
-        if (family.getMembers() == null || family.getMembers().isEmpty()) {
-            return;
-        }
+    private void autoCompleteFamilyMembers(Study study, Family family, List<String> members, String userId) throws CatalogException {
+        List<Individual> memberList = new ArrayList<>();
 
-        Map<String, Individual> memberMap = new HashMap<>();
-        Set<String> individualIds = new HashSet<>();
-        for (Individual individual : family.getMembers()) {
-            memberMap.put(individual.getId(), individual);
-            individualIds.add(individual.getId());
+        if (family.getMembers() != null && !family.getMembers().isEmpty()) {
+            // Check the user can create new individuals
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
-            if (individual.getFather() != null && StringUtils.isNotEmpty(individual.getFather().getId())) {
-                individualIds.add(individual.getFather().getId());
-            }
-            if (individual.getMother() != null && StringUtils.isNotEmpty(individual.getMother().getId())) {
-                individualIds.add(individual.getMother().getId());
+            // Validate the individuals can be created and are valid
+            for (Individual individual : family.getMembers()) {
+                catalogManager.getIndividualManager().validateNewIndividual(study, individual, null, userId, false);
+                memberList.add(individual);
             }
         }
 
-        InternalGetQueryResult<Individual> individuals = catalogManager.getIndividualManager().internalGet(study.getUid(),
-                new ArrayList<>(individualIds), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId, true);
-        for (Individual individual : individuals.getResult()) {
-            // We override the individuals from the map
-            memberMap.put(individual.getId(), individual);
+        if (members != null && !members.isEmpty()) {
+            // We remove any possible duplicate
+            ArrayList<String> deduplicatedMemberIds = new ArrayList<>(new HashSet<>(members));
+
+            InternalGetQueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                    deduplicatedMemberIds, IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId, false);
+
+            memberList.addAll(individualQueryResult.getResult());
         }
 
-        // We validate the individuals that do not exist so they can be successfully created
-        for (InternalGetQueryResult<Individual>.Missing missing : individuals.getMissing()) {
-            if (!memberMap.containsKey(missing.getId())) {
-                throw new CatalogException("Member " + missing.getId() + " not present in the members list");
-            }
-            catalogManager.getIndividualManager().validateNewIndividual(study, memberMap.get(missing.getId()), userId, false);
-        }
-
-
-        family.setMembers(new ArrayList<>(memberMap.values()));
+        family.setMembers(memberList);
     }
 
     private void validateFamily(Family family) throws CatalogException {

@@ -169,7 +169,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
-        ParamUtils.checkAlias(sample.getId(), "name");
+        ParamUtils.checkAlias(sample.getId(), "id");
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
@@ -183,6 +183,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
+
+        // Check the id is not in use
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId());
+        if (sampleDBAdaptor.count(query).first() > 0) {
+            throw new CatalogException("Sample '" + sample.getId() + "' already exists.");
+        }
 
         if (StringUtils.isNotEmpty(sample.getIndividualId())) {
             // Check individual exists

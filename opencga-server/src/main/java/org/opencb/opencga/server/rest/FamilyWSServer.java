@@ -165,11 +165,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response createFamilyPOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
+            @ApiParam(value = "Comma separated list of member ids to be associated to the created family") @QueryParam("members")
+                    String members,
             @ApiParam(value = "JSON containing family information", required = true) FamilyPOST family) {
         try {
             family = ObjectUtils.defaultIfNull(family, new FamilyPOST());
             QueryResult<Family> queryResult = familyManager.create(studyStr,
-                    family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), queryOptions, sessionId);
+                    family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), getIdList(members), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
