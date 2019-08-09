@@ -76,6 +76,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final MetadataCache<String, Integer> sampleIdCache;
     private final MetadataCache<Integer, String> sampleNameCache;
     private final MetadataCache<Integer, Boolean> sampleIdIndexedCache;
+    private final MetadataCache<Integer, LinkedHashSet<Integer>> sampleIdsFromFileIdCache;
 
     private final MetadataCache<String, Integer> fileIdCache;
     private final MetadataCache<Integer, String> fileNameCache;
@@ -106,6 +107,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.sampleNotFound(sampleId, studyId);
             }
             return sampleMetadata.isIndexed();
+        });
+        sampleIdsFromFileIdCache = new MetadataCache<>((studyId, fileId) -> {
+            FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
+            if (fileMetadata == null) {
+                throw VariantQueryException.fileNotFound(fileId, studyId);
+            }
+            return fileMetadata.getSamples();
         });
 
         fileIdCache = new MetadataCache<>(fileDBAdaptor::getFileId);
@@ -1116,6 +1124,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         }
         return id;
+    }
+    public LinkedHashSet<Integer> getSampleIdsFromFileId(int studyId, int fileId) {
+        return sampleIdsFromFileIdCache.get(studyId, fileId);
     }
 
     public Set<Integer> getFileIdsFromSampleIds(int studyId, Collection<Integer> sampleIds) {
