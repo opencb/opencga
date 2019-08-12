@@ -55,6 +55,9 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private int count = 0;
     private ExecutorService threadPool;
     private AtomicLong timeConverting = new AtomicLong();
+//    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
+//            .namingPattern("variant-hbase-scan-convert-%s")
+//            .build());
 
     public VariantHBaseScanIterator(Iterator<ResultScanner> resultScanners, GenomeHelper genomeHelper, VariantStorageMetadataManager scm,
                                     Query query, QueryOptions options, String unknownGenotype, List<String> formats,

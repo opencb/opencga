@@ -65,6 +65,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         MendelianErrorSampleIndexVariantIterator mendelianIterator = null;
 
         byte[] row = result.getRow();
+        int sampleId = SampleIndexSchema.sampleIdFromRowKey(row);
         String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
         int batchStart = SampleIndexSchema.batchStartFromRowKey(row);
 
@@ -120,7 +121,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
             }
         }
 
-        return new SampleIndexEntry(chromosome, batchStart, gts, mendelianIterator);
+        return new SampleIndexEntry(sampleId, chromosome, batchStart, gts, mendelianIterator);
     }
 
     public static boolean columnStartsWith(Cell cell, byte[] prefix) {

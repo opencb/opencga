@@ -120,6 +120,10 @@ public final class SampleIndexSchema {
         }
     }
 
+    public static int sampleIdFromRowKey(byte[] row) {
+        return ((Number) PInteger.INSTANCE.toObject(row, 0, 4)).intValue();
+    }
+
     public static String chromosomeFromRowKey(byte[] row) {
         return (String) PVarchar.INSTANCE.toObject(row, 4, row.length - 4 - 1 - 4);
     }

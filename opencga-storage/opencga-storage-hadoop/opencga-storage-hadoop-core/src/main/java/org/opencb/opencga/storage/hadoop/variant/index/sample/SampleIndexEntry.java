@@ -12,13 +12,15 @@ import java.util.Map;
  */
 public class SampleIndexEntry {
 
+    private int sampleId;
     private String chromosome;
     private int batchStart;
     private Map<String, SampleIndexGtEntry> gts;
     private MendelianErrorSampleIndexVariantIterator mendelianVariants;
 
-    public SampleIndexEntry(String chromosome, int batchStart,
+    public SampleIndexEntry(int sampleId, String chromosome, int batchStart,
                             Map<String, SampleIndexGtEntry> gts, MendelianErrorSampleIndexVariantIterator mendelianVariants) {
+        this.sampleId = sampleId;
         this.chromosome = chromosome;
         this.batchStart = batchStart;
         this.gts = gts;
@@ -69,6 +71,15 @@ public class SampleIndexEntry {
                 .append("gts", gts)
                 .append("mendelianVariants", mendelianVariants)
                 .toString();
+    }
+
+    public int getSampleId() {
+        return sampleId;
+    }
+
+    public SampleIndexEntry setSampleId(int sampleId) {
+        this.sampleId = sampleId;
+        return this;
     }
 
     public static class SampleIndexGtEntry {

@@ -108,7 +108,7 @@ public class SampleIndexEntryFilterTest {
                 .collect(Collectors.toMap(cell -> Bytes.toString(CellUtil.cloneQualifier(cell)), CellUtil::cloneValue)).get("_PF_0/1");
 
 
-        return new SampleIndexEntry("1", 0, Collections.singletonMap("S1", new SampleIndexEntry.SampleIndexGtEntry("0/1")
+        return new SampleIndexEntry(0, "1", 0, Collections.singletonMap("S1", new SampleIndexEntry.SampleIndexGtEntry("0/1")
                 .setPopulationFrequencyIndexGt(pf)
                 .setCount(5)
                 .setVariants(buildIterator(
