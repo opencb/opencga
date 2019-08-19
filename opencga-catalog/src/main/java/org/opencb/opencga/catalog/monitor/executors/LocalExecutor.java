@@ -139,25 +139,25 @@ public class LocalExecutor implements BatchExecutor {
     }
 
 
-    private void closeOutputStreams(Command com) {
+    private void closeOutputStreams(Command command) {
         /** Close output streams **/
-        if (com.getOutputOutputStream() != null) {
+        if (command.getOutputOutputStream() != null) {
             try {
-                com.getOutputOutputStream().close();
+                command.getOutputOutputStream().close();
             } catch (IOException e) {
                 logger.warn("Error closing OutputStream", e);
             }
-            com.setOutputOutputStream(null);
-            com.setOutput(null);
+            command.setOutputOutputStream(null);
+            command.setOutput(null);
         }
-        if (com.getErrorOutputStream() != null) {
+        if (command.getErrorOutputStream() != null) {
             try {
-                com.getErrorOutputStream().close();
+                command.getErrorOutputStream().close();
             } catch (IOException e) {
                 logger.warn("Error closing OutputStream", e);
             }
-            com.setErrorOutputStream(null);
-            com.setError(null);
+            command.setErrorOutputStream(null);
+            command.setError(null);
         }
     }
 }

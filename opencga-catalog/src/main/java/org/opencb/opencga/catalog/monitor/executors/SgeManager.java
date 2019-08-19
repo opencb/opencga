@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core;
+package org.opencb.opencga.catalog.monitor.executors;
 
 import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
@@ -41,10 +41,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class  SgeManager {
+public class SgeManager {
 
-
-    private static final Map<String, String> stateDic;
+    private static final Map<String, String> STATE_DIC;
     public static final String UNKNOWN = "unknown";
     public static final String RUNNING = "running";
     public static final String TRANSFERRED = "transferred";
@@ -59,11 +58,11 @@ public class  SgeManager {
     private static Configuration configuration;
 
     static {
-        stateDic = new HashMap<String, String>();
-        stateDic.put("r", RUNNING);
-        stateDic.put("t", TRANSFERRED);
-        stateDic.put("qw", QUEUED);
-        stateDic.put("Eqw", ERROR);
+        STATE_DIC = new HashMap<>();
+        STATE_DIC.put("r", RUNNING);
+        STATE_DIC.put("t", TRANSFERRED);
+        STATE_DIC.put("qw", QUEUED);
+        STATE_DIC.put("Eqw", ERROR);
     }
 
     public SgeManager(Configuration configuration) {
@@ -80,20 +79,20 @@ public class  SgeManager {
         queueJob(toolName, wumJobName, wumUserId, outdir, commandLine, queue, "");
     }
 
-    public static void queueJob(String toolName, String wumJobName, int wumUserId, URI outdir, String commandLine, String queue, String logFileId)
+    public static void queueJob(String toolName, String jobName, int userId, URI outdir, String commandLine, String queue, String logFile)
             throws Exception {
         if (outdir.getScheme() != null && !outdir.getScheme().equals("file")) {
             throw new IOException("Unsupported outdir for QueueJob");
         }
-        queueJob(toolName, wumJobName, wumUserId, outdir.getPath(), commandLine, queue, logFileId);
+        queueJob(toolName, jobName, userId, outdir.getPath(), commandLine, queue, logFile);
     }
     @Deprecated
-    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue, String logFileId)
-            throws Exception {
-        logFileId = logFileId == null || logFileId.isEmpty() ? "" : "." + logFileId;
+    public static void queueJob(String toolName, String jobName, int userId, String outdir, String commandLine, String queue,
+                                String logFile) throws Exception {
+        logFile = logFile == null || logFile.isEmpty() ? "" : "." + logFile;
         queue = queue == null || queue.isEmpty() ? getQueueName(toolName) : queue;
-        String outFile = Paths.get(outdir, "sge_out" + logFileId + ".log").toString();
-        String errFile = Paths.get(outdir, "sge_err" + logFileId + ".log").toString();
+        String outFile = Paths.get(outdir, "sge_out" + logFile + ".log").toString();
+        String errFile = Paths.get(outdir, "sge_err" + logFile + ".log").toString();
 
         // init sge job
         String outScript = outdir + "/command_line.sh";
@@ -101,7 +100,7 @@ public class  SgeManager {
 
         ArrayList<String> args = new ArrayList<>(Arrays.asList(
                 "qsub", "-V",
-                "-N", getSgeJobName(toolName, wumJobName),
+                "-N", getSgeJobName(toolName, jobName),
                 "-o", outFile,
                 "-e", errFile,
                 "-q", queue,
@@ -115,7 +114,8 @@ public class  SgeManager {
         SingleProcess sp = new SingleProcess(sgeCommand);
         sp.getRunnableProcess().run();
         if (sgeCommand.getExitValue() != 0 || sgeCommand.getException() != null) {
-            throw new Exception("Can't queue job " + getSgeJobName(toolName, wumJobName) + ". qsub returned " + sgeCommand.getExitValue() + " and message:" + sgeCommand.getException());
+            throw new Exception("Can't queue job " + getSgeJobName(toolName, jobName) + ". qsub returned " + sgeCommand.getExitValue()
+                    + " and message:" + sgeCommand.getException());
         }
     }
 
@@ -222,7 +222,7 @@ public class  SgeManager {
         }
 
         if (!status.equals(UNKNOWN)) {
-            status = stateDic.get(status);
+            status = STATE_DIC.get(status);
         } else {
             String command = "qacct -j *" + jobId + "*";
 //            logger.info(command);
