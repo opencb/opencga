@@ -19,7 +19,6 @@ package org.opencb.opencga.app.cli.main.executors.analysis;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.internal.ManagedChannelImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.Variant;
@@ -49,10 +48,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
+
 
 /**
  * Created by pfurio on 15/08/16.
@@ -155,7 +154,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         // Let's hide some STDOUT verbose messages from ManagedChannelImpl class
-        Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
+//        Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
 
 
         ObjectMap params = new ObjectMap(query);
