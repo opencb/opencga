@@ -20,7 +20,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -33,6 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -403,7 +403,7 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
                     cell.getValueArray(),
                     cell.getValueOffset(),
                     cell.getValueLength());
-            PArrayDataType.positionAtArrayElement(ptr, idx, PVarchar.INSTANCE, null);
+            PhoenixHelper.positionAtArrayElement(ptr, idx, PVarchar.INSTANCE, null);
             return Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
         }
 

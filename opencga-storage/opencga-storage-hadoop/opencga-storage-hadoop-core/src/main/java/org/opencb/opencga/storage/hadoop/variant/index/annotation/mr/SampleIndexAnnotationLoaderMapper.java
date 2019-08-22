@@ -6,10 +6,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
@@ -66,7 +66,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
                             cell.getValueArray(),
                             cell.getValueOffset(),
                             cell.getValueLength());
-                    PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                    PhoenixHelper.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
                     if (ptr.getLength() == 0) {
                         gt = GenotypeClass.NA_GT_VALUE;
                         validGt = true;

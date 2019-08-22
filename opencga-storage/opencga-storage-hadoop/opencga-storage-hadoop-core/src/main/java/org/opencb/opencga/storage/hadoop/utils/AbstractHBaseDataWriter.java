@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.BufferedMutator;
-import org.apache.hadoop.hbase.client.BufferedMutatorImpl;
-import org.apache.hadoop.hbase.client.Mutation;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.io.DataWriter;
 import org.slf4j.Logger;
@@ -61,16 +58,24 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
         } catch (IllegalArgumentException e) {
             // Try to extend the information regarding the InvalidArgumentException, in case of being a PUT validation exception
             if (CollectionUtils.isNotEmpty(mutations) && mutations.get(0) instanceof Put && mutator instanceof BufferedMutatorImpl) {
-                for (M mutation : mutations) {
-                    if (mutation instanceof Put) {
-                        try {
-                            ((BufferedMutatorImpl) mutator).validatePut(((Put) mutation));
-                        } catch (RuntimeException e1) {
-                            // Don't print the whole stacktrace
-                            logger.error("Invalid put operation on RowKey '" + Bytes.toStringBinary(mutation.getRow()) + "', "
-                                    + e1.getMessage());
+                try {
+                    hBaseManager.act(tableName, table -> {
+                        for (M mutation : mutations) {
+                            if (mutation instanceof Put) {
+                                try {
+//                                ((BufferedMutatorImpl) mutator).validatePut(((Put) mutation));
+                                    ((HTable) table).validatePut((Put) mutation);
+                                } catch (RuntimeException e1) {
+                                    // Don't print the whole stacktrace
+                                    logger.error("Invalid put operation on RowKey '" + Bytes.toStringBinary(mutation.getRow()) + "', "
+                                            + e1.getMessage());
+                                }
+                            }
                         }
-                    }
+                    });
+                } catch (IOException ioe) {
+                    // Do not propagate this IOException.
+                    logger.error("Unexpected IOException", e);
                 }
             }
             throw e;

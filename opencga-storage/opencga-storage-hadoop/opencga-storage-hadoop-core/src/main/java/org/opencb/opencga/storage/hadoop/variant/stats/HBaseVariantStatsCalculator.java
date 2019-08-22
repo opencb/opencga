@@ -6,7 +6,6 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.feature.Genotype;
@@ -19,6 +18,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -130,7 +130,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                                 cell.getValueArray(),
                                 cell.getValueOffset(),
                                 cell.getValueLength());
-                        PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                        PhoenixHelper.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
                         String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
 
 //                        Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
@@ -155,7 +155,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                                 cell.getValueArray(),
                                 cell.getValueOffset(),
                                 cell.getValueLength());
-                        PArrayDataType.positionAtArrayElement(ptr, FILE_SEC_ALTS_IDX, PVarchar.INSTANCE, null);
+                        PhoenixHelper.positionAtArrayElement(ptr, FILE_SEC_ALTS_IDX, PVarchar.INSTANCE, null);
                         String secAlt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
 
 //                        byte[] value = CellUtil.cloneValue(cell);
