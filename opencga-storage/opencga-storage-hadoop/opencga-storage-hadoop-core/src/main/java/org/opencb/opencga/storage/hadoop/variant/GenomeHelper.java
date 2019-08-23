@@ -37,6 +37,7 @@ public class GenomeHelper {
 
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
+    public static final byte[] DEFAULT_COLUMN_FAMILY_BYTES = Bytes.toBytes(DEFAULT_COLUMN_FAMILY);
 
     public static final String PHOENIX_LOCK_COLUMN = "PHOENIX_LOCK";
     public static final String PHOENIX_INDEX_LOCK_COLUMN = "PHOENIX_INDEX_LOCK";

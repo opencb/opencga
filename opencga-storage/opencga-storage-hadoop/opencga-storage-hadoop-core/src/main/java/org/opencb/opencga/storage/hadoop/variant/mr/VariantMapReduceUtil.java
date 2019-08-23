@@ -13,17 +13,23 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.phoenix.mapreduce.PhoenixOutputFormat;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.analysis.gwas.FisherTestDriver;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +122,16 @@ public class VariantMapReduceUtil {
         }
     }
 
+    public static void initTableMapperJobFromPhoenix(Job job, String variantTable, String sql,
+                                                     Class<? extends Mapper> mapper) {
+        job.setInputFormatClass(CustomPhoenixInputFormat.class);
+
+        PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTable,  sql);
+        job.setMapperClass(mapper);
+
+    }
+
+
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
                                                      Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
@@ -169,12 +185,101 @@ public class VariantMapReduceUtil {
         job.setMapperClass(variantMapperClass);
         job.setOutputFormatClass(PhoenixOutputFormat.class);
 
-//        job.setMapOutputKeyClass(Text.class);
-//        job.setMapOutputValueClass(DoubleWritable.class);
-//        job.setOutputKeyClass(NullWritable.class);
-//        job.setOutputValueClass(StockWritable.class);
-
         job.setInputFormatClass(PhoenixVariantTableInputFormat.class);
+    }
+
+    public static void initVariantRowMapperJob(Job job, String variantTable, VariantStorageMetadataManager metadataManager,
+                                               Query query, QueryOptions queryOptions) throws IOException {
+        initVariantRowMapperJob(job, variantTable, metadataManager, query, queryOptions,
+                job.getConfiguration().getBoolean("skipSampleIndex", false));
+    }
+
+    public static void initVariantRowMapperJob(Job job, String variantTable, VariantStorageMetadataManager metadataManager,
+                                               Query query, QueryOptions queryOptions, boolean skipSampleIndex) throws IOException {
+        GenomeHelper helper = new GenomeHelper(job.getConfiguration());
+        query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
+        if (VariantHBaseQueryParser.isSupportedQuery(query)) {
+            LOGGER.info("Init MapReduce job reading from HBase");
+            boolean useSampleIndex = !skipSampleIndex
+                    && SampleIndexQueryParser.validSampleIndexQuery(query);
+            if (useSampleIndex) {
+                // Remove extra fields from the query
+                SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
+
+                LOGGER.info("Use sample index to read from HBase");
+            }
+
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(helper, metadataManager);
+            List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
+            configureMapReduceScans(scans, job.getConfiguration());
+
+            initVariantRowMapperJobFromHBase(job, variantTable, scans, FisherTestDriver.FisherTestMapper.class, useSampleIndex);
+
+            int i = 0;
+            for (Scan scan : scans) {
+                LOGGER.info("[" + ++i + "]Scan: " + scan.toString());
+            }
+        } else {
+            LOGGER.info("Init MapReduce job reading from Phoenix");
+            String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
+                    .parse(query, queryOptions).getSql();
+
+            initVariantRowMapperJobFromPhoenix(job, variantTable, sql, FisherTestDriver.FisherTestMapper.class);
+        }
+    }
+
+    public static void initVariantRowMapperJobFromHBase(Job job, String variantTableName, Scan scan,
+                                                     Class<? extends VariantRowMapper> variantMapperClass)
+            throws IOException {
+        initVariantRowMapperJobFromHBase(job, variantTableName, scan, variantMapperClass, false);
+    }
+
+    public static void initVariantRowMapperJobFromHBase(Job job, String variantTableName, Scan scan,
+                                                           Class<? extends VariantRowMapper> variantMapperClass, boolean useSampleIndex)
+            throws IOException {
+        initVariantRowMapperJobFromHBase(job, variantTableName, Collections.singletonList(scan), variantMapperClass, useSampleIndex);
+    }
+
+    public static void initVariantRowMapperJobFromHBase(Job job, String variantTableName, List<Scan> scans,
+                                                           Class<? extends VariantRowMapper> variantMapperClass, boolean useSampleIndex)
+            throws IOException {
+        initTableMapperJob(job, variantTableName, scans, TableMapper.class);
+
+        job.setMapperClass(variantMapperClass);
+
+//        job.getConfiguration().set(TableInputFormat.INPUT_TABLE, variantTableName);
+        job.setInputFormatClass(HBaseVariantRowTableInputFormat.class);
+        job.getConfiguration().setBoolean(HBaseVariantRowTableInputFormat.MULTI_SCANS, scans.size() > 1);
+        job.getConfiguration().setBoolean(HBaseVariantRowTableInputFormat.USE_SAMPLE_INDEX_TABLE_INPUT_FORMAT, useSampleIndex);
+    }
+
+    public static void initVariantRowMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor,
+                                                       Class<? extends VariantRowMapper> variantMapperClass)
+            throws IOException {
+        initVariantRowMapperJobFromPhoenix(job, dbAdaptor, new Query(), new QueryOptions(), variantMapperClass);
+    }
+
+    public static void initVariantRowMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor, Query query, QueryOptions queryOptions,
+                                                       Class<? extends VariantRowMapper> variantMapperClass)
+            throws IOException {
+        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        String variantTableName = dbAdaptor.getVariantTable();
+        VariantStorageMetadataManager mm = dbAdaptor.getMetadataManager();
+        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, mm, false);
+
+        String sql = variantSqlQueryParser.parse(query, queryOptions).getSql();
+
+        initVariantRowMapperJobFromPhoenix(job, variantTableName, sql, variantMapperClass);
+    }
+
+    public static void initVariantRowMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
+                                                       Class<? extends VariantRowMapper> variantMapperClass)
+            throws IOException {
+        // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
+        PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTableName,  sqlQuery);
+
+        job.setMapperClass(variantMapperClass);
+        job.setInputFormatClass(PhoenixVariantRowTableInputFormat.class);
     }
 
     public static void setNoneReduce(Job job) throws IOException {
@@ -182,6 +287,10 @@ public class VariantMapReduceUtil {
             LOGGER.info("Set none reduce task");
         }
         job.setNumReduceTasks(0);
+    }
+
+    public static void setNoneTimestamp(Job job) throws IOException {
+        job.getConfiguration().set(AbstractVariantsTableDriver.TIMESTAMP, AbstractVariantsTableDriver.NONE_TIMESTAMP);
     }
 
     public static void setSampleIndexTableInputFormat(Job job) {

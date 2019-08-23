@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
-import org.opencb.biodata.models.variant.Variant;
 
 import java.io.IOException;
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.function.Function;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AbstractVariantsTableInputFormat<KEYIN, VALUEIN> extends InputFormat<KEYIN, Variant> {
+public abstract class TransformInputFormat<KEYIN, VALUEIN, VALUEOUT> extends InputFormat<KEYIN, VALUEOUT> {
 
     protected InputFormat<KEYIN, VALUEIN> inputFormat;
 

@@ -62,6 +62,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
     private String outFile;
     private Query query = new Query();
     private QueryOptions options = new QueryOptions();
+    private final Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
 
     @Override
     protected void parseAndValidateParameters() throws IOException {
@@ -89,7 +90,6 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
                 return VariantExporterMapper.class;
         }
     }
-    private final Logger logger = LoggerFactory.getLogger(VariantExporterDriver.class);
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {

@@ -12,6 +12,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +28,7 @@ import java.util.List;
  */
 public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
+    public static final String COUNTER_GROUP_NAME = VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
     public static final String COLUMNS_TO_COUNT = "columns_to_count";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
     protected String table;
@@ -59,6 +61,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     protected String getUsage() {
         return "Usage: " + getClass().getSimpleName() + " [generic options] <table> (<key> <value>)*";
+    }
+
+    protected String getParam(String key) {
+        return getParam(key, null);
+    }
+
+    protected String getParam(String key, String defaultValue) {
+        return getConf().get(key, getConf().get("--" + key, defaultValue));
     }
 
     protected int getFixedSizeArgs() {
@@ -181,4 +191,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return args.toArray(new String[args.size()]);
     }
 
+    protected static void main(String[] args, Class<? extends Tool> aClass) {
+        try {
+            Tool tool = aClass.newInstance();
+            int code = ToolRunner.run(tool, args);
+            System.exit(code);
+        } catch (Exception e) {
+            LoggerFactory.getLogger(aClass).error("Error executing " + aClass, e);
+            System.exit(1);
+        }
+    }
 }

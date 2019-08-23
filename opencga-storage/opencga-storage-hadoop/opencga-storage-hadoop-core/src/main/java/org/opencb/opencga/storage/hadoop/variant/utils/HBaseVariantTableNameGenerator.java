@@ -16,7 +16,7 @@ public class HBaseVariantTableNameGenerator {
     private static final String VARIANTS_SUFIX = "_variants";
     private static final String META_SUFIX = "_meta";
     private static final String ARCHIVE_SUFIX = "_archive_";
-    private static final String SAMPLE_SUFIX = "_sample_index_";
+    private static final String SAMPLE_SUFIX = "_variant_sample_index_";
     private static final String ANNOTATION_SUFIX = "_annotation";
     private static final String PENDING_ANNOTATION_SUFIX = "_pending_annotation";
     private static final int MINIMUM_DB_NAME_SIZE = 1;
