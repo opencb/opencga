@@ -39,9 +39,10 @@
     <properties>
         <opencga.version>2.0.0-dev</opencga.version>
         <java.version>1.8</java.version>
-        <java-common-libs.version>3.8.0-SNAPSHOT</java-common-libs.version>
-        <biodata.version>1.6.0-SNAPSHOT</biodata.version>
         <cellbase.version>4.6.3-SNAPSHOT</cellbase.version>
+        <biodata.version>1.6.0-SNAPSHOT</biodata.version>
+        <oskar.version>0.2.0-SNAPSHOT</oskar.version>
+        <java-common-libs.version>3.8.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
         <bionet.version>0.2.0-SNAPSHOT</bionet.version>
         <jackson.version>2.9.8</jackson.version>
@@ -187,6 +188,11 @@
             </dependency>
 
             <!-- OpenCB dependencies -->
+            <dependency>
+                <groupId>org.opencb.oskar</groupId>
+                <artifactId>oskar-analysis</artifactId>
+                <version>${oskar.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.opencb.biodata</groupId>
                 <artifactId>biodata-formats</artifactId>

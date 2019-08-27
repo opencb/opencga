@@ -61,7 +61,7 @@ public abstract class OpenCgaAnalysis<T> {
         this.opencgaHome = opencgaHome;
         this.sessionId = sessionId;
 
-        init();
+//        init();
     }
 
     public abstract AnalysisResult<T> execute() throws Exception;

@@ -33,6 +33,7 @@ import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.analysis.old.execution.plugins.PluginExecutor;
 import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAnalysis;
 import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
@@ -55,6 +56,9 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
+import org.opencb.oskar.analysis.AbstractAnalysis;
+import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
+import org.opencb.oskar.core.annotations.Analysis;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -90,6 +94,13 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     @Override
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
+
+        GwasAnalysis gwasAnalysis = new GwasAnalysis("", new ArrayList<>(), new ArrayList<>(), null, new GwasConfiguration(), "");
+        gwasAnalysis.execute();
+        System.exit(1);
+
+
+
 
 //        String subCommandString = variantCommandOptions.getParsedSubCommand();
         String subCommandString = getParsedSubCommand(variantCommandOptions.jCommander);
@@ -215,6 +226,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     }
 
     private void query() throws Exception {
+
+
 
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
