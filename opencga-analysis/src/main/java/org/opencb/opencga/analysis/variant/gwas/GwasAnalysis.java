@@ -27,6 +27,7 @@ import org.opencb.oskar.core.annotations.Analysis;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -68,7 +69,8 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         checkToken(token);
 
         ObjectMap executorParams = new ObjectMap("ID", "MongoIter");
-        Gwas gwas = new Gwas(sampleList1, sampleList2, executorParams, gwasConfiguration);
+        Path outDir = null;
+        Gwas gwas = new Gwas(sampleList1, sampleList2, executorParams, outDir, gwasConfiguration);
         gwas.execute();
         return null;
     }

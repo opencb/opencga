@@ -17,11 +17,13 @@
 package org.opencb.opencga.analysis.variant.gwas;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.oskar.analysis.AnalysisResult;
 import org.opencb.oskar.analysis.variant.gwas.AbstractGwasExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 import org.opencb.oskar.core.annotations.AnalysisExecutor;
 import org.opencb.oskar.core.annotations.AnalysisExecutorRequirement;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.opencb.oskar.core.annotations.AnalysisExecutorRequirement.AnalysisRequirementFramework;
@@ -34,13 +36,14 @@ public class GwasHBaseIterAnalysisExecutor extends AbstractGwasExecutor {
     public GwasHBaseIterAnalysisExecutor() {
     }
 
-    public GwasHBaseIterAnalysisExecutor(List<String> list1, List<String> list2, ObjectMap params, GwasConfiguration configuration) {
-        super(list1, list2, params, configuration);
+    public GwasHBaseIterAnalysisExecutor(List<String> list1, List<String> list2, ObjectMap params, Path outDir, GwasConfiguration configuration) {
+        super(list1, list2, params, outDir, configuration);
     }
 
 
     @Override
-    public void exec() {
+    public AnalysisResult exec() {
         System.out.println("This class must be moved to opencga-storage-hadoop");
+        return null;
     }
 }
