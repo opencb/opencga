@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 
@@ -55,6 +56,12 @@ public class ParamUtils {
             }
         } else {
             throw new CatalogParameterException("Error in parameter: parameter list is not multiple of 2");
+        }
+    }
+
+    public static void checkUpdateParametersMap(ObjectMap parameters) throws CatalogParameterException {
+        if (parameters == null || parameters.isEmpty()) {
+            throw new CatalogParameterException("Missing parameters to update");
         }
     }
 

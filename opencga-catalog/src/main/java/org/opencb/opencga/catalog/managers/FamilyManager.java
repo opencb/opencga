@@ -42,9 +42,9 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.update.FamilyUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -443,11 +443,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public QueryResult<Family> updateAnnotationSet(String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
                                                    ParamUtils.UpdateAction action, QueryOptions options, String token)
             throws CatalogException {
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, familyStr, params, options, token);
+        return update(studyStr, familyStr, updateParams, options, token);
     }
 
     public QueryResult<Family> addAnnotationSet(String studyStr, String familyStr, AnnotationSet annotationSet, QueryOptions options,
@@ -490,11 +490,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if (annotations == null || annotations.isEmpty()) {
             return new QueryResult<>(familyStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
         }
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
+        FamilyUpdateParams updateParams = new FamilyUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, "", annotations)));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, familyStr, params, options, token);
+        return update(studyStr, familyStr, updateParams, options, token);
     }
 
     public QueryResult<Family> removeAnnotations(String studyStr, String familyStr, String annotationSetId,
@@ -509,20 +510,47 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    @Override
-    public QueryResult<Family> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
+    /**
+     * Update an Family from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param familyId   Family id in string format. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A QueryResult with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public QueryResult<Family> update(String studyStr, String familyId, FamilyUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
-        ParamUtils.checkObj(parameters, "Missing parameters");
-        parameters = new ObjectMap(parameters);
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            parameters = updateParams.getUpdateMap();
+        }
+
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+            ParamUtils.checkUpdateParametersMap(parameters);
+        }
+
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS) && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
+                logger.warn("Assuming the user wants to add the list of annotation sets provided");
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                options.put(Constants.ACTIONS, actionMap);
+            }
+        }
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-        Family storedFamily = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
+        Family storedFamily = internalGet(study.getUid(), familyId, QueryOptions.empty(), userId).first();
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+        if (updateParams != null && updateParams.getAnnotationSets() != null) {
             authorizationManager.checkFamilyPermission(study.getUid(), storedFamily.getUid(), userId,
                     FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
         }
@@ -533,50 +561,30 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     FamilyAclEntry.FamilyPermissions.UPDATE);
         }
 
-        try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> FamilyDBAdaptor.UpdateParams.getParam(a) != null);
-        } catch (CatalogParameterException e) {
-            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
+            ParamUtils.checkAlias(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
         }
 
-        // In case the user is updating members or phenotype list, we will create the family variable. If it is != null, it will mean that
-        // all or some of those parameters have been passed to be updated, and we will need to call the private validator to check if the
-        // fields are valid.
-        Family family = null;
-
-        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(FamilyDBAdaptor.QueryParams.ID.key()), FamilyDBAdaptor.QueryParams.ID.key());
-        }
-        if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())
-                || parameters.containsKey(FamilyDBAdaptor.QueryParams.DISORDERS.key())
-                || parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
-            // We parse the parameters to a family object
-            try {
-                ObjectMapper objectMapper = getDefaultObjectMapper();
-
-                family = objectMapper.readValue(objectMapper.writeValueAsString(parameters), Family.class);
-            } catch (IOException e) {
-                logger.error("{}", e.getMessage(), e);
-                throw new CatalogException(e);
-            }
-        }
-
-        if (family != null) {
-            // MEMBERS, PHENOTYPES OR DISORDERS have been passed. We will complete the family object with the stored parameters that are
-            // not expected to be updated
-            if (family.getMembers() == null || family.getMembers().isEmpty()) {
-                family.setMembers(storedFamily.getMembers());
+        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getPhenotypes()) || ListUtils.isNotEmpty(updateParams.getMembers())
+                || ListUtils.isNotEmpty(updateParams.getDisorders()))) {
+            Family family = new Family();
+            if (ListUtils.isNotEmpty(updateParams.getMembers())) {
+                // We obtain the members from catalog
+                autoCompleteFamilyMembers(study, family, updateParams.getMembers(), userId);
             } else {
-                // We will need to complete the individual information provided
-                List<String> memberList = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
-                family.setMembers(null);
-                autoCompleteFamilyMembers(study, family, memberList, userId);
+                // We use the list of members from the stored family
+                family.setMembers(storedFamily.getMembers());
             }
-            if (family.getPhenotypes() == null || family.getMembers().isEmpty()) {
+
+            if (ListUtils.isEmpty(updateParams.getPhenotypes())) {
                 family.setPhenotypes(storedFamily.getPhenotypes());
+            } else {
+                family.setPhenotypes(updateParams.getPhenotypes());
             }
-            if (ListUtils.isEmpty(family.getDisorders())) {
+            if (ListUtils.isEmpty(updateParams.getDisorders())) {
                 family.setDisorders(storedFamily.getDisorders());
+            } else {
+                family.setDisorders(updateParams.getDisorders());
             }
 
             validateFamily(family);
@@ -860,7 +868,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             ArrayList<String> deduplicatedMemberIds = new ArrayList<>(new HashSet<>(members));
 
             InternalGetQueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-                    deduplicatedMemberIds, IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId, false);
+                    deduplicatedMemberIds, IndividualManager.INCLUDE_INDIVIDUAL_DISORDERS_PHENOTYPES, userId, false);
 
             memberList.addAll(individualQueryResult.getResult());
         }

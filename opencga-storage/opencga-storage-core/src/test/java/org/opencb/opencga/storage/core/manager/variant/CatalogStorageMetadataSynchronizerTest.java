@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStorageMetadataSynchronizer;
@@ -145,7 +146,7 @@ public class CatalogStorageMetadataSynchronizerTest {
             indexedFiles.add(file.getName());
             List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-            catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), true, null, sessionId);
+            catalogManager.getCohortManager().update(studyId, cohortId, new CohortUpdateParams().setSamples(samples), true, null, sessionId);
         }
         return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
     }

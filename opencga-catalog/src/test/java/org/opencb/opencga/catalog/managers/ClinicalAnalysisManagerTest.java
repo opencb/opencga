@@ -16,6 +16,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
 import org.opencb.opencga.core.models.*;
 
 import java.io.IOException;
@@ -217,9 +218,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void updateSubjectsNoFamilyTest() throws CatalogException {
         createDummyEnvironment(false);
 
-        ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(),
-                new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
-        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", params,
+        ClinicalUpdateParams updateParams = new ClinicalUpdateParams().setProband(
+                new ClinicalUpdateParams.ProbandParam()
+                        .setId("child1")
+                        .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))));
+        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
                 QueryOptions.empty(), sessionIdUser);
 
         assertEquals(1, updateResult.getNumResults());
@@ -236,12 +239,16 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void updateSubjectsAndFamilyTest() throws CatalogException {
         createDummyEnvironment(false);
 
-        ObjectMap params = new ObjectMap()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(),
-                        new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Family().setId("family")
-                        .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
-        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", params,
+        ClinicalUpdateParams updateParams = new ClinicalUpdateParams()
+                .setProband(new ClinicalUpdateParams.ProbandParam()
+                        .setId("child1")
+                        .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))
+                .setFamily(new ClinicalUpdateParams.FamilyParam()
+                        .setId("family")
+                        .setMembers(Collections.singletonList(new ClinicalUpdateParams.ProbandParam()
+                                .setId("child1")
+                                .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))));
+        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
                 QueryOptions.empty(), sessionIdUser);
 
         assertEquals(1, updateResult.getNumResults());

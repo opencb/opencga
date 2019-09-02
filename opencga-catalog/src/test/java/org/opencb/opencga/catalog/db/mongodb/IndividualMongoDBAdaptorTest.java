@@ -157,7 +157,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 null, 1, Collections.emptyList(), null), null).first().getUid();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.update(individualId, new ObjectMap(IndividualDBAdaptor.UpdateParams.FATHER_ID.key(), 4000),
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), 4000),
                 QueryOptions.empty());
     }
 

@@ -226,7 +226,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        if (parameters.containsKey(UpdateParams.ID.key())) {
+        if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
             Query tmpQuery = new Query(query);
 
@@ -250,22 +250,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
-            document.getSet().put(UpdateParams.ID.key(), parameters.get(UpdateParams.ID.key()));
+            document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {UpdateParams.DESCRIPTION.key(), UpdateParams.STATUS.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.STATUS.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key(), UpdateParams.FILTERS.key()};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.FILTERS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {UpdateParams.PANELS.key(), UpdateParams.SOFTWARE.key(), UpdateParams.ANALYST.key(),
-                UpdateParams.DEPENDENCIES.key(), UpdateParams.REPORTED_VARIANTS.key(), UpdateParams.REPORTED_LOW_COVERAGE.key()};
+        String[] objectAcceptedParams = {QueryParams.PANELS.key(), QueryParams.SOFTWARE.key(), QueryParams.ANALYST.key(),
+                QueryParams.DEPENDENCIES.key(), QueryParams.REPORTED_VARIANTS.key(), QueryParams.REPORTED_LOW_COVERAGE.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        String operation = (String) actionMap.getOrDefault(UpdateParams.COMMENTS.key(), "ADD");
-        objectAcceptedParams = new String[]{UpdateParams.COMMENTS.key()};
+        String operation = (String) actionMap.getOrDefault(QueryParams.COMMENTS.key(), "ADD");
+        objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         switch (operation) {
             case "SET":
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -279,8 +279,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 break;
         }
 
-        operation = (String) actionMap.getOrDefault(UpdateParams.REPORTED_VARIANTS.key(), "ADD");
-        objectAcceptedParams = new String[]{UpdateParams.REPORTED_VARIANTS.key()};
+        operation = (String) actionMap.getOrDefault(QueryParams.REPORTED_VARIANTS.key(), "ADD");
+        objectAcceptedParams = new String[]{QueryParams.REPORTED_VARIANTS.key()};
         switch (operation) {
             case "SET":
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);

@@ -564,7 +564,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // Add SET action for samples
         queryOptions.putIfAbsent(Constants.ACTIONS, new HashMap<>());
-        queryOptions.getMap(Constants.ACTIONS).put(UpdateParams.SAMPLES.key(), SET);
+        queryOptions.getMap(Constants.ACTIONS).put(QueryParams.SAMPLES.key(), SET);
     }
 
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
@@ -606,8 +606,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {UpdateParams.PHENOTYPES.key(), UpdateParams.DISORDERS.key(), UpdateParams.MULTIPLES.key(),
-                UpdateParams.LOCATION.key()};
+        String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(), QueryParams.MULTIPLES.key(),
+                QueryParams.LOCATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
@@ -626,16 +626,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             }
         }
 
-        if (parameters.containsKey(UpdateParams.SAMPLES.key())) {
+        if (parameters.containsKey(QueryParams.SAMPLES.key())) {
             // That can only be done to one individual...
             Individual individual = checkOnlyOneIndividualMatches(clientSession, query);
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            String operation = (String) actionMap.getOrDefault(UpdateParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD.name());
+            String operation = (String) actionMap.getOrDefault(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD.name());
 
             getSampleChanges(individual, parameters, document, operation);
 
-            acceptedObjectParams = new String[]{UpdateParams.SAMPLES.key()};
+            acceptedObjectParams = new String[]{QueryParams.SAMPLES.key()};
             switch (operation) {
                 case "SET":
                     filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
@@ -665,7 +665,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     private void getSampleChanges(Individual individual, ObjectMap parameters, UpdateDocument updateDocument, String operation) {
-        List<Sample> sampleList = parameters.getAsList(UpdateParams.SAMPLES.key(), Sample.class);
+        List<Sample> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class);
 
         Set<Long> currentSampleUidList = new HashSet<>();
         if (individual.getSamples() != null) {

@@ -31,6 +31,8 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
+import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
@@ -476,16 +478,11 @@ public class FileManagerTest extends AbstractManagerTest {
                 .append("HEIGHT", 180);
         AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
 
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
-        ObjectMap updateAnnotation = new ObjectMap()
-                // Update the annotation values
-                .append(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))
-                ));
+        FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("intended only for");
-        fileManager.update(studyFqn, "data/", updateAnnotation, QueryOptions.empty(), sessionIdUser);
+        fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
@@ -506,15 +503,9 @@ public class FileManagerTest extends AbstractManagerTest {
                 .append("HEIGHT", 180);
         AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
 
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
-        ObjectMap updateAnnotation = new ObjectMap()
-                // Update the annotation values
-                .append(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet))
-                ));
+        FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
 
-        QueryResult<File> update = fileManager.update(studyFqn, "data/", updateAnnotation, QueryOptions.empty(),
-                sessionIdUser);
+        QueryResult<File> update = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, update.first().getAnnotationSets().size());
     }
 
@@ -537,23 +528,16 @@ public class FileManagerTest extends AbstractManagerTest {
         AnnotationSet annotationSet = new AnnotationSet("annotation1", vs1.getId(), annotations);
         AnnotationSet annotationSet1 = new AnnotationSet("annotation2", vs1.getId(), annotations);
 
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
-        ObjectMap updateAnnotation = new ObjectMap()
-                // Update the annotation values
-                .append(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Arrays.asList(
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet)),
-                        new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet1))
-                ));
-        QueryResult<File> update = fileManager.update(studyFqn, "data/", updateAnnotation, QueryOptions.empty(),
-                sessionIdUser);
+        FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet1));
+        QueryResult<File> update = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
         assertEquals(2, update.first().getAnnotationSets().size());
     }
 
     @Test
     public void testUpdateSamples() throws CatalogException {
         // Update the same sample twice to the file
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), "s_1,s_1,s_2,s_1");
-        QueryResult<File> file = fileManager.update(studyFqn, "test_1K.txt.gz", params, null, sessionIdUser);
+        FileUpdateParams updateParams = new FileUpdateParams().setSamples(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
+        QueryResult<File> file = fileManager.update(studyFqn, "test_1K.txt.gz", updateParams, null, sessionIdUser);
         assertEquals(2, file.first().getSamples().size());
         assertTrue(file.first().getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
     }
@@ -1084,8 +1068,8 @@ public class FileManagerTest extends AbstractManagerTest {
                 sessionIdUser).first();
 
         // Associate the two samples to the file
-        fileManager.update(studyFqn, "data/test/", new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                Arrays.asList(sample1.getId(), sample2.getId())), QueryOptions.empty(), sessionIdUser);
+        fileManager.update(studyFqn, "data/test/", new FileUpdateParams().setSamples(Arrays.asList(sample1.getId(), sample2.getId())),
+                QueryOptions.empty(), sessionIdUser);
 
         // Fetch the file
         fileQueryResult = fileManager.get(studyFqn, "data/test/", new QueryOptions(
@@ -1099,7 +1083,7 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         // Update the version of one of the samples
-        catalogManager.getSampleManager().update(studyFqn, sample1.getId(), new ObjectMap(),
+        catalogManager.getSampleManager().update(studyFqn, sample1.getId(), new SampleUpdateParams(),
                 new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
 
         // Fetch the file again to see if we get the latest version as expected

@@ -390,7 +390,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         QueryOptions options = new QueryOptions();
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(IndividualDBAdaptor.UpdateParams.SAMPLES.key(), updateAction.name());
+        actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), updateAction.name());
         options.put(Constants.ACTIONS, actionMap);
 
         Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), individualUid);
@@ -428,7 +428,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedMapParams = {QueryParams.STATS.key(), QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), UpdateParams.COLLECTION.key(), UpdateParams.PROCESSING.key()};
+        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.ID.key())) {
@@ -467,8 +467,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        if (parameters.containsKey(UpdateParams.INDIVIDUAL_ID.key())) {
-            String individualId = parameters.getString(UpdateParams.INDIVIDUAL_ID.key());
+        if (parameters.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+            String individualId = parameters.getString(QueryParams.INDIVIDUAL_ID.key());
 
             if (StringUtils.isNotEmpty(individualId)) {
                 // Look for the individual uid
@@ -477,15 +477,15 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(clientSession, indQuery, options);
 
                 if (individualQueryResult.getNumResults() == 0) {
-                    throw new CatalogDBException("Cannot update " + UpdateParams.INDIVIDUAL_ID.key() + " for sample. Individual '"
+                    throw new CatalogDBException("Cannot update " + QueryParams.INDIVIDUAL_ID.key() + " for sample. Individual '"
                             + individualId + "' not found.");
                 }
 
-                document.getSet().put(UpdateParams.INDIVIDUAL_ID.key(), individualId);
+                document.getSet().put(QueryParams.INDIVIDUAL_ID.key(), individualId);
                 document.getSet().put(PRIVATE_INDIVIDUAL_UID, individualQueryResult.first().getUid());
             } else {
                 // The user wants to leave the sample orphan
-                document.getSet().put(UpdateParams.INDIVIDUAL_ID.key(), "");
+                document.getSet().put(QueryParams.INDIVIDUAL_ID.key(), "");
                 document.getSet().put(PRIVATE_INDIVIDUAL_UID, -1);
             }
         }

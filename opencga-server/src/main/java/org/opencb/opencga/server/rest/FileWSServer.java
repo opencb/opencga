@@ -17,13 +17,11 @@
 package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.ListUtils;
@@ -33,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
@@ -40,14 +39,12 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -67,7 +64,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 
@@ -838,8 +834,6 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
-            ObjectMap params = updateParams.toFileObjectMap();
-
             if (samplesAction == null) {
                 samplesAction = ParamUtils.UpdateAction.ADD;
             }
@@ -852,7 +846,7 @@ public class FileWSServer extends OpenCGAWSServer {
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            QueryResult<File> queryResult = fileManager.update(studyStr, fileIdStr, params, queryOptions, sessionId);
+            QueryResult<File> queryResult = fileManager.update(studyStr, fileIdStr, updateParams, queryOptions, sessionId);
             queryResult.setId("Update file");
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -1395,40 +1389,6 @@ public class FileWSServer extends OpenCGAWSServer {
         public boolean parents;
         @JsonProperty(defaultValue = "false")
         public boolean directory;
-    }
-
-    private static class FileUpdateParams {
-        public String name;
-        public String description;
-
-        public List<String> samples;
-
-        public String checksum;
-        public File.Format format;
-        public File.Bioformat bioformat;
-        public Software software;
-
-        public List<AnnotationSet> annotationSets;
-        public Map<String, Object> stats;
-        public Map<String, Object> attributes;
-
-        public ObjectMap toFileObjectMap() throws JsonProcessingException, WebServiceException {
-            File file = new File()
-                    .setName(name)
-                    .setDescription(description)
-                    .setChecksum(checksum)
-                    .setFormat(format)
-                    .setBioformat(bioformat)
-                    .setStats(stats)
-                    .setSoftware(software)
-                    .setAttributes(attributes);
-
-            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(file));
-            params.putIfNotNull(FileDBAdaptor.QueryParams.SAMPLES.key(), OpenCGAWSServer.checkUniqueList(samples, "sample"));
-            params.putIfNotNull(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSets);
-
-            return params;
-        }
     }
 
     public static class RelatedFile {

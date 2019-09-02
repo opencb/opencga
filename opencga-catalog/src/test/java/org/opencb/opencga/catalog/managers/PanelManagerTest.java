@@ -6,15 +6,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Study;
@@ -157,21 +157,23 @@ public class PanelManagerTest extends GenericTest {
         Panel diseasePanelQueryResult = panelManager.importGlobalPanels(studyFqn,
                 Collections.singletonList(panel.getId()), null, sessionIdUser).first();
 
-        ObjectMap params = new ObjectMap()
-                .append(PanelDBAdaptor.UpdateParams.AUTHOR.key(), "author")
-                .append(PanelDBAdaptor.UpdateParams.REGIONS.key(), Collections.singletonList(
-                        new ObjectMap("coordinates", Collections.singletonList(new DiseasePanel.Coordinate("", "chr1:1-1000", "")))
-                ))
-                .append(PanelDBAdaptor.UpdateParams.PHENOTYPES.key(), Collections.singletonList(
-                        new ObjectMap("id", "ontologyTerm")
-                ))
-                .append(PanelDBAdaptor.UpdateParams.VARIANTS.key(), Collections.singletonList(
-                        new ObjectMap("id", "variant1")
-                ))
-                .append(PanelDBAdaptor.UpdateParams.GENES.key(), Collections.singletonList(
-                        new ObjectMap("id", "BRCA2")
-                ));
-        Panel panelUpdated = panelManager.update(studyFqn, diseasePanelQueryResult.getId(), params, null, sessionIdUser)
+        DiseasePanel.RegionPanel regionPanel = new DiseasePanel.RegionPanel();
+        regionPanel.setCoordinates(Collections.singletonList(new DiseasePanel.Coordinate("", "chr1:1-1000", "")));
+
+        DiseasePanel.VariantPanel variantPanel = new DiseasePanel.VariantPanel();
+        variantPanel.setId("variant1");
+
+        DiseasePanel.GenePanel genePanel = new DiseasePanel.GenePanel();
+        genePanel.setId("BRCA2");
+
+        PanelUpdateParams updateParams = new PanelUpdateParams()
+                .setSource(new DiseasePanel.SourcePanel().setAuthor("author"))
+                .setRegions(Collections.singletonList(regionPanel))
+                .setPhenotypes(Collections.singletonList(new Phenotype().setId("ontologyTerm")))
+                .setVariants(Collections.singletonList(variantPanel))
+                .setGenes(Collections.singletonList(genePanel));
+
+        Panel panelUpdated = panelManager.update(studyFqn, diseasePanelQueryResult.getId(), updateParams, null, sessionIdUser)
                 .first();
 
         assertEquals("author", panelUpdated.getSource().getAuthor());

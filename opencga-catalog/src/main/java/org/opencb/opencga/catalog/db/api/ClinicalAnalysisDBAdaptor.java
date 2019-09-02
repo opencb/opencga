@@ -55,6 +55,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         PRIORITY("priority", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
         ANALYST_ASSIGNEE("analyst.assignee", TEXT, ""),
+        ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
         FLAGS("flags", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""),
 

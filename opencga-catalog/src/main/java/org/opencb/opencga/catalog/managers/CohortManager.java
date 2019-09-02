@@ -34,9 +34,9 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -418,11 +418,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     public QueryResult<Cohort> updateAnnotationSet(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
                                                    ParamUtils.UpdateAction action, QueryOptions options, String token)
             throws CatalogException {
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
+        CohortUpdateParams updateParams = new CohortUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, cohortStr, params, options, token);
+        return update(studyStr, cohortStr, updateParams, options, token);
     }
 
     public QueryResult<Cohort> addAnnotationSet(String studyStr, String cohortStr, AnnotationSet annotationSet, QueryOptions options,
@@ -465,11 +465,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         if (annotations == null || annotations.isEmpty()) {
             return new QueryResult<>(cohortStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
         }
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
+        CohortUpdateParams updateParams = new CohortUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, "", annotations)));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, cohortStr, params, options, token);
+        return update(studyStr, cohortStr, updateParams, options, token);
     }
 
     public QueryResult<Cohort> removeAnnotations(String studyStr, String cohortStr, String annotationSetId,
@@ -484,25 +485,50 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    @Override
-    public QueryResult<Cohort> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
+    public QueryResult<Cohort> update(String studyStr, String cohortId, CohortUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
-        return update(studyStr, entryStr, parameters, false, options, token);
+        return update(studyStr, cohortId, updateParams, false, options, token);
     }
 
-    public QueryResult<Cohort> update(String studyStr, String entryStr, ObjectMap parameters, boolean allowModifyCohortAll,
-                                      QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(parameters, "Update parameters");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        parameters = new ObjectMap(parameters);
+    /**
+     * Update a Cohort from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param cohortId   Cohort id in string format. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param allowModifyCohortAll Boolean indicating whether we should not raise an exception if the cohort ALL is to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A QueryResult with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public QueryResult<Cohort> update(String studyStr, String cohortId, CohortUpdateParams updateParams, boolean allowModifyCohortAll,
+                                      QueryOptions options, String token) throws CatalogException {
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            parameters = updateParams.getUpdateMap();
+        }
+        ParamUtils.checkUpdateParametersMap(parameters);
 
-        String userId = userManager.getUserId(sessionId);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS) && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
+                logger.warn("Assuming the user wants to add the list of annotation sets provided");
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                options.put(Constants.ACTIONS, actionMap);
+            }
+        }
+
+        String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-        Cohort cohort = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
+        Cohort cohort = internalGet(study.getUid(), cohortId, QueryOptions.empty(), userId).first();
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (parameters.containsKey(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+        if (updateParams != null && updateParams.getAnnotationSets() != null) {
             authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId,
                     CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS);
         }
@@ -512,25 +538,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId, CohortAclEntry.CohortPermissions.UPDATE);
         }
 
-        return unsafeUpdate(study, cohort, parameters, allowModifyCohortAll, options, userId);
-    }
-
-    QueryResult<Cohort> unsafeUpdate(Study study, Cohort cohort, ObjectMap parameters, boolean allowModifyCohortAll, QueryOptions options,
-                                     String user) throws CatalogException {
-        try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> CohortDBAdaptor.UpdateParams.getParam(a) != null);
-        } catch (CatalogParameterException e) {
-            throw new CatalogException("Could not update: " + e.getMessage(), e);
-        }
-
         if (!allowModifyCohortAll) {
             if (StudyEntry.DEFAULT_COHORT.equals(cohort.getId())) {
-                throw new CatalogException("Cannot modify cohort " + StudyEntry.DEFAULT_COHORT);
+                throw new CatalogException("Unable to modify cohort " + StudyEntry.DEFAULT_COHORT);
             }
         }
 
-        if (parameters.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())
-                || parameters.containsKey(CohortDBAdaptor.QueryParams.ID.key())) {
+        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples()) || StringUtils.isNotEmpty(updateParams.getId()))) {
             switch (cohort.getStatus().getName()) {
                 case Cohort.CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
@@ -545,24 +559,26 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     break;
             }
 
-            List<String> sampleStringList = parameters.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key());
-            InternalGetQueryResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(), sampleStringList,
-                    SampleManager.INCLUDE_SAMPLE_IDS, user, false);
+            if (ListUtils.isNotEmpty(updateParams.getSamples())) {
+                InternalGetQueryResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                        updateParams.getSamples(), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
 
-            if (sampleResult.getNumResults() != sampleStringList.size()) {
-                throw new CatalogException("Could not find all the samples introduced. Update was not performed.");
+                if (sampleResult.getNumResults() != updateParams.getSamples().size()) {
+                    throw new CatalogException("Could not find all the samples introduced. Update was not performed.");
+                }
+
+                // Override sample list of ids with sample list
+                parameters.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleResult.getResult());
+                // TODO: Until we support "action" in the cohort WS, the action behaviour will always be SET
+                options.put(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
+                        ParamUtils.UpdateAction.SET.name()));
             }
-
-            // Override sample list of ids with sample list
-            parameters.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleResult.getResult());
-            // TODO: Until we support "action" in the cohort WS, the action behaviour will always be SET
-            options.put(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name()));
         }
 
-        checkUpdateAnnotations(study, cohort, parameters, options, VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, user);
+        checkUpdateAnnotations(study, cohort, parameters, options, VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, userId);
 
         QueryResult<Cohort> queryResult = cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
-        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohort.getUid(), user, parameters, null, null);
+        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohort.getUid(), userId, parameters, null, null);
 
         return queryResult;
     }

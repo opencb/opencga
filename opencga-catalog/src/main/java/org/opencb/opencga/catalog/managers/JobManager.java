@@ -453,7 +453,6 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    @Override
     public QueryResult<Job> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");

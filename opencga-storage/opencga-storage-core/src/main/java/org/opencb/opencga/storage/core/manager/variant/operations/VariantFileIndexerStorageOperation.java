@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -487,8 +488,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             // Update storagePipelineResult
             Map<String, Object> attributes = indexedFile.getAttributes();
             attributes.put("storagePipelineResult", storagePipelineResult);
-            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-            fileManager.update(study.getFqn(), indexedFile.getPath(), params, new QueryOptions(), sessionId);
+            FileUpdateParams updateParams = new FileUpdateParams().setAttributes(attributes);
+            fileManager.update(study.getFqn(), indexedFile.getPath(), updateParams, new QueryOptions(), sessionId);
 
             // Update index status
             fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
@@ -537,8 +538,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             } catch (StorageEngineException e) {
                 throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
             }
-            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_FILE_STATS, stats));
-            fileManager.update(studyFqn, inputFile.getPath(), params, new QueryOptions(), sessionId);
+            FileUpdateParams updateParams = new FileUpdateParams().setStats(new ObjectMap(VARIANT_FILE_STATS, stats));
+            fileManager.update(studyFqn, inputFile.getPath(), updateParams, new QueryOptions(), sessionId);
         }
 //        long studyId = catalogManager.getStudyIdByJobId(job.getId());
 //        Query query = new Query()

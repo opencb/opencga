@@ -497,20 +497,20 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             throws CatalogDBException {
         Document panelParameters = new Document();
 
-        final String[] acceptedParams = {UpdateParams.NAME.key(), UpdateParams.DESCRIPTION.key(), UpdateParams.AUTHOR.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.AUTHOR.key()};
         filterStringParams(parameters, panelParameters, acceptedParams);
 
-        final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key(), UpdateParams.STATS.key()};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, panelParameters, acceptedMapParams);
 
-        String[] acceptedParamsList = { UpdateParams.TAGS.key()};
+        String[] acceptedParamsList = { QueryParams.TAGS.key()};
         filterStringListParams(parameters, panelParameters, acceptedParamsList);
 
-        final String[] acceptedObjectParams = {UpdateParams.VARIANTS.key(), UpdateParams.PHENOTYPES.key(), UpdateParams.REGIONS.key(),
-                UpdateParams.GENES.key(), UpdateParams.SOURCE.key(), UpdateParams.CATEGORIES.key()};
+        final String[] acceptedObjectParams = {QueryParams.VARIANTS.key(), QueryParams.PHENOTYPES.key(), QueryParams.REGIONS.key(),
+                QueryParams.GENES.key(), QueryParams.SOURCE.key(), QueryParams.CATEGORIES.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
-        if (parameters.containsKey(UpdateParams.ID.key())) {
+        if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one panel...
 
             Query tmpQuery = new Query(query);
@@ -522,7 +522,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 throw new CatalogDBException("Update panel: No panel found to be updated");
             }
             if (panelQueryResult.getNumResults() > 1) {
-                throw new CatalogDBException("Update panel: Cannot update " + UpdateParams.ID.key() + " parameter. More than one panel "
+                throw new CatalogDBException("Update panel: Cannot update " + QueryParams.ID.key() + " parameter. More than one panel "
                         + "found to be updated.");
             }
 
@@ -538,11 +538,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
             }
 
-            panelParameters.put(UpdateParams.ID.key(), parameters.get(UpdateParams.ID.key()));
+            panelParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        if (parameters.containsKey(UpdateParams.STATUS_NAME.key())) {
-            panelParameters.put(UpdateParams.STATUS_NAME.key(), parameters.get(UpdateParams.STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            panelParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             panelParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 

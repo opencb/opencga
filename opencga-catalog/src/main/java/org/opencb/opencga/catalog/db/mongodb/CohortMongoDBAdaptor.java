@@ -241,7 +241,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, studyPermission.name(),
                 studyPermission.getCohortPermission().name(), Entity.COHORT.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
-        logger.debug("Cohort count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Cohort count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return cohortCollection.count(clientSession, bson);
     }
 
@@ -385,8 +385,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        String operation = (String) actionMap.getOrDefault(UpdateParams.SAMPLES.key(), "ADD");
-        String[] acceptedObjectParams = new String[]{UpdateParams.SAMPLES.key()};
+        String operation = (String) actionMap.getOrDefault(QueryParams.SAMPLES.key(), "ADD");
+        String[] acceptedObjectParams = new String[]{QueryParams.SAMPLES.key()};
         switch (operation) {
             case "SET":
                 filterObjectParams(parameters, document.getSet(), acceptedObjectParams);

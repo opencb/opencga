@@ -19,31 +19,32 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
+import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -254,29 +255,21 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
+                @QueryParam("study") String studyStr,
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
-            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") SamplePOST parameters) {
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "params") SampleUpdateParams parameters) {
         try {
-            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
-            params.putIfNotNull(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), parameters.annotationSets);
-
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.UpdateAction.ADD;
             }
-
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(SampleDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
+            actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-            if (params.size() == 0) {
-                throw new CatalogException("Missing parameters to update.");
-            }
-
-            return createOkResponse(sampleManager.update(studyStr, sampleStr, params, queryOptions, sessionId));
+            return createOkResponse(sampleManager.update(studyStr, sampleStr, parameters, options, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -508,58 +501,14 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            sampleManager.update(studyStr, sampleStr, new ObjectMap()
-                            .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                    .append(AnnotationSetManager.ID, annotationSetId)
-                                    .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
-                                    .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
-                            ),
+            sampleManager.update(studyStr, sampleStr, new SampleUpdateParams()
+                    .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, variableSet, params.annotations))),
                     QueryOptions.empty(), sessionId);
             QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,
                     Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
             List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
             QueryResult<AnnotationSet> queryResult = new QueryResult<>(sampleStr, sampleQueryResult.getDbTime(), annotationSets.size(),
                     annotationSets.size(), "", "", annotationSets);
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{sample}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", hidden = true, position = 14,
-            notes = "Use /{sample}/update instead")
-    public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
-                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                        @QueryParam("study") String studyStr,
-                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
-        try {
-            QueryResult<AnnotationSet> queryResult;
-            if (annotations != null) {
-                queryResult = sampleManager.deleteAnnotations(sampleStr, studyStr, annotationsetName, annotations, sessionId);
-            } else {
-                queryResult = sampleManager.deleteAnnotationSet(sampleStr, studyStr, annotationsetName, sessionId);
-            }
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{sample}/annotationsets/{annotationsetName}/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [DEPRECATED]", hidden = true, position = 15, notes = "Use /{sample}/update instead")
-    public Response updateAnnotationGET(
-            @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleIdStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "JSON containing key:value annotations to update", required = true) Map<String, Object> annotations) {
-        try {
-            QueryResult<AnnotationSet> queryResult = sampleManager.updateAnnotationSet(sampleIdStr, studyStr, annotationsetName,
-                    annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -742,39 +691,36 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    private static class SamplePOST {
-        public String id;
+//    private static class SamplePOST {
+//        public String id;
+//        @Deprecated
+//        public String name;
+//        public String description;
+//        public String type;
+//        public String individualId;
+//        public SampleProcessing processing;
+//        public SampleCollection collection;
+//        public String source;
+//        public boolean somatic;
+//        public List<Phenotype> phenotypes;
+//        public List<AnnotationSet> annotationSets;
+//        @Deprecated
+//        public Map<String, Object> stats;
+//        public Map<String, Object> attributes;
+//    }
+
+    public static class CreateSamplePOST extends SampleUpdateParams {
         @Deprecated
         public String name;
-        public String description;
-        public String type;
-        public String individualId;
-        public SampleProcessing processing;
-        public SampleCollection collection;
-        public String source;
-        public boolean somatic;
-        public List<Phenotype> phenotypes;
-        public List<AnnotationSet> annotationSets;
         @Deprecated
         public Map<String, Object> stats;
-        public Map<String, Object> attributes;
-    }
 
-    public static class CreateSamplePOST extends SamplePOST {
         public Sample toSample() {
-//            List<AnnotationSet> annotationSetList = new ArrayList<>();
-//            if (annotationSets != null) {
-//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-//                    if (annotationSet != null) {
-//                        annotationSetList.add(annotationSet.toAnnotationSet(studyId, studyManager, sessionId));
-//                    }
-//                }
-//            }
 
-            String sampleId = StringUtils.isEmpty(id) ? name : id;
+            String sampleId = StringUtils.isEmpty(this.getId()) ? name : this.getId();
             String sampleName = StringUtils.isEmpty(name) ? sampleId : name;
-            return new Sample(sampleId, source, individualId, processing, collection, 1, 1, description, type, somatic, phenotypes,
-                    annotationSets, attributes)
+            return new Sample(sampleId, getSource(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(), getType(),
+                    getSomatic(), getPhenotypes(), getAnnotationSets(), getAttributes())
                     .setName(sampleName).setStats(stats);
         }
     }

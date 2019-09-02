@@ -460,7 +460,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), UpdateParams.PHENOTYPES.key(), UpdateParams.DISORDERS.key()};
+        final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         final String[] acceptedIntParams = {QueryParams.EXPECTED_SIZE.key()};

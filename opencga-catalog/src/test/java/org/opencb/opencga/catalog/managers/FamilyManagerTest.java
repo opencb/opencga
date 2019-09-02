@@ -36,6 +36,8 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.update.FamilyUpdateParams;
+import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Family;
@@ -251,28 +253,28 @@ public class FamilyManagerTest extends GenericTest {
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(phenotype1));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(phenotype2));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(phenotype1));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(phenotype2));
 
         Individual relChild1 = new Individual().setId("child1")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
+                .setPhenotypes(Arrays.asList(phenotype1, phenotype2))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
-                .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
+                .setPhenotypes(Arrays.asList(phenotype1))
                 .setFather(father)
                 .setMother(mother)
                 .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
@@ -286,7 +288,7 @@ public class FamilyManagerTest extends GenericTest {
             memberIds = Arrays.asList("father", "mother", "child1", "child2", "child3");
         }
 
-        Family family = new Family(familyName, familyName, Arrays.asList(phenotype1, phenotype2), null, members, "", 5,
+        Family family = new Family(familyName, familyName, null, null, members, "", 5,
                 Collections.emptyList(), Collections.emptyMap());
 
         return familyManager.create(STUDY, family, memberIds, QueryOptions.empty(), sessionIdUser);
@@ -298,7 +300,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(0, family.first().getDisorders().size());
 
         List<Disorder> disorderList = Arrays.asList(new Disorder().setId("disorder"));
-        ObjectMap params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+        IndividualUpdateParams params = new IndividualUpdateParams().setDisorders(disorderList);
 
         catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
         QueryResult<Individual> child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
@@ -308,7 +310,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(1, family.first().getDisorders().size());
 
         disorderList = Collections.emptyList();
-        params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+        params.setDisorders(disorderList);
         catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(0, child1.first().getDisorders().size());
@@ -318,7 +320,7 @@ public class FamilyManagerTest extends GenericTest {
 
         // Now we will update increasing the version. No changes should be produced in the family
         disorderList = Arrays.asList(new Disorder().setId("disorder"));
-        params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+        params.setDisorders(disorderList);
 
         catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
@@ -591,17 +593,11 @@ public class FamilyManagerTest extends GenericTest {
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-
-        Family family = new Family();
-        family.setMembers(Arrays.asList(relChild1, relFather));
-        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
-
-        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
-        params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), params.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList("child3", "father"));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");
-        familyManager.update(STUDY, originalFamily.first().getId(), params, QueryOptions.empty(), sessionIdUser);
+        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
@@ -612,16 +608,10 @@ public class FamilyManagerTest extends GenericTest {
         Phenotype phenotype2 = new Phenotype("dis2", "New name", "New source");
         Phenotype phenotype3 = new Phenotype("dis3", "New name", "New source");
 
-        Family family = new Family();
-        family.setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3));
-        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3));
 
-        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
-        params = new ObjectMap(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), params.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
-
-        QueryResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(),
+        QueryResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), updateParams, QueryOptions.empty(),
                 sessionIdUser);
-
         assertEquals(3, updatedFamily.first().getPhenotypes().size());
 
         // Only one id should be the same as in originalFamilyIds (father id)
@@ -637,16 +627,11 @@ public class FamilyManagerTest extends GenericTest {
 
         Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
 
-        Family family = new Family();
-        family.setPhenotypes(Arrays.asList(phenotype1));
-        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
-
-        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
-        params = new ObjectMap(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), params.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Collections.singletonList(phenotype1));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in any member of the family");
-        familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
+        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
 }

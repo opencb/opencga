@@ -283,10 +283,11 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
     public void updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters, List<VariableSet> variableSetList,
                                      QueryOptions options, boolean isVersioned) throws CatalogDBException {
-        if (parameters.containsKey(ANNOTATION_SETS)) {
+        Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+
+        if (actionMap.containsKey(ANNOTATION_SETS)) {
             List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
 
-            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
             ParamUtils.UpdateAction action = (ParamUtils.UpdateAction) actionMap.getOrDefault(ANNOTATION_SETS,
                     ParamUtils.UpdateAction.ADD);
 
@@ -364,9 +365,9 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 }
 
             }
-        } else if (parameters.containsKey(ANNOTATIONS)) {
+        } else if (actionMap.containsKey(ANNOTATIONS)) {
             // Update annotation
-            AnnotationSet annotationSet = (AnnotationSet) parameters.get(ANNOTATIONS);
+            AnnotationSet annotationSet = ((List<AnnotationSet>) parameters.get(ANNOTATION_SETS)).get(0);
 
             // 1. Get list of annotations to be inserted
             List<Document> annotationDocumentList = getNewAnnotationList(Collections.singletonList(annotationSet), variableSetList);

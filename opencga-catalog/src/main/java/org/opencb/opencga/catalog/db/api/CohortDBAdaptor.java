@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -111,40 +110,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
 
         public static QueryParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        @Deprecated
-        NAME(QueryParams.NAME.key()),
-        CREATION_DATE(QueryParams.CREATION_DATE.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        SAMPLES(QueryParams.SAMPLES.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
-        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new HashMap<>();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }

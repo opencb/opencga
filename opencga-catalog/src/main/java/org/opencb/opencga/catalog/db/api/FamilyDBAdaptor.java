@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
@@ -115,41 +114,6 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
 
         public static QueryParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        NAME(QueryParams.NAME.key()),
-        PHENOTYPES(QueryParams.PHENOTYPES.key()),
-        DISORDERS(QueryParams.DISORDERS.key()),
-        MEMBERS(QueryParams.MEMBERS.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        EXPECTED_SIZE(QueryParams.EXPECTED_SIZE.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
-        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new LinkedMap();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }

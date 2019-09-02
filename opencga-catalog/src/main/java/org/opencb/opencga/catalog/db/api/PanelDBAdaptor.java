@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -124,45 +123,6 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         }
 
         public static QueryParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        NAME(QueryParams.NAME.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        SOURCE(QueryParams.SOURCE.key()),
-        PHENOTYPES(QueryParams.PHENOTYPES.key()),
-        VARIANTS(QueryParams.VARIANTS.key()),
-        GENES(QueryParams.GENES.key()),
-        CATEGORIES(QueryParams.CATEGORIES.key()),
-        TAGS(QueryParams.TAGS.key()),
-        REGIONS(QueryParams.REGIONS.key()),
-        AUTHOR(QueryParams.AUTHOR.key()),
-        STATUS_NAME(QueryParams.STATUS_NAME.key()),
-        STATS(QueryParams.STATS.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key());
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new LinkedMap();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
             return map.get(key);
         }
     }

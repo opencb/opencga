@@ -177,9 +177,7 @@ public class File extends Annotable {
 
     public enum Type {
         FILE,
-        DIRECTORY,
-        @Deprecated
-        FOLDER
+        DIRECTORY
     }
 
     public enum Compression {

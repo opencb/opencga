@@ -31,10 +31,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.models.update.FamilyUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Location;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
@@ -199,10 +203,8 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "params") FamilyPOST parameters) {
+            @ApiParam(value = "params") FamilyUpdateParams parameters) {
         try {
-            ObjectUtils.defaultIfNull(parameters, new FamilyPOST());
-
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.UpdateAction.ADD;
             }
@@ -211,13 +213,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
             queryOptions.remove("updateIndividualVersion");
             query.remove("updateIndividualVersion");
 
-            ObjectMap params = parameters.toFamilyObjectMap();
-
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, params, queryOptions,
+            QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, parameters, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -419,59 +419,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
             }
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
 
-            familyManager.update(studyStr, familyStr, new ObjectMap()
-                            .append(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                    .append(AnnotationSetManager.ID, annotationSetId)
-                                    .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet)
-                                    .append(AnnotationSetManager.ANNOTATIONS, params.annotations))
-                            ),
-                    QueryOptions.empty(), sessionId);
+            familyManager.update(studyStr, familyStr, new FamilyUpdateParams().setAnnotationSets(Collections.singletonList(
+                    new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), sessionId);
             QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, new QueryOptions(QueryOptions.INCLUDE,
                     Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
             List<AnnotationSet> annotationSets = familyQueryResult.first().getAnnotationSets();
             QueryResult<AnnotationSet> queryResult = new QueryResult<>(familyStr, familyQueryResult.getDbTime(), annotationSets.size(),
                     annotationSets.size(), "", "", annotationSets);
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{family}/annotationsets/{annotationsetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [DEPRECATED]", hidden = true, position = 14,
-            notes = "Use /{family}/update instead")
-    public Response deleteAnnotationGET(@ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
-                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                        @QueryParam("study") String studyStr,
-                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
-        try {
-            QueryResult<AnnotationSet> queryResult;
-            if (annotations != null) {
-                queryResult = familyManager.deleteAnnotations(familyStr, studyStr, annotationsetName, annotations, sessionId);
-            } else {
-                queryResult = familyManager.deleteAnnotationSet(familyStr, studyStr, annotationsetName, sessionId);
-            }
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{family}/annotationsets/{annotationsetName}/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [DEPRECATED]", hidden = true, position = 15,
-            notes = "Use /{family}/update instead")
-    public Response updateAnnotationGET(
-            @ApiParam(value = "familyId", required = true) @PathParam("family") String familyIdStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-            @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "JSON containing key:value annotations to update", required = true) Map<String, Object> annotations) {
-        try {
-            QueryResult<AnnotationSet> queryResult = familyManager.updateAnnotationSet(familyIdStr, studyStr, annotationsetName,
-                    annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -685,43 +639,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             int familyExpectedSize = expectedSize != null ? expectedSize : -1;
             return new Family(familyId, familyName, phenotypes, disorders, relatives, description, familyExpectedSize, annotationSets,
                     attributes);
-        }
-
-        public ObjectMap toFamilyObjectMap() throws JsonProcessingException {
-            List<ObjectMap> relatives = null;
-            if (members != null) {
-                relatives = new ArrayList<>(members.size());
-                for (IndividualPOST member : members) {
-                    Individual individual = member.toIndividualUpdate();
-                    ObjectMap objectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(individual));
-                    if (member.parentalConsanguinity == null) {
-                        objectMap.remove("parentalConsanguinity");
-                    }
-                    relatives.add(objectMap);
-                }
-            }
-
-            Family family = new Family()
-                    .setId(id)
-                    .setName(name)
-                    .setPhenotypes(phenotypes)
-                    .setMembers(null)
-                    .setDescription(description)
-                    .setAttributes(attributes);
-            family.setAnnotationSets(annotationSets);
-
-            ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(family));
-            params.putIfNotNull("members", relatives);
-            params.putIfNotNull(FamilyDBAdaptor.UpdateParams.ANNOTATION_SETS.key(), annotationSets);
-
-            // We do this because jackson will always introduce expectedSize = 0
-            if (expectedSize == null) {
-                params.remove(FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key());
-            } else {
-                params.put(FamilyDBAdaptor.UpdateParams.EXPECTED_SIZE.key(), expectedSize);
-            }
-
-            return params;
         }
     }
 }

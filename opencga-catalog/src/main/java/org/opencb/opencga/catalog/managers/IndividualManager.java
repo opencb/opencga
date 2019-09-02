@@ -35,9 +35,9 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -77,6 +77,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
             IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
             IndividualDBAdaptor.QueryParams.MOTHER.key()));
+    public static final QueryOptions INCLUDE_INDIVIDUAL_DISORDERS_PHENOTYPES = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
+            IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
+            IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.DISORDERS.key(),
+            IndividualDBAdaptor.QueryParams.PHENOTYPES.key()));
 
     private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 
@@ -510,11 +515,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     public QueryResult<Individual> updateAnnotationSet(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
                                                        ParamUtils.UpdateAction action, QueryOptions options, String token)
             throws CatalogException {
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
+        IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, individualStr, params, options, token);
+        return update(studyStr, individualStr, individualUpdateParams, options, token);
     }
 
     public QueryResult<Individual> addAnnotationSet(String studyStr, String individualStr, AnnotationSet annotationSet,
@@ -558,11 +563,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             return new QueryResult<>(individualStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "",
                     Collections.emptyList());
         }
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
+        IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, "", annotations)));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, individualStr, params, options, token);
+        return update(studyStr, individualStr, individualUpdateParams, options, token);
     }
 
     public QueryResult<Individual> removeAnnotations(String studyStr, String individualStr, String annotationSetId,
@@ -577,93 +583,102 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    @Override
-    public QueryResult<Individual> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
-            throws CatalogException {
-        ParamUtils.checkObj(parameters, "parameters");
-        parameters = new ObjectMap(parameters);
+    /**
+     * Update an Individual from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param individualId   Individual id in string format. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A QueryResult with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public QueryResult<Individual> update(String studyStr, String individualId, IndividualUpdateParams updateParams, QueryOptions options,
+                                          String token) throws CatalogException {
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            parameters = updateParams.getUpdateMap();
+        }
+
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+            ParamUtils.checkUpdateParametersMap(parameters);
+        }
+
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS) && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
+                logger.warn("Assuming the user wants to add the list of annotation sets provided");
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                options.put(Constants.ACTIONS, actionMap);
+            }
+        }
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-        Individual individual = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
+        Individual individual = internalGet(study.getUid(), individualId, QueryOptions.empty(), userId).first();
         long studyUid = study.getUid();
-        long individualId = individual.getUid();
+        long individualUid = individual.getUid();
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (parameters.containsKey(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
-            authorizationManager.checkIndividualPermission(studyUid, individualId, userId,
+        if (updateParams != null && updateParams.getAnnotationSets() != null) {
+            authorizationManager.checkIndividualPermission(studyUid, individualUid, userId,
                     IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
         }
         // Only check update permissions if the user wants to update anything apart from the annotation sets
         if ((parameters.size() == 1 && !parameters.containsKey(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
-            authorizationManager.checkIndividualPermission(studyUid, individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
+            authorizationManager.checkIndividualPermission(studyUid, individualUid, userId,
+                    IndividualAclEntry.IndividualPermissions.UPDATE);
         }
 
-        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.NAME.key())) {
-            ParamUtils.checkAlias(parameters.getString(IndividualDBAdaptor.UpdateParams.NAME.key()), "name");
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
+            ParamUtils.checkAlias(updateParams.getId(), "id");
 
-            String myName = parameters.getString(IndividualDBAdaptor.QueryParams.ID.key());
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), myName);
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), updateParams.getId());
             if (individualDBAdaptor.count(query).first() > 0) {
-                throw new CatalogException("Individual name " + myName + " already in use");
+                throw new CatalogException("Individual name " + updateParams.getId() + " already in use");
             }
         }
-        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key())) {
-            if (StringUtils.isEmpty(parameters.getString(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key()))) {
-                parameters.put(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key(), "");
+        if (updateParams != null && updateParams.getDateOfBirth() != null) {
+            if (StringUtils.isEmpty(updateParams.getDateOfBirth())) {
+                parameters.put(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "");
             } else {
-                if (!TimeUtils.isValidFormat("yyyyMMdd", parameters.getString(IndividualDBAdaptor.UpdateParams.DATE_OF_BIRTH.key()))) {
+                if (!TimeUtils.isValidFormat("yyyyMMdd", updateParams.getDateOfBirth())) {
                     throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
                 }
             }
         }
-        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.KARYOTYPIC_SEX.key())) {
-            try {
-                IndividualProperty.KaryotypicSex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.KARYOTYPIC_SEX.key()));
-            } catch (IllegalArgumentException e) {
-                logger.error("Invalid karyotypic sex found: {}", e.getMessage(), e);
-                throw new CatalogException("Invalid karyotypic sex detected");
-            }
-        }
-        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.SEX.key())) {
-            try {
-                IndividualProperty.Sex.valueOf(parameters.getString(IndividualDBAdaptor.UpdateParams.SEX.key()));
-            } catch (IllegalArgumentException e) {
-                logger.error("Invalid sex found: {}", e.getMessage(), e);
-                throw new CatalogException("Invalid sex detected");
-            }
-        }
-        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.MULTIPLES.key())) {
+        if (updateParams != null && updateParams.getMultiples() != null) {
             // Check individual names exist
-            Map<String, Object> multiples = parameters.getMap(IndividualDBAdaptor.UpdateParams.MULTIPLES.key());
-            List<String> siblingList = (List<String>) multiples.get("siblings");
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), StringUtils.join(siblingList, ","));
+                    .append(IndividualDBAdaptor.QueryParams.ID.key(), StringUtils.join(updateParams.getMultiples().getSiblings(), ","));
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
             QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
-            if (individualQueryResult.getNumResults() < siblingList.size()) {
-                int missing = siblingList.size() - individualQueryResult.getNumResults();
+            if (individualQueryResult.getNumResults() < updateParams.getMultiples().getSiblings().size()) {
+                int missing = updateParams.getMultiples().getSiblings().size() - individualQueryResult.getNumResults();
                 throw new CatalogDBException("Missing " + missing + " siblings in the database.");
             }
         }
-        if (parameters.containsKey(IndividualDBAdaptor.UpdateParams.SAMPLES.key())) {
+        if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
             // Check those samples can be used
-            List<String> sampleStringList = parameters.getAsStringList(IndividualDBAdaptor.UpdateParams.SAMPLES.key());
+            List<String> sampleStringList = updateParams.getSamples();
             List<Sample> sampleList = catalogManager.getSampleManager().internalGet(studyUid, sampleStringList,
                     SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResult();
 
             Map<Long, Integer> existingSamplesInIndividual = checkSamplesNotInUseInOtherIndividual(
-                    sampleList.stream().map(Sample::getUid).collect(Collectors.toSet()), studyUid, individualId);
+                    sampleList.stream().map(Sample::getUid).collect(Collectors.toSet()), studyUid, individualUid);
 
             List<Sample> updatedSamples = new ArrayList<>();
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-            String action = (String) actionMap.getOrDefault(IndividualDBAdaptor.UpdateParams.SAMPLES.key(),
+            String action = (String) actionMap.getOrDefault(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
                     ParamUtils.UpdateAction.ADD.name());
             if (ParamUtils.UpdateAction.ADD.name().equals(action)) {
                 // We will convert the ADD action into a SET to remove existing samples with older versions and replace them for the newest
@@ -688,7 +703,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 updatedSamples.addAll(sampleList);
 
                 // Replace action
-                actionMap.put(IndividualDBAdaptor.UpdateParams.SAMPLES.key(),  ParamUtils.UpdateAction.SET.name());
+                actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(),  ParamUtils.UpdateAction.SET.name());
             }
             // We add the rest of the samples the user want to add
             updatedSamples.addAll(sampleList);
@@ -697,44 +712,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), updatedSamples);
         }
 
-        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
-            Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.FATHER.key());
-            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()))) {
-                QueryResult<Individual> queryResult = internalGet(studyUid, (String) map.get(IndividualDBAdaptor.QueryParams.ID.key()),
-                        INCLUDE_INDIVIDUAL_IDS, userId);
-                parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
-                parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), queryResult.first().getUid());
-            } else {
-                throw new CatalogException("Cannot update father parameter. Father name or id not passed");
-            }
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getFather())) {
+            QueryResult<Individual> queryResult = internalGet(studyUid, updateParams.getFather(), INCLUDE_INDIVIDUAL_IDS, userId);
+            parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
+            parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), queryResult.first().getUid());
         }
-        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
-            Map<String, Object> map = parameters.getMap(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            if (map != null && StringUtils.isNotEmpty((String) map.get(IndividualDBAdaptor.QueryParams.ID.key()))) {
-                QueryResult<Individual> queryResult = internalGet(studyUid, (String) map.get(IndividualDBAdaptor.QueryParams.ID.key()),
-                        INCLUDE_INDIVIDUAL_IDS, userId);
-                parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
-                parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), queryResult.first().getUid());
-            } else {
-                throw new CatalogException("Cannot update mother parameter. Mother name or id not passed");
-            }
-        }
-
-        try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> IndividualDBAdaptor.UpdateParams.getParam(a) != null);
-        } catch (CatalogParameterException e) {
-            throw new CatalogException("Could not update: " + e.getMessage(), e);
-        }
-
-        return unsafeUpdate(study, individual, parameters, options, userId);
-    }
-
-    QueryResult<Individual> unsafeUpdate(Study study, Individual individual, ObjectMap parameters, QueryOptions options, String userId)
-            throws CatalogException {
-        try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> IndividualDBAdaptor.UpdateParams.getParam(a) != null);
-        } catch (CatalogParameterException e) {
-            throw new CatalogException("Could not update: " + e.getMessage(), e);
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getMother())) {
+            QueryResult<Individual> queryResult = internalGet(studyUid, updateParams.getMother(), INCLUDE_INDIVIDUAL_IDS, userId);
+            parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
+            parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), queryResult.first().getUid());
         }
 
         checkUpdateAnnotations(study, individual, parameters, options, VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor,

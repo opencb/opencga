@@ -32,6 +32,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
@@ -108,8 +109,8 @@ public class AlignmentStorageManager extends StorageManager {
             // Store the stats in catalog
             ObjectWriter objectWriter = new ObjectMapper().typedWriter(AlignmentGlobalStats.class);
             ObjectMap globalStats = new ObjectMap(GLOBAL_STATS, objectWriter.writeValueAsString(stats.first()));
-            ObjectMap alignmentStats = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), globalStats);
-            catalogManager.getFileManager().update(studyIdStr, fileInfo.getPath(), alignmentStats, new QueryOptions(), sessionId);
+            FileUpdateParams fileUpdateParams = new FileUpdateParams().setStats(globalStats);
+            catalogManager.getFileManager().update(studyIdStr, fileInfo.getPath(), fileUpdateParams, new QueryOptions(), sessionId);
 
             // Remove the stats file
             Path statsFile = outDir.resolve(fileInfo.getName() + ".stats");

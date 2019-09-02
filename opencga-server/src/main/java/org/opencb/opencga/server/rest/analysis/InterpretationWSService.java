@@ -18,6 +18,8 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
+import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
+import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
@@ -97,21 +99,15 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisParameters params) {
+                    ClinicalUpdateParams params) {
         try {
-            ObjectMap parameters = new ObjectMap(getUpdateObjectMapper().writeValueAsString(params.toClinicalAnalysis()));
-
-            if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
+            if (params != null && params.getInterpretations() != null) {
                 Map<String, Object> actionMap = new HashMap<>();
                 actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
                 queryOptions.put(Constants.ACTIONS, actionMap);
             }
 
-            // We remove the following parameters that are always going to appear because of Jackson
-            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
-            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
-
-            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
+            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, params, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -430,10 +426,9 @@ public class InterpretationWSService extends AnalysisWSService {
 //            @ApiParam(value = "Create a new version of clinical interpretation", defaultValue = "false")
 //                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
-                    ClinicalInterpretationParameters params) {
+                    InterpretationUpdateParams params) {
         try {
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params.toInterpretationObjectMap(),
-                    queryOptions, sessionId));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -452,13 +447,13 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(name = "params", value = "JSON containing a list of comments", required = true)
                     List<Comment> comments) {
         try {
-            ObjectMap params = new ObjectMap(InterpretationDBAdaptor.UpdateParams.COMMENTS.key(), comments);
+            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.UpdateParams.COMMENTS.key(), action.name());
+            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, sessionId));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -476,13 +471,13 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(name = "params", value = "JSON containing a list of reported variants", required = true)
                     List<ReportedVariant> reportedVariants) {
         try {
-            ObjectMap params = new ObjectMap(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key(), Arrays.asList(reportedVariants));
+            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(reportedVariants);
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key(), action.name());
+            actionMap.put(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, sessionId));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
