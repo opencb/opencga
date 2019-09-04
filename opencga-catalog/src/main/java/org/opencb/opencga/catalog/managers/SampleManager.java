@@ -168,6 +168,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
+    private QueryResult<Sample> getSample(long studyUid, String sampleUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(SampleDBAdaptor.QueryParams.UUID.key(), sampleUuid);
+        return sampleDBAdaptor.get(query, options);
+    }
+
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
         ParamUtils.checkAlias(sample.getId(), "id");
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
@@ -220,7 +227,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         validateNewSample(study, sample, userId);
 
         // We create the sample
-        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
+        sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
+        QueryResult<Sample> queryResult = getSample(study.getUid(), sample.getUuid(), options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
@@ -322,7 +330,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
 
-        WriteResult writeResult = new WriteResult("delete");
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -495,7 +503,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are samples that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some samples could not be deleted"));
         }
 
         return writeResult;

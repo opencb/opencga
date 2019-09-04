@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
@@ -92,36 +91,29 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     @Override
-    public QueryResult<Cohort> insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
+    public WriteResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
-        long startQuery = startQuery();
-
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long startTime = startQuery();
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                long newId = insert(clientSession, studyId, cohort, variableSetList);
-
-                return endWrite(String.valueOf(newId), startTime, 1, 1, null);
+                insert(clientSession, studyId, cohort, variableSetList);
+                return endWrite(startTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create cohort '{}': {}", cohort.getId(), e.getMessage(), e);
                 clientSession.abortTransaction();
-                return endWrite(cohort.getId(), startTime, 1, 0,
+                return endWrite(startTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query()
-                    .append(QueryParams.STUDY_UID.key(), studyId)
-                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
-            return endQuery("createIndividual", startQuery, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     long insert(ClientSession clientSession, long studyId, Cohort cohort, List<VariableSet> variableSetList) throws CatalogDBException {
@@ -315,11 +307,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 } catch (CatalogDBException e) {
                     logger.error("Error updating cohort {}({}). {}", cohort.getId(), cohort.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(cohort.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
                 }
 
-                return endWrite(cohort.getId(), tmpStartTime, 1, 1, null);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             };
 
             WriteResult result = commitTransaction(clientSession, txnBody);
@@ -337,14 +329,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0
-                    ? "None of the cohorts could be updated"
-                    : "Some of the cohorts could not be updated"));
-        }
-
-        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query,
@@ -492,12 +477,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     }
 
                     logger.debug("Cohort {} successfully deleted", cohort.getId());
-                    return endWrite(cohort.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
 
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting cohort {}({}). {}", cohort.getId(), cohort.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(cohort.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(cohort.getId(), e.getMessage())));
                 }
             };
@@ -517,14 +502,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0
-                    ? "None of the cohorts could be deleted"
-                    : "Some of the cohorts could not be deleted"));
-        }
-
-        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     private void checkCohortCanBeDeleted(Cohort cohort) throws CatalogDBException {

@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.User;
 
@@ -64,7 +65,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    QueryResult<User> insert(User user, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(User user, QueryOptions options) throws CatalogDBException;
 
     QueryResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
 

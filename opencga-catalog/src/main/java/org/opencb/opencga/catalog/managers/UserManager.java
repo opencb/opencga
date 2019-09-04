@@ -200,7 +200,8 @@ public class UserManager extends AbstractManager {
 
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
-            QueryResult<User> queryResult = userDBAdaptor.insert(user, QueryOptions.empty());
+            userDBAdaptor.insert(user, QueryOptions.empty());
+            QueryResult<User> queryResult = userDBAdaptor.get(user.getId(), QueryOptions.empty(), null);
             auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), user.getId(), queryResult.first(), null, null);
 
             if (StringUtils.isNotEmpty(password)) {

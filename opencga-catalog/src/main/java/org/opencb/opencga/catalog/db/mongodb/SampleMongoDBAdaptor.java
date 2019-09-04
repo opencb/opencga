@@ -31,7 +31,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
@@ -173,10 +172,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public QueryResult<Sample> insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+    public WriteResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
-        long startQuery = startQuery();
-
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -185,26 +182,22 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                Sample createdSample = insert(clientSession, studyId, sample, variableSetList);
-                return endWrite(String.valueOf(createdSample.getUid()), tmpStartTime, 1, 1, null);
+                insert(clientSession, studyId, sample, variableSetList);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create sample {}: {}", sample.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(sample.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(sample.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query()
-                    .append(QueryParams.STUDY_UID.key(), studyId)
-                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
-            return endQuery("createSample", startQuery, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
 
@@ -298,11 +291,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 long tmpStartTime = startQuery();
                 try {
                     update(clientSession, sampleDocument, parameters, variableSetList, queryOptions);
-                    return endWrite(sampleId, tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating sample {}({}). {}", sampleId, sampleUid, e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(sampleId, tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(sampleId, e.getMessage())));
                 }
             };
@@ -322,14 +315,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0
-                    ? "None of the samples could be updated"
-                    : "Some of the samples could not be updated"));
-        }
-
-        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     private void update(ClientSession clientSession, Document sampleDocument, ObjectMap parameters, List<VariableSet> variableSetList,
@@ -738,12 +724,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
                     logger.info("Sample {}({}) deleted", sample.getId(), sample.getUid());
 
-                    return endWrite(sample.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
 
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting sample {}({}). {}", sample.getId(), sample.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(sample.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(sample.getId(), e.getMessage())));
                 }
             };
@@ -763,14 +749,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0
-                    ? "None of the samples could be deleted"
-                    : "Some of the samples could not be deleted"));
-        }
-
-        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     private void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {

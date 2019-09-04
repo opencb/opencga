@@ -284,6 +284,13 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
+    private QueryResult<File> getFile(long studyUid, String fileUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(FileDBAdaptor.QueryParams.UUID.key(), fileUuid);
+        return fileDBAdaptor.get(query, options);
+    }
+
     public URI getUri(File file) throws CatalogException {
         ParamUtils.checkObj(file, "File");
         if (file.getUri() != null) {
@@ -732,7 +739,8 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
 
-        QueryResult<File> queryResult = fileDBAdaptor.insert(studyId, file, study.getVariableSets(), options);
+        fileDBAdaptor.insert(studyId, file, study.getVariableSets(), options);
+        QueryResult<File> queryResult = getFile(studyId, file.getUuid(), options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
         // Propagate ACLs
@@ -1267,7 +1275,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
 
-        WriteResult writeResult = new WriteResult("delete", -1, 0, 0, null, null, null);
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -1385,7 +1393,7 @@ public class FileManager extends AnnotationSetManager<File> {
         writeResult.setNumMatches(writeResult.getNumMatches() + numMatches);
 
         if (!failedList.isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are files that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some files could not be deleted"));
         }
 
         return writeResult;
@@ -3078,7 +3086,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 studyManager.getCurrentRelease(study), Collections.emptyList(), null, null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
-        QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
+        fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
+        QueryResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
             authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()), allFileAcls.getResult(),
@@ -3236,7 +3245,8 @@ public class FileManager extends AnnotationSetManager<File> {
                         Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
                 subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                 checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
-                QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
+                fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
+                QueryResult<File> queryResult = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
 
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -3310,8 +3320,8 @@ public class FileManager extends AnnotationSetManager<File> {
                                     Collections.emptyMap(), Collections.emptyMap());
                             folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
-                            QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(),
-                                    new QueryOptions());
+                            fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
+                            QueryResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
 
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
@@ -3362,8 +3372,8 @@ public class FileManager extends AnnotationSetManager<File> {
                                     Collections.emptyMap(), Collections.emptyMap());
                             subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
                             checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
-                            QueryResult<File> queryResult = fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(),
-                                    new QueryOptions());
+                            fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
+                            QueryResult<File> queryResult = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
 
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {

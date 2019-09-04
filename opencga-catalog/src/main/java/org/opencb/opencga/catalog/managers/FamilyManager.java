@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
@@ -174,6 +175,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
+    private QueryResult<Family> getFamily(long studyUid, String familyUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(FamilyDBAdaptor.QueryParams.UUID.key(), familyUuid);
+        return familyDBAdaptor.get(query, options);
+    }
+
     @Override
     public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         return null;
@@ -223,7 +231,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         family.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FAMILY));
 
-        QueryResult<Family> queryResult = familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
+        familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
+        QueryResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
         auditManager.recordCreation(AuditRecord.Resource.family, queryResult.first().getId(), userId, queryResult.first(), null, null);
 
         return queryResult;
@@ -348,7 +357,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        WriteResult writeResult = new WriteResult("delete");
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -401,7 +410,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are families that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some families could not be deleted"));
         }
 
         return writeResult;

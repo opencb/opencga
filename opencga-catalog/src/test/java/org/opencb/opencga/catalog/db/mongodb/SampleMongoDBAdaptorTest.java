@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 
@@ -57,8 +58,6 @@ public class SampleMongoDBAdaptorTest {
     private User user3;
     private User user4;
     private long studyId;
-    private Sample s1;
-    private Sample s2;
 
     @AfterClass
     public static void afterClass() {
@@ -78,12 +77,18 @@ public class SampleMongoDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        s1 = catalogSampleDBAdaptor.insert(studyId, new Sample("s1", "", null, null, null, 1, 1, "", "", false,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), null).first();
-        s2 = catalogSampleDBAdaptor.insert(studyId, new Sample("s2", "", null, null, null, 1, 1, "", "", false,
-                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), null).first();
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s1", "", null, null, null, 1, 1, "", "", false,
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), null);
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s2", "", null, null, null, 1, 1, "", "", false,
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), null);
     }
 
+    QueryResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
+        return catalogSampleDBAdaptor.get(query, options);
+    }
 //    @Test
 //    public void testAnnotateSample() throws Exception {
 //        long sampleId = s1.getId();
@@ -217,8 +222,8 @@ public class SampleMongoDBAdaptorTest {
         );
         Sample sample2 = new Sample().setId("sample2").setPhenotypes(ontologyList).setStatus(new Status());
 
-        catalogSampleDBAdaptor.insert(studyId, sample1, new QueryOptions()).first().getUid();
-        catalogSampleDBAdaptor.insert(studyId, sample2, new QueryOptions()).first().getUid();
+        catalogSampleDBAdaptor.insert(studyId, sample1, Collections.emptyList(), new QueryOptions());
+        catalogSampleDBAdaptor.insert(studyId, sample2, Collections.emptyList(), new QueryOptions());
 
         // Start the search
         Query query = new Query()
@@ -256,7 +261,12 @@ public class SampleMongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
-        QueryResult<Sample> result = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "HG0097")
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        QueryResult<Sample> result = catalogSampleDBAdaptor.get(query, QueryOptions.empty());
 
         assertEquals(hg0097.getId(), result.first().getId());
         assertEquals(hg0097.getDescription(), result.first().getDescription());
@@ -277,8 +287,8 @@ public class SampleMongoDBAdaptorTest {
         Sample sample2 = new Sample("sample2", "1000g", null, "A description", 1)
                 .setCreationDate(TimeUtils.getTime(calendar.getTime()));
 
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample1, null);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample2, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample1, null, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample2, null, null);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
 
@@ -319,8 +329,8 @@ public class SampleMongoDBAdaptorTest {
 
         // We create a new sample with the individual
         Sample sample = new Sample().setId("sample1").setStatus(new Status());
-        QueryResult<Sample> sampleQR = catalogSampleDBAdaptor.insert(studyId, sample, queryOptions);
-        long sampleId = sampleQR.first().getUid();
+        catalogSampleDBAdaptor.insert(studyId, sample, Collections.emptyList(), queryOptions);
+        long sampleId = getSample(studyId, "sample1", queryOptions).first().getUid();
 
         // We create an individual
         String individualName = "individualName";
@@ -328,7 +338,7 @@ public class SampleMongoDBAdaptorTest {
                 .setId(individualName)
                 .setStatus(new Status())
                 .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1).setStatus(new Status())));
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, queryOptions);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, null, queryOptions);
 
         // Get the sample
         Query query = new Query()
@@ -350,10 +360,12 @@ public class SampleMongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
-        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getUid());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
 
-        QueryResult<Sample> sampleQueryResult = catalogSampleDBAdaptor.get(createResult.first().getUid(), QueryOptions.empty());
+        long sampleUid = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first().getUid();
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sampleUid);
+
+        QueryResult<Sample> sampleQueryResult = catalogSampleDBAdaptor.get(sampleUid, QueryOptions.empty());
         assertEquals(0, sampleQueryResult.getNumResults());
     }
 
@@ -371,11 +383,13 @@ public class SampleMongoDBAdaptorTest {
                 "data/file.vcf");
 
         Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
-        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
-        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                createResult.first().getUid()), QueryOptions.empty());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
 
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getUid());
+        long sampleUid = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first().getUid();
+        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleUid),
+                QueryOptions.empty());
+
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sampleUid);
     }
 
     @Test
@@ -385,12 +399,14 @@ public class SampleMongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
-        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
+        Sample sample = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first();
+
         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort("Cohort", Study.Type.COLLECTION, "", "",
-                Collections.singletonList(createResult.first()), 1, null), null);
+                Collections.singletonList(sample), 1, null), null, null);
 
         thrown.expect(CatalogDBException.class);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getUid());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample.getUid());
     }
 
     @Test
@@ -408,7 +424,7 @@ public class SampleMongoDBAdaptorTest {
                 threads.add(new Thread(() -> {
                     try {
                         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort(cohortName, Study.Type.COLLECTION,
-                                "", "", Collections.emptyList(), 1, null), null);
+                                "", "", Collections.emptyList(), 1, null), null, null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();
                     }

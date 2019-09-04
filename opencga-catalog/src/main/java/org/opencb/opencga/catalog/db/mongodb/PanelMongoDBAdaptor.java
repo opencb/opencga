@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -77,7 +76,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public void insert(Panel panel, boolean overwrite) throws CatalogDBException {
+    public WriteResult insert(Panel panel, boolean overwrite) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -109,11 +108,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
                 logger.info("Global panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
 
-                return endWrite(String.valueOf(panel.getUid()), tmpStartTime, 1, 1, null);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create global panel {}: {}", panel.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
             }
         };
@@ -123,12 +122,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     @Override
-    public QueryResult<Panel> insert(long studyUid, Panel panel, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult insert(long studyUid, Panel panel, QueryOptions options) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -138,26 +136,21 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
                 insert(clientSession, studyUid, panel);
-
-                return endWrite(String.valueOf(panel.getUid()), tmpStartTime, 1, 1, null);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create panel {}: {}", panel.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query()
-                    .append(QueryParams.STUDY_UID.key(), studyUid)
-                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
-            return endQuery("Create panel", startTime, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     void insert(ClientSession clientSession, long studyUid, Panel panel) throws CatalogDBException {
@@ -445,11 +438,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                                 new QueryOptions("multi", true));
                     }
 
-                    return endWrite(panel.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating panel {}({}). {}", panel.getId(), panel.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
                 }
             };
@@ -469,14 +462,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0
-                    ? "None of the panels could be updated"
-                    : "Some of the panels could not be updated"));
-        }
-
-        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long panelUid) throws CatalogDBException {
@@ -612,15 +598,15 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                             QueryOptions.empty()).first();
                     if (panelResult.getModifiedCount() == 1) {
                         logger.info("Panel {}({}) deleted", panel.getId(), panel.getUid());
-                        return endWrite(panel.getId(), tmpStartTime, 1, 1, null);
+                        return endWrite(tmpStartTime, 1, 1, null, null);
                     } else {
                         logger.error("Panel {}({}) could not be deleted", panel.getId(), panel.getUid());
-                        return endWrite(panel.getId(), tmpStartTime, 1, 0, null);
+                        return endWrite(tmpStartTime, 1, 0, null, null);
                     }
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting panel {}({}). {}", panel.getId(), panel.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(panel.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(panel.getId(), e.getMessage())));
                 }
             };
@@ -640,14 +626,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0
-                    ? "None of the panels could be deleted"
-                    : "Some of the panels could not be deleted"));
-        }
-
-        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     @Override

@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -93,9 +92,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> insert(long studyId, Job job, QueryOptions options) throws CatalogDBException {
-        long startQuery = startQuery();
-
+    public WriteResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -104,28 +101,22 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-
-                long jobUid = insert(clientSession, studyId, job);
-
-                return endWrite(String.valueOf(jobUid), tmpStartTime, 1, 1, null);
+                insert(clientSession, studyId, job);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create job {}: {}", job.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(job.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query()
-                    .append(QueryParams.STUDY_UID.key(), studyId)
-                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
-            return endQuery("Create Job", startQuery, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     long insert(ClientSession clientSession, long studyId, Job job) throws CatalogDBException {
@@ -288,11 +279,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                             jobParameters.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
                     jobCollection.update(parseQuery(query), new Document("$set", jobParameters), null);
 
-                    return endWrite(job.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating job {}({}). {}", job.getId(), job.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(job.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
                 }
             };
@@ -312,14 +303,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0
-                    ? "None of the jobs could be updated"
-                    : "Some of the jobs could not be updated"));
-        }
-
-        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     @Override
@@ -380,12 +364,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         logger.error("Job '{}' successfully deleted", job.getId());
                     }
 
-                    return endWrite(job.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
 
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting job {}({}). {}", job.getId(), job.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(job.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(job.getId(), e.getMessage())));
                 }
             };
@@ -405,14 +389,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0
-                    ? "None of the jobs could be deleted"
-                    : "Some of the jobs could not be deleted"));
-        }
-
-        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     @Override

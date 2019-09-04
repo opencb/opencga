@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
@@ -163,6 +164,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
     }
 
+    private QueryResult<Cohort> getCohort(long studyUid, String cohortUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(CohortDBAdaptor.QueryParams.UUID.key(), cohortUuid);
+        return cohortDBAdaptor.get(query, options);
+    }
+
     @Deprecated
     public QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Sample> samples,
                                       List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
@@ -187,7 +195,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
         validateNewCohort(study, cohort, userId);
 
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
+        cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
+        QueryResult<Cohort> queryResult = getCohort(study.getUid(), cohort.getUuid(), options);
         auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
@@ -360,7 +369,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        WriteResult writeResult = new WriteResult("delete");
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -409,7 +418,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are cohorts that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some cohorts could not be deleted"));
         }
 
         return writeResult;

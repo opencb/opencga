@@ -17,7 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -37,6 +40,13 @@ import static org.junit.Assert.assertTrue;
  */
 public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
+    Study getStudy(long projectUid, String studyId) throws CatalogDBException {
+        Query query = new Query()
+                .append(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), projectUid)
+                .append(StudyDBAdaptor.QueryParams.ID.key(), studyId);
+        return catalogStudyDBAdaptor.get(query, QueryOptions.empty()).first();
+    }
+
     @Test
     public void updateDiskUsage() throws Exception {
         catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(null, 5, 100);
@@ -51,9 +61,10 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogException {
-        QueryResult<Study> ph1 = catalogStudyDBAdaptor.insert(user1.getProjects().get(0),
-                new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", new Status(), null, 1), null);
-        assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);
+        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", new Status(),
+                null, 1), null);
+        Study ph1 = getStudy(user1.getProjects().get(0).getUid(), "ph1");
+        assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getUid() > 0);
     }
 
     private QueryResult<VariableSet> createExampleVariableSet(String name, boolean confidential) throws CatalogDBException {

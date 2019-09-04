@@ -84,9 +84,9 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void deleteProjectTest() throws CatalogException {
         Project p = new Project("2000G", "Project about some more genomes", null, "Cool", new Status(), "", 3000, "", null, 1);
-        QueryResult<Project> result = catalogProjectDBAdaptor.insert(p, user1.getId(), null);
-        System.out.println(result.first().getStatus());
-        p = result.first();
+        catalogProjectDBAdaptor.insert(p, user1.getId(), null);
+
+        p = getProject(user1.getId(), "2000G");
         QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
         System.out.println(queryResult.first().getStatus());
         assertTrue(queryResult.getNumResults() == 1);
@@ -116,10 +116,11 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void renameProjectTest() throws CatalogException {
-        Project p1 = catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", new Status(), "", 3000, "", null, 1),
-                user1.getId(), null).first();
-        Project p2 = catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", new Status(), "", 3000, "", null, 1),
-                user1.getId(), null).first();
+        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", new Status(), "", 3000, "", null, 1), user1.getId(), null);
+        Project p1 = getProject(user1.getId(), "p1");
+        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", new Status(), "", 3000, "", null, 1), user1.getId(), null);
+        Project p2 = getProject(user1.getId(), "p2");
+
         catalogProjectDBAdaptor.editId(user1.getId(), p1.getUid(), "p1", "newpmp");
 
         try {

@@ -49,7 +49,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
-    QueryResult<Job> insert(long studyId, Job job, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
     default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));

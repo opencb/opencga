@@ -209,10 +209,10 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param file The file to be inserted in the database.
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
-     * @return A QueryResult object containing information regarding the inserted file.
+     * @return A WriteResult object containing the time spent.
      * @throws CatalogDBException when the file could not be inserted due to different reasons.
      */
-    QueryResult<File> insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves the file from the database containing the fileId given.

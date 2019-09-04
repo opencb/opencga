@@ -79,9 +79,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<User> insert(User user, QueryOptions options) throws CatalogDBException {
-        long startQuery = startQuery();
-
+    public WriteResult insert(User user, QueryOptions options) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -90,23 +88,21 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
             try {
                 insert(clientSession, user);
-                return endWrite(user.getId(), tmpStartTime, 1, 1, null);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create user {}: {}", user.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(user.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(user.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query(QueryParams.ID.key(), result.getId());
-            return endQuery("createdUser", startQuery, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     private void insert(ClientSession clientSession, User user) throws CatalogDBException {
@@ -421,10 +417,10 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         if (!userParameters.isEmpty()) {
             QueryResult<UpdateResult> update = userCollection.update(parseQuery(query),
                     new Document("$set", userParameters), null);
-            return endWrite("Update user", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
+            return endWrite(startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null, null);
         }
 
-        return endWrite("Update user", startTime, 0, 0, null);
+        return endWrite(startTime, 0, 0, null, null);
     }
 
     @Override

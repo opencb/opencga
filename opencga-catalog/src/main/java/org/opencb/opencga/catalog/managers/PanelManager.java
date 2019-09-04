@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
@@ -151,6 +152,13 @@ public class PanelManager extends ResourceManager<Panel> {
         }
     }
 
+    private QueryResult<Panel> getPanel(long studyUid, String panelUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(PanelDBAdaptor.QueryParams.UUID.key(), panelUuid);
+        return panelDBAdaptor.get(query, options);
+    }
+
     private Panel getInstallationPanel(String entry) throws CatalogException {
         Query query = new Query(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
@@ -202,7 +210,8 @@ public class PanelManager extends ResourceManager<Panel> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        return panelDBAdaptor.insert(study.getUid(), panel, options);
+        panelDBAdaptor.insert(study.getUid(), panel, options);
+        return getPanel(study.getUid(), panel.getUuid(), options);
     }
 
     public QueryResult<Panel> importAllGlobalPanels(String studyStr, QueryOptions options, String token) throws CatalogException {
@@ -261,7 +270,8 @@ public class PanelManager extends ResourceManager<Panel> {
         diseasePanel.setVersion(1);
 
         // Install the current diseasePanel
-        return panelDBAdaptor.insert(study.getUid(), diseasePanel, options);
+        panelDBAdaptor.insert(study.getUid(), diseasePanel, options);
+        return getPanel(study.getUid(), diseasePanel.getUuid(), options);
     }
 
     public void importPanelApp(String token, boolean overwrite) throws CatalogException {
@@ -685,7 +695,7 @@ public class PanelManager extends ResourceManager<Panel> {
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -735,7 +745,7 @@ public class PanelManager extends ResourceManager<Panel> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are panels that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some panels could not be deleted"));
         }
 
         return writeResult;

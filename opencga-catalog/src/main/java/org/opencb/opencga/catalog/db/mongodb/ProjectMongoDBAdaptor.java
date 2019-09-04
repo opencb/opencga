@@ -35,7 +35,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -97,9 +96,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Project> insert(Project project, String userId, QueryOptions options) throws CatalogDBException {
-        long startQuery = startQuery();
-
+    public WriteResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -108,23 +105,21 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
             try {
                 Project createdProject = insert(clientSession, project, userId);
-                return endWrite(String.valueOf(createdProject.getUid()), tmpStartTime, 1, 1, null);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create project {}: {}", project.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(project.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(project.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query(QueryParams.UID.key(), Long.parseLong(result.getId()));
-            return endQuery("createdProject", startQuery, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     Project insert(ClientSession clientSession, Project project, String userId) throws CatalogDBException {
@@ -312,11 +307,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                             updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
                     userCollection.update(clientSession, finalQuery, updates, null);
 
-                    return endWrite(project.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating project {}({}). {}", project.getId(), project.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(project.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(project.getId(), e.getMessage())));
                 }
             };
@@ -336,14 +331,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0
-                    ? "None of the projects could be updated"
-                    : "Some of the projects could not be updated"));
-        }
-
-        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     Document getDocumentUpdateParams(ObjectMap parameters) {
@@ -471,7 +459,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                             QueryOptions.empty()).first();
                     if (updateResult.getModifiedCount() == 1) {
                         logger.debug("Project {} successfully deleted", project.getId());
-                        return endWrite(project.getId(), tmpStartTime, 1, 1, null);
+                        return endWrite(tmpStartTime, 1, 1, null, null);
                     } else {
                         logger.error("Project {} could not be deleted", project.getId());
                         throw new CatalogDBException("Project " + project.getId() + " could not be deleted");
@@ -479,7 +467,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting project {}({}). {}", project.getId(), project.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(project.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(project.getId(), e.getMessage())));
                 }
             };
@@ -499,14 +487,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0
-                    ? "None of the projects could be deleted"
-                    : "Some of the projects could not be deleted"));
-        }
-
-        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     @Deprecated

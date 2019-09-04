@@ -217,6 +217,13 @@ public class StudyManager extends AbstractManager {
         return studyQueryResult;
     }
 
+    private QueryResult<Study> getStudy(long projectUid, String studyUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), projectUid)
+                .append(StudyDBAdaptor.QueryParams.UUID.key(), studyUuid);
+        return studyDBAdaptor.get(query, options);
+    }
+
     public QueryResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
                                      String description, Status status, String cipher, String uriScheme, URI uri,
                                      Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
@@ -288,7 +295,8 @@ public class StudyManager extends AbstractManager {
 
         /* CreateStudy */
         study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
-        QueryResult<Study> result = studyDBAdaptor.insert(project, study, options);
+        studyDBAdaptor.insert(project, study, options);
+        QueryResult<Study> result = getStudy(projectId, study.getUuid(), options);
         study = result.getResult().get(0);
 
         //URI studyUri;

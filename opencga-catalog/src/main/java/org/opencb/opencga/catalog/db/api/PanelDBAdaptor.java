@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Panel;
@@ -146,11 +147,12 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      *
      * @param panel Panel.
      * @param overwrite Flag to overwrite in case of an ID conflict.
+     * @return WriteResult object.
      * @throws CatalogDBException In case of an ID conflict when overwrite is false.
      */
-    void insert(Panel panel, boolean overwrite) throws CatalogDBException;
+    WriteResult insert(Panel panel, boolean overwrite) throws CatalogDBException;
 
-    QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
 

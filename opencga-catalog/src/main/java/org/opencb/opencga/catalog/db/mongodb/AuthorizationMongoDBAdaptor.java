@@ -446,10 +446,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
                 clientSession.abortTransaction();
-                return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
-            return endWrite("", startTime, 1, 1, null);
+            return endWrite(startTime, 1, 1, null, null);
         };
         WriteResult result = commitTransaction(clientSession, txnBody);
 
@@ -474,10 +474,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
                 clientSession.abortTransaction();
-                return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
-            return endWrite("", startTime, 1, 1, null);
+            return endWrite(startTime, 1, 1, null, null);
         };
         WriteResult result = commitTransaction(clientSession, txnBody);
 
@@ -551,10 +551,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
                 clientSession.abortTransaction();
-                return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
-            return endWrite("", startTime, 1, 1, null);
+            return endWrite(startTime, 1, 1, null, null);
         };
         WriteResult result = commitTransaction(clientSession, txnBody);
 
@@ -609,10 +609,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
                 clientSession.abortTransaction();
-                return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
-            return endWrite("", startTime, 1, 1, null);
+            return endWrite(startTime, 1, 1, null, null);
         };
         WriteResult result = commitTransaction(clientSession, txnBody);
 
@@ -653,10 +653,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
                 clientSession.abortTransaction();
-                return endWrite("", startTime, -1, 0, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
 
-            return endWrite("", startTime, 1, 1, null);
+            return endWrite(startTime, 1, 1, null, null);
         };
         WriteResult result = commitTransaction(clientSession, txnBody);
 

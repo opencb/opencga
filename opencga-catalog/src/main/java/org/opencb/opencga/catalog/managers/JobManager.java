@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
@@ -159,6 +160,13 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
+    private QueryResult<Job> getJob(long studyUid, String jobUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(JobDBAdaptor.QueryParams.UUID.key(), jobUuid);
+        return jobDBAdaptor.get(query, options);
+    }
+
     public Long getStudyId(long jobId) throws CatalogException {
         return jobDBAdaptor.getStudyId(jobId);
     }
@@ -280,7 +288,8 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
-        QueryResult<Job> queryResult = jobDBAdaptor.insert(study.getUid(), job, options);
+        jobDBAdaptor.insert(study.getUid(), job, options);
+        QueryResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
         auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
@@ -381,7 +390,7 @@ public class JobManager extends ResourceManager<Job> {
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        WriteResult writeResult = new WriteResult("delete", -1, -1, -1, null, null, null);
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -430,7 +439,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are jobs that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some jobs could not be deleted"));
         }
 
         return writeResult;

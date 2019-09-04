@@ -162,6 +162,13 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
+    private QueryResult<Project> getProject(String userId, String projectUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
+                .append(ProjectDBAdaptor.QueryParams.UUID.key(), projectUuid);
+        return projectDBAdaptor.get(query, options);
+    }
+
     /**
      * Obtain the list of projects and studies that are shared with the user.
      *
@@ -217,7 +224,8 @@ public class ProjectManager extends AbstractManager {
         Project project = new Project(id, name, description, new Status(), organization, organism, 1);
 
         project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
-        QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
+        projectDBAdaptor.insert(project, userId, options);
+        QueryResult<Project> queryResult = getProject(userId, project.getUuid(), options);
         project = queryResult.getResult().get(0);
 
         try {

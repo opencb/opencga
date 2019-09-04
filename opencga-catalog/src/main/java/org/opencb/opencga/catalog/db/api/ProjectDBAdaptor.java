@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Project;
 
@@ -127,7 +128,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
     void nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    QueryResult<Project> insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 

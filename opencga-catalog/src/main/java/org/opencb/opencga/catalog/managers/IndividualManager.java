@@ -187,6 +187,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
+    private QueryResult<Individual> getIndividual(long studyUid, String individualUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(IndividualDBAdaptor.QueryParams.UUID.key(), individualUuid);
+        return individualDBAdaptor.get(query, options);
+    }
+
     void validateNewIndividual(Study study, Individual individual, List<String> samples, String userId, boolean linkParents)
             throws CatalogException {
         ParamUtils.checkAlias(individual.getId(), "id");
@@ -284,7 +291,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         validateNewIndividual(study, individual, sampleIds, userId, true);
 
         // Create the individual
-        QueryResult<Individual> queryResult = individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
+        individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
+        QueryResult<Individual> queryResult = getIndividual(study.getUid(), individual.getUuid(), options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
@@ -433,7 +441,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     @Override
     public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        WriteResult writeResult = new WriteResult("delete");
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -506,7 +514,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are individuals that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some individuals could not be deleted"));
         }
 
         return writeResult;

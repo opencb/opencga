@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.*;
@@ -61,7 +62,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     void nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
 
-    QueryResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
 
     boolean hasStudyPermission(long studyId, String user, StudyAclEntry.StudyPermissions permission) throws CatalogDBException;
 

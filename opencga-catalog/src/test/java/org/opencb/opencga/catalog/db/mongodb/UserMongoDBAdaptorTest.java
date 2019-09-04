@@ -51,8 +51,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void createUserTest() throws CatalogException {
 
         User user = new User("NewUser", "", "", "", "", User.UserStatus.READY);
-        QueryResult createUser = catalogUserDBAdaptor.insert(user, null);
-        assertNotSame(0, createUser.getResult().size());
+        catalogUserDBAdaptor.insert(user, null);
 
         thrown.expect(CatalogDBException.class);
         catalogUserDBAdaptor.insert(user, null);
@@ -61,11 +60,13 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void deleteUserTest() throws CatalogException {
         User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.UserStatus.READY);
-        QueryResult<User> createUser = catalogUserDBAdaptor.insert(deletable1, null);
-        assertFalse(createUser.getResult().isEmpty());
-        assertNotNull(createUser.first());
+        catalogUserDBAdaptor.insert(deletable1, null);
+        Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), "deletable1");
+        QueryResult<User> userResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
+        assertFalse(userResult.getResult().isEmpty());
+        assertNotNull(userResult.first());
 
-        assertEquals(Status.READY, createUser.first().getStatus().getName());
+        assertEquals(Status.READY, userResult.first().getStatus().getName());
 
         QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertFalse(deleteUser.getResult().isEmpty());

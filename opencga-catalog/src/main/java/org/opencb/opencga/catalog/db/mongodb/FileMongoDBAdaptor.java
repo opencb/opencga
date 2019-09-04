@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -104,7 +103,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public QueryResult<File> insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options)
+    public WriteResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
         long startQuery = startQuery();
 
@@ -116,28 +115,22 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-
-                long fileUid = insert(clientSession, studyId, file, variableSetList);
-
-                return endWrite(String.valueOf(fileUid), tmpStartTime, 1, 1, null);
+                insert(clientSession, studyId, file, variableSetList);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create file {}: {}", file.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(file.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(file.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query()
-                    .append(QueryParams.STUDY_UID.key(), studyId)
-                    .append(QueryParams.UID.key(), Long.parseLong(result.getId()));
-            return endQuery("Create file", startQuery, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     long insert(ClientSession clientSession, long studyId, File file, List<VariableSet> variableSetList) throws CatalogDBException {
@@ -311,14 +304,14 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                             long difDiskUsage = newDiskUsage - file.getSize();
                             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, file.getStudyUid(), difDiskUsage);
                         }
-                        return endWrite("Update file", startTime, (int) update.getResult().get(0).getModifiedCount(),
-                                (int) update.getResult().get(0).getModifiedCount(), null);
+                        return endWrite(startTime, (int) update.getResult().get(0).getModifiedCount(),
+                                (int) update.getResult().get(0).getModifiedCount(), null, null);
                     }
 
-                    return endWrite(file.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating file {}({}). {}", file.getId(), file.getUid(), e.getMessage(), e);
-                    return endWrite(file.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(file.getId(), e.getMessage())));
                 }
             };
@@ -337,14 +330,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0
-                    ? "None of the files could be updated"
-                    : "Some of the files could not be updated"));
-        }
-
-        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     @Override
@@ -564,11 +550,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         logger.info("File {}({}) could not be deleted", file.getPath(), file.getUid());
                     }
 
-                    return endWrite(file.getPath(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting file {}({}). {}", file.getId(), file.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(file.getPath(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(file.getId(), e.getMessage())));
                 }
             };
@@ -588,14 +574,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0
-                    ? "None of the files could be deleted"
-                    : "Some of the files could not be deleted"));
-        }
-
-        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     @Override

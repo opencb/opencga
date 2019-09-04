@@ -31,7 +31,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.utils.ListUtils;
@@ -110,9 +109,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
-        long startQuery = startQuery();
-
+    public WriteResult insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -120,24 +117,22 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             logger.debug("Starting study insert transaction for study id '{}'", study.getId());
 
             try {
-                Study createdStudy = insert(clientSession, project, study);
-                return endWrite(String.valueOf(createdStudy.getUid()), tmpStartTime, 1, 1, null);
+                insert(clientSession, project, study);
+                return endWrite(tmpStartTime, 1, 1, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create study {}: {}", study.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(study.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(study.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query(QueryParams.UID.key(), Long.parseLong(result.getId()));
-            return endQuery("createdStudy", startQuery, get(query, options));
-        } else {
+        if (result.getNumModified() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     Study insert(ClientSession clientSession, Project project, Study study) throws CatalogDBException {
@@ -1209,11 +1204,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                             updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
                     studyCollection.update(clientSession, finalQuery, updates, null);
 
-                    return endWrite(study.getId(), tmpStartTime, 1, 1, null);
+                    return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating study {}({}). {}", study.getId(), study.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(study.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(study.getId(), e.getMessage())));
                 }
             };
@@ -1233,14 +1228,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "update", (numModified == 0
-                    ? "None of the studies could be updated"
-                    : "Some of the studies could not be updated"));
-        }
-
-        return endWrite("update", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
@@ -1317,7 +1305,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     UpdateResult updateResult = delete(clientSession, study);
                     if (updateResult.getModifiedCount() == 1) {
                         logger.debug("Study {} successfully deleted", study.getId());
-                        return endWrite(study.getId(), tmpStartTime, 1, 1, null);
+                        return endWrite(tmpStartTime, 1, 1, null, null);
                     } else {
                         logger.error("Study {} could not be deleted", study.getId());
                         throw new CatalogDBException("Study " + study.getId() + " could not be deleted");
@@ -1325,7 +1313,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 } catch (CatalogDBException e) {
                     logger.error("Error deleting study {}({}). {}", study.getId(), study.getUid(), e.getMessage(), e);
                     clientSession.abortTransaction();
-                    return endWrite(study.getId(), tmpStartTime, 1, 0,
+                    return endWrite(tmpStartTime, 1, 0, null,
                             Collections.singletonList(new WriteResult.Fail(study.getId(), e.getMessage())));
                 }
             };
@@ -1345,14 +1333,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             }
         }
 
-        Error error = null;
-        if (!failList.isEmpty()) {
-            error = new Error(-1, "delete", (numModified == 0
-                    ? "None of the studies could be deleted"
-                    : "Some of the studies could not be deleted"));
-        }
-
-        return endWrite("delete", startTime, numMatches, numModified, failList, null, error);
+        return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
     UpdateResult delete(ClientSession clientSession, Study study) throws CatalogDBException {
