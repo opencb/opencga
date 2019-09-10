@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -529,9 +530,13 @@ public class StudyManager extends AbstractManager {
 
         String ownerId = getOwner(study);
         userDBAdaptor.updateUserLastModified(ownerId);
-        QueryResult<Study> result = studyDBAdaptor.update(study.getUid(), parameters, options);
+        WriteResult result = studyDBAdaptor.update(study.getUid(), parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.study, study.getUid(), userId, parameters, null, null);
-        return result;
+
+        QueryResult<Study> queryResult = studyDBAdaptor.get(study.getUid(), options);
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+        return queryResult;
     }
 
     public QueryResult<PermissionRule> createPermissionRule(String studyStr, Study.Entity entry, PermissionRule permissionRule,
@@ -744,7 +749,12 @@ public class StudyManager extends AbstractManager {
         studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
 
         // Create the group
-        return studyDBAdaptor.createGroup(study.getUid(), group);
+        WriteResult result = studyDBAdaptor.createGroup(study.getUid(), group);
+
+        QueryResult<Group> queryResult = studyDBAdaptor.getGroup(study.getUid(), group.getId(), null);
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+        return queryResult;
     }
 
     public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
@@ -1053,9 +1063,12 @@ public class StudyManager extends AbstractManager {
                 getCurrentRelease(study), attributes);
         AnnotationUtils.checkVariableSet(variableSet);
 
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
-        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getUid(), userId, queryResult.first(), null,
-                null);
+        WriteResult result = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.getVariableSet(study.getUid(), variableSet.getId(), QueryOptions.empty());
+
+        auditManager.recordCreation(AuditRecord.Resource.variableSet, study.getUid(), userId, queryResult.first(), null, null);
+
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
 
         return queryResult;
     }
@@ -1092,14 +1105,13 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getVariableSets(query, options, userId);
     }
 
-    public QueryResult<VariableSet> deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException {
+    public WriteResult deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
 
         authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.deleteVariableSet(resource.getResourceId(), QueryOptions.empty(), userId);
-        auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
-        return queryResult;
+        return studyDBAdaptor.deleteVariableSet(resource.getResourceId(), QueryOptions.empty(), userId);
+//        auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, result.first(), null, null);
     }
 
     public QueryResult<VariableSet> addFieldToVariableSet(String studyStr, String variableSetStr, Variable variable, String sessionId)
@@ -1114,8 +1126,11 @@ public class StudyManager extends AbstractManager {
         String userId = resource.getUser();
 
         authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.addFieldToVariableSet(resource.getResourceId(), variable, userId);
-        auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
+        WriteResult result = studyDBAdaptor.addFieldToVariableSet(resource.getResourceId(), variable, userId);
+
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.getVariableSet(resource.getResourceId(), QueryOptions.empty());
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
         return queryResult;
     }
 
@@ -1125,8 +1140,11 @@ public class StudyManager extends AbstractManager {
         String userId = resource.getUser();
 
         authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
-        QueryResult<VariableSet> queryResult = studyDBAdaptor.removeFieldFromVariableSet(resource.getResourceId(), name, userId);
-        auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, queryResult.first(), null, null);
+        WriteResult result = studyDBAdaptor.removeFieldFromVariableSet(resource.getResourceId(), name, userId);
+
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.getVariableSet(resource.getResourceId(), QueryOptions.empty());
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
         return queryResult;
     }
 

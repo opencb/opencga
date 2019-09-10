@@ -942,10 +942,10 @@ public class FileManager extends AnnotationSetManager<File> {
                     params.put(FileDBAdaptor.QueryParams.STATS.key(), stats);
                 }
 
-                fileQueryResult = fileDBAdaptor.update(overwrittenFile.getUid(), params, null, queryOptions);
+                fileDBAdaptor.update(overwrittenFile.getUid(), params, null, queryOptions);
             } else {
                 // We need to register a new file
-                fileQueryResult = register(study, file, parents, QueryOptions.empty(), sessionId);
+                register(study, file, parents, QueryOptions.empty(), sessionId);
             }
         } catch (CatalogException e) {
             ioManager.deleteFile(file.getUri());
@@ -953,7 +953,7 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("Upload file failed. Could not register the file in the DB: " + e.getMessage());
         }
 
-        return fileQueryResult;
+        return fileDBAdaptor.get(query, QueryOptions.empty());
     }
 
     /**
@@ -1354,20 +1354,20 @@ public class FileManager extends AnnotationSetManager<File> {
                 if (file.isExternal()) {
                     // unlink
                     WriteResult result = unlink(study.getUid(), file);
-                    writeResult.setNumModified(writeResult.getNumModified() + result.getNumModified());
+                    writeResult.setNumUpdated(writeResult.getNumUpdated() + result.getNumUpdated());
                     writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
                 } else {
                     // local
                     if (physicalDelete) {
                         // physicalDelete
                         WriteResult result = physicalDelete(study.getUid(), file, params.getBoolean(FORCE_DELETE, false));
-                        writeResult.setNumModified(writeResult.getNumModified() + result.getNumModified());
+                        writeResult.setNumUpdated(writeResult.getNumUpdated() + result.getNumUpdated());
                         writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
                         failedList.addAll(result.getFailed());
                     } else {
                         // sendToTrash
                         WriteResult result = sendToTrash(study.getUid(), file);
-                        writeResult.setNumModified(writeResult.getNumModified() + result.getNumModified());
+                        writeResult.setNumUpdated(writeResult.getNumUpdated() + result.getNumUpdated());
                         writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
                     }
                 }
@@ -2187,7 +2187,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         catalogIOManager.rename(oldUri, newUri);   // io.move() 1
                     }
                 }
-                result = fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
+                fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, new ObjectMap("path", newPath)
                         .append("name", newName), "rename", null);
                 break;
@@ -2196,7 +2196,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     catalogIOManager = catalogIOManagerFactory.get(oldUri);
                     catalogIOManager.rename(oldUri, newUri);
                 }
-                result = fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
+                fileDBAdaptor.rename(file.getUid(), newPath, newUri.toString(), null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, file.getUid(), userId, new ObjectMap("path", newPath)
                         .append("name", newName), "rename", null);
                 break;
@@ -2204,7 +2204,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Unknown file type " + file.getType());
         }
 
-        return result;
+        return fileDBAdaptor.get(file.getUid(), QueryOptions.empty());
     }
 
     public DataInputStream grep(String studyStr, String fileStr, String pattern, QueryOptions options, String sessionId)

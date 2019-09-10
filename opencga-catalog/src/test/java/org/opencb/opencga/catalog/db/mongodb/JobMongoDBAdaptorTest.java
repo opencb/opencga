@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -185,13 +186,16 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)
                 .append(JobDBAdaptor.QueryParams.OUTPUT.key(), fileOutput);
 
-        QueryResult<Job> update = catalogJobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
-        assertEquals(3, update.first().getInput().size());
-        assertEquals(3, update.first().getOutput().size());
+        WriteResult result = catalogJobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
+        assertEquals(1, result.getNumUpdated());
 
-        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(update.first().getInput().stream().map(File::getUid).collect(Collectors.toList())));
+        QueryResult<Job> queryResult = catalogJobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+        assertEquals(3, queryResult.first().getInput().size());
+        assertEquals(3, queryResult.first().getOutput().size());
+
+        assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(queryResult.first().getInput().stream().map(File::getUid).collect(Collectors.toList())));
         assertTrue(Arrays.asList(15L, 16L, 17L)
-                .containsAll(update.first().getOutput().stream().map(File::getUid).collect(Collectors.toList())));
+                .containsAll(queryResult.first().getOutput().stream().map(File::getUid).collect(Collectors.toList())));
     }
 
 }

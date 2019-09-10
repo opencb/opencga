@@ -198,7 +198,11 @@ public class JobManager extends ResourceManager<Job> {
         Job job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
         authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.VIEW);
         ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        return jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
+        WriteResult result = jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
+        QueryResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+        return queryResult;
     }
 
     @Deprecated
@@ -473,8 +477,12 @@ public class JobManager extends ResourceManager<Job> {
 
         authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
 
-        QueryResult<Job> queryResult = jobDBAdaptor.update(job.getUid(), parameters, options);
+        WriteResult result = jobDBAdaptor.update(job.getUid(), parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.job, job.getUid(), userId, parameters, null, null);
+
+        QueryResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
         return queryResult;
     }
 

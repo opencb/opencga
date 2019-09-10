@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
@@ -174,8 +174,12 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 Collections.emptyList(), null), Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "in1").getUid();
 
-        Individual individual = catalogIndividualDBAdaptor.update(individualUid,
-                new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), -1), QueryOptions.empty()).first();
+        WriteResult result = catalogIndividualDBAdaptor.update(individualUid,
+                new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), -1), QueryOptions.empty());
+        assertEquals(1, result.getNumUpdated());
+
+        Individual individual = catalogIndividualDBAdaptor.get(individualUid,
+                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.FATHER.key())).first();
         assertEquals(-1, individual.getFather().getUid());
     }
 
@@ -216,9 +220,14 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         // Update samples
         ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
-        Individual update = catalogIndividualDBAdaptor.update(individualStored.getUid(), params, QueryOptions.empty()).first();
-        assertEquals(2, update.getSamples().size());
-        assertTrue(update.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(sample1.getUid(),
+        WriteResult result = catalogIndividualDBAdaptor.update(individualStored.getUid(), params, QueryOptions.empty());
+        assertEquals(1, result.getNumUpdated());
+
+        individual = catalogIndividualDBAdaptor.get(individualStored.getUid(),
+                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key())).first();
+
+        assertEquals(2, individual.getSamples().size());
+        assertTrue(individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(sample1.getUid(),
                 sample2.getUid())));
     }
 

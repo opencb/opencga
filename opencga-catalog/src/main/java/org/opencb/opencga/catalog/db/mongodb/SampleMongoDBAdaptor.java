@@ -23,7 +23,6 @@ import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -39,7 +38,6 @@ import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.SampleMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -99,9 +97,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public void nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException {
+    public WriteResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException {
         Document sampleDocument = getMongoDBDocument(sample, "sample");
-        sampleCollection.insert(sampleDocument, null);
+        return sampleCollection.insert(sampleDocument, null);
     }
 
     Sample insert(ClientSession clientSession, long studyId, Sample sample, List<VariableSet> variableSetList) throws CatalogDBException {
@@ -194,7 +192,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 0) {
+        if (result.getNumInserted() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
         return result;
@@ -209,7 +207,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public QueryResult<Sample> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(id, parameters, Collections.emptyList(), queryOptions);
     }
 
@@ -238,18 +236,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public QueryResult<Sample> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public WriteResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
         WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumModified() != 1) {
+        if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update sample with id " + id + ": " + update.getFailed().get(0).getMessage());
         }
-        Query query = new Query()
-                .append(QueryParams.UID.key(), id)
-                .append(QueryParams.STUDY_UID.key(), getStudyId(id))
-                .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        return endQuery("Update sample", startTime, get(query, queryOptions));
+        return update;
     }
 
     @Override
@@ -302,7 +296,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             WriteResult result = commitTransaction(clientSession, txnBody);
 
-            if (result.getNumModified() == 1) {
+            if (result.getNumUpdated() == 1) {
                 logger.info("Sample {} successfully updated", sampleId);
                 numModified += 1;
             } else {
@@ -346,7 +340,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             logger.debug("Sample update: query : {}, update: {}",
                     finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     sampleUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true)).first();
+            sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
 
             if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
                 long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
@@ -502,7 +496,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public void updateProjectRelease(long studyId, int release) throws CatalogDBException {
+    public WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
@@ -513,12 +507,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        sampleCollection.update(bson, update, queryOptions);
+        return sampleCollection.update(bson, update, queryOptions);
     }
 
     @Override
-    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
-        unmarkPermissionRule(sampleCollection, studyId, permissionRuleId);
+    public WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) {
+        return unmarkPermissionRule(sampleCollection, studyId, permissionRuleId);
     }
 
     @Deprecated
@@ -655,7 +649,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         WriteResult delete = delete(query);
         if (delete.getNumMatches() == 0) {
             throw new CatalogDBException("Could not delete sample. Uid " + id + " not found.");
-        } else if (delete.getNumModified() == 0) {
+        } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete sample. " + delete.getFailed().get(0).getMessage());
         }
         return delete;
@@ -713,9 +707,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         logger.debug("Delete version {} of sample: Query: {}, update: {}", tmpSample.getVersion(),
                                 bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                        UpdateResult sampleResult = sampleCollection.update(clientSession, bsonQuery, updateDocument,
-                                QueryOptions.empty()).first();
-                        if (sampleResult.getModifiedCount() == 1) {
+                        WriteResult sampleResult = sampleCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+                        if (sampleResult.getNumUpdated() == 1) {
                             logger.debug("Sample version {} successfully deleted", tmpSample.getVersion());
                         } else {
                             logger.error("Sample version {} could not be deleted", tmpSample.getVersion());
@@ -736,7 +729,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             WriteResult result = commitTransaction(clientSession, txnBody);
 
-            if (result.getNumModified() == 1) {
+            if (result.getNumUpdated() == 1) {
                 logger.info("Sample {} successfully deleted", sample.getId());
                 numModified += 1;
             } else {
@@ -764,14 +757,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return endQuery("Restore samples", startTime, setStatus(query, Status.READY));
+        return setStatus(query, Status.READY);
     }
 
     @Override
-    public QueryResult<Sample> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         checkId(id);
@@ -783,10 +776,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         // Change the status of the sample to deleted
-        setStatus(id, Status.READY);
-        query = new Query(QueryParams.UID.key(), id);
-
-        return endQuery("Restore sample", startTime, get(query, null));
+        return setStatus(id, Status.READY);
     }
 
     @Override
@@ -1260,14 +1250,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return sampleCollection;
     }
 
-    QueryResult<Sample> setStatus(long sampleId, String status) throws CatalogDBException {
+    WriteResult setStatus(long sampleId, String status) throws CatalogDBException {
         return update(sampleId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
-                "", Collections.singletonList(update.getNumModified()));
+    WriteResult setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
 }

@@ -147,7 +147,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         }
     }
 
-    void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
 
     WriteResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
@@ -172,7 +172,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
     long getStudyId(long individualId) throws CatalogDBException;
 
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -180,8 +180,9 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

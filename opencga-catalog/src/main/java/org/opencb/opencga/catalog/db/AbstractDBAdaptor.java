@@ -73,9 +73,15 @@ public abstract class AbstractDBAdaptor {
         return queryResult;
     }
 
-    protected WriteResult endWrite(long startTime, int numMatches, int numModified, List<String> warnings, List<WriteResult.Fail> failed) {
+    protected WriteResult endWrite(long startTime, long numMatches, long numUpdated, List<String> warnings, List<WriteResult.Fail> failed) {
         long end = System.currentTimeMillis();
-        return new WriteResult((int) (end - startTime), numMatches, numModified, warnings, failed);
+        return new WriteResult((int) (end - startTime), numMatches, 0, numUpdated, 0, warnings, failed);
+    }
+
+    protected WriteResult endWrite(long startTime, long numMatches, long numInserted, long numUpdated, long numDeleted,
+                                   List<String> warnings, List<WriteResult.Fail> failed) {
+        long end = System.currentTimeMillis();
+        return new WriteResult((int) (end - startTime), numMatches, numInserted, numUpdated, numDeleted, warnings, failed);
     }
 
     protected void checkParameter(Object param, String name) throws CatalogDBException {

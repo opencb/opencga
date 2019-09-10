@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -502,8 +503,12 @@ public class UserManager extends AbstractManager {
             checkEmail(parameters.getString("email"));
         }
         userDBAdaptor.updateUserLastModified(userId);
-        QueryResult<User> queryResult = userDBAdaptor.update(userId, parameters);
+        WriteResult result = userDBAdaptor.update(userId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
+
+        QueryResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()), "");
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
         return queryResult;
     }
 
@@ -526,7 +531,14 @@ public class UserManager extends AbstractManager {
         List<QueryResult<User>> deletedUsers = new ArrayList<>(userIds.size());
         for (String userId : userIds) {
             if ("admin".equals(tokenUser) || userId.equals(tokenUser)) {
-                QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
+                WriteResult result = userDBAdaptor.delete(userId, options);
+
+                Query query = new Query()
+                        .append(UserDBAdaptor.QueryParams.ID.key(), userId)
+                        .append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
+                QueryResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
+                deletedUser.setDbTime(deletedUser.getDbTime() + result.getDbTime());
+
                 auditManager.recordDeletion(AuditRecord.Resource.user, userId, tokenUser, deletedUser.first(), null, null);
                 deletedUsers.add(deletedUser);
             }
@@ -556,7 +568,7 @@ public class UserManager extends AbstractManager {
         throw new UnsupportedOperationException();
     }
 
-    public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
+    public WriteResult resetPassword(String userId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         validateUserAndToken(userId, sessionId);
@@ -686,7 +698,9 @@ public class UserManager extends AbstractManager {
         }
 
         User.Filter filter = new User.Filter(name, description, bioformat, query, queryOptions);
-        return userDBAdaptor.addFilter(userId, filter);
+        WriteResult result = userDBAdaptor.addFilter(userId, filter);
+
+        return new QueryResult<>("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(filter));
     }
 
     /**
@@ -718,14 +732,13 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("There is no filter called " + name + " for user " + userId);
         }
 
-        QueryResult<Long> queryResult = userDBAdaptor.updateFilter(userId, name, params);
+        WriteResult result = userDBAdaptor.updateFilter(userId, name, params);
         User.Filter filter = getFilter(userId, name);
         if (filter == null) {
             throw new CatalogException("Internal error: The filter " + name + " could not be found.");
         }
 
-        return new QueryResult<>("Update filter", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(), queryResult.getErrorMsg(),
-                Arrays.asList(filter));
+        return new QueryResult<>("Update filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
     }
 
     /**
@@ -754,9 +767,8 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("There is no filter called " + name + " for user " + userId);
         }
 
-        QueryResult<Long> queryResult = userDBAdaptor.deleteFilter(userId, name);
-        return new QueryResult<>("Delete filter", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(), queryResult.getErrorMsg(),
-                Arrays.asList(filter));
+        WriteResult result = userDBAdaptor.deleteFilter(userId, name);
+        return new QueryResult<>("Delete filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
     }
 
     /**
@@ -841,7 +853,8 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("User " + userIdAux + " is not authorised to set configuration for user " + userId);
         }
 
-        return userDBAdaptor.setConfig(userId, name, config);
+        WriteResult result = userDBAdaptor.setConfig(userId, name, config);
+        return new QueryResult("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(config));
     }
 
     /**
@@ -880,8 +893,8 @@ public class UserManager extends AbstractManager {
             throw new CatalogException("Error: Cannot delete configuration with name " + name + ". Configuration name not found.");
         }
 
-        QueryResult<Long> queryResult = userDBAdaptor.deleteConfig(userId, name);
-        return new QueryResult("Delete configuration", queryResult.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
+        WriteResult result = userDBAdaptor.deleteConfig(userId, name);
+        return new QueryResult("Delete configuration", result.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
     }
 
     /**

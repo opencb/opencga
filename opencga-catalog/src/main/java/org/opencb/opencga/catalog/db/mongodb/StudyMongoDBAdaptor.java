@@ -20,9 +20,10 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.TransactionBody;
-import com.mongodb.client.model.*;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -43,9 +44,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
@@ -103,10 +102,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException {
+    public WriteResult nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException {
         Document studyDocument = getMongoDBDocument(study, "study");
         studyDocument.put(PRIVATE_OWNER_ID, userId);
-        studyCollection.insert(studyDocument, null);
+        return studyCollection.insert(studyDocument, null);
     }
 
     @Override
@@ -130,7 +129,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 0) {
+        if (result.getNumInserted() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
         return result;
@@ -230,8 +229,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void updateStudyLastModified(long studyId) throws CatalogDBException {
-        update(studyId, new ObjectMap("lastModified", TimeUtils.getTime()), QueryOptions.empty());
+    public WriteResult updateStudyLastModified(long studyId) throws CatalogDBException {
+        return update(studyId, new ObjectMap("lastModified", TimeUtils.getTime()), QueryOptions.empty());
     }
 
     @Override
@@ -283,17 +282,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<Group> createGroup(long studyId, Group group) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult createGroup(long studyId, Group group) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), new Document("$ne", group.getId()));
         Document update = new Document("$push", new Document(QueryParams.GROUPS.key(), getMongoDBDocument(group, "Group")));
 
-        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+        WriteResult result = studyCollection.update(query, update, null);
 
-        if (queryResult.first().getModifiedCount() != 1) {
+        if (result.getNumUpdated() != 1) {
             QueryResult<Group> group1 = getGroup(studyId, group.getId(), Collections.emptyList());
             if (group1.getNumResults() > 0) {
                 throw new CatalogDBException("Unable to create the group " + group.getId() + ". Group already existed.");
@@ -301,30 +298,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 throw new CatalogDBException("Unable to create the group " + group.getId() + ".");
             }
         }
-
-        return endQuery("Create group", startTime, getGroup(studyId, group.getId(), Collections.emptyList()));
-    }
-
-    private long getDiskUsageByStudy(int studyId) {
-
-        List<Bson> operations = new ArrayList<>();
-        operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_UID, studyId)));
-        operations.add(Aggregates.group("$" + PRIVATE_STUDY_UID, Accumulators.sum("size", "$diskUsage")));
-
-        QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection()
-                .aggregate(operations, null);
-        if (aggregate.getNumResults() == 1) {
-            Object size = aggregate.getResult().get(0).get("size");
-            if (size instanceof Integer) {
-                return ((Integer) size).longValue();
-            } else if (size instanceof Long) {
-                return ((Long) size);
-            } else {
-                return Long.parseLong(size.toString());
-            }
-        } else {
-            return 0;
-        }
+        return result;
     }
 
     @Override
@@ -357,7 +331,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public void setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+    public WriteResult setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         if (members == null) {
             members = Collections.emptyList();
         }
@@ -371,11 +345,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Document update = new Document("$set", new Document("groups.$.userIds", members));
-        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+        WriteResult result = studyCollection.update(query, update, null);
 
-        if (queryResult.first().getMatchedCount() != 1) {
+        if (result.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to set users to group " + groupId + ". The group does not exist.");
         }
+        return result;
     }
 
     void addUsersToGroup(long studyId, String groupId, List<String> members, ClientSession clientSession) throws CatalogDBException {
@@ -387,32 +362,33 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
-        QueryResult<UpdateResult> queryResult = studyCollection.update(clientSession, query, update, null);
+        WriteResult result = studyCollection.update(clientSession, query, update, null);
 
-        if (queryResult.first().getMatchedCount() != 1) {
+        if (result.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
     }
 
     @Override
-    public void addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+    public WriteResult addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         if (ListUtils.isEmpty(members)) {
-            return;
+            throw new CatalogDBException("List of 'members' is missing or empty.");
         }
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
-        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+        WriteResult result = studyCollection.update(query, update, null);
 
-        if (queryResult.first().getMatchedCount() != 1) {
+        if (result.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
+        return result;
     }
 
     @Override
-    public void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+    public WriteResult removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         if (members == null || members.size() == 0) {
             throw new CatalogDBException("Unable to remove members from group. List of members is empty");
         }
@@ -421,14 +397,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Bson pull = Updates.pullAll("groups.$.userIds", members);
-        QueryResult<UpdateResult> update = studyCollection.update(query, pull, null);
-        if (update.first().getMatchedCount() != 1) {
+        WriteResult update = studyCollection.update(query, pull, null);
+        if (update.getNumMatches() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId + ". The group does not exist.");
         }
+        return update;
     }
 
     @Override
-    public void removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException {
+    public WriteResult removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException {
         if (users == null || users.size() == 0) {
             throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
         }
@@ -445,52 +422,55 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 Bson pull = Updates.pullAll("groups.$.userIds", users);
 
                 // Pull those users while they are still there
-                QueryResult<UpdateResult> update;
+                WriteResult update;
                 do {
                     update = studyCollection.update(clientSession, query, pull, null);
-                } while (update.first().getModifiedCount() > 0);
+                } while (update.getNumUpdated() > 0);
 
                 return endWrite(tmpStartTime, -1, -1, null, null);
             } catch (Exception e) {
                 logger.error("Could not remove users from all groups of the study. {}", e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(tmpStartTime, 1, 0, null, Collections.singletonList(new WriteResult.Fail("id", e.getMessage())));
+                return endWrite(tmpStartTime, 1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     @Override
-    public void deleteGroup(long studyId, String groupId) throws CatalogDBException {
+    public WriteResult deleteGroup(long studyId, String groupId) throws CatalogDBException {
         Bson queryBson = new Document()
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Document pull = new Document("$pull", new Document("groups", new Document("id", groupId)));
-        QueryResult<UpdateResult> update = studyCollection.update(queryBson, pull, null);
+        WriteResult result = studyCollection.update(queryBson, pull, null);
 
-        if (update.first().getModifiedCount() != 1) {
+        if (result.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not remove the group " + groupId);
         }
+        return result;
     }
 
     @Override
-    public void syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException {
+    public WriteResult syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException {
         Document mongoDBDocument = getMongoDBDocument(syncedFrom, "Group.Sync");
 
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Document updates = new Document("$set", new Document("groups.$.syncedFrom", mongoDBDocument));
-        studyCollection.update(query, updates, null);
+        return studyCollection.update(query, updates, null);
     }
 
+    // TODO: Make this transactional
     @Override
-    public void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException {
+    public WriteResult resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException {
         if (StringUtils.isEmpty(user)) {
             throw new CatalogDBException("Missing user field");
         }
@@ -505,10 +485,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         // Pull the user while it still belongs to a synced group
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-        QueryResult<UpdateResult> update;
+        WriteResult update;
         do {
             update = studyCollection.update(query, pull, multi);
-        } while (update.first().getModifiedCount() > 0);
+        } while (update.getNumUpdated() > 0);
 
         // 2. Add user to all synced groups
         if (groupList != null && groupList.size() > 0) {
@@ -522,7 +502,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             Document push = new Document("$addToSet", new Document("groups.$.userIds", user));
             do {
                 update = studyCollection.update(query, push, multi);
-            } while (update.first().getModifiedCount() > 0);
+            } while (update.getNumUpdated() > 0);
 
             // We need to be updated with the internal @members group, so we fetch all the studies where the user has been added
             // and attempt to add it to the each @members group
@@ -535,10 +515,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 addUsersToGroup(study.getUid(), "@members", Arrays.asList(user));
             }
         }
+
+        return WriteResult.empty();
     }
 
     @Override
-    public void createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogDBException {
+    public WriteResult createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
         }
@@ -563,15 +545,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         // We update the study document to contain the new permission rules
         Query query = new Query(QueryParams.UID.key(), studyId);
         Document update = new Document("$set", new Document(QueryParams.PERMISSION_RULES.key() + "." + entry, permissionDocumentList));
-        QueryResult<UpdateResult> updateResult = studyCollection.update(parseQuery(query), update, QueryOptions.empty());
+        WriteResult result = studyCollection.update(parseQuery(query), update, QueryOptions.empty());
 
-        if (updateResult.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw new CatalogDBException("Unexpected error occurred when adding new permission rules to study");
         }
+        return result;
     }
 
     @Override
-    public void markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
+    public WriteResult markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
@@ -590,14 +573,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        QueryResult<UpdateResult> updateQueryResult = studyCollection.update(query, update, QueryOptions.empty());
-        if (updateQueryResult.first().getMatchedCount() == 0) {
+        WriteResult result = studyCollection.update(query, update, QueryOptions.empty());
+        if (result.getNumMatches() == 0) {
             throw new CatalogDBException("Permission rule " + permissionRuleId + " not found");
         }
 
-        if (updateQueryResult.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw new CatalogDBException("Unexpected error: Permission rule " + permissionRuleId + " could not be marked for deletion");
         }
+
+        return result;
     }
 
     @Override
@@ -643,7 +628,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
+    public WriteResult createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
         long startTime = startQuery();
 
         if (variableSetExists(variableSet.getId(), studyId) > 0) {
@@ -657,28 +642,26 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Bson bsonQuery = Filters.eq(PRIVATE_UID, studyId);
         Bson update = Updates.push("variableSets", object);
-        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
+        WriteResult result = studyCollection.update(bsonQuery, update, null);
 
-        if (queryResult.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw new CatalogDBException("createVariableSet: Could not create a new variable set in study " + studyId);
         }
 
-        return endQuery("createVariableSet", startTime, getVariableSet(variableSetId, null));
+        return result;
     }
 
     @Override
-    public QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
+    public WriteResult addFieldToVariableSet(long variableSetId, Variable variable, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        long startTime = startQuery();
-
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, new QueryOptions(), user);
         checkVariableNotInVariableSet(variableSet.first(), variable.getId());
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
         Bson update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
                 getMongoDBDocument(variable, "variable"));
-        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
-        if (queryResult.first().getModifiedCount() == 0) {
+        WriteResult result = studyCollection.update(bsonQuery, update, null);
+        if (result.getNumUpdated() == 0) {
             throw CatalogDBException.updateError("VariableSet", variableSetId);
         }
         if (variable.isRequired()) {
@@ -688,11 +671,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogFamilyDBAdaptor().addVariableToAnnotations(variableSetId, variable);
             dbAdaptorFactory.getCatalogFileDBAdaptor().addVariableToAnnotations(variableSetId, variable);
         }
-        return endQuery("Add field to variable set", startTime, getVariableSet(variableSetId, null));
+
+        return result;
     }
 
     @Override
-    public QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
+    public WriteResult renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         // TODO
         throw new UnsupportedOperationException("Operation not yet supported");
@@ -744,7 +728,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
+    public WriteResult removeFieldFromVariableSet(long variableSetId, String name, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
 
@@ -754,8 +738,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
         Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
                 Filters.eq("id", name));
-        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
-        if (queryResult.first().getModifiedCount() != 1) {
+        WriteResult result = studyCollection.update(bsonQuery, update, null);
+        if (result.getNumUpdated() != 1) {
             throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + name
                     + " from the variableSet id " + variableSetId);
         }
@@ -767,7 +751,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         dbAdaptorFactory.getCatalogFamilyDBAdaptor().removeAnnotationField(variableSetId, name);
         dbAdaptorFactory.getCatalogFileDBAdaptor().removeAnnotationField(variableSetId, name);
 
-        return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
+        return result;
     }
 
     private Variable getVariable(VariableSet variableSet, String variableId) throws CatalogDBException {
@@ -808,11 +792,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<VariableSet> getVariableSet(long variableSetUid, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        Query query = new Query(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
-        Bson projection = Projections.elemMatch("variableSets", Filters.eq(PRIVATE_UID, variableSetId));
+        Query query = new Query(QueryParams.VARIABLE_SET_UID.key(), variableSetUid);
+        Bson projection = Projections.elemMatch("variableSets", Filters.eq(PRIVATE_UID, variableSetUid));
         if (options == null) {
             options = new QueryOptions();
         }
@@ -821,7 +805,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<Study> studyQueryResult = get(query, qOptions);
 
         if (studyQueryResult.getResult().isEmpty() || studyQueryResult.first().getVariableSets().isEmpty()) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist.");
+            throw new CatalogDBException("VariableSet {uid: " + variableSetUid + "} does not exist.");
         }
 
         return endQuery("", startTime, studyQueryResult.first().getVariableSets());
@@ -856,6 +840,28 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         return endQuery("", startTime, study.getVariableSets());
+    }
+
+    @Override
+    public QueryResult<VariableSet> getVariableSet(long studyUid, String variableSetId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Query query = new Query()
+                .append(QueryParams.VARIABLE_SET_ID.key(), variableSetId)
+                .append(QueryParams.UID.key(), studyUid);
+        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        QueryOptions qOptions = new QueryOptions(options);
+        qOptions.put(MongoDBCollection.ELEM_MATCH, projection);
+        QueryResult<Study> studyQueryResult = get(query, qOptions);
+
+        if (studyQueryResult.getResult().isEmpty() || studyQueryResult.first().getVariableSets().isEmpty()) {
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist.");
+        }
+
+        return endQuery("", startTime, studyQueryResult.first().getVariableSets());
     }
 
     @Override
@@ -986,21 +992,19 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+    public WriteResult deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        long startTime = startQuery();
-
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user);
         checkVariableSetInUse(variableSetId);
 
         Bson query = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
         Bson operation = Updates.pull("variableSets", Filters.eq(PRIVATE_UID, variableSetId));
-        QueryResult<UpdateResult> update = studyCollection.update(query, operation, null);
+        WriteResult result = studyCollection.update(query, operation, null);
 
-        if (update.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw CatalogDBException.uidNotFound("VariableSet", variableSetId);
         }
-        return endQuery("Delete VariableSet", startTime, variableSet);
+        return result;
     }
 
     public void checkVariableSetInUse(long variableSetId) throws CatalogDBException {
@@ -1092,28 +1096,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     /*
     * Helper methods
     ********************/
-
-
-    //Join fields from other collections
-    private void joinFields(User user, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (user.getProjects() != null) {
-            for (Project project : user.getProjects()) {
-                joinFields(project, options);
-            }
-        }
-    }
-
-    private void joinFields(Project project, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (options.getBoolean("includeStudies")) {
-            project.setStudies(getAllStudiesInProject(project.getUid(), options).getResult());
-        }
-    }
 
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
         try {
@@ -1236,7 +1218,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
             WriteResult result = commitTransaction(clientSession, txnBody);
 
-            if (result.getNumModified() == 1) {
+            if (result.getNumUpdated() == 1) {
                 logger.info("Study {} successfully updated", study.getId());
                 numModified += 1;
             } else {
@@ -1294,7 +1276,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         WriteResult delete = delete(query);
         if (delete.getNumMatches() == 0) {
             throw new CatalogDBException("Could not delete study. Uid " + id + " not found.");
-        } else if (delete.getNumModified() == 0) {
+        } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete study. " + delete.getFailed().get(0).getMessage());
         }
         return delete;
@@ -1323,8 +1305,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
                     // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
 
-                    UpdateResult updateResult = delete(clientSession, study);
-                    if (updateResult.getModifiedCount() == 1) {
+                    WriteResult updateResult = delete(clientSession, study);
+                    if (updateResult.getNumUpdated() == 1) {
                         logger.debug("Study {} successfully deleted", study.getId());
                         return endWrite(tmpStartTime, 1, 1, null, null);
                     } else {
@@ -1341,7 +1323,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
             WriteResult result = commitTransaction(clientSession, txnBody);
 
-            if (result.getNumModified() == 1) {
+            if (result.getNumUpdated() == 1) {
                 logger.info("Study {} successfully deleted", study.getId());
                 numModified += 1;
             } else {
@@ -1357,7 +1339,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return endWrite(startTime, numMatches, numModified, null, failList);
     }
 
-    UpdateResult delete(ClientSession clientSession, Study study) throws CatalogDBException {
+    WriteResult delete(ClientSession clientSession, Study study) throws CatalogDBException {
         String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
 
         Query studyQuery = new Query(QueryParams.UID.key(), study.getUid());
@@ -1373,25 +1355,21 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         logger.debug("Delete study {}: Query: {}, update: {}", study.getId(),
                 bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return studyCollection.update(clientSession, bsonQuery, updateDocument,
-                QueryOptions.empty()).first();
+        return studyCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
     }
 
     @Override
-    public QueryResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-
-        long startTime = startQuery();
-        WriteResult update =
-                update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
-        if (update.getNumModified() != 1) {
+    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
+        if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update study with id " + id);
         }
-        return endQuery("Update study", startTime, get(id, null));
+        return update;
 
     }
 
     @Override
-    public void updateProjectId(long projectUid, String newProjectId) throws CatalogDBException {
+    public WriteResult updateProjectId(long projectUid, String newProjectId) throws CatalogDBException {
         Query query = new Query(QueryParams.PROJECT_UID.key(), projectUid);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 QueryParams.FQN.key(), QueryParams.UID.key()
@@ -1411,17 +1389,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
             Bson bsonQuery = Filters.eq(QueryParams.UID.key(), study.getUid());
 
-            QueryResult<UpdateResult> result = studyCollection.update(bsonQuery, update, null);
-            if (result.getResult().get(0).getModifiedCount() == 0) {    //Check if the the project id was modified
+            WriteResult result = studyCollection.update(bsonQuery, update, null);
+            if (result.getNumUpdated() == 0) {    //Check if the the project id was modified
                 throw new CatalogDBException("CRITICAL: Could not update new project id references in study " + study.getFqn());
             }
         }
+
+        return WriteResult.empty();
     }
 
     @Override
-    public QueryResult<Study> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         // Check the study is active
         Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
@@ -1449,33 +1427,26 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Change the status of the project to deleted
-        setStatus(id, Status.DELETED);
-
-        query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-
-        return endQuery("Delete study", startTime, get(query, null));
+        return setStatus(id, Status.DELETED);
     }
 
-    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        WriteResult update = update(query,
-                new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
-                "", Collections.singletonList(update.getNumModified()));
+    WriteResult setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    QueryResult<Study> setStatus(long studyId, String status) throws CatalogDBException {
+    WriteResult setStatus(long studyId, String status) throws CatalogDBException {
         return update(studyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.append(QueryParams.STATUS_NAME.key(), Status.READY);
         QueryResult<Study> studyQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
+        WriteResult writeResult = new WriteResult();
         for (Study study : studyQueryResult.getResult()) {
-            delete(study.getUid(), queryOptions);
+            writeResult.concat(delete(study.getUid(), queryOptions));
         }
-        return endQuery("Delete study", startTime, Collections.singletonList(studyQueryResult.getNumTotalResults()));
+        return writeResult;
     }
 
     /**
@@ -1521,58 +1492,24 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
-    /**
-     * Checks if the study is empty or has more active information.
-     *
-     * @param studyId Id of the study.
-     * @throws CatalogDBException when there exists active files, samples, cohorts...
-     */
-    private void checkEmptyStudy(long studyId) throws CatalogDBException {
-        Query query = new Query(PRIVATE_STUDY_UID, studyId)
-                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-
-        // Check files
-        if (dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first() > 0) {
-            throw new CatalogDBException("Cannot delete study " + studyId + ". There are files being used.");
-        }
-
-        // Check samples
-        if (dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first() > 0) {
-            throw new CatalogDBException("Cannot delete study " + studyId + ". There are samples being used.");
-        }
-
-        // Check individuals
-        if (dbAdaptorFactory.getCatalogIndividualDBAdaptor().count(query).first() > 0) {
-            throw new CatalogDBException("Cannot delete study " + studyId + ". There are individuals being used.");
-        }
-
-        // Check cohorts
-        if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first() > 0) {
-            throw new CatalogDBException("Cannot delete study " + studyId + ". There are cohorts being used.");
-        }
-    }
-
     @Override
-    public QueryResult<Study> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return endQuery("Restore studies", startTime, setStatus(query, Status.READY));
+        return setStatus(query, Status.READY);
     }
 
     @Override
-    public QueryResult<Study> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.UID.key(), id)
@@ -1582,24 +1519,21 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         // Change the status of the cohort to deleted
-        setStatus(id, Status.READY);
-        query = new Query(QueryParams.UID.key(), id);
-
-        return endQuery("Restore study", startTime, get(query, null));
+        return setStatus(id, Status.READY);
     }
 
-    public QueryResult<Study> remove(int studyId) throws CatalogDBException {
+    public WriteResult remove(int studyId) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), studyId);
         QueryResult<Study> studyQueryResult = get(query, null);
         if (studyQueryResult.getResult().size() == 1) {
-            QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query), null);
-            if (remove.getResult().size() == 0) {
+            WriteResult remove = studyCollection.remove(parseQuery(query), null);
+            if (remove.getNumMatches() == 0) {
                 throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
             }
+            return remove;
         } else {
             throw CatalogDBException.uidNotFound("Study id '{}' does not exist (or there are too many)", studyId);
         }
-        return studyQueryResult;
     }
 
     @Override
@@ -1881,6 +1815,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case COHORTS:
                     case VARIABLE_SET:
                     case VARIABLE_SET_UID:
+                    case VARIABLE_SET_ID:
                     case VARIABLE_SET_NAME:
                     case VARIABLE_SET_DESCRIPTION:
                     case OWNER:
@@ -1917,7 +1852,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException {
         Bson query = new Document(QueryParams.UID.key(), studyId);
         Bson update = Updates.inc(QueryParams.SIZE.key(), size);
-        if (studyCollection.update(clientSession, query, update, null).getNumTotalResults() == 0) {
+        if (studyCollection.update(clientSession, query, update, null).getNumMatches() == 0) {
             throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the size field of"
                     + " the study " + studyId);
         }

@@ -226,7 +226,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
 
-        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.insert(study.getUid(), interpretation, options);
+        WriteResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, options);
+        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(), QueryOptions.empty());
+        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
 
         // Now, we add the interpretation to the clinical analysis
         ObjectMap parameters = new ObjectMap();
@@ -278,9 +280,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     InterpretationDBAdaptor.QueryParams.ID.key());
         }
 
-        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
-        auditManager.recordUpdate(AuditRecord.Resource.interpretation, interpretation.getUid(), userId, parameters,
-                null, null);
+        WriteResult writeResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
+        auditManager.recordUpdate(AuditRecord.Resource.interpretation, interpretation.getUid(), userId, parameters, null, null);
+
+        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+                new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(queryResult.getDbTime() + writeResult.getDbTime());
 
         return queryResult;
     }

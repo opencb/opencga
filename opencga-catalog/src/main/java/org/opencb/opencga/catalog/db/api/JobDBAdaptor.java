@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Job;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,23 +46,21 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         }
     }
 
-    void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
     WriteResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
-    default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    default WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
     }
 
-    default QueryResult<Job> setStatus(long jobId, String status) throws CatalogDBException {
+    default WriteResult setStatus(long jobId, String status) throws CatalogDBException {
         return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    default QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
-                "", Collections.singletonList(update.getNumModified()));
+    default WriteResult setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     default QueryResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
@@ -87,9 +84,10 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),

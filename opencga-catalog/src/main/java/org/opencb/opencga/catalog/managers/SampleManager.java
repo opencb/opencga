@@ -729,8 +729,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
+        WriteResult result = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sample.getUid(), userId, parameters, null, null);
+
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(sample.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
         return queryResult;
     }
 

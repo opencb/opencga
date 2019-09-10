@@ -21,6 +21,7 @@ package org.opencb.opencga.catalog.db.api;
  */
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 public interface MetaDBAdaptor {
@@ -34,6 +35,6 @@ public interface MetaDBAdaptor {
 
     String readAlgorithm() throws CatalogDBException;
 
-    void updateJWTParameters(ObjectMap params) throws CatalogDBException;
+    WriteResult updateJWTParameters(ObjectMap params) throws CatalogDBException;
 
 }

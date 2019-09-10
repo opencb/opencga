@@ -592,8 +592,12 @@ public class PanelManager extends ResourceManager<Panel> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        QueryResult<Panel> queryResult = panelDBAdaptor.update(panel.getUid(), parameters, options);
+        WriteResult result = panelDBAdaptor.update(panel.getUid(), parameters, options);
         auditManager.recordUpdate(AuditRecord.Resource.panel, panel.getUid(), userId, parameters, null, null);
+
+        QueryResult<Panel> queryResult = panelDBAdaptor.get(panel.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
+
         return queryResult;
     }
 

@@ -586,8 +586,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         checkUpdateAnnotations(study, cohort, parameters, options, VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, userId);
 
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
+        WriteResult result = cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohort.getUid(), userId, parameters, null, null);
+
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(cohort.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
 
         return queryResult;
     }

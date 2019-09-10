@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -68,10 +69,12 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         assertEquals(Status.READY, userResult.first().getStatus().getName());
 
-        QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
-        assertFalse(deleteUser.getResult().isEmpty());
-        assertNotNull(deleteUser.first());
-        assertEquals(Status.DELETED, deleteUser.first().getStatus().getName());
+        WriteResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
+        assertEquals(1, deleteUser.getNumUpdated());
+
+        query.append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
+        QueryResult<User> queryResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
+        assertEquals(Status.DELETED, queryResult.first().getStatus().getName());
 
 
         /*
@@ -101,8 +104,8 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void changePasswordTest() throws CatalogDBException {
-        QueryResult queryResult = catalogUserDBAdaptor.changePassword(user2.getId(), user2.getPassword(), "1234");
-        assertNotSame(0, queryResult.getResult().size());
+        WriteResult result = catalogUserDBAdaptor.changePassword(user2.getId(), user2.getPassword(), "1234");
+        assertEquals(1, result.getNumUpdated());
 
         thrown.expect(CatalogDBException.class);
         catalogUserDBAdaptor.changePassword(user2.getId(), "BAD_PASSWORD", "asdf");
@@ -186,20 +189,23 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append("key1", Arrays.asList(1,2,3,4,5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
 
-        QueryResult queryResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+        WriteResult writeResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
 
-        assertEquals(1, queryResult.getNumResults());
+        assertEquals(1, writeResult.getNumUpdated());
 
-        LinkedHashMap result = (LinkedHashMap) queryResult.first();
+        QueryResult<User> queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty(), "");
+        LinkedHashMap result = (LinkedHashMap) queryResult.first().getConfigs().get("config1");
         assertTrue(result.get("key1") instanceof List);
         assertTrue(result.get("key2") instanceof Map);
 
         // Update the config
         objectMap.put("key2", objectMap.get("key1"));
-        queryResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
-        assertEquals(1, queryResult.getNumResults());
+        writeResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+        assertEquals(1, writeResult.getNumUpdated());
 
-        result = (LinkedHashMap) queryResult.first();
+        queryResult = catalogUserDBAdaptor.get(user4.getId(), QueryOptions.empty(), "");
+        result = (LinkedHashMap) queryResult.first().getConfigs().get("config1");
+
         assertTrue(result.get("key1") instanceof List);
         assertTrue(result.get("key2") instanceof List);
     }

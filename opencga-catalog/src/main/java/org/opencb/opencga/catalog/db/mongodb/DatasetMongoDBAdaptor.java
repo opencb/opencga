@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -39,7 +38,10 @@ import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterOptions;
@@ -74,8 +76,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
-    public QueryResult<Dataset> insert(Dataset dataset, long studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult insert(Dataset dataset, long studyId, QueryOptions options) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
 
         Query query = new Query(QueryParams.NAME.key(), dataset.getName()).append(QueryParams.STUDY_ID.key(), studyId);
@@ -90,9 +91,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         dataset.setId(newId);
 
         Document datasetObject = datasetConverter.convertToStorageType(dataset);
-        datasetCollection.insert(datasetObject, null);
-
-        return endQuery("createDataset", startTime, get(dataset.getId(), options));
+        return datasetCollection.insert(datasetObject, null);
     }
 
     @Override
@@ -172,10 +171,8 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
-    public QueryResult<Dataset> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
-        return endQuery("Update dataset", startTime, get(id, new QueryOptions()));
+    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(new Query(QueryParams.ID.key(), id), parameters, QueryOptions.empty());
     }
 
     @Override
@@ -232,9 +229,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
-    public QueryResult<Dataset> delete(long id, QueryOptions queryOptions) throws CatalogDBException    {
-        long startTime = startQuery();
-
+    public WriteResult delete(long id, QueryOptions queryOptions) throws CatalogDBException    {
         checkId(id);
         // Check the dataset is active
         Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
@@ -246,54 +241,46 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         }
 
         // Change the status of the dataset to deleted
-        setStatus(id, Status.DELETED);
-
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-
-        return endQuery("Delete dataset", startTime, get(query, null));
+        return setStatus(id, Status.DELETED);
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.append(QueryParams.STATUS_NAME.key(), Status.READY);
         QueryResult<Dataset> datasetQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Dataset dataset : datasetQueryResult.getResult()) {
             delete(dataset.getId(), queryOptions);
         }
-        return endQuery("Delete dataset", startTime, Collections.singletonList(datasetQueryResult.getNumTotalResults()));
+        return WriteResult.empty();
     }
 
-    QueryResult<Dataset> setStatus(long datasetId, String status) throws CatalogDBException {
+    WriteResult setStatus(long datasetId, String status) throws CatalogDBException {
         return update(datasetId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+    WriteResult setStatus(Query query, String status) throws CatalogDBException {
 //        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
         return null;
     }
 
     @Override
-    public QueryResult<Dataset> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return endQuery("Restore datasets", startTime, setStatus(query, Status.READY));
+        return setStatus(query, Status.READY);
     }
 
     @Override
-    public QueryResult<Dataset> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
@@ -303,30 +290,23 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         }
 
         // Change the status of the cohort to deleted
-        setStatus(id, Status.READY);
-        query = new Query(QueryParams.ID.key(), id);
-
-        return endQuery("Restore dataset", startTime, get(query, null));
+        return setStatus(id, Status.READY);
     }
 
     @Override
-    public QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         Bson update = new Document("$push", new Document(QueryParams.FILES.key(), new Document("$each", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-        QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
-        return endQuery("Insert files into datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+        return datasetCollection.update(bsonQuery, update, multi);
     }
 
     @Override
-    public QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         Bson update = new Document("$pull", new Document(QueryParams.FILES.key(), new Document("$in", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
-        QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
-        return endQuery("Extract files from datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+        return datasetCollection.update(bsonQuery, update, multi);
     }
 
     @Override

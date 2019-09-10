@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -83,7 +84,9 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         ));
         VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, Collections.emptyMap());
-        return catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
+        catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
+
+        return catalogStudyDBAdaptor.getVariableSet(5L, QueryOptions.empty());
     }
 
     @Test
@@ -96,9 +99,13 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testRemoveFieldFromVariableSet() throws CatalogDBException, CatalogAuthorizationException {
         QueryResult<VariableSet> variableSetQueryResult = createExampleVariableSet("VARSET_1", false);
-        QueryResult<VariableSet> queryResult =
+        WriteResult result =
                 catalogStudyDBAdaptor.removeFieldFromVariableSet(variableSetQueryResult.first().getUid(), "NAME", user3.getId());
-        assertTrue(queryResult.first().getVariables()
+        assertEquals(1, result.getNumUpdated());
+
+        VariableSet variableSet = catalogStudyDBAdaptor.getVariableSet(variableSetQueryResult.first().getUid(), QueryOptions.empty()).first();
+
+        assertTrue(variableSet.getVariables()
                 .stream()
                 .filter(v -> "NAME".equals(v.getId()))
                 .collect(Collectors.toList()).isEmpty());
@@ -147,7 +154,10 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         createExampleVariableSet("VARSET_2", true);
         Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
                 Collections.emptyMap());
-        QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
+        WriteResult result = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
+        assertEquals(1, result.getNumUpdated());
+
+        QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.getVariableSet(18L, QueryOptions.empty());
 
         // Check that the new variable has been inserted in the variableSet
         assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getId().equals(variable1.getId())).findAny()

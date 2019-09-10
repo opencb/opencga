@@ -1117,7 +1117,7 @@ public class FileManagerTest extends AbstractManagerTest {
         WriteResult deleteResult = fileManager.delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.UID.key(), fileQueryResult.first().getUid()), null, sessionIdUser);
         assertEquals(1, deleteResult.getNumMatches());
-        assertEquals(0, deleteResult.getNumModified());
+        assertEquals(0, deleteResult.getNumUpdated());
         assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
 
         // Change the status to STAGED
@@ -1126,7 +1126,7 @@ public class FileManagerTest extends AbstractManagerTest {
         deleteResult = fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(),
                 fileQueryResult.first().getUid()), null, sessionIdUser);
         assertEquals(1, deleteResult.getNumMatches());
-        assertEquals(0, deleteResult.getNumModified());
+        assertEquals(0, deleteResult.getNumUpdated());
         assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
 
         // Change the status to READY
@@ -1135,7 +1135,7 @@ public class FileManagerTest extends AbstractManagerTest {
         deleteResult = fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(),
                 fileQueryResult.first().getUid()), null, sessionIdUser);
         assertEquals(6, deleteResult.getNumMatches());
-        assertEquals(6, deleteResult.getNumModified());
+        assertEquals(6, deleteResult.getNumUpdated());
     }
 
     // It will try to delete a folder in status ready
@@ -1247,7 +1247,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath()), null, sessionIdUser);
 
         assertEquals(1, result.getNumMatches());
-        assertEquals(0, result.getNumModified());
+        assertEquals(0, result.getNumUpdated());
         assertEquals("Root directories cannot be deleted", result.getFailed().get(0).getMessage());
     }
 
@@ -1268,7 +1268,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         WriteResult deleteResult = fileManager.delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, sessionIdUser);
-        assertEquals(0, deleteResult.getNumModified());
+        assertEquals(0, deleteResult.getNumUpdated());
 
         File fileTmp = fileManager.get(studyFqn, folder.getPath(), null, sessionIdUser).first();
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());

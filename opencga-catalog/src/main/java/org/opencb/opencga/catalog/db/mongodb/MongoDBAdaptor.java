@@ -20,7 +20,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.*;
-import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -452,13 +451,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return queryOptions;
     }
 
-    protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
+    protected WriteResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
                 .append(PRIVATE_STUDY_UID, studyId)
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
-        collection.update(query, update, new QueryOptions("multi", true));
+        return collection.update(query, update, new QueryOptions("multi", true));
     }
 
     protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, Document document)
@@ -494,10 +493,9 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        QueryResult<UpdateResult> updateResult = dbCollection.update(clientSession, queryDocument,
-                new Document("$set", updateOldVersion), null);
+        WriteResult updateResult = dbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
 
-        if (updateResult.first().getModifiedCount() == 0) {
+        if (updateResult.getNumUpdated() == 0) {
             throw new CatalogDBException("Internal error: Could not update previous version");
         }
 

@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -326,7 +327,6 @@ public class ProjectManager extends AbstractManager {
         long projectId = project.getUid();
         authorizationManager.checkCanEditProject(projectId, userId);
 
-        QueryResult<Project> queryResult = new QueryResult<>();
         if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
             editId(project, parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), sessionId);
 
@@ -345,48 +345,43 @@ public class ProjectManager extends AbstractManager {
             if (projectQR.getNumResults() == 0) {
                 throw new CatalogException("Project " + projectId + " not found");
             }
-            ObjectMap objectMap = new ObjectMap();
+            boolean canBeUpdated = false;
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
                     && StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
-                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
-                        parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key()));
-                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key());
+                canBeUpdated = true;
             }
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
                     && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
-                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
-                        parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key()));
-                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key());
+                canBeUpdated = true;
             }
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
                     && projectQR.first().getOrganism().getTaxonomyCode() <= 0) {
-                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
-                        parameters.getInt(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key()));
-                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key());
+                canBeUpdated = true;
             }
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
                     && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
-                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(),
-                        parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key()));
-                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());
+                canBeUpdated = true;
             }
-            if (!objectMap.isEmpty()) {
-                queryResult = projectDBAdaptor.update(projectId, objectMap, QueryOptions.empty());
-            } else {
+            if (!canBeUpdated) {
                 throw new CatalogException("Cannot update organism information that is already filled in");
             }
         }
 
         for (String s : parameters.keySet()) {
-            if (!s.matches("name|description|organization|attributes")) {
+            if (!s.matches("name|description|organization|attributes|" + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
         }
         userDBAdaptor.updateUserLastModified(userId);
-        if (parameters.size() > 0) {
-            queryResult = projectDBAdaptor.update(projectId, parameters, QueryOptions.empty());
-        }
+        WriteResult result = projectDBAdaptor.update(projectId, parameters, QueryOptions.empty());
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
+
+        QueryResult<Project> queryResult = projectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
         return queryResult;
     }
 
@@ -446,17 +441,21 @@ public class ProjectManager extends AbstractManager {
 
         if (checkCurrentReleaseInUse(allStudiesInProject, currentRelease)) {
             // Increment current project release
-            QueryResult<Integer> integerQueryResult = projectDBAdaptor.incrementCurrentRelease(projectId);
+            WriteResult writeResult = projectDBAdaptor.incrementCurrentRelease(projectId);
+            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId,
+                    new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+            QueryResult<Integer> queryResult = new QueryResult<>("", projectQueryResult.getDbTime() + writeResult.getDbTime(), 1, 1, "", "",
+                    Collections.singletonList(projectQueryResult.first().getCurrentRelease()));
 
             // Upgrade release in sample, family and individuals
             for (Study study : allStudiesInProject) {
-                sampleDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
-                individualDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
-                familyDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
-                panelDBAdaptor.updateProjectRelease(study.getUid(), integerQueryResult.first());
+                sampleDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                individualDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                familyDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                panelDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
             }
 
-            return integerQueryResult;
+            return queryResult;
         } else {
             throw new CatalogException("Cannot increment current release number. The current release " + currentRelease + " has not yet "
                     + "been used in any entry");

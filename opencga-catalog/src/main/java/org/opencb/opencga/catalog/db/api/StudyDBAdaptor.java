@@ -60,7 +60,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         }
     }
 
-    void nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> study, String userId) throws CatalogDBException;
 
     WriteResult insert(Project project, Study study, QueryOptions options) throws CatalogDBException;
 
@@ -73,7 +73,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     QueryResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
-    void updateStudyLastModified(long studyId) throws CatalogDBException;
+    WriteResult updateStudyLastModified(long studyId) throws CatalogDBException;
 
 //    @Deprecated
 //    QueryResult<Study> modifyStudy(long studyId, ObjectMap params) throws CatalogDBException;
@@ -94,7 +94,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
     String getOwnerId(long studyId) throws CatalogDBException;
 
-    QueryResult<Group> createGroup(long studyId, Group group) throws CatalogDBException;
+    WriteResult createGroup(long studyId, Group group) throws CatalogDBException;
 
     /**
      * Obtains the groups that satisfies the query.
@@ -113,9 +113,10 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId study id.
      * @param groupId group id.
      * @param members new list of users that will compose the group.
+     * @return WriteResult object.
      * @throws CatalogDBException when any of the members do not exist.
      */
-    void setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    WriteResult setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
@@ -123,9 +124,10 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId studyId
      * @param groupId Group id.
      * @param members List of members that will be added to the group.
+     * @return WriteResult object.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
-    void addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    WriteResult addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the list of members from the group.
@@ -133,22 +135,24 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId study id.
      * @param groupId Group id where the user members belong to.
      * @param members List of members that are going to be removed from the group.
+     * @return WriteResult object.
      * @throws CatalogDBException when any of the studyId, groupId or members do not exist.
      */
-    void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    WriteResult removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
-    void removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException;
+    WriteResult removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException;
 
     /**
      * Delete a group.
      *
      * @param studyId study id.
      * @param groupId Group id to be deleted.
+     * @return WriteResult object.
      * @throws CatalogDBException if the groupId could not be removed.
      */
-    void deleteGroup(long studyId, String groupId) throws CatalogDBException;
+    WriteResult deleteGroup(long studyId, String groupId) throws CatalogDBException;
 
-    void syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException;
+    WriteResult syncGroup(long studyId, String groupId, Group.Sync syncedFrom) throws CatalogDBException;
 
     /**
      * Resync the user groups from an authentication origin.
@@ -158,9 +162,10 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param user User to be resynced in groups.
      * @param groupList List containing possible groups that are synced and where the user should be added to.
      * @param authOrigin Authentication origin of the synced groups.
+     * @return WriteResult object.
      * @throws CatalogDBException CatalogDBException.
      */
-    void resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
+    WriteResult resyncUserWithSyncedGroups(String user, List<String> groupList, String authOrigin) throws CatalogDBException;
 
     /**
      * Create the permission rule to the list of permission rules defined for the entry in the studyId.
@@ -168,9 +173,10 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      * @param studyId study id corresponding to the study where the permission rule will be added.
      * @param entry entry for which the permission rule is to be applied (samples, cohorts, files...)
      * @param permissionRules PermissionRules object that will be added.
+     * @return WriteResult object.
      * @throws CatalogDBException if the permission rule id already existed.
      */
-    void createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRules) throws CatalogDBException;
+    WriteResult createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRules) throws CatalogDBException;
 
     /**
      * Get permission rules defined for an entry.
@@ -194,9 +200,10 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
                         permissions that might have been assigned by other permission rules (leave permissions as if the permission rule
                         had never existed).
                 NONE: Remove the permission rule but no the permissions that might have been eventually assigned because of it.
+     * @return WriteResult object.
      * @throws CatalogDBException if the permission rule does not exist.
      */
-    void markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
+    WriteResult markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
                                    PermissionRule.DeleteAction deleteAction) throws CatalogDBException;
 
     /*
@@ -238,18 +245,20 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         }
     }
 
-    QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
+    WriteResult createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
-    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String user)
+    WriteResult addFieldToVariableSet(long variableSetId, Variable variable, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
+    WriteResult renameFieldVariableSet(long variableSetId, String oldName, String newName, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String user)
+    WriteResult removeFieldFromVariableSet(long variableSetId, String name, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
+    QueryResult<VariableSet> getVariableSet(long variableSetUid, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<VariableSet> getVariableSet(long studyUid, String variableSetId, QueryOptions options) throws CatalogDBException;
 
     /**
      * Get variable set.
@@ -269,14 +278,14 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
     QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+    WriteResult deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
     QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
-    void updateProjectId(long projectUid, String newProjectId) throws CatalogDBException;
+    WriteResult updateProjectId(long projectUid, String newProjectId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -331,6 +340,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
 
         VARIABLE_SET("variableSets", TEXT_ARRAY, ""),
         VARIABLE_SET_UID("variableSets.uid", INTEGER_ARRAY, ""),
+        VARIABLE_SET_ID("variableSets.id", TEXT, ""),
         VARIABLE_SET_NAME("variableSets.name", TEXT_ARRAY, ""),
         VARIABLE_SET_DESCRIPTION("variableSets.description", TEXT_ARRAY, "");
 

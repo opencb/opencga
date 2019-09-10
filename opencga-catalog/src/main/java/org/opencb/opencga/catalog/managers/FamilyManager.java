@@ -628,8 +628,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        QueryResult<Family> queryResult = familyDBAdaptor.update(storedFamily.getUid(), parameters, study.getVariableSets(), options);
-        auditManager.recordUpdate(AuditRecord.Resource.family, storedFamily.getUid(), userId, parameters, null, null);
+        WriteResult result = familyDBAdaptor.update(storedFamily.getUid(), parameters, study.getVariableSets(), options);
+//        auditManager.recordUpdate(AuditRecord.Resource.family, storedFamily.getUid(), userId, parameters, null, null);
+
+        QueryResult<Family> queryResult = familyDBAdaptor.get(storedFamily.getUid(),
+                new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
 
         return queryResult;
     }

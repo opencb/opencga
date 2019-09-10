@@ -21,8 +21,6 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -86,9 +84,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public void nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException {
+    public WriteResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(job, "job");
-        jobCollection.insert(document, null);
+        return jobCollection.insert(document, null);
     }
 
     @Override
@@ -113,7 +111,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 0) {
+        if (result.getNumInserted() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
         return result;
@@ -182,8 +180,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
-        unmarkPermissionRule(jobCollection, studyId, permissionRuleId);
+    public WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        return unmarkPermissionRule(jobCollection, studyId, permissionRuleId);
     }
 
     @Override
@@ -290,7 +288,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
             WriteResult result = commitTransaction(clientSession, txnBody);
 
-            if (result.getNumModified() == 1) {
+            if (result.getNumUpdated() == 1) {
                 logger.info("Job {} successfully updated", job.getId());
                 numModified += 1;
             } else {
@@ -312,7 +310,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         WriteResult delete = delete(query);
         if (delete.getNumMatches() == 0) {
             throw new CatalogDBException("Could not delete job. Uid " + id + " not found.");
-        } else if (delete.getNumModified() == 0) {
+        } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete job. " + delete.getFailed().get(0).getMessage());
         }
         return delete;
@@ -356,9 +354,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     logger.debug("Delete job {}: Query: {}, update: {}", job.getId(),
                             bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                             updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    UpdateResult jobResult = jobCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
-                            QueryOptions.empty()).first();
-                    if (jobResult.getModifiedCount() == 1) {
+                    WriteResult result = jobCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
+                            QueryOptions.empty());
+                    if (result.getNumUpdated() == 1) {
                         logger.info("Job {}({}) deleted", job.getId(), job.getUid());
                     } else {
                         logger.error("Job '{}' successfully deleted", job.getId());
@@ -376,7 +374,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
             WriteResult result = commitTransaction(clientSession, txnBody);
 
-            if (result.getNumModified() == 1) {
+            if (result.getNumUpdated() == 1) {
                 logger.info("Job {} successfully deleted", job.getId());
                 numModified += 1;
             } else {
@@ -393,17 +391,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, queryOptions);
-        if (update.getNumModified() != 1) {
+        if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update job id '" + id + "'");
         }
-        Query query = new Query()
-                .append(QueryParams.UID.key(), id)
-                .append(QueryParams.STUDY_UID.key(), getStudyId(id))
-                .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        return endQuery("Update job", startTime, get(query, queryOptions));
+        return update;
     }
 
     private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
@@ -454,42 +447,39 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return jobParameters;
     }
 
-    public QueryResult<Job> clean(int id) throws CatalogDBException {
+    public WriteResult clean(int id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         QueryResult<Job> jobQueryResult = get(query, null);
         if (jobQueryResult.getResult().size() == 1) {
-            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query), null);
-            if (delete.getResult().size() == 0) {
+            WriteResult delete = jobCollection.remove(parseQuery(query), null);
+            if (delete.getNumUpdated() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
+            return delete;
         } else {
             throw CatalogDBException.uidNotFound("Job id '{}' does not exist (or there are too many)", id);
         }
-        return jobQueryResult;
     }
 
 
     @Override
-    public QueryResult<Job> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return endQuery("Restore jobs", startTime, setStatus(query, Status.READY));
+        return setStatus(query, Status.READY);
     }
 
     @Override
-    public QueryResult<Job> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.UID.key(), id)
@@ -499,10 +489,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
 
         // Change the status of the cohort to deleted
-        setStatus(id, Status.READY);
-        query = new Query(QueryParams.UID.key(), id);
-
-        return endQuery("Restore job", startTime, get(query, null));
+        return setStatus(id, Status.READY);
     }
 
     /**
@@ -760,8 +747,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         logger.debug("Removing file from job '{}' field. Query: {}, Update: {}", QueryParams.INPUT.key(),
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        QueryResult<UpdateResult> result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
-        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+        WriteResult result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
 
         // OUTPUT
         query = new Document()
@@ -777,7 +764,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
-        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
 
         // OUT DIR
         query = new Document()
@@ -792,7 +779,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         result = jobCollection.update(clientSession, query, updateDocument, QueryOptions.empty());
-        logger.debug("File '{}' removed from {} jobs", fileUid, result.first().getModifiedCount());
+        logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {

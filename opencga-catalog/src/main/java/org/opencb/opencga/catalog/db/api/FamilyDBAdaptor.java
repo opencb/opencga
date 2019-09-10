@@ -133,7 +133,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
-    void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
     WriteResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
@@ -142,7 +142,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     long getStudyId(long familyId) throws CatalogDBException;
 
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -150,11 +150,12 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    void removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
+    WriteResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
 
     default List<Phenotype> getAllPhenotypes(List<Individual> individualList) {
         if (individualList == null || individualList.isEmpty()) {

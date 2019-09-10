@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -330,12 +331,12 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getResourceManagerAttributes().put(BatchExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-            QueryResult<Job> update = jobDBAdaptor.update(job.getUid(), updateObjectMap, QueryOptions.empty());
-            if (update.getNumResults() == 1) {
-                job = update.first();
-                executeJob(job, userSessionId);
+            WriteResult update = jobDBAdaptor.update(job.getUid(), updateObjectMap, QueryOptions.empty());
+            if (update.getNumUpdated() == 1) {
+                QueryResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+                executeJob(queryResult.first(), userSessionId);
             } else {
-                logger.error("Could not update nor run job {}" + job.getUid());
+                logger.error("Could not update nor run job {}", job.getUid());
             }
         } catch (CatalogException e) {
             logger.error("Could not update job {}.", job.getUid(), e);

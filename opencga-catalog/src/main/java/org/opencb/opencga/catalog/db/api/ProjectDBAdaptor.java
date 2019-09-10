@@ -126,7 +126,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         }
     }
 
-    void nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
     WriteResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
 
@@ -134,17 +134,9 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
     QueryResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Integer> incrementCurrentRelease(long projectId) throws CatalogDBException;
+    WriteResult incrementCurrentRelease(long projectId) throws CatalogDBException;
 
-//    @Deprecated
-//    default QueryResult<Project> deleteProject(long projectId) throws CatalogDBException {
-//        return delete(projectId, false);
-//    }
-
-    void editId(String owner, long projectUid, String oldId, String newId) throws CatalogDBException;
-
-//    @Deprecated
-//    QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException;
+    WriteResult editId(String owner, long projectUid, String oldId, String newId) throws CatalogDBException;
 
     long getId(String userId, String projectAlias) throws CatalogDBException;
 

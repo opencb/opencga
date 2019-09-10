@@ -739,8 +739,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        QueryResult<Individual> queryResult = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+        WriteResult result = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individual.getUid(), userId, parameters, null, null);
+
+        QueryResult<Individual> queryResult = individualDBAdaptor.get(individual.getUid(),
+                new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
 
         return queryResult;
     }

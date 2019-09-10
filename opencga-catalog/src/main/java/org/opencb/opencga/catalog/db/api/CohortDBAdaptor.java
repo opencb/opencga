@@ -128,7 +128,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
     }
 
-    void nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
     WriteResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
@@ -144,8 +144,9 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

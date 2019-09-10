@@ -18,8 +18,10 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -64,8 +66,13 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
         assertEquals(1, projectQueryResult.first().getCurrentRelease());
 
-        assertEquals(2, catalogProjectDBAdaptor.incrementCurrentRelease(projectId).first().intValue());
-        assertEquals(3, catalogProjectDBAdaptor.incrementCurrentRelease(projectId).first().intValue());
+        catalogProjectDBAdaptor.incrementCurrentRelease(projectId);
+        int currentRelease = catalogProjectDBAdaptor.get(projectId, QueryOptions.empty()).first().getCurrentRelease();
+        assertEquals(2, currentRelease);
+
+        catalogProjectDBAdaptor.incrementCurrentRelease(projectId);
+        currentRelease = catalogProjectDBAdaptor.get(projectId, QueryOptions.empty()).first().getCurrentRelease();
+        assertEquals(3, currentRelease);
     }
 
 
@@ -87,9 +94,14 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogProjectDBAdaptor.insert(p, user1.getId(), null);
 
         p = getProject(user1.getId(), "2000G");
-        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
-        System.out.println(queryResult.first().getStatus());
-        assertTrue(queryResult.getNumResults() == 1);
+        WriteResult writeResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
+        assertEquals(1, writeResult.getNumUpdated());
+
+        Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), p.getUid())
+                .append(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+        QueryResult<Project> queryResult = catalogProjectDBAdaptor.get(query, QueryOptions.empty());
+        assertEquals(1, queryResult.getNumResults());
+        assertEquals(Status.DELETED, queryResult.first().getStatus().getName());
 
         //thrown.expect(CatalogDBException.class);
         //catalogProjectDBAdaptor.delete(p.getId());

@@ -200,7 +200,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
     long getStudyIdByFileId(long fileId) throws CatalogDBException;
 
-    void nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
 
     /***
      * Inserts the passed file in the database.
@@ -252,19 +252,20 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param filePath New file or directory name (containing the full path).
      * @param fileUri New file uri (containing the full path).
      * @param options Options to filter the file output.
-     * @return A QueryResult object containing the file that have been renamed.
+     * @return A WriteResult object.
      * @throws CatalogDBException when the filePath already exists.
      */
-    QueryResult<File> rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
+    WriteResult rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
 
     /**
      * Add the samples to the array of samples in the file entry.
      *
      * @param fileId file id corresponding to the file being updated.
      * @param samples List of samples to be added to the array.
+     * @return WriteResult object.
      * @throws CatalogDBException CatalogDBException.
      */
-    void addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
+    WriteResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -272,9 +273,10 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
     /**
      * Delete file.

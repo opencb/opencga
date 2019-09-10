@@ -798,10 +798,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
-        VariableSet vs1_deleted = catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()),
-                sessionIdUser).first();
-
-        assertEquals(vs1.getUid(), vs1_deleted.getUid());
+        WriteResult writeResult = catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser);
+        assertEquals(1, writeResult.getNumUpdated());
 
         thrown.expect(CatalogException.class);    //VariableSet does not exist
         thrown.expectMessage("not found");
@@ -873,7 +871,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), sessionIdUser);
 
         try {
-            catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser).first();
+            catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser);
         } finally {
             VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, vs1.getId(), null, sessionIdUser).first();
             assertEquals(vs1.getUid(), variableSet.getUid());
@@ -1080,7 +1078,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         WriteResult deleteResult = catalogManager.getCohortManager().delete(studyId,
                 new Query(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid()), null, sessionIdUser);
 
-        assertEquals(1, deleteResult.getNumModified());
+        assertEquals(1, deleteResult.getNumUpdated());
 
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid())
@@ -1245,11 +1243,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
                 new ObjectMap(), sessionIdUser);
-        assertEquals(0, writeResult.getNumModified());
+        assertEquals(0, writeResult.getNumUpdated());
         assertTrue(writeResult.getFailed().get(0).getMessage().contains("found in the families"));
 
         writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(Constants.FORCE, true), sessionIdUser);
-        assertEquals(1, writeResult.getNumModified());
+        assertEquals(1, writeResult.getNumUpdated());
 
         Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), sessionIdUser).first();
         Family family2 = familyManager.get(studyFqn, "family2", QueryOptions.empty(), sessionIdUser).first();

@@ -174,7 +174,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         WriteResult result = catalogManager.getFileManager().delete(
                 study.getFqn(),
                 new Query(FileDBAdaptor.QueryParams.PATH.key(), inputFile.getPath()) , null, sessionId);
-        assertEquals(0, result.getNumModified());
+        assertEquals(0, result.getNumUpdated());
         assertTrue(result.getFailed().get(0).getMessage().contains("index status"));
     }
 
@@ -248,7 +248,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         WriteResult result = catalogManager.getCohortManager().delete(studyFqn, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"),
                 null, sessionId);
-        assertEquals(0, result.getNumModified());
+        assertEquals(0, result.getNumUpdated());
         assertTrue(result.getFailed().get(0).getMessage().contains("ALL cannot be deleted"));
     }
 

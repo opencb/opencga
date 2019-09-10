@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
@@ -144,7 +145,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId) throws CatalogException {
+    public WriteResult resetPassword(String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         userDBAdaptor.updateUserLastModified(userId);
 
@@ -161,7 +162,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
         String email = user.first().getEmail();
 
-        QueryResult queryResult = userDBAdaptor.resetPassword(userId, email, newCryptPass);
+        WriteResult result = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 
         String mailUser = this.emailConfig.getFrom();
         String mailPassword = this.emailConfig.getPassword();
@@ -170,6 +171,6 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
-        return queryResult;
+        return result;
     }
 }

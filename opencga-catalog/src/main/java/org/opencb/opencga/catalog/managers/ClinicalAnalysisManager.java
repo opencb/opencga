@@ -266,7 +266,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         sortMembersFromFamily(clinicalAnalysis);
 
         clinicalAnalysis.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.CLINICAL));
-        QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
+        WriteResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
+
+        QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(), QueryOptions.empty());
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
 
         return queryResult;
     }
@@ -627,7 +630,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        return clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, QueryOptions.empty());
+        WriteResult result = clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, QueryOptions.empty());
+
+        QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(), QueryOptions.empty());
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+        return queryResult;
     }
 
     /**

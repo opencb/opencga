@@ -158,7 +158,7 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
 
     long getStudyId(long panelId) throws CatalogDBException;
 
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -166,8 +166,9 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

@@ -20,7 +20,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -126,9 +125,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> update(long id, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult update(long id, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, options);
 
@@ -139,14 +136,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
             logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
-            QueryResult<UpdateResult> update = clinicalCollection.update(bsonQuery, updateOperation, null);
+            WriteResult result = clinicalCollection.update(bsonQuery, updateOperation, null);
 
-            if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
+            if (result.getNumMatches() == 0) {
                 throw CatalogDBException.uidNotFound("Clinical Analysis", id);
             }
+            return result;
         }
 
-        return endQuery("Modify clinical analysis", startTime, get(id, options));
+        return WriteResult.empty();
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
@@ -247,8 +245,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
-        unmarkPermissionRule(clinicalCollection, studyId, permissionRuleId);
+    public WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+        return unmarkPermissionRule(clinicalCollection, studyId, permissionRuleId);
     }
 
     @Override
@@ -262,12 +260,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
@@ -478,16 +476,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public void nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException {
+    public WriteResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(clinicalAnalysis, "clinicalAnalysis");
-        clinicalCollection.insert(document, null);
+        return clinicalCollection.insert(document, null);
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
@@ -514,16 +509,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
         clinicalObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-        clinicalCollection.insert(clinicalObject, null);
 
-        return endQuery("createClinicalAnalysis", startTime, get(clinicalAnalysisId, options));
+        return clinicalCollection.insert(clinicalObject, null);
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException {
-        checkId(clinicalAnalysisId);
-        return get(new Query(QueryParams.UID.key(), clinicalAnalysisId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
-                .append(QueryParams.STUDY_UID.key(), getStudyId(clinicalAnalysisId)), options);
+    public QueryResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException {
+        checkId(clinicalAnalysisUid);
+        return get(new Query(QueryParams.UID.key(), clinicalAnalysisUid).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+                .append(QueryParams.STUDY_UID.key(), getStudyId(clinicalAnalysisUid)), options);
+    }
+
+    @Override
+    public QueryResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException {
+        return get(new Query(QueryParams.ID.key(), clinicalAnalysisId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+                .append(QueryParams.STUDY_UID.key(), studyUid), options);
     }
 
     @Override
