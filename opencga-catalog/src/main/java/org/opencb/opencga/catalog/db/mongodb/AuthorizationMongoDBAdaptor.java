@@ -645,10 +645,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             long startTime = startQuery();
 
             try {
-                removeFromMembers(resourceIds, members, permissionList, entity, clientSession);
+                removeFromMembers(clientSession, resourceIds, members, permissionList, entity);
 
                 if (ListUtils.isNotEmpty(resourceIds2) && entity2 != null) {
-                    removeFromMembers(resourceIds2, members, permissionList, entity2, clientSession);
+                    removeFromMembers(clientSession, resourceIds2, members, permissionList, entity2);
                 }
             } catch (CatalogDBException e) {
                 logger.error("{}", e.getMessage(), e);
@@ -665,8 +665,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, Entity entity,
-                                   ClientSession clientSession) throws CatalogDBException {
+    private void removeFromMembers(ClientSession clientSession, List<Long> resourceIds, List<String> members, List<String> permissionList,
+                                   Entity entity) throws CatalogDBException {
         validateEntry(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
@@ -700,19 +700,40 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
         if (members == null || members.isEmpty()) {
-            return;
+            throw new CatalogDBException("Missing 'members' array.");
         }
 
-        removePermissions(studyId, members, Entity.COHORT);
-        removePermissions(studyId, members, Entity.DATASET);
-        removePermissions(studyId, members, Entity.FILE);
-        removePermissions(studyId, members, Entity.INDIVIDUAL);
-        removePermissions(studyId, members, Entity.JOB);
-        removePermissions(studyId, members, Entity.SAMPLE);
-        removePermissions(studyId, members, Entity.PANEL);
-        removePermissions(studyId, members, Entity.FAMILY);
-        removePermissions(studyId, members, Entity.CLINICAL_ANALYSIS);
-        removeFromMembers(Arrays.asList(studyId), members, null, Entity.STUDY);
+        ClientSession clientSession = getClientSession();
+        TransactionBody<WriteResult> txnBody = () -> {
+            long tmpStartTime = startQuery();
+            logger.debug("Resetting permissions of users '{}' for study '{}'", members, studyId);
+
+            try {
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+                removePermissions(clientSession, studyId, members, Entity.COHORT);
+                removePermissions(clientSession, studyId, members, Entity.DATASET);
+                removePermissions(clientSession, studyId, members, Entity.FILE);
+                removePermissions(clientSession, studyId, members, Entity.INDIVIDUAL);
+                removePermissions(clientSession, studyId, members, Entity.JOB);
+                removePermissions(clientSession, studyId, members, Entity.SAMPLE);
+                removePermissions(clientSession, studyId, members, Entity.PANEL);
+                removePermissions(clientSession, studyId, members, Entity.FAMILY);
+                removePermissions(clientSession, studyId, members, Entity.CLINICAL_ANALYSIS);
+                removeFromMembers(clientSession, Arrays.asList(studyId), members, null, Entity.STUDY);
+
+                return endWrite(tmpStartTime, -1, -1, null, null);
+            } catch (CatalogDBException e) {
+                logger.error("Could reset permissions of users. {}", e.getMessage());
+                clientSession.abortTransaction();
+                return endWrite(tmpStartTime, 1, 0, null, Collections.singletonList(new WriteResult.Fail("id", e.getMessage())));
+            }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 0) {
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
+        }
     }
 
     @Override
@@ -1063,7 +1084,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
     }
 
-    private void removePermissions(long studyId, List<String> users, Entity entity) {
+    private void removePermissions(ClientSession clientSession, long studyId, List<String> users, Entity entity) {
         List<String> permissions = fullPermissionsMap.get(entity);
         List<String> removePermissions = createPermissionArray(users, permissions);
 
@@ -1076,7 +1097,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
         );
 
-        collection.update(queryDocument, update, new QueryOptions("multi", true));
+        collection.update(clientSession, queryDocument, update, new QueryOptions("multi", true));
     }
 
     private List<String> createPermissionArray(Map<String, List<String>> memberPermissionsMap) {

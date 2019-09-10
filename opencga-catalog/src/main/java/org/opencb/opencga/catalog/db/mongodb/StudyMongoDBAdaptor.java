@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.*;
@@ -432,16 +433,36 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
         }
 
-        Document query = new Document()
-                .append(PRIVATE_UID, studyId)
-                .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users));
-        Bson pull = Updates.pullAll("groups.$.userIds", users);
+        ClientSession clientSession = getClientSession();
+        TransactionBody<WriteResult> txnBody = () -> {
+            long tmpStartTime = startQuery();
+            logger.debug("Removing list of users '{}' from all groups from study '{}'", users, studyId);
 
-        // Pull those users while they are still there
-        QueryResult<UpdateResult> update;
-        do {
-            update = studyCollection.update(query, pull, null);
-        } while (update.first().getModifiedCount() > 0);
+            try {
+                Document query = new Document()
+                        .append(PRIVATE_UID, studyId)
+                        .append(QueryParams.GROUP_USER_IDS.key(), new Document("$in", users));
+                Bson pull = Updates.pullAll("groups.$.userIds", users);
+
+                // Pull those users while they are still there
+                QueryResult<UpdateResult> update;
+                do {
+                    update = studyCollection.update(clientSession, query, pull, null);
+                } while (update.first().getModifiedCount() > 0);
+
+                return endWrite(tmpStartTime, -1, -1, null, null);
+            } catch (Exception e) {
+                logger.error("Could not remove users from all groups of the study. {}", e.getMessage());
+                clientSession.abortTransaction();
+                return endWrite(tmpStartTime, 1, 0, null, Collections.singletonList(new WriteResult.Fail("id", e.getMessage())));
+            }
+        };
+
+        WriteResult result = commitTransaction(clientSession, txnBody);
+
+        if (result.getNumModified() == 0) {
+            throw new CatalogDBException(result.getFailed().get(0).getMessage());
+        }
     }
 
     @Override
