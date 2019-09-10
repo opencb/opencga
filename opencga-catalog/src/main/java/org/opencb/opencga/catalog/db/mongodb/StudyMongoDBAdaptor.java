@@ -118,7 +118,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
             try {
                 insert(clientSession, project, study);
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create study {}: {}", study.getId(), e.getMessage());
                 clientSession.abortTransaction();
@@ -629,8 +629,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public WriteResult createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
-        long startTime = startQuery();
-
         if (variableSetExists(variableSet.getId(), studyId) > 0) {
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getId() + "'} already exists.");
         }
@@ -1368,15 +1366,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     }
 
-    @Override
-    public WriteResult updateProjectId(long projectUid, String newProjectId) throws CatalogDBException {
+    void updateProjectId(ClientSession clientSession, long projectUid, String newProjectId) throws CatalogDBException {
         Query query = new Query(QueryParams.PROJECT_UID.key(), projectUid);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 QueryParams.FQN.key(), QueryParams.UID.key()
         ));
-        QueryResult<Study> studyQueryResult = get(query, options);
+        DBIterator<Study> studyIterator = iterator(clientSession, query, options);
 
-        for (Study study : studyQueryResult.getResult()) {
+        while (studyIterator.hasNext()) {
+            Study study = studyIterator.next();
             String[] split = study.getFqn().split("@");
             String[] split1 = split[1].split(":");
             String newFqn = split[0] + "@" + newProjectId + ":" + split1[1];
@@ -1386,16 +1384,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     .append(QueryParams.FQN.key(), newFqn)
                     .append(PRIVATE_PROJECT_ID, newProjectId)
             );
-
             Bson bsonQuery = Filters.eq(QueryParams.UID.key(), study.getUid());
 
-            WriteResult result = studyCollection.update(bsonQuery, update, null);
+            WriteResult result = studyCollection.update(clientSession, bsonQuery, update, null);
             if (result.getNumUpdated() == 0) {    //Check if the the project id was modified
-                throw new CatalogDBException("CRITICAL: Could not update new project id references in study " + study.getFqn());
+                throw new CatalogDBException("Could not update new project id references in study " + study.getFqn());
             }
         }
-
-        return WriteResult.empty();
     }
 
     @Override
@@ -1612,7 +1607,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options);
+        return iterator(null, query, options);
+    }
+
+    private DBIterator<Study> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
         return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter);
     }
 

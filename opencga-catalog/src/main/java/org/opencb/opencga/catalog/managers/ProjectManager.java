@@ -324,16 +324,8 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = this.catalogManager.getUserManager().getUserId(sessionId);
         Project project = resolveId(projectStr, userId);
-        long projectId = project.getUid();
-        authorizationManager.checkCanEditProject(projectId, userId);
-
-        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
-            editId(project, parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), sessionId);
-
-            //Clone and remove alias from parameters. Do not modify the original parameter
-            parameters = new ObjectMap(parameters);
-            parameters.remove(ProjectDBAdaptor.QueryParams.ID.key());
-        }
+        long projectUid = project.getUid();
+        authorizationManager.checkCanEditProject(projectUid, userId);
 
         // Update organism information only if any of the fields was not properly defined
         if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
@@ -341,9 +333,9 @@ public class ProjectManager extends AbstractManager {
                 || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
                 || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
             QueryResult<Project> projectQR = projectDBAdaptor
-                    .get(projectId, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
+                    .get(projectUid, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
             if (projectQR.getNumResults() == 0) {
-                throw new CatalogException("Project " + projectId + " not found");
+                throw new CatalogException("Project " + projectUid + " not found");
             }
             boolean canBeUpdated = false;
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
@@ -368,39 +360,23 @@ public class ProjectManager extends AbstractManager {
         }
 
         for (String s : parameters.keySet()) {
-            if (!s.matches("name|description|organization|attributes|" + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
+            if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
                     + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
                     + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
                     + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
         }
-        userDBAdaptor.updateUserLastModified(userId);
-        WriteResult result = projectDBAdaptor.update(projectId, parameters, QueryOptions.empty());
-        auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
 
-        QueryResult<Project> queryResult = projectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        userDBAdaptor.updateUserLastModified(userId);
+        WriteResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
+        auditManager.recordUpdate(AuditRecord.Resource.project, projectUid, userId, parameters, null, null);
+
+        QueryResult<Project> queryResult = projectDBAdaptor.get(projectUid, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
         queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
 
         return queryResult;
-    }
-
-    void editId(Project project, String newProjectId, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkAlias(newProjectId, "new project id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        authorizationManager.checkCanEditProject(project.getUid(), userId);
-
-        String owner = project.getFqn().split("@")[0];
-        if (StringUtils.isEmpty(owner)) {
-            throw new CatalogException("Internal error. Project fqn required");
-        }
-
-        userDBAdaptor.updateUserLastModified(userId);
-        projectDBAdaptor.editId(owner, project.getUid(), project.getId(), newProjectId);
-        auditManager.recordUpdate(AuditRecord.Resource.project, project.getUid(), userId,
-                new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), newProjectId), null, null);
     }
 
     public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,

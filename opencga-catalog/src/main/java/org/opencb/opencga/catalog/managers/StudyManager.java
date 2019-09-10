@@ -746,7 +746,9 @@ public class StudyManager extends AbstractManager {
         }
 
         // Add those users to the members group
-        studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+        if (ListUtils.isNotEmpty(users)) {
+            studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+        }
 
         // Create the group
         WriteResult result = studyDBAdaptor.createGroup(study.getUid(), group);

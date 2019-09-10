@@ -104,7 +104,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
             try {
                 insert(clientSession, project, userId);
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create project {}: {}", project.getId(), e.getMessage());
                 clientSession.abortTransaction();
@@ -181,9 +181,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return updateQR;
     }
 
-    // TODO: Make this transactional
-    @Override
-    public WriteResult editId(String owner, long projectUid, String oldId, String newId) throws CatalogDBException {
+    private void editId(ClientSession clientSession, String owner, long projectUid, String newId) throws CatalogDBException {
         if (!exists(projectUid)) {
             logger.error("Project {} not found", projectUid);
             throw new CatalogDBException("Project not found.");
@@ -197,15 +195,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 .append("projects.$." + QueryParams.ID.key(), newId)
                 .append("projects.$." + QueryParams.FQN.key(), owner + "@" + newId)
         );
-        WriteResult result = userCollection.update(query, update, null);
+        WriteResult result = userCollection.update(clientSession, query, update, null);
         if (result.getNumUpdated() == 0) {    //Check if the the project id was modified
             throw new CatalogDBException("Project {id:\"" + newId + "\"} already exists");
         }
 
         // Update all the internal project ids stored in the study documents
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().updateProjectId(projectUid, newId);
-
-        return result;
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().updateProjectId(clientSession, projectUid, newId);
     }
 
     @Override
@@ -277,14 +273,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         Document updateParams = getDocumentUpdateParams(parameters);
 
-        if (updateParams.isEmpty()) {
+        if (updateParams.isEmpty() && !parameters.containsKey(QueryParams.ID.key())) {
             throw new CatalogDBException("Nothing to update");
         }
 
         Document updates = new Document("$set", updateParams);
 
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(),
+                QueryParams.FQN.key()));
         DBIterator<Project> iterator = iterator(query, options);
 
         int numMatches = 0;
@@ -299,14 +295,21 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
-                    Query tmpQuery = new Query(QueryParams.UID.key(), project.getUid());
-                    Bson finalQuery = parseQuery(tmpQuery);
+                    if (parameters.containsKey(QueryParams.ID.key())) {
+                        logger.debug("Update project id '{}'({}) to new id '{}'", project.getId(), project.getUid(),
+                                parameters.getString(QueryParams.ID.key()));
+                        editId(clientSession, project.getFqn().split("@")[0], project.getUid(), parameters.getString(QueryParams.ID.key()));
+                    }
 
-                    logger.debug("Update project. Query: {}, update: {}",
-                            finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    userCollection.update(clientSession, finalQuery, updates, null);
+                    if (!updateParams.isEmpty()) {
+                        Query tmpQuery = new Query(QueryParams.UID.key(), project.getUid());
+                        Bson finalQuery = parseQuery(tmpQuery);
 
+                        logger.debug("Update project. Query: {}, update: {}",
+                                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                                updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                        userCollection.update(clientSession, finalQuery, updates, null);
+                    }
                     return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating project {}({}). {}", project.getId(), project.getUid(), e.getMessage(), e);

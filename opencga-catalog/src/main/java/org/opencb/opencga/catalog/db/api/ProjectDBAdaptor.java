@@ -136,8 +136,6 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
 
     WriteResult incrementCurrentRelease(long projectId) throws CatalogDBException;
 
-    WriteResult editId(String owner, long projectUid, String oldId, String newId) throws CatalogDBException;
-
     long getId(String userId, String projectAlias) throws CatalogDBException;
 
     String getOwnerId(long projectId) throws CatalogDBException;
