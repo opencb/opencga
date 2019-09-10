@@ -327,6 +327,16 @@ public class ProjectManager extends AbstractManager {
         long projectUid = project.getUid();
         authorizationManager.checkCanEditProject(projectUid, userId);
 
+        for (String s : parameters.keySet()) {
+            if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
+                    + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+            }
+        }
+
         // Update organism information only if any of the fields was not properly defined
         if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
                 || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
@@ -367,6 +377,10 @@ public class ProjectManager extends AbstractManager {
                     + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
+        }
+
+        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
+            ParamUtils.checkAlias(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
         }
 
         userDBAdaptor.updateUserLastModified(userId);

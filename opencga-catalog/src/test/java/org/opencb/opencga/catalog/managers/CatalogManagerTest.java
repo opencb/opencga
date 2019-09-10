@@ -364,6 +364,20 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testModifyStudyId() throws Exception {
+        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
+        Study study =  catalogManager.getStudyManager().get(query, null, sessionIdUser).first();
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.put(StudyDBAdaptor.QueryParams.ID.key(), "newId");
+        catalogManager.getStudyManager().update(study.getId(), parameters, null, sessionIdUser);
+
+        QueryResult<Study> result = catalogManager.getStudyManager().get("newId", null, sessionIdUser);
+        assertEquals("newId", result.first().getId());
+        assertEquals(study.getFqn().replace(study.getId(), "newId"), result.first().getFqn());
+    }
+
+    @Test
     public void testGetAllStudies() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().get(query, null, sessionIdUser).first().getId();

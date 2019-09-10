@@ -1175,7 +1175,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Document updateParams = getDocumentUpdateParams(parameters);
 
-        if (updateParams.isEmpty()) {
+        if (updateParams.isEmpty() && !parameters.containsKey(QueryParams.ID.key())) {
             throw new CatalogDBException("Nothing to update");
         }
 
@@ -1197,14 +1197,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             TransactionBody<WriteResult> txnBody = () -> {
                 long tmpStartTime = startQuery();
                 try {
-                    Query tmpQuery = new Query(QueryParams.UID.key(), study.getUid());
-                    Bson finalQuery = parseQuery(tmpQuery);
+                    if (parameters.containsKey(QueryParams.ID.key())) {
+                        editId(clientSession, study.getUid(), parameters.getString(QueryParams.ID.key()));
+                    }
+                    if (!updateParams.isEmpty()) {
+                        Query tmpQuery = new Query(QueryParams.UID.key(), study.getUid());
+                        Bson finalQuery = parseQuery(tmpQuery);
 
-                    logger.debug("Update study. Query: {}, update: {}",
-                            finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    studyCollection.update(clientSession, finalQuery, updates, null);
-
+                        logger.debug("Update study. Query: {}, update: {}",
+                                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                                updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                        studyCollection.update(clientSession, finalQuery, updates, null);
+                    }
                     return endWrite(tmpStartTime, 1, 1, null, null);
                 } catch (CatalogDBException e) {
                     logger.error("Error updating study {}({}). {}", study.getId(), study.getUid(), e.getMessage(), e);
@@ -1235,8 +1239,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
-                QueryParams.CIPHER.key(), };
+        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(),
+                QueryParams.DESCRIPTION.key(), QueryParams.CIPHER.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
@@ -1266,6 +1270,29 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
         }
         return studyParameters;
+    }
+
+    private void editId(ClientSession clientSession, long studyUid, String newId) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), studyUid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.FQN.key(), QueryParams.ID.key()));
+
+        QueryResult<Study> studyQueryResult = get(clientSession, query, options);
+        if (studyQueryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Cannot update study id. Study " + studyUid + " not found");
+        }
+
+        String oldId = studyQueryResult.first().getId();
+        String newFqn = studyQueryResult.first().getFqn().replace(oldId, newId);
+
+        Bson bsonQuery = parseQuery(query);
+        Bson update = Updates.combine(
+            Updates.set(QueryParams.ID.key(), newId),
+            Updates.set(QueryParams.FQN.key(), newFqn)
+        );
+        WriteResult writeResult = studyCollection.update(bsonQuery, update, null);
+        if (writeResult.getNumUpdated() == 0) {
+            throw new CatalogDBException("Could not update study id");
+        }
     }
 
     @Override
@@ -1540,10 +1567,14 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
+        return get(null, query, options);
+    }
+
+    private QueryResult<Study> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Study> documentList = new ArrayList<>();
         QueryResult<Study> studyQueryResult;
-        try (DBIterator<Study> dbIterator = iterator(query, options)) {
+        try (DBIterator<Study> dbIterator = iterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -1554,6 +1585,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
         return studyQueryResult;
     }
+
 
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {

@@ -44,15 +44,15 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
      */
 
 
-    default Long exists(long studyId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), studyId)).first();
+    default boolean exists(long studyId) throws CatalogDBException {
+        return count(new Query(QueryParams.UID.key(), studyId)).first() == 1;
     }
 
     default void checkId(long studyId) throws CatalogDBException {
         if (studyId < 0) {
             throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
         }
-        Long count = exists(studyId);
+        long count = count(new Query(QueryParams.UID.key(), studyId)).first();
         if (count <= 0) {
             throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
         } else if (count > 1) {
