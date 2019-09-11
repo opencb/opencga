@@ -19,13 +19,13 @@ package org.opencb.opencga.storage.mongodb.metadata;
 import com.google.common.collect.Iterators;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
@@ -187,9 +187,9 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     public void removeVariantFileMetadata(int study, int file) {
         String id = DocumentToVariantFileMetadataConverter.buildId(study, file);
 
-        DeleteResult deleteResult = collection.remove(Filters.eq("_id", id), null).first();
+        WriteResult deleteResult = collection.remove(Filters.eq("_id", id), null);
 
-        if (deleteResult.getDeletedCount() != 1) {
+        if (deleteResult.getNumDeleted() != 1) {
             throw new IllegalArgumentException("Unable to delete VariantSource " + id);
         }
 

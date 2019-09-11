@@ -27,6 +27,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -156,7 +157,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     }
 
     @Override
-    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public WriteResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getName());
@@ -181,7 +182,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
             throw new UncheckedIOException(e);
         }
 
-        return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime), 0, 0, "", error, Collections.emptyList());
+        return new WriteResult().setDbTime(((int) (System.currentTimeMillis() - startTime)));
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.load;
 
-import com.mongodb.bulk.BulkWriteResult;
 import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -28,6 +27,7 @@ import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -167,8 +167,8 @@ public class MongoVariantImporter extends VariantImporter {
         @Override
         public boolean write(List<Document> batch) {
 
-            BulkWriteResult result = collection.insert(batch, QueryOptions.empty()).first();
-            insertedCount += result.getInsertedCount();
+            WriteResult result = collection.insert(batch, QueryOptions.empty());
+            insertedCount += result.getNumInserted();
 
             return true;
         }
