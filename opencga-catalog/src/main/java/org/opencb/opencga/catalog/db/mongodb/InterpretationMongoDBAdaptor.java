@@ -4,7 +4,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -51,15 +50,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public void nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException {
+    public WriteResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(interpretation, "clinicalAnalysis");
-        interpretationCollection.insert(document, null);
+        return interpretationCollection.insert(document, null);
     }
 
     @Override
-    public QueryResult<Interpretation> insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
@@ -86,16 +83,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         } else {
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
-        interpretationCollection.insert(interpretationObject, null);
-
-        return endQuery("createInterpretation", startTime, get(interpretationUid, options));
+        return interpretationCollection.insert(interpretationObject, null);
     }
 
     @Override
-    public QueryResult<Interpretation> get(long interpretationId, QueryOptions options) throws CatalogDBException {
-        checkId(interpretationId);
-        return get(new Query(QueryParams.UID.key(), interpretationId).append(QueryParams.STUDY_UID.key(),
-                getStudyId(interpretationId)), options);
+    public QueryResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException {
+        checkId(interpretationUid);
+        return get(new Query(QueryParams.UID.key(), interpretationUid).append(QueryParams.STUDY_UID.key(),
+                getStudyId(interpretationUid)), options);
+    }
+
+    @Override
+    public QueryResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException {
+        return get(new Query(QueryParams.ID.key(), interpretationId).append(QueryParams.STUDY_UID.key(), studyUid), options);
     }
 
     @Override
@@ -195,9 +195,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult<Interpretation> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
 
@@ -212,21 +210,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
             logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
-            QueryResult<UpdateResult> update = interpretationCollection.update(bsonQuery, updateOperation, null);
+            WriteResult update = interpretationCollection.update(bsonQuery, updateOperation, null);
 
-            if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
+            if (update.getNumMatches() == 0) {
                 throw CatalogDBException.uidNotFound("Interpretation", id);
             }
+            return update;
         }
 
-        return endQuery("Modify interpretation", startTime, get(id, queryOptions));
+        return WriteResult.empty();
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
             throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        if (parameters.containsKey(UpdateParams.ID.key())) {
+        if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
             Query tmpQuery = new Query(query);
 
@@ -250,22 +249,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 
-            document.getSet().put(UpdateParams.ID.key(), parameters.get(UpdateParams.ID.key()));
+            document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {UpdateParams.DESCRIPTION.key(), UpdateParams.STATUS.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.STATUS.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        final String[] acceptedMapParams = {UpdateParams.ATTRIBUTES.key(), UpdateParams.FILTERS.key()};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.FILTERS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {UpdateParams.PANELS.key(), UpdateParams.SOFTWARE.key(), UpdateParams.ANALYST.key(),
-                UpdateParams.DEPENDENCIES.key(), UpdateParams.REPORTED_VARIANTS.key(), UpdateParams.REPORTED_LOW_COVERAGE.key()};
+        String[] objectAcceptedParams = {QueryParams.PANELS.key(), QueryParams.SOFTWARE.key(), QueryParams.ANALYST.key(),
+                QueryParams.DEPENDENCIES.key(), QueryParams.REPORTED_VARIANTS.key(), QueryParams.REPORTED_LOW_COVERAGE.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        String operation = (String) actionMap.getOrDefault(UpdateParams.COMMENTS.key(), "ADD");
-        objectAcceptedParams = new String[]{UpdateParams.COMMENTS.key()};
+        String operation = (String) actionMap.getOrDefault(QueryParams.COMMENTS.key(), "ADD");
+        objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         switch (operation) {
             case "SET":
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -279,8 +278,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 break;
         }
 
-        operation = (String) actionMap.getOrDefault(UpdateParams.REPORTED_VARIANTS.key(), "ADD");
-        objectAcceptedParams = new String[]{UpdateParams.REPORTED_VARIANTS.key()};
+        operation = (String) actionMap.getOrDefault(QueryParams.REPORTED_VARIANTS.key(), "ADD");
+        objectAcceptedParams = new String[]{QueryParams.REPORTED_VARIANTS.key()};
         switch (operation) {
             case "SET":
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -323,9 +322,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
                     .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
                     .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
-            QueryResult<UpdateResult> updateResult = interpretationCollection.update(queryDocument, new Document("$set", updateOldVersion),
-                    null);
-            if (updateResult.first().getModifiedCount() == 0) {
+            WriteResult result = interpretationCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
+            if (result.getNumUpdated() == 0) {
                 throw new CatalogDBException("Internal error: Could not update interpretation");
             }
 
@@ -354,12 +352,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult<Interpretation> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 

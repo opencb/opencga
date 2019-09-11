@@ -36,9 +36,9 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -168,8 +168,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
+    private QueryResult<Sample> getSample(long studyUid, String sampleUuid, QueryOptions options) throws CatalogDBException {
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(SampleDBAdaptor.QueryParams.UUID.key(), sampleUuid);
+        return sampleDBAdaptor.get(query, options);
+    }
+
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
-        ParamUtils.checkAlias(sample.getId(), "name");
+        ParamUtils.checkAlias(sample.getId(), "id");
         sample.setSource(ParamUtils.defaultString(sample.getSource(), ""));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setType(ParamUtils.defaultString(sample.getType(), ""));
@@ -183,6 +190,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setVersion(1);
         sample.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
         sample.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE));
+
+        // Check the id is not in use
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId());
+        if (sampleDBAdaptor.count(query).first() > 0) {
+            throw new CatalogException("Sample '" + sample.getId() + "' already exists.");
+        }
 
         if (StringUtils.isNotEmpty(sample.getIndividualId())) {
             // Check individual exists
@@ -212,7 +227,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         validateNewSample(study, sample, userId);
 
         // We create the sample
-        QueryResult<Sample> queryResult = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
+        sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
+        QueryResult<Sample> queryResult = getSample(study.getUid(), sample.getUuid(), options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getUid(), userId, queryResult.first(), null, null);
 
         return queryResult;
@@ -314,7 +330,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
 
-        WriteResult writeResult = new WriteResult("delete");
+        WriteResult writeResult = new WriteResult();
 
         String userId;
         Study study;
@@ -487,7 +503,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList(new Error(-1, null, "There are samples that could not be deleted")));
+            writeResult.setWarning(Collections.singletonList("Some samples could not be deleted"));
         }
 
         return writeResult;
@@ -496,11 +512,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public QueryResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
                                                    ParamUtils.UpdateAction action, QueryOptions options, String token)
             throws CatalogException {
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, annotationSetList);
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, sampleStr, params, options, token);
+        return update(studyStr, sampleStr, sampleUpdateParams, options, token);
     }
 
     public QueryResult<Sample> addAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
@@ -543,11 +559,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         if (annotations == null || annotations.isEmpty()) {
             return new QueryResult<>(sampleStr, -1, -1, -1, "Nothing to do: The map of annotations is empty", "", Collections.emptyList());
         }
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetId, "", annotations));
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, null, annotations)));
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, sampleStr, params, options, token);
+        return update(studyStr, sampleStr, sampleUpdateParams, options, token);
     }
 
     public QueryResult<Sample> removeAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
@@ -638,20 +655,47 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
-    @Override
-    public QueryResult<Sample> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
+    /**
+     * Update a Sample from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sampleId   Sample id in string format. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A QueryResult with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public QueryResult<Sample> update(String studyStr, String sampleId, SampleUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
-        ParamUtils.checkObj(parameters, "parameters");
-        parameters = new ObjectMap(parameters);
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            parameters = updateParams.getUpdateMap();
+        }
+
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+            ParamUtils.checkUpdateParametersMap(parameters);
+        }
+
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS) && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
+                logger.warn("Assuming the user wants to add the list of annotation sets provided");
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                options.put(Constants.ACTIONS, actionMap);
+            }
+        }
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-        Sample sample = internalGet(study.getUid(), entryStr, INCLUDE_SAMPLE_IDS, userId).first();
+        Sample sample = internalGet(study.getUid(), sampleId, INCLUDE_SAMPLE_IDS, userId).first();
 
         // Check permissions...
         // Only check write annotation permissions if the user wants to update the annotation sets
-        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+        if (updateParams != null && updateParams.getAnnotationSets() != null) {
             authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
                     SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
         }
@@ -662,26 +706,20 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SampleAclEntry.SamplePermissions.UPDATE);
         }
 
-        try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(), (a) -> SampleDBAdaptor.UpdateParams.getParam(a) != null);
-        } catch (CatalogParameterException e) {
-            throw new CatalogException("Could not update: " + e.getMessage(), e);
-        }
-        if (parameters.containsKey(SampleDBAdaptor.UpdateParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(SampleDBAdaptor.UpdateParams.ID.key()), SampleDBAdaptor.UpdateParams.ID.key());
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
+            ParamUtils.checkAlias(updateParams.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 
-        String individualId = parameters.getString(SampleDBAdaptor.UpdateParams.INDIVIDUAL_ID.key());
-        if (StringUtils.isNotEmpty(individualId)) {
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getIndividualId())) {
             // Check individual id exists
-            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().internalGet(study.getUid(), individualId,
-                    IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
+            QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                    updateParams.getIndividualId(), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId);
             if (individualQueryResult.getNumResults() == 0) {
-                throw new CatalogException("Individual '" + individualId + "' not found.");
+                throw new CatalogException("Individual '" + updateParams.getIndividualId() + "' not found.");
             }
 
             // Overwrite individual id parameter just in case the user used a uuid or other individual identifier
-            parameters.put(SampleDBAdaptor.UpdateParams.INDIVIDUAL_ID.key(), individualQueryResult.first().getId());
+            parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualQueryResult.first().getId());
         }
 
         checkUpdateAnnotations(study, sample, parameters, options, VariableSet.AnnotableDataModels.SAMPLE, sampleDBAdaptor, userId);
@@ -691,15 +729,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
+        WriteResult result = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sample.getUid(), userId, parameters, null, null);
-        return queryResult;
-    }
 
-    @Deprecated
-    public QueryResult<Sample> update(Long sampleId, ObjectMap parameters, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return update(null, String.valueOf(sampleId), parameters, options, sessionId);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(sample.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+        return queryResult;
     }
 
     @Override

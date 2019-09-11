@@ -16,9 +16,9 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -226,7 +226,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
 
-        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.insert(study.getUid(), interpretation, options);
+        WriteResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, options);
+        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(), QueryOptions.empty());
+        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
 
         // Now, we add the interpretation to the clinical analysis
         ObjectMap parameters = new ObjectMap();
@@ -240,16 +242,25 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return queryResult;
     }
 
-    @Override
-    public QueryResult<Interpretation> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options,
-                                              String token) throws CatalogException {
-        ParamUtils.checkObj(parameters, "parameters");
-        parameters = new ObjectMap(parameters);
+    /**
+     * Update na Interpretation from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param interpretationId   Interpretation id in string format. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A QueryResult with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public QueryResult<Interpretation> update(String studyStr, String interpretationId, InterpretationUpdateParams updateParams,
+                                              QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
-        Interpretation interpretation = internalGet(study.getUid(), entryStr, QueryOptions.empty(), userId).first();
+        Interpretation interpretation = internalGet(study.getUid(), interpretationId, QueryOptions.empty(), userId).first();
 
         // Check if user has permissions to write clinical analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
@@ -257,26 +268,24 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-        try {
-            ParamUtils.checkAllParametersExist(parameters.keySet().iterator(),
-                    (a) -> InterpretationDBAdaptor.UpdateParams.getParam(a) != null);
-        } catch (CatalogParameterException e) {
-            throw new CatalogException("Could not update: " + e.getMessage(), e);
-        }
+        ObjectMap parameters = updateParams.getUpdateMap();
 
         if (ListUtils.isNotEmpty(interpretation.getPrimaryFindings()) && (parameters.size() > 1
-                || !parameters.containsKey(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key()))) {
+                || !parameters.containsKey(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key()))) {
             throw new CatalogException("Interpretation already has reported variants. Only array of reported variants can be updated.");
         }
 
-        if (parameters.containsKey(InterpretationDBAdaptor.UpdateParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(InterpretationDBAdaptor.UpdateParams.ID.key()),
-                    InterpretationDBAdaptor.UpdateParams.ID.key());
+        if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
+            ParamUtils.checkAlias(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
+                    InterpretationDBAdaptor.QueryParams.ID.key());
         }
 
-        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
-        auditManager.recordUpdate(AuditRecord.Resource.interpretation, interpretation.getUid(), userId, parameters,
-                null, null);
+        WriteResult writeResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
+        auditManager.recordUpdate(AuditRecord.Resource.interpretation, interpretation.getUid(), userId, parameters, null, null);
+
+        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+                new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+        queryResult.setDbTime(queryResult.getDbTime() + writeResult.getDbTime());
 
         return queryResult;
     }

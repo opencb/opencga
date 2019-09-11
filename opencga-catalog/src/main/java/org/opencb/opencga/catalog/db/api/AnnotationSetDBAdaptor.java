@@ -46,7 +46,7 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
     QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName)
             throws CatalogDBException;
 
-    QueryResult<T> update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    WriteResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException;
 
     WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
@@ -57,10 +57,10 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      *
      * @param variableSetId variable set id to identify the annotations that will add a new annotation.
      * @param variable new variable that will be added.
-     * @return the number of annotations that add the new annotation.
+     * @return a WriteResult object.
      * @throws CatalogDBException if the variable could not be added to an existing annotationSet.
      */
-    QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
+    WriteResult addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
 
 //    /**
 //     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
@@ -79,10 +79,10 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      *
      * @param variableSetId variable set id for which the annotationSets have to delete the annotation.
      * @param annotationName Annotation name.
-     * @return the number of annotations that deleted the annotation.
+     * @return a WriteResult object.
      * @throws CatalogDBException when there is an error in the database.
      */
-    QueryResult<Long> removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException;
+    WriteResult removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException;
 
     /**
      * Makes a groupBy to obtain the different values that every annotation has and the total number of each.

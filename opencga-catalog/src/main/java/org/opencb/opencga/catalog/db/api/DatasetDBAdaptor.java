@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Dataset;
@@ -114,7 +115,7 @@ public interface DatasetDBAdaptor extends DBAdaptor<Dataset> {
 
     long getStudyIdByDatasetId(long datasetId) throws CatalogDBException;
 
-    QueryResult<Dataset> insert(Dataset dataset, long studyId, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(Dataset dataset, long studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Dataset> get(long datasetId, QueryOptions options) throws CatalogDBException;
 
@@ -125,19 +126,19 @@ public interface DatasetDBAdaptor extends DBAdaptor<Dataset> {
      *
      * @param query query.
      * @param fileIds file ids.
-     * @return A queryResult object containing the number of datasets matching the query.
+     * @return A WriteResult object containing the number of datasets matching the query.
      * @throws CatalogDBException CatalogDBException.
      */
-    QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
+    WriteResult insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
 
     /**
      * Extract the fileIds given from the datasets that matching the query.
      *
      * @param query query.
      * @param fileIds file ids.
-     * @return A queryResult object containing the number of datasets matching the query.
+     * @return A WriteResult object.
      * @throws CatalogDBException CatalogDBException.
      */
-    QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
+    WriteResult extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
 
 }

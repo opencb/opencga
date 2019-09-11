@@ -95,7 +95,7 @@ public interface DBAdaptor<T> extends Iterable<T> {
         return queryResults;
     }
 
-    QueryResult<T> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
     WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
@@ -103,28 +103,28 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     WriteResult delete(Query query) throws CatalogDBException;
 
-    default QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    default WriteResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    default WriteResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    default WriteResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    default WriteResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
-    QueryResult<T> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+    WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
 
 //    QueryResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;

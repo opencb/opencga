@@ -26,6 +26,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
@@ -203,7 +204,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public void updateJWTParameters(ObjectMap params) throws CatalogDBException {
+    public WriteResult updateJWTParameters(ObjectMap params) throws CatalogDBException {
         Bson query = METADATA_QUERY;
 
         Document adminDocument = new Document();
@@ -224,7 +225,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         if (adminDocument.size() > 0) {
             Bson update = new Document("$set", adminDocument);
-            this.metaCollection.update(query, update, QueryOptions.empty());
+            return this.metaCollection.update(query, update, QueryOptions.empty());
         }
+
+        return WriteResult.empty();
     }
 }

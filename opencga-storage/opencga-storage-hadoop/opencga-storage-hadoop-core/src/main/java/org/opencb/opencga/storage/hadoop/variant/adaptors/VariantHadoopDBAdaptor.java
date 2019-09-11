@@ -32,6 +32,7 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -574,7 +575,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     @Override
     @Deprecated
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
+    public WriteResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
                                    QueryOptions queryOptions) {
         throw new UnsupportedOperationException("Unimplemented method");
     }
@@ -584,7 +585,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     @Override
     @Deprecated
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
+    public WriteResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                    long timestamp, QueryOptions options) {
         throw new UnsupportedOperationException("Unimplemented method");
     }
@@ -600,7 +601,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     @Deprecated
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
+    public WriteResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
                                          long timestamp, QueryOptions queryOptions) {
 
         long start = System.currentTimeMillis();
@@ -621,11 +622,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } catch (SQLException | ClassNotFoundException | IOException e) {
             throw new RuntimeException(e);
         }
-        return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
+        return new WriteResult((int) (System.currentTimeMillis() - start), 0, variantAnnotations.size(), 0, 0,
+                Collections.emptyList(), Collections.emptyList());
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
+    public WriteResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
                                                QueryOptions options) {
         throw new UnsupportedOperationException();
     }

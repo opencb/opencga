@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -243,14 +244,14 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         cohorts.put("coh0", catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        catalogManager.getCohortManager().update(studyId, coh[0], new ObjectMap("description", "NewDescription"), new QueryOptions(), sessionId);
+        catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setDescription("NewDescription"), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());
 
         List<String> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
                 .map(Sample::getId)
                 .skip(10).limit(100)
                 .collect(Collectors.toList());
-        catalogManager.getCohortManager().update(studyId, coh[0], new ObjectMap("samples", newCohort), new QueryOptions(), sessionId);
+        catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setSamples(newCohort), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());
 
         calculateStats(coh[0]);

@@ -60,21 +60,6 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     public abstract QueryResult<R> create(String studyStr, R entry, QueryOptions options, String token) throws CatalogException;
 
     /**
-     * Update an entry from catalog.
-     *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param entryStr   Entry id in string format. Could be either the id or name generally.
-     * @param parameters Map with parameters and values from the entry to be updated.
-     * @param options    QueryOptions object.
-     * @param token  Session id of the user logged in.
-     * @return A QueryResult with the object updated.
-     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
-     *                          exist or is not allowed to be updated.
-     */
-    public abstract QueryResult<R> update(String studyStr, String entryStr, ObjectMap parameters, QueryOptions options, String token)
-            throws CatalogException;
-
-    /**
      * Fetch the R object.
      *
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].

@@ -102,7 +102,7 @@ public class MongoLock {
             Bson query = and(eq("_id", id), or(eq(lockWriteField, null), lt(lockWriteField, now)));
             Bson update = combine(set(lockWriteField, date));
 
-            modifiedCount = collection.update(query, update, null).first().getModifiedCount();
+            modifiedCount = collection.update(query, update, null).getNumUpdated();
 
             if (modifiedCount != 1) {
                 Thread.sleep(100);
@@ -131,7 +131,7 @@ public class MongoLock {
         Bson query = and(eq("_id", id), eq(lockWriteField, date));
         Bson update = set(lockWriteField, null);
 
-        long matchedCount = collection.update(query, update, null).first().getMatchedCount();
+        long matchedCount = collection.update(query, update, null).getNumMatches();
         if (matchedCount == 0) {
             throw new IllegalStateException("Lock token " + lockToken + " not found!");
         }

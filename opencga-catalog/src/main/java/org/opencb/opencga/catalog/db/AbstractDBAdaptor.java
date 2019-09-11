@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db;
 
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.slf4j.Logger;
@@ -74,14 +73,15 @@ public abstract class AbstractDBAdaptor {
         return queryResult;
     }
 
-    protected WriteResult endWrite(String id, long startTime, int numMatches, int numModified, List<WriteResult.Fail> failed) {
-        return endWrite(id, startTime, numMatches, numModified, failed, null, null);
+    protected WriteResult endWrite(long startTime, long numMatches, long numUpdated, List<String> warnings, List<WriteResult.Fail> failed) {
+        long end = System.currentTimeMillis();
+        return new WriteResult((int) (end - startTime), numMatches, 0, numUpdated, 0, warnings, failed);
     }
 
-    protected WriteResult endWrite(String id, long startTime, int numMatches, int numModified, List<WriteResult.Fail> failed,
-                                   List<Error> errorList, Error error) {
+    protected WriteResult endWrite(long startTime, long numMatches, long numInserted, long numUpdated, long numDeleted,
+                                   List<String> warnings, List<WriteResult.Fail> failed) {
         long end = System.currentTimeMillis();
-        return new WriteResult(id, (int) (end - startTime), numMatches, numModified, failed, errorList, error);
+        return new WriteResult((int) (end - startTime), numMatches, numInserted, numUpdated, numDeleted, warnings, failed);
     }
 
     protected void checkParameter(Object param, String name) throws CatalogDBException {

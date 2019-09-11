@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.User;
 
@@ -64,7 +65,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    QueryResult<User> insert(User user, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(User user, QueryOptions options) throws CatalogDBException;
 
     QueryResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
 
@@ -73,32 +74,32 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
 //        return update(userId, parameters);
 //    }
 
-    QueryResult<User> update(String userId, ObjectMap parameters) throws CatalogDBException;
+    WriteResult update(String userId, ObjectMap parameters) throws CatalogDBException;
 
 //    @Deprecated
 //    default QueryResult<User> deleteUser(String userId) throws CatalogDBException {
 //        return delete(userId, false);
 //    }
 
-    QueryResult<User> delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
+    WriteResult delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
+    WriteResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    void updateUserLastModified(String userId) throws CatalogDBException;
+    WriteResult updateUserLastModified(String userId) throws CatalogDBException;
 
-    QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
+    WriteResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
     // Config operations
-    QueryResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;
+    WriteResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;
 
-    QueryResult<Long> deleteConfig(String userId, String name) throws CatalogDBException;
+    WriteResult deleteConfig(String userId, String name) throws CatalogDBException;
 
     // Filter operations
-    QueryResult<User.Filter> addFilter(String userId, User.Filter filter) throws CatalogDBException;
+    WriteResult addFilter(String userId, User.Filter filter) throws CatalogDBException;
 
-    QueryResult<Long> updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException;
+    WriteResult updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException;
 
-    QueryResult deleteFilter(String userId, String name) throws CatalogDBException;
+    WriteResult deleteFilter(String userId, String name) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT_ARRAY, ""),

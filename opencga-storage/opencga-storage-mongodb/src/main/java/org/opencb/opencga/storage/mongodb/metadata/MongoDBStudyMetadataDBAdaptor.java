@@ -18,19 +18,19 @@ package org.opencb.opencga.storage.mongodb.metadata;
 
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 import org.slf4j.Logger;
@@ -133,17 +133,17 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
     }
 
     @Override
-    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public WriteResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         Document studyMongo = new DocumentToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
         Document query = new Document("_id", studyConfiguration.getId());
         List<Bson> updates = new ArrayList<>(studyMongo.size());
         studyMongo.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
-        QueryResult<UpdateResult> queryResult = collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
+        WriteResult writeResult = collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
 //        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
 
-        return queryResult;
+        return writeResult;
     }
 
     @Override

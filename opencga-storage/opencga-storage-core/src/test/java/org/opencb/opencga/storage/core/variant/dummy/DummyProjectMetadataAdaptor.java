@@ -3,9 +3,10 @@ package org.opencb.opencga.storage.core.variant.dummy;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,9 +48,9 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public synchronized QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
+    public synchronized WriteResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
         DummyProjectMetadataAdaptor.projectMetadata = projectMetadata;
-        return new QueryResult<>();
+        return new WriteResult();
     }
 
     @Override

@@ -205,7 +205,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         // 2) Remove from files collection
         MongoDataStore dataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
         MongoDBCollection files = dataStore.getCollection(MongoDBVariantOptions.COLLECTION_FILES.defaultValue());
-        System.out.println("Files delete count " + files.remove(new Document(), new QueryOptions()).first().getDeletedCount());
+        System.out.println("Files delete count " + files.remove(new Document(), new QueryOptions()).getNumDeleted());
 
         // 3) Clean some variants from the Stage collection.
         MongoDBCollection stage = dbAdaptor.getStageCollection(studyMetadata.getId());
@@ -214,7 +214,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         System.out.println("stage count : " + stageCount);
         int i = 0;
         for (Document document : stage.find(new Document(), Projections.include("_id"), null).getResult()) {
-            stage.remove(document, null).first().getDeletedCount();
+            stage.remove(document, null).getNumDeleted();
             i++;
             if (i >= stageCount / 2) {
                 break;

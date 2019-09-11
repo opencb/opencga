@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.PanelManager;
+import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Panel;
@@ -72,9 +73,9 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Panel id") @PathParam("panel") String panelId,
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "params", value = "Panel parameters") PanelPOST panelParams) {
+            @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
-            return createOkResponse(panelManager.update(studyStr, panelId, panelParams.toObjectMap(), queryOptions, sessionId));
+            return createOkResponse(panelManager.update(studyStr, panelId, panelParams, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

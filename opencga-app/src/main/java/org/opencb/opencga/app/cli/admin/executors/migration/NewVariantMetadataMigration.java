@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.models.DataStore;
@@ -174,23 +175,27 @@ public class NewVariantMetadataMigration {
                 File file = iterator.next();
                 logger.info("Migrating file " + file.getName());
 
-                ObjectMap parameters = new ObjectMap();
+                FileUpdateParams parameters = new FileUpdateParams();
+
+                boolean alreadyMigrated = true;
                 if (!file.getAttributes().containsKey(FileMetadataReader.VARIANT_FILE_METADATA)) {
                     VariantSource variantSource = getObject(file.getAttributes(), FileMetadataReader.VARIANT_SOURCE, VariantSource.class);
                     VariantFileMetadata fileMetadata = converter.convert(variantSource);
 
-                    parameters.append(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap(FileMetadataReader.VARIANT_FILE_METADATA, fileMetadata));
+                    parameters.setAttributes(new ObjectMap(FileMetadataReader.VARIANT_FILE_METADATA, fileMetadata));
+                    alreadyMigrated = false;
                 }
 
                 if (!file.getStats().containsKey(FileMetadataReader.VARIANT_FILE_STATS)) {
                     VariantGlobalStats globalStats = getObject(file.getStats(), FileMetadataReader.VARIANT_STATS, VariantGlobalStats.class);
                     if (globalStats != null) {
                         VariantSetStats variantSetStats = converter.convertStats(globalStats);
-                        parameters.append(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(FileMetadataReader.VARIANT_FILE_STATS, variantSetStats));
+                        parameters.setStats(new ObjectMap(FileMetadataReader.VARIANT_FILE_STATS, variantSetStats));
+                        alreadyMigrated = false;
                     }
                 }
 
-                if (parameters.isEmpty()) {
+                if (alreadyMigrated) {
                     alreadyMigratedFile++;
                 } else {
                     migratedFiles++;

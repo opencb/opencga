@@ -23,9 +23,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
@@ -119,41 +119,6 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        NAME(QueryParams.NAME.key()),
-        PHENOTYPES(QueryParams.PHENOTYPES.key()),
-        DISORDERS(QueryParams.DISORDERS.key()),
-        MEMBERS(QueryParams.MEMBERS.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        EXPECTED_SIZE(QueryParams.EXPECTED_SIZE.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
-        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new LinkedMap();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
     default boolean exists(long familyId) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), familyId)).first() > 0;
     }
@@ -168,21 +133,16 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
-    void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    default QueryResult<Family> insert(long studyId, Family family, QueryOptions options) throws CatalogDBException {
-        family.setAnnotationSets(Collections.emptyList());
-        return insert(studyId, family, Collections.emptyList(), options);
-    }
-
-    QueryResult<Family> insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+    WriteResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
 
     QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long familyId) throws CatalogDBException;
 
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -190,11 +150,12 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    void removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
+    WriteResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
 
     default List<Phenotype> getAllPhenotypes(List<Individual> individualList) {
         if (individualList == null || individualList.isEmpty()) {

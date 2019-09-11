@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Panel;
@@ -128,45 +128,6 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         }
     }
 
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        NAME(QueryParams.NAME.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        SOURCE(QueryParams.SOURCE.key()),
-        PHENOTYPES(QueryParams.PHENOTYPES.key()),
-        VARIANTS(QueryParams.VARIANTS.key()),
-        GENES(QueryParams.GENES.key()),
-        CATEGORIES(QueryParams.CATEGORIES.key()),
-        TAGS(QueryParams.TAGS.key()),
-        REGIONS(QueryParams.REGIONS.key()),
-        AUTHOR(QueryParams.AUTHOR.key()),
-        STATUS_NAME(QueryParams.STATUS_NAME.key()),
-        STATS(QueryParams.STATS.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key());
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new LinkedMap();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
     default boolean exists(long panelUid) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), panelUid)).first() > 0;
     }
@@ -186,17 +147,18 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      *
      * @param panel Panel.
      * @param overwrite Flag to overwrite in case of an ID conflict.
+     * @return WriteResult object.
      * @throws CatalogDBException In case of an ID conflict when overwrite is false.
      */
-    void insert(Panel panel, boolean overwrite) throws CatalogDBException;
+    WriteResult insert(Panel panel, boolean overwrite) throws CatalogDBException;
 
-    QueryResult<Panel> insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long panelId) throws CatalogDBException;
 
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -204,8 +166,9 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return WriteResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

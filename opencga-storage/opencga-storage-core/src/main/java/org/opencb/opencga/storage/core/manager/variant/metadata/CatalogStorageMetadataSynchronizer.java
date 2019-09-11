@@ -21,7 +21,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -29,6 +28,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
@@ -164,7 +164,7 @@ public class CatalogStorageMetadataSynchronizer {
                     catalogManager.getCohortManager().setStatus(study.getName(), defaultCohortName, status, null, sessionId);
                 }
                 catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
-                        new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortFromStorage),
+                        new CohortUpdateParams().setSamples(new ArrayList<>(cohortFromStorage)),
                         true, null, sessionId);
                 modified = true;
             }

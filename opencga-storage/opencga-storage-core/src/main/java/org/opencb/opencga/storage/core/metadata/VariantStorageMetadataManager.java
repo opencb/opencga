@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
@@ -256,7 +257,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public final WriteResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long timeStamp = System.currentTimeMillis();
         logger.debug("Timestamp : {} -> {}", studyConfiguration.getTimeStamp(), timeStamp);
         studyConfiguration.setTimeStamp(timeStamp);

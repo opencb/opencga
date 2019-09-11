@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
@@ -104,7 +105,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
+    public WriteResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
         try {
             ensureTableExists();
             hBaseManager.act(tableName, (table -> {
@@ -119,7 +120,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
                 table.put(put);
             }));
 
-            return getProjectMetadata();
+            return new WriteResult();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

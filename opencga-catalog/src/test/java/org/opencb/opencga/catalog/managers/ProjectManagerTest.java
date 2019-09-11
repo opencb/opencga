@@ -150,23 +150,25 @@ public class ProjectManagerTest extends GenericTest {
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
         QueryResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
-
         assertEquals(1, update.getNumResults());
-        assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
-        assertEquals("", update.first().getOrganism().getCommonName());
-        assertEquals("GRCh38", update.first().getOrganism().getAssembly());
-        assertEquals(55, update.first().getOrganism().getTaxonomyCode());
+        QueryResult<Project> queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
+
+        assertEquals("Homo sapiens", queryResult.first().getOrganism().getScientificName());
+        assertEquals("", queryResult.first().getOrganism().getCommonName());
+        assertEquals("GRCh38", queryResult.first().getOrganism().getAssembly());
+        assertEquals(55, queryResult.first().getOrganism().getTaxonomyCode());
 
         objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
         update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
-
         assertEquals(1, update.getNumResults());
-        assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
-        assertEquals("common", update.first().getOrganism().getCommonName());
-        assertEquals("GRCh38", update.first().getOrganism().getAssembly());
-        assertEquals(55, update.first().getOrganism().getTaxonomyCode());
+        queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
+
+        assertEquals("Homo sapiens", queryResult.first().getOrganism().getScientificName());
+        assertEquals("common", queryResult.first().getOrganism().getCommonName());
+        assertEquals("GRCh38", queryResult.first().getOrganism().getAssembly());
+        assertEquals(55, queryResult.first().getOrganism().getTaxonomyCode());
 
         objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), "assembly");

@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Interpretation;
 
@@ -24,6 +25,16 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         VERSION("version", INTEGER, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
+
+        PANELS("panels", TEXT_ARRAY, ""),
+        SOFTWARE("software", TEXT_ARRAY, ""),
+        ANALYST("analyst", TEXT_ARRAY, ""),
+        DEPENDENCIES("dependencies", TEXT_ARRAY, ""),
+        FILTERS("filters", TEXT_ARRAY, ""),
+        REPORTED_VARIANTS("reportedVariants", TEXT_ARRAY, ""),
+        REPORTED_LOW_COVERAGE("reportedLowCoverages", TEXT_ARRAY, ""),
+        COMMENTS("comments", TEXT_ARRAY, ""),
+
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -74,43 +85,6 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         }
     }
 
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        STATUS(QueryParams.STATUS.key()),
-        PANELS("panels"),
-        SOFTWARE("software"),
-        ANALYST("analyst"),
-        DEPENDENCIES("dependencies"),
-        FILTERS("filters"),
-        REPORTED_VARIANTS("reportedVariants"),
-        REPORTED_LOW_COVERAGE("reportedLowCoverages"),
-        COMMENTS("comments"),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key());
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new LinkedMap();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
     default boolean exists(long interpretationId) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), interpretationId)).first() > 0;
     }
@@ -125,11 +99,13 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         }
     }
 
-    void nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
+    WriteResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
 
-    QueryResult<Interpretation> insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException;
+    WriteResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Interpretation> get(long interpretationId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long interpretationId) throws CatalogDBException;
 

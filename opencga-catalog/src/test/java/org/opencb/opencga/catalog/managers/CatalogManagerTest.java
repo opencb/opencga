@@ -30,6 +30,9 @@ import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
+import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
+import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -358,6 +361,20 @@ public class CatalogManagerTest extends AbstractManagerTest {
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(study.getAttributes().get(entry.getKey()), entry.getValue());
         }
+    }
+
+    @Test
+    public void testModifyStudyId() throws Exception {
+        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
+        Study study =  catalogManager.getStudyManager().get(query, null, sessionIdUser).first();
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.put(StudyDBAdaptor.QueryParams.ID.key(), "newId");
+        catalogManager.getStudyManager().update(study.getId(), parameters, null, sessionIdUser);
+
+        QueryResult<Study> result = catalogManager.getStudyManager().get("newId", null, sessionIdUser);
+        assertEquals("newId", result.first().getId());
+        assertEquals(study.getFqn().replace(study.getId(), "newId"), result.first().getFqn());
     }
 
     @Test
@@ -795,10 +812,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
-        VariableSet vs1_deleted = catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()),
-                sessionIdUser).first();
-
-        assertEquals(vs1.getUid(), vs1_deleted.getUid());
+        QueryResult<VariableSet> result = catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser);
+        assertEquals(0, result.getNumResults());
 
         thrown.expect(CatalogException.class);    //VariableSet does not exist
         thrown.expectMessage("not found");
@@ -865,16 +880,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         Map<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "LINUS");
-        catalogManager.getSampleManager().update(studyFqn, sampleId1, new ObjectMap()
-                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                .append(AnnotationSetManager.ID, "annotationId")
-                                .append(AnnotationSetManager.VARIABLE_SET_ID, vs1.getId())
-                                .append(AnnotationSetManager.ANNOTATIONS, annotations))
-                        ),
+        catalogManager.getSampleManager().update(studyFqn, sampleId1, new SampleUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotationId", vs1.getId(), annotations))),
                 QueryOptions.empty(), sessionIdUser);
 
         try {
-            catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser).first();
+            catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser);
         } finally {
             VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, vs1.getId(), null, sessionIdUser).first();
             assertEquals(vs1.getUid(), variableSet.getUid());
@@ -1041,9 +1052,10 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId2.getUid()));
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId3.getUid()));
 
-        Cohort myModifiedCohort = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(),
-                new ObjectMap("samples", Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId4.getId(), sampleId5.getId()))
-                        .append(CohortDBAdaptor.QueryParams.ID.key(), "myModifiedCohort"), new QueryOptions(), sessionIdUser).first();
+        Cohort myModifiedCohort = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(), new CohortUpdateParams()
+                        .setId("myModifiedCohort")
+                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId4.getId(), sampleId5.getId())),
+                new QueryOptions(), sessionIdUser).first();
 
         assertEquals("myModifiedCohort", myModifiedCohort.getId());
         assertEquals(4, myModifiedCohort.getSamples().size());
@@ -1080,7 +1092,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         WriteResult deleteResult = catalogManager.getCohortManager().delete(studyId,
                 new Query(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid()), null, sessionIdUser);
 
-        assertEquals(1, deleteResult.getNumModified());
+        assertEquals(1, deleteResult.getNumUpdated());
 
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid())
@@ -1136,31 +1148,19 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId1, new ObjectMap()
-                        .append(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                .append(AnnotationSetManager.ID, "annot1")
-                                .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet.getId())
-                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5)
-                                        .append("PHEN", "CASE").append("ALIVE", true)))
-                        ),
+        catalogManager.getIndividualManager().update(studyFqn, individualId1, new IndividualUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                                new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true)))),
                 QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId2, new ObjectMap()
-                        .append(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                .append(AnnotationSetManager.ID, "annot1")
-                                .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet.getId())
-                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "INDIVIDUAL_2").append("AGE", 15)
-                                        .append("PHEN", "CONTROL").append("ALIVE", true)))
-                        ),
+        catalogManager.getIndividualManager().update(studyFqn, individualId2, new IndividualUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                                new ObjectMap("NAME", "INDIVIDUAL_2").append("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true)))),
                 QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId3, new ObjectMap()
-                        .append(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                .append(AnnotationSetManager.ID, "annot1")
-                                .append(AnnotationSetManager.VARIABLE_SET_ID, variableSet.getId())
-                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("NAME", "INDIVIDUAL_3").append("AGE", 25)
-                                        .append("PHEN", "CASE").append("ALIVE", true)))
-                        ),
+        catalogManager.getIndividualManager().update(studyFqn, individualId3, new IndividualUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                                new ObjectMap("NAME", "INDIVIDUAL_3").append("AGE", 25).append("PHEN", "CASE").append("ALIVE", true)))),
                 QueryOptions.empty(), sessionIdUser);
 
         List<String> individuals;
@@ -1192,22 +1192,19 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("19870214", individualQueryResult.first().getDateOfBirth());
 
         QueryResult<Individual> update = individualManager.update(studyFqn, individualQueryResult.first().getId(),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key() , null),
-                QueryOptions.empty(), sessionIdUser);
+                new IndividualUpdateParams().setDateOfBirth(""), QueryOptions.empty(), sessionIdUser);
         assertEquals("", update.first().getDateOfBirth());
 
         update = individualManager.update(studyFqn, individualQueryResult.first().getId(),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "19870214"), QueryOptions.empty(), sessionIdUser);
+                new IndividualUpdateParams().setDateOfBirth("19870214"), QueryOptions.empty(), sessionIdUser);
         assertEquals("19870214", update.first().getDateOfBirth());
 
-        update = individualManager.update(studyFqn,
-                String.valueOf(individualQueryResult.first().getId()),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.ATTRIBUTES.key(), Collections.singletonMap("key", "value")), QueryOptions.empty(), sessionIdUser);
+        update = individualManager.update(studyFqn, String.valueOf(individualQueryResult.first().getId()),
+                new IndividualUpdateParams().setAttributes(Collections.singletonMap("key", "value")), QueryOptions.empty(), sessionIdUser);
         assertEquals("value", update.first().getAttributes().get("key"));
 
-        update = individualManager.update(studyFqn,
-                String.valueOf(individualQueryResult.first().getId()),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.ATTRIBUTES.key(), Collections.singletonMap("key2", "value2")), QueryOptions.empty(), sessionIdUser);
+        update = individualManager.update(studyFqn, String.valueOf(individualQueryResult.first().getId()),
+                new IndividualUpdateParams().setAttributes(Collections.singletonMap("key2", "value2")), QueryOptions.empty(), sessionIdUser);
         assertEquals("value", update.first().getAttributes().get("key")); // Keep "key"
         assertEquals("value2", update.first().getAttributes().get("key2")); // add new "key2"
 
@@ -1215,7 +1212,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Invalid date of birth format");
         individualManager.update(studyFqn, individualQueryResult.first().getId(),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "198421"), QueryOptions.empty(), sessionIdUser);
+                new IndividualUpdateParams().setDateOfBirth("198421"), QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
@@ -1225,10 +1222,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
         individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), sessionIdUser);
 
-        QueryResult<Individual> individualQueryResult = individualManager.update(studyFqn, "child", new ObjectMap()
-                        .append(IndividualDBAdaptor.QueryParams.FATHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "father"))
-                        .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "mother")),
-                QueryOptions.empty(), sessionIdUser);
+        QueryResult<Individual> individualQueryResult = individualManager.update(studyFqn, "child",
+                new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), sessionIdUser);
 
         assertEquals("mother", individualQueryResult.first().getMother().getId());
         assertEquals(1, individualQueryResult.first().getMother().getVersion());
@@ -1245,27 +1240,28 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype1")))
                         .setDisorders(Collections.singletonList(new Disorder().setId("disorder1"))),
                 QueryOptions.empty(), sessionIdUser).first();
-        Individual father = individualManager.create(studyFqn, new Individual()
+        Individual father = new Individual()
                         .setId("father")
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype2")))
-                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder2"))),
-                QueryOptions.empty(), sessionIdUser).first();
-        Individual mother = individualManager.create(studyFqn, new Individual()
+                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+        Individual mother = new Individual()
                         .setId("mother")
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype3")))
-                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder3"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder3")));
 
         FamilyManager familyManager = catalogManager.getFamilyManager();
-        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Arrays.asList(father, child)), QueryOptions.empty(), sessionIdUser);
-        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Arrays.asList(father, mother, child)), QueryOptions.empty(), sessionIdUser);
+        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Collections.singletonList(father)),
+                Collections.singletonList(child.getId()), QueryOptions.empty(), sessionIdUser);
+        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Collections.singletonList(mother)),
+                Arrays.asList(father.getId(), child.getId()), QueryOptions.empty(), sessionIdUser);
 
-        WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(), sessionIdUser);
-        assertEquals(0, writeResult.getNumModified());
+        WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
+                new ObjectMap(), sessionIdUser);
+        assertEquals(0, writeResult.getNumUpdated());
         assertTrue(writeResult.getFailed().get(0).getMessage().contains("found in the families"));
 
         writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(Constants.FORCE, true), sessionIdUser);
-        assertEquals(1, writeResult.getNumModified());
+        assertEquals(1, writeResult.getNumUpdated());
 
         Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), sessionIdUser).first();
         Family family2 = familyManager.get(studyFqn, "family2", QueryOptions.empty(), sessionIdUser).first();

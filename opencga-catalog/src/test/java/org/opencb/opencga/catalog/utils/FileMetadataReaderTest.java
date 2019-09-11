@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.*;
@@ -217,8 +218,8 @@ public class FileMetadataReaderTest {
         //Add a sampleId
         String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), null, sessionIdUser)
                 .first().getId();
-        catalogManager.getFileManager().update(study.getFqn(), file.getPath(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(),
-                        Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().update(study.getFqn(), file.getPath(),
+                new FileUpdateParams().setSamples(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
         assertEquals(5, file.getSamples().size());

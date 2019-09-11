@@ -22,12 +22,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -38,7 +43,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class MongoDBAdaptorTest extends GenericTest {
@@ -113,6 +117,34 @@ public class MongoDBAdaptorTest extends GenericTest {
         initDefaultCatalogDB();
     }
 
+    Sample getSample(long studyUid, String sampleId) throws CatalogDBException {
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
+        return catalogDBAdaptor.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
+    }
+
+    Individual getIndividual(long studyUid, String individualId) throws CatalogDBException {
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
+        return catalogIndividualDBAdaptor.get(query, QueryOptions.empty()).first();
+    }
+
+    Job getJob(long studyUid, String jobId) throws CatalogDBException {
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(JobDBAdaptor.QueryParams.ID.key(), jobId);
+        return catalogJobDBAdaptor.get(query, QueryOptions.empty()).first();
+    }
+
+    Project getProject(String userId, String projectId) throws CatalogDBException {
+        Query query = new Query()
+                .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
+                .append(ProjectDBAdaptor.QueryParams.ID.key(), projectId);
+        return catalogProjectDBAdaptor.get(query, QueryOptions.empty()).first();
+    }
+
     public void initDefaultCatalogDB() throws CatalogException {
 
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
@@ -126,12 +158,10 @@ public class MongoDBAdaptorTest extends GenericTest {
                 Arrays.<Project>asList(new Project("P1", "project", "", new Status(), "", null, 1), new Project("P2", "project", "",
                         new Status(), "", null, 1), new Project("P3", "project", "", new Status(), "", null, 1)),
                 Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
-        QueryResult createUser = catalogUserDBAdaptor.insert(user1, null);
-        assertNotNull(createUser.getResult());
+        catalogUserDBAdaptor.insert(user1, null);
 
         user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.UserStatus.READY);
-        createUser = catalogUserDBAdaptor.insert(user2, null);
-        assertNotNull(createUser.getResult());
+        catalogUserDBAdaptor.insert(user2, null);
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
                 Arrays.asList(new Project("pr1", "90 GigaGenomes", null, "very long description", "Spain", null, new Status(), "", 0,
@@ -148,8 +178,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                         )
                 ), Collections.emptyMap(), Collections.emptyMap(), 1)
                 ), Collections.emptyList(), new HashMap<>(), new HashMap<>());
-        createUser = catalogUserDBAdaptor.insert(user3, null);
-        assertNotNull(createUser.getResult());
+        catalogUserDBAdaptor.insert(user3, null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
                 Arrays.asList(new Project("pr", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
@@ -189,8 +218,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                 ),
                 Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
 
-        createUser = catalogUserDBAdaptor.insert(user4, null);
-        assertNotNull(createUser.getResult());
+        catalogUserDBAdaptor.insert(user4, null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);

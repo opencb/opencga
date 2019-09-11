@@ -302,10 +302,12 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testAddSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
-                QueryOptions.empty()).first();
-        Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
-                QueryOptions.empty()).first();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
+                Collections.emptyList(), QueryOptions.empty());
+        Sample sample1 = getSample(studyUid, "sample1");
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
+                Collections.emptyList(), QueryOptions.empty());
+        Sample sample2 = getSample(studyUid, "sample2");
 
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         catalogFileDBAdaptor.addSamplesToFile(file.getUid(), Arrays.asList(sample1, sample2));
@@ -315,8 +317,9 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(Arrays.asList(sample1.getUid(), sample2.getUid()).containsAll(
                 fileQueryResult.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList())));
 
-        Sample sample3 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
-                QueryOptions.empty()).first();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
+                Collections.emptyList(), QueryOptions.empty());
+        Sample sample3 = getSample(studyUid, "sample3");
         // Test we avoid duplicities
         catalogFileDBAdaptor.addSamplesToFile(file.getUid(),
                 Arrays.asList(sample1, sample2, sample2, sample3));
@@ -329,12 +332,15 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testRemoveSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Sample sample1 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
-                QueryOptions.empty()).first();
-        Sample sample2 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
-                QueryOptions.empty()).first();
-        Sample sample3 = catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
-                QueryOptions.empty()).first();
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setStatus(new Status()),
+                Collections.emptyList(), QueryOptions.empty());
+        Sample sample1 = getSample(studyUid, "sample1");
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setStatus(new Status()),
+                Collections.emptyList(), QueryOptions.empty());
+        Sample sample2 = getSample(studyUid, "sample2");
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setStatus(new Status()),
+                Collections.emptyList(), QueryOptions.empty());
+        Sample sample3 = getSample(studyUid, "sample3");
         List<File> files = user3.getProjects().get(0).getStudies().get(0).getFiles();
         File file = files.get(0);
         File file2 = files.get(1);

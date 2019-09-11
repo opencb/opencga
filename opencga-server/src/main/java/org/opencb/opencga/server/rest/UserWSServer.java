@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -157,7 +158,7 @@ public class UserWSServer extends OpenCGAWSServer {
             notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
+            WriteResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

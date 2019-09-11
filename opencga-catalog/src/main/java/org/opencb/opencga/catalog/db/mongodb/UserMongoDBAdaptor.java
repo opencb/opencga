@@ -22,8 +22,6 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -79,9 +77,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<User> insert(User user, QueryOptions options) throws CatalogDBException {
-        long startQuery = startQuery();
-
+    public WriteResult insert(User user, QueryOptions options) throws CatalogDBException {
         ClientSession clientSession = getClientSession();
         TransactionBody<WriteResult> txnBody = () -> {
             long tmpStartTime = startQuery();
@@ -90,23 +86,21 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
             try {
                 insert(clientSession, user);
-                return endWrite(user.getId(), tmpStartTime, 1, 1, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create user {}: {}", user.getId(), e.getMessage());
                 clientSession.abortTransaction();
-                return endWrite(user.getId(), tmpStartTime, 1, 0,
+                return endWrite(tmpStartTime, 1, 0, null,
                         Collections.singletonList(new WriteResult.Fail(user.getId(), e.getMessage())));
             }
         };
 
         WriteResult result = commitTransaction(clientSession, txnBody);
 
-        if (result.getNumModified() == 1) {
-            Query query = new Query(QueryParams.ID.key(), result.getId());
-            return endQuery("createdUser", startQuery, get(query, options));
-        } else {
+        if (result.getNumInserted() == 0) {
             throw new CatalogDBException(result.getFailed().get(0).getMessage());
         }
+        return result;
     }
 
     private void insert(ClientSession clientSession, User user) throws CatalogDBException {
@@ -143,71 +137,57 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), userId);
         query.append(QueryParams.PASSWORD.key(), oldPassword);
         Bson bson = parseQuery(query);
 
         Bson set = Updates.set("password", newPassword);
 
-        QueryResult<UpdateResult> update = userCollection.update(bson, set, null);
-        if (update.getResult().get(0).getModifiedCount() == 0) {  //0 query matches.
+        WriteResult result = userCollection.update(bson, set, null);
+        if (result.getNumUpdated() == 0) {  //0 query matches.
             throw new CatalogDBException("Bad user or password");
         }
-        return endQuery("Change Password", startTime, update);
+        return result;
     }
 
     @Override
-    public void updateUserLastModified(String userId) throws CatalogDBException {
-        update(userId, new ObjectMap("lastModified", TimeUtils.getTimeMillis()));
+    public WriteResult updateUserLastModified(String userId) throws CatalogDBException {
+        return update(userId, new ObjectMap("lastModified", TimeUtils.getTimeMillis()));
     }
 
     @Override
-    public QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), userId);
         query.append(QueryParams.EMAIL.key(), email);
         Bson bson = parseQuery(query);
 
         Bson set = Updates.set("password", new Document("password", newCryptPass));
 
-        QueryResult<UpdateResult> update = userCollection.update(bson, set, null);
-        if (update.getResult().get(0).getModifiedCount() == 0) {  //0 query matches.
+        WriteResult result = userCollection.update(bson, set, null);
+        if (result.getNumUpdated() == 0) {  //0 query matches.
             throw new CatalogDBException("Bad user or email");
         }
-        return endQuery("Reset Password", startTime, Arrays.asList("Password successfully changed"));
+        return result;
     }
 
     @Override
-    public QueryResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException {
         // Set the config
         Bson bsonQuery = Filters.eq(QueryParams.ID.key(), userId);
         Bson filterDocument = getMongoDBDocument(config, "Config");
         Bson update = Updates.set(QueryParams.CONFIGS.key() + "." + name, filterDocument);
 
-        QueryResult<UpdateResult> queryResult = userCollection.update(bsonQuery, update, null);
+        WriteResult result = userCollection.update(bsonQuery, update, null);
 
-        if (queryResult.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not create " + name + " configuration ");
         }
-
-        QueryResult<User> userQueryResult = get(userId, new QueryOptions(), "");
-        if (userQueryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Internal error: Could not retrieve user " + userId + " information");
-        }
-
-        return endQuery("Set config", startTime, Arrays.asList(userQueryResult.first().getConfigs().get(name)));
+        return result;
     }
 
     @Override
-    public QueryResult<Long> deleteConfig(String userId, String name) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult deleteConfig(String userId, String name) throws CatalogDBException {
         // Insert the config
         Bson bsonQuery = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
@@ -215,24 +195,16 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         );
         Bson update = Updates.unset(QueryParams.CONFIGS.key() + "." + name);
 
-        QueryResult<UpdateResult> queryResult = userCollection.update(bsonQuery, update, null);
+        WriteResult result = userCollection.update(bsonQuery, update, null);
 
-        if (queryResult.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete " + name + " configuration ");
         }
-
-        QueryResult<User> userQueryResult = get(userId, new QueryOptions(), "");
-        if (userQueryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Internal error: Could not retrieve user " + userId + " information");
-        }
-
-        return endQuery("Delete config", startTime, Arrays.asList(queryResult.first().getModifiedCount()));
+        return result;
     }
 
     @Override
-    public QueryResult<User.Filter> addFilter(String userId, User.Filter filter) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult addFilter(String userId, User.Filter filter) throws CatalogDBException {
         // Insert the filter
         Bson bsonQuery = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
@@ -241,24 +213,22 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Bson filterDocument = getMongoDBDocument(filter, "Filter");
         Bson update = Updates.push(QueryParams.CONFIGS_FILTERS.key(), filterDocument);
 
-        QueryResult<UpdateResult> queryResult = userCollection.update(bsonQuery, update, null);
+        WriteResult result = userCollection.update(bsonQuery, update, null);
 
-        if (queryResult.first().getModifiedCount() != 1) {
-            if (queryResult.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() != 1) {
+            if (result.getNumUpdated() == 0) {
                 throw new CatalogDBException("Internal error: The filter could not be stored.");
             } else {
                 // This error should NEVER be raised.
                 throw new CatalogDBException("User: There was a critical error when storing the filter. Is has been inserted "
-                        + queryResult.first().getModifiedCount() + " times.");
+                        + result.getNumUpdated() + " times.");
             }
         }
-        return endQuery("addFilter", startTime, Arrays.asList(filter));
+        return result;
     }
 
     @Override
-    public QueryResult<Long> updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException {
         if (params.isEmpty()) {
             throw new CatalogDBException("Nothing to be updated. No parameters were passed.");
         }
@@ -290,27 +260,24 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Query query = new Query()
                 .append(ID.key(), userId)
                 .append(CONFIGS_FILTERS_NAME.key(), name);
-        QueryResult<UpdateResult> update = userCollection.update(parseQuery(query), new Document("$set", parameters), null);
-        return endQuery("Update filter", startTime, Arrays.asList(update.first().getModifiedCount()));
+        return userCollection.update(parseQuery(query), new Document("$set", parameters), null);
     }
 
     @Override
-    public QueryResult deleteFilter(String userId, String name) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult deleteFilter(String userId, String name) throws CatalogDBException {
         // Delete the filter
         Bson bsonQuery = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
                 Filters.eq(QueryParams.CONFIGS_FILTERS_NAME.key(), name)
         );
         Bson update = Updates.pull(QueryParams.CONFIGS_FILTERS.key(), new Document(FilterParams.NAME.key(), name));
-        QueryResult<UpdateResult> queryResult = userCollection.update(bsonQuery, update, null);
+        WriteResult result = userCollection.update(bsonQuery, update, null);
 
-        if (queryResult.first().getModifiedCount() == 0) {
+        if (result.getNumUpdated() == 0) {
             throw new CatalogDBException("Internal error: Filter " + name + " could not be removed");
         }
 
-        return endQuery("Delete filter", startTime, Arrays.asList(queryResult.first().getModifiedCount()));
+        return result;
     }
 
     @Override
@@ -400,7 +367,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     @Override
     public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key(),
@@ -419,12 +385,10 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = userCollection.update(parseQuery(query),
-                    new Document("$set", userParameters), null);
-            return endWrite("Update user", startTime, (int) update.getNumTotalResults(), (int) update.getNumTotalResults(), null);
+            return userCollection.update(parseQuery(query), new Document("$set", userParameters), null);
         }
 
-        return endWrite("Update user", startTime, 0, 0, null);
+        return WriteResult.empty();
     }
 
     @Override
@@ -445,37 +409,34 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<User> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Update user by int id. The id should be a string.");
     }
 
-    public QueryResult<User> update(String userId, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult update(String userId, ObjectMap parameters) throws CatalogDBException {
         checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId);
         WriteResult update = update(query, parameters, QueryOptions.empty());
-        if (update.getNumModified() != 1) {
+        if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update user " + userId);
         }
-        return endQuery("Update user", startTime, get(query, null));
+        return update;
     }
 
-    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        WriteResult update = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-        return new QueryResult<>(update.getId(), update.getDbTime(), (int) update.getNumMatches(), update.getNumMatches(), "",
-                "", Collections.singletonList(update.getNumModified()));
+    WriteResult setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {
+    public WriteResult setStatus(String userId, String status) throws CatalogDBException {
         return update(userId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Override
-    public QueryResult<User> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new CatalogDBException("Delete user by int id. The id should be a string.");
     }
 
-    public QueryResult<User> delete(String id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult delete(String id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         checkId(id);
@@ -501,12 +462,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         // Change the status of the user to deleted
-        setStatus(id, User.UserStatus.DELETED);
-
-        query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
-
-        return endQuery("Delete user", startTime, get(query, queryOptions));
+        return setStatus(id, User.UserStatus.DELETED);
     }
 
     /**
@@ -526,36 +482,33 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
 
     }
 
     @Override
-    public QueryResult<User> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return endQuery("Restore users", startTime, setStatus(query, Status.READY));
+        return setStatus(query, Status.READY);
     }
 
     @Override
-    public QueryResult<User> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new CatalogDBException("Delete user by int id. The id should be a string.");
     }
 
-    public QueryResult<User> restore(String id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
+    public WriteResult restore(String id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         Query query = new Query(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
@@ -563,29 +516,26 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("The user {" + id + "} is not deleted");
         }
 
-        setStatus(id, Status.READY);
-        query = new Query(QueryParams.ID.key(), id);
-
-        return endQuery("Restore user", startTime, get(query, null));
+        return setStatus(id, Status.READY);
     }
 
     /***
      * Removes completely the user from the database.
      * @param id User id to be removed from the database.
-     * @return a QueryResult object with the user removed.
+     * @return a WriteResult object with the user removed.
      * @throws CatalogDBException when there is any problem during the removal.
      */
-    public QueryResult<User> clean(String id) throws CatalogDBException {
+    public WriteResult clean(String id) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.ID.key(), id);
         Bson bson = parseQuery(query);
 
         QueryResult<User> userQueryResult = get(query, new QueryOptions());
-        QueryResult<DeleteResult> remove = userCollection.remove(bson, new QueryOptions());
-        if (remove.first().getDeletedCount() == 0) {
+        WriteResult result = userCollection.remove(bson, new QueryOptions());
+        if (result.getNumDeleted() == 0) {
             throw CatalogDBException.idNotFound("User", query.getString(QueryParams.ID.key()));
         } else {
-            return endQuery("Clean user", startTime, userQueryResult);
+            return result;
         }
     }
 

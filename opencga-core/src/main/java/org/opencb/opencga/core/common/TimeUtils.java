@@ -18,6 +18,8 @@ package org.opencb.opencga.core.common;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -30,6 +32,8 @@ public class TimeUtils {
 
     private static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
     private static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
+
+    private static final Logger logger = LoggerFactory.getLogger(TimeUtils.class);
 
     public static String getTime() {
         return getTime(new Date());
@@ -90,7 +94,7 @@ public class TimeUtils {
                 date = sdfMillis.parse(dateStr);
             }
         } catch (ParseException e) {
-            e.printStackTrace();
+            logger.warn(e.getMessage());
         }
         return date;
     }
@@ -103,8 +107,8 @@ public class TimeUtils {
             if (!value.equals(sdf.format(date))) {
                 date = null;
             }
-        } catch (ParseException ex) {
-            ex.printStackTrace();
+        } catch (ParseException e) {
+            logger.warn(e.getMessage());
         }
         return date != null;
     }

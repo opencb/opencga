@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Entity;
@@ -62,52 +63,51 @@ public interface AuthorizationDBAdaptor {
      * @param studyId study id where the Acls will be removed from.
      * @param member member from whom the Acls will be removed.
      * @param entry Entity for which the ACLs will be retrieved.
+     * @return WriteResult object.
      * @throws CatalogException  CatalogException.
      */
-    void removeFromStudy(long studyId, String member, Entity entry) throws CatalogException;
+    WriteResult removeFromStudy(long studyId, String member, Entity entry) throws CatalogException;
 
-    default void setToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+    default WriteResult setToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
             throws CatalogDBException {
-        setToMembers(studyId, resourceIds, null, members, permissions, entity, null);
+        return setToMembers(studyId, resourceIds, null, members, permissions, entity, null);
     }
 
-    void setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
+    WriteResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
                       Entity entity, Entity entity2) throws CatalogDBException;
 
     // Special method only to set acls in study
-    void setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
+    WriteResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
 
-    default void addToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+    default WriteResult addToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
             throws CatalogDBException {
-        addToMembers(studyId, resourceIds, null, members, permissions, entity, null);
+        return addToMembers(studyId, resourceIds, null, members, permissions, entity, null);
     }
 
-    void addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
+    WriteResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
                       Entity entity, Entity entity2) throws CatalogDBException;
 
     // Special method only to add acls in study
-    void addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
+    WriteResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
 
-    default void removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+    default WriteResult removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
             throws CatalogDBException {
-        removeFromMembers(resourceIds, null, members, permissions, entity, null);
+        return removeFromMembers(resourceIds, null, members, permissions, entity, null);
     }
 
-    void removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions, Entity entity,
-                           Entity entity2) throws CatalogDBException;
+    WriteResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
+                                  Entity entity, Entity entity2) throws CatalogDBException;
 
-    void resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
+    WriteResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
 
-    <E extends AbstractAclEntry> void setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException;
+    <E extends AbstractAclEntry> WriteResult setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException;
 
-    void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity);
+    WriteResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
 
-    void applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
+    WriteResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
 
-    void removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
-
-    void removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entity)
+    WriteResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entity)
             throws CatalogException;
 
-    void removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException;
+    WriteResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException;
 }
