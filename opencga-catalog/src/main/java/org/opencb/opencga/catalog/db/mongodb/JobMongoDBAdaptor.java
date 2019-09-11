@@ -100,7 +100,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
                 insert(clientSession, studyId, job);
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create job {}: {}", job.getId(), e.getMessage());
                 clientSession.abortTransaction();

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -133,16 +134,16 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", new Status(), "", 3000, "", null, 1), user1.getId(), null);
         Project p2 = getProject(user1.getId(), "p2");
 
-        catalogProjectDBAdaptor.editId(user1.getId(), p1.getUid(), "p1", "newpmp");
+        catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "newpmp"), QueryOptions.empty());
 
         try {
-            catalogProjectDBAdaptor.editId(user1.getId(), -1, "", "falseProject");
+            catalogProjectDBAdaptor.update(-1, new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "falseProject"), QueryOptions.empty());
             fail("renamed project with projectId=-1");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
         try {
-            catalogProjectDBAdaptor.editId(user1.getId(), p1.getUid(), "newpmp", p2.getId());
+            catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), p2.getId()), QueryOptions.empty());
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

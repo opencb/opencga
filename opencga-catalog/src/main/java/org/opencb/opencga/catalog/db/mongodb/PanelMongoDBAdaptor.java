@@ -107,7 +107,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
                 logger.info("Global panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
 
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create global panel {}: {}", panel.getId(), e.getMessage());
                 clientSession.abortTransaction();
@@ -135,7 +135,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
                 insert(clientSession, studyUid, panel);
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create panel {}: {}", panel.getId(), e.getMessage());
                 clientSession.abortTransaction();

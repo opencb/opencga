@@ -86,7 +86,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, Collections.emptyMap());
         catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
 
-        return catalogStudyDBAdaptor.getVariableSet(5L, QueryOptions.empty());
+        return catalogStudyDBAdaptor.getVariableSet(5L, name, QueryOptions.empty());
     }
 
     @Test

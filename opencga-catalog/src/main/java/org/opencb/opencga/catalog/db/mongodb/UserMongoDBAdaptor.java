@@ -86,7 +86,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
             try {
                 insert(clientSession, user);
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create user {}: {}", user.getId(), e.getMessage());
                 clientSession.abortTransaction();

@@ -107,7 +107,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
                 insert(clientSession, studyId, individual, variableSetList);
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create individual {}: {}", individual.getId(), e.getMessage(), e);
                 clientSession.abortTransaction();

@@ -97,7 +97,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
                 insert(clientSession, studyId, cohort, variableSetList);
-                return endWrite(startTime, 1, 1, null, null);
+                return endWrite(startTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create cohort '{}': {}", cohort.getId(), e.getMessage(), e);
                 clientSession.abortTransaction();

@@ -515,17 +515,17 @@ public class StudyManager extends AbstractManager {
 
         authorizationManager.checkCanEditStudy(study.getUid(), userId);
 
-        if (parameters.containsKey("alias")) {
-            rename(study.getUid(), parameters.getString("alias"), sessionId);
-
-            //Clone and remove alias from parameters. Do not modify the original parameter
-            parameters = new ObjectMap(parameters);
-            parameters.remove("alias");
-        }
         for (String s : parameters.keySet()) {
-            if (!s.matches("name|type|description|attributes|stats")) {
+            if (!s.matches("id|alias|name|type|description|attributes|stats")) {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
+        }
+
+        if (parameters.containsKey("id")) {
+            ParamUtils.checkAlias(parameters.getString("id"), "id");
+        }
+        if (parameters.containsKey("alias")) {
+            ParamUtils.checkAlias(parameters.getString("alias"), "alias");
         }
 
         String ownerId = getOwner(study);
@@ -746,7 +746,9 @@ public class StudyManager extends AbstractManager {
         }
 
         // Add those users to the members group
-        studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+        if (ListUtils.isNotEmpty(users)) {
+            studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+        }
 
         // Create the group
         WriteResult result = studyDBAdaptor.createGroup(study.getUid(), group);
@@ -1464,25 +1466,6 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Internal error. Cannot retrieve current release from project");
         }
         return projectQueryResult.first().getCurrentRelease();
-    }
-
-    private QueryResult rename(long studyId, String newStudyAlias, String sessionId) throws CatalogException {
-        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias");
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-//        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
-
-        //User can't write/modify the study
-        authorizationManager.checkCanEditStudy(studyId, userId);
-
-        // Both users must bu updated
-        userDBAdaptor.updateUserLastModified(userId);
-//        userDBAdaptor.updateUserLastModified(studyOwnerId);
-        //TODO get all shared users to updateUserLastModified
-
-        //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
-        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
-        return new QueryResult();
-
     }
 
     private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {

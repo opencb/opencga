@@ -115,7 +115,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
                 insert(clientSession, studyId, file, variableSetList);
-                return endWrite(tmpStartTime, 1, 1, null, null);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
             } catch (CatalogDBException e) {
                 logger.error("Could not create file {}: {}", file.getId(), e.getMessage());
                 clientSession.abortTransaction();
