@@ -1107,12 +1107,14 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getVariableSets(query, options, userId);
     }
 
-    public WriteResult deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException {
+    public QueryResult<VariableSet> deleteVariableSet(String studyStr, String variableSetStr, String sessionId) throws CatalogException {
         MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
         String userId = resource.getUser();
 
         authorizationManager.checkCanCreateUpdateDeleteVariableSets(resource.getStudyId(), userId);
-        return studyDBAdaptor.deleteVariableSet(resource.getResourceId(), QueryOptions.empty(), userId);
+        WriteResult writeResult = studyDBAdaptor.deleteVariableSet(resource.getResourceId(), QueryOptions.empty(), userId);
+
+        return new QueryResult("", writeResult.getDbTime(), 0, 0, "", "", Collections.emptyList());
 //        auditManager.recordDeletion(AuditRecord.Resource.variableSet, resource.getResourceId(), userId, result.first(), null, null);
     }
 
