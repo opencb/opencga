@@ -11,9 +11,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +27,7 @@ public class StudyMetadata {
     private Aggregation aggregation;
     private Long timeStamp;
     private VariantFileHeader variantHeader;
+    private List<VariantScoreMetadata> variantScores;
 
     private ObjectMap attributes;
 
@@ -42,6 +41,7 @@ public class StudyMetadata {
         this.id = id;
         this.name = name;
         this.variantHeader = VariantFileHeader.newBuilder().setVersion("").build();
+        variantScores = new ArrayList<>();
         attributes = new ObjectMap();
     }
 
@@ -115,6 +115,19 @@ public class StudyMetadata {
 
     public StudyMetadata setVariantHeader(VariantFileHeader variantHeader) {
         this.variantHeader = variantHeader;
+        return this;
+    }
+
+    public List<VariantScoreMetadata> getVariantScores() {
+        return variantScores;
+    }
+
+    public StudyMetadata setVariantScores(List<VariantScoreMetadata> variantScores) {
+        if (variantScores == null) {
+            this.variantScores = new ArrayList<>();
+        } else {
+            this.variantScores = variantScores;
+        }
         return this;
     }
 

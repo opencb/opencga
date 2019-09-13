@@ -186,6 +186,10 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("File '" + file + "' not found in study '" + study + "'");
     }
 
+    public static VariantQueryException scoreNotFound(Object score, Object study) {
+        return new VariantQueryException("Variant Score '" + score + "' not found in study '" + study + "'");
+    }
+
     public static VariantQueryException incompatibleSampleAndGenotypeOperators() {
         return new VariantQueryException("Unable to mix AND/OR operators in filters " + SAMPLE.key() + " and " + GENOTYPE.key());
     }

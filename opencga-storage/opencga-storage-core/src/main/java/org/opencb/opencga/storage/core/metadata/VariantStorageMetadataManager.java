@@ -97,21 +97,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         sampleNameCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
             if (sampleMetadata == null) {
-                throw VariantQueryException.sampleNotFound(sampleId, studyId);
+                throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
             return sampleMetadata.getName();
         });
         sampleIdIndexedCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
             if (sampleMetadata == null) {
-                throw VariantQueryException.sampleNotFound(sampleId, studyId);
+                throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
             return sampleMetadata.isIndexed();
         });
         sampleIdsFromFileIdCache = new MetadataCache<>((studyId, fileId) -> {
             FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
             if (fileMetadata == null) {
-                throw VariantQueryException.fileNotFound(fileId, studyId);
+                throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.getSamples();
         });
@@ -120,21 +120,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         fileNameCache = new MetadataCache<>((studyId, fileId) -> {
             FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
             if (fileMetadata == null) {
-                throw VariantQueryException.fileNotFound(fileId, studyId);
+                throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.getName();
         });
         fileIdIndexedCache = new MetadataCache<>((studyId, fileId) -> {
             FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
             if (fileMetadata == null) {
-                throw VariantQueryException.fileNotFound(fileId, studyId);
+                throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.isIndexed();
         });
         fileIdsFromSampleIdCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = getSampleMetadata(studyId, sampleId);
             if (sampleMetadata == null) {
-                throw VariantQueryException.sampleNotFound(sampleId, studyId);
+                throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
             return sampleMetadata.getFiles();
         });
@@ -366,6 +366,75 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             throw VariantQueryException.studyNotFound(studyId, studies.keySet());
         }
         return studyId;
+    }
+
+    public VariantScoreMetadata getVariantScoreMetadata(int studyId, int scoreId) {
+        return getStudyMetadata(studyId).getVariantScores().stream().filter(s -> s.getId() == scoreId).findFirst().orElse(null);
+    }
+
+    public VariantScoreMetadata getVariantScoreMetadata(int studyId, String scoreMetadataName) {
+        return getVariantScoreMetadata(getStudyMetadata(studyId), scoreMetadataName);
+    }
+
+    private VariantScoreMetadata getVariantScoreMetadata(StudyMetadata studyMetadata, String scoreName) {
+        for (VariantScoreMetadata s : studyMetadata.getVariantScores()) {
+            if (s.getName().equalsIgnoreCase(scoreName)) {
+                return s;
+//                if (s.getCohortId1() == cohort1 && Objects.equals(s.getCohortId2(), cohort2)) {
+//                    return s;
+//                }
+            }
+        }
+        return null;
+    }
+
+    public VariantScoreMetadata getOrCreateVariantScoreMetadata(int studyId, String scoreMetadataName, int cohort1, Integer cohort2)
+            throws StorageEngineException {
+        StudyMetadata sm = updateStudyMetadata(studyId, studyMetadata -> {
+            VariantScoreMetadata scoreMetadata = getVariantScoreMetadata(studyMetadata, scoreMetadataName);
+            if (scoreMetadata != null) {
+                if (cohort1 == scoreMetadata.getCohortId1() && Objects.equals(scoreMetadata.getCohortId2(), cohort2)) {
+                    return studyMetadata;
+                } else {
+                    String cohort1Name = getCohortName(studyId, scoreMetadata.getCohortId1());
+                    String cohort2Name = scoreMetadata.getCohortId2() == null ? null : getCohortName(studyId, scoreMetadata.getCohortId2());
+
+                    throw new StorageEngineException(
+                            "Variant score '" + scoreMetadataName + "' already exists in study '" + studyMetadata.getName() + "' "
+                                    + "for cohorts '" + cohort1Name + "' and '" + cohort2Name + "'. "
+                                    + "Attempting to overwrite the VariantScore with cohorts '" + getCohortName(studyId, cohort1) + "' "
+                                    + "and '" + (cohort2 == null ? null : getCohortName(studyId, cohort2)) + "'");
+                }
+            }
+
+            int scoreId = newVariantScoreId(studyMetadata.getId());
+            scoreMetadata = new VariantScoreMetadata(studyMetadata.getId(), scoreId, scoreMetadataName, "", cohort1, cohort2);
+            studyMetadata.getVariantScores().add(scoreMetadata);
+            return studyMetadata;
+        });
+        return getVariantScoreMetadata(sm, scoreMetadataName);
+    }
+
+    public <E extends Exception> VariantScoreMetadata updateVariantScoreMetadata(int studyId, int scoreId,
+                                                                                 UpdateFunction<VariantScoreMetadata, E> updater)
+            throws StorageEngineException, E {
+        updateStudyMetadata(studyId, studyMetadata -> {
+            VariantScoreMetadata scoreMetadata = studyMetadata.getVariantScores()
+                    .stream()
+                    .filter(s -> s.getId() == scoreId)
+                    .findFirst()
+                    .orElse(null);
+
+            if (scoreMetadata == null) {
+                throw VariantQueryException.scoreNotFound(scoreId, getStudyName(studyId));
+            }
+
+            updater.update(scoreMetadata);
+
+            return studyMetadata;
+        });
+
+        return getVariantScoreMetadata(studyId, scoreId);
     }
 
     public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
@@ -713,7 +782,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     /**
      * Get a list of the samples to be returned, given a study and a list of samples to be returned.
-     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition}
+     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition(Map)}
      *
      * @param sm                    Study metadata
      * @param includeSamples        List of samples to be included in the result
@@ -1341,6 +1410,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileId;
     }
 
+    public Map<String, Integer> registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
+        return registerCohorts(study, Collections.singletonMap(cohortName, samples));
+    }
+
     public Map<String, Integer> registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
             throws StorageEngineException {
         int studyId = getStudyId(study);
@@ -1366,6 +1439,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     protected int newCohortId(int studyId) throws StorageEngineException {
         return projectDBAdaptor.generateId(studyId, "cohort");
+    }
+
+    protected int newVariantScoreId(int studyId) throws StorageEngineException {
+        return projectDBAdaptor.generateId(studyId, "variantScore");
     }
 
     protected int newTaskId(int studyId) throws StorageEngineException {
@@ -1437,7 +1514,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
      * @param jobOperationName   Job operation name used to create the jobName and as {@link TaskMetadata#getOperationName()}
      * @param fileIds            Files to be processed in this batch.
      * @param resume             Resume operation. Assume that previous operation went wrong.
-     * @param type               Operation type as {@link TaskMetadata#type}
+     * @param type               Operation type as {@link TaskMetadata.Type}
      * @param allowConcurrent    Predicate to test if the new operation can be executed at the same time as a non ready operation.
      *                           If not, throws {@link StorageEngineException#otherOperationInProgressException}
      * @return                   The current batchOperation
