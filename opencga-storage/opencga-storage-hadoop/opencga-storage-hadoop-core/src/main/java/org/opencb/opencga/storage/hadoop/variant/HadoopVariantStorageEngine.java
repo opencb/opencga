@@ -59,6 +59,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.query.DBAdaptorVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
@@ -89,6 +90,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
+import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -840,6 +842,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     public void removeStudy(String studyName) throws StorageEngineException {
         int studyId = getMetadataManager().getStudyId(studyName);
         removeFiles(studyName, getMetadataManager().getIndexedFiles(studyId).stream().map(Object::toString).collect(Collectors.toList()));
+    }
+
+    @Override
+    public void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
+                                 VariantScoreFormatDescriptor descriptor, ObjectMap options)
+            throws StorageEngineException {
+        new HadoopVariantScoreLoader(getDBAdaptor(), ioConnectorProvider)
+                .loadVariantScore(scoreFile, study, scoreName, cohort1, cohort2, descriptor, options);
     }
 
     private HBaseCredentials getDbCredentials() throws StorageEngineException {

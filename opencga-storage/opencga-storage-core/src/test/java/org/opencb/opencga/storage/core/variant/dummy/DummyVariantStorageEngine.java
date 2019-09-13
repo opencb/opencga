@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -25,6 +26,7 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 
 import java.io.IOException;
 import java.net.URI;
@@ -95,7 +97,17 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
+                                 VariantScoreFormatDescriptor descriptor, ObjectMap options) {
+        throw new UnsupportedOperationException("Unable to load VariantScore in " + getStorageEngineId());
+    }
+
+    @Override
     public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
         return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+    }
+
+    @Override
+    public void testConnection() throws StorageEngineException {
     }
 }

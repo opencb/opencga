@@ -49,7 +49,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.extractFileId;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.extractFileIdOrNull;
 
 public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
     private static final String NUM_FILES = "numFiles";
@@ -373,7 +373,7 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
             VariantType type = variant.getType();
             int chromosomeIdx = FileStatsWritable.getChromosomeIdx(variant.getChromosome());
             for (Cell cell : value.rawCells()) {
-                Integer fileId = extractFileId(
+                Integer fileId = extractFileIdOrNull(
                         cell.getQualifierArray(),
                         cell.getQualifierOffset(),
                         cell.getQualifierLength());

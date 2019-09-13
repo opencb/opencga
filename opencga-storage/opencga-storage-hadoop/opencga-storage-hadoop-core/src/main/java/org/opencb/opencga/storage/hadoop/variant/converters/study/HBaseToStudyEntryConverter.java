@@ -25,13 +25,16 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantScore;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -189,6 +192,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Map<Integer, List<Pair<Integer, List<String>>>> sampleDataMap = new HashMap<>();
         Map<Integer, List<Pair<String, PhoenixArray>>> filesMap = new HashMap<>();
         Map<Integer, Map<Integer, VariantStats>> stats = new HashMap<>();
+        Map<Integer, List<VariantScore>> scores = new HashMap<>();
 
         Variant variant = row.walker()
                 .onStudy(studies::add)
@@ -196,7 +200,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 .onSample(sampleColumn -> {
                     studies.add(sampleColumn.getStudyId());
                     sampleDataMap.computeIfAbsent(sampleColumn.getStudyId(), s -> new ArrayList<>())
-                            .add(Pair.of(sampleColumn.getSampleId(), sampleColumn.getSampleData()));
+                            .add(Pair.of(sampleColumn.getSampleId(), sampleColumn.getMutableSampleData()));
                 })
                 .onFile(fileColumn -> {
                     studies.add(fileColumn.getStudyId());
@@ -207,7 +211,29 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     studies.add(statsColumn.getStudyId());
                     stats.computeIfAbsent(statsColumn.getStudyId(), s -> new HashMap<>())
                             .put(statsColumn.getCohortId(), statsConverter.convert(statsColumn));
-                }).walk();
+                })
+                .onVariantScore(variantScoreColumn -> {
+                    int studyId = variantScoreColumn.getStudyId();
+                    for (VariantScoreMetadata variantScoreMetadata : getStudyMetadata(studyId).getVariantScores()) {
+                        if (variantScoreMetadata.getId() == variantScoreColumn.getScoreId()) {
+                            String cohortId1 = metadataManager.getCohortName(studyId, variantScoreMetadata.getCohortId1());
+                            String cohortId2 = variantScoreMetadata.getCohortId2() == null
+                                    ? null
+                                    : metadataManager.getCohortName(studyId, variantScoreMetadata.getCohortId2());
+                            VariantScore variantScore = new VariantScore(
+                                    variantScoreMetadata.getName(),
+                                    cohortId1,
+                                    cohortId2,
+                                    variantScoreColumn.getScore(),
+                                    variantScoreColumn.getPValue());
+                            scores.computeIfAbsent(studyId, s -> new LinkedList<>()).add(variantScore);
+                            return;
+                        }
+                    }
+                    // This is highly improvable
+                    throw VariantQueryException.scoreNotFound(variantScoreColumn.getScoreId(), metadataManager.getStudyName(studyId));
+                })
+                .walk();
 
         HashMap<Integer, StudyEntry> map = new HashMap<>();
         for (Integer studyId : studies) {
@@ -217,6 +243,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             List<Pair<String, PhoenixArray>> files = filesMap.getOrDefault(studyId, Collections.emptyList());
 
             StudyEntry studyEntry = convert(samplesData, files, variant, studyMetadata, fillMissingColumnValue);
+            studyEntry.setScores(scores.getOrDefault(studyId, Collections.emptyList()));
 
             for (Map.Entry<Integer, VariantStats> entry : stats.getOrDefault(studyId, Collections.emptyMap()).entrySet()) {
                 studyEntry.setStats(getCohortName(studyMetadata.getId(), entry.getKey()), entry.getValue());

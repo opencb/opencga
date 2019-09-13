@@ -381,7 +381,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             Map<Integer, Byte> fileIndexMap = new HashMap<>();
             for (Cell cell : result.rawCells()) {
                 Integer fileId = VariantPhoenixHelper
-                        .extractFileId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                        .extractFileIdOrNull(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                 if (fileId != null) {
                     PhoenixArray fileColumn = (PhoenixArray)
                             PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
@@ -395,7 +395,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
             for (Cell cell : result.rawCells()) {
                 Integer sampleId = VariantPhoenixHelper
-                        .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                        .extractSampleIdOrNull(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                 if (sampleId != null && (samplesSet == null || samplesSet.contains(sampleId))) {
                     String gt;
                     boolean validGt;

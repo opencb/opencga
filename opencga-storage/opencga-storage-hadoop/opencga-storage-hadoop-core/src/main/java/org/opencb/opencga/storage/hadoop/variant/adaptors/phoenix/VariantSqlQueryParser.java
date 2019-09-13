@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -258,6 +259,15 @@ public class VariantSqlQueryParser {
                         }
                     }
                 });
+            }
+            if (returnedFields.contains(VariantField.STUDIES_SCORES)) {
+                for (StudyMetadata studyMetadata : queryFields.getStudyMetadatas().values()) {
+                    for (VariantScoreMetadata variantScore : studyMetadata.getVariantScores()) {
+                        sb.append(",\"");
+                        sb.append(VariantPhoenixHelper.getVariantScoreColumn(variantScore.getStudyId(), variantScore.getId()));
+                        sb.append('"');
+                    }
+                }
             }
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);

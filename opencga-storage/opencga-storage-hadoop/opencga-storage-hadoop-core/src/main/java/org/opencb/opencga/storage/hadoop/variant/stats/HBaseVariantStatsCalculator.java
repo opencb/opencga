@@ -145,7 +145,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                             }
                         }
                     })
-                    .onFillMissing(fillMissingColumnValue::set)
+                    .onFillMissing((studyId, value) -> fillMissingColumnValue.set(value))
                     .walk();
 
             // If there are multiple different alternates, rearrange genotype

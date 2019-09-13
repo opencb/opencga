@@ -1094,7 +1094,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     public void testExpressionQuery() throws StorageEngineException {
         Collection<String> genes;
         Query query = new Query(ANNOT_EXPRESSION.key(), "non_existing_tissue");
-        QueryResult<Variant> result = variantStorageEngine.get(query, null);
+        QueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
         assertEquals(0, result.getNumResults());
 
         for (String tissue : Arrays.asList("umbilical cord", "midbrain")) {
@@ -1623,7 +1623,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_fileNotFound() {
-        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyMetadata.getName()));
+//        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyMetadata.getName()));
+        VariantQueryException e = VariantQueryException.fileNotFound("-1", studyMetadata.getName());
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         count(new Query(FILE.key(), -1));
@@ -1716,15 +1717,23 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertEquals(variant1.toString(), variant2.toString());
             assertEquals(expectedSamples, queryResult.getSamples());
 
+            LinkedHashMap<String, Integer> thisSamplesPosition1 = variant1.getStudy(studyMetadata.getName()).getSamplesPosition();
+            LinkedHashMap<String, Integer> thisSamplesPosition2 = variant2.getStudy(studyMetadata.getName()).getSamplesPosition();
             if (samplesPosition1 == null) {
-                samplesPosition1 = variant1.getStudy(studyMetadata.getName()).getSamplesPosition();
+                samplesPosition1 = thisSamplesPosition1;
             }
             if (samplesPosition2 == null) {
-                samplesPosition2 = variant2.getStudy(studyMetadata.getName()).getSamplesPosition();
+                samplesPosition2 = thisSamplesPosition2;
                 assertEquals(samplesName, new ArrayList<>(samplesPosition2.keySet()));
             }
-            assertSame(samplesPosition1, variant1.getStudy(studyMetadata.getName()).getSamplesPosition());
-            assertSame(samplesPosition2, variant2.getStudy(studyMetadata.getName()).getSamplesPosition());
+            assertEquals(samplesPosition1, thisSamplesPosition1);
+            assertEquals(samplesPosition2, thisSamplesPosition2);
+
+            assertEquals(System.identityHashCode(samplesPosition1), System.identityHashCode(thisSamplesPosition1));
+            assertEquals(System.identityHashCode(samplesPosition2), System.identityHashCode(thisSamplesPosition2));
+
+            assertSame(samplesPosition1, thisSamplesPosition1);
+            assertSame(samplesPosition2, thisSamplesPosition2);
             for (String sampleName : samplesName) {
                 String gt1 = variant1.getStudy(studyMetadata.getName()).getSampleData(sampleName, "GT");
                 String gt2 = variant2.getStudy(studyMetadata.getName()).getSampleData(sampleName, "GT");

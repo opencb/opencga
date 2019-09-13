@@ -244,7 +244,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
             Map<Integer, String> gtMap = new HashMap<>();
             for (Cell cell : value.rawCells()) {
                 Integer sampleId = VariantPhoenixHelper
-                        .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                        .extractSampleIdOrNull(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                 if (sampleId != null) {
                     ImmutableBytesWritable ptr = new ImmutableBytesWritable(
                             cell.getValueArray(),

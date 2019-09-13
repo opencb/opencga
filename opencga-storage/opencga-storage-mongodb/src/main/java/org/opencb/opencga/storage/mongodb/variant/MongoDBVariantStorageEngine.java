@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -303,6 +304,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }
+    }
+
+    @Override
+    public void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
+                                 VariantScoreFormatDescriptor descriptor, ObjectMap options) {
+        throw new UnsupportedOperationException("Unable to load VariantScore in " + getStorageEngineId());
     }
 
     @Override

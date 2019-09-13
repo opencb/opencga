@@ -80,10 +80,10 @@ public class PhoenixHelper {
         }
     }
 
-    public static boolean positionAtArrayElement(ImmutableBytesWritable ptr, int arrayIndex, PDataType instance, Integer byteSize) {
+    public static boolean positionAtArrayElement(ImmutableBytesWritable ptr, int arrayIndex, PDataType pDataType, Integer byteSize) {
 //        return PArrayDataTypeDecoder.positionAtArrayElement(ptr, arrayIndex, instance, byteSize);
         try {
-            Object o = positionAtArrayElement.invoke(null, ptr, arrayIndex, instance, byteSize);
+            Object o = positionAtArrayElement.invoke(null, ptr, arrayIndex, pDataType, byteSize);
             return o == null || (boolean) o;
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
