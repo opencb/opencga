@@ -93,8 +93,8 @@ public class CatalogManager implements AutoCloseable {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
         this.initializeAdmin();
-        auditManager = new AuditManager(catalogDBAdaptorFactory, this.configuration);
-        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
+        authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, this.configuration);
+        auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, this.configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,

@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
@@ -10,7 +9,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -48,11 +46,12 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
+import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
+import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 public class PanelManager extends ResourceManager<Panel> {
@@ -179,39 +178,52 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String token)
-            throws CatalogException {
+    public QueryResult<Panel> create(String studyStr, Panel panel, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-        // 1. We check everything can be done
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("panel", panel)
+                .append("options", options)
+                .append("token", token);
+        try {
+            // 1. We check everything can be done
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
-        // Check all the panel fields
-        ParamUtils.checkAlias(panel.getId(), "id");
-        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
-        panel.setRelease(studyManager.getCurrentRelease(study));
-        panel.setVersion(1);
-        panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
-        panel.setCreationDate(TimeUtils.getTime());
-        panel.setModificationDate(TimeUtils.getTime());
-        panel.setStatus(new Status());
-        panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
-        panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
-        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
-        panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
-        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
-        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
-        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
-        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
-        panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
+            // Check all the panel fields
+            ParamUtils.checkAlias(panel.getId(), "id");
+            panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
+            panel.setRelease(studyManager.getCurrentRelease(study));
+            panel.setVersion(1);
+            panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
+            panel.setCreationDate(TimeUtils.getTime());
+            panel.setModificationDate(TimeUtils.getTime());
+            panel.setStatus(new Status());
+            panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
+            panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
+            panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
+            panel.setPhenotypes(ParamUtils.defaultObject(panel.getPhenotypes(), Collections.emptyList()));
+            panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
+            panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
+            panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
+            panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
+            panel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
 
-        fillDefaultStats(panel);
+            fillDefaultStats(panel);
 
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        panelDBAdaptor.insert(study.getUid(), panel, options);
-        return getPanel(study.getUid(), panel.getUuid(), options);
+            panelDBAdaptor.insert(study.getUid(), panel, options);
+            auditManager.auditCreate(userId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    AuditRecord.Entity.PANEL, ERROR);
+
+            return getPanel(study.getUid(), panel.getUuid(), options);
+        } catch (CatalogException e) {
+            auditManager.auditCreate(userId, panel.getId(), "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.PANEL,
+                    ERROR);
+            throw e;
+        }
     }
 
     public QueryResult<Panel> importAllGlobalPanels(String studyStr, QueryOptions options, String token) throws CatalogException {
@@ -564,41 +576,62 @@ public class PanelManager extends ResourceManager<Panel> {
      */
     public QueryResult<Panel> update(String studyStr, String panelId, PanelUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
-        ObjectMap parameters = new ObjectMap();
-        if (updateParams != null) {
-            parameters = updateParams.getUpdateMap();
-        }
-
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
-
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
-        Panel panel = internalGet(study.getUid(), panelId, INCLUDE_PANEL_IDS, userId).first();
 
-        // Check update permissions
-        authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.UPDATE);
-
-        if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
-                    PanelDBAdaptor.QueryParams.ID.key());
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("panelId", panelId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+        Panel panel;
+        try {
+            panel = internalGet(study.getUid(), panelId, INCLUDE_PANEL_IDS, userId).first();
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, panelId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.PANEL, ERROR);
+            throw e;
         }
 
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
+        try {
+            ObjectMap parameters = new ObjectMap();
+            if (updateParams != null) {
+                parameters = updateParams.getUpdateMap();
+            }
+
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+                ParamUtils.checkUpdateParametersMap(parameters);
+            }
+
+            // Check update permissions
+            authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.UPDATE);
+
+            if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
+                ParamUtils.checkAlias(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
+                        PanelDBAdaptor.QueryParams.ID.key());
+            }
+
+            if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+                // We do need to get the current release to properly create a new version
+                options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
+            }
+
+            WriteResult result = panelDBAdaptor.update(panel.getUid(), parameters, options);
+            auditManager.auditUpdate(userId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    AuditRecord.Entity.PANEL, SUCCESS);
+
+            QueryResult<Panel> queryResult = panelDBAdaptor.get(panel.getUid(),
+                    new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+            queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    AuditRecord.Entity.PANEL, ERROR);
+            throw e;
         }
-
-        WriteResult result = panelDBAdaptor.update(panel.getUid(), parameters, options);
-        auditManager.recordUpdate(AuditRecord.Resource.panel, panel.getUid(), userId, parameters, null, null);
-
-        QueryResult<Panel> queryResult = panelDBAdaptor.get(panel.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
-
-        return queryResult;
     }
 
     @Override
@@ -697,14 +730,20 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
+    public WriteResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         WriteResult writeResult = new WriteResult();
 
-        String userId;
-        Study study;
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
 
-        StopWatch watch = StopWatch.createStarted();
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        Query auditQuery = new Query(query);
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("params", params)
+                .append("token", token);
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
         boolean checkPermissions;
@@ -712,9 +751,6 @@ public class PanelManager extends ResourceManager<Panel> {
         // We try to get an iterator containing all the families to be deleted
         DBIterator<Panel> iterator;
         try {
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = studyManager.resolveId(studyStr, userId);
-
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = panelDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
@@ -722,10 +758,9 @@ public class PanelManager extends ResourceManager<Panel> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            logger.error("Delete panel: {}", e.getMessage(), e);
-            writeResult.setError(new Error(-1, null, e.getMessage()));
-            writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
-            return writeResult;
+            auditManager.auditDelete(userId, operationUuid, "", "", study.getId(), study.getUuid(), auditQuery, auditParams,
+                    AuditRecord.Entity.PANEL, ERROR);
+            throw e;
         }
 
         while (iterator.hasNext()) {
@@ -742,9 +777,15 @@ public class PanelManager extends ResourceManager<Panel> {
 
                 // Delete the panel
                 writeResult.concat(panelDBAdaptor.delete(panel.getUid()));
+
+                auditManager.auditDelete(userId, operationUuid, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditQuery,
+                        auditParams, AuditRecord.Entity.PANEL, SUCCESS);
             } catch (Exception e) {
                 writeResult.getFailed().add(new WriteResult.Fail(panel.getId(), e.getMessage()));
                 logger.debug("Cannot delete panel {}: {}", panel.getId(), e.getMessage(), e);
+
+                auditManager.auditDelete(userId, operationUuid, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditQuery,
+                        auditParams, AuditRecord.Entity.PANEL, ERROR);
             }
         }
 

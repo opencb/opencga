@@ -196,9 +196,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param query Query object.
      * @param params Map containing additional parameters to be considered for the deletion.
      * @param sessionId Session id of the user logged in.
+     * @throws CatalogException if the study or the user do not exist.
      * @return A WriteResult object containing the number of matching elements, deleted and elements that could not be deleted.
      */
-    public abstract WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId);
+    public abstract WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

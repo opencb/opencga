@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
@@ -46,6 +47,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
+import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -158,8 +162,13 @@ public class UserManager extends AbstractManager {
 
     public QueryResult<User> create(User user, @Nullable String token) throws CatalogException {
         // Check if the users can be registered publicly or just the admin.
+        ObjectMap auditParams = new ObjectMap("user", user);
+
+        String userId = user.getId();
         if (!authorizationManager.isPublicRegistration()) {
-            if (!"admin".equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+             userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
+            if (!"admin".equals(userId)) {
+                auditManager.auditCreate(userId, user.getId(), "", "", "", auditParams, AuditRecord.Entity.USER, ERROR);
                 throw new CatalogException("The registration is closed to the public: Please talk to your administrator.");
             }
         }
@@ -202,8 +211,10 @@ public class UserManager extends AbstractManager {
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             userDBAdaptor.insert(user, QueryOptions.empty());
+
+            auditManager.auditCreate(userId, user.getId(), "", "", "", auditParams, AuditRecord.Entity.USER, SUCCESS);
+
             QueryResult<User> queryResult = userDBAdaptor.get(user.getId(), QueryOptions.empty(), null);
-            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), user.getId(), queryResult.first(), null, null);
 
             if (StringUtils.isNotEmpty(password)) {
                 authenticationManagerMap.get(INTERNAL_AUTHORIZATION).newPassword(user.getId(), password);
@@ -215,6 +226,9 @@ public class UserManager extends AbstractManager {
                 logger.error("ERROR! DELETING USER! " + user.getId());
                 catalogIOManagerFactory.getDefault().deleteUser(user.getId());
             }
+
+            auditManager.auditCreate(userId, user.getId(), "", "", "", auditParams, AuditRecord.Entity.USER, ERROR);
+
             throw e;
         }
     }
@@ -486,30 +500,41 @@ public class UserManager extends AbstractManager {
         return userQueryResult;
     }
 
-    public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String token)
-            throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkObj(parameters, "parameters");
-        ParamUtils.checkParameter(token, "token");
+    public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+        String loggedUser = getUserId(token);
 
-        validateUserAndToken(userId, token);
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|email|organization|attributes")) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("updateParams", parameters)
+                .append("options", options)
+                .append("token", token);
+        try {
+            ParamUtils.checkParameter(userId, "userId");
+            ParamUtils.checkObj(parameters, "parameters");
+            ParamUtils.checkParameter(token, "token");
+
+            validateUserAndToken(userId, token);
+            for (String s : parameters.keySet()) {
+                if (!s.matches("name|email|organization|attributes")) {
+                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                }
             }
+
+            if (parameters.containsKey("email")) {
+                checkEmail(parameters.getString("email"));
+            }
+            userDBAdaptor.updateUserLastModified(userId);
+            WriteResult result = userDBAdaptor.update(userId, parameters);
+            auditManager.auditUpdate(loggedUser, userId, "", "", "", auditParams, AuditRecord.Entity.USER, SUCCESS);
+
+            QueryResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()), "");
+            queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(loggedUser, userId, "", "", "", auditParams, AuditRecord.Entity.USER, ERROR);
+            throw e;
         }
-
-        if (parameters.containsKey("email")) {
-            checkEmail(parameters.getString("email"));
-        }
-        userDBAdaptor.updateUserLastModified(userId);
-        WriteResult result = userDBAdaptor.update(userId, parameters);
-        auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
-
-        QueryResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()), "");
-        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
-
-        return queryResult;
     }
 
     /**
@@ -527,20 +552,33 @@ public class UserManager extends AbstractManager {
 
         String tokenUser = getUserId(token);
 
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userIdList", userIdList)
+                .append("options", options)
+                .append("token", token);
+
         List<String> userIds = Arrays.asList(userIdList.split(","));
         List<QueryResult<User>> deletedUsers = new ArrayList<>(userIds.size());
         for (String userId : userIds) {
             if ("admin".equals(tokenUser) || userId.equals(tokenUser)) {
-                WriteResult result = userDBAdaptor.delete(userId, options);
+                try {
+                    WriteResult result = userDBAdaptor.delete(userId, options);
 
-                Query query = new Query()
-                        .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                        .append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
-                QueryResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
-                deletedUser.setDbTime(deletedUser.getDbTime() + result.getDbTime());
+                    auditManager.auditDelete(tokenUser, operationUuid, userId, "", "", "", new Query(), auditParams,
+                            AuditRecord.Entity.USER, SUCCESS);
 
-                auditManager.recordDeletion(AuditRecord.Resource.user, userId, tokenUser, deletedUser.first(), null, null);
-                deletedUsers.add(deletedUser);
+                    Query query = new Query()
+                            .append(UserDBAdaptor.QueryParams.ID.key(), userId)
+                            .append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
+                    QueryResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
+                    deletedUser.setDbTime(deletedUser.getDbTime() + result.getDbTime());
+
+                    deletedUsers.add(deletedUser);
+                } catch (CatalogException e) {
+                    auditManager.auditDelete(tokenUser, operationUuid, userId, "", "", "", new Query(), auditParams,
+                            AuditRecord.Entity.USER, ERROR);
+                }
             }
         }
         return deletedUsers;
@@ -598,7 +636,7 @@ public class UserManager extends AbstractManager {
 
         if (token == null) {
             // TODO: We should raise better exceptions. It could fail for other reasons.
-            auditManager.recordLogin(username, false);
+//            auditManager.recordLogin(username, false);
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
@@ -626,7 +664,7 @@ public class UserManager extends AbstractManager {
             }
         }
 
-        auditManager.recordLogin(userId, true);
+//        auditManager.recordLogin(userId, true);
         return token;
     }
 
@@ -961,7 +999,7 @@ public class UserManager extends AbstractManager {
     }
 
     private void validateUserAndToken(String userId, String jwtToken) throws CatalogException {
-        Boolean validToken = null;
+        boolean validToken;
         for (AuthenticationManager authenticationManager : authenticationManagerMap.values()) {
             try {
                 if (!userId.equals(authenticationManager.getUserId(jwtToken))) {
@@ -974,12 +1012,10 @@ public class UserManager extends AbstractManager {
                 continue;
             }
 
-            if (validToken != null) {
-                if (validToken) {
-                    return;
-                } else {
-                    throw new CatalogException("Invalid authentication token for user: " + userId);
-                }
+            if (validToken) {
+                return;
+            } else {
+                throw new CatalogException("Invalid authentication token for user: " + userId);
             }
         }
 

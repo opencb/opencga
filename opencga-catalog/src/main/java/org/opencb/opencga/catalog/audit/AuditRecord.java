@@ -18,6 +18,9 @@ package org.opencb.opencga.catalog.audit;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+
+import java.util.Date;
 
 /**
  * Created on 18/08/15.
@@ -26,74 +29,157 @@ import org.opencb.commons.datastore.core.ObjectMap;
  */
 public class AuditRecord {
 
-    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, family, interpretation, tool,
-        variant, variableSet}
-    public enum Action {create, update, view, delete, download, restore, index, login, logout, share}
-    public enum Magnitude {low, medium, high}
-
-    private Object id;
-    private Resource resource;
-    private Action action;
-    private Magnitude importance;
-    private ObjectMap before;
-    private ObjectMap after;
-    /*
-     * Time in milliseconds
-     */
-    private long timeStamp;
     private String userId;
-    private String description;
+    private String apiVersion;
+    private String operationUuid;
+    private String id;
+    private String uuid;
+    private String studyId;
+    private String studyUuid;
+
+    private Query query;
+    private ObjectMap params;
+
+    private Entity entity;
+    private Action action;
+
+    private int status;
+
+    private Date date;
     private ObjectMap attributes;
+
+    public static final int SUCCESS = 0;
+    public static final int ERROR = 1;
 
     public AuditRecord() {
     }
 
-    public AuditRecord(Object id, Resource resource, Action action, Magnitude importance, ObjectMap before, ObjectMap after, long timeStamp,
-                       String userId, String description, ObjectMap attributes) {
-        this.id = id;
-        this.resource = resource;
-        this.action = action;
-        this.importance = importance;
-        this.before = before;
-        this.after = after;
-        this.timeStamp = timeStamp;
+    public AuditRecord(String userId, String apiVersion, String operationUuid, String id, String uuid, String studyId, String studyUuid,
+                       Query query, ObjectMap params, Entity entity, Action action, int status, Date date, ObjectMap attributes) {
         this.userId = userId;
-        this.description = description;
+        this.apiVersion = apiVersion;
+        this.operationUuid = operationUuid;
+        this.id = id;
+        this.uuid = uuid;
+        this.studyId = studyId;
+        this.studyUuid = studyUuid;
+        this.query = query;
+        this.params = params;
+        this.entity = entity;
+        this.action = action;
+        this.status = status;
+        this.date = date;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AuditRecord{");
-        sb.append("id=").append(id);
-        sb.append(", resource=").append(resource);
+        sb.append("userId='").append(userId).append('\'');
+        sb.append(", apiVersion='").append(apiVersion).append('\'');
+        sb.append(", operationUuid='").append(operationUuid).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", studyId='").append(studyId).append('\'');
+        sb.append(", studyUuid='").append(studyUuid).append('\'');
+        sb.append(", query=").append(query);
+        sb.append(", params=").append(params);
+        sb.append(", entity=").append(entity);
         sb.append(", action=").append(action);
-        sb.append(", importance=").append(importance);
-        sb.append(", before=").append(before);
-        sb.append(", after=").append(after);
-        sb.append(", timeStamp=").append(timeStamp);
-        sb.append(", userId='").append(userId).append('\'');
-        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", date=").append(date);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
 
-    public Object getId() {
+    public String getUserId() {
+        return userId;
+    }
+
+    public AuditRecord setUserId(String userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    public String getApiVersion() {
+        return apiVersion;
+    }
+
+    public AuditRecord setApiVersion(String apiVersion) {
+        this.apiVersion = apiVersion;
+        return this;
+    }
+
+    public String getOperationUuid() {
+        return operationUuid;
+    }
+
+    public AuditRecord setOperationUuid(String operationUuid) {
+        this.operationUuid = operationUuid;
+        return this;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public AuditRecord setId(Object id) {
+    public AuditRecord setId(String id) {
         this.id = id;
         return this;
     }
 
-    public Resource getResource() {
-        return resource;
+    public String getUuid() {
+        return uuid;
     }
 
-    public AuditRecord setResource(Resource resource) {
-        this.resource = resource;
+    public AuditRecord setUuid(String uuid) {
+        this.uuid = uuid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public AuditRecord setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getStudyUuid() {
+        return studyUuid;
+    }
+
+    public AuditRecord setStudyUuid(String studyUuid) {
+        this.studyUuid = studyUuid;
+        return this;
+    }
+
+    public Query getQuery() {
+        return query;
+    }
+
+    public AuditRecord setQuery(Query query) {
+        this.query = query;
+        return this;
+    }
+
+    public ObjectMap getParams() {
+        return params;
+    }
+
+    public AuditRecord setParams(ObjectMap params) {
+        this.params = params;
+        return this;
+    }
+
+    public Entity getEntity() {
+        return entity;
+    }
+
+    public AuditRecord setEntity(Entity entity) {
+        this.entity = entity;
         return this;
     }
 
@@ -106,48 +192,21 @@ public class AuditRecord {
         return this;
     }
 
-    public ObjectMap getBefore() {
-        return before;
+    public int getStatus() {
+        return status;
     }
 
-    public AuditRecord setBefore(ObjectMap before) {
-        this.before = before;
+    public AuditRecord setStatus(int status) {
+        this.status = status;
         return this;
     }
 
-    public ObjectMap getAfter() {
-        return after;
+    public Date getDate() {
+        return date;
     }
 
-    public AuditRecord setAfter(ObjectMap after) {
-        this.after = after;
-        return this;
-    }
-
-    public long getTimeStamp() {
-        return timeStamp;
-    }
-
-    public AuditRecord setTimeStamp(long timeStamp) {
-        this.timeStamp = timeStamp;
-        return this;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public AuditRecord setUserId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public AuditRecord setDescription(String description) {
-        this.description = description;
+    public AuditRecord setDate(Date date) {
+        this.date = date;
         return this;
     }
 
@@ -160,12 +219,119 @@ public class AuditRecord {
         return this;
     }
 
-    public Magnitude getImportance() {
-        return importance;
+    public enum Entity {
+        USER,
+        PROJECT,
+        STUDY,
+        FILE,
+        SAMPLE,
+        JOB,
+        INDIVIDUAL,
+        COHORT,
+        PANEL,
+        FAMILY,
+        CLINICAL,
+        INTERPRETATION,
+        VARIANT,
+        ALIGNMENT,
+        VARIABLE_SET
     }
 
-    public AuditRecord setImportance(Magnitude importance) {
-        this.importance = importance;
-        return this;
+    public enum Action {
+        CREATE,
+        UPDATE,
+        INFO,
+        SEARCH,
+        DELETE,
+        DOWNLOAD,
+        INDEX,
+        CHANGE_PERMISSION,
+        LOGIN,
+        UPLOAD,
+        LINK,
+        ADD_VARIABLE,
+        REMOVE_VARIABLE,
+
+        // Variants
+        SAMPLE_DATA,
+        FACET
+    }
+
+    public static class Result {
+
+        private int dbTime;
+        private int numMatches;
+        private int numModified;
+        private String warning;
+        private String error;
+
+        public Result() {
+        }
+
+        public Result(int dbTime, int numMatches, String warning, String error) {
+            this.dbTime = dbTime;
+            this.numMatches = numMatches;
+            this.warning = warning;
+            this.error = error;
+        }
+
+        public Result(int dbTime, int numMatches, int numModified, String warning, String error) {
+            this.dbTime = dbTime;
+            this.numMatches = numMatches;
+            this.numModified = numModified;
+            this.warning = warning;
+            this.error = error;
+        }
+
+        @Override
+        public String toString() {
+            return "Result{"
+                    + "dbTime=" + dbTime
+                    + ", numMatches=" + numMatches
+                    + ", numModified=" + numModified
+                    + ", warning='" + warning + '\''
+                    + ", error='" + error + '\''
+                    + '}';
+        }
+
+        public int getDbTime() {
+            return dbTime;
+        }
+
+        public void setDbTime(int dbTime) {
+            this.dbTime = dbTime;
+        }
+
+        public int getNumMatches() {
+            return numMatches;
+        }
+
+        public void setNumMatches(int numMatches) {
+            this.numMatches = numMatches;
+        }
+
+        public int getNumModified() {
+            return numModified;
+        }
+
+        public void setNumModified(int numModified) {
+            this.numModified = numModified;
+        }
+
+        public String getWarning() {
+            return warning;
+        }
+
+        public void setWarning(String warning) {
+            this.warning = warning;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public void setError(String error) {
+            this.error = error;
+        }
     }
 }

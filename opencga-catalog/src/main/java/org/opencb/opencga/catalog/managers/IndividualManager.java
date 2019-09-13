@@ -17,13 +17,11 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
@@ -55,10 +53,11 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
+import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
@@ -287,15 +286,28 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-        validateNewIndividual(study, individual, sampleIds, userId, true);
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("individual", individual)
+                .append("sampleIds", sampleIds)
+                .append("options", options)
+                .append("token", token);
+        try {
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
+            validateNewIndividual(study, individual, sampleIds, userId, true);
 
-        // Create the individual
-        individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
-        QueryResult<Individual> queryResult = getIndividual(study.getUid(), individual.getUuid(), options);
-        auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getUid(), userId, queryResult.first(), null, null);
+            // Create the individual
+            individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
+            QueryResult<Individual> queryResult = getIndividual(study.getUid(), individual.getUuid(), options);
+            auditManager.auditCreate(userId, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    AuditRecord.Entity.INDIVIDUAL, SUCCESS);
 
-        return queryResult;
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditCreate(userId, individual.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    AuditRecord.Entity.INDIVIDUAL, ERROR);
+            throw e;
+        }
     }
 
     private Map<Long, Integer> checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId)
@@ -439,14 +451,20 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
+    public WriteResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         WriteResult writeResult = new WriteResult();
 
-        String userId;
-        Study study;
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        StopWatch watch = StopWatch.createStarted();
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        Query auditQuery = new Query(query);
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("params", params)
+                .append("token", token);
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
         boolean checkPermissions;
@@ -454,9 +472,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // We try to get an iterator containing all the individuals to be deleted
         DBIterator<Individual> iterator;
         try {
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-            study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-
             // Fix query if it contains any annotation
             fixQuery(study, finalQuery, userId);
             // Fix query if it contains any annotation
@@ -469,10 +484,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            logger.error("No individuals were deleted: {}", e.getMessage(), e);
-            writeResult.setError(new Error(-1, null, "No individuals were deleted: " + e.getMessage()));
-            writeResult.setDbTime((int) watch.getTime(TimeUnit.MILLISECONDS));
-            return writeResult;
+            auditManager.auditDelete(userId, operationUuid, "", "", study.getId(), study.getUuid(), auditQuery, auditParams,
+                    AuditRecord.Entity.INDIVIDUAL, ERROR);
+            throw e;
         }
 
         while (iterator.hasNext()) {
@@ -507,9 +521,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 // Add the results to the current write result
                 writeResult.concat(individualDBAdaptor.delete(individual.getUid()));
 
+                auditManager.auditDelete(userId, operationUuid, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(),
+                        auditQuery, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
             } catch (Exception e) {
                 writeResult.getFailed().add(new WriteResult.Fail(individual.getId(), e.getMessage()));
                 logger.debug("Cannot delete individual {}: {}", individual.getId(), e.getMessage(), e);
+
+                auditManager.auditDelete(userId, operationUuid, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(),
+                        auditQuery, auditParams, AuditRecord.Entity.INDIVIDUAL, ERROR);
             }
         }
 
@@ -605,148 +624,172 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
      */
     public QueryResult<Individual> update(String studyStr, String individualId, IndividualUpdateParams updateParams, QueryOptions options,
                                           String token) throws CatalogException {
-        ObjectMap parameters = new ObjectMap();
-        if (updateParams != null) {
-            parameters = updateParams.getUpdateMap();
-        }
-
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
-
-        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
-            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-            if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS) && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
-                logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
-                options.put(Constants.ACTIONS, actionMap);
-            }
-        }
-
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-        Individual individual = internalGet(study.getUid(), individualId, QueryOptions.empty(), userId).first();
-        long studyUid = study.getUid();
-        long individualUid = individual.getUid();
 
-        // Check permissions...
-        // Only check write annotation permissions if the user wants to update the annotation sets
-        if (updateParams != null && updateParams.getAnnotationSets() != null) {
-            authorizationManager.checkIndividualPermission(studyUid, individualUid, userId,
-                    IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("individualId", individualId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        Individual individual;
+        try {
+            individual = internalGet(study.getUid(), individualId, QueryOptions.empty(), userId).first();
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, individualId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.INDIVIDUAL,
+                    ERROR);
+            throw e;
         }
-        // Only check update permissions if the user wants to update anything apart from the annotation sets
-        if ((parameters.size() == 1 && !parameters.containsKey(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                || parameters.size() > 1) {
-            authorizationManager.checkIndividualPermission(studyUid, individualUid, userId,
-                    IndividualAclEntry.IndividualPermissions.UPDATE);
-        }
 
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), "id");
-
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), updateParams.getId());
-            if (individualDBAdaptor.count(query).first() > 0) {
-                throw new CatalogException("Individual name " + updateParams.getId() + " already in use");
+        try {
+            ObjectMap parameters = new ObjectMap();
+            if (updateParams != null) {
+                parameters = updateParams.getUpdateMap();
             }
-        }
-        if (updateParams != null && updateParams.getDateOfBirth() != null) {
-            if (StringUtils.isEmpty(updateParams.getDateOfBirth())) {
-                parameters.put(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "");
-            } else {
-                if (!TimeUtils.isValidFormat("yyyyMMdd", updateParams.getDateOfBirth())) {
-                    throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
+
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+                ParamUtils.checkUpdateParametersMap(parameters);
+            }
+
+            if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+                Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+                if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
+                        && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
+                    logger.warn("Assuming the user wants to add the list of annotation sets provided");
+                    actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                    options.put(Constants.ACTIONS, actionMap);
                 }
             }
-        }
-        if (updateParams != null && updateParams.getMultiples() != null) {
-            // Check individual names exist
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(IndividualDBAdaptor.QueryParams.ID.key(), StringUtils.join(updateParams.getMultiples().getSiblings(), ","));
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
-            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
-            if (individualQueryResult.getNumResults() < updateParams.getMultiples().getSiblings().size()) {
-                int missing = updateParams.getMultiples().getSiblings().size() - individualQueryResult.getNumResults();
-                throw new CatalogDBException("Missing " + missing + " siblings in the database.");
+
+            long studyUid = study.getUid();
+            long individualUid = individual.getUid();
+
+            // Check permissions...
+            // Only check write annotation permissions if the user wants to update the annotation sets
+            if (updateParams != null && updateParams.getAnnotationSets() != null) {
+                authorizationManager.checkIndividualPermission(studyUid, individualUid, userId,
+                        IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
             }
-        }
-        if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
-            // Check those samples can be used
-            List<String> sampleStringList = updateParams.getSamples();
-            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(studyUid, sampleStringList,
-                    SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResult();
+            // Only check update permissions if the user wants to update anything apart from the annotation sets
+            if ((parameters.size() == 1 && !parameters.containsKey(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                    || parameters.size() > 1) {
+                authorizationManager.checkIndividualPermission(studyUid, individualUid, userId,
+                        IndividualAclEntry.IndividualPermissions.UPDATE);
+            }
 
-            Map<Long, Integer> existingSamplesInIndividual = checkSamplesNotInUseInOtherIndividual(
-                    sampleList.stream().map(Sample::getUid).collect(Collectors.toSet()), studyUid, individualUid);
+            if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
+                ParamUtils.checkAlias(updateParams.getId(), "id");
 
-            List<Sample> updatedSamples = new ArrayList<>();
-            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-            String action = (String) actionMap.getOrDefault(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
-                    ParamUtils.UpdateAction.ADD.name());
-            if (ParamUtils.UpdateAction.ADD.name().equals(action)) {
-                // We will convert the ADD action into a SET to remove existing samples with older versions and replace them for the newest
-                // ones
-                Iterator<Sample> iterator = sampleList.iterator();
-                while (iterator.hasNext()) {
-                    Sample sample = iterator.next();
-                    // We check if the sample is already present in the individual. If so, and the current version is higher than the one
-                    // stored, we will change the version to the current one.
-                    if (existingSamplesInIndividual.containsKey(sample.getUid())
-                            && existingSamplesInIndividual.get(sample.getUid()) < sample.getVersion()) {
-                        existingSamplesInIndividual.put(sample.getUid(), sample.getVersion());
-
-                        // We remove the sample from the list to avoid duplicities
-                        iterator.remove();
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), updateParams.getId());
+                if (individualDBAdaptor.count(query).first() > 0) {
+                    throw new CatalogException("Individual name " + updateParams.getId() + " already in use");
+                }
+            }
+            if (updateParams != null && updateParams.getDateOfBirth() != null) {
+                if (StringUtils.isEmpty(updateParams.getDateOfBirth())) {
+                    parameters.put(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), "");
+                } else {
+                    if (!TimeUtils.isValidFormat("yyyyMMdd", updateParams.getDateOfBirth())) {
+                        throw new CatalogException("Invalid date of birth format. Valid format yyyyMMdd");
                     }
                 }
-                for (Map.Entry<Long, Integer> entry : existingSamplesInIndividual.entrySet()) {
-                    updatedSamples.add(new Sample().setUid(entry.getKey()).setVersion(entry.getValue()));
+            }
+            if (updateParams != null && updateParams.getMultiples() != null) {
+                // Check individual names exist
+                Query query = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), StringUtils.join(updateParams.getMultiples().getSiblings(), ","));
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+                if (individualQueryResult.getNumResults() < updateParams.getMultiples().getSiblings().size()) {
+                    int missing = updateParams.getMultiples().getSiblings().size() - individualQueryResult.getNumResults();
+                    throw new CatalogDBException("Missing " + missing + " siblings in the database.");
                 }
+            }
+            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
+                // Check those samples can be used
+                List<String> sampleStringList = updateParams.getSamples();
+                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(studyUid, sampleStringList,
+                        SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResult();
 
+                Map<Long, Integer> existingSamplesInIndividual = checkSamplesNotInUseInOtherIndividual(
+                        sampleList.stream().map(Sample::getUid).collect(Collectors.toSet()), studyUid, individualUid);
+
+                List<Sample> updatedSamples = new ArrayList<>();
+                Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+                String action = (String) actionMap.getOrDefault(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
+                        ParamUtils.UpdateAction.ADD.name());
+                if (ParamUtils.UpdateAction.ADD.name().equals(action)) {
+                    // We will convert the ADD action into a SET to remove existing samples with older versions and replace them for the
+                    // newest ones
+                    Iterator<Sample> iterator = sampleList.iterator();
+                    while (iterator.hasNext()) {
+                        Sample sample = iterator.next();
+                        // We check if the sample is already present in the individual. If so, and the current version is higher than the
+                        // one stored, we will change the version to the current one.
+                        if (existingSamplesInIndividual.containsKey(sample.getUid())
+                                && existingSamplesInIndividual.get(sample.getUid()) < sample.getVersion()) {
+                            existingSamplesInIndividual.put(sample.getUid(), sample.getVersion());
+
+                            // We remove the sample from the list to avoid duplicities
+                            iterator.remove();
+                        }
+                    }
+                    for (Map.Entry<Long, Integer> entry : existingSamplesInIndividual.entrySet()) {
+                        updatedSamples.add(new Sample().setUid(entry.getKey()).setVersion(entry.getValue()));
+                    }
+
+                    updatedSamples.addAll(sampleList);
+
+                    // Replace action
+                    actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name());
+                }
+                // We add the rest of the samples the user want to add
                 updatedSamples.addAll(sampleList);
 
-                // Replace action
-                actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(),  ParamUtils.UpdateAction.SET.name());
+                // Update the parameters with the proper list of samples
+                parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), updatedSamples);
             }
-            // We add the rest of the samples the user want to add
-            updatedSamples.addAll(sampleList);
 
-            // Update the parameters with the proper list of samples
-            parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), updatedSamples);
+            if (updateParams != null && StringUtils.isNotEmpty(updateParams.getFather())) {
+                QueryResult<Individual> queryResult = internalGet(studyUid, updateParams.getFather(), INCLUDE_INDIVIDUAL_IDS, userId);
+                parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
+                parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), queryResult.first().getUid());
+            }
+            if (updateParams != null && StringUtils.isNotEmpty(updateParams.getMother())) {
+                QueryResult<Individual> queryResult = internalGet(studyUid, updateParams.getMother(), INCLUDE_INDIVIDUAL_IDS, userId);
+                parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
+                parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), queryResult.first().getUid());
+            }
+
+            checkUpdateAnnotations(study, individual, parameters, options, VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor,
+                    userId);
+
+            if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+                // We do need to get the current release to properly create a new version
+                options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
+            }
+
+            WriteResult result = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+            auditManager.auditUpdate(userId, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    AuditRecord.Entity.INDIVIDUAL, SUCCESS);
+
+            QueryResult<Individual> queryResult = individualDBAdaptor.get(individual.getUid(),
+                    new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+            queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    AuditRecord.Entity.INDIVIDUAL, ERROR);
+            throw e;
         }
-
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getFather())) {
-            QueryResult<Individual> queryResult = internalGet(studyUid, updateParams.getFather(), INCLUDE_INDIVIDUAL_IDS, userId);
-            parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), queryResult.first().getUid());
-        }
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getMother())) {
-            QueryResult<Individual> queryResult = internalGet(studyUid, updateParams.getMother(), INCLUDE_INDIVIDUAL_IDS, userId);
-            parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), queryResult.first().getUid());
-        }
-
-        checkUpdateAnnotations(study, individual, parameters, options, VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor,
-                userId);
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
-        }
-
-        WriteResult result = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individual.getUid(), userId, parameters, null, null);
-
-        QueryResult<Individual> queryResult = individualDBAdaptor.get(individual.getUid(),
-                new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-        queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
-
-        return queryResult;
     }
 
     @Override
@@ -853,11 +896,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return individualAclList;
     }
 
-    public List<QueryResult<IndividualAclEntry>> updateAcl(String studyStr, List<String> individualList, String memberIds,
+    public List<QueryResult<IndividualAclEntry>> updateAcl(String studyStr, List<String> individualStringList, String memberIds,
                                                            Individual.IndividualAclParams aclParams, String sessionId)
             throws CatalogException {
         int count = 0;
-        count += individualList != null && !individualList.isEmpty() ? 1 : 0;
+        count += individualStringList != null && !individualStringList.isEmpty() ? 1 : 0;
         count += StringUtils.isNotEmpty(aclParams.getSample()) ? 1 : 0;
 
         if (count > 1) {
@@ -884,11 +927,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
             QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyStr, query, options, sessionId);
 
-            individualList = indQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
+            individualStringList = indQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
         }
 
         // Obtain the resource ids
-        QueryResult<Individual> individualQueryResult = internalGet(study.getUid(), individualList, INCLUDE_INDIVIDUAL_IDS, userId, false);
+        List<Individual> individualList = internalGet(study.getUid(), individualStringList, INCLUDE_INDIVIDUAL_IDS, userId, false)
+                .getResult();
 
         authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
 
@@ -903,7 +947,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         checkMembers(study.getUid(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-        List<Long> individualUids = individualQueryResult.getResult().stream().map(Individual::getUid).collect(Collectors.toList());
+        List<Long> individualUids = individualList.stream().map(Individual::getUid).collect(Collectors.toList());
 
         Entity entity2 = null;
         List<Long> sampleUids = null;
@@ -932,6 +976,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             default:
                 throw new CatalogException("Unexpected error occurred. No valid action found.");
         }
+
+//        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+//            auditManager.audit(operationUuid, null, null, study.getId(), null, AuditRecord.Resource.INDIVIDUAL,
+//                    AuditRecord.Action.CHANGE_PERMISSION, result, userId, new ObjectMap());
 
         return queryResults;
     }

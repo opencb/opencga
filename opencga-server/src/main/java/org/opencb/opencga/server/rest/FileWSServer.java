@@ -1273,7 +1273,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             File.FileAclParams aclParams = new File.FileAclParams(
                     params.getPermissions(), params.getAction(), params.sample);
-            List<String> idList = StringUtils.isEmpty(params.file) ? Collections.emptyList() : getIdList(params.file);
+            List<String> idList = StringUtils.isEmpty(params.file) ? Collections.emptyList() : getIdList(params.file, false);
             return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -466,7 +466,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         try {
             params = ObjectUtils.defaultIfNull(params, new FamilyAcl());
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.family);
+            List<String> idList = getIdList(params.family, false);
             return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

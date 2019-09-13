@@ -352,7 +352,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new JobAcl());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.job);
+            List<String> idList = getIdList(params.job, false);
             return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

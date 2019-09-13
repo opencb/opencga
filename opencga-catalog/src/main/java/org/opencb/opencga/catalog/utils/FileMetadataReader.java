@@ -265,29 +265,7 @@ public class FileMetadataReader {
 //        logger.trace("FileAttributes = " + (System.currentTimeMillis() - start) / 1000.0);
 
         if (!modifyParams.isEmpty()) {
-//            start = System.currentTimeMillis();
-
-            if (modifyParams.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
-                catalogManager.getFileManager().setDiskUsage(study.getFqn(), file.getPath(),
-                        modifyParams.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
-                modifyParams.remove(FileDBAdaptor.QueryParams.SIZE.key());
-            }
-            if (modifyParams.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
-                catalogManager.getFileManager().setModificationDate(study.getFqn(), file.getPath(),
-                        modifyParams.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()), sessionId);
-                modifyParams.remove(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key());
-            }
-            if (modifyParams.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
-                catalogManager.getFileManager()
-                        .setUri(study.getFqn(), file.getPath(), modifyParams.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
-                modifyParams.remove(FileDBAdaptor.QueryParams.URI.key());
-            }
-
-            if (!modifyParams.isEmpty()) {
-                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), modifyParams, new QueryOptions(), sessionId);
-            }
-//            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);
-
+            catalogManager.getFileManager().update(study.getFqn(), file.getPath(), modifyParams, new QueryOptions(), sessionId);
             return catalogManager.getFileManager().get(study.getFqn(), file.getPath(), options, sessionId).first();
         }
 

@@ -102,7 +102,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting variable information");
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(VariableSetParams.STUDY_ID.key(), resolveStudy(variableCommandOptions.infoCommandOptions.studyId));
+        queryOptions.putIfNotEmpty(VariableSetParams.STUDY_UID.key(), resolveStudy(variableCommandOptions.infoCommandOptions.studyId));
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, variableCommandOptions.infoCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, variableCommandOptions.infoCommandOptions.exclude);
         return openCGAClient.getVariableClient().get(variableCommandOptions.infoCommandOptions.id, queryOptions);

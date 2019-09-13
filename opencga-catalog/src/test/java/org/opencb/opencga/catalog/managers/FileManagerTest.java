@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -35,12 +34,14 @@ import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -55,7 +56,6 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -1112,7 +1112,8 @@ public class FileManagerTest extends AbstractManagerTest {
         QueryResult<File> fileQueryResult = fileManager.get(studyFqn, query, null, sessionIdUser);
 
         // Change the status to MISSING
-        fileManager.setStatus(studyFqn, filePath, File.FileStatus.MISSING, null, sessionIdUser);
+        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.MISSING);
+        catalogManager.getFileManager().update(studyFqn, filePath, params, null, sessionIdUser);
 
         WriteResult deleteResult = fileManager.delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.UID.key(), fileQueryResult.first().getUid()), null, sessionIdUser);
@@ -1121,7 +1122,8 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
 
         // Change the status to STAGED
-        fileManager.setStatus(studyFqn, filePath, File.FileStatus.STAGE, null, sessionIdUser);
+        params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.STAGE);
+        catalogManager.getFileManager().update(studyFqn, filePath, params, null, sessionIdUser);
 
         deleteResult = fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(),
                 fileQueryResult.first().getUid()), null, sessionIdUser);
@@ -1130,7 +1132,8 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
 
         // Change the status to READY
-        fileManager.setStatus(studyFqn, filePath, File.FileStatus.READY, null, sessionIdUser);
+        params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.READY);
+        catalogManager.getFileManager().update(studyFqn, filePath, params, null, sessionIdUser);
 
         deleteResult = fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(),
                 fileQueryResult.first().getUid()), null, sessionIdUser);

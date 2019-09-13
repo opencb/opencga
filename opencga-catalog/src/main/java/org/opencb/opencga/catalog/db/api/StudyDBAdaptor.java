@@ -396,7 +396,7 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
         RELEASE("release", INTEGER, ""),
-        STUDY_ID("studyId", DECIMAL, "");
+        STUDY_UID("studyUid", DECIMAL, "");
 
         private static Map<String, VariableSetParams> map;
         static {

@@ -59,7 +59,6 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements AuthorizationDBAdaptor {
 
     private Map<Entity, MongoDBCollection> dbCollectionMap = new HashMap<>();
-    private Map<Entity, List<String>> fullPermissionsMap = new HashMap<>();
 
     private static final String ANONYMOUS = "*";
     static final String MEMBER_WITH_INTERNAL_ACL = "_withInternalAcls";
@@ -68,7 +67,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
         this.dbAdaptorFactory = (MongoDBAdaptorFactory) dbFactory;
         initCollectionConnections();
-        initPermissions();
     }
 
     enum QueryParams implements QueryParam {
@@ -131,43 +129,10 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.dbCollectionMap.put(Entity.CLINICAL_ANALYSIS, dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection());
     }
 
-    private void initPermissions() {
-        this.fullPermissionsMap.put(Entity.STUDY, Arrays.stream(StudyAclEntry.StudyPermissions.values())
-                .map(StudyAclEntry.StudyPermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.COHORT, Arrays.stream(CohortAclEntry.CohortPermissions.values())
-                .map(CohortAclEntry.CohortPermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.DATASET, Arrays.stream(DatasetAclEntry.DatasetPermissions.values())
-                .map(DatasetAclEntry.DatasetPermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.FILE, Arrays.stream(FileAclEntry.FilePermissions.values())
-                .map(FileAclEntry.FilePermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.INDIVIDUAL, Arrays.stream(IndividualAclEntry.IndividualPermissions.values())
-                .map(IndividualAclEntry.IndividualPermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.JOB, Arrays.stream(JobAclEntry.JobPermissions.values())
-                .map(JobAclEntry.JobPermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.SAMPLE, Arrays.stream(SampleAclEntry.SamplePermissions.values())
-                .map(SampleAclEntry.SamplePermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.PANEL, Arrays.stream(PanelAclEntry.PanelPermissions.values())
-                .map(PanelAclEntry.PanelPermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.FAMILY, Arrays.stream(FamilyAclEntry.FamilyPermissions.values())
-                .map(FamilyAclEntry.FamilyPermissions::toString)
-                .collect(Collectors.toList()));
-        this.fullPermissionsMap.put(Entity.CLINICAL_ANALYSIS,
-                Arrays.stream(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.values())
-                        .map(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::toString)
-                        .collect(Collectors.toList()));
-
-        // Add none as the last permission for all of them
-        for (Map.Entry<Entity, List<String>> stringListEntry : this.fullPermissionsMap.entrySet()) {
-            stringListEntry.getValue().add("NONE");
-        }
+    private List<String> getFullPermissions(Entity entity) {
+        List<String> permissionList = new ArrayList<>(entity.getFullPermissionList());
+        permissionList.add("NONE");
+        return permissionList;
     }
 
     private void validateEntry(Entity entry) throws CatalogDBException {
@@ -405,19 +370,20 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public WriteResult removeFromStudy(long studyId, String member, Entity entry) throws CatalogException {
-        validateEntry(entry);
+    public WriteResult removeFromStudy(long studyId, String member, Entity entity) throws CatalogException {
+        validateEntry(entity);
+
         Document query = new Document()
                 .append(PRIVATE_STUDY_UID, studyId);
-        List<String> removePermissions = createPermissionArray(Arrays.asList(member), fullPermissionsMap.get(entry));
+        List<String> removePermissions = createPermissionArray(Arrays.asList(member), getFullPermissions(entity));
         Document update = new Document("$pullAll", new Document()
                 .append(QueryParams.ACL.key(), removePermissions)
                 .append(QueryParams.USER_DEFINED_ACLS.key(), removePermissions)
         );
-        logger.debug("Remove all acls for entity {} for member {} in study {}. Query: {}, pullAll: {}", entry, member, studyId,
+        logger.debug("Remove all acls for entity {} for member {} in study {}. Query: {}, pullAll: {}", entity, member, studyId,
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return dbCollectionMap.get(entry).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        return dbCollectionMap.get(entity).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override
@@ -493,7 +459,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         /* 1. We are going to try to remove all the permissions to those members in first instance */
 
         // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-        List<String> permissions = fullPermissionsMap.get(entity);
+        List<String> permissions = getFullPermissions(entity);
         permissions.add("NONE");
         permissions = createPermissionArray(members, permissions);
 
@@ -676,7 +642,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         if (permissions == null || permissions.isEmpty()) {
             // We get all possible permissions those members will have to do a full reset
-            permissions = fullPermissionsMap.get(entity);
+            permissions = getFullPermissions(entity);
         }
 
         List<String> removePermissions = createPermissionArray(members, permissions);
@@ -1079,7 +1045,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     private void removePermissions(ClientSession clientSession, long studyId, List<String> users, Entity entity) {
-        List<String> permissions = fullPermissionsMap.get(entity);
+        List<String> permissions = getFullPermissions(entity);
         List<String> removePermissions = createPermissionArray(users, permissions);
 
         MongoDBCollection collection = dbCollectionMap.get(entity);

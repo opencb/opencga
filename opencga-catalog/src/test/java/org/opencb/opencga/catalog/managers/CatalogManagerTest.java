@@ -812,7 +812,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
-        QueryResult<VariableSet> result = catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser);
+        QueryResult<VariableSet> result = catalogManager.getStudyManager().deleteVariableSet(studyFqn, vs1.getId(), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
         thrown.expect(CatalogException.class);    //VariableSet does not exist
@@ -885,7 +885,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), sessionIdUser);
 
         try {
-            catalogManager.getStudyManager().deleteVariableSet(studyFqn, Long.toString(vs1.getUid()), sessionIdUser);
+            catalogManager.getStudyManager().deleteVariableSet(studyFqn, vs1.getId(), sessionIdUser);
         } finally {
             VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, vs1.getId(), null, sessionIdUser).first();
             assertEquals(vs1.getUid(), variableSet.getUid());

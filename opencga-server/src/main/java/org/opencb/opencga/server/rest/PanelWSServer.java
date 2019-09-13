@@ -268,7 +268,7 @@ public class PanelWSServer extends OpenCGAWSServer {
         try {
             params = ObjectUtils.defaultIfNull(params, new PanelAcl());
             AclParams panelAclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.panel);
+            List<String> idList = getIdList(params.panel, false);
             return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

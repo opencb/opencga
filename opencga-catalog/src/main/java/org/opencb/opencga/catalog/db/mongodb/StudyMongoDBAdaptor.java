@@ -883,8 +883,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     continue;
                 }
                 switch (option) {
-                    case STUDY_ID:
-                        studyId = query.getLong(VariableSetParams.STUDY_ID.key());
+                    case STUDY_UID:
+                        studyId = query.getLong(VariableSetParams.STUDY_UID.key());
                         break;
                     default:
                         String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.key());
@@ -924,7 +924,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         long startTime = startQuery();
 
         List<Document> mongoQueryList = new LinkedList<>();
-        long studyId = -1;
+        long studyUid = -1;
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -940,8 +940,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     continue;
                 }
                 switch (option) {
-                    case STUDY_ID:
-                        studyId = query.getLong(VariableSetParams.STUDY_ID.key());
+                    case STUDY_UID:
+                        studyUid = query.getLong(VariableSetParams.STUDY_UID.key());
                         break;
                     default:
                         String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.key());
@@ -953,12 +953,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             }
         }
 
-        if (studyId == -1) {
-            throw new CatalogDBException("Cannot look for variable sets if studyId is not passed");
+        if (studyUid == -1) {
+            throw new CatalogDBException("Cannot look for variable sets if studyUid is not passed");
         }
 
         List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_UID, studyId)));
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_UID, studyUid)));
         aggregation.add(Aggregates.unwind("$variableSets"));
         if (mongoQueryList.size() > 0) {
             List<Bson> bsonList = new ArrayList<>(mongoQueryList.size());
@@ -990,9 +990,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public WriteResult deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions, user);
+    public WriteResult deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user) throws CatalogDBException {
         checkVariableSetInUse(variableSetId);
 
         Bson query = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);

@@ -424,7 +424,7 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, "get variants", engine -> {
+        return secure(query, queryOptions, sessionId, AuditRecord.Action.SEARCH, engine -> {
             logger.debug("getVariants {}, {}", query, queryOptions);
             VariantQueryResult<Variant> result = engine.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
@@ -558,7 +558,7 @@ public class VariantStorageManager extends StorageManager {
         options.remove(QueryOptions.INCLUDE);
         options.remove(QueryOptions.EXCLUDE);
         options.remove(VariantField.SUMMARY);
-        return secure(query, options, sessionId, "sampleData", engine -> {
+        return secure(query, options, sessionId, AuditRecord.Action.SAMPLE_DATA, engine -> {
             String studyFqn = query.getString(STUDY.key());
             options.putAll(query);
             return engine.getSampleData(variant, studyFqn, options);
@@ -645,8 +645,8 @@ public class VariantStorageManager extends StorageManager {
         return supplier.apply(variantStorageEngine);
     }
 
-    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
-                                             VariantReadOperation<R> supplier)
+    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, AuditRecord.Action auditAction,
+                         VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
         ObjectMap auditAttributes = new ObjectMap()
                 .append("query", new Query(query))
@@ -696,12 +696,8 @@ public class VariantStorageManager extends StorageManager {
             logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().recordAction(
-                    AuditRecord.Resource.variant,
-                    AuditRecord.Action.view,
-                    AuditRecord.Magnitude.low,
-                    dbName,
-                    userId, null, null, auditAction, auditAttributes);
+            catalogManager.getAuditManager().audit(userId, "", "", "", "", new Query(), new ObjectMap(), AuditRecord.Entity.VARIANT,
+                    auditAction, AuditRecord.SUCCESS, auditAttributes);
         }
     }
 
@@ -842,7 +838,7 @@ public class VariantStorageManager extends StorageManager {
 
     public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, "facet", engine -> {
+        return secure(query, queryOptions, sessionId, AuditRecord.Action.FACET, engine -> {
             addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
             FacetQueryResult result = engine.facet(query, queryOptions);

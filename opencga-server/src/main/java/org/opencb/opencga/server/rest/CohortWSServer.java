@@ -561,7 +561,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new CohortAcl());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.cohort);
+            List<String> idList = getIdList(params.cohort, false);
             return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

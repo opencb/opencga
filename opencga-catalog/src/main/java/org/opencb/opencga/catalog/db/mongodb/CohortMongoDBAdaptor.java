@@ -176,7 +176,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public WriteResult update(long cohortId, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
-        return update(new Query(QueryParams.UID.key(), cohortId), parameters, variableSetList, queryOptions);
+        WriteResult update = update(new Query(QueryParams.UID.key(), cohortId), parameters, variableSetList, queryOptions);
+        if (update.getNumUpdated() != 1) {
+            throw new CatalogDBException("Could not update cohort with id " + cohortId + ": " + update.getFailed().get(0).getMessage());
+        }
+        return update;
     }
 
     @Override

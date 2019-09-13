@@ -70,7 +70,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
     }
 
     @Override
-    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
+    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) throws CatalogException {
         return null;
     }
 

@@ -714,7 +714,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(params, new StudyAcl());
 
             Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.template);
-            List<String> idList = getIdList(params.study);
+            List<String> idList = getIdList(params.study, false);
             return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);

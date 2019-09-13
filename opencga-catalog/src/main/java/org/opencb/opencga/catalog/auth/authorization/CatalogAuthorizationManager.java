@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.auth.authorization;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor;
@@ -63,11 +62,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final SampleDBAdaptor sampleDBAdaptor;
     private final IndividualDBAdaptor individualDBAdaptor;
     private final CohortDBAdaptor cohortDBAdaptor;
-    private final DatasetDBAdaptor datasetDBAdaptor;
     private final PanelDBAdaptor panelDBAdaptor;
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
-    private final AuditManager auditManager;
 
     // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
     private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
@@ -81,10 +78,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private final AuthorizationDBAdaptor aclDBAdaptor;
 
-    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, AuditManager auditManager, Configuration configuration)
-            throws CatalogDBException, CatalogAuthorizationException {
+    public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
+            throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
-        this.auditManager = auditManager;
         this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory);
 
         this.openRegister = configuration.isOpenRegister();
@@ -97,7 +93,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         sampleDBAdaptor = dbFactory.getCatalogSampleDBAdaptor();
         individualDBAdaptor = dbFactory.getCatalogIndividualDBAdaptor();
         cohortDBAdaptor = dbFactory.getCatalogCohortDBAdaptor();
-        datasetDBAdaptor = dbFactory.getCatalogDatasetDBAdaptor();
         panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
         familyDBAdaptor = dbFactory.getCatalogFamilyDBAdaptor();
         clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();

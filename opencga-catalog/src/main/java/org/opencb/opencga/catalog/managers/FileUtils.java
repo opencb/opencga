@@ -528,7 +528,8 @@ public class FileUtils {
         }
 
         Study study = catalogManager.getFileManager().getStudy(file, sessionId);
-        catalogManager.getFileManager().setStatus(study.getFqn(), file.getPath(), File.FileStatus.TRASHED, null, sessionId);
+        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+        catalogManager.getFileManager().update(study.getFqn(), file.getPath(), params, null, sessionId);
     }
 
     /**
@@ -559,23 +560,16 @@ public class FileUtils {
                     logger.warn("File { id:" + file.getPath() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
                     if (!file.getStatus().getName().equals(File.FileStatus.MISSING)) {
                         logger.info("Set status to " + File.FileStatus.MISSING);
-                        catalogManager.getFileManager().setStatus(studyStr, file.getPath(), File.FileStatus.MISSING, null, sessionId);
+                        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.MISSING);
+                        catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
                         modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                     }
                 } else if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
                     logger.info("File { path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + File.FileStatus.READY);
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
-                    if (params.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
-                        catalogManager.getFileManager()
-                                .setDiskUsage(studyStr, file.getPath(), params.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
-                        params.remove(FileDBAdaptor.QueryParams.SIZE.key());
-                    }
-                    if (!params.isEmpty()) {
-                        catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
-                    }
-                    // Update status
-                    catalogManager.getFileManager().setStatus(studyStr, file.getPath(), File.FileStatus.READY, null, sessionId);
+                    params.put(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.READY);
+                    catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
                     modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                 }
                 break;
@@ -638,29 +632,7 @@ public class FileUtils {
 
         //Update file
         if (!parameters.isEmpty()) {    //If there is something to update
-//            if (parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
-//                ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
-//                        parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
-//                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), attributes, new QueryOptions(), sessionId);
-//            }
-            if (parameters.get(FileDBAdaptor.QueryParams.STATUS_NAME.key()) != null) {
-                catalogManager.getFileManager()
-                        .setStatus(study.getFqn(), file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.STATUS_NAME.key()),
-                                null, sessionId);
-                parameters.remove(FileDBAdaptor.QueryParams.STATUS_NAME.key());
-            }
-            if (parameters.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
-                catalogManager.getFileManager()
-                        .setDiskUsage(study.getFqn(), file.getPath(), parameters.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
-                parameters.remove(FileDBAdaptor.QueryParams.SIZE.key());
-            }
-            if (!parameters.isEmpty()) {
-                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), parameters, QueryOptions.empty(), sessionId);
-            }
-//            if (parameters.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
-//                catalogManager.getFileManager()
-//                        .setUri(study.getFqn(), file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
-//            }
+            catalogManager.getFileManager().update(study.getFqn(), file.getPath(), parameters, QueryOptions.empty(), sessionId);
         }
     }
 

@@ -48,6 +48,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
+import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
@@ -55,13 +57,9 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class ProjectManager extends AbstractManager {
 
-    private String vcfFile;
-
     ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                   Configuration configuration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
-                configuration);
+                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
     public String getOwner(long projectId) throws CatalogException {
@@ -186,7 +184,6 @@ public class ProjectManager extends AbstractManager {
     public QueryResult<Project> create(String id, String name, String description, String organization, String scientificName,
                                        String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException {
-
         ParamUtils.checkParameter(name, ProjectDBAdaptor.QueryParams.NAME.key());
         ParamUtils.checkParameter(scientificName, ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key());
         ParamUtils.checkParameter(assembly, ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());
@@ -205,7 +202,18 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogException("Internal error happened. Could not find user " + userId);
         }
 
+        ObjectMap auditParams = new ObjectMap()
+                .append("id", id)
+                .append("name", name)
+                .append("organization", organization)
+                .append("scientificName", scientificName)
+                .append("commonName", commonName)
+                .append("taxonomyCode", taxonomyCode)
+                .append("assembly", assembly)
+                .append("options", options)
+                .append("token", sessionId);
         if (Account.Type.GUEST == user.first().getAccount().getType()) {
+            auditManager.auditCreate(userId, id, "", "", "", auditParams, AuditRecord.Entity.PROJECT, ERROR);
             throw new CatalogException("User " + userId + " has a guest account and is not authorized to create new projects. If you "
                     + " think this might be an error, please contact with your administrator.");
         }
@@ -232,6 +240,7 @@ public class ProjectManager extends AbstractManager {
         try {
             catalogIOManagerFactory.getDefault().createProject(userId, project.getId());
         } catch (CatalogIOException e) {
+            auditManager.auditCreate(userId, id, "", "", "", auditParams, AuditRecord.Entity.PROJECT, ERROR);
             try {
                 projectDBAdaptor.delete(project.getUid());
             } catch (Exception e1) {
@@ -241,7 +250,7 @@ public class ProjectManager extends AbstractManager {
             throw e;
         }
         userDBAdaptor.updateUserLastModified(userId);
-        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getUid(), userId, queryResult.first(), null, null);
+        auditManager.auditCreate(userId, project.getId(), project.getUuid(), "", "", auditParams, AuditRecord.Entity.PROJECT, SUCCESS);
 
         return queryResult;
     }
@@ -311,86 +320,105 @@ public class ProjectManager extends AbstractManager {
     /**
      * Update metada from projects.
      *
-     * @param projectStr Project id or alias.
+     * @param projectId Project id or alias.
      * @param parameters Parameters to change.
      * @param options    options
-     * @param sessionId  sessionId
+     * @param token  sessionId
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Project> update(String projectStr, ObjectMap parameters, QueryOptions options, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(parameters, "Parameters");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        Project project = resolveId(projectStr, userId);
-        long projectUid = project.getUid();
-        authorizationManager.checkCanEditProject(projectUid, userId);
+    public QueryResult<Project> update(String projectId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+        String userId = this.catalogManager.getUserManager().getUserId(token);
 
-        for (String s : parameters.keySet()) {
-            if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-            }
+        ObjectMap auditParams = new ObjectMap()
+                .append("project", projectId)
+                .append("updateParams", parameters)
+                .append("options", options)
+                .append("token", token);
+
+        Project project;
+        try {
+            project = resolveId(projectId, userId);
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, projectId, "", "", "", auditParams, AuditRecord.Entity.PROJECT, ERROR);
+            throw e;
         }
 
-        // Update organism information only if any of the fields was not properly defined
-        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
-                || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
-                || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
-                || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
-            QueryResult<Project> projectQR = projectDBAdaptor
-                    .get(projectUid, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
-            if (projectQR.getNumResults() == 0) {
-                throw new CatalogException("Project " + projectUid + " not found");
+        try {
+            ParamUtils.checkObj(parameters, "Parameters");
+            ParamUtils.checkParameter(token, "token");
+            long projectUid = project.getUid();
+            authorizationManager.checkCanEditProject(projectUid, userId);
+
+            for (String s : parameters.keySet()) {
+                if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                }
             }
-            boolean canBeUpdated = false;
+
+            // Update organism information only if any of the fields was not properly defined
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
-                    && StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
-                canBeUpdated = true;
+                    || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
+                    || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
+                    || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+                QueryResult<Project> projectQR = projectDBAdaptor
+                        .get(projectUid, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
+                if (projectQR.getNumResults() == 0) {
+                    throw new CatalogException("Project " + projectUid + " not found");
+                }
+                boolean canBeUpdated = false;
+                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
+                        && StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
+                    canBeUpdated = true;
+                }
+                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
+                        && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
+                    canBeUpdated = true;
+                }
+                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
+                        && projectQR.first().getOrganism().getTaxonomyCode() <= 0) {
+                    canBeUpdated = true;
+                }
+                if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
+                        && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
+                    canBeUpdated = true;
+                }
+                if (!canBeUpdated) {
+                    throw new CatalogException("Cannot update organism information that is already filled in");
+                }
             }
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
-                    && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
-                canBeUpdated = true;
+
+            for (String s : parameters.keySet()) {
+                if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
+                        + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                }
             }
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
-                    && projectQR.first().getOrganism().getTaxonomyCode() <= 0) {
-                canBeUpdated = true;
+
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
+                ParamUtils.checkAlias(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
             }
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
-                    && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
-                canBeUpdated = true;
-            }
-            if (!canBeUpdated) {
-                throw new CatalogException("Cannot update organism information that is already filled in");
-            }
+
+            userDBAdaptor.updateUserLastModified(userId);
+            WriteResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
+            auditManager.auditUpdate(userId, project.getId(), project.getUuid(), "", "", auditParams, AuditRecord.Entity.PROJECT, SUCCESS);
+
+            QueryResult<Project> queryResult = projectDBAdaptor.get(projectUid,
+                    new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+            queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, project.getId(), project.getUuid(), "", "", auditParams, AuditRecord.Entity.PROJECT, ERROR);
+            throw e;
         }
-
-        for (String s : parameters.keySet()) {
-            if (!s.matches(ProjectDBAdaptor.QueryParams.ID.key() + "|name|description|organization|attributes|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key() + "|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key() + "|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key() + "|"
-                    + ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-            }
-        }
-
-        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
-        }
-
-        userDBAdaptor.updateUserLastModified(userId);
-        WriteResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
-        auditManager.recordUpdate(AuditRecord.Resource.project, projectUid, userId, parameters, null, null);
-
-        QueryResult<Project> queryResult = projectDBAdaptor.get(projectUid, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
-
-        return queryResult;
     }
 
     public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,

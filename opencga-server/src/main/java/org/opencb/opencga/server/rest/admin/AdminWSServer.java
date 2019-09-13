@@ -142,7 +142,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
             @QueryParam("fields") String fields,
-            @ApiParam(value = "Resource to be grouped by.", required = true) @QueryParam("resource") AuditRecord.Resource resource,
+            @ApiParam(value = "Entity to be grouped by.", required = true) @QueryParam("entity") AuditRecord.Entity entity,
             @ApiParam(value = "Action performed") @DefaultValue("") @QueryParam("action") String action,
             @ApiParam(value = "Object before update") @DefaultValue("") @QueryParam("before") String before,
             @ApiParam(value = "Object after update") @DefaultValue("") @QueryParam("after") String after,
