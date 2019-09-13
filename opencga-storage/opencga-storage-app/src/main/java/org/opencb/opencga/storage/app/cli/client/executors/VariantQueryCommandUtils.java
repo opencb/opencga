@@ -125,6 +125,7 @@ public class VariantQueryCommandUtils {
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
         addParam(query, SAMPLE, queryVariantsOptions.samples);
         addParam(query, FORMAT, queryVariantsOptions.format);
+        addParam(query, SCORE, queryVariantsOptions.score);
         addParam(query, INCLUDE_SAMPLE, queryVariantsOptions.includeSample);
         addParam(query, INCLUDE_FORMAT, queryVariantsOptions.includeFormat);
         addParam(query, INCLUDE_GENOTYPE, queryVariantsOptions.includeGenotype);

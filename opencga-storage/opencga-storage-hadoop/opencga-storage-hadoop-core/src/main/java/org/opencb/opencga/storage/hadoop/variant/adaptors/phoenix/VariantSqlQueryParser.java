@@ -1020,6 +1020,23 @@ public class VariantSqlQueryParser {
             filters.add(appendFilters(gtFilters, genotypeQueryOperation));
         }
 
+        if (isValidParam(query, SCORE)) {
+            addQueryFilter(query, SCORE, (kov, v) -> {
+                String key = kov[0];
+                String[] studyResource = splitStudyResource(key);
+                int studyId;
+                int scoreId;
+                if (studyResource.length == 1) {
+                    studyId = defaultStudyMetadata.getId();
+                    scoreId = metadataManager.getVariantScoreMetadata(defaultStudyMetadata, studyResource[0]).getId();
+                } else {
+                    studyId = metadataManager.getStudyId(studyResource[0]);
+                    scoreId = metadataManager.getVariantScoreMetadata(studyId, studyResource[1]).getId();
+                }
+                return VariantPhoenixHelper.getVariantScoreColumn(studyId, scoreId);
+            }, null, filters, null, 1);
+        }
+
         if (isValidParam(query, RELEASE)) {
             int release = query.getInt(RELEASE.key(), -1);
             if (release <= 0) {

@@ -376,7 +376,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getVariantScoreMetadata(getStudyMetadata(studyId), scoreMetadataName);
     }
 
-    private VariantScoreMetadata getVariantScoreMetadata(StudyMetadata studyMetadata, String scoreName) {
+    public VariantScoreMetadata getVariantScoreMetadata(StudyMetadata studyMetadata, String scoreName) {
         for (VariantScoreMetadata s : studyMetadata.getVariantScores()) {
             if (s.getName().equalsIgnoreCase(scoreName)) {
                 return s;
@@ -407,6 +407,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 }
             }
 
+            if (scoreMetadataName.isEmpty()) {
+                throw new IllegalArgumentException("Variant score name can not be empty");
+            } else if (StringUtils.containsAny(scoreMetadataName, ':', ' ')) {
+                throw new IllegalArgumentException("Variant score name can not contain ':' or ' '");
+            }
             int scoreId = newVariantScoreId(studyMetadata.getId());
             scoreMetadata = new VariantScoreMetadata(studyMetadata.getId(), scoreId, scoreMetadataName, "", cohort1, cohort2);
             studyMetadata.getVariantScores().add(scoreMetadata);
@@ -1442,7 +1447,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     protected int newVariantScoreId(int studyId) throws StorageEngineException {
-        return projectDBAdaptor.generateId(studyId, "variantScore");
+        return projectDBAdaptor.generateId(studyId, "score");
     }
 
     protected int newTaskId(int studyId) throws StorageEngineException {

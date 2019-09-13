@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -122,7 +123,7 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 /**
  * Created by mh719 on 16/06/15.
  */
-public class HadoopVariantStorageEngine extends VariantStorageEngine {
+public class HadoopVariantStorageEngine extends VariantStorageEngine implements Configurable {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
@@ -242,11 +243,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected IOConnectorProvider createIOConnectorProvider(StorageConfiguration configuration) {
         IOConnectorProvider ioConnectorProvider = super.createIOConnectorProvider(configuration);
-        try {
-            ioConnectorProvider.add(new HDFSIOConnector(getHadoopConfiguration()));
-        } catch (StorageEngineException e) {
-            throw new RuntimeException(e);
-        }
+        ioConnectorProvider.add(new HDFSIOConnector(getHadoopConfiguration()));
         return ioConnectorProvider;
     }
 
@@ -1023,18 +1020,28 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return executors;
     }
 
-    private Configuration getHadoopConfiguration() throws StorageEngineException {
+    @Override
+    public void setConf(Configuration conf) {
+        this.conf = conf;
+    }
+
+    @Override
+    public Configuration getConf() {
+        return getHadoopConfiguration();
+    }
+
+    private Configuration getHadoopConfiguration() {
         return getHadoopConfiguration(getOptions());
     }
 
-    private Configuration getHadoopConfiguration(ObjectMap options) throws StorageEngineException {
+    private Configuration getHadoopConfiguration(ObjectMap options) {
         Configuration conf = this.conf == null ? HBaseConfiguration.create() : this.conf;
         // This is the only key needed to connect to HDFS:
         //   CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY = fs.defaultFS
         //
 
         if (conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY) == null) {
-            throw new StorageEngineException("Missing configuration parameter \""
+            throw new IllegalArgumentException("Missing configuration parameter \""
                     + CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY + "\"");
         }
 

@@ -35,6 +35,8 @@ public abstract class VariantScoreLoader {
     public final VariantScoreMetadata loadVariantScore(URI scoreFile, String study, String scoreName,
                                                  String cohort1, String cohort2, VariantScoreFormatDescriptor descriptor, ObjectMap options)
             throws StorageEngineException {
+        descriptor.checkValid();
+
         VariantScoreMetadata scoreMetadata = preLoad(study, scoreName, cohort1, cohort2, options);
 
         boolean success = false;
@@ -140,7 +142,7 @@ public abstract class VariantScoreLoader {
                                 split[altColumnIdx]);
 
                 Float score = Float.valueOf(split[scoreColumnIdx]);
-                Float pvalue = Float.valueOf(split[pvalueColumnIdx]);
+                Float pvalue = pvalueColumnIdx < 0 ? -1 : Float.valueOf(split[pvalueColumnIdx]);
                 VariantScore variantScore = new VariantScore(scoreMetadata.getName(), cohortName, secondCohortName, score, pvalue);
 
                 variantScores.add(Pair.of(variant, variantScore));
