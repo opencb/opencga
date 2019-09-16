@@ -1,12 +1,8 @@
 package org.opencb.opencga.storage.core.variant.score;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.common.StringUtils;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantScore;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
@@ -18,8 +14,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public abstract class VariantScoreLoader {
@@ -108,15 +102,8 @@ public abstract class VariantScoreLoader {
         return stringReader;
     }
 
-    protected Task<String, Pair<Variant, VariantScore>> getParser(VariantScoreMetadata scoreMetadata,
-                                                                  VariantScoreFormatDescriptor descriptor) {
-        int variantColumnIdx = descriptor.getVariantColumnIdx();
-        int chrColumnIdx = descriptor.getChrColumnIdx();
-        int posColumnIdx = descriptor.getPosColumnIdx();
-        int refColumnIdx = descriptor.getRefColumnIdx();
-        int altColumnIdx = descriptor.getAltColumnIdx();
-        int scoreColumnIdx = descriptor.getScoreColumnIdx();
-        int pvalueColumnIdx = descriptor.getPvalueColumnIdx();
+    protected VariantScoreParser newParser(VariantScoreMetadata scoreMetadata,
+                                           VariantScoreFormatDescriptor descriptor) {
 
         final String cohortName = metadataManager.getCohortName(scoreMetadata.getStudyId(), scoreMetadata.getCohortId1());
         final String secondCohortName;
@@ -125,31 +112,7 @@ public abstract class VariantScoreLoader {
         } else {
             secondCohortName = null;
         }
-        Task<String, Pair<Variant, VariantScore>> parser = list -> {
-            List<Pair<Variant, VariantScore>> variantScores = new ArrayList<>(list.size());
-            for (String line : list) {
-                if (line.startsWith("#")) {
-                    continue;
-                }
-                String[] split = line.split("\t");
-                Variant variant;
-                variant = variantColumnIdx >= 0
-                        ? new Variant(split[variantColumnIdx])
-                        : new Variant(
-                                split[chrColumnIdx],
-                                Integer.parseInt(split[posColumnIdx]),
-                                split[refColumnIdx],
-                                split[altColumnIdx]);
-
-                Float score = Float.valueOf(split[scoreColumnIdx]);
-                Float pvalue = pvalueColumnIdx < 0 ? -1 : Float.valueOf(split[pvalueColumnIdx]);
-                VariantScore variantScore = new VariantScore(scoreMetadata.getName(), cohortName, secondCohortName, score, pvalue);
-
-                variantScores.add(Pair.of(variant, variantScore));
-            }
-            return variantScores;
-        };
-        return parser;
+        return new VariantScoreParser(descriptor, scoreMetadata, cohortName, secondCohortName);
     }
 
 }

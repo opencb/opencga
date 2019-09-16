@@ -1,20 +1,17 @@
 package org.opencb.opencga.storage.hadoop.variant.score;
 
 import com.google.common.base.Throwables;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Put;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantScore;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.ParallelTaskRunner.Config;
-import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreLoader;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreParser;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -41,7 +38,7 @@ public class HadoopVariantScoreLoader extends VariantScoreLoader {
             throws ExecutionException, IOException {
         StringDataReader stringReader = getDataReader(scoreFile);
 
-        Task<String, Pair<Variant, VariantScore>> parser = getParser(scoreMetadata, descriptor);
+        VariantScoreParser parser = newParser(scoreMetadata, descriptor);
         VariantScoreToHBaseConverter converter = new VariantScoreToHBaseConverter(
                 dbAdaptor.getGenomeHelper().getColumnFamily(),
                 scoreMetadata.getStudyId(),
