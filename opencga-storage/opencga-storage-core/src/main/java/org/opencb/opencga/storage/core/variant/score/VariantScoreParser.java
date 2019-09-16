@@ -60,12 +60,24 @@ public class VariantScoreParser implements Task<String, Pair<Variant, VariantSco
                     split[altColumnIdx]);
             variant = variantNormalizer.normalize(Collections.singletonList(variant), true).get(0);
 
-            Float score = Float.valueOf(split[scoreColumnIdx]);
-            Float pvalue = pValueColumnIdx < 0 ? -1 : Float.valueOf(split[pValueColumnIdx]);
+
+            Float score = parseFloat(split, scoreColumnIdx);
+            Float pvalue = parseFloat(split, pValueColumnIdx);
             VariantScore variantScore = new VariantScore(scoreMetadata.getName(), cohortName, secondCohortName, score, pvalue);
 
             variantScores.add(Pair.of(variant, variantScore));
         }
         return variantScores;
+    }
+
+    private Float parseFloat(String[] split, int columnIdx) {
+        if (columnIdx < 0) {
+            return Float.NaN;
+        }
+        String str = split[columnIdx];
+        if (str.equals(".") || str.equals("NA")) {
+            return Float.NaN;
+        }
+        return Float.valueOf(str);
     }
 }

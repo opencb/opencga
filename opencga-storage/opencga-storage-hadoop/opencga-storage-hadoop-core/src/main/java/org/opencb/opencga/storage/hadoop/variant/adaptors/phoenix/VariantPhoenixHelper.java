@@ -648,7 +648,7 @@ public class VariantPhoenixHelper {
     }
 
     public static int extractSampleId(String columnKey) {
-        return extractStudyId(columnKey, true);
+        return extractSampleId(columnKey, true);
     }
 
     public static Integer extractSampleId(String columnKey, boolean failOnMissing) {
