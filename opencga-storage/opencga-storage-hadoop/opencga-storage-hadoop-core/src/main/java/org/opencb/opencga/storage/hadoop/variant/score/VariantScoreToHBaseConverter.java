@@ -9,6 +9,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
 import java.util.Arrays;
 
@@ -25,6 +26,7 @@ public class VariantScoreToHBaseConverter extends AbstractPhoenixConverter imple
     public Put convert(Pair<Variant, VariantScore> pair) {
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(pair.getKey()));
         add(put, column, Arrays.asList(pair.getValue().getScore(), pair.getValue().getPValue()));
+        HadoopVariantSearchIndexUtils.addNotSyncStatus(put, columnFamily);
         return put;
     }
 }
