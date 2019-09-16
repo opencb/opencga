@@ -3,31 +3,46 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
+import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class FisherTestDriverTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @Rule
     public ExternalResource externalResource = new HadoopExternalResource();
+    private URI localOut;
+
+    @Before
+    public void setUp() throws Exception {
+        localOut = newOutputUri(getClass().getSimpleName());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), localOut);
+    }
 
     @Test
     public void testFisher() throws Exception {
@@ -36,20 +51,24 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
 
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
                 .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                 .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 
+        URI input = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        IntStream controlCohort = IntStream.range(1, 250);
+        IntStream caseCohort = IntStream.range(250, 500);
+
+//        URI input = smallInputUri;
+//        IntStream controlCohort = IntStream.of(1, 2);
+//        IntStream caseCohort = IntStream.of(3, 4);
+
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata, params);
+        runDefaultETL(input, variantStorageEngine, studyMetadata, params);
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        URI localOut = newOutputUri();
-        FileSystem fs = FileSystem.get(configuration.get());
-
         ObjectMap objectMap = new ObjectMap()
-                .append(FisherTestDriver.CONTROL_COHORT, "1,2")
-                .append(FisherTestDriver.CASE_COHORT, "3,4")
+                .append(FisherTestDriver.CONTROL_COHORT, controlCohort.boxed().collect(Collectors.toList()))
+                .append(FisherTestDriver.CASE_COHORT, caseCohort.boxed().collect(Collectors.toList()))
                 .append(FisherTestDriver.OUTDIR, "fisher_result");
         new TestMRExecutor().run(FisherTestDriver.class, FisherTestDriver.buildArgs(
                 dbAdaptor.getArchiveTableName(1),
@@ -57,7 +76,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 1,
                 Collections.emptySet(), objectMap), objectMap);
 
-        fs.copyToLocalFile(new Path("fisher_result"), new Path(localOut));
+        URI local1 = copyToLocal("fisher_result");
 
         objectMap.append(FisherTestDriver.OUTDIR, "fisher_result2")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "lof,missense_variant")
@@ -68,14 +87,18 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
                 1,
                 Collections.emptySet(), objectMap), objectMap);
 
-        fs.copyToLocalFile(new Path("fisher_result2"), new Path(localOut));
-        System.out.println("localOut = " + localOut);
+        URI local2 = copyToLocal("fisher_result2");
 
+        variantStorageEngine.loadVariantScore(local1, studyMetadata.getName(), "fisher1", "ALL", null, new VariantScoreFormatDescriptor(1, 16, 15), new ObjectMap());
+        variantStorageEngine.loadVariantScore(local2, studyMetadata.getName(), "fisher2", "ALL", null, new VariantScoreFormatDescriptor(1, 16, 15), new ObjectMap());
+
+        FileSystem fs = FileSystem.get(configuration.get());
         Set<String> lines1 = new HashSet<>();
+        int lines2 = 0;
         try (FSDataInputStream is = fs.open(new Path("fisher_result/part-r-00000"))) {
             String x = is.readLine();
             while (x != null) {
-                System.out.println(x);
+//                System.out.println(x);
                 if (!x.startsWith("#")) {
                     lines1.add(x);
                 }
@@ -85,14 +108,23 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
         try (FSDataInputStream is = fs.open(new Path("fisher_result2/part-r-00000"))) {
             String x = is.readLine();
             while (x != null) {
-                System.out.println(x);
+//                System.out.println(x);
                 if (!x.startsWith("#")) {
                     Assert.assertTrue(lines1.contains(x));
                 }
                 x = is.readLine();
             }
+            lines2++;
         }
+        Assert.assertThat(lines2, VariantMatchers.lt(lines1.size()));
+        Assert.assertThat(lines2, VariantMatchers.gt(0));
+    }
 
+    private URI copyToLocal(String s) throws IOException {
+        FileSystem fs = FileSystem.get(configuration.get());
+        URI local = localOut.resolve(s + ".tsv");
+        fs.copyToLocalFile(new Path(s + "/part-r-00000"), new Path(local));
+        return local;
     }
 
 }

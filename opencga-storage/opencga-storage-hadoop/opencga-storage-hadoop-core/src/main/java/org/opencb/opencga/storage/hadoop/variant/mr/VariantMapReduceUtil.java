@@ -27,7 +27,6 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.analysis.gwas.FisherTestDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
@@ -188,14 +187,16 @@ public class VariantMapReduceUtil {
         job.setInputFormatClass(PhoenixVariantTableInputFormat.class);
     }
 
-    public static void initVariantRowMapperJob(Job job, String variantTable, VariantStorageMetadataManager metadataManager,
-                                               Query query, QueryOptions queryOptions) throws IOException {
-        initVariantRowMapperJob(job, variantTable, metadataManager, query, queryOptions,
+    public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
+                                               VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions)
+            throws IOException {
+        initVariantRowMapperJob(job, mapperClass, variantTable, metadataManager, query, queryOptions,
                 job.getConfiguration().getBoolean("skipSampleIndex", false));
     }
 
-    public static void initVariantRowMapperJob(Job job, String variantTable, VariantStorageMetadataManager metadataManager,
-                                               Query query, QueryOptions queryOptions, boolean skipSampleIndex) throws IOException {
+    public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
+                                               VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
+                                               boolean skipSampleIndex) throws IOException {
         GenomeHelper helper = new GenomeHelper(job.getConfiguration());
         query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
         if (VariantHBaseQueryParser.isSupportedQuery(query)) {
@@ -213,7 +214,7 @@ public class VariantMapReduceUtil {
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
             configureMapReduceScans(scans, job.getConfiguration());
 
-            initVariantRowMapperJobFromHBase(job, variantTable, scans, FisherTestDriver.FisherTestMapper.class, useSampleIndex);
+            initVariantRowMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
 
             int i = 0;
             for (Scan scan : scans) {
@@ -224,7 +225,7 @@ public class VariantMapReduceUtil {
             String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
                     .parse(query, queryOptions).getSql();
 
-            initVariantRowMapperJobFromPhoenix(job, variantTable, sql, FisherTestDriver.FisherTestMapper.class);
+            initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
     }
 
@@ -273,7 +274,7 @@ public class VariantMapReduceUtil {
     }
 
     public static void initVariantRowMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
-                                                       Class<? extends VariantRowMapper> variantMapperClass)
+                                                       Class<? extends Mapper> variantMapperClass)
             throws IOException {
         // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
         PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTableName,  sqlQuery);

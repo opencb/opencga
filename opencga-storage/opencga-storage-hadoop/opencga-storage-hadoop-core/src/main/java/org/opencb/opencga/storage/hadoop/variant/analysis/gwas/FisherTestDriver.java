@@ -46,7 +46,10 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
 public class FisherTestDriver extends AbstractVariantsTableDriver {
     private final Logger logger = LoggerFactory.getLogger(FisherTestDriver.class);
 
+    // Output directory within DFS
     public static final String OUTDIR = "outdir";
+//    // Move to local directory (remove from DFS)
+//    public static final String MOVE_TO_LOCAL = "move-to-local";
     public static final String CASE_COHORT = "caseCohort";
     public static final String CONTROL_COHORT = "controlCohort";
 //    public static final String DELETE_COHORTS = "deleteCohorts";
@@ -74,6 +77,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
         params.put("--" + OUTDIR, "<outdir>*");
         params.put("--" + CASE_COHORT, "<case-cohort>*");
         params.put("--" + CONTROL_COHORT, "<control-cohort>*");
+//        params.put("--" + MOVE_TO_LOCAL, "<local-output>");
 //        params.put("--" + DELETE_COHORTS, "<true|false>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         return params;
@@ -175,7 +179,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        VariantMapReduceUtil.initVariantRowMapperJob(job, variantTable, metadataManager, query, queryOptions, true);
+        VariantMapReduceUtil.initVariantRowMapperJob(job, FisherTestMapper.class, variantTable, metadataManager, query, queryOptions, true);
 
         job.getConfiguration().set(CASE_COHORT_IDS, caseCohort.stream().map(Objects::toString).collect(Collectors.joining(",")));
         job.getConfiguration().set(CONTROL_COHORT_IDS, controlCohort.stream().map(Objects::toString).collect(Collectors.joining(",")));
@@ -211,16 +215,8 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
             Configuration configuration = context.getConfiguration();
             VariantTableHelper helper = getHelper();
 
-            int[] ints = configuration.getInts(CASE_COHORT_IDS);
-            List<Integer> caseCohortIds = new ArrayList<>(ints.length);
-            for (int sampleId : ints) {
-                caseCohortIds.add(sampleId);
-            }
-            ints = configuration.getInts(CONTROL_COHORT_IDS);
-            List<Integer> controlCohortIds = new ArrayList<>(ints.length);
-            for (int sampleId : ints) {
-                controlCohortIds.add(sampleId);
-            }
+            List<Integer> caseCohortIds = Arrays.stream(configuration.getInts(CASE_COHORT_IDS)).boxed().collect(Collectors.toList());
+            List<Integer> controlCohortIds = Arrays.stream(configuration.getInts(CONTROL_COHORT_IDS)).boxed().collect(Collectors.toList());
 
             VariantStorageMetadataManager metadataManager = getMetadataManager();
             StudyMetadata studyMetadata = getStudyMetadata();
@@ -270,6 +266,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
 
                 context.write(NullWritable.get(), tsv(
                         id,
+                        variant.toString(),
                         variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate(),
                         String.join(",", genes),
                         a, b, c, d,
@@ -326,6 +323,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                                 .map(id -> metadataManager.getSampleName(studyMetadata.getId(), id)).collect(Collectors.joining(","))));
                 context.write(NullWritable.get(),
                         tsv("#ID",
+                                "VAR",
                                 "CHROM",
                                 "POS",
                                 "REF",
