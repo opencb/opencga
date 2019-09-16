@@ -625,8 +625,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studies}/acl")
     @ApiOperation(value = "Return the acl of the study. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
-            @PathParam("studies") String studiesStr,
+            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or "
+                    + "alias up to a maximum of 100", required = true) @PathParam("studies") String studiesStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
@@ -705,7 +705,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member")
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to modify ACLs. 'template' could be either 'admin', 'analyst' or 'view_only'",

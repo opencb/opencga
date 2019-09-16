@@ -85,11 +85,6 @@ public class AuditManager {
         audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.UPDATE, status, new ObjectMap());
     }
 
-    public void auditUpdate(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
-                            AuditRecord.Entity entity, AuditRecord.Action action, int status) {
-        audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, action, status, new ObjectMap());
-    }
-
     public void auditDelete(String userId, String id, String uuid, String studyId, String studyUuid, Query query, ObjectMap params,
                             AuditRecord.Entity entity, int status) {
         audit(userId, id, uuid, studyId, studyUuid, query, params, entity, AuditRecord.Action.UPDATE, status, new ObjectMap());
@@ -99,6 +94,29 @@ public class AuditManager {
                             ObjectMap params, AuditRecord.Entity entity, int status) {
         audit(userId, operationUuid, id, uuid, studyId, studyUuid, query, params, entity, AuditRecord.Action.UPDATE, status,
                 new ObjectMap());
+    }
+
+    public void auditUser(String userId, String id, AuditRecord.Action action, int status) {
+        audit(userId, id, "", "", "", new Query(), new ObjectMap(), AuditRecord.Entity.USER, action, status, new ObjectMap());
+    }
+
+    public void auditUser(String userId, String id, ObjectMap params, AuditRecord.Action action, int status) {
+        audit(userId, id, "", "", "", new Query(), params, AuditRecord.Entity.USER, action, status, new ObjectMap());
+    }
+
+    public void auditInfo(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
+                          AuditRecord.Entity entity, int status) {
+        audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.INFO, status, new ObjectMap());
+    }
+
+    public void auditSearch(String userId, String studyId, String studyUuid, Query query, ObjectMap params, AuditRecord.Entity entity,
+                            int status) {
+        audit(userId, "", "", studyId, studyUuid, query, params, entity, AuditRecord.Action.SEARCH, status, new ObjectMap());
+    }
+
+    public void audit(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Entity entity,
+                      AuditRecord.Action action, int status) {
+        audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, action, status, new ObjectMap());
     }
 
     public void audit(String userId, String id, String uuid, String studyId, String studyUuid, Query query,

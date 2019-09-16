@@ -258,17 +258,28 @@ public class ProjectManager extends AbstractManager {
     /**
      * Reads a project from Catalog given a project id or alias.
      *
-     * @param projectStr Project id or alias.
+     * @param projectId Project id or alias.
      * @param options    Read options
-     * @param sessionId  sessionId
+     * @param token  sessionId
      * @return The specified object
      * @throws CatalogException CatalogException
      */
-    @Deprecated
-    public QueryResult<Project> get(String projectStr, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Project project = resolveId(projectStr, userId);
-        return projectDBAdaptor.get(project.getUid(), options);
+    public QueryResult<Project> get(String projectId, QueryOptions options, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("projectId", projectId)
+                .append("options", options)
+                .append("token", token);
+        try {
+            Project project = resolveId(projectId, userId);
+            QueryResult<Project> queryResult = projectDBAdaptor.get(project.getUid(), options);
+            auditManager.auditInfo(userId, project.getId(), project.getUuid(), "", "", auditParams, AuditRecord.Entity.PROJECT, SUCCESS);
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditInfo(userId, projectId, "", "", "", auditParams, AuditRecord.Entity.PROJECT, ERROR);
+            throw e;
+        }
     }
 
     public List<QueryResult<Project>> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
@@ -296,25 +307,38 @@ public class ProjectManager extends AbstractManager {
      *
      * @param query     Query to catalog.
      * @param options   Query options, like "include", "exclude", "limit" and "skip"
-     * @param sessionId sessionId
+     * @param token sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Project> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Project> get(Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+        String userId = catalogManager.getUserManager().getUserId(token);
         query = new Query(query);
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
-        // If study is provided, we need to check if it will be study alias or id
-        if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
-            List<Study> studies = catalogManager.getStudyManager()
-                    .resolveIds(query.getAsStringList(ProjectDBAdaptor.QueryParams.STUDY.key()), userId);
-            query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
-            query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), studies.stream().map(Study::getUid).collect(Collectors.toList()));
+        ObjectMap auditParams = new ObjectMap()
+                .append("query", query)
+                .append("options", options)
+                .append("token", token);
+
+        try {
+            // If study is provided, we need to check if it will be study alias or id
+            if (StringUtils.isNotEmpty(query.getString(ProjectDBAdaptor.QueryParams.STUDY.key()))) {
+                List<Study> studies = catalogManager.getStudyManager()
+                        .resolveIds(query.getAsStringList(ProjectDBAdaptor.QueryParams.STUDY.key()), userId);
+                query.remove(ProjectDBAdaptor.QueryParams.STUDY.key());
+                query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), studies.stream().map(Study::getUid).collect(Collectors.toList()));
+            }
+
+            QueryResult<Project> queryResult = projectDBAdaptor.get(query, options, userId);
+            auditManager.auditSearch(userId, "", "", query, auditParams, AuditRecord.Entity.PROJECT, SUCCESS);
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditSearch(userId, "", "", query, auditParams, AuditRecord.Entity.PROJECT, ERROR);
+
+            throw e;
         }
-
-        return projectDBAdaptor.get(query, options, userId);
     }
 
     /**
@@ -424,7 +448,6 @@ public class ProjectManager extends AbstractManager {
     public Map<String, Object> facet(String projectStr, String fileFields, String sampleFields, String individualFields,
                                      String cohortFields, String familyFields, boolean defaultStats, String sessionId)
             throws CatalogException, IOException {
-
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Project project = resolveId(projectStr, userId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
@@ -443,40 +466,49 @@ public class ProjectManager extends AbstractManager {
     public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
 
-        Project project = resolveId(projectStr, userId);
-        long projectId = project.getUid();
+        try {
+            Project project = resolveId(projectStr, userId);
+            long projectUid = project.getUid();
 
-        authorizationManager.checkCanEditProject(projectId, userId);
+            authorizationManager.checkCanEditProject(projectUid, userId);
 
-        // Obtain the current release number
-        int currentRelease = project.getCurrentRelease();
+            // Obtain the current release number
+            int currentRelease = project.getCurrentRelease();
 
-        // Check current release has been used at least in one study or file or cohort or individual...
-        List<Study> allStudiesInProject = project.getStudies();
-        if (allStudiesInProject.isEmpty()) {
-            throw new CatalogException("Cannot increment current release number. No studies found for release " + currentRelease);
-        }
-
-        if (checkCurrentReleaseInUse(allStudiesInProject, currentRelease)) {
-            // Increment current project release
-            WriteResult writeResult = projectDBAdaptor.incrementCurrentRelease(projectId);
-            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectId,
-                    new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
-            QueryResult<Integer> queryResult = new QueryResult<>("", projectQueryResult.getDbTime() + writeResult.getDbTime(), 1, 1, "", "",
-                    Collections.singletonList(projectQueryResult.first().getCurrentRelease()));
-
-            // Upgrade release in sample, family and individuals
-            for (Study study : allStudiesInProject) {
-                sampleDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
-                individualDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
-                familyDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
-                panelDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+            // Check current release has been used at least in one study or file or cohort or individual...
+            List<Study> allStudiesInProject = project.getStudies();
+            if (allStudiesInProject.isEmpty()) {
+                throw new CatalogException("Cannot increment current release number. No studies found for release " + currentRelease);
             }
 
-            return queryResult;
-        } else {
-            throw new CatalogException("Cannot increment current release number. The current release " + currentRelease + " has not yet "
-                    + "been used in any entry");
+            if (checkCurrentReleaseInUse(allStudiesInProject, currentRelease)) {
+                // Increment current project release
+                WriteResult writeResult = projectDBAdaptor.incrementCurrentRelease(projectUid);
+                QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectUid,
+                        new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
+                QueryResult<Integer> queryResult = new QueryResult<>("", projectQueryResult.getDbTime() + writeResult.getDbTime(), 1, 1,
+                        "", "", Collections.singletonList(projectQueryResult.first().getCurrentRelease()));
+
+                // Upgrade release in sample, family and individuals
+                for (Study study : allStudiesInProject) {
+                    sampleDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                    individualDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                    familyDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                    panelDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                }
+
+                auditManager.audit(userId, project.getId(), project.getUuid(), "", "", new ObjectMap(), AuditRecord.Entity.PROJECT,
+                        AuditRecord.Action.INCREMENT_PROJECT_RELEASE, ERROR);
+
+                return queryResult;
+            } else {
+                throw new CatalogException("Cannot increment current release number. The current release " + currentRelease
+                        + " has not yet been used in any entry");
+            }
+        } catch (CatalogException e) {
+            auditManager.audit(userId, projectStr, "", "", "", new ObjectMap(), AuditRecord.Entity.PROJECT,
+                    AuditRecord.Action.INCREMENT_PROJECT_RELEASE, ERROR);
+            throw e;
         }
     }
 

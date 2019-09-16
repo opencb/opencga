@@ -233,8 +233,7 @@ public class AuditRecord {
         CLINICAL,
         INTERPRETATION,
         VARIANT,
-        ALIGNMENT,
-        VARIABLE_SET
+        ALIGNMENT
     }
 
     public enum Action {
@@ -246,11 +245,35 @@ public class AuditRecord {
         DOWNLOAD,
         INDEX,
         CHANGE_PERMISSION,
+
         LOGIN,
+        CHANGE_USER_PASSWORD,
+        RESET_USER_PASSWORD,
+        CHANGE_USER_CONFIG,
+        FETCH_USER_CONFIG,
+
+        INCREMENT_PROJECT_RELEASE,
+
+        FETCH_STUDY_GROUPS,
+        ADD_STUDY_GROUP,
+        REMOVE_STUDY_GROUP,
+        UPDATE_USERS_FROM_STUDY_GROUP,
+        FETCH_STUDY_PERMISSION_RULES,
+        ADD_STUDY_PERMISSION_RULE,
+        REMOVE_STUDY_PERMISSION_RULE,
+        FETCH_ACLS,
+        UPDATE_ACLS,
+        FETCH_VARIABLE_SET,
+        ADD_VARIABLE_SET,
+        DELETE_VARIABLE_SET,
+        ADD_VARIABLE_TO_VARIABLE_SET,
+        REMOVE_VARIABLE_FROM_VARIABLE_SET,
+
+        AGGREGATION_STATS,
+
         UPLOAD,
         LINK,
-        ADD_VARIABLE,
-        REMOVE_VARIABLE,
+
 
         // Variants
         SAMPLE_DATA,

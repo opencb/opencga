@@ -150,14 +150,20 @@ public class UserManager extends AbstractManager {
 //        checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
-        if (oldPassword.equals(newPassword)) {
-            throw new CatalogException("New password is the same as the old password.");
-        }
+        try {
+            if (oldPassword.equals(newPassword)) {
+                throw new CatalogException("New password is the same as the old password.");
+            }
 
-        userDBAdaptor.checkId(userId);
-        String authOrigin = getAuthenticationOriginId(userId);
-        authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
-        userDBAdaptor.updateUserLastModified(userId);
+            userDBAdaptor.checkId(userId);
+            String authOrigin = getAuthenticationOriginId(userId);
+            authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
+            userDBAdaptor.updateUserLastModified(userId);
+            auditManager.auditUser(userId, userId, AuditRecord.Action.CHANGE_USER_PASSWORD, SUCCESS);
+        } catch (CatalogException e) {
+            auditManager.auditUser(userId, userId, AuditRecord.Action.CHANGE_USER_PASSWORD, ERROR);
+            throw e;
+        }
     }
 
     public QueryResult<User> create(User user, @Nullable String token) throws CatalogException {
@@ -472,32 +478,45 @@ public class UserManager extends AbstractManager {
      * @param userId       User id
      * @param lastModified If lastModified matches with the one in Catalog, return an empty QueryResult.
      * @param options      QueryOptions
-     * @param sessionId    SessionId of the user performing this operation.
+     * @param token    SessionId of the user performing this operation.
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    public QueryResult<User> get(String userId, String lastModified, QueryOptions options, String sessionId)
+    public QueryResult<User> get(String userId, String lastModified, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        validateUserAndToken(userId, sessionId);
+        ParamUtils.checkParameter(token, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
 
-        // Remove some unnecessary and prohibited parameters
-        for (User user : userQueryResult.getResult()) {
-            user.setPassword(null);
-            if (user.getProjects() != null) {
-                for (Project project : user.getProjects()) {
-                    if (project.getStudies() != null) {
-                        for (Study study : project.getStudies()) {
-                            study.setVariableSets(null);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("lastModified", lastModified)
+                .append("options", options)
+                .append("token", token);
+        try {
+            validateUserAndToken(userId, token);
+            QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
+
+            // Remove some unnecessary and prohibited parameters
+            for (User user : userQueryResult.getResult()) {
+                user.setPassword(null);
+                if (user.getProjects() != null) {
+                    for (Project project : user.getProjects()) {
+                        if (project.getStudies() != null) {
+                            for (Study study : project.getStudies()) {
+                                study.setVariableSets(null);
+                            }
                         }
                     }
                 }
             }
+
+            auditManager.auditInfo(userId, userId, "", "", "", auditParams, AuditRecord.Entity.USER, SUCCESS);
+            return userQueryResult;
+        } catch (CatalogException e) {
+            auditManager.auditInfo(userId, userId, "", "", "", auditParams, AuditRecord.Entity.USER, ERROR);
+            throw e;
         }
-        return userQueryResult;
     }
 
     public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
@@ -609,10 +628,16 @@ public class UserManager extends AbstractManager {
     public WriteResult resetPassword(String userId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        validateUserAndToken(userId, sessionId);
-
-        String authOrigin = getAuthenticationOriginId(userId);
-        return authenticationManagerMap.get(authOrigin).resetPassword(userId);
+        try {
+            validateUserAndToken(userId, sessionId);
+            String authOrigin = getAuthenticationOriginId(userId);
+            WriteResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
+            auditManager.auditUser(userId, userId, AuditRecord.Action.RESET_USER_PASSWORD, SUCCESS);
+            return writeResult;
+        } catch (CatalogException e) {
+            auditManager.auditUser(userId, userId, AuditRecord.Action.RESET_USER_PASSWORD, ERROR);
+            throw e;
+        }
     }
 
     public String login(String username, String password) throws CatalogException {
@@ -636,10 +661,11 @@ public class UserManager extends AbstractManager {
 
         if (token == null) {
             // TODO: We should raise better exceptions. It could fail for other reasons.
-//            auditManager.recordLogin(username, false);
+            auditManager.auditUser(username, username, AuditRecord.Action.LOGIN, ERROR);
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
+        auditManager.auditUser(username, username, AuditRecord.Action.LOGIN, SUCCESS);
         String userId = authenticationManagerMap.get(authId).getUserId(token);
         if (!INTERNAL_AUTHORIZATION.equals(authId)) {
             // External authorization
@@ -664,7 +690,6 @@ public class UserManager extends AbstractManager {
             }
         }
 
-//        auditManager.recordLogin(userId, true);
         return token;
     }
 
@@ -677,10 +702,20 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
     public String refreshToken(String userId, String token) throws CatalogException {
-        if (!userId.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
-            throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+        String authenticatedUser = userId;
+        try {
+            authenticatedUser = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
+            if (!userId.equals(authenticatedUser)) {
+                throw new CatalogException("Cannot refresh token. The token received does not correspond to " + userId);
+            }
+            String newToken = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId);
+
+            auditManager.auditUser(authenticatedUser, userId, AuditRecord.Action.LOGIN, SUCCESS);
+            return newToken;
+        } catch (CatalogException e) {
+            auditManager.auditUser(authenticatedUser, userId, AuditRecord.Action.LOGIN, ERROR);
+            throw e;
         }
-        return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(userId);
     }
 
     /**
@@ -705,15 +740,15 @@ public class UserManager extends AbstractManager {
      * @param bioformat    Bioformat where the filter should be applied.
      * @param query        Query object.
      * @param queryOptions Query options object.
-     * @param sessionId    session id of the user asking to store the filter.
+     * @param token    session id of the user asking to store the filter.
      * @return the created filter.
      * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
      *                          session id is not the same as the provided user id.
      */
     public QueryResult<User.Filter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
-                                              QueryOptions queryOptions, String sessionId) throws CatalogException {
+                                              QueryOptions queryOptions, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(bioformat, "bioformat");
         ParamUtils.checkObj(query, "Query");
@@ -722,23 +757,36 @@ public class UserManager extends AbstractManager {
             description = "";
         }
 
-        String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to store filters for user " + userId);
+        String userIdAux = getUserId(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("name", name)
+                .append("description", description)
+                .append("bioformat", bioformat)
+                .append("query", query)
+                .append("queryOptions", queryOptions)
+                .append("token", token);
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to store filters for user " + userId);
+            }
+
+            Query queryExists = new Query()
+                    .append(UserDBAdaptor.QueryParams.ID.key(), userId)
+                    .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
+            if (userDBAdaptor.count(queryExists).first() > 0) {
+                throw new CatalogException("There already exists a filter called " + name + " for user " + userId);
+            }
+
+            User.Filter filter = new User.Filter(name, description, bioformat, query, queryOptions);
+            WriteResult result = userDBAdaptor.addFilter(userId, filter);
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, SUCCESS);
+            return new QueryResult<>("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(filter));
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, ERROR);
+            throw e;
         }
-
-        Query queryExists = new Query()
-                .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
-        if (userDBAdaptor.count(queryExists).first() > 0) {
-            throw new CatalogException("There already exists a filter called " + name + " for user " + userId);
-        }
-
-        User.Filter filter = new User.Filter(name, description, bioformat, query, queryOptions);
-        WriteResult result = userDBAdaptor.addFilter(userId, filter);
-
-        return new QueryResult<>("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(filter));
     }
 
     /**
@@ -747,36 +795,46 @@ public class UserManager extends AbstractManager {
      * @param userId    user id to whom the filter should be updated.
      * @param name      Filter name.
      * @param params    Map containing the parameters to be updated.
-     * @param sessionId session id of the user asking to update the filter.
+     * @param token session id of the user asking to update the filter.
      * @return the updated filter.
      * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
      *                          the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> updateFilter(String userId, String name, ObjectMap params, String sessionId) throws CatalogException {
+    public QueryResult<User.Filter> updateFilter(String userId, String name, ObjectMap params, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to update filters for user " + userId);
-        }
+        String userIdAux = getUserId(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("name", name)
+                .append("params", params)
+                .append("token", token);
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to update filters for user " + userId);
+            }
 
-        Query queryExists = new Query()
-                .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
-        if (userDBAdaptor.count(queryExists).first() == 0) {
-            throw new CatalogException("There is no filter called " + name + " for user " + userId);
-        }
+            Query queryExists = new Query()
+                    .append(UserDBAdaptor.QueryParams.ID.key(), userId)
+                    .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
+            if (userDBAdaptor.count(queryExists).first() == 0) {
+                throw new CatalogException("There is no filter called " + name + " for user " + userId);
+            }
 
-        WriteResult result = userDBAdaptor.updateFilter(userId, name, params);
-        User.Filter filter = getFilter(userId, name);
-        if (filter == null) {
-            throw new CatalogException("Internal error: The filter " + name + " could not be found.");
+            WriteResult result = userDBAdaptor.updateFilter(userId, name, params);
+            User.Filter filter = getFilter(userId, name);
+            if (filter == null) {
+                throw new CatalogException("Internal error: The filter " + name + " could not be found.");
+            }
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, SUCCESS);
+            return new QueryResult<>("Update filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, ERROR);
+            throw e;
         }
-
-        return new QueryResult<>("Update filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
     }
 
     /**
@@ -784,29 +842,39 @@ public class UserManager extends AbstractManager {
      * <p>
      * @param userId    user id to whom the filter should be deleted.
      * @param name      filter name to be deleted.
-     * @param sessionId session id of the user asking to delete the filter.
+     * @param token session id of the user asking to delete the filter.
      * @return the deleted filter.
      * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
      *                          session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> deleteFilter(String userId, String name, String sessionId) throws CatalogException {
+    public QueryResult<User.Filter> deleteFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to delete filters for user " + userId);
-        }
+        String userIdAux = getUserId(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("name", name)
+                .append("token", token);
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to delete filters for user " + userId);
+            }
 
-        User.Filter filter = getFilter(userId, name);
-        if (filter == null) {
-            throw new CatalogException("There is no filter called " + name + " for user " + userId);
-        }
+            User.Filter filter = getFilter(userId, name);
+            if (filter == null) {
+                throw new CatalogException("There is no filter called " + name + " for user " + userId);
+            }
 
-        WriteResult result = userDBAdaptor.deleteFilter(userId, name);
-        return new QueryResult<>("Delete filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
+            WriteResult result = userDBAdaptor.deleteFilter(userId, name);
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, SUCCESS);
+            return new QueryResult<>("Delete filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, ERROR);
+            throw e;
+        }
     }
 
     /**
@@ -814,26 +882,37 @@ public class UserManager extends AbstractManager {
      * <p>
      * @param userId    user id having the filter stored.
      * @param name      Filter name to be fetched.
-     * @param sessionId session id of the user fetching the filter.
+     * @param token session id of the user fetching the filter.
      * @return the filter.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> getFilter(String userId, String name, String sessionId) throws CatalogException {
+    public QueryResult<User.Filter> getFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
-        }
+        String userIdAux = getUserId(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("name", name)
+                .append("token", token);
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
+            }
 
-        User.Filter filter = getFilter(userId, name);
-        if (filter == null) {
-            return new QueryResult<>("Get filter", 0, 0, 0, "", "Filter not found", Arrays.asList());
-        } else {
-            return new QueryResult<>("Get filter", 0, 1, 1, "", "", Arrays.asList(filter));
+            User.Filter filter = getFilter(userId, name);
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.FETCH_USER_CONFIG, SUCCESS);
+
+            if (filter == null) {
+                return new QueryResult<>("Get filter", 0, 0, 0, "", "Filter not found", Arrays.asList());
+            } else {
+                return new QueryResult<>("Get filter", 0, 1, 1, "", "", Arrays.asList(filter));
+            }
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.FETCH_USER_CONFIG, ERROR);
+            throw e;
         }
     }
 
@@ -841,32 +920,41 @@ public class UserManager extends AbstractManager {
      * Retrieves all the user filters.
      *
      * @param userId    user id having the filters.
-     * @param sessionId session id of the user fetching the filters.
+     * @param token session id of the user fetching the filters.
      * @return the filters.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> getAllFilters(String userId, String sessionId) throws CatalogException {
+    public QueryResult<User.Filter> getAllFilters(String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(token, "sessionId");
 
-        String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
+        String userIdAux = getUserId(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("token", token);
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to get filters from user " + userId);
+            }
+
+            Query query = new Query()
+                    .append(UserDBAdaptor.QueryParams.ID.key(), userId);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+            QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
+
+            if (userQueryResult.getNumResults() != 1) {
+                throw new CatalogException("Internal error: User " + userId + " not found.");
+            }
+
+            List<User.Filter> filters = userQueryResult.first().getConfigs().getFilters();
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.FETCH_USER_CONFIG, SUCCESS);
+
+            return new QueryResult<>("Get filters", 0, filters.size(), filters.size(), "", "", filters);
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.FETCH_USER_CONFIG, ERROR);
+            throw e;
         }
-
-        Query query = new Query()
-                .append(UserDBAdaptor.QueryParams.ID.key(), userId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
-
-        if (userQueryResult.getNumResults() != 1) {
-            throw new CatalogException("Internal error: User " + userId + " not found.");
-        }
-
-        List<User.Filter> filters = userQueryResult.first().getConfigs().getFilters();
-
-        return new QueryResult<>("Get filters", 0, filters.size(), filters.size(), "", "", filters);
     }
 
     /**
@@ -875,24 +963,37 @@ public class UserManager extends AbstractManager {
      * @param userId    user id to whom the config will be associated.
      * @param name      Name of the configuration (normally, name of the application).
      * @param config    Configuration to be stored.
-     * @param sessionId session id of the user asking to store the config.
+     * @param token session id of the user asking to store the config.
      * @return the set configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult setConfig(String userId, String name, Map<String, Object> config, String sessionId) throws CatalogException {
+    public QueryResult setConfig(String userId, String name, Map<String, Object> config, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(config, "ObjectMap");
 
-        String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to set configuration for user " + userId);
-        }
+        String userIdAux = getUserId(token);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("name", name)
+                .append("config", config)
+                .append("token", token);
 
-        WriteResult result = userDBAdaptor.setConfig(userId, name, config);
-        return new QueryResult("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(config));
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to set configuration for user " + userId);
+            }
+
+            WriteResult result = userDBAdaptor.setConfig(userId, name, config);
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, ERROR);
+
+            return new QueryResult("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(config));
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, ERROR);
+            throw e;
+        }
     }
 
     /**
@@ -900,39 +1001,50 @@ public class UserManager extends AbstractManager {
      * <p>
      * @param userId    user id to whom the configuration should be deleted.
      * @param name      Name of the configuration to be deleted (normally, name of the application).
-     * @param sessionId session id of the user asking to delete the configuration.
+     * @param token session id of the user asking to delete the configuration.
      * @return the deleted configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
      *                          did not exist.
      */
-    public QueryResult deleteConfig(String userId, String name, String sessionId) throws CatalogException {
+    public QueryResult deleteConfig(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
 
-        String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to delete the configuration of user " + userId);
-        }
+        String userIdAux = getUserId(token);
 
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
-        if (userQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error: Could not get user " + userId);
-        }
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("name", name)
+                .append("token", token);
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to delete the configuration of user " + userId);
+            }
 
-        User.UserConfiguration configs = userQueryResult.first().getConfigs();
-        if (configs == null) {
-            throw new CatalogException("Internal error: Configuration object is null.");
-        }
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+            QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
+            if (userQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Internal error: Could not get user " + userId);
+            }
 
-        if (configs.get(name) == null) {
-            throw new CatalogException("Error: Cannot delete configuration with name " + name + ". Configuration name not found.");
-        }
+            User.UserConfiguration configs = userQueryResult.first().getConfigs();
+            if (configs == null) {
+                throw new CatalogException("Internal error: Configuration object is null.");
+            }
 
-        WriteResult result = userDBAdaptor.deleteConfig(userId, name);
-        return new QueryResult("Delete configuration", result.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
+            if (configs.get(name) == null) {
+                throw new CatalogException("Error: Cannot delete configuration with name " + name + ". Configuration name not found.");
+            }
+
+            WriteResult result = userDBAdaptor.deleteConfig(userId, name);
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, SUCCESS);
+            return new QueryResult("Delete configuration", result.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.CHANGE_USER_CONFIG, ERROR);
+            throw e;
+        }
     }
 
     /**
@@ -950,32 +1062,42 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userIdAux = getUserId(sessionId);
-        userDBAdaptor.checkId(userId);
-        if (!userId.equals(userIdAux)) {
-            throw new CatalogException("User " + userIdAux + " is not authorised to fetch the configuration of user " + userId);
+        ObjectMap auditParams = new ObjectMap()
+                .append("userId", userId)
+                .append("name", name)
+                .append("sessionId", sessionId);
+        try {
+            userDBAdaptor.checkId(userId);
+            if (!userId.equals(userIdAux)) {
+                throw new CatalogException("User " + userIdAux + " is not authorised to fetch the configuration of user " + userId);
+            }
+
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
+            QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
+            if (userQueryResult.getNumResults() == 0) {
+                throw new CatalogException("Internal error: Could not get user " + userId);
+            }
+
+            User.UserConfiguration configs = userQueryResult.first().getConfigs();
+            if (configs == null) {
+                throw new CatalogException("Internal error: Configuration object is null.");
+            }
+
+            if (StringUtils.isNotEmpty(name) && configs.get(name) == null) {
+                throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
+            }
+
+            // Remove filters form configs array
+            configs.remove("filters");
+            Map configMap = StringUtils.isEmpty(name) ? configs : (Map) configs.get(name);
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.FETCH_USER_CONFIG, SUCCESS);
+
+            return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),
+                    userQueryResult.getErrorMsg(), Arrays.asList(configMap));
+        } catch (CatalogException e) {
+            auditManager.auditUser(userIdAux, userId, auditParams, AuditRecord.Action.FETCH_USER_CONFIG, ERROR);
+            throw e;
         }
-
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
-        if (userQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error: Could not get user " + userId);
-        }
-
-        User.UserConfiguration configs = userQueryResult.first().getConfigs();
-        if (configs == null) {
-            throw new CatalogException("Internal error: Configuration object is null.");
-        }
-
-        if (StringUtils.isNotEmpty(name) && configs.get(name) == null) {
-            throw new CatalogException("Error: Cannot fetch configuration with name " + name + ". Configuration name not found.");
-        }
-
-        // Remove filters form configs array
-        configs.remove("filters");
-        Map configMap = StringUtils.isEmpty(name) ? configs : (Map) configs.get(name);
-
-        return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),
-                userQueryResult.getErrorMsg(), Arrays.asList(configMap));
     }
 
 
