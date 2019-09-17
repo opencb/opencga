@@ -1122,7 +1122,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //    public Response deleteGET(
 //            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
 //            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                @QueryParam("study") String studyStr,
+//                @QueryParam("study") String studyId,
 //            @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)")
 //                @DefaultValue("false") @QueryParam("deleteExternal") boolean deleteExternal,
 //            @ApiParam(value = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)")
@@ -1132,7 +1132,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //            ObjectMap params = new ObjectMap()
 //                    .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
 //                    .append(FileManager.SKIP_TRASH, skipTrash);
-//            List<QueryResult<File>> result = fileManager.delete(studyStr, fileIdStr, params, sessionId);
+//            List<QueryResult<File>> result = fileManager.delete(studyId, fileIdStr, params, sessionId);
 //            return createOkResponse(result);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);

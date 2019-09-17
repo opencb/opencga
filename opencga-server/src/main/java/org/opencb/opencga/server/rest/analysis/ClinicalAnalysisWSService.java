@@ -270,7 +270,7 @@ public class ClinicalAnalysisWSService extends AnalysisWSService {
 //            @ApiImplicitParam(name = "field", value = "Facet field for categorical fields", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "fieldRange", value = "Facet field range for continuous fields", dataType = "string", paramType = "query")
 //    })
-//    public Response stats(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+//    public Response stats(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyId,
 //                          @ApiParam(value = "Clinical Analysis Id") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
 //                          @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
 //                          @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
@@ -289,7 +289,7 @@ public class ClinicalAnalysisWSService extends AnalysisWSService {
 //    @GET
 //    @Path("/interpretation/team")
 //    @ApiOperation(value = "TEAM interpretation analysis (PENDING)", position = 14, response = QueryResponse.class)
-//    public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+//    public Response team(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyId,
 //                         @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
 //                         @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
 //                         @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
@@ -307,7 +307,7 @@ public class ClinicalAnalysisWSService extends AnalysisWSService {
 //    @GET
 //    @Path("/interpretation/tiering")
 //    @ApiOperation(value = "GEL Tiering interpretation analysis (PENDING)", position = 14, response = QueryResponse.class)
-//    public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+//    public Response tiering(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyId,
 //                            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
 //                            @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
 //                            @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,

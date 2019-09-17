@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.auth;
+package org.opencb.opencga.storage.core.auth;
 
 /**
  *
@@ -24,7 +24,7 @@ public class IllegalOpenCGACredentialsException extends Exception {
 
     public IllegalOpenCGACredentialsException() {
     }
-    
+
     public IllegalOpenCGACredentialsException(String message) {
         super(message);
     }
@@ -40,6 +40,5 @@ public class IllegalOpenCGACredentialsException extends Exception {
     public IllegalOpenCGACredentialsException(String message, Throwable cause) {
         super(message, cause);
     }
-    
-    
+
 }

@@ -771,7 +771,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 //            if (annotationSets != null) {
 //                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
 //                    if (annotationSet != null) {
-//                        annotationSetList.add(annotationSet.toAnnotationSet(studyStr, studyManager, sessionId));
+//                        annotationSetList.add(annotationSet.toAnnotationSet(studyId, studyManager, sessionId));
 //                    }
 //                }
 //            }

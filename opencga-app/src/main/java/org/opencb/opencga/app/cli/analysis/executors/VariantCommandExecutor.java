@@ -215,7 +215,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     }
 
     private void query() throws Exception {
-
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 

@@ -17,8 +17,8 @@
 package org.opencb.opencga.storage.hadoop.auth;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.core.auth.OpenCGACredentials;
+import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.storage.core.auth.OpenCGACredentials;
 
 import java.net.URI;
 import java.net.URISyntaxException;

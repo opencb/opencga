@@ -50,18 +50,70 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>1.4.2-dev</version>
-        <!--<relativePath>../pom.xml</relativePath>-->
+        <version>2.0.0-dev</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
+
+    <modules>
+        <module>opencga-storage-hadoop-deps-hdp2.5</module>
+        <module>opencga-storage-hadoop-deps-hdp2.6</module>
+        <module>opencga-storage-hadoop-deps-hdp3.1</module>
+        <module>opencga-storage-hadoop-deps-emr5.8</module>
+        <module>opencga-storage-hadoop-deps-cdh5.13</module>
+    </modules>
 
     <!--<groupId>org.opencb.opencga</groupId>-->
     <artifactId>opencga-storage-hadoop-deps</artifactId>
-    <version>1.4.2-dev</version>
+    <version>2.0.0-dev</version>
+
+    <packaging>pom</packaging>
 
     <properties>
         <checkstyle.skip>true</checkstyle.skip>
+
+        <!-- Default dependency versions. To be overwritten. -->
+        <hadoop.version>2.7.3</hadoop.version>
+        <hbase.version>1.1.2</hbase.version>
+        <phoenix.version>4.7.0-HBase-1.1</phoenix.version>
+
+        <protobuf2.version>2.5.0</protobuf2.version>
+        <guava.version>15.0</guava.version>
+
+        <!--Read from main hadoop pom.xml . Versions not as a property in that pom-->
+        <commons-httpclient.version>3.1</commons-httpclient.version>
+        <commons-compress.version>1.4.1</commons-compress.version>
+        <commons-io.version>2.5</commons-io.version>
+        <commons-net.version>3.1</commons-net.version>
+        <curator.version>2.7.1</curator.version>
+        <apacheds-kerberos-codec.version>2.0.0-M15</apacheds-kerberos-codec.version>
+        <leveldbjni-all.version>1.8</leveldbjni-all.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
+
+        <!--Read from main hbase pom.xml-->
+        <metrics-core.version>2.2.0</metrics-core.version>
+        <disruptor.version>3.3.0</disruptor.version>
+        <commons-math.version>2.2</commons-math.version>
+        <netty.version>4.0.23.Final</netty.version>
+        <jamon-runtime.version>2.4.1</jamon-runtime.version>
+        <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
+        <mortbay.jetty.version>6.1.26</mortbay.jetty.version>
+
+        <!--Read from main phoenix pom.xml-->
+        <commons-configuration.version>1.6</commons-configuration.version>
+        <!--<commons-io.version>2.1</commons-io.version>-->
+        <commons-lang.version>2.5</commons-lang.version>
+        <commons-logging.version>1.2</commons-logging.version>
+        <commons-csv.version>1.0</commons-csv.version>
+        <commons-codec.version>1.7</commons-codec.version>
+        <collections.version>3.2.1</collections.version>
+        <sqlline.version>1.1.9</sqlline.version>
+        <jline.version>2.11</jline.version>
+        <antlr.version>3.5.2</antlr.version> <!--see [PHOENIX-2465]-->
+        <tephra.version>0.7.0</tephra.version>
+        <snappy.version>0.3</snappy.version>
     </properties>
 
+    <dependencyManagement>
     <dependencies>
         <!-- =================================================== -->
         <!-- Dependencies that we DON't want. To be shaded       -->
@@ -103,12 +155,16 @@
             <artifactId>hadoop-azure</artifactId>
             <version>${hadoop.version}</version>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-azure-datalake</artifactId>
-            <version>${hadoop.version}</version>
-            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!--HBase dependencies-->
@@ -161,6 +217,10 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.lmax</groupId>
+                    <artifactId>disruptor</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -243,10 +303,12 @@
         <dependency>
             <groupId>org.apache.avro</groupId>
             <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.avro</groupId>
             <artifactId>avro-ipc</artifactId>
+            <version>${avro.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.mortbay.jetty</groupId>
@@ -266,6 +328,7 @@
             <groupId>org.apache.avro</groupId>
             <artifactId>avro-mapred</artifactId>
             <classifier>hadoop2</classifier>
+            <version>${avro.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.mortbay.jetty</groupId>
@@ -396,6 +459,10 @@
             <artifactId>azure-storage</artifactId>
             <version>2.0.0</version>
             <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-lang3</artifactId>
@@ -566,6 +633,7 @@
             </exclusions>
         </dependency>
     </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -596,7 +664,6 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <classifier>${opencga-storage-hadoop-deps.classifier}</classifier>
                             <skipIfEmpty>true</skipIfEmpty>
                         </configuration>
                     </execution>
@@ -606,7 +673,7 @@
                             <goal>test-jar</goal>
                         </goals>
                         <configuration>
-                            <classifier>${opencga-storage-hadoop-deps.classifier}-tests</classifier>
+                            <classifier>tests</classifier>
                             <skipIfEmpty>true</skipIfEmpty>
                         </configuration>
                     </execution>
@@ -623,7 +690,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <shadedClassifierName>${opencga-storage-hadoop-deps.classifier}-shaded</shadedClassifierName>
+                            <shadedClassifierName>shaded</shadedClassifierName>
                             <createDependencyReducedPom>true</createDependencyReducedPom>
                             <!--<generateUniqueDependencyReducedPom>true</generateUniqueDependencyReducedPom>-->
                             <shadedArtifactAttached>true</shadedArtifactAttached>
@@ -687,6 +754,7 @@
                                         This line won't include new servlet-api.
                                         Artifact name in 3.x is "javax.servlet-api", and in 2.x "servlet-api" -->
                                     <!--<include>javax.servlet:servlet-api</include>-->
+                                    <include>javax.ws.rs</include>
 
                                     <!-- Include jersey1, which is relocated. -->
                                     <include>com.sun.jersey</include>
@@ -741,8 +809,7 @@
                         </goals>
                         <configuration>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <!--<shadedClassifierName>tests</shadedClassifierName>-->
-                            <shadedClassifierName>${opencga-storage-hadoop-deps.classifier}-tests</shadedClassifierName>
+                            <shadedClassifierName>tests</shadedClassifierName>
                             <createSourcesJar>true</createSourcesJar>
 
                             <relocations>
@@ -859,21 +926,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>hdf-3.0.1</id>
-            <properties>
-                <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hbase.thirdparty</groupId>
-                    <artifactId>hbase-shaded-netty</artifactId>
-                    <version>${hbase-thirdparty.version}</version>
-                    <!--included in uber-jar-->
-                    <optional>true</optional>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 

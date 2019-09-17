@@ -207,7 +207,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         if (sampleParameters.containsKey(QueryParams.STATUS_NAME.key())) {
             query.put(Constants.ALL_VERSIONS, true);
-            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
+            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query),
                     new Document("$set", sampleParameters), new QueryOptions("multi", true));
 
 //            applyAnnotationUpdates(query.getLong(QueryParams.UID.key(), -1L), annotationUpdateMap, true);
@@ -223,7 +223,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         updateAnnotationSets(query.getLong(QueryParams.UID.key(), -1L), parameters, variableSetList, queryOptions, true);
 
         if (!sampleParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query, false),
+            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query),
                     new Document("$set", sampleParameters), new QueryOptions("multi", true));
             return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
         }
@@ -364,7 +364,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
 
         Document update = new Document()
                 .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
@@ -427,7 +427,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return sampleCollection.count(bson);
     }
 
@@ -455,7 +455,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
                 studyPermission.name(), studyPermission.getSamplePermission().name(), Entity.SAMPLE.name());
-        Bson bson = parseQuery(finalQuery, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(finalQuery, queryForAuthorisedEntries);
 
         if (query.containsKey(QueryParams.INDIVIDUAL_UID.key())) {
             // We need to do a left join
@@ -494,7 +494,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bson = parseQuery(query, false);
+        Bson bson = parseQuery(query);
         return sampleCollection.distinct(field, bson);
     }
 
@@ -511,7 +511,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public void delete(Query query) throws CatalogDBException {
-        QueryResult<DeleteResult> remove = sampleCollection.remove(parseQuery(query, false), null);
+        QueryResult<DeleteResult> remove = sampleCollection.remove(parseQuery(query), null);
 
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.deleteError("Sample");
@@ -770,7 +770,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
         }
 
-        Bson bson = parseQuery(finalQuery, false, queryForAuthorisedEntries);
+        Bson bson = parseQuery(finalQuery, queryForAuthorisedEntries);
         logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return sampleCollection.nativeQuery().find(bson, qOptions).iterator();
     }
@@ -821,21 +821,21 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return rank(sampleCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(sampleCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query);
         return groupBy(sampleCollection, bsonQuery, fields, "name", options);
     }
 
@@ -853,7 +853,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name(), Entity.SAMPLE.name());
         }
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
@@ -871,7 +871,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name(), Entity.SAMPLE.name());
         }
         filterOutDeleted(query);
-        Bson bsonQuery = parseQuery(query, false, queryForAuthorisedEntries);
+        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
@@ -885,19 +885,15 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
     }
 
-    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
-        return parseQuery(query, isolated, null);
+    private Bson parseQuery(Query query) throws CatalogDBException {
+        return parseQuery(query, null);
     }
 
-    protected Bson parseQuery(Query query, boolean isolated, Document authorisation) throws CatalogDBException {
+    protected Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         Document annotationDocument = null;
 
         Query queryCopy = new Query(query);
-
-        if (isolated) {
-            andBsonList.add(new Document("$isolated", 1));
-        }
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);

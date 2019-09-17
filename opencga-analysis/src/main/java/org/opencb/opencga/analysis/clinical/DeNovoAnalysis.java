@@ -4,7 +4,6 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -33,7 +32,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_SAMPLE;
 
-public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
+public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
 
     private Query query;
 
@@ -50,14 +49,11 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
     }
 
-    public DeNovoAnalysis(String clinicalAnalysisId, List<String> diseasePanelIds, Query query,
-                          Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                          Map<String, List<String>> actionableVariants, ObjectMap config, String studyStr, String opencgaHome,
-                          String token) {
-        super(clinicalAnalysisId, diseasePanelIds, roleInCancer, actionableVariants, null, config, studyStr, opencgaHome, token);
+    public DeNovoAnalysis(String clinicalAnalysisId, String studyId, Query query, ObjectMap options, String opencgaHome, String sessionId) {
+        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.query = new Query(defaultQuery);
         this.query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyStr)
+                .append(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
@@ -77,14 +73,14 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
         Individual proband = getProband(clinicalAnalysis);
 
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr,
-                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), token);
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
+                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId);
         if (studyQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Study " + studyStr + " not found");
+            throw new AnalysisException("Study " + studyId + " not found");
         }
 
         String sampleId = proband.getSamples().get(0).getId();
-        SampleMetadata sampleMetadata = variantStorageManager.getSampleMetadata(studyQueryResult.first().getFqn(), sampleId, token);
+        SampleMetadata sampleMetadata = variantStorageManager.getSampleMetadata(studyQueryResult.first().getFqn(), sampleId, sessionId);
         if (TaskMetadata.Status.READY.equals(sampleMetadata.getMendelianErrorStatus())) {
             logger.debug("Getting precomputed DE NOVO variants");
 
@@ -96,7 +92,7 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
 
             logger.debug("Query: {}", query.safeToString());
 
-            variants = variantStorageManager.get(query, QueryOptions.empty(), token).getResult();
+            variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult();
 //            if (CollectionUtils.isNotEmpty(mendelianErrorVariants)) {
 //                for (Variant variant : mendelianErrorVariants) {
 //                    if (!GenotypeClass.HOM_REF.test(variant.getStudies().get(0).getSampleData(sampleId, "GT"))) {
@@ -112,7 +108,7 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
             Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
 
             // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
-            removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
+            ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
             // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
             // samples easily)
@@ -163,7 +159,7 @@ public class DeNovoAnalysis extends FamilyAnalysis<List<Variant>> {
             logger.debug("De novo samples: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(samples));
             logger.debug("De novo query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
 
-            VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), token);
+            VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), sessionId);
             variants = ModeOfInheritance.deNovo(iterator, 0, motherSampleIdx, fatherSampleIdx);
         }
         logger.debug("Variants obtained: {}", variants.size());

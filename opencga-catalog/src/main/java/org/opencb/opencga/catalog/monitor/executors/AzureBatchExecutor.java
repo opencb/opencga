@@ -15,15 +15,6 @@ import java.io.IOException;
  * Created by wasim on 17/12/18.
  */
 public class AzureBatchExecutor implements BatchExecutor {
-    public static final String VARIANT_INDEX_JOB = "variant-index-job";
-    public static final String VARIANT_ANALYSIS_JOB = "variant-analysis-job";
-    public static final String BATCH_ACCOUNT = "batchAccount";
-    public static final String BATCH_KEY = "batchKey";
-    public static final String BATCH_URI = "batchUri";
-    public static final String BATCH_POOL_ID = "batchPoolId";
-    public static final String DOCKER_IMAGE_NAME = "dockerImageName";
-    public static final String DOCKER_ARGS = "dockerArgs";
-    private static Logger logger;
 
     private String batchAccount;
     private String batchKey;
@@ -33,6 +24,18 @@ public class AzureBatchExecutor implements BatchExecutor {
     private String dockerArgs;
     private BatchClient batchClient;
     private PoolInformation poolInformation;
+
+    private static Logger logger;
+
+    private static final String VARIANT_INDEX_JOB = "variant-index-job";
+    private static final String VARIANT_ANALYSIS_JOB = "variant-analysis-job";
+    private static final String BATCH_ACCOUNT = "batchAccount";
+    private static final String BATCH_KEY = "batchKey";
+    private static final String BATCH_URI = "batchUri";
+    private static final String BATCH_POOL_ID = "batchPoolId";
+    private static final String DOCKER_IMAGE_NAME = "dockerImageName";
+    private static final String DOCKER_ARGS = "dockerArgs";
+
 
     public AzureBatchExecutor(Configuration configuration) {
         logger = LoggerFactory.getLogger(AzureBatchExecutor.class);
@@ -45,7 +48,8 @@ public class AzureBatchExecutor implements BatchExecutor {
         String jobId = getOrCreateAzureJob(job.getType());
         TaskAddParameter taskToAdd = new TaskAddParameter();
         taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine()).withContainerSettings(
-                new TaskContainerSettings().withImageName(dockerImageName)
+                new TaskContainerSettings()
+                        .withImageName(dockerImageName)
                         .withContainerRunOptions(dockerArgs));
         taskToAdd.withId(job.getId()).withCommandLine(getCommandLine(job, token));
         batchClient.taskOperations().createTask(jobId, taskToAdd);
@@ -78,25 +82,23 @@ public class AzureBatchExecutor implements BatchExecutor {
 
     @Override
     public String getStatus(Job job) {
-        CloudTask cloudTask;
         try {
-            cloudTask = batchClient.taskOperations().getTask(getAzureJobType(job.getType()), job.getId());
+            CloudTask cloudTask = batchClient.taskOperations().getTask(getAzureJobType(job.getType()), job.getId());
+            TaskState state = cloudTask.state();
+            switch (state) {
+                case RUNNING:
+                    return Job.JobStatus.RUNNING;
+                case COMPLETED:
+                    return Job.JobStatus.DONE;
+                case ACTIVE:
+                case PREPARING:
+                    return Job.JobStatus.QUEUED;
+                default:
+                    return Job.JobStatus.UNKNOWN;
+            }
         } catch (BatchErrorException | IOException e) {
             logger.error("unable to get azure task status {}", job.getId());
             return Job.JobStatus.UNKNOWN;
-        }
-
-        TaskState state = cloudTask.state();
-        switch (state) {
-            case RUNNING:
-                return Job.JobStatus.RUNNING;
-            case COMPLETED:
-                return Job.JobStatus.DONE;
-            case ACTIVE:
-            case PREPARING:
-                return Job.JobStatus.QUEUED;
-            default:
-                return Job.JobStatus.UNKNOWN;
         }
     }
 

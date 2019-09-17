@@ -22,8 +22,8 @@ import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.core.auth.OpenCGACredentials;
+import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.storage.core.auth.OpenCGACredentials;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 
 import java.util.Collections;

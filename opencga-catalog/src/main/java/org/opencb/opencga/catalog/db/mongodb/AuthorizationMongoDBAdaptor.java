@@ -404,7 +404,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     public void removeFromStudy(long studyId, String member, Entity entry) throws CatalogException {
         validateEntry(entry);
         Document query = new Document()
-                .append("$isolated", 1)
                 .append(PRIVATE_STUDY_ID, studyId);
         List<String> removePermissions = createPermissionArray(Arrays.asList(member), fullPermissionsMap.get(entry));
         Document update = new Document("$pullAll", new Document()
@@ -433,7 +432,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         permissions = createPermissionArray(members, permissions);
 
         Document queryDocument = new Document()
-                .append("$isolated", 1)
                 .append(PRIVATE_UID, new Document("$in", resourceIds));
         Document update = new Document(QueryParams.ACL.key(), permissions);
         if (isPermissionRuleEntity(entity)) {
@@ -478,7 +476,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         List<String> myPermissions = createPermissionArray(members, permissions);
 
         Document queryDocument = new Document()
-                .append("$isolated", 1)
                 .append(PRIVATE_UID, new Document("$in", resourceIds));
         Document update;
         if (isPermissionRuleEntity(entry)) {
@@ -517,7 +514,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         List<String> removePermissions = createPermissionArray(members, permissions);
         Document queryDocument = new Document()
-                .append("$isolated", 1)
                 .append(PRIVATE_UID, new Document("$in", resourceIds));
         Document update;
         if (isPermissionRuleEntity(entity)) {
@@ -575,7 +571,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
 
             Document queryDocument = new Document()
-                    .append("$isolated", 1)
                     .append(PRIVATE_UID, resourceId);
             Document update;
             if (isPermissionRuleEntity(entity)) {
@@ -602,7 +597,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         }
 
         Document queryDocument = new Document()
-                .append("$isolated", 1)
                 .append(PRIVATE_UID, studyId);
 
         Document addToSet = new Document();
@@ -709,8 +703,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             Document tmpQuery = new Document()
                     .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
-                    .append(PRIVATE_STUDY_ID, study.getUid())
-                    .append("$isolated", true);
+                    .append(PRIVATE_STUDY_ID, study.getUid());
 
             Document update = new Document("$set", new Document()
                     .append(QueryParams.ACL.key(), effectivePermissions)
@@ -793,8 +786,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
             Document tmpQuery = new Document()
                     .append(PRIVATE_UID, myDocument.get(PRIVATE_UID))
-                    .append(PRIVATE_STUDY_ID, study.getUid())
-                    .append("$isolated", true);
+                    .append(PRIVATE_STUDY_ID, study.getUid());
 
             Document update = new Document("$set", new Document()
                     .append(QueryParams.ACL.key(), effectivePermissions)
@@ -820,8 +812,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         Document query = new Document()
                 .append(PRIVATE_STUDY_ID, studyId)
-                .append(PERMISSION_RULES_APPLIED, permissionRuleId)
-                .append("$isolated", 1);
+                .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Document update = new Document()
                 .append("$pull", new Document(PERMISSION_RULES_APPLIED, permissionRuleId));
         logger.debug("Remove permission rule id from all {} in study {}: Query {}, Update {}", entry, studyId,
@@ -869,19 +860,19 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private Bson parseQuery(Query query, Document rawQuery, Entity entry) throws CatalogException {
         switch (entry) {
             case COHORT:
-                return dbAdaptorFactory.getCatalogCohortDBAdaptor().parseQuery(query, true, rawQuery);
+                return dbAdaptorFactory.getCatalogCohortDBAdaptor().parseQuery(query, rawQuery);
             case INDIVIDUAL:
-                return dbAdaptorFactory.getCatalogIndividualDBAdaptor().parseQuery(query, true, rawQuery);
+                return dbAdaptorFactory.getCatalogIndividualDBAdaptor().parseQuery(query, rawQuery);
             case JOB:
-                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, true, rawQuery);
+                return dbAdaptorFactory.getCatalogJobDBAdaptor().parseQuery(query, rawQuery);
             case FILE:
-                return dbAdaptorFactory.getCatalogFileDBAdaptor().parseQuery(query, true, rawQuery);
+                return dbAdaptorFactory.getCatalogFileDBAdaptor().parseQuery(query, rawQuery);
             case SAMPLE:
-                return dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, true, rawQuery);
+                return dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, rawQuery);
             case FAMILY:
-                return dbAdaptorFactory.getCatalogFamilyDBAdaptor().parseQuery(query, true, rawQuery);
+                return dbAdaptorFactory.getCatalogFamilyDBAdaptor().parseQuery(query, rawQuery);
             case CLINICAL_ANALYSIS:
-                return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().parseQuery(query, true, rawQuery);
+                return dbAdaptorFactory.getClinicalAnalysisDBAdaptor().parseQuery(query, rawQuery);
             default:
                 throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
         }
@@ -893,7 +884,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         MongoDBCollection collection = dbCollectionMap.get(entity);
         Document queryDocument = new Document()
-                .append("$isolated", 1)
                 .append(PRIVATE_STUDY_ID, studyId)
                 .append(QueryParams.ACL.key(), new Document("$in", removePermissions));
         Document update = new Document("$pullAll", new Document()

@@ -127,13 +127,12 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                int port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+        for (String host : catalogConfiguration.getCatalog().getDatabase().getHosts()) {
+            if (host.contains(":")) {
+                String[] hostAndPort = host.split(":");
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostAndPort[0], Integer.parseInt(hostAndPort[1])));
             } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+                dataStoreServerAddresses.add(new DataStoreServerAddress(host, 27017));
             }
         }
 
@@ -161,23 +160,19 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public void initializeCatalogDB(Admin admin) throws CatalogDBException {
         //If "metadata" document doesn't exist, create.
         if (!isCatalogDBReady()) {
-
             /* Check all collections are empty */
             for (Map.Entry<String, MongoDBCollection> entry : collections.entrySet()) {
                 if (entry.getValue().count().first() != 0L) {
-                    throw new CatalogDBException("Fail to initialize Catalog Database in MongoDB. Collection " + entry.getKey() + " is "
-                            + "not empty.");
+                    throw new CatalogDBException("Fail to initialize Catalog Database in MongoDB. Collection " + entry.getKey()
+                            + " is not empty.");
                 }
             }
 
             try {
-//                DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
-                Document metadataObject = getMongoDBDocument(new Metadata(), "Metadata");
-                metadataObject.put("id", METADATA_OBJECT_ID);
-                metadataObject.put("admin", getMongoDBDocument(admin, "Admin"));
-
-                metaCollection.insert(metadataObject, null);
-
+                Document metadataDocument = getMongoDBDocument(new Metadata(), "Metadata");
+                metadataDocument.put("id", METADATA_OBJECT_ID);
+                metadataDocument.put("admin", getMongoDBDocument(admin, "Admin"));
+                metaCollection.insert(metadataDocument, null);
             } catch (DuplicateKeyException e) {
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
             }

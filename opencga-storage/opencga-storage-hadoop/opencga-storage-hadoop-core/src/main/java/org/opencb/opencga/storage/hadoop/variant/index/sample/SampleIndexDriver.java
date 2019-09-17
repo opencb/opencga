@@ -16,7 +16,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.apache.phoenix.schema.types.PVarcharArray;
 import org.apache.phoenix.schema.types.PhoenixArray;
@@ -35,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -424,7 +424,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                                 cell.getValueArray(),
                                 cell.getValueOffset(),
                                 cell.getValueLength());
-                        PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                        PhoenixHelper.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
                         if (ptr.getLength() == 0) {
                             gt = GenotypeClass.NA_GT_VALUE;
                             validGt = true;

@@ -70,7 +70,7 @@ public class PersistentResultScanner extends AbstractClientScanner {
                 lastRow = result.getRow();
             }
             return result;
-        } catch (ScannerTimeoutException | UnknownScannerException e) {
+        } catch (UnknownScannerException e) {
             if (empty) {
                 return null;
             }

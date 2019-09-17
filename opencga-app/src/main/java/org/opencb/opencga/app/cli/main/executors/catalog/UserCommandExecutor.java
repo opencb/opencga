@@ -28,6 +28,8 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
+import org.opencb.oskar.analysis.AbstractAnalysis;
+import org.opencb.oskar.core.annotations.Analysis;
 
 import java.io.IOException;
 import java.util.*;
@@ -52,6 +54,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
     @Override
     public void execute() throws Exception {
+
+
 
         logger.debug("Executing users command line");
 //        openCGAClient = new OpenCGAClient(clientConfiguration);
