@@ -517,7 +517,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         QueryResult<Project> projectQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
         WriteResult writeResult = new WriteResult();
         for (Project project : projectQueryResult.getResult()) {
-            writeResult.concat(delete(project.getUid(), queryOptions));
+            writeResult.append(delete(project.getUid(), queryOptions));
         }
         return writeResult;
     }

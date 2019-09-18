@@ -1464,7 +1464,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<Study> studyQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
         WriteResult writeResult = new WriteResult();
         for (Study study : studyQueryResult.getResult()) {
-            writeResult.concat(delete(study.getUid(), queryOptions));
+            writeResult.append(delete(study.getUid(), queryOptions));
         }
         return writeResult;
     }

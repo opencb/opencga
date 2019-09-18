@@ -519,7 +519,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
 
                 // Add the results to the current write result
-                writeResult.concat(individualDBAdaptor.delete(individual.getUid()));
+                writeResult.append(individualDBAdaptor.delete(individual.getUid()));
 
                 auditManager.auditDelete(userId, operationUuid, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(),
                         auditQuery, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
@@ -533,7 +533,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList("Some individuals could not be deleted"));
+            writeResult.setWarnings(Collections.singletonList("Some individuals could not be deleted"));
         }
 
         return writeResult;

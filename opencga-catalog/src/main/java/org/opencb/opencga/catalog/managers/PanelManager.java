@@ -776,7 +776,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
 
                 // Delete the panel
-                writeResult.concat(panelDBAdaptor.delete(panel.getUid()));
+                writeResult.append(panelDBAdaptor.delete(panel.getUid()));
 
                 auditManager.auditDelete(userId, operationUuid, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditQuery,
                         auditParams, AuditRecord.Entity.PANEL, SUCCESS);
@@ -790,7 +790,7 @@ public class PanelManager extends ResourceManager<Panel> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList("Some panels could not be deleted"));
+            writeResult.setWarnings(Collections.singletonList("Some panels could not be deleted"));
         }
 
         return writeResult;

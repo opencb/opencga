@@ -400,7 +400,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Check if the sample can be deleted
                 checkSampleCanBeDeleted(study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
 
-                writeResult.concat(sampleDBAdaptor.delete(sample.getUid()));
+                writeResult.append(sampleDBAdaptor.delete(sample.getUid()));
 
                 auditManager.auditDelete(userId, operationUuid, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
                         auditQuery, auditParams, AuditRecord.Entity.SAMPLE, SUCCESS);
@@ -414,7 +414,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList("Some samples could not be deleted"));
+            writeResult.setWarnings(Collections.singletonList("Some samples could not be deleted"));
         }
 
         return writeResult;

@@ -425,7 +425,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 }
 
                 WriteResult tmpWriteResult = cohortDBAdaptor.delete(cohort.getUid());
-                writeResult.concat(tmpWriteResult);
+                writeResult.append(tmpWriteResult);
 
                 auditManager.auditDelete(userId, operationUuid, cohort.getId(), cohort.getUuid(), study.getId(), study.getUuid(),
                         auditQuery, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
@@ -439,7 +439,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList("Some cohorts could not be deleted"));
+            writeResult.setWarnings(Collections.singletonList("Some cohorts could not be deleted"));
         }
 
         return writeResult;

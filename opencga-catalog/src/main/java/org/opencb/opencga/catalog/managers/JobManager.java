@@ -449,7 +449,7 @@ public class JobManager extends ResourceManager<Job> {
                 // Check if the job can be deleted
                 checkJobCanBeDeleted(job);
 
-                writeResult.concat(jobDBAdaptor.delete(job.getUid()));
+                writeResult.append(jobDBAdaptor.delete(job.getUid()));
 
                 auditManager.auditDelete(userId, operationUuid, job.getId(), job.getUuid(), study.getId(), study.getUuid(), auditQuery,
                         auditParams, AuditRecord.Entity.JOB, SUCCESS);
@@ -463,7 +463,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList("Some jobs could not be deleted"));
+            writeResult.setWarnings(Collections.singletonList("Some jobs could not be deleted"));
         }
 
         return writeResult;

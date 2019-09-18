@@ -420,7 +420,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
 
                 // Delete the family
-                writeResult.concat(familyDBAdaptor.delete(family.getUid()));
+                writeResult.append(familyDBAdaptor.delete(family.getUid()));
 
                 auditManager.auditDelete(userId, operationUuid, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
                         auditQuery, auditParams, AuditRecord.Entity.FAMILY, SUCCESS);
@@ -434,7 +434,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         if (!writeResult.getFailed().isEmpty()) {
-            writeResult.setWarning(Collections.singletonList("Some families could not be deleted"));
+            writeResult.setWarnings(Collections.singletonList("Some families could not be deleted"));
         }
 
         return writeResult;

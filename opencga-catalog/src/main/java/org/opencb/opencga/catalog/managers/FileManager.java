@@ -1287,7 +1287,7 @@ public class FileManager extends AnnotationSetManager<File> {
         writeResult.setNumMatches(writeResult.getNumMatches() + numMatches);
 
         if (!failedList.isEmpty()) {
-            writeResult.setWarning(Collections.singletonList("Some files could not be deleted"));
+            writeResult.setWarnings(Collections.singletonList("Some files could not be deleted"));
         }
 
         return writeResult;
