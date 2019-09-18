@@ -241,6 +241,7 @@ public class AuditRecord {
         UPDATE,
         INFO,
         SEARCH,
+        COUNT,
         DELETE,
         DOWNLOAD,
         INDEX,

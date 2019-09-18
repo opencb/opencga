@@ -95,6 +95,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.FAMILY;
+    }
+
+    @Override
     QueryResult<Family> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
@@ -281,12 +286,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return familyQueryResult;
     }
 
-    public QueryResult<Family> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Family> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         Query finalQuery = new Query(query);
@@ -295,7 +300,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
         AnnotationUtils.fixQueryOptionAnnotation(options);
 
-        fixQueryObject(study, finalQuery, sessionId);
+        fixQueryObject(study, finalQuery, token);
 
         finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 

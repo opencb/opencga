@@ -79,6 +79,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.CLINICAL;
+    }
+
+    @Override
     QueryResult<ClinicalAnalysis> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
@@ -733,10 +738,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return true;
     }
 
-    public QueryResult<ClinicalAnalysis> search(String studyStr, Query query, QueryOptions options, String sessionId)
+    public QueryResult<ClinicalAnalysis> search(String studyId, Query query, QueryOptions options, String token)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         fixQueryObject(study, query, userId);
 

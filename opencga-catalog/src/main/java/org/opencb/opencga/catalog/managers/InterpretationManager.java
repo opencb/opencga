@@ -60,6 +60,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.INTERPRETATION;
+    }
+
+    @Override
     QueryResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
@@ -372,9 +377,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public QueryResult<Interpretation> search(String studyStr, Query query, QueryOptions options, String sessionId)
+    public QueryResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token)
             throws CatalogException {
-        return get(studyStr, query, options, sessionId);
+        return get(studyId, query, options, token);
     }
 
     @Override

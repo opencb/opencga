@@ -86,6 +86,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.COHORT;
+    }
+
+    @Override
     QueryResult<Cohort> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
@@ -319,12 +324,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public QueryResult<Cohort> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation

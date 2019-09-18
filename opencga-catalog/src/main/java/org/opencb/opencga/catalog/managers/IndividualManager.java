@@ -109,6 +109,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.INDIVIDUAL;
+    }
+
+    @Override
     QueryResult<Individual> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
@@ -396,12 +401,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Individual> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         Query finalQuery = new Query(query);

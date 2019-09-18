@@ -109,9 +109,25 @@ public class AuditManager {
         audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.INFO, status, new ObjectMap());
     }
 
+    public void auditInfo(String userId, String operationUuid, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
+                          AuditRecord.Entity entity, int status) {
+        audit(userId, operationUuid, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.INFO, status,
+                new ObjectMap());
+    }
+
     public void auditSearch(String userId, String studyId, String studyUuid, Query query, ObjectMap params, AuditRecord.Entity entity,
                             int status) {
         audit(userId, "", "", studyId, studyUuid, query, params, entity, AuditRecord.Action.SEARCH, status, new ObjectMap());
+    }
+
+    public void auditCount(String userId, String studyId, String studyUuid, Query query, ObjectMap params, AuditRecord.Entity entity,
+                            int status) {
+        audit(userId, "", "", studyId, studyUuid, query, params, entity, AuditRecord.Action.COUNT, status, new ObjectMap());
+    }
+
+    public void auditFacet(String userId, String studyId, String studyUuid, Query query, ObjectMap params, AuditRecord.Entity entity,
+                           int status) {
+        audit(userId, "", "", studyId, studyUuid, query, params, entity, AuditRecord.Action.FACET, status, new ObjectMap());
     }
 
     public void audit(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Entity entity,

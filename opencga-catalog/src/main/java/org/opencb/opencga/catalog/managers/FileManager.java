@@ -134,6 +134,11 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.FILE;
+    }
+
+    @Override
     QueryResult<File> internalGet(long studyUid, String fileName, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(fileName);
@@ -1106,9 +1111,9 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+    public QueryResult<File> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation

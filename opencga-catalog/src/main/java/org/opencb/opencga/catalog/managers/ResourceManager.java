@@ -7,12 +7,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.Study;
@@ -21,6 +24,9 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
+import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 
 /**
  * Created by pfurio on 07/08/17.
@@ -31,6 +37,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                     DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
+
+    abstract AuditRecord.Entity getEntity();
 
     QueryResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
         return internalGet(studyUid, entry, null, options, user);
@@ -94,52 +102,59 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         return get(studyStr, entryList, new Query(), options, silent, token);
     }
 
-    public List<QueryResult<R>> get(String studyStr, List<String> entryList, Query query, QueryOptions options, boolean silent,
-                                    String token) throws CatalogException {
-        List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
-
+    public List<QueryResult<R>> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        InternalGetQueryResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-//        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
-//        if (responseResult.getMissing() != null) {
-//            missingMap = responseResult.getMissing().stream()
-//                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
-//        }
-//        int counter = 0;
-//        for (String entry : entryList) {
-//            if (missingMap.containsKey(entry)) {
-//                // We add a QueryResult entry with the missing field
-//                resultList.add(new QueryResult<>(entry, responseResult.getDbTime(), 0, 0, "", missingMap.get(entry).getErrorMsg(),
-//                        Collections.emptyList()));
-//            } else {
-//                R response = responseResult.getResult().get(counter);
-//                resultList.add(new QueryResult<>(response.getId(), responseResult.getDbTime(), 1, 1, "", "",
-//                        Collections.singletonList(response)));
-//                counter += 1;
-//            }
-//        }
-        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
-        if (responseResult.getMissing() != null) {
-            missingMap = responseResult.getMissing().stream()
-                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
-        }
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("entryList", entryList)
+                .append("query", new Query(query))
+                .append("options", new QueryOptions(options))
+                .append("silent", silent)
+                .append("token", token);
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
-        List<List<R>> versionedResults = responseResult.getVersionedResults();
-        for (int i = 0; i < versionedResults.size(); i++) {
-            String entryId = entryList.get(i);
-            if (versionedResults.get(i).isEmpty()) {
-                // Missing
-                resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), 0, 0, "", missingMap.get(entryId).getErrorMsg(),
-                        Collections.emptyList()));
-            } else {
-                int size = versionedResults.get(i).size();
-                resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), size, size, "", "", versionedResults.get(i)));
+        try {
+            List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
+
+            InternalGetQueryResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
+
+            Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+            if (responseResult.getMissing() != null) {
+                missingMap = responseResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
             }
+
+            List<List<R>> versionedResults = responseResult.getVersionedResults();
+            for (int i = 0; i < versionedResults.size(); i++) {
+                String entryId = entryList.get(i);
+                if (versionedResults.get(i).isEmpty()) {
+                    // Missing
+                    resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), 0, 0, "", missingMap.get(entryId).getErrorMsg(),
+                            Collections.emptyList()));
+                } else {
+                    int size = versionedResults.get(i).size();
+                    resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), size, size, "", "", versionedResults.get(i)));
+                }
+            }
+
+            for (QueryResult<R> queryResult : resultList) {
+                auditManager.auditInfo(userId, operationUuid, queryResult.first().getId(), queryResult.first().getUuid(), study.getId(),
+                        study.getUuid(), auditParams, getEntity(), SUCCESS);
+            }
+
+            return resultList;
+        } catch (CatalogException e) {
+            for (String entryId : entryList) {
+                auditManager.auditInfo(userId, operationUuid, entryId, "", study.getId(), study.getUuid(), auditParams, getEntity(), ERROR);
+            }
+            throw e;
         }
-        return resultList;
     }
 
     /**
@@ -169,14 +184,14 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Search of entries in catalog.
      *
-     * @param studyStr  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyId  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query     Query object.
      * @param options   QueryOptions object.
-     * @param sessionId Session id of the user logged in.
+     * @param token Session id of the user logged in.
      * @return The list of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract QueryResult<R> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
+    public abstract QueryResult<R> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Count matching entries in catalog.

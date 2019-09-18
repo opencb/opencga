@@ -84,6 +84,11 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.JOB;
+    }
+
+    @Override
     QueryResult<Job> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
@@ -369,7 +374,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public QueryResult<Job> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Job> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         throw new NotImplementedException("To be implemented");
     }
 

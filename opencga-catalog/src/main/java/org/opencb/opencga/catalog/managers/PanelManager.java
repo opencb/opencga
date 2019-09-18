@@ -77,6 +77,11 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
+    AuditRecord.Entity getEntity() {
+        return AuditRecord.Entity.PANEL;
+    }
+
+    @Override
     QueryResult<Panel> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
@@ -687,18 +692,18 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Panel> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (INSTALLATION_PANELS.equals(studyStr)) {
+        if (INSTALLATION_PANELS.equals(studyId)) {
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
             // Here view permissions won't be checked
             return panelDBAdaptor.get(query, options);
         } else {
-            String userId = userManager.getUserId(sessionId);
-            long studyUid = catalogManager.getStudyManager().resolveId(studyStr, userId).getUid();
+            String userId = userManager.getUserId(token);
+            long studyUid = catalogManager.getStudyManager().resolveId(studyId, userId).getUid();
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
             // Here permissions will be checked
