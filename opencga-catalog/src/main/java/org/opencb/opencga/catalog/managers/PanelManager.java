@@ -712,18 +712,18 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> count(String studyStr, Query query, String sessionId) throws CatalogException {
+    public QueryResult<Panel> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
         QueryResult<Long> queryResultAux;
-        if (studyStr.equals(INSTALLATION_PANELS)) {
+        if (studyId.equals(INSTALLATION_PANELS)) {
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
             // Here view permissions won't be checked
             queryResultAux = panelDBAdaptor.count(query);
         } else {
-            String userId = userManager.getUserId(sessionId);
-            long studyUid = catalogManager.getStudyManager().resolveId(studyStr, userId).getUid();
+            String userId = userManager.getUserId(token);
+            long studyUid = catalogManager.getStudyManager().resolveId(studyId, userId).getUid();
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
             // Here view permissions will be checked

@@ -1145,9 +1145,9 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public QueryResult<File> count(String studyStr, Query query, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+    public QueryResult<File> count(String studyId, Query query, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         // Fix query if it contains any annotation

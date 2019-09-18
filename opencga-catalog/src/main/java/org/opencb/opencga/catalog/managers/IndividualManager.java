@@ -430,11 +430,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public QueryResult<Individual> count(String studyStr, Query query, String sessionId) throws CatalogException {
+    public QueryResult<Individual> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         Query finalQuery = new Query(query);

@@ -356,18 +356,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public QueryResult<Family> count(String studyStr, Query query, String sessionId) throws CatalogException {
+    public QueryResult<Family> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         Query finalQuery = new Query(query);
 
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
-        fixQueryObject(study, finalQuery, sessionId);
+        fixQueryObject(study, finalQuery, token);
 
         finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);

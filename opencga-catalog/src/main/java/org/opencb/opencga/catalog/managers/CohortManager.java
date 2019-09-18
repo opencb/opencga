@@ -332,16 +332,28 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, query);
-        AnnotationUtils.fixQueryOptionAnnotation(options);
-        fixQueryObject(study, query, userId);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("token", token);
 
-        query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
+        try {
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, query);
+            AnnotationUtils.fixQueryOptionAnnotation(options);
+            fixQueryObject(study, query, userId);
+
+            query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
 //        authorizationManager.filterCohorts(userId, studyId, queryResultAux.getResult());
 
-        return queryResult;
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, ERROR);
+            throw e;
+        }
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
@@ -365,22 +377,34 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public QueryResult<Cohort> count(String studyStr, Query query, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("token", token);
 
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, query);
-        fixQueryObject(study, query, userId);
+        try {
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, query);
+            fixQueryObject(study, query, userId);
 
-        query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
-        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
-                queryResultAux.getErrorMsg(), Collections.emptyList());
+            query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
+
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
+
+            return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                    queryResultAux.getErrorMsg(), Collections.emptyList());
+        } catch (CatalogException e) {
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, ERROR);
+            throw e;
+        }
     }
 
     @Override
@@ -735,122 +759,185 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<QueryResult<CohortAclEntry>> getAcls(String studyStr, List<String> cohortList, String member, boolean silent,
-                                                     String sessionId) throws CatalogException {
-        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortList.size());
-        String user = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, user);
+    public List<QueryResult<CohortAclEntry>> getAcls(String studyId, List<String> cohortList, String member, boolean silent, String token)
+            throws CatalogException {
+        String user = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, user);
 
-        InternalGetQueryResult<Cohort> cohortQueryResult = internalGet(study.getUid(), cohortList, INCLUDE_COHORT_IDS, user, silent);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("cohortList", cohortList)
+                .append("member", member)
+                .append("silent", silent)
+                .append("token", token);
 
-        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
-        if (cohortQueryResult.getMissing() != null) {
-            missingMap = cohortQueryResult.getMissing().stream()
-                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
-        }
-        int counter = 0;
-        for (String cohortId : cohortList) {
-            if (!missingMap.containsKey(cohortId)) {
-                try {
-                    QueryResult<CohortAclEntry> allCohortAcls;
-                    if (StringUtils.isNotEmpty(member)) {
-                        allCohortAcls = authorizationManager.getCohortAcl(study.getUid(),
-                                cohortQueryResult.getResult().get(counter).getUid(), user, member);
-                    } else {
-                        allCohortAcls = authorizationManager.getAllCohortAcls(study.getUid(),
-                                cohortQueryResult.getResult().get(counter).getUid(), user);
-                    }
-                    allCohortAcls.setId(cohortId);
-                    cohortAclList.add(allCohortAcls);
-                } catch (CatalogException e) {
-                    if (!silent) {
-                        throw e;
-                    } else {
-                        cohortAclList.add(new QueryResult<>(cohortId, cohortQueryResult.getDbTime(), 0, 0, "",
-                                missingMap.get(cohortId).getErrorMsg(), Collections.emptyList()));
-                    }
-                }
-                counter += 1;
-            } else {
-                cohortAclList.add(new QueryResult<>(cohortId, cohortQueryResult.getDbTime(), 0, 0, "",
-                        missingMap.get(cohortId).getErrorMsg(), Collections.emptyList()));
+        try {
+            List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortList.size());
+
+            InternalGetQueryResult<Cohort> cohortQueryResult = internalGet(study.getUid(), cohortList, INCLUDE_COHORT_IDS, user, silent);
+
+            Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+            if (cohortQueryResult.getMissing() != null) {
+                missingMap = cohortQueryResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
             }
+            int counter = 0;
+            for (String cohortId : cohortList) {
+                if (!missingMap.containsKey(cohortId)) {
+                    Cohort cohort = cohortQueryResult.getResult().get(counter);
+                    try {
+                        QueryResult<CohortAclEntry> allCohortAcls;
+                        if (StringUtils.isNotEmpty(member)) {
+                            allCohortAcls = authorizationManager.getCohortAcl(study.getUid(), cohort.getUid(), user, member);
+                        } else {
+                            allCohortAcls = authorizationManager.getAllCohortAcls(study.getUid(), cohort.getUid(), user);
+                        }
+                        allCohortAcls.setId(cohortId);
+                        cohortAclList.add(allCohortAcls);
+
+                        auditManager.audit(user, operationId, cohort.getId(), cohort.getUuid(), study.getId(), study.getUuid(), new Query(),
+                                auditParams, AuditRecord.Entity.COHORT, AuditRecord.Action.FETCH_ACLS, SUCCESS, new ObjectMap());
+                    } catch (CatalogException e) {
+                        auditManager.audit(user, operationId, cohort.getId(), cohort.getUuid(), study.getId(), study.getUuid(), new Query(),
+                                auditParams, AuditRecord.Entity.COHORT, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+
+                        if (!silent) {
+                            throw e;
+                        } else {
+                            cohortAclList.add(new QueryResult<>(cohortId, cohortQueryResult.getDbTime(), 0, 0, "",
+                                    missingMap.get(cohortId).getErrorMsg(), Collections.emptyList()));
+                        }
+                    }
+                    counter += 1;
+                } else {
+                    cohortAclList.add(new QueryResult<>(cohortId, cohortQueryResult.getDbTime(), 0, 0, "",
+                            missingMap.get(cohortId).getErrorMsg(), Collections.emptyList()));
+
+                    auditManager.audit(user, operationId, cohortId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.COHORT, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                }
+            }
+            return cohortAclList;
+        } catch (CatalogException e) {
+            for (String cohortId : cohortList) {
+                auditManager.audit(user, operationId, cohortId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                        AuditRecord.Entity.COHORT, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+            }
+            throw e;
         }
-        return cohortAclList;
     }
 
-    public List<QueryResult<CohortAclEntry>> updateAcl(String studyStr, List<String> cohortStrList, String memberIds, AclParams aclParams,
-                                                       String sessionId) throws CatalogException {
-        if (cohortStrList == null || cohortStrList.isEmpty()) {
-            throw new CatalogException("Missing cohort parameter");
+    public List<QueryResult<CohortAclEntry>> updateAcl(String studyId, List<String> cohortStrList, String memberList, AclParams aclParams,
+                                                       String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("cohortStrList", cohortStrList)
+                .append("memberList", memberList)
+                .append("aclParams", aclParams)
+                .append("token", token);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        try {
+            if (cohortStrList == null || cohortStrList.isEmpty()) {
+                throw new CatalogException("Missing cohort parameter");
+            }
+
+            if (aclParams.getAction() == null) {
+                throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+            }
+
+            List<String> permissions = Collections.emptyList();
+            if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+                permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+                checkPermissions(permissions, CohortAclEntry.CohortPermissions::valueOf);
+            }
+
+            List<Cohort> cohortList = internalGet(study.getUid(), cohortStrList, INCLUDE_COHORT_IDS, userId, false).getResult();
+
+            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
+
+            // Validate that the members are actually valid members
+            List<String> members;
+            if (memberList != null && !memberList.isEmpty()) {
+                members = Arrays.asList(memberList.split(","));
+            } else {
+                members = Collections.emptyList();
+            }
+            authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+            checkMembers(study.getUid(), members);
+
+            List<Long> cohortUids = cohortList.stream().map(Cohort::getUid).collect(Collectors.toList());
+
+            List<QueryResult<CohortAclEntry>> queryResultList;
+            switch (aclParams.getAction()) {
+                case SET:
+                    queryResultList = authorizationManager.setAcls(study.getUid(), cohortUids, members, permissions, Entity.COHORT);
+                    break;
+                case ADD:
+                    queryResultList = authorizationManager.addAcls(study.getUid(), cohortUids, members, permissions, Entity.COHORT);
+                    break;
+                case REMOVE:
+                    queryResultList = authorizationManager.removeAcls(cohortUids, members, permissions, Entity.COHORT);
+                    break;
+                case RESET:
+                    queryResultList = authorizationManager.removeAcls(cohortUids, members, null, Entity.COHORT);
+                    break;
+                default:
+                    throw new CatalogException("Unexpected error occurred. No valid action found.");
+            }
+
+            for (Cohort cohort : cohortList) {
+                auditManager.audit(userId, operationId, cohort.getId(), cohort.getUuid(), study.getId(), study.getUuid(), new Query(),
+                        auditParams, AuditRecord.Entity.COHORT, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+            }
+            return queryResultList;
+        } catch (CatalogException e) {
+            for (String cohortId : cohortStrList) {
+                auditManager.audit(userId, operationId, cohortId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                        AuditRecord.Entity.COHORT, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+            }
+            throw e;
         }
-
-        if (aclParams.getAction() == null) {
-            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
-        }
-
-        List<String> permissions = Collections.emptyList();
-        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
-            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-            checkPermissions(permissions, CohortAclEntry.CohortPermissions::valueOf);
-        }
-
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_STUDY_UID);
-
-        List<Cohort> cohortList = internalGet(study.getUid(), cohortStrList, INCLUDE_COHORT_IDS, userId, false).getResult();
-
-        authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
-
-        // Validate that the members are actually valid members
-        List<String> members;
-        if (memberIds != null && !memberIds.isEmpty()) {
-            members = Arrays.asList(memberIds.split(","));
-        } else {
-            members = Collections.emptyList();
-        }
-        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-        checkMembers(study.getUid(), members);
-
-        List<Long> cohortUids = cohortList.stream().map(Cohort::getUid).collect(Collectors.toList());
-
-        switch (aclParams.getAction()) {
-            case SET:
-                return authorizationManager.setAcls(study.getUid(), cohortUids, members, permissions, Entity.COHORT);
-            case ADD:
-                return authorizationManager.addAcls(study.getUid(), cohortUids, members, permissions, Entity.COHORT);
-            case REMOVE:
-                return authorizationManager.removeAcls(cohortUids, members, permissions, Entity.COHORT);
-            case RESET:
-                return authorizationManager.removeAcls(cohortUids, members, null, Entity.COHORT);
-            default:
-                throw new CatalogException("Unexpected error occurred. No valid action found.");
-        }
-//        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
-//        auditManager.audit(operationUuid, null, null, study.getId(), null, AuditRecord.Resource.COHORT,
-//                    AuditRecord.Action.CHANGE_PERMISSION, result, userId, new ObjectMap());
-
     }
 
-    public FacetQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
+    public FacetQueryResult facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
             throws CatalogException, IOException {
         ParamUtils.defaultObject(query, Query::new);
-        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+        ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            String facet = queryOptions.getString(QueryOptions.FACET);
-            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-        }
-
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-
-        String userId = userManager.getUserId(sessionId);
+        String userId = userManager.getUserId(token);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
 
-        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("defaultStats", defaultStats)
+                .append("token", token);
 
-        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION, query, queryOptions, userId);
+        try {
+            if (defaultStats || StringUtils.isEmpty(options.getString(QueryOptions.FACET))) {
+                String facet = options.getString(QueryOptions.FACET);
+                options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+            }
+
+            AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+            FacetQueryResult result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.COHORT_SOLR_COLLECTION, query, options,
+                    userId);
+            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, ERROR);
+            throw e;
+        }
     }
 }

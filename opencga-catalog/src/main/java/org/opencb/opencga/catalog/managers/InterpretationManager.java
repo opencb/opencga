@@ -383,7 +383,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public QueryResult<Interpretation> count(String studyStr, Query query, String sessionId) throws CatalogException {
+    public QueryResult<Interpretation> count(String studyId, Query query, String token) throws CatalogException {
         return null;
     }
 

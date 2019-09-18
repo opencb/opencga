@@ -196,13 +196,13 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     /**
      * Count matching entries in catalog.
      *
-     * @param studyStr  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyId  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query     Query object.
-     * @param sessionId Session id of the user logged in.
+     * @param token Session id of the user logged in.
      * @return A QueryResult with the total number of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract QueryResult<R> count(String studyStr, Query query, String sessionId) throws CatalogException;
+    public abstract QueryResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
     /**
      * Delete all entries matching the query.

@@ -394,11 +394,11 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public QueryResult<Job> count(String studyStr, Query query, String sessionId) throws CatalogException {
+    public QueryResult<Job> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         fixQueryObject(study, query, userId);
 

@@ -777,10 +777,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
     }
 
-    public QueryResult<ClinicalAnalysis> count(String studyStr, Query query, String sessionId)
+    public QueryResult<ClinicalAnalysis> count(String studyId, Query query, String token)
             throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         fixQueryObject(study, query, userId);
 
