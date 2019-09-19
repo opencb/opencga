@@ -377,12 +377,6 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Return multiple matches", required = false) @DefaultValue("true") @QueryParam("multi") Boolean multi) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-            File file = fileManager.get(studyStr, fileIdStr, FileManager.INCLUDE_FILE_IDS, sessionId).first();
-            catalogManager.getAuthorizationManager().checkFilePermission(study.getUid(), file.getUid(), userId,
-                    FileAclEntry.FilePermissions.VIEW_CONTENT);
-
             QueryOptions options = new QueryOptions("ignoreCase", ignoreCase);
             options.put("multi", multi);
             try (DataInputStream stream = catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, options, sessionId)) {
@@ -679,8 +673,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             ParamUtils.checkIsSingleID(folderId);
             query.remove("maxDepth");
-            QueryResult result = fileManager
-                    .getTree(folderId.replace(":", "/"), studyStr, query, queryOptions, maxDepth, sessionId);
+            QueryResult result = fileManager.getTree(studyStr, folderId.replace(":", "/"), query, queryOptions, maxDepth, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

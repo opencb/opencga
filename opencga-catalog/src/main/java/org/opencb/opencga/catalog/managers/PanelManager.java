@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -231,56 +232,92 @@ public class PanelManager extends ResourceManager<Panel> {
         }
     }
 
-    public QueryResult<Panel> importAllGlobalPanels(String studyStr, QueryOptions options, String token) throws CatalogException {
+    public QueryResult<Panel> importAllGlobalPanels(String studyId, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        // 1. We check everything can be done
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("options", options)
+                .append("token", token);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        try {
+            // 1. We check everything can be done
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
-        DBIterator<Panel> iterator = iterator(INSTALLATION_PANELS, new Query(), QueryOptions.empty(), token);
+            DBIterator<Panel> iterator = iterator(INSTALLATION_PANELS, new Query(), QueryOptions.empty(), token);
 
-        int dbTime = 0;
+            int dbTime = 0;
+            int counter = 0;
+            while (iterator.hasNext()) {
+                Panel globalPanel = iterator.next();
+                QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options);
+                dbTime += panelQueryResult.getDbTime();
+                counter++;
+
+                auditManager.audit(userId, operationId, panelQueryResult.first().getId(), panelQueryResult.first().getUuid(), study.getId(),
+                        study.getUuid(), new Query(), auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL,
+                        SUCCESS, new ObjectMap());
+            }
+            iterator.close();
+
+            return new QueryResult<>("Import panel", dbTime, counter, counter, "", "", Collections.emptyList());
+        } catch (CatalogException e) {
+            auditManager.audit(userId, operationId, "", "", study.getId(), study.getUuid(), new Query(), auditParams,
+                    AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL, ERROR, new ObjectMap());
+            throw e;
+        }
+    }
+
+    public QueryResult<Panel> importGlobalPanels(String studyId, List<String> panelIds, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("panelIds", panelIds)
+                .append("options", options)
+                .append("token", token);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
         int counter = 0;
-        while (iterator.hasNext()) {
-            Panel globalPanel = iterator.next();
-            QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options, userId);
-            dbTime += panelQueryResult.getDbTime();
-            counter++;
-        }
-        iterator.close();
+        try {
+            // 1. We check everything can be done
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
-        return new QueryResult<>("Import panel", dbTime, counter, counter, "", "", Collections.emptyList());
+            List<Panel> importedPanels = new ArrayList<>(panelIds.size());
+            int dbTime = 0;
+            for (counter = 0; counter < panelIds.size(); counter++) {
+                // Fetch the installation Panel (if it exists)
+                Panel globalPanel = getInstallationPanel(panelIds.get(counter));
+                QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options);
+                importedPanels.add(panelQueryResult.first());
+                dbTime += panelQueryResult.getDbTime();
+
+                auditManager.audit(userId, operationId, panelQueryResult.first().getId(), panelQueryResult.first().getUuid(), study.getId(),
+                        study.getUuid(), new Query(), auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL,
+                        SUCCESS, new ObjectMap());
+            }
+
+            if (importedPanels.size() > 5) {
+                // If we have imported more than 5 panels, we will only return the number of imported panels
+                return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "",
+                        Collections.emptyList());
+            }
+
+            return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", importedPanels);
+        } catch (CatalogException e) {
+            // Audit panels that could not be imported
+            for (int i = counter; i < panelIds.size(); i++) {
+                auditManager.audit(userId, operationId, panelIds.get(i), "", study.getId(), study.getUuid(), new Query(), auditParams,
+                        AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL, ERROR, new ObjectMap());
+            }
+            throw e;
+        }
     }
 
-    public QueryResult<Panel> importGlobalPanels(String studyStr, List<String> panelIds, QueryOptions options, String token)
-            throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        // 1. We check everything can be done
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
-
-        List<Panel> importedPanels = new ArrayList<>(panelIds.size());
-        int dbTime = 0;
-        for (String panelId : panelIds) {
-            // Fetch the installation Panel (if it exists)
-            Panel globalPanel = getInstallationPanel(panelId);
-            QueryResult<Panel> panelQueryResult = importGlobalPanel(study, globalPanel, options, userId);
-            importedPanels.add(panelQueryResult.first());
-            dbTime += panelQueryResult.getDbTime();
-        }
-
-        if (importedPanels.size() > 5) {
-            // If we have imported more than 5 panels, we will only return the number of imported panels
-            return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", Collections.emptyList());
-        }
-
-        return new QueryResult<>("Import panel", dbTime, importedPanels.size(), importedPanels.size(), "", "", importedPanels);
-    }
-
-    private QueryResult<Panel> importGlobalPanel(Study study, Panel diseasePanel, QueryOptions options, String userId)
-            throws CatalogException {
+    private QueryResult<Panel> importGlobalPanel(Study study, Panel diseasePanel, QueryOptions options) throws CatalogException {
         diseasePanel.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PANEL));
         diseasePanel.setCreationDate(TimeUtils.getTime());
         diseasePanel.setRelease(studyManager.getCurrentRelease(study));
@@ -696,18 +733,40 @@ public class PanelManager extends ResourceManager<Panel> {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (INSTALLATION_PANELS.equals(studyId)) {
-            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
-
-            // Here view permissions won't be checked
-            return panelDBAdaptor.get(query, options);
+        String userId = userManager.getUserId(token);
+        Study study;
+        if (studyId.equals(INSTALLATION_PANELS)) {
+            study = new Study().setId("").setUuid("");
         } else {
-            String userId = userManager.getUserId(token);
-            long studyUid = catalogManager.getStudyManager().resolveId(studyId, userId).getUid();
-            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+            study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+        }
 
-            // Here permissions will be checked
-            return panelDBAdaptor.get(query, options, userId);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("token", token);
+
+        try {
+            QueryResult<Panel> result;
+            if (INSTALLATION_PANELS.equals(studyId)) {
+                query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
+
+                // Here view permissions won't be checked
+                result = panelDBAdaptor.get(query, options);
+            } else {
+                query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+                // Here permissions will be checked
+                result = panelDBAdaptor.get(query, options, userId);
+            }
+
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, SUCCESS);
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, ERROR);
+            throw e;
         }
     }
 
@@ -715,23 +774,42 @@ public class PanelManager extends ResourceManager<Panel> {
     public QueryResult<Panel> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
 
-        QueryResult<Long> queryResultAux;
+        String userId = userManager.getUserId(token);
+        Study study;
         if (studyId.equals(INSTALLATION_PANELS)) {
-            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
-
-            // Here view permissions won't be checked
-            queryResultAux = panelDBAdaptor.count(query);
+            study = new Study().setId("").setUuid("");
         } else {
-            String userId = userManager.getUserId(token);
-            long studyUid = catalogManager.getStudyManager().resolveId(studyId, userId).getUid();
-            query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-            // Here view permissions will be checked
-            queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+            study = studyManager.resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+                    StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
         }
 
-        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
-                queryResultAux.getErrorMsg(), Collections.emptyList());
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("token", token);
+
+        try {
+            QueryResult<Long> queryResultAux;
+            if (studyId.equals(INSTALLATION_PANELS)) {
+                query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
+
+                // Here view permissions won't be checked
+                queryResultAux = panelDBAdaptor.count(query);
+            } else {
+                query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+                // Here view permissions will be checked
+                queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+            }
+
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, SUCCESS);
+
+            return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                    queryResultAux.getErrorMsg(), Collections.emptyList());
+        } catch (CatalogException e) {
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, ERROR);
+            throw e;
+        }
     }
 
     @Override
@@ -747,6 +825,7 @@ public class PanelManager extends ResourceManager<Panel> {
         Query auditQuery = new Query(query);
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
+                .append("query", new Query(query))
                 .append("params", params)
                 .append("token", token);
 
@@ -845,99 +924,148 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<QueryResult<PanelAclEntry>> getAcls(String studyStr, List<String> panelList, String member, boolean silent,
-                                                    String sessionId) throws CatalogException {
-        List<QueryResult<PanelAclEntry>> panelAclList = new ArrayList<>(panelList.size());
-        String user = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, user);
+    public List<QueryResult<PanelAclEntry>> getAcls(String studyId, List<String> panelList, String member, boolean silent,
+                                                    String token) throws CatalogException {
+        String user = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, user);
 
-        InternalGetQueryResult<Panel> queryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, silent);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("panelList", panelList)
+                .append("member", member)
+                .append("silent", silent)
+                .append("token", token);
+        try {
+            List<QueryResult<PanelAclEntry>> panelAclList = new ArrayList<>(panelList.size());
+            InternalGetQueryResult<Panel> queryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, silent);
 
-        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
-        if (queryResult.getMissing() != null) {
-            missingMap = queryResult.getMissing().stream()
-                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
-        }
-        int counter = 0;
-        for (String panelId : panelList) {
-            if (!missingMap.containsKey(panelId)) {
-                try {
-                    QueryResult<PanelAclEntry> allPanelAcls;
-                    if (StringUtils.isNotEmpty(member)) {
-                        allPanelAcls =
-                                authorizationManager.getPanelAcl(study.getUid(), queryResult.getResult().get(counter).getUid(), user,
-                                        member);
-                    } else {
-                        allPanelAcls = authorizationManager.getAllPanelAcls(study.getUid(), queryResult.getResult().get(counter).getUid(),
-                                user);
-                    }
-                    allPanelAcls.setId(panelId);
-                    panelAclList.add(allPanelAcls);
-                } catch (CatalogException e) {
-                    if (!silent) {
-                        throw e;
-                    } else {
-                        panelAclList.add(new QueryResult<>(panelId, queryResult.getDbTime(), 0, 0, "",
-                                missingMap.get(panelId).getErrorMsg(), Collections.emptyList()));
-                    }
-                }
-                counter += 1;
-            } else {
-                panelAclList.add(new QueryResult<>(panelId, queryResult.getDbTime(), 0, 0, "", missingMap.get(panelId).getErrorMsg(),
-                        Collections.emptyList()));
+            Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
             }
+            int counter = 0;
+            for (String panelId : panelList) {
+                if (!missingMap.containsKey(panelId)) {
+                    Panel panel = queryResult.getResult().get(counter);
+                    try {
+                        QueryResult<PanelAclEntry> allPanelAcls;
+                        if (StringUtils.isNotEmpty(member)) {
+                            allPanelAcls =
+                                    authorizationManager.getPanelAcl(study.getUid(), panel.getUid(), user, member);
+                        } else {
+                            allPanelAcls = authorizationManager.getAllPanelAcls(study.getUid(), panel.getUid(), user);
+                        }
+                        allPanelAcls.setId(panelId);
+                        panelAclList.add(allPanelAcls);
+                        auditManager.audit(user, operationId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), new Query(),
+                                auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, SUCCESS, new ObjectMap());
+                    } catch (CatalogException e) {
+                        auditManager.audit(user, operationId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), new Query(),
+                                auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+
+                        if (!silent) {
+                            throw e;
+                        } else {
+                            panelAclList.add(new QueryResult<>(panelId, queryResult.getDbTime(), 0, 0, "",
+                                    missingMap.get(panelId).getErrorMsg(), Collections.emptyList()));
+                        }
+                    }
+                    counter += 1;
+                } else {
+                    panelAclList.add(new QueryResult<>(panelId, queryResult.getDbTime(), 0, 0, "", missingMap.get(panelId).getErrorMsg(),
+                            Collections.emptyList()));
+
+                    auditManager.audit(user, operationId, panelId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                }
+            }
+            return panelAclList;
+        } catch (CatalogException e) {
+            for (String panelId : panelList) {
+                auditManager.audit(user, operationId, panelId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                        AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+            }
+            throw e;
         }
-        return panelAclList;
     }
 
-    public List<QueryResult<PanelAclEntry>> updateAcl(String studyStr, List<String> panelList, String memberIds,
-                                                      AclParams panelAclParams, String sessionId) throws CatalogException {
-        if (panelList == null || panelList.isEmpty()) {
-            throw new CatalogException("Update ACL: Missing panel parameter");
-        }
+    public List<QueryResult<PanelAclEntry>> updateAcl(String studyId, List<String> panelStrList, String memberList, AclParams aclParams,
+                                                      String token) throws CatalogException {
+        String user = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, user);
 
-        if (panelAclParams.getAction() == null) {
-            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
-        }
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("panelStrList", panelStrList)
+                .append("memberList", memberList)
+                .append("aclParams", aclParams)
+                .append("token", token);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
-        List<String> permissions = Collections.emptyList();
-        if (StringUtils.isNotEmpty(panelAclParams.getPermissions())) {
-            permissions = Arrays.asList(panelAclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-            checkPermissions(permissions, PanelAclEntry.PanelPermissions::valueOf);
-        }
+        try {
+            if (panelStrList == null || panelStrList.isEmpty()) {
+                throw new CatalogException("Update ACL: Missing panel parameter");
+            }
 
-        String user = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, user);
+            if (aclParams.getAction() == null) {
+                throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+            }
 
-        QueryResult<Panel> panelQueryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, false);
-        authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
+            List<String> permissions = Collections.emptyList();
+            if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+                permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+                checkPermissions(permissions, PanelAclEntry.PanelPermissions::valueOf);
+            }
 
-        // Validate that the members are actually valid members
-        List<String> members;
-        if (memberIds != null && !memberIds.isEmpty()) {
-            members = Arrays.asList(memberIds.split(","));
-        } else {
-            members = Collections.emptyList();
-        }
-        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-        checkMembers(study.getUid(), members);
+            QueryResult<Panel> panelQueryResult = internalGet(study.getUid(), panelStrList, INCLUDE_PANEL_IDS, user, false);
+            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
 
-        switch (panelAclParams.getAction()) {
-            case SET:
-                return authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream().map(Panel::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.PANEL);
-            case ADD:
-                return authorizationManager.addAcls(study.getUid(), panelQueryResult.getResult().stream()
-                        .map(Panel::getUid)
-                        .collect(Collectors.toList()), members, permissions, Entity.PANEL);
-            case REMOVE:
-                return authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
-                        .collect(Collectors.toList()), members, permissions, Entity.PANEL);
-            case RESET:
-                return authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
-                        .collect(Collectors.toList()), members, null, Entity.PANEL);
-            default:
-                throw new CatalogException("Unexpected error occurred. No valid action found.");
+            // Validate that the members are actually valid members
+            List<String> members;
+            if (memberList != null && !memberList.isEmpty()) {
+                members = Arrays.asList(memberList.split(","));
+            } else {
+                members = Collections.emptyList();
+            }
+            authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+            checkMembers(study.getUid(), members);
+
+            List<QueryResult<PanelAclEntry>> queryResultList;
+            switch (aclParams.getAction()) {
+                case SET:
+                    queryResultList = authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream().map(Panel::getUid)
+                            .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+                    break;
+                case ADD:
+                    queryResultList = authorizationManager.addAcls(study.getUid(), panelQueryResult.getResult().stream().map(Panel::getUid)
+                            .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+                    break;
+                case REMOVE:
+                    queryResultList = authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
+                            .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+                    break;
+                case RESET:
+                    queryResultList = authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
+                            .collect(Collectors.toList()), members, null, Entity.PANEL);
+                    break;
+                default:
+                    throw new CatalogException("Unexpected error occurred. No valid action found.");
+            }
+            for (Panel panel : panelQueryResult.getResult()) {
+                auditManager.audit(user, operationId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), new Query(),
+                        auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
+            }
+            return queryResultList;
+        } catch (CatalogException e) {
+            if (panelStrList != null) {
+                for (String panelId : panelStrList) {
+                    auditManager.audit(user, operationId, panelId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.PANEL, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                }
+            }
+            throw e;
         }
     }
 

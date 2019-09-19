@@ -196,17 +196,31 @@ public class JobManager extends ResourceManager<Job> {
     }
 
 
-    public QueryResult<Job> visit(String studyStr, String jobId, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
-        Job job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
-        authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.VIEW);
-        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        WriteResult result = jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
-        QueryResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), QueryOptions.empty());
-        queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+    public QueryResult<Job> visit(String studyId, String jobId, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
 
-        return queryResult;
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("jobId", jobId)
+                .append("token", token);
+        try {
+            Job job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
+            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.VIEW);
+            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
+            WriteResult result = jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
+            QueryResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+            queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+
+            auditManager.audit(userId, job.getId(), job.getUuid(), study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.JOB,
+                    AuditRecord.Action.VISIT, SUCCESS);
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, jobId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.JOB,
+                    AuditRecord.Action.VISIT, ERROR);
+            throw e;
+        }
     }
 
     @Deprecated
@@ -245,7 +259,6 @@ public class JobManager extends ResourceManager<Job> {
                 .append("job", job)
                 .append("options", options)
                 .append("token", token);
-
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
@@ -325,27 +338,31 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public QueryResult<Job> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Job> get(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("token", token);
+        try {
+            query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        fixQueryObject(study, query, userId);
+            fixQueryObject(study, query, userId);
 
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
+            QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.JOB, SUCCESS);
 
-        if (jobQueryResult.getNumResults() == 0 && query.containsKey(JobDBAdaptor.QueryParams.UID.key())) {
-            List<Long> idList = query.getAsLongList(JobDBAdaptor.QueryParams.UID.key());
-            for (Long myId : idList) {
-                authorizationManager.checkJobPermission(study.getUid(), myId, userId, JobAclEntry.JobPermissions.VIEW);
-            }
+            return jobQueryResult;
+        } catch (CatalogException e) {
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.JOB, ERROR);
+            throw e;
         }
-
-        return jobQueryResult;
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
@@ -379,12 +396,12 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public DBIterator<Job> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public DBIterator<Job> iterator(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -400,27 +417,40 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        fixQueryObject(study, query, userId);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            fixQueryObject(study, query, userId);
 
-        query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = jobDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
-        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
-                queryResultAux.getErrorMsg(), Collections.emptyList());
+            query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryResult<Long> queryResultAux = jobDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.JOB, SUCCESS);
+
+            return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                    queryResultAux.getErrorMsg(), Collections.emptyList());
+        } catch (CatalogException e) {
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.JOB, ERROR);
+            throw e;
+        }
     }
 
     @Override
-    public WriteResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
+    public WriteResult delete(String studyId, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         WriteResult writeResult = new WriteResult();
 
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
         Query auditQuery = new Query(query);
         ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
+                .append("study", studyId)
+                .append("query", new Query(query))
                 .append("params", params)
                 .append("token", token);
 
@@ -491,13 +521,13 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public QueryResult<Job> update(String studyStr, String jobId, ObjectMap parameters, QueryOptions options, String token)
+    public QueryResult<Job> update(String studyId, String jobId, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyId, userId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
+                .append("study", studyId)
                 .append("jobId", jobId)
                 .append("parameters", parameters)
                 .append("options", options)
@@ -532,16 +562,16 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
-        return update(null, String.valueOf(jobId), parameters, options, sessionId);
+    public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+        return update(null, String.valueOf(jobId), parameters, options, token);
     }
 
-    public void setStatus(String studyStr, String jobId, String status, String message, String token) throws CatalogException {
+    public void setStatus(String studyId, String jobId, String status, String message, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyId, userId);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
+                .append("study", studyId)
                 .append("jobId", jobId)
                 .append("status", status)
                 .append("message", message)
@@ -576,14 +606,14 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
+    public QueryResult rank(String studyId, Query query, String field, int numResults, boolean asc, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
-        ParamUtils.checkObj(sessionId, "sessionId");
+        ParamUtils.checkObj(token, "sessionId");
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -599,7 +629,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public QueryResult groupBy(@Nullable String studyId, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -608,8 +638,8 @@ public class JobManager extends ResourceManager<Job> {
             throw new CatalogException("Empty fields parameter.");
         }
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -619,7 +649,7 @@ public class JobManager extends ResourceManager<Job> {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    public QueryResult<Job> queue(String studyStr, String jobName, String toolId, String description, String execution, Job.Type type,
+    public QueryResult<Job> queue(String studyId, String jobName, String toolId, String description, String execution, Job.Type type,
                                   Map<String, String> params, List<File> input, List<File> output, File outDir,
                                   Map<String, Object> attributes, String token)
             throws CatalogException {
@@ -628,121 +658,153 @@ public class JobManager extends ResourceManager<Job> {
                 .setOutput(output)
                 .setOutDir(outDir);
 
-        return create(studyStr, job, QueryOptions.empty(), token);
+        return create(studyId, job, QueryOptions.empty(), token);
     }
 
     // **************************   ACLs  ******************************** //
-    public List<QueryResult<JobAclEntry>> getAcls(String studyStr, List<String> jobList, String member, boolean silent, String sessionId)
+    public List<QueryResult<JobAclEntry>> getAcls(String studyId, List<String> jobList, String member, boolean silent, String token)
             throws CatalogException {
-        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(jobList.size());
-        String user = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, user);
+        String user = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, user);
 
-        InternalGetQueryResult<Job> queryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, silent);
-
-        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
-        if (queryResult.getMissing() != null) {
-            missingMap = queryResult.getMissing().stream()
-                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
-        }
-        int counter = 0;
-        for (String jobId : jobList) {
-            if (!missingMap.containsKey(jobId)) {
-                try {
-                    QueryResult<JobAclEntry> allJobAcls;
-                    if (StringUtils.isNotEmpty(member)) {
-                        allJobAcls = authorizationManager.getJobAcl(study.getUid(), queryResult.getResult().get(counter).getUid(), user,
-                                member);
-                    } else {
-                        allJobAcls = authorizationManager.getAllJobAcls(study.getUid(), queryResult.getResult().get(counter).getUid(),
-                                user);
-                    }
-                    allJobAcls.setId(jobId);
-                    jobAclList.add(allJobAcls);
-                } catch (CatalogException e) {
-                    if (!silent) {
-                        throw e;
-                    } else {
-                        jobAclList.add(new QueryResult<>(jobId, queryResult.getDbTime(), 0, 0, "", missingMap.get(jobId).getErrorMsg(),
-                                Collections.emptyList()));
-                    }
-                }
-                counter += 1;
-            } else {
-                jobAclList.add(new QueryResult<>(jobId, queryResult.getDbTime(), 0, 0, "", missingMap.get(jobId).getErrorMsg(),
-                        Collections.emptyList()));
-            }
-        }
-        return jobAclList;
-    }
-
-    public List<QueryResult<JobAclEntry>> updateAcl(String studyStr, List<String> jobStringList, String memberIds, AclParams aclParams,
-                                                    String sessionId) throws CatalogException {
-        if (jobStringList == null || jobStringList.isEmpty()) {
-            throw new CatalogException("Missing job parameter");
-        }
-
-        if (aclParams.getAction() == null) {
-            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
-        }
-
-        List<String> permissions = Collections.emptyList();
-        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
-            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-            checkPermissions(permissions, JobAclEntry.JobPermissions::valueOf);
-        }
-
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        List<Job> jobList = internalGet(study.getUid(), jobStringList, INCLUDE_JOB_IDS, userId, false).getResult();
-
-        authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
-
-        // Validate that the members are actually valid members
-        List<String> members;
-        if (memberIds != null && !memberIds.isEmpty()) {
-            members = Arrays.asList(memberIds.split(","));
-        } else {
-            members = Collections.emptyList();
-        }
-        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-        checkMembers(study.getUid(), members);
-//        catalogManager.getStudyManager().membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
-
-        switch (aclParams.getAction()) {
-            case SET:
-                return authorizationManager.setAcls(study.getUid(), jobList.stream().map(Job::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.JOB);
-            case ADD:
-                return authorizationManager.addAcls(study.getUid(), jobList.stream().map(Job::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.JOB);
-            case REMOVE:
-                return authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
-                        members, permissions, Entity.JOB);
-            case RESET:
-                return authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
-                        members, null, Entity.JOB);
-            default:
-                throw new CatalogException("Unexpected error occurred. No valid action found.");
-        }
-    }
-
-
-    // **************************   Private methods  ******************************** //
-
-    private long getJobId(boolean silent, String jobStr) throws CatalogException {
-        long jobId = Long.parseLong(jobStr);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("jobList", jobList)
+                .append("member", member)
+                .append("silent", silent)
+                .append("token", token);
         try {
-            jobDBAdaptor.checkId(jobId);
-        } catch (CatalogException e) {
-            if (silent) {
-                return -1L;
-            } else {
-                throw e;
+            List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(jobList.size());
+            InternalGetQueryResult<Job> queryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, silent);
+
+            Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
             }
+            int counter = 0;
+            for (String jobId : jobList) {
+                if (!missingMap.containsKey(jobId)) {
+                    Job job = queryResult.getResult().get(counter);
+                    try {
+                        QueryResult<JobAclEntry> allJobAcls;
+                        if (StringUtils.isNotEmpty(member)) {
+                            allJobAcls = authorizationManager.getJobAcl(study.getUid(), job.getUid(), user, member);
+                        } else {
+                            allJobAcls = authorizationManager.getAllJobAcls(study.getUid(), job.getUid(), user);
+                        }
+                        allJobAcls.setId(jobId);
+                        jobAclList.add(allJobAcls);
+                        auditManager.audit(user, operationId, job.getId(), job.getUuid(), study.getId(), study.getUuid(), new Query(),
+                                auditParams, AuditRecord.Entity.JOB, AuditRecord.Action.FETCH_ACLS, SUCCESS, new ObjectMap());
+                    } catch (CatalogException e) {
+                        auditManager.audit(user, operationId, job.getId(), job.getUuid(), study.getId(), study.getUuid(), new Query(),
+                                auditParams, AuditRecord.Entity.JOB, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                        if (!silent) {
+                            throw e;
+                        } else {
+                            jobAclList.add(new QueryResult<>(jobId, queryResult.getDbTime(), 0, 0, "", missingMap.get(jobId).getErrorMsg(),
+                                    Collections.emptyList()));
+                        }
+                    }
+                    counter += 1;
+                } else {
+                    jobAclList.add(new QueryResult<>(jobId, queryResult.getDbTime(), 0, 0, "", missingMap.get(jobId).getErrorMsg(),
+                            Collections.emptyList()));
+
+                    auditManager.audit(user, operationId, jobId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.JOB, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                }
+            }
+            return jobAclList;
+        } catch (CatalogException e) {
+            for (String jobId : jobList) {
+                auditManager.audit(user, operationId, jobId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                        AuditRecord.Entity.JOB, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+            }
+            throw e;
         }
-        return jobId;
+    }
+
+    public List<QueryResult<JobAclEntry>> updateAcl(String studyId, List<String> jobStrList, String memberList, AclParams aclParams,
+                                                    String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("jobStrList", jobStrList)
+                .append("memberList", memberList)
+                .append("aclParams", aclParams)
+                .append("token", token);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        try {
+            if (jobStrList == null || jobStrList.isEmpty()) {
+                throw new CatalogException("Missing job parameter");
+            }
+
+            if (aclParams.getAction() == null) {
+                throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+            }
+
+            List<String> permissions = Collections.emptyList();
+            if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+                permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+                checkPermissions(permissions, JobAclEntry.JobPermissions::valueOf);
+            }
+
+            List<Job> jobList = internalGet(study.getUid(), jobStrList, INCLUDE_JOB_IDS, userId, false).getResult();
+
+            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
+
+            // Validate that the members are actually valid members
+            List<String> members;
+            if (memberList != null && !memberList.isEmpty()) {
+                members = Arrays.asList(memberList.split(","));
+            } else {
+                members = Collections.emptyList();
+            }
+            authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+            checkMembers(study.getUid(), members);
+
+            List<QueryResult<JobAclEntry>> queryResultList;
+            switch (aclParams.getAction()) {
+                case SET:
+                    queryResultList = authorizationManager.setAcls(study.getUid(), jobList.stream().map(Job::getUid)
+                            .collect(Collectors.toList()), members, permissions, Entity.JOB);
+                    break;
+                case ADD:
+                    queryResultList = authorizationManager.addAcls(study.getUid(), jobList.stream().map(Job::getUid)
+                            .collect(Collectors.toList()), members, permissions, Entity.JOB);
+                    break;
+                case REMOVE:
+                    queryResultList = authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
+                            members, permissions, Entity.JOB);
+                    break;
+                case RESET:
+                    queryResultList = authorizationManager.removeAcls(jobList.stream().map(Job::getUid).collect(Collectors.toList()),
+                            members, null, Entity.JOB);
+                    break;
+                default:
+                    throw new CatalogException("Unexpected error occurred. No valid action found.");
+            }
+
+            for (Job job : jobList) {
+                auditManager.audit(userId, operationId, job.getId(), job.getUuid(), study.getId(), study.getUuid(), new Query(),
+                        auditParams, AuditRecord.Entity.JOB, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
+            }
+            return queryResultList;
+        } catch (CatalogException e) {
+            if (jobStrList != null) {
+                for (String jobId : jobStrList) {
+                    auditManager.audit(userId, operationId, jobId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.JOB, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                }
+            }
+            throw e;
+        }
     }
 
 }

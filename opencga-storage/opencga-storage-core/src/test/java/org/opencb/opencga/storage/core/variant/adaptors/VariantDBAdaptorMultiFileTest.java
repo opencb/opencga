@@ -1060,18 +1060,18 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         Query query = new Query(STUDY.key(), study1).append(SAMPLE.key(), sampleNA12877);
 
         FacetQueryResult facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]"));
-        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1:10109-17539")).first().longValue(), facet.getNumMatches());
+        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1:10109-17539")).first().longValue(), facet.getNumMatched());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 
         facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]:500"));
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 
         facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1]"));
-        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatches());
+        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatched());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 
         facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]:500>>type"));
-        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatches());
+        assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1")).first().longValue(), facet.getNumMatched());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
     }
 

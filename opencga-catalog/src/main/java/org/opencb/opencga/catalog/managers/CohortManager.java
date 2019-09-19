@@ -335,8 +335,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("query", new Query(query))
+                .append("options", options)
                 .append("token", token);
-
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
@@ -388,7 +388,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("token", token);
-
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
@@ -421,6 +420,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         Query auditQuery = new Query(query);
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
+                .append("query", new Query(query))
                 .append("params", params)
                 .append("token", token);
 
@@ -771,7 +771,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("member", member)
                 .append("silent", silent)
                 .append("token", token);
-
         try {
             List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortList.size());
 
@@ -892,13 +891,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             for (Cohort cohort : cohortList) {
                 auditManager.audit(userId, operationId, cohort.getId(), cohort.getUuid(), study.getId(), study.getUuid(), new Query(),
-                        auditParams, AuditRecord.Entity.COHORT, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                        auditParams, AuditRecord.Entity.COHORT, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
             }
             return queryResultList;
         } catch (CatalogException e) {
-            for (String cohortId : cohortStrList) {
-                auditManager.audit(userId, operationId, cohortId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                        AuditRecord.Entity.COHORT, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+            if (cohortStrList != null) {
+                for (String cohortId : cohortStrList) {
+                    auditManager.audit(userId, operationId, cohortId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.COHORT, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                }
             }
             throw e;
         }
@@ -935,7 +936,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
 
             return result;
-        } catch (CatalogException e) {
+        } catch (CatalogException | IOException e) {
             auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.COHORT, ERROR);
             throw e;
         }

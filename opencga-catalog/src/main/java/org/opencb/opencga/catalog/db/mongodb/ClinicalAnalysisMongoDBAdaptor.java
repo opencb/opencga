@@ -138,7 +138,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
             WriteResult result = clinicalCollection.update(bsonQuery, updateOperation, null);
 
-            if (result.getNumMatches() == 0) {
+            if (result.getNumMatched() == 0) {
                 throw CatalogDBException.uidNotFound("Clinical Analysis", id);
             }
             return result;

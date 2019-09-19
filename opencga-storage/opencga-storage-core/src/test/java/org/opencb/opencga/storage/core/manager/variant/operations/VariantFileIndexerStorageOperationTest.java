@@ -187,7 +187,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         indexFile(inputFile, queryOptions, outputId);
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), inputFile.getSamples().get(100).getId());
         WriteResult delete = catalogManager.getSampleManager().delete(studyFqn, query, null, sessionId);
-        assertEquals(1, delete.getNumMatches());
+        assertEquals(1, delete.getNumMatched());
         assertTrue(delete.getFailed().get(0).getMessage().contains("Sample associated to the files"));
     }
 

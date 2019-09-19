@@ -173,7 +173,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
 
         WriteResult updateQR = userCollection.update(parseQuery(query), update, null);
-        if (updateQR == null || updateQR.getNumMatches() == 0) {
+        if (updateQR == null || updateQR.getNumMatched() == 0) {
             throw new CatalogDBException("Could not increment release number. Project id " + projectId + " not found");
         } else if (updateQR.getNumUpdated() == 0) {
             throw new CatalogDBException("Internal error. Current release number could not be incremented.");
@@ -393,7 +393,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         WriteResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
+        if (delete.getNumMatched() == 0) {
             throw new CatalogDBException("Could not delete project. Uid " + id + " not found.");
         } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete project. " + delete.getFailed().get(0).getMessage());

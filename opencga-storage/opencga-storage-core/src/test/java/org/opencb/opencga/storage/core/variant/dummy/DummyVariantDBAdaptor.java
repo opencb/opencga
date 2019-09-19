@@ -183,7 +183,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     public WriteResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
         WriteResult queryResult = new WriteResult();
         logger.info("Writing " + variantStatsWrappers.size() + " statistics");
-        queryResult.setNumMatches(variantStatsWrappers.size());
+        queryResult.setNumMatched(variantStatsWrappers.size());
         queryResult.setNumUpdated(variantStatsWrappers.size());
         return queryResult;
     }

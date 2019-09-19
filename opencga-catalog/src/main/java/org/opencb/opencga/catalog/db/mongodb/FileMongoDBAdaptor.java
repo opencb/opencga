@@ -175,7 +175,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         fileCollection.insert(clientSession, fileDocument, null);
 
         // Update the size field from the study collection
-        if (!file.isExternal()) {
+        if (!file.isExternal() && file.getSize() > 0) {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, studyId, file.getSize());
         }
 
@@ -462,7 +462,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public WriteResult delete(long fileUid, String status) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), fileUid);
         WriteResult delete = delete(query, status);
-        if (delete.getNumMatches() == 0) {
+        if (delete.getNumMatched() == 0) {
             throw new CatalogDBException("Could not delete file. Uid " + fileUid + " not found.");
         } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete file. " + delete.getFailed().get(0).getMessage());
@@ -1157,6 +1157,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         WriteResult result = fileCollection.update(clientSession, bsonQuery, update, multi);
         logger.debug("Sample uid '" + sampleUid + "' references removed from " + result.getNumUpdated() + " out of "
-                + result.getNumMatches() + " files");
+                + result.getNumMatched() + " files");
     }
 }

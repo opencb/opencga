@@ -1391,7 +1391,7 @@ public class StudyManager extends AbstractManager {
 
     private VariableSet extractVariableSet(Study study, String variableSetId, String userId) throws CatalogException {
         if (study == null || study.getVariableSets() == null || study.getVariableSets().isEmpty()) {
-            throw new CatalogException("Unable to find " + variableSetId);
+            throw new CatalogException(variableSetId + " not found.");
         }
         if (StringUtils.isEmpty(variableSetId)) {
             throw new CatalogException("Missing 'variableSetId' variable");
@@ -1565,6 +1565,7 @@ public class StudyManager extends AbstractManager {
                         authorizationManager.resetPermissionsFromAllEntities(study.getUid(), members);
                         aclResult.add(authorizationManager.getAllStudyAcls(userId, study.getUid()));
                     }
+                    break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }

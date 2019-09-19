@@ -347,7 +347,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document update = new Document("$set", new Document("groups.$.userIds", members));
         WriteResult result = studyCollection.update(query, update, null);
 
-        if (result.getNumMatches() != 1) {
+        if (result.getNumMatched() != 1) {
             throw new CatalogDBException("Unable to set users to group " + groupId + ". The group does not exist.");
         }
         return result;
@@ -364,7 +364,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         WriteResult result = studyCollection.update(clientSession, query, update, null);
 
-        if (result.getNumMatches() != 1) {
+        if (result.getNumMatched() != 1) {
             throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
     }
@@ -381,7 +381,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         WriteResult result = studyCollection.update(query, update, null);
 
-        if (result.getNumMatches() != 1) {
+        if (result.getNumMatched() != 1) {
             throw new CatalogDBException("Unable to add members to group " + groupId + ". The group does not exist.");
         }
         return result;
@@ -398,7 +398,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 .append(QueryParams.GROUP_ID.key(), groupId);
         Bson pull = Updates.pullAll("groups.$.userIds", members);
         WriteResult update = studyCollection.update(query, pull, null);
-        if (update.getNumMatches() != 1) {
+        if (update.getNumMatched() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId + ". The group does not exist.");
         }
         return update;
@@ -574,7 +574,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         WriteResult result = studyCollection.update(query, update, QueryOptions.empty());
-        if (result.getNumMatches() == 0) {
+        if (result.getNumMatched() == 0) {
             throw new CatalogDBException("Permission rule " + permissionRuleId + " not found");
         }
 
@@ -1297,7 +1297,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         WriteResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
+        if (delete.getNumMatched() == 0) {
             throw new CatalogDBException("Could not delete study. Uid " + id + " not found.");
         } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete study. " + delete.getFailed().get(0).getMessage());
@@ -1547,7 +1547,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<Study> studyQueryResult = get(query, null);
         if (studyQueryResult.getResult().size() == 1) {
             WriteResult remove = studyCollection.remove(parseQuery(query), null);
-            if (remove.getNumMatches() == 0) {
+            if (remove.getNumMatched() == 0) {
                 throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
             }
             return remove;
@@ -1881,7 +1881,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public void updateDiskUsage(ClientSession clientSession, long studyId, long size) throws CatalogDBException {
         Bson query = new Document(QueryParams.UID.key(), studyId);
         Bson update = Updates.inc(QueryParams.SIZE.key(), size);
-        if (studyCollection.update(clientSession, query, update, null).getNumMatches() == 0) {
+        if (studyCollection.update(clientSession, query, update, null).getNumMatched() == 0) {
             throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the size field of"
                     + " the study " + studyId);
         }

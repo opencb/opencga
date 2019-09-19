@@ -403,56 +403,67 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     @Override
     public QueryResult<Individual> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
+        Query finalQuery = new Query(query);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        Query finalQuery = new Query(query);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("token", token);
         try {
             fixQuery(study, finalQuery, userId);
+
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+            AnnotationUtils.fixQueryOptionAnnotation(options);
+
+            finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.INDIVIDUAL, SUCCESS);
+
+            return queryResult;
         } catch (CatalogException e) {
-            // Any of mother, father or sample ids or names do not exist or were not found
-            return new QueryResult<>("Get");
+            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.INDIVIDUAL, ERROR);
+            throw e;
         }
-
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
-        AnnotationUtils.fixQueryOptionAnnotation(options);
-
-        finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
-//        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
-
-        return queryResult;
     }
 
     @Override
     public QueryResult<Individual> count(String studyId, Query query, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
+        Query finalQuery = new Query(query);
 
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        Query finalQuery = new Query(query);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", query)
+                .append("token", token);
         try {
             fixQuery(study, finalQuery, userId);
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+
+            finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId,
+                    StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.INDIVIDUAL, SUCCESS);
+
+            return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
+                    queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
-            // Any of mother, father or sample ids or names do not exist or were not found
-            return new QueryResult<>(null);
+            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.INDIVIDUAL, ERROR);
+            throw e;
         }
-
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
-
-
-        finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
-        return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
-                queryResultAux.getErrorMsg(), Collections.emptyList());
     }
 
     @Override
@@ -468,6 +479,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Query auditQuery = new Query(query);
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
+                .append("query", new Query(query))
                 .append("params", params)
                 .append("token", token);
 
@@ -527,7 +539,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 writeResult.append(individualDBAdaptor.delete(individual.getUid()));
 
                 auditManager.auditDelete(userId, operationUuid, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(),
-                        auditQuery, auditParams, AuditRecord.Entity.COHORT, SUCCESS);
+                        auditQuery, auditParams, AuditRecord.Entity.INDIVIDUAL, SUCCESS);
             } catch (Exception e) {
                 writeResult.getFailed().add(new WriteResult.Fail(individual.getId(), e.getMessage()));
                 logger.debug("Cannot delete individual {}: {}", individual.getId(), e.getMessage(), e);
@@ -857,159 +869,216 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
     // **************************   ACLs  ******************************** //
-    public List<QueryResult<IndividualAclEntry>> getAcls(String studyStr, List<String> individualList, String member,
-                                                         boolean silent, String sessionId) throws CatalogException {
-        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualList.size());
-        String user = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, user);
+    public List<QueryResult<IndividualAclEntry>> getAcls(String studyId, List<String> individualList, String member, boolean silent,
+                                                         String token) throws CatalogException {
+        String user = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, user);
 
-        InternalGetQueryResult<Individual> queryResult = internalGet(study.getUid(), individualList, INCLUDE_INDIVIDUAL_IDS, user, silent);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("individualList", individualList)
+                .append("member", member)
+                .append("silent", silent)
+                .append("token", token);
+        try {
+            List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualList.size());
+            InternalGetQueryResult<Individual> queryResult = internalGet(study.getUid(), individualList, INCLUDE_INDIVIDUAL_IDS, user,
+                    silent);
 
-        Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
-        if (queryResult.getMissing() != null) {
-            missingMap = queryResult.getMissing().stream()
-                    .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
-        }
-        int counter = 0;
-        for (String individualId : individualList) {
-            if (!missingMap.containsKey(individualId)) {
-                try {
-                    QueryResult<IndividualAclEntry> allIndividualAcls;
-                    if (StringUtils.isNotEmpty(member)) {
-                        allIndividualAcls = authorizationManager.getIndividualAcl(study.getUid(),
-                                queryResult.getResult().get(counter).getUid(), user, member);
-                    } else {
-                        allIndividualAcls = authorizationManager.getAllIndividualAcls(study.getUid(),
-                                queryResult.getResult().get(counter).getUid(), user);
-                    }
-                    allIndividualAcls.setId(individualId);
-                    individualAclList.add(allIndividualAcls);
-                } catch (CatalogException e) {
-                    if (!silent) {
-                        throw e;
-                    } else {
-                        individualAclList.add(new QueryResult<>(individualId, queryResult.getDbTime(), 0, 0, "",
-                                missingMap.get(individualId).getErrorMsg(), Collections.emptyList()));
-                    }
-                }
-                counter += 1;
-            } else {
-                individualAclList.add(new QueryResult<>(individualId, queryResult.getDbTime(), 0, 0, "",
-                        missingMap.get(individualId).getErrorMsg(), Collections.emptyList()));
+            Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
             }
+            int counter = 0;
+            for (String individualId : individualList) {
+                if (!missingMap.containsKey(individualId)) {
+                    Individual individual = queryResult.getResult().get(counter);
+                    try {
+                        QueryResult<IndividualAclEntry> allIndividualAcls;
+                        if (StringUtils.isNotEmpty(member)) {
+                            allIndividualAcls = authorizationManager.getIndividualAcl(study.getUid(), individual.getUid(), user, member);
+                        } else {
+                            allIndividualAcls = authorizationManager.getAllIndividualAcls(study.getUid(), individual.getUid(), user);
+                        }
+                        allIndividualAcls.setId(individualId);
+                        individualAclList.add(allIndividualAcls);
+
+                        auditManager.audit(user, operationId, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(),
+                                new Query(), auditParams, AuditRecord.Entity.INDIVIDUAL, AuditRecord.Action.FETCH_ACLS, SUCCESS,
+                                new ObjectMap());
+                    } catch (CatalogException e) {
+                        auditManager.audit(user, operationId, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(),
+                                new Query(), auditParams, AuditRecord.Entity.INDIVIDUAL, AuditRecord.Action.FETCH_ACLS, ERROR,
+                                new ObjectMap());
+                        if (!silent) {
+                            throw e;
+                        } else {
+                            individualAclList.add(new QueryResult<>(individualId, queryResult.getDbTime(), 0, 0, "",
+                                    missingMap.get(individualId).getErrorMsg(), Collections.emptyList()));
+                        }
+                    }
+                    counter += 1;
+                } else {
+                    individualAclList.add(new QueryResult<>(individualId, queryResult.getDbTime(), 0, 0, "",
+                            missingMap.get(individualId).getErrorMsg(), Collections.emptyList()));
+
+                    auditManager.audit(user, operationId, individualId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.INDIVIDUAL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                }
+            }
+            return individualAclList;
+        } catch (CatalogException e) {
+            for (String individualId : individualList) {
+                auditManager.audit(user, operationId, individualId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                        AuditRecord.Entity.INDIVIDUAL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+            }
+            throw e;
         }
-        return individualAclList;
     }
 
-    public List<QueryResult<IndividualAclEntry>> updateAcl(String studyStr, List<String> individualStringList, String memberIds,
-                                                           Individual.IndividualAclParams aclParams, String sessionId)
+    public List<QueryResult<IndividualAclEntry>> updateAcl(String studyId, List<String> individualStrList, String memberList,
+                                                           Individual.IndividualAclParams aclParams, String token)
             throws CatalogException {
-        int count = 0;
-        count += individualStringList != null && !individualStringList.isEmpty() ? 1 : 0;
-        count += StringUtils.isNotEmpty(aclParams.getSample()) ? 1 : 0;
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
 
-        if (count > 1) {
-            throw new CatalogException("Update ACL: Only one of these parameters are allowed: individual or sample per query.");
-        } else if (count == 0) {
-            throw new CatalogException("Update ACL: At least one of these parameters should be provided: individual or sample");
-        }
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("individualStrList", individualStrList)
+                .append("memberList", memberList)
+                .append("aclParams", aclParams)
+                .append("token", token);
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
-        if (aclParams.getAction() == null) {
-            throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
-        }
+        try {
+            int count = 0;
+            count += individualStrList != null && !individualStrList.isEmpty() ? 1 : 0;
+            count += StringUtils.isNotEmpty(aclParams.getSample()) ? 1 : 0;
 
-        List<String> permissions = Collections.emptyList();
-        if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
-            permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-            checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
-        }
+            if (count > 1) {
+                throw new CatalogException("Update ACL: Only one of these parameters are allowed: individual or sample per query.");
+            } else if (count == 0) {
+                throw new CatalogException("Update ACL: At least one of these parameters should be provided: individual or sample");
+            }
 
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_STUDY_UID);
+            if (aclParams.getAction() == null) {
+                throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+            }
 
-        if (StringUtils.isNotEmpty(aclParams.getSample())) {
-            Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), aclParams.getSample());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-            QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyStr, query, options, sessionId);
+            List<String> permissions = Collections.emptyList();
+            if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+                permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+                checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
+            }
 
-            individualStringList = indQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
-        }
+            if (StringUtils.isNotEmpty(aclParams.getSample())) {
+                Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), aclParams.getSample());
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+                QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyId, query, options, token);
 
-        // Obtain the resource ids
-        List<Individual> individualList = internalGet(study.getUid(), individualStringList, INCLUDE_INDIVIDUAL_IDS, userId, false)
-                .getResult();
+                individualStrList = indQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
+            }
 
-        authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
+            // Obtain the resource ids
+            List<Individual> individualList = internalGet(study.getUid(), individualStrList, INCLUDE_INDIVIDUAL_IDS, userId, false)
+                    .getResult();
 
-        // Validate that the members are actually valid members
-        List<String> members;
-        if (memberIds != null && !memberIds.isEmpty()) {
-            members = Arrays.asList(memberIds.split(","));
-        } else {
-            members = Collections.emptyList();
-        }
-        authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
-        checkMembers(study.getUid(), members);
+            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
+
+            // Validate that the members are actually valid members
+            List<String> members;
+            if (memberList != null && !memberList.isEmpty()) {
+                members = Arrays.asList(memberList.split(","));
+            } else {
+                members = Collections.emptyList();
+            }
+            authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+            checkMembers(study.getUid(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-        List<Long> individualUids = individualList.stream().map(Individual::getUid).collect(Collectors.toList());
+            List<Long> individualUids = individualList.stream().map(Individual::getUid).collect(Collectors.toList());
 
-        Entity entity2 = null;
-        List<Long> sampleUids = null;
-        if (aclParams.isPropagate()) {
-            entity2 = Entity.SAMPLE;
-            sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
+            Entity entity2 = null;
+            List<Long> sampleUids = null;
+            if (aclParams.isPropagate()) {
+                entity2 = Entity.SAMPLE;
+                sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
+            }
+
+            List<QueryResult<IndividualAclEntry>> queryResults;
+            switch (aclParams.getAction()) {
+                case SET:
+                    queryResults = authorizationManager.setAcls(study.getUid(), individualUids, sampleUids, members, permissions,
+                            Entity.INDIVIDUAL, entity2);
+                    break;
+                case ADD:
+                    queryResults = authorizationManager.addAcls(study.getUid(), individualUids, sampleUids, members, permissions,
+                            Entity.INDIVIDUAL, entity2);
+                    break;
+                case REMOVE:
+                    queryResults = authorizationManager.removeAcls(individualUids, sampleUids, members, permissions, Entity.INDIVIDUAL,
+                            entity2);
+                    break;
+                case RESET:
+                    queryResults = authorizationManager.removeAcls(individualUids, sampleUids, members, null, Entity.INDIVIDUAL, entity2);
+                    break;
+                default:
+                    throw new CatalogException("Unexpected error occurred. No valid action found.");
+            }
+
+            for (Individual individual : individualList) {
+                auditManager.audit(userId, operationId, individual.getId(), individual.getUuid(), study.getId(), study.getUuid(),
+                        new Query(), auditParams, AuditRecord.Entity.INDIVIDUAL, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
+            }
+            return queryResults;
+        } catch (CatalogException e) {
+            if (individualStrList != null) {
+                for (String individualId : individualStrList) {
+                    auditManager.audit(userId, operationId, individualId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.INDIVIDUAL, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                }
+            }
+            throw e;
         }
-
-        List<QueryResult<IndividualAclEntry>> queryResults;
-        switch (aclParams.getAction()) {
-            case SET:
-                queryResults = authorizationManager.setAcls(study.getUid(), individualUids, sampleUids, members, permissions,
-                        Entity.INDIVIDUAL, entity2);
-                break;
-            case ADD:
-                queryResults = authorizationManager.addAcls(study.getUid(), individualUids, sampleUids, members, permissions,
-                        Entity.INDIVIDUAL, entity2);
-                break;
-            case REMOVE:
-                queryResults = authorizationManager.removeAcls(individualUids, sampleUids, members, permissions, Entity.INDIVIDUAL,
-                        entity2);
-                break;
-            case RESET:
-                queryResults = authorizationManager.removeAcls(individualUids, sampleUids, members, null, Entity.INDIVIDUAL, entity2);
-                break;
-            default:
-                throw new CatalogException("Unexpected error occurred. No valid action found.");
-        }
-
-//        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
-
-//            auditManager.audit(operationUuid, null, null, study.getId(), null, AuditRecord.Resource.INDIVIDUAL,
-//                    AuditRecord.Action.CHANGE_PERMISSION, result, userId, new ObjectMap());
-
-        return queryResults;
     }
 
-    public FacetQueryResult facet(String studyStr, Query query, QueryOptions queryOptions, boolean defaultStats, String sessionId)
+    public FacetQueryResult facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
             throws CatalogException, IOException {
         ParamUtils.defaultObject(query, Query::new);
-        ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+        ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (defaultStats || StringUtils.isEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            String facet = queryOptions.getString(QueryOptions.FACET);
-            queryOptions.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
-        }
-
-        CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-
-        String userId = userManager.getUserId(sessionId);
+        String userId = userManager.getUserId(token);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(StudyDBAdaptor.QueryParams.VARIABLE_SET.key(), StudyDBAdaptor.QueryParams.GROUPS.key())));
 
-        AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("defaultStats", defaultStats)
+                .append("token", token);
+        try {
+            if (defaultStats || StringUtils.isEmpty(options.getString(QueryOptions.FACET))) {
+                String facet = options.getString(QueryOptions.FACET);
+                options.put(QueryOptions.FACET, StringUtils.isNotEmpty(facet) ? defaultFacet + ";" + facet : defaultFacet);
+            }
 
-        return catalogSolrManager.facetedQuery(study, CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION, query, queryOptions, userId);
+            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
+
+            AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
+
+            FacetQueryResult result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION, query, options,
+                    userId);
+            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.INDIVIDUAL, SUCCESS);
+
+            return result;
+        } catch (CatalogException | IOException e) {
+            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.INDIVIDUAL, ERROR);
+            throw e;
+        }
     }
 
     // **************************   Private methods  ******************************** //

@@ -31,7 +31,6 @@ import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -82,8 +81,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
 
-            return createOkResponse(
-                    individualManager.create(studyStr, params.toIndividual(), getIdList(samples), queryOptions, sessionId));
+            return createOkResponse(individualManager.create(studyStr, params.toIndividual(), getIdList(samples), queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -158,9 +156,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus") String affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
@@ -264,7 +262,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation set name. If provided, only chosen annotation set will be shown") @QueryParam("name") String annotationsetName,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-                @QueryParam("silent") boolean silent) throws WebServiceException {
+            @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
             List<QueryResult<Individual>> queryResults = individualManager.get(studyStr, getIdList(individualsStr), null, sessionId);
 
@@ -610,7 +608,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog individual stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                @QueryParam("study") String studyStr,
+            @QueryParam("study") String studyStr,
             @ApiParam(value = "Has father") @QueryParam("hasFather") Boolean hasFather,
             @ApiParam(value = "Has mother") @QueryParam("hasMother") Boolean hasMother,
             @ApiParam(value = "Number of multiples") @QueryParam("numMultiples") String numMultiples,
@@ -692,49 +690,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
     // Data models
-
-    protected static class IndividualPOST {
-        public String id;
-        public String name;
-
-        public String father;
-        public String mother;
-        public Multiples multiples;
-        public Location location;
-
-        public IndividualProperty.Sex sex;
-        public String ethnicity;
-        public Boolean parentalConsanguinity;
-        public Individual.Population population;
-        public String dateOfBirth;
-        public IndividualProperty.KaryotypicSex karyotypicSex;
-        public IndividualProperty.LifeStatus lifeStatus;
-        public IndividualProperty.AffectationStatus affectationStatus;
-        public List<AnnotationSet> annotationSets;
-        public List<Phenotype> phenotypes;
-        public List<Disorder> disorders;
-        public Map<String, Object> attributes;
-
-        public Individual toIndividual(String studyStr, StudyManager studyManager, String sessionId) throws CatalogException {
-//            List<AnnotationSet> annotationSetList = new ArrayList<>();
-//            if (annotationSets != null) {
-//                for (CommonModels.AnnotationSetParams annotationSet : annotationSets) {
-//                    if (annotationSet != null) {
-//                        annotationSetList.add(annotationSet.toAnnotationSet(studyId, studyManager, sessionId));
-//                    }
-//                }
-//            }
-
-            String individualId = StringUtils.isEmpty(id) ? name : id;
-            String individualName = StringUtils.isEmpty(name) ? individualId : name;
-            return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
-                    location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
-                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes, disorders)
-                    .setAttributes(attributes);
-        }
-    }
-
     protected static class IndividualCreatePOST {
         public String id;
         public String name;

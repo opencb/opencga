@@ -274,7 +274,13 @@ public class AuditRecord {
 
         UPLOAD,
         LINK,
+        UNLINK,
+        GREP,
+        TREE,
 
+        VISIT,
+
+        IMPORT_GLOBAL_PANEL,
 
         // Variants
         SAMPLE_DATA,

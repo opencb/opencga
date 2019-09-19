@@ -302,8 +302,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("query", new Query(query))
+                .append("options", options)
                 .append("token", token);
-
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
@@ -380,6 +380,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query auditQuery = new Query(query);
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
+                .append("query", new Query(query))
                 .append("params", params)
                 .append("token", token);
 
@@ -764,8 +765,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<QueryResult<SampleAclEntry>> getAcls(String studyId, List<String> sampleList, String member, boolean silent,
-                                                     String token) throws CatalogException {
+    public List<QueryResult<SampleAclEntry>> getAcls(String studyId, List<String> sampleList, String member, boolean silent, String token)
+            throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -926,9 +927,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             checkMembers(study.getUid(), members);
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
         } catch (CatalogException e) {
-            for (String sampleId : sampleStringList) {
-                auditManager.audit(user, operationId, sampleId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                        AuditRecord.Entity.SAMPLE, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+            if (sampleStringList != null) {
+                for (String sampleId : sampleStringList) {
+                    auditManager.audit(user, operationId, sampleId, "", study.getId(), study.getUuid(), new Query(), auditParams,
+                            AuditRecord.Entity.SAMPLE, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                }
             }
             throw e;
         }
@@ -1041,7 +1044,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, SUCCESS);
             return result;
-        } catch (CatalogException e) {
+        } catch (CatalogException | IOException e) {
             auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, ERROR);
             throw e;
         }

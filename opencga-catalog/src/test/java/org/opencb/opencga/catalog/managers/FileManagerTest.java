@@ -653,7 +653,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testGetTreeView() throws CatalogException {
-        QueryResult<FileTree> fileTree = fileManager.getTree("/", studyFqn, new Query(), new QueryOptions(),
+        QueryResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, sessionIdUser);
         assertEquals(7, fileTree.getNumResults());
     }
@@ -665,11 +665,11 @@ public class FileManagerTest extends AbstractManagerTest {
         // properly
         catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser).first().getUid();
 
-        QueryResult<FileTree> fileTree = fileManager.getTree("/", studyFqn, new Query(), new QueryOptions(),
+        QueryResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, sessionIdUser);
         assertEquals(7, fileTree.getNumResults());
 
-        fileTree = fileManager.getTree(".", "user@1000G:phase2", new Query(), new QueryOptions(), 5, sessionIdUser);
+        fileTree = fileManager.getTree("user@1000G:phase2", ".", new Query(), new QueryOptions(), 5, sessionIdUser);
         assertEquals(1, fileTree.getNumResults());
     }
 
@@ -1117,7 +1117,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         WriteResult deleteResult = fileManager.delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.UID.key(), fileQueryResult.first().getUid()), null, sessionIdUser);
-        assertEquals(1, deleteResult.getNumMatches());
+        assertEquals(1, deleteResult.getNumMatched());
         assertEquals(0, deleteResult.getNumUpdated());
         assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
 
@@ -1127,7 +1127,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         deleteResult = fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(),
                 fileQueryResult.first().getUid()), null, sessionIdUser);
-        assertEquals(1, deleteResult.getNumMatches());
+        assertEquals(1, deleteResult.getNumMatched());
         assertEquals(0, deleteResult.getNumUpdated());
         assertTrue(deleteResult.getFailed().get(0).getMessage().contains("Cannot delete"));
 
@@ -1137,7 +1137,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         deleteResult = fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(),
                 fileQueryResult.first().getUid()), null, sessionIdUser);
-        assertEquals(6, deleteResult.getNumMatches());
+        assertEquals(6, deleteResult.getNumMatched());
         assertEquals(6, deleteResult.getNumUpdated());
     }
 
@@ -1249,7 +1249,7 @@ public class FileManagerTest extends AbstractManagerTest {
         WriteResult result = fileManager.delete(studyFqn2,
                 new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath()), null, sessionIdUser);
 
-        assertEquals(1, result.getNumMatches());
+        assertEquals(1, result.getNumMatched());
         assertEquals(0, result.getNumUpdated());
         assertEquals("Root directories cannot be deleted", result.getFailed().get(0).getMessage());
     }

@@ -713,7 +713,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         WriteResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
+        if (delete.getNumMatched() == 0) {
             throw new CatalogDBException("Could not delete individual. Uid " + id + " not found.");
         } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete individual. " + delete.getFailed().get(0).getMessage());
@@ -790,7 +790,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
                         WriteResult result = familyDBAdaptor.getFamilyCollection().update(clientSession, bsonQuery, update,
                                 new QueryOptions(MongoDBCollection.MULTI, true));
-                        logger.debug("Families found: {}, families updated: {}", result.getNumMatches(), result.getNumUpdated());
+                        logger.debug("Families found: {}, families updated: {}", result.getNumMatched(), result.getNumUpdated());
                     }
 
                     // Look for all the different individual versions
@@ -1351,7 +1351,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         WriteResult updateResult = individualCollection.update(clientSession, bsonQuery, update, multi);
         logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
-                + updateResult.getNumMatches() + " individuals");
+                + updateResult.getNumMatched() + " individuals");
     }
 
     public MongoDBCollection getIndividualCollection() {

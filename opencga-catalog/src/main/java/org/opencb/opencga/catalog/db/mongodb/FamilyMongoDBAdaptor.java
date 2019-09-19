@@ -505,7 +505,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         WriteResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
+        if (delete.getNumMatched() == 0) {
             throw new CatalogDBException("Could not delete family. Uid " + id + " not found.");
         } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete family. " + delete.getFailed().get(0).getMessage());

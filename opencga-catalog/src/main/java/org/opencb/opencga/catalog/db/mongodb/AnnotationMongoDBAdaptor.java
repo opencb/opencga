@@ -395,7 +395,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             Bson unset = Updates.unset(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + entry.getKey());
 
             WriteResult result = getCollection().update(clientSession, queryDocument, unset, new QueryOptions());
-            if (result.getNumUpdated() < 1 && result.getNumMatches() == 1) {
+            if (result.getNumUpdated() < 1 && result.getNumMatched() == 1) {
                 throw new CatalogDBException("Could not remove private map information");
             }
         }
@@ -414,7 +414,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         }
 
         WriteResult result = getCollection().update(clientSession, queryDocument, Updates.combine(setMap), new QueryOptions("multi", true));
-        if (result.getNumUpdated() < 1 && result.getNumMatches() == 0) {
+        if (result.getNumUpdated() < 1 && result.getNumMatched() == 0) {
             throw new CatalogDBException("Could not add new private map information");
         }
     }
@@ -447,7 +447,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         );
 
         WriteResult result = getCollection().update(clientSession, queryDocument, bsonUpdate, new QueryOptions());
-        if (result.getNumUpdated() < 1 && result.getNumMatches() == 0) {
+        if (result.getNumUpdated() < 1 && result.getNumMatched() == 0) {
             throw new CatalogDBException("Could not remove all annotationSets");
         }
     }
@@ -606,7 +606,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
             WriteResult result = getCollection().update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true));
             modifiedCount += result.getNumUpdated();
-            matchCount += result.getNumMatches();
+            matchCount += result.getNumMatched();
         }
 
         return endWrite(startTime, matchCount, modifiedCount, new ArrayList<>(), new ArrayList<>());
@@ -703,7 +703,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                         .append(AnnotationSetParams.ID.key(), Pattern.compile("^" + fieldId))));
 
         WriteResult result = getCollection().update(query, pull, new QueryOptions("multi", true));
-        if (result.getNumUpdated() == 0 && result.getNumMatches() > 0) {
+        if (result.getNumUpdated() == 0 && result.getNumMatched() > 0) {
             throw new CatalogDBException("VariableSet {id: " + variableSetId + "}: An unexpected error happened when extracting the "
                     + "annotations for the variable " + fieldId + ". Please, report this error to the OpenCGA developers.");
         }

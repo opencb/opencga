@@ -212,7 +212,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
             WriteResult update = interpretationCollection.update(bsonQuery, updateOperation, null);
 
-            if (update.getNumMatches() == 0) {
+            if (update.getNumMatched() == 0) {
                 throw CatalogDBException.uidNotFound("Interpretation", id);
             }
             return update;

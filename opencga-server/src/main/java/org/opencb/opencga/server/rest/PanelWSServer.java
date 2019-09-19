@@ -1,11 +1,9 @@
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.PanelManager;
@@ -24,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
@@ -298,27 +295,6 @@ public class PanelWSServer extends OpenCGAWSServer {
         public Panel toPanel() {
             return new Panel(id, name, categories, phenotypes, tags, variants, genes, regions, strs, stats, 1, 1, author,
                     source, new Status(), description, attributes);
-        }
-
-        public ObjectMap toObjectMap() throws JsonProcessingException {
-            Panel panel = new Panel();
-            panel.setId(id);
-            panel.setId(id);
-            panel.setName(name);
-            panel.setAuthor(author);
-            panel.setSource(source);
-            panel.setDescription(description);
-            panel.setCategories(categories);
-            panel.setTags(tags);
-            panel.setPhenotypes(phenotypes);
-            panel.setVariants(variants);
-            panel.setGenes(genes);
-            panel.setStrs(strs);
-            panel.setRegions(regions);
-            panel.setStats(stats);
-            panel.setAttributes(attributes);
-
-            return new ObjectMap(getUpdateObjectMapper().writeValueAsString(panel));
         }
     }
 

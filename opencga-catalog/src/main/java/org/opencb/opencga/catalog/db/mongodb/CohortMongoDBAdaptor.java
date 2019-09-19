@@ -416,7 +416,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     public WriteResult delete(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         WriteResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
+        if (delete.getNumMatched() == 0) {
             throw new CatalogDBException("Could not delete cohort. Uid " + id + " not found.");
         } else if (delete.getNumUpdated() == 0) {
             throw new CatalogDBException("Could not delete cohort. " + delete.getFailed().get(0).getMessage());
@@ -966,7 +966,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         WriteResult result = cohortCollection.update(clientSession, bsonQuery, update, multi);
         logger.debug("Sample uid '" + sampleUid + "' references removed from " + result.getNumUpdated() + " out of "
-                + result.getNumMatches() + " cohorts");
+                + result.getNumMatched() + " cohorts");
     }
 
 }
