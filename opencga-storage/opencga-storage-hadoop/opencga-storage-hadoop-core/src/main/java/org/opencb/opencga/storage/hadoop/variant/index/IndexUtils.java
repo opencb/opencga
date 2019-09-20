@@ -87,6 +87,10 @@ public final class IndexUtils {
         return (indexValue & indexMask) != 0;
     }
 
+    public static boolean testIndexAny(short indexValue, short indexMask) {
+        return (indexValue & indexMask) != 0;
+    }
+
     public static boolean testIndexAny(byte[] index, int indexPosition, short indexMask) {
         return (Bytes.toShort(index, indexPosition * Short.BYTES, Short.BYTES) & indexMask) != 0;
     }

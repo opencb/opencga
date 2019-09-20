@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.core.io.bit.BitOutputStream;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.io.ByteArrayOutputStream;
@@ -12,9 +13,8 @@ public class AnnotationIndexPutBuilder {
     private final ByteArrayOutputStream annotation;
     private final ByteArrayOutputStream biotype;
     private final ByteArrayOutputStream ct;
-    private final ByteArrayOutputStream popFreq;
-    private byte partialPopFreq;
-    private int partialPopFreqIdx;
+    private final BitOutputStream ctBt;
+    private final BitOutputStream popFreq;
     private int numVariants;
 
     public AnnotationIndexPutBuilder() {
@@ -25,9 +25,8 @@ public class AnnotationIndexPutBuilder {
         this.annotation = new ByteArrayOutputStream(size);
         this.biotype = new ByteArrayOutputStream(size / 4);
         this.ct = new ByteArrayOutputStream(size / 2);
-        this.popFreq = new ByteArrayOutputStream(size / 2);
-        partialPopFreq = 0;
-        partialPopFreqIdx = 0;
+        this.ctBt = new BitOutputStream(size / 4);
+        this.popFreq = new BitOutputStream(size / 2);
         numVariants = 0;
     }
 
@@ -40,13 +39,10 @@ public class AnnotationIndexPutBuilder {
             biotype.write(indexEntry.getBtIndex());
         }
         for (byte popFreqIndex : indexEntry.getPopFreqIndex()) {
-            partialPopFreq |= ((0b11 & popFreqIndex) << (partialPopFreqIdx * AnnotationIndexConverter.POP_FREQ_SIZE));
-            partialPopFreqIdx++;
-            if (partialPopFreqIdx * AnnotationIndexConverter.POP_FREQ_SIZE == Byte.SIZE) {
-                popFreq.write(partialPopFreq);
-                partialPopFreqIdx = 0;
-                partialPopFreq = 0;
-            }
+            popFreq.write(popFreqIndex, AnnotationIndexConverter.POP_FREQ_SIZE);
+        }
+        for (byte ctBtIndex : indexEntry.getCtBtMatrix()) {
+            ctBt.write(ctBtIndex, indexEntry.getNumBts());
         }
         return this;
     }
@@ -66,9 +62,8 @@ public class AnnotationIndexPutBuilder {
             put.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt), ct.toByteArray());
             put.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt), biotype.toByteArray());
         }
-        if (partialPopFreqIdx != 0) {
-            popFreq.write(partialPopFreq);
-        }
+        put.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt), ctBt.toByteArray());
+
         put.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt), popFreq.toByteArray());
         reset();
         return put;
@@ -78,9 +73,8 @@ public class AnnotationIndexPutBuilder {
         annotation.reset();
         biotype.reset();
         ct.reset();
+        ctBt.reset();
         popFreq.reset();
-        partialPopFreq = 0;
-        partialPopFreqIdx = 0;
         numVariants = 0;
     }
 }

@@ -77,6 +77,7 @@ public class AnnotationIndexConverter {
     public static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
     public static final byte[] CT_VALUE_COLUMN = Bytes.toBytes("ct");
     public static final byte[] BT_VALUE_COLUMN = Bytes.toBytes("bt");
+    public static final byte[] CT_BT_VALUE_COLUMN = Bytes.toBytes("cb");
     public static final byte[] POP_FREQ_VALUE_COLUMN = Bytes.toBytes("pf");
     public static final int VALUE_LENGTH = 1;
     public static final String TRANSCRIPT_FLAG_BASIC = "basic";
@@ -130,6 +131,7 @@ public class AnnotationIndexConverter {
         short ct = 0;
         byte bt = 0;
         byte[] pf = null;
+        byte[] ctBtIndex = null;
 
         for (Cell cell : result.rawCells()) {
             if (CellUtil.matchingQualifier(cell, VALUE_COLUMN)) {
@@ -138,13 +140,15 @@ public class AnnotationIndexConverter {
                 ct = Bytes.toShort(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
             } else if (CellUtil.matchingQualifier(cell, BT_VALUE_COLUMN)) {
                 bt = cell.getValueArray()[cell.getValueOffset()];
+            } else if (CellUtil.matchingQualifier(cell, CT_BT_VALUE_COLUMN)) {
+                ctBtIndex = CellUtil.cloneValue(cell);
             } else if (CellUtil.matchingQualifier(cell, POP_FREQ_VALUE_COLUMN)) {
                 pf = CellUtil.cloneValue(cell);
             }
         }
 
         return Pair.of(variant,
-                new AnnotationIndexEntry(summary, IndexUtils.testIndex(summary, INTERGENIC_MASK, INTERGENIC_MASK), ct, bt, pf));
+                new AnnotationIndexEntry(summary, IndexUtils.testIndex(summary, INTERGENIC_MASK, INTERGENIC_MASK), ct, bt, pf, ctBtIndex));
     }
 
     public AnnotationIndexEntry convert(VariantAnnotation variantAnnotation) {
@@ -155,6 +159,7 @@ public class AnnotationIndexConverter {
         short ctIndex = 0;
         byte btIndex = 0;
         byte[] popFreqIndex = new byte[populations.size()];
+        boolean[][] ctBtcombinations = new boolean[16][8];
 
         boolean intergenic = false;
 
@@ -163,14 +168,23 @@ public class AnnotationIndexConverter {
                 if (BIOTYPE_SET.contains(ct.getBiotype())) {
                     b |= PROTEIN_CODING_MASK;
                 }
-                btIndex |= getMaskFromBiotype(ct.getBiotype());
+                byte maskFromBiotype = getMaskFromBiotype(ct.getBiotype());
+                btIndex |= maskFromBiotype;
+
                 boolean proteinCoding = PROTEIN_CODING.equals(ct.getBiotype());
                 for (SequenceOntologyTerm sequenceOntologyTerm : ct.getSequenceOntologyTerms()) {
                     String soName = sequenceOntologyTerm.getName();
                     if (!intergenic && INTERGENIC_VARIANT.equals(soName)) {
                         intergenic = true;
                     }
-                    ctIndex |= getMaskFromSoName(soName);
+
+                    short maskFromSoName = getMaskFromSoName(soName);
+                    if (maskFromSoName != 0) {
+                        if (maskFromBiotype != 0) {
+                            ctBtcombinations[maskPosition(maskFromSoName)][maskPosition(maskFromBiotype)] = true;
+                        }
+                    }
+                    ctIndex |= maskFromSoName;
 
                     if (VariantQueryUtils.LOF_SET.contains(soName)) {
                         b |= LOF_MASK;
@@ -191,6 +205,8 @@ public class AnnotationIndexConverter {
         if (intergenic) {
             b |= INTERGENIC_MASK;
         }
+
+        AnnotationIndexEntry.CtBtCombination ctBtCombination = getCtBtCombination(ctIndex, btIndex, ctBtcombinations);
 
         // By default, population frequency is 0.
         double minFreq = 0;
@@ -216,7 +232,48 @@ public class AnnotationIndexConverter {
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
             b |= CLINICAL_MASK;
         }
-        return new AnnotationIndexEntry(b, intergenic, ctIndex, btIndex, popFreqIndex);
+        return new AnnotationIndexEntry(b, intergenic, ctIndex, btIndex, popFreqIndex, ctBtCombination);
+    }
+
+    private int maskPosition(byte b) {
+        return Integer.numberOfTrailingZeros(b);
+    }
+
+    private int maskPosition(short s) {
+        return Integer.numberOfTrailingZeros(s);
+    }
+
+    private AnnotationIndexEntry.CtBtCombination getCtBtCombination(short ctIndex, byte origBtIndex, boolean[][] ctBt) {
+        AnnotationIndexEntry.CtBtCombination ctBtCombination;
+        int numCt = Integer.bitCount(Short.toUnsignedInt(ctIndex));
+        int numBt = Integer.bitCount(Byte.toUnsignedInt(origBtIndex));
+        if (numBt > 0 && numCt > 0) {
+            byte[] ctBtIndex = new byte[numCt];
+
+            for (int ctIndexPos = 0; ctIndexPos < numCt; ctIndexPos++) {
+                // Get the first CT value from the right.
+                short ct = (short) Integer.lowestOneBit(ctIndex);
+                // Remove the CT value from the index, so the next iteration gets the next value
+                ctIndex &= ~ct;
+                byte btIndex = origBtIndex;
+                byte combinationValue = 0;
+                for (int btIndexPos = 0; btIndexPos < numBt; btIndexPos++) {
+                    // As before, take the first BT value from the right.
+                    byte bt = (byte) Integer.lowestOneBit(btIndex);
+                    btIndex &= ~bt;
+
+                    // If the CT+BT combination is true, write a 1
+                    if (ctBt[maskPosition(ct)][maskPosition(bt)]) {
+                        combinationValue |= 1 << btIndexPos;
+                    }
+                }
+                ctBtIndex[ctIndexPos] = combinationValue;
+            }
+            ctBtCombination = new AnnotationIndexEntry.CtBtCombination(ctBtIndex, numCt, numBt);
+        } else {
+            ctBtCombination = null;
+        }
+        return ctBtCombination;
     }
 
     protected void addPopFreqIndex(byte[] popFreqIndex, PopulationFrequency populationFrequency) {
@@ -338,7 +395,7 @@ public class AnnotationIndexConverter {
         }
     }
 
-    public static boolean isImpreciseBtMask(short btMask) {
+    public static boolean isImpreciseBtMask(byte btMask) {
         return btMask == BT_LNCRNA_MASK;
     }
 

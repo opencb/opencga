@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter.MendelianErrorSampleIndexVariantIterator;
 
 import java.util.Map;
@@ -92,6 +94,7 @@ public class SampleIndexEntry {
         private int[] annotationCounts;
         private byte[] consequenceTypeIndexGt;
         private byte[] biotypeIndexGt;
+        private BitInputStream ctBtIndexGt;
         private byte[] populationFrequencyIndexGt;
         private byte[] parentsGt;
 
@@ -182,6 +185,10 @@ public class SampleIndexEntry {
             return consequenceTypeIndexGt;
         }
 
+        public short getConsequenceTypeIndexGt(int nonIntergenicIndex) {
+            return Bytes.toShort(consequenceTypeIndexGt, nonIntergenicIndex * Short.BYTES);
+        }
+
         public SampleIndexGtEntry setConsequenceTypeIndexGt(byte[] consequenceTypeIndexGt) {
             this.consequenceTypeIndexGt = consequenceTypeIndexGt;
             return this;
@@ -193,6 +200,15 @@ public class SampleIndexEntry {
 
         public SampleIndexGtEntry setBiotypeIndexGt(byte[] biotypeIndexGt) {
             this.biotypeIndexGt = biotypeIndexGt;
+            return this;
+        }
+
+        public BitInputStream getCtBtIndexGt() {
+            return ctBtIndexGt;
+        }
+
+        public SampleIndexGtEntry setCtBtIndexGt(byte[] ctBtIndexGt) {
+            this.ctBtIndexGt = new BitInputStream(ctBtIndexGt);
             return this;
         }
 

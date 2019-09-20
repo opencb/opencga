@@ -86,6 +86,50 @@ public class AnnotationIndexConverterTest {
     }
 
     @Test
+    public void testCtBtCombination() {
+        AnnotationIndexEntry entry = converter.convert(annot(ct("missense_variant", "other"), ct("other", "protein_coding")));
+        byte[] ctBtIndex = entry.getCtBtMatrix();
+        assertEquals(1, ctBtIndex.length);
+        assertEquals(1, entry.getNumCts());
+        assertEquals(1, entry.getNumBts());
+        assertEquals(0, ctBtIndex[0]); // No combination
+
+        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding")));
+        ctBtIndex = entry.getCtBtMatrix();
+        assertEquals(2, ctBtIndex.length);
+        assertEquals(2, entry.getNumCts());
+        assertEquals(1, entry.getNumBts());
+        assertEquals(1, ctBtIndex[0]); // missense_variant
+        assertEquals(1, ctBtIndex[1]); // stop_lost
+
+        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding"), ct("stop_gained", "other")));
+        ctBtIndex = entry.getCtBtMatrix();
+        assertEquals(3, ctBtIndex.length);
+        assertEquals(3, entry.getNumCts());
+        assertEquals(1, entry.getNumBts());
+        assertEquals(1, ctBtIndex[0]); // missense_variant
+        assertEquals(0, ctBtIndex[1]); // stop_gained
+        assertEquals(1, ctBtIndex[2]); // stop_lost
+
+        entry = converter.convert(annot(
+                ct("missense_variant", "protein_coding"),
+                ct("start_lost", "processed_transcript"),
+                ct("start_lost", "protein_coding"),
+                ct("stop_lost", "processed_transcript"),
+                ct("stop_gained", "other")));
+        ctBtIndex = entry.getCtBtMatrix();
+        assertEquals(4, ctBtIndex.length);
+        assertEquals(4, entry.getNumCts());
+        assertEquals(2, entry.getNumBts()); // protein_coding + processed_transcript. biotype "other" does not count
+
+                 //protein_coding | processed_transcript
+        assertEquals(0b10, ctBtIndex[0]); // missense_variant
+        assertEquals(0b11, ctBtIndex[1]); // start_lost
+        assertEquals(0b00, ctBtIndex[2]); // stop_gained
+        assertEquals(0b01, ctBtIndex[3]); // stop_lost
+    }
+
+    @Test
     public void testIntergenic() {
         assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
                 b = converter.convert(annot(ct("intergenic_variant"))).getSummaryIndex());
@@ -142,26 +186,26 @@ public class AnnotationIndexConverterTest {
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.001), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
     }
 
-    protected VariantAnnotation annot() {
+    public static VariantAnnotation annot() {
         VariantAnnotation variantAnnotation = new VariantAnnotation();
         variantAnnotation.setConsequenceTypes(Arrays.asList(ct("intergenic_variant")));
         return variantAnnotation;
     }
 
-    protected VariantAnnotation annot(ConsequenceType... value) {
+    public static VariantAnnotation annot(ConsequenceType... value) {
         VariantAnnotation variantAnnotation = new VariantAnnotation();
         variantAnnotation.setConsequenceTypes(Arrays.asList(value));
         return variantAnnotation;
     }
 
-    protected VariantAnnotation annot(PopulationFrequency... value) {
+    public static VariantAnnotation annot(PopulationFrequency... value) {
         VariantAnnotation variantAnnotation = new VariantAnnotation();
         variantAnnotation.setPopulationFrequencies(Arrays.asList(value));
         variantAnnotation.setConsequenceTypes(Arrays.asList(ct("intergenic_variant")));
         return variantAnnotation;
     }
 
-    public PopulationFrequency pf(String study, String population, double af) {
+    public static PopulationFrequency pf(String study, String population, double af) {
         PopulationFrequency pf = new PopulationFrequency();
         pf.setStudy(study);
         pf.setPopulation(population);
@@ -171,13 +215,13 @@ public class AnnotationIndexConverterTest {
         return pf;
     }
 
-    public ConsequenceType ct(String ct, String biotype) {
+    public static ConsequenceType ct(String ct, String biotype) {
         ConsequenceType consequenceType = ct(ct);
         consequenceType.setBiotype(biotype);
         return consequenceType;
     }
 
-    public ConsequenceType ct(String ct) {
+    public static ConsequenceType ct(String ct) {
         ConsequenceType consequenceType = new ConsequenceType();;
         consequenceType.setGeneName("Gene");
         consequenceType.setEnsemblGeneId("ENSEMBL_GENE");

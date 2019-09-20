@@ -28,7 +28,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;

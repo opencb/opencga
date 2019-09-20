@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
@@ -175,13 +176,15 @@ public class SampleIndexEntryFilter {
         int idx = variants.nextIndex();
         // Either call to next() or to skip(), but no both
 
+        AnnotationIndexEntry.CtBtCombination ctBtCombination = nextCtBtCombination(gtEntry, variants, idx);
+
         // Test annotation index (if any)
         if (gtEntry.getAnnotationIndexGt() == null
                 || gtEntry.getAnnotationIndexGt()[idx] == AnnotationIndexEntry.MISSING_ANNOTATION
                 || testIndex(gtEntry.getAnnotationIndexGt()[idx], query.getAnnotationIndexMask(), query.getAnnotationIndex())) {
             expectedResultsFromAnnotation.decrement();
 
-            if (filterOtherAnnotFields(gtEntry, variants) && filterPopFreq(gtEntry, idx)) {
+            if (filterOtherAnnotFields(gtEntry, variants, ctBtCombination) && filterPopFreq(gtEntry, idx)) {
 
                 // Test file index (if any)
                 if (filterFile(gtEntry, idx)) {
@@ -203,6 +206,30 @@ public class SampleIndexEntryFilter {
         }
         variants.skip();
         return null;
+    }
+
+    private AnnotationIndexEntry.CtBtCombination nextCtBtCombination(
+            SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants, int idx) {
+        AnnotationIndexEntry.CtBtCombination ctBtCombination = null;
+        if (gtEntry.getAnnotationIndexGt() != null
+                && gtEntry.getCtBtIndexGt() != null
+                && gtEntry.getAnnotationIndexGt()[idx] != AnnotationIndexEntry.MISSING_ANNOTATION
+                && SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndexGt(), idx)) {
+            int nonIntergenicIndex = variants.nextNonIntergenicIndex();
+            if (nonIntergenicIndex >= 0) {
+                if (gtEntry.getConsequenceTypeIndexGt() != null || gtEntry.getBiotypeIndexGt() != null) {
+                    short ctIndex = Bytes.toShort(gtEntry.getConsequenceTypeIndexGt(), nonIntergenicIndex * Short.BYTES);
+                    int numCt = Integer.bitCount(Short.toUnsignedInt(ctIndex));
+                    int numBt = Integer.bitCount(Byte.toUnsignedInt(gtEntry.getBiotypeIndexGt()[nonIntergenicIndex]));
+                    byte[] ctBtCombinations = new byte[numCt];
+                    for (int ctIndexPos = 0; ctIndexPos < numCt; ctIndexPos++) {
+                        ctBtCombinations[ctIndexPos] = gtEntry.getCtBtIndexGt().readByte(numBt);
+                    }
+                    ctBtCombination = new AnnotationIndexEntry.CtBtCombination(ctBtCombinations, numCt, numBt);
+                }
+            }
+        }
+        return ctBtCombination;
     }
 
     private boolean filterFile(SampleIndexGtEntry gtEntry, int idx) {
@@ -254,7 +281,8 @@ public class SampleIndexEntryFilter {
         }
     }
 
-    private boolean filterOtherAnnotFields(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
+    private boolean filterOtherAnnotFields(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants,
+                                           AnnotationIndexEntry.CtBtCombination ctBtCombination) {
         if (gtEntry.getAnnotationIndexGt() == null
                 || gtEntry.getAnnotationIndexGt()[variants.nextIndex()] == AnnotationIndexEntry.MISSING_ANNOTATION) {
             return true;
@@ -270,7 +298,52 @@ public class SampleIndexEntryFilter {
             if (gtEntry.getConsequenceTypeIndexGt() == null || testIndexAny(gtEntry.getConsequenceTypeIndexGt(), nonIntergenicIndex,
                     query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
 
-                return true;
+                if (ctBtCombination == null || gtEntry.getConsequenceTypeIndexGt() == null || gtEntry.getBiotypeIndexGt() == null) {
+                    return true;
+                } else {
+                    // Check ct+bt combinations
+                    short ctIndex = gtEntry.getConsequenceTypeIndexGt(nonIntergenicIndex);
+                    int numCt = ctBtCombination.getNumCt();
+                    int numBt = ctBtCombination.getNumBt();
+                    // Pitfall!
+                    // if (numCt == 1 || numBt == 1) { return true; } This may not be true.
+                    // There could be missing rows/columns in the index
+                    byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
+                    // Check if any combination matches que query filter.
+                    // Walk through all values of CT and BT in this variant.
+                    // 3 conditions must meet:
+                    //  - The CT is part of the query filter
+                    //  - The BT is part of the query filter
+                    //  - The variant had the combination of both
+                    for (int ctIndexPos = 0; ctIndexPos < numCt; ctIndexPos++) {
+                        // Get the first CT value from the right.
+                        short ct = (short) Integer.lowestOneBit(ctIndex);
+                        // Remove the CT value from the index, so the next iteration gets the next value
+                        ctIndex &= ~ct;
+                        // Check if the CT is part of the query filter
+                        if (IndexUtils.testIndexAny(ct, query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
+                            // Iterate over the Biotype values
+                            byte btIndex = gtEntry.getBiotypeIndexGt()[nonIntergenicIndex];
+                            for (int btIndexPos = 0; btIndexPos < numBt; btIndexPos++) {
+                                // As before, take the first BT value from the right.
+                                byte bt = (byte) Integer.lowestOneBit(btIndex);
+                                btIndex &= ~bt;
+                                // Check if the BT is part of the query filter
+                                if (IndexUtils.testIndexAny(bt, query.getAnnotationIndexQuery().getBiotypeMask())) {
+                                    // Check if this CT was together with this BT
+                                    if ((ctBtMatrix[ctIndexPos] & (1 << btIndexPos)) != 0) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            // assert btIndex == 0; // We should have removed all BT from the index
+                        }
+                    }
+                    // assert ctIndex == 0; // We should have removed all CT from the index
+
+                    // could not find any valid combination
+                    return false;
+                }
             }
         }
         return false;

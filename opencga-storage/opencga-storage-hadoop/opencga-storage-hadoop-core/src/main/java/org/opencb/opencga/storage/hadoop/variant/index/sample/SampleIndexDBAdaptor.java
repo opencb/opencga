@@ -422,6 +422,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
                 }
+                if (query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK
+                        && query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
+                }
                 if (!query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                 }

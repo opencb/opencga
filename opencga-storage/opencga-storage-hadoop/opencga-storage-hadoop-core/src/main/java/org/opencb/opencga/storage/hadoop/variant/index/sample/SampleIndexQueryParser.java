@@ -689,6 +689,8 @@ public class SampleIndexQueryParser {
         }
 
         BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query);
+        boolean btCovered = false;
+        boolean ctCovered = false;
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
             List<String> soNames = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
@@ -704,6 +706,7 @@ public class SampleIndexQueryParser {
                 intergenic = true;
             }
             boolean ctFilterCoveredBySummary = false;
+            boolean ctBtCombinationCoveredBySummary = false;
             if (LOF_SET.containsAll(soNames)) {
                 ctFilterCoveredBySummary = soNames.size() == LOF_SET.size();
                 annotationIndex |= LOF_MASK;
@@ -725,9 +728,10 @@ public class SampleIndexQueryParser {
                     if (completeIndex && !isValidParam(query, GENE)) {
                         if (simpleCombination(combination)) {
                             query.remove(ANNOT_CONSEQUENCE_TYPE.key());
-                        } else if (proteinCodingOnly) {
+                        } else if (proteinCodingOnly && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
                             query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                             query.remove(ANNOT_BIOTYPE.key());
+                            ctBtCombinationCoveredBySummary = true;
                         }
                     }
                 }
@@ -741,8 +745,12 @@ public class SampleIndexQueryParser {
             }
 
             // Do not use ctIndex if the CT filter is covered by the summary
-            if (!ctFilterCoveredBySummary) {
-                boolean ctCovered = completeIndex;
+            // Use the ctIndex if:
+            // - The CtFilter is not covered by the summary
+            // - The query has the combination CT+BT , and it is not covered by the summary
+            boolean useCtIndexFilter = !ctFilterCoveredBySummary || (!ctBtCombinationCoveredBySummary && combination.isBiotype());
+            if (useCtIndexFilter) {
+                ctCovered = completeIndex;
                 for (String soName : soNames) {
                     short mask = getMaskFromSoName(soName);
                     if (mask == IndexUtils.EMPTY_MASK) {
@@ -780,8 +788,10 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
-            if (!biotypeFilterCoveredBySummary) {
-                boolean btCovered = completeIndex;
+
+            boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.isConsequenceType();
+            if (useBtIndexFilter) {
+                btCovered = completeIndex;
                 for (String biotype : biotypes) {
                     byte mask = getMaskFromBiotype(biotype);
                     if (mask == IndexUtils.EMPTY_MASK) {
@@ -801,6 +811,10 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+        }
+        if (btCovered && ctCovered && !isValidParam(query, GENE) && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
+            query.remove(ANNOT_BIOTYPE.key());
+            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
         }
 
         // If filter by proteinSubstitution, without filter << or >>, add ProteinCodingMask

@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
+import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.ANTISENSE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.DELTA;
@@ -1003,19 +1004,55 @@ public class SampleIndexQueryParserTest {
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, GENE));
 
-        // LoFE subset + protein_coding -> Use summary mask. Not fully covered (not clear query)
+        // LoFE subset + protein_coding -> Use summary mask.
+        // Not fully covered by Summary, still has to use both CT and BT indices
+        // The combination is covered, so the params should be removed from the query
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(0, 5)))
                 .append(ANNOT_BIOTYPE.key(), "protein_coding");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
-        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
-        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
+        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
+        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
         // LoFE + protein_coding + others -> Can not use summary mask
+        // Not fully covered by Summary, still has to use both CT and BT indices
+        // The combination is covered, so the params should be removed from the query
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
                 .append(ANNOT_BIOTYPE.key(), "protein_coding,miRNA");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
+        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
+        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
+
+        // Use of imprecise CT.
+        // Has to use both CT and BT indices
+        // The combination is covered
+        // The params can not be removed from the query, as the CT is filter is only an approximation
+        // BT has to remain to check the combination.
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationUtils.FIVE_PRIME_UTR_VARIANT)
+                .append(ANNOT_BIOTYPE.key(), "protein_coding,miRNA");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
+        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertTrue(isImpreciseCtMask(indexQuery.getConsequenceTypeMask()));
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
+        assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
+
+        // Use of imprecise BT.
+        // Has to use both CT and BT indices
+        // The combination is covered
+        // The params can not be removed from the query, as the BT is filter is only an approximation.
+        // CT has to remain to check the combination.
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+                .append(ANNOT_BIOTYPE.key(), ANTISENSE);
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
+        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertTrue(isImpreciseBtMask(indexQuery.getBiotypeMask()));
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
