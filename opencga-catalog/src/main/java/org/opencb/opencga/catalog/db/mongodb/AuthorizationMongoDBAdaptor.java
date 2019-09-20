@@ -124,7 +124,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.dbCollectionMap.put(Entity.INDIVIDUAL, dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection());
         this.dbCollectionMap.put(Entity.JOB, dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection());
         this.dbCollectionMap.put(Entity.SAMPLE, dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection());
-        this.dbCollectionMap.put(Entity.PANEL, dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection());
+        this.dbCollectionMap.put(Entity.DISEASE_PANEL, dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection());
         this.dbCollectionMap.put(Entity.FAMILY, dbAdaptorFactory.getCatalogFamilyDBAdaptor().getCollection());
         this.dbCollectionMap.put(Entity.CLINICAL_ANALYSIS, dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection());
     }
@@ -144,7 +144,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case JOB:
             case FILE:
             case SAMPLE:
-            case PANEL:
+            case DISEASE_PANEL:
             case FAMILY:
             case CLINICAL_ANALYSIS:
                 return;
@@ -334,7 +334,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                     retList.add((E) new SampleAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
-            case PANEL:
+            case DISEASE_PANEL:
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new PanelAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
@@ -685,7 +685,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 removePermissions(clientSession, studyId, members, Entity.INDIVIDUAL);
                 removePermissions(clientSession, studyId, members, Entity.JOB);
                 removePermissions(clientSession, studyId, members, Entity.SAMPLE);
-                removePermissions(clientSession, studyId, members, Entity.PANEL);
+                removePermissions(clientSession, studyId, members, Entity.DISEASE_PANEL);
                 removePermissions(clientSession, studyId, members, Entity.FAMILY);
                 removePermissions(clientSession, studyId, members, Entity.CLINICAL_ANALYSIS);
                 removeFromMembers(clientSession, Arrays.asList(studyId), members, null, Entity.STUDY);

@@ -146,8 +146,8 @@ public class AuditManager {
         String apiVersion = GitRepositoryState.get().getBuildVersion();
         Date date = TimeUtils.getDate();
 
-        AuditRecord auditRecord = new AuditRecord(userId, apiVersion, operationUuid, id, uuid, studyId, studyUuid, query, params, entity,
-                action, status, date, attributes);
+        AuditRecord auditRecord = new AuditRecord(userId, apiVersion, operationUuid, id, uuid, studyId, studyUuid, params, entity,
+                action, status, date, attributes, );
         try {
             auditDBAdaptor.insertAuditRecord(auditRecord);
         } catch (CatalogDBException e) {

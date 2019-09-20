@@ -141,7 +141,7 @@ public class Study extends PrivateFields {
         FAMILIES(org.opencb.opencga.core.common.Entity.FAMILY),
         JOBS(org.opencb.opencga.core.common.Entity.JOB),
         CLINICAL_ANALYSES(org.opencb.opencga.core.common.Entity.CLINICAL_ANALYSIS),
-        PANELS(org.opencb.opencga.core.common.Entity.PANEL);
+        PANELS(org.opencb.opencga.core.common.Entity.DISEASE_PANEL);
 
         private final org.opencb.opencga.core.common.Entity entity;
 

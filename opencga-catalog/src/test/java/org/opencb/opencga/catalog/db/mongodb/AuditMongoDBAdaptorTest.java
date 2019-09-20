@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -83,14 +82,14 @@ public class AuditMongoDBAdaptorTest {
     @Test
     public void testInsertAuditRecord() throws Exception {
         auditDbAdaptor.insertAuditRecord(new AuditRecord("user", "api", UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                "sampleId", "sampleUuid", "studyId", "studyUuid", new Query(), new ObjectMap(), AuditRecord.Entity.SAMPLE,
-                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap()));
+                "sampleId", "sampleUuid", "studyId", "studyUuid", new ObjectMap(), AuditRecord.Entity.SAMPLE,
+                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap(), ));
         auditDbAdaptor.insertAuditRecord(new AuditRecord("user", "api", UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                "sampleId2", "sampleUuid2", "studyId", "studyUuid", new Query(), new ObjectMap(), AuditRecord.Entity.SAMPLE,
-                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap()));
+                "sampleId2", "sampleUuid2", "studyId", "studyUuid", new ObjectMap(), AuditRecord.Entity.SAMPLE,
+                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap(), ));
         auditDbAdaptor.insertAuditRecord(new AuditRecord("user", "api", UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                "sampleId3", "sampleUuid3", "studyId", "studyUuid", new Query(), new ObjectMap(), AuditRecord.Entity.SAMPLE,
-                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap()));
+                "sampleId3", "sampleUuid3", "studyId", "studyUuid", new ObjectMap(), AuditRecord.Entity.SAMPLE,
+                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap(), ));
     }
 
 //    @Test

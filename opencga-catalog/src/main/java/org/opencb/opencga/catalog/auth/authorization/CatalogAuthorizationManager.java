@@ -742,7 +742,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
-        return aclDBAdaptor.get(panelId, null, Entity.PANEL);
+        return aclDBAdaptor.get(panelId, null, Entity.DISEASE_PANEL);
     }
 
     @Override
@@ -754,7 +754,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkAskingOwnPermissions(userId, member, studyId);
         }
 
-        return aclDBAdaptor.get(panelId, Arrays.asList(member), Entity.PANEL);
+        return aclDBAdaptor.get(panelId, Arrays.asList(member), Entity.DISEASE_PANEL);
     }
 
     @Override

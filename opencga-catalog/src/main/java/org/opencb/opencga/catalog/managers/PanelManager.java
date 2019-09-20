@@ -1036,19 +1036,19 @@ public class PanelManager extends ResourceManager<Panel> {
             switch (aclParams.getAction()) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), panelQueryResult.getResult().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+                            .collect(Collectors.toList()), members, permissions, Entity.DISEASE_PANEL);
                     break;
                 case ADD:
                     queryResultList = authorizationManager.addAcls(study.getUid(), panelQueryResult.getResult().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+                            .collect(Collectors.toList()), members, permissions, Entity.DISEASE_PANEL);
                     break;
                 case REMOVE:
                     queryResultList = authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.PANEL);
+                            .collect(Collectors.toList()), members, permissions, Entity.DISEASE_PANEL);
                     break;
                 case RESET:
                     queryResultList = authorizationManager.removeAcls(panelQueryResult.getResult().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, null, Entity.PANEL);
+                            .collect(Collectors.toList()), members, null, Entity.DISEASE_PANEL);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

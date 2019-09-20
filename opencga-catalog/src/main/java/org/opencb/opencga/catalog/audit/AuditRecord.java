@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.audit;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.result.Error;
 
 import java.util.Date;
 
@@ -29,44 +29,52 @@ import java.util.Date;
  */
 public class AuditRecord {
 
+    /**
+     * AuditRecord timestamp UUID
+     */
+    private String id;
+
+    /**
+     * operationID timestamp UUID
+     */
+    private String operationId;
+
     private String userId;
     private String apiVersion;
-    private String operationUuid;
-    private String id;
-    private String uuid;
+
+    private Action action;
+
+    private Entity entity;
+    private String resourceId;
+    private String resourceUuid;
+
     private String studyId;
     private String studyUuid;
 
-    private Query query;
     private ObjectMap params;
 
-    private Entity entity;
-    private Action action;
-
-    private int status;
+    private Status status;
 
     private Date date;
     private ObjectMap attributes;
 
-    public static final int SUCCESS = 0;
-    public static final int ERROR = 1;
-
     public AuditRecord() {
     }
 
-    public AuditRecord(String userId, String apiVersion, String operationUuid, String id, String uuid, String studyId, String studyUuid,
-                       Query query, ObjectMap params, Entity entity, Action action, int status, Date date, ObjectMap attributes) {
+    public AuditRecord(String id, String operationId, String userId, String apiVersion, Action action, Entity entity, String resourceId,
+                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, Status status, Date date,
+                       ObjectMap attributes) {
+        this.id = id;
+        this.operationId = operationId;
         this.userId = userId;
         this.apiVersion = apiVersion;
-        this.operationUuid = operationUuid;
-        this.id = id;
-        this.uuid = uuid;
+        this.action = action;
+        this.entity = entity;
+        this.resourceId = resourceId;
+        this.resourceUuid = resourceUuid;
         this.studyId = studyId;
         this.studyUuid = studyUuid;
-        this.query = query;
         this.params = params;
-        this.entity = entity;
-        this.action = action;
         this.status = status;
         this.date = date;
         this.attributes = attributes;
@@ -75,22 +83,40 @@ public class AuditRecord {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AuditRecord{");
-        sb.append("userId='").append(userId).append('\'');
+        sb.append("id='").append(id).append('\'');
+        sb.append(", operationId='").append(operationId).append('\'');
+        sb.append(", userId='").append(userId).append('\'');
         sb.append(", apiVersion='").append(apiVersion).append('\'');
-        sb.append(", operationUuid='").append(operationUuid).append('\'');
-        sb.append(", id='").append(id).append('\'');
-        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", action=").append(action);
+        sb.append(", entity=").append(entity);
+        sb.append(", resourceId='").append(resourceId).append('\'');
+        sb.append(", resourceUuid='").append(resourceUuid).append('\'');
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", studyUuid='").append(studyUuid).append('\'');
-        sb.append(", query=").append(query);
         sb.append(", params=").append(params);
-        sb.append(", entity=").append(entity);
-        sb.append(", action=").append(action);
         sb.append(", status=").append(status);
         sb.append(", date=").append(date);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public AuditRecord setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getOperationId() {
+        return operationId;
+    }
+
+    public AuditRecord setOperationId(String operationId) {
+        this.operationId = operationId;
+        return this;
     }
 
     public String getUserId() {
@@ -111,30 +137,39 @@ public class AuditRecord {
         return this;
     }
 
-    public String getOperationUuid() {
-        return operationUuid;
+    public Action getAction() {
+        return action;
     }
 
-    public AuditRecord setOperationUuid(String operationUuid) {
-        this.operationUuid = operationUuid;
+    public AuditRecord setAction(Action action) {
+        this.action = action;
         return this;
     }
 
-    public String getId() {
-        return id;
+    public Entity getEntity() {
+        return entity;
     }
 
-    public AuditRecord setId(String id) {
-        this.id = id;
+    public AuditRecord setEntity(Entity entity) {
+        this.entity = entity;
         return this;
     }
 
-    public String getUuid() {
-        return uuid;
+    public String getResourceId() {
+        return resourceId;
     }
 
-    public AuditRecord setUuid(String uuid) {
-        this.uuid = uuid;
+    public AuditRecord setResourceId(String resourceId) {
+        this.resourceId = resourceId;
+        return this;
+    }
+
+    public String getResourceUuid() {
+        return resourceUuid;
+    }
+
+    public AuditRecord setResourceUuid(String resourceUuid) {
+        this.resourceUuid = resourceUuid;
         return this;
     }
 
@@ -156,15 +191,6 @@ public class AuditRecord {
         return this;
     }
 
-    public Query getQuery() {
-        return query;
-    }
-
-    public AuditRecord setQuery(Query query) {
-        this.query = query;
-        return this;
-    }
-
     public ObjectMap getParams() {
         return params;
     }
@@ -174,29 +200,11 @@ public class AuditRecord {
         return this;
     }
 
-    public Entity getEntity() {
-        return entity;
-    }
-
-    public AuditRecord setEntity(Entity entity) {
-        this.entity = entity;
-        return this;
-    }
-
-    public Action getAction() {
-        return action;
-    }
-
-    public AuditRecord setAction(Action action) {
-        this.action = action;
-        return this;
-    }
-
-    public int getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public AuditRecord setStatus(int status) {
+    public AuditRecord setStatus(Status status) {
         this.status = status;
         return this;
     }
@@ -219,6 +227,56 @@ public class AuditRecord {
         return this;
     }
 
+    public static class Status {
+        private Result name;
+        private Error error;
+
+        public Status() {
+        }
+
+        public Status(Result name) {
+            this.name = name;
+        }
+
+        public Status(Result name, Error error) {
+            this.name = name;
+            this.error = error;
+        }
+
+        public enum Result {
+            SUCCESS,
+            ERROR
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Status{");
+            sb.append("name=").append(name);
+            sb.append(", error=").append(error);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public Result getName() {
+            return name;
+        }
+
+        public Status setName(Result name) {
+            this.name = name;
+            return this;
+        }
+
+        public Error getError() {
+            return error;
+        }
+
+        public Status setError(Error error) {
+            this.error = error;
+            return this;
+        }
+    }
+
+// Resource
     public enum Entity {
         USER,
         PROJECT,
@@ -280,7 +338,7 @@ public class AuditRecord {
 
         VISIT,
 
-        IMPORT_GLOBAL_PANEL,
+//        IMPORT_GLOBAL_PANEL,
 
         IMPORT_EXTERNAL_USERS,
         IMPORT_EXTERNAL_GROUP_OF_USERS,

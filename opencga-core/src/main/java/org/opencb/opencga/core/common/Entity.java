@@ -11,14 +11,13 @@ public enum Entity {
     USER,
     PROJECT,
     STUDY,
-    SAMPLE,
+    JOB,
     FILE,
-    DATASET,
-    COHORT,
+    SAMPLE,
     INDIVIDUAL,
     FAMILY,
-    JOB,
-    PANEL,
+    COHORT,
+    DISEASE_PANEL,
     CLINICAL_ANALYSIS;
 
     public List<String> getFullPermissionList() {
@@ -38,7 +37,7 @@ public enum Entity {
                 return EnumSet.allOf(FamilyAclEntry.FamilyPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
             case JOB:
                 return EnumSet.allOf(JobAclEntry.JobPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
-            case PANEL:
+            case DISEASE_PANEL:
                 return EnumSet.allOf(PanelAclEntry.PanelPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
             case CLINICAL_ANALYSIS:
                 return EnumSet.allOf(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.class).stream().map(String::valueOf)
