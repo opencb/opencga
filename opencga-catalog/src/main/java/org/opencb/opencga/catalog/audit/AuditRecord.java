@@ -282,6 +282,10 @@ public class AuditRecord {
 
         IMPORT_GLOBAL_PANEL,
 
+        IMPORT_EXTERNAL_USERS,
+        IMPORT_EXTERNAL_GROUP_OF_USERS,
+        SYNC_EXTERNAL_GROUP_OF_USERS,
+
         // Variants
         SAMPLE_DATA,
         FACET

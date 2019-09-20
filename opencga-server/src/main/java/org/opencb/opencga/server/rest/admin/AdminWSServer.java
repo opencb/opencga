@@ -50,7 +50,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             }
 
             QueryResult queryResult = catalogManager.getUserManager()
-                    .create(user.id, user.name, user.email, user.password, user.organization, null, user.type, queryOptions, sessionId);
+                    .create(user.id, user.name, user.email, user.password, user.organization, null, user.type, sessionId);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -112,10 +112,10 @@ public class AdminWSServer extends OpenCGAWSServer {
                     + "synchronised with any other group.</li>"
                     + "</ul>"
     )
-    public Response ldapSync(@ApiParam(value = "JSON containing the parameters", required = true) LDAPSyncParams ldapParams) {
+    public Response externalSync(@ApiParam(value = "JSON containing the parameters", required = true) SyncParams syncParams) {
         try {
-            return createOkResponse(catalogManager.getStudyManager().syncGroupWith(ldapParams.study, ldapParams.from, ldapParams.to,
-                    ldapParams.authenticationOriginId, ldapParams.force, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().syncGroupWith(syncParams.study, syncParams.from, syncParams.to,
+                    syncParams.authenticationOriginId, syncParams.force, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -177,8 +177,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             + "<il><b>password</b>: Password that will be set to perform future administrative operations over OpenCGA</il><br>"
             + "<ul>")
     public Response install(
-            @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallParams installParams
-    ) {
+            @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallParams installParams) {
         try {
             catalogManager.installCatalogDB(installParams.secretKey, installParams.password);
             return createOkResponse(new QueryResult<>("install ok"));
@@ -296,7 +295,7 @@ public class AdminWSServer extends OpenCGAWSServer {
         APPLICATION
     }
 
-    public static class LDAPSyncParams {
+    public static class SyncParams {
         public String authenticationOriginId;
         public String from;
         public String to;

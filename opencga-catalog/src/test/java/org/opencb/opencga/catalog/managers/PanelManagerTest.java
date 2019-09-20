@@ -50,7 +50,7 @@ public class PanelManagerTest extends GenericTest {
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",

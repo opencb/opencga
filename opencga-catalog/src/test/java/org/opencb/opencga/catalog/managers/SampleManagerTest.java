@@ -10,7 +10,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -1122,7 +1121,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
-                Account.Type.GUEST, QueryOptions.empty(), null);
+                Account.Type.GUEST, null);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("dummy",
                 GroupParams.Action.ADD), sessionIdUser);
 

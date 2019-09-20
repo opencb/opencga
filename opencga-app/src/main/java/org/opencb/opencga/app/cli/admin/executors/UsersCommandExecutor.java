@@ -159,7 +159,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                     usersCommandOptions.createUserCommandOptions.userPassword,
                     usersCommandOptions.createUserCommandOptions.userOrganization, userQuota,
-                    usersCommandOptions.createUserCommandOptions.type, null, token).first();
+                    usersCommandOptions.createUserCommandOptions.type, token).first();
 
             System.out.println("The user has been successfully created: " + user.toString() + "\n");
         }

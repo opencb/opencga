@@ -1265,7 +1265,7 @@ public class StudyManager extends AbstractManager {
     public QueryResult<VariableSet> getVariableSet(String studyId, String variableSetId, QueryOptions options, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = resolveId(studyId, userId);
+        Study study = resolveId(studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)

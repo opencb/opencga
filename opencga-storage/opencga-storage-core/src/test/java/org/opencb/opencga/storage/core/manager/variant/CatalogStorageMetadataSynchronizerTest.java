@@ -17,9 +17,7 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
 import org.junit.*;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -80,7 +78,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new FileUtils(catalogManager);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",

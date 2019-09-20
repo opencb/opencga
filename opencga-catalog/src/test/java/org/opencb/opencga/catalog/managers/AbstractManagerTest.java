@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.models.*;
@@ -62,9 +61,9 @@ public class AbstractManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null);
 
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);

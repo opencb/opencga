@@ -19,12 +19,10 @@ package org.opencb.opencga.catalog.utils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -69,7 +67,7 @@ public class FileMetadataReaderTest {
     public void setUp() throws IOException, CatalogException, URISyntaxException {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();

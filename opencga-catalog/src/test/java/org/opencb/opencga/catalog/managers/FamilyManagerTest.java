@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -28,7 +27,6 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
@@ -77,7 +75,7 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
@@ -138,7 +136,7 @@ public class FamilyManagerTest extends GenericTest {
     public void getFamilyWithOnlyAllowedMembers() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null, null);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null);
         String token = catalogManager.getUserManager().login("user2", PASSWORD);
 
         try {

@@ -249,13 +249,12 @@ public class UserManager extends AbstractManager {
      * @param organization Optional organization
      * @param quota        Maximum user disk quota
      * @param type  User account type. Full or guest.
-     * @param options      Optional options
      * @param token        JWT token.
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
     public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
-                                    Account.Type type, QueryOptions options, String token) throws CatalogException {
+                                    Account.Type type, String token) throws CatalogException {
         User user = new User(id, name, email, password, organization, User.UserStatus.READY)
                 .setAccount(new Account(type, "", "", null))
                 .setQuota(quota != null ? quota : 0L);
@@ -264,7 +263,7 @@ public class UserManager extends AbstractManager {
     }
 
     public void syncAllUsersOfExternalGroup(String study, String authOrigin, String token) throws CatalogException {
-        if (!"admin".equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+        if (!ROOT.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
@@ -333,62 +332,78 @@ public class UserManager extends AbstractManager {
      */
     public void importRemoteGroupOfUsers(String authOrigin, String remoteGroup, @Nullable String internalGroup, @Nullable String study,
                                          boolean sync, String token) throws CatalogException {
-        if (!"admin".equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
-            throw new CatalogAuthorizationException("Only the root user can perform this action");
-        }
+        String userId = getUserId(token);
 
-        ParamUtils.checkParameter(authOrigin, "Authentication origin");
-        ParamUtils.checkParameter(remoteGroup, "Remote group");
+        ObjectMap auditParams = new ObjectMap()
+                .append("authOrigin", authOrigin)
+                .append("remoteGroup", remoteGroup)
+                .append("internalGroup", internalGroup)
+                .append("study", study)
+                .append("sync", sync)
+                .append("token", token);
+        try {
+            if (!ROOT.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+                throw new CatalogAuthorizationException("Only the root user can perform this action");
+            }
 
-        if (!authenticationManagerMap.containsKey(authOrigin)) {
-            throw new CatalogException("Unknown authentication origin");
-        }
+            ParamUtils.checkParameter(authOrigin, "Authentication origin");
+            ParamUtils.checkParameter(remoteGroup, "Remote group");
 
-        List<User> userList;
-        if (sync) {
-            // We don't create any user as they will be automatically populated during login
-            userList = Collections.emptyList();
-        } else {
-            logger.info("Fetching users from authentication origin '{}'", authOrigin);
+            if (!authenticationManagerMap.containsKey(authOrigin)) {
+                throw new CatalogException("Unknown authentication origin");
+            }
 
-            // Register the users
-            userList = authenticationManagerMap.get(authOrigin).getUsersFromRemoteGroup(remoteGroup);
-            for (User user : userList) {
-                try {
-                    create(user, token);
-                    logger.info("User '{}' successfully created", user.getId());
-                } catch (CatalogException e) {
-                    logger.warn("{}", e.getMessage());
+            List<User> userList;
+            if (sync) {
+                // We don't create any user as they will be automatically populated during login
+                userList = Collections.emptyList();
+            } else {
+                logger.info("Fetching users from authentication origin '{}'", authOrigin);
+
+                // Register the users
+                userList = authenticationManagerMap.get(authOrigin).getUsersFromRemoteGroup(remoteGroup);
+                for (User user : userList) {
+                    try {
+                        create(user, token);
+                        logger.info("User '{}' successfully created", user.getId());
+                    } catch (CatalogException e) {
+                        logger.warn("{}", e.getMessage());
+                    }
                 }
             }
-        }
 
-        if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
-            // Check if the group already exists
-            try {
-                QueryResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
-                if (group.getNumResults() == 1) {
+            if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
+                // Check if the group already exists
+                QueryResult<Group> groupResult = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
+                if (groupResult.getNumResults() == 1) {
                     logger.error("Cannot synchronise with group {}. The group already exists and is already in use.", internalGroup);
-                    return;
+                    throw new CatalogException("Cannot synchronise with group " +  internalGroup
+                            + ". The group already exists and is already in use.");
                 }
-            } catch (CatalogException e) {
-                logger.warn("The group '{}' did not exist.", internalGroup);
-            }
 
-            // Create new group associating it to the remote group
-            try {
-                logger.info("Attempting to register group '{}' in study '{}'", internalGroup, study);
-                Group.Sync groupSync = null;
-                if (sync) {
-                    groupSync = new Group.Sync(authOrigin, remoteGroup);
+                // Create new group associating it to the remote group
+                try {
+                    logger.info("Attempting to register group '{}' in study '{}'", internalGroup, study);
+                    Group.Sync groupSync = null;
+                    if (sync) {
+                        groupSync = new Group.Sync(authOrigin, remoteGroup);
+                    }
+                    Group group = new Group(internalGroup, userList.stream().map(User::getId).collect(Collectors.toList()))
+                            .setSyncedFrom(groupSync);
+                    catalogManager.getStudyManager().createGroup(study, group, token);
+                    logger.info("Group '{}' created and synchronised with external group", internalGroup);
+                    auditManager.audit(userId, group.getId(), "", study, "", auditParams, AuditRecord.Entity.USER,
+                            AuditRecord.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, SUCCESS);
+                } catch (CatalogException e) {
+                    logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage(), e);
+                    throw new CatalogException("Could not register group '" + internalGroup + "' in study '" + study + "': "
+                            + e.getMessage(), e);
                 }
-                Group group = new Group(internalGroup, userList.stream().map(User::getId).collect(Collectors.toList()))
-                        .setSyncedFrom(groupSync);
-                catalogManager.getStudyManager().createGroup(study, group, token);
-                logger.info("Group '{}' created and synchronised with external group", internalGroup);
-            } catch (CatalogException e) {
-                logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage(), e);
             }
+        } catch (CatalogException e) {
+            auditManager.audit(userId, "", "", "", "", auditParams, AuditRecord.Entity.USER,
+                    AuditRecord.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, ERROR);
+            throw e;
         }
     }
 
@@ -405,57 +420,77 @@ public class UserManager extends AbstractManager {
      */
     public void importRemoteEntities(String authOrigin, List<String> idList, boolean isApplication, @Nullable String internalGroup,
                                      @Nullable String study, String token) throws CatalogException {
-        if (!"admin".equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
-            throw new CatalogAuthorizationException("Only the root user can perform this action");
-        }
+        ObjectMap auditParams = new ObjectMap()
+                .append("authOrigin", authOrigin)
+                .append("idList", idList)
+                .append("isApplication", isApplication)
+                .append("internalGroup", internalGroup)
+                .append("study", study)
+                .append("token", token);
 
-        ParamUtils.checkParameter(authOrigin, "Authentication origin");
-        ParamUtils.checkObj(idList, "ids");
+        String userId = getUserId(token);
 
-        if (!authenticationManagerMap.containsKey(authOrigin)) {
-            throw new CatalogException("Unknown authentication origin");
-        }
-
-        if (!isApplication) {
-            logger.info("Fetching user information from authentication origin '{}'", authOrigin);
-            List<User> parsedUserList = authenticationManagerMap.get(authOrigin).getRemoteUserInformation(idList);
-            for (User user : parsedUserList) {
-                create(user, token);
-                logger.info("User '{}' successfully created", user.getId());
+        try {
+            if (!ROOT.equals(userId)) {
+                throw new CatalogAuthorizationException("Only the root user can perform this action");
             }
-        } else {
-            for (String applicationId : idList) {
-                User application = new User(applicationId, new Account()
-                        .setType(Account.Type.GUEST)
-                        .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
-                        .setEmail("mail@mail.co.uk");
-                create(application, token);
-                logger.info("User (application) '{}' successfully created", application.getId());
-            }
-        }
 
-        if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
-            // Check if the group already exists
-            try {
-                QueryResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
-                if (group.getNumResults() == 1) {
-                    // We will add those users to the existing group
-                    catalogManager.getStudyManager().updateGroup(study, internalGroup,
-                            new GroupParams(StringUtils.join(idList, ","), GroupParams.Action.ADD), token);
-                    return;
+            ParamUtils.checkParameter(authOrigin, "Authentication origin");
+            ParamUtils.checkObj(idList, "ids");
+
+            if (!authenticationManagerMap.containsKey(authOrigin)) {
+                throw new CatalogException("Unknown authentication origin");
+            }
+
+            if (!isApplication) {
+                logger.info("Fetching user information from authentication origin '{}'", authOrigin);
+                List<User> parsedUserList = authenticationManagerMap.get(authOrigin).getRemoteUserInformation(idList);
+                for (User user : parsedUserList) {
+                    create(user, token);
+                    auditManager.audit(userId, user.getId(), "", "", "", auditParams, AuditRecord.Entity.USER,
+                            AuditRecord.Action.IMPORT_EXTERNAL_USERS, SUCCESS);
+                    logger.info("User '{}' successfully created", user.getId());
                 }
-            } catch (CatalogException e) {
-                logger.warn("The group '{}' did not exist.", internalGroup);
+            } else {
+                for (String applicationId : idList) {
+                    User application = new User(applicationId, new Account()
+                            .setType(Account.Type.GUEST)
+                            .setAuthentication(new Account.AuthenticationOrigin(authOrigin, true)))
+                            .setEmail("mail@mail.co.uk");
+                    create(application, token);
+                    auditManager.audit(userId, application.getId(), "", "", "", auditParams, AuditRecord.Entity.USER,
+                            AuditRecord.Action.IMPORT_EXTERNAL_USERS, SUCCESS);
+                    logger.info("User (application) '{}' successfully created", application.getId());
+                }
             }
 
-            // Create new group associating it to the remote group
-            try {
-                logger.info("Attempting to register group '{}' in study '{}'", internalGroup, study);
-                Group group = new Group(internalGroup, idList);
-                catalogManager.getStudyManager().createGroup(study, group, token);
-            } catch (CatalogException e) {
-                logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage());
+            if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
+                // Check if the group already exists
+                try {
+                    QueryResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
+                    if (group.getNumResults() == 1) {
+                        // We will add those users to the existing group
+                        catalogManager.getStudyManager().updateGroup(study, internalGroup,
+                                new GroupParams(StringUtils.join(idList, ","), GroupParams.Action.ADD), token);
+                        return;
+                    }
+                } catch (CatalogException e) {
+                    logger.warn("The group '{}' did not exist.", internalGroup);
+                }
+
+                // Create new group associating it to the remote group
+                try {
+                    logger.info("Attempting to register group '{}' in study '{}'", internalGroup, study);
+                    Group group = new Group(internalGroup, idList);
+                    catalogManager.getStudyManager().createGroup(study, group, token);
+                } catch (CatalogException e) {
+                    logger.error("Could not register group '{}' in study '{}'\n{}", internalGroup, study, e.getMessage());
+                }
             }
+        } catch (CatalogException e) {
+            auditManager.audit(userId, "", "", "", "", auditParams, AuditRecord.Entity.USER, AuditRecord.Action.IMPORT_EXTERNAL_USERS,
+                    ERROR);
+            throw e;
         }
     }
 

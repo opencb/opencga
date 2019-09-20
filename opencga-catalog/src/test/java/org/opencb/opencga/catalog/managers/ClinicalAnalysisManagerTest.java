@@ -10,11 +10,9 @@ import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.pedigree.Multiples;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
 import org.opencb.opencga.core.models.*;
@@ -49,7 +47,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
