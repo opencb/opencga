@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -160,7 +161,7 @@ public class UserManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             auditManager.auditUser(userId, AuditRecord.Action.CHANGE_USER_PASSWORD, userId,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -173,9 +174,10 @@ public class UserManager extends AbstractManager {
         if (!authorizationManager.isPublicRegistration()) {
              userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
             if (!"admin".equals(userId)) {
+                String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
                 auditManager.auditCreate(userId, AuditRecord.Resource.USER, user.getId(), "", "", "", auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
-                throw new CatalogException("The registration is closed to the public: Please talk to your administrator.");
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+                throw new CatalogException(errorMsg);
             }
         }
 
@@ -235,7 +237,7 @@ public class UserManager extends AbstractManager {
             }
 
             auditManager.auditCreate(userId, AuditRecord.Resource.USER, user.getId(), "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
         }
@@ -404,7 +406,7 @@ public class UserManager extends AbstractManager {
             }
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.IMPORT_EXTERNAL_GROUP_OF_USERS, AuditRecord.Resource.USER, "", "", "", "",
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -491,7 +493,7 @@ public class UserManager extends AbstractManager {
             }
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.IMPORT_EXTERNAL_USERS, AuditRecord.Resource.USER, "", "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -553,7 +555,7 @@ public class UserManager extends AbstractManager {
             return userQueryResult;
         } catch (CatalogException e) {
             auditManager.auditInfo(userId, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -592,7 +594,7 @@ public class UserManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(loggedUser, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -637,7 +639,7 @@ public class UserManager extends AbstractManager {
                     deletedUsers.add(deletedUser);
                 } catch (CatalogException e) {
                     auditManager.auditDelete(operationUuid, tokenUser, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
                 }
             }
         }
@@ -678,7 +680,7 @@ public class UserManager extends AbstractManager {
             return writeResult;
         } catch (CatalogException e) {
             auditManager.auditUser(userId, AuditRecord.Action.RESET_USER_PASSWORD, userId,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -704,7 +706,8 @@ public class UserManager extends AbstractManager {
 
         if (token == null) {
             // TODO: We should raise better exceptions. It could fail for other reasons.
-            auditManager.auditUser(username, AuditRecord.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+            auditManager.auditUser(username, AuditRecord.Action.LOGIN, username,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
@@ -758,7 +761,7 @@ public class UserManager extends AbstractManager {
             return newToken;
         } catch (CatalogException e) {
             auditManager.auditUser(authenticatedUser, AuditRecord.Action.LOGIN, userId,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -831,7 +834,7 @@ public class UserManager extends AbstractManager {
             return new QueryResult<>("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(filter));
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -881,7 +884,7 @@ public class UserManager extends AbstractManager {
             return new QueryResult<>("Update filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -923,7 +926,7 @@ public class UserManager extends AbstractManager {
             return new QueryResult<>("Delete filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -964,7 +967,7 @@ public class UserManager extends AbstractManager {
             }
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1007,7 +1010,7 @@ public class UserManager extends AbstractManager {
             return new QueryResult<>("Get filters", 0, filters.size(), filters.size(), "", "", filters);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1048,7 +1051,7 @@ public class UserManager extends AbstractManager {
             return new QueryResult("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(config));
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1101,7 +1104,7 @@ public class UserManager extends AbstractManager {
             return new QueryResult("Delete configuration", result.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1156,7 +1159,7 @@ public class UserManager extends AbstractManager {
                     userQueryResult.getErrorMsg(), Arrays.asList(configMap));
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }

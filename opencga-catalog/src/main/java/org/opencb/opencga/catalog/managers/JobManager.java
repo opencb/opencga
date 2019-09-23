@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -216,7 +217,7 @@ public class JobManager extends ResourceManager<Job> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.VISIT, AuditRecord.Resource.JOB, jobId, "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -323,7 +324,7 @@ public class JobManager extends ResourceManager<Job> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, AuditRecord.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -361,7 +362,7 @@ public class JobManager extends ResourceManager<Job> {
             return jobQueryResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -435,7 +436,7 @@ public class JobManager extends ResourceManager<Job> {
                     queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -472,7 +473,7 @@ public class JobManager extends ResourceManager<Job> {
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -491,12 +492,12 @@ public class JobManager extends ResourceManager<Job> {
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (Exception e) {
+            } catch (CatalogException e) {
                 writeResult.getFailed().add(new WriteResult.Fail(job.getId(), e.getMessage()));
                 logger.debug("Cannot delete job {}: {}", job.getId(), e.getMessage(), e);
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
-                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
 
@@ -541,7 +542,7 @@ public class JobManager extends ResourceManager<Job> {
             job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.JOB, jobId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -561,7 +562,7 @@ public class JobManager extends ResourceManager<Job> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -585,7 +586,7 @@ public class JobManager extends ResourceManager<Job> {
             job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.JOB, jobId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -605,7 +606,7 @@ public class JobManager extends ResourceManager<Job> {
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -707,7 +708,7 @@ public class JobManager extends ResourceManager<Job> {
                     } catch (CatalogException e) {
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.JOB, job.getId(),
                                 job.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                         if (!silent) {
                             throw e;
                         } else {
@@ -721,14 +722,16 @@ public class JobManager extends ResourceManager<Job> {
                             Collections.emptyList()));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.JOB, jobId, "", study.getId(),
-                            study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                            study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    new Error(0, "", missingMap.get(jobId).getErrorMsg())), new ObjectMap());
                 }
             }
             return jobAclList;
         } catch (CatalogException e) {
             for (String jobId : jobList) {
                 auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.JOB, jobId, "", study.getId(),
-                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
+                        new ObjectMap());
             }
             throw e;
         }
@@ -808,8 +811,8 @@ public class JobManager extends ResourceManager<Job> {
             if (jobStrList != null) {
                 for (String jobId : jobStrList) {
                     auditManager.audit(operationId, userId, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.JOB, jobId, "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
-                            new ObjectMap());
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    e.getError()), new ObjectMap());
                 }
             }
             throw e;

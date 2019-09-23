@@ -149,7 +149,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         } catch (CatalogException e) {
             for (String entryId : entryList) {
                 auditManager.auditInfo(operationUuid, userId, getEntity(), entryId, "", study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
             throw e;
         }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.exceptions;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.result.Error;
 
 import java.util.List;
 
@@ -50,5 +51,9 @@ public class CatalogException extends Exception {
         } else {
             return new CatalogException(fullMessage, e.getCause());
         }
+    }
+
+    public Error getError() {
+        return new Error(0, "", this.getMessage());
     }
 }

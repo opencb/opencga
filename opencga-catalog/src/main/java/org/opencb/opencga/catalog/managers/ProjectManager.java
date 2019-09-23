@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -211,10 +212,11 @@ public class ProjectManager extends AbstractManager {
                 .append("options", options)
                 .append("token", sessionId);
         if (Account.Type.GUEST == user.first().getAccount().getType()) {
+            String errorMsg = "User " + userId + " has a guest account and is not authorized to create new projects. If you "
+                    + " think this might be an error, please contact with your administrator.";
             auditManager.auditCreate(userId, AuditRecord.Resource.PROJECT, id, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
-            throw new CatalogException("User " + userId + " has a guest account and is not authorized to create new projects. If you "
-                    + " think this might be an error, please contact with your administrator.");
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+            throw new CatalogException(errorMsg);
         }
 
         description = description != null ? description : "";
@@ -240,7 +242,7 @@ public class ProjectManager extends AbstractManager {
             catalogIOManagerFactory.getDefault().createProject(userId, project.getId());
         } catch (CatalogIOException e) {
             auditManager.auditCreate(userId, AuditRecord.Resource.PROJECT, id, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
                 projectDBAdaptor.delete(project.getUid());
             } catch (Exception e1) {
@@ -280,7 +282,7 @@ public class ProjectManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditInfo(userId, AuditRecord.Resource.PROJECT, projectId, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -340,7 +342,7 @@ public class ProjectManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, AuditRecord.Resource.PROJECT, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
         }
@@ -370,7 +372,7 @@ public class ProjectManager extends AbstractManager {
             project = resolveId(projectId, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.PROJECT, projectId, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -448,7 +450,7 @@ public class ProjectManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -515,7 +517,7 @@ public class ProjectManager extends AbstractManager {
             }
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.INCREMENT_PROJECT_RELEASE, AuditRecord.Resource.PROJECT, projectStr, "", "", "",
-                    new ObjectMap(), new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new ObjectMap(), new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }

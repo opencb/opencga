@@ -291,7 +291,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -586,7 +586,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis = internalGet(study.getUid(), clinicalId, QueryOptions.empty(), userId).first();
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -682,7 +682,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }

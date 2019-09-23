@@ -259,7 +259,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -295,7 +295,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             interpretation = internalGet(study.getUid(), interpretationId, QueryOptions.empty(), userId).first();
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretationId, "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -329,7 +329,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), interpretation.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }

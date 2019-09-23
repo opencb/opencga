@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
@@ -308,7 +309,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -429,7 +430,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, AuditRecord.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -463,7 +464,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -504,7 +505,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -542,12 +543,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (Exception e) {
+            } catch (CatalogException e) {
                 writeResult.getFailed().add(new WriteResult.Fail(individual.getId(), e.getMessage()));
                 logger.debug("Cannot delete individual {}: {}", individual.getId(), e.getMessage(), e);
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
 
@@ -658,7 +659,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             individual = internalGet(study.getUid(), individualId, QueryOptions.empty(), userId).first();
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.INDIVIDUAL, individualId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -806,7 +807,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -913,7 +914,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     } catch (CatalogException e) {
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.INDIVIDUAL,
                                 individual.getId(), individual.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                         if (!silent) {
                             throw e;
                         } else {
@@ -927,15 +928,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                             missingMap.get(individualId).getErrorMsg(), Collections.emptyList()));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.INDIVIDUAL, individualId, "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
-                            new ObjectMap());
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    new Error(0, "", missingMap.get(individualId).getErrorMsg())), new ObjectMap());
                 }
             }
             return individualAclList;
         } catch (CatalogException e) {
             for (String individualId : individualList) {
                 auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.INDIVIDUAL, individualId, "",
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
             throw e;
@@ -1042,8 +1043,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             if (individualStrList != null) {
                 for (String individualId : individualStrList) {
                     auditManager.audit(operationId, userId, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.INDIVIDUAL, individualId,
-                            "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
-                            new ObjectMap());
+                            "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    e.getError()), new ObjectMap());
                 }
             }
             throw e;
@@ -1084,7 +1085,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             return result;
         } catch (CatalogException | IOException e) {
             auditManager.auditFacet(userId, AuditRecord.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
             throw e;
         }
     }

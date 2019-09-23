@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
@@ -242,7 +243,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, AuditRecord.Resource.SAMPLE, sample.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -318,7 +319,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -362,7 +363,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -415,7 +416,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -435,12 +436,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            } catch (Exception e) {
+            } catch (CatalogException e) {
                 writeResult.getFailed().add(new WriteResult.Fail(sample.getId(), e.getMessage()));
                 logger.debug("Cannot delete sample {}: {}", sample.getId(), e.getMessage(), e);
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
 
@@ -625,7 +626,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sample = internalGet(study.getUid(), sampleId, INCLUDE_SAMPLE_IDS, userId).first();
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.SAMPLE, sampleId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -699,7 +700,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -811,7 +812,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     } catch (CatalogException e) {
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
                                 sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
 
                         if (!silent) {
                             throw e;
@@ -826,8 +827,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                             Collections.emptyList()));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
-                            new ObjectMap());
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    new Error(0, "", missingMap.get(sampleId).getErrorMsg())), new ObjectMap());
                 }
             }
 
@@ -835,7 +836,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } catch (CatalogException e) {
             for (String sampleId : sampleList) {
                 auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
             throw e;
@@ -937,8 +938,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (sampleStringList != null) {
                 for (String sampleId : sampleStringList) {
                     auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",
-                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
-                            new ObjectMap());
+                            study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
             }
             throw e;
@@ -995,7 +996,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 for (Sample sample : batchSampleList) {
                     auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
                             sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
 
                 // Process remaining unprocessed batches
@@ -1003,7 +1004,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     Sample sample = sampleList.get(numProcessed);
                     auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
                             sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
 
                 throw e;
@@ -1058,7 +1059,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             return result;
         } catch (CatalogException | IOException e) {
             auditManager.auditFacet(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
             throw e;
         }
     }

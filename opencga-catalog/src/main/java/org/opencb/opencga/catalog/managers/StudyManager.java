@@ -337,9 +337,9 @@ public class StudyManager extends AbstractManager {
 
             result.setResult(Arrays.asList(study));
             return result;
-        } catch (Exception e) {
+        } catch (CatalogException e) {
             auditManager.auditCreate(userId, AuditRecord.Resource.STUDY, id, "", id, "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -430,7 +430,7 @@ public class StudyManager extends AbstractManager {
             return studyQueryResult;
         } catch (CatalogException e) {
             auditManager.auditInfo(userId, AuditRecord.Resource.STUDY, studyStr, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -537,7 +537,7 @@ public class StudyManager extends AbstractManager {
             return studyQueryResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, AuditRecord.Resource.STUDY, "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -565,7 +565,7 @@ public class StudyManager extends AbstractManager {
             study = resolveId(studyId, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.STUDY, studyId, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
@@ -599,7 +599,7 @@ public class StudyManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -630,7 +630,8 @@ public class StudyManager extends AbstractManager {
             return new QueryResult<>(study.getFqn(), -1, 1, 1, "", "", Collections.singletonList(permissionRule));
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.ADD_STUDY_PERMISSION_RULE, AuditRecord.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -659,7 +660,8 @@ public class StudyManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.REMOVE_STUDY_PERMISSION_RULE, AuditRecord.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -682,7 +684,8 @@ public class StudyManager extends AbstractManager {
             return result;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.FETCH_STUDY_PERMISSION_RULES, AuditRecord.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -877,7 +880,7 @@ public class StudyManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.ADD_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -904,7 +907,7 @@ public class StudyManager extends AbstractManager {
             return result;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.FETCH_STUDY_GROUPS, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1005,7 +1008,8 @@ public class StudyManager extends AbstractManager {
             return studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.UPDATE_USERS_FROM_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(),
-                    study.getUuid(), study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1149,7 +1153,7 @@ public class StudyManager extends AbstractManager {
             return group;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.REMOVE_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1264,7 +1268,7 @@ public class StudyManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.ADD_VARIABLE_SET, AuditRecord.Resource.STUDY, id, "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1290,7 +1294,7 @@ public class StudyManager extends AbstractManager {
             return result;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.FETCH_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSetId, "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1329,7 +1333,7 @@ public class StudyManager extends AbstractManager {
             return new QueryResult("", writeResult.getDbTime(), 0, 0, "", "", Collections.emptyList());
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.DELETE_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSet.getId(), "",
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1363,7 +1367,7 @@ public class StudyManager extends AbstractManager {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.ADD_VARIABLE_TO_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSet.getId(), "",
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1393,7 +1397,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, AuditRecord.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -1464,7 +1468,7 @@ public class StudyManager extends AbstractManager {
             } catch (CatalogException e) {
                 auditManager.audit(operationUuid, userId, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 if (silent) {
                     studyAclList.add(new QueryResult<>(study.getFqn(), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
                 } else {
@@ -1591,7 +1595,7 @@ public class StudyManager extends AbstractManager {
             for (Study study : studies) {
                 auditManager.audit(operationUuid, userId, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
             }
 
             throw e;
@@ -1642,7 +1646,7 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Only the " + ROOT + " user can index in Solr");
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.INDEX, AuditRecord.Resource.CATALOG, "", "", "", "", new ObjectMap(),
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
