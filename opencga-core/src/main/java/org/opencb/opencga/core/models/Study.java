@@ -55,8 +55,6 @@ public class Study extends PrivateFields {
     private List<Individual> individuals;
     private List<Sample> samples;
 
-    @Deprecated
-    private List<Dataset> datasets;
     private List<Cohort> cohorts;
 
     private List<Panel> panels;
@@ -108,7 +106,6 @@ public class Study extends PrivateFields {
         this.jobs = FieldUtils.defaultObject(jobs, ArrayList::new);
         this.individuals = FieldUtils.defaultObject(individuals, ArrayList::new);
         this.samples = FieldUtils.defaultObject(samples, ArrayList::new);
-        this.datasets = FieldUtils.defaultObject(datasets, ArrayList::new);
         this.cohorts = FieldUtils.defaultObject(cohorts, ArrayList::new);
         this.panels = FieldUtils.defaultObject(panels, ArrayList::new);
         this.variableSets = FieldUtils.defaultObject(variableSets, ArrayList::new);
@@ -176,7 +173,6 @@ public class Study extends PrivateFields {
         sb.append(", jobs=").append(jobs);
         sb.append(", individuals=").append(individuals);
         sb.append(", samples=").append(samples);
-        sb.append(", datasets=").append(datasets);
         sb.append(", cohorts=").append(cohorts);
         sb.append(", panels=").append(panels);
         sb.append(", variableSets=").append(variableSets);
@@ -355,15 +351,6 @@ public class Study extends PrivateFields {
 
     public Study setSamples(List<Sample> samples) {
         this.samples = samples;
-        return this;
-    }
-
-    public List<Dataset> getDatasets() {
-        return datasets;
-    }
-
-    public Study setDatasets(List<Dataset> datasets) {
-        this.datasets = datasets;
         return this;
     }
 

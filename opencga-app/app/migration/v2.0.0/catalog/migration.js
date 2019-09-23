@@ -14,3 +14,6 @@ for (var i = 0; i < individuals.length(); i++) {
         }
     }
 }
+
+// Drop dataset collection
+db.getCollection("dataset").drop()

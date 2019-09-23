@@ -1443,7 +1443,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogSampleDBAdaptor().setStatus(query, Status.DELETED);
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().setStatus(query, Status.DELETED);
             dbAdaptorFactory.getCatalogCohortDBAdaptor().setStatus(query, Status.DELETED);
-            dbAdaptorFactory.getCatalogDatasetDBAdaptor().setStatus(query, Status.DELETED);
         }
 
         // Change the status of the project to deleted
@@ -1504,11 +1503,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (count > 0) {
             throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
                     + " cohorts in use.");
-        }
-        count = dbAdaptorFactory.getCatalogDatasetDBAdaptor().count(query).first();
-        if (count > 0) {
-            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
-                    + " datasets in use.");
         }
     }
 

@@ -52,10 +52,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_STUDY_UID = "studyUid";
     private static final String VERSION = "version";
 
-    static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
-    static final String FILTER_ROUTE_DATASETS = "projects.studies.datasets.";
     static final String FILTER_ROUTE_INDIVIDUALS = "projects.studies.individuals.";
     static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";

@@ -746,7 +746,6 @@ public class StudyManager extends AbstractManager {
                 .setAttributes(study.getAttributes())
                 .setCipher(study.getCipher())
                 .setCreationDate(study.getCreationDate())
-                .setDatasets(study.getDatasets().size())
                 .setDescription(study.getDescription())
                 .setDiskUsage(study.getSize())
                 .setExperiments(study.getExperiments())

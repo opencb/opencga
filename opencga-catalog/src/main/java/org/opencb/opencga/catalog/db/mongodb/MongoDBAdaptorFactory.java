@@ -55,7 +55,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             "sample",
             "individual",
             "cohort",
-            "dataset",
             "panel",
             "family",
             "clinical",
@@ -72,7 +71,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String INDIVIDUAL_COLLECTION = "individual";
     public static final String COHORT_COLLECTION = "cohort";
     public static final String FAMILY_COLLECTION = "family";
-    public static final String DATASET_COLLECTION = "dataset";
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
@@ -109,7 +107,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private ProjectMongoDBAdaptor projectDBAdaptor;
     private CohortMongoDBAdaptor cohortDBAdaptor;
     private FamilyMongoDBAdaptor familyDBAdaptor;
-    private DatasetMongoDBAdaptor datasetDBAdaptor;
     private PanelMongoDBAdaptor panelDBAdaptor;
     private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private InterpretationMongoDBAdaptor interpretationDBAdaptor;
@@ -296,11 +293,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public DatasetMongoDBAdaptor getCatalogDatasetDBAdaptor() {
-        return datasetDBAdaptor;
-    }
-
-    @Override
     public PanelMongoDBAdaptor getCatalogPanelDBAdaptor() {
         return panelDBAdaptor;
     }
@@ -348,7 +340,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
         jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
         cohortCollection = mongoDataStore.getCollection(COHORT_COLLECTION);
-        datasetCollection = mongoDataStore.getCollection(DATASET_COLLECTION);
         auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
         panelCollection = mongoDataStore.getCollection(PANEL_COLLECTION);
         familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
@@ -364,7 +355,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(INDIVIDUAL_COLLECTION, individualCollection);
         collections.put(JOB_COLLECTION, jobCollection);
         collections.put(COHORT_COLLECTION, cohortCollection);
-        collections.put(DATASET_COLLECTION, datasetCollection);
         collections.put(AUDIT_COLLECTION, auditCollection);
         collections.put(PANEL_COLLECTION, panelCollection);
         collections.put(FAMILY_COLLECTION, familyCollection);
@@ -379,7 +369,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, this);
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, this);
-        datasetDBAdaptor = new DatasetMongoDBAdaptor(datasetCollection, this);
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, this);
