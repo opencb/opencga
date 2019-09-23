@@ -87,7 +87,7 @@ public class AnnotationIndexConverterTest {
 
     @Test
     public void testCtBtCombination() {
-        AnnotationIndexEntry entry = converter.convert(annot(ct("missense_variant", "other"), ct("other", "protein_coding")));
+        AnnotationIndexEntry entry = converter.convert(annot(ct("missense_variant", "pseudogene"), ct("pseudogene", "protein_coding")));
         byte[] ctBtIndex = entry.getCtBtMatrix();
         assertEquals(1, ctBtIndex.length);
         assertEquals(1, entry.getNumCts());
@@ -102,7 +102,7 @@ public class AnnotationIndexConverterTest {
         assertEquals(1, ctBtIndex[0]); // missense_variant
         assertEquals(1, ctBtIndex[1]); // stop_lost
 
-        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding"), ct("stop_gained", "other")));
+        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding"), ct("stop_gained", "pseudogene")));
         ctBtIndex = entry.getCtBtMatrix();
         assertEquals(3, ctBtIndex.length);
         assertEquals(3, entry.getNumCts());
@@ -116,7 +116,7 @@ public class AnnotationIndexConverterTest {
                 ct("start_lost", "processed_transcript"),
                 ct("start_lost", "protein_coding"),
                 ct("stop_lost", "processed_transcript"),
-                ct("stop_gained", "other")));
+                ct("stop_gained", "pseudogene")));
         ctBtIndex = entry.getCtBtMatrix();
         assertEquals(4, ctBtIndex.length);
         assertEquals(4, entry.getNumCts());

@@ -109,13 +109,13 @@ public class SampleIndexEntryFilterTest {
         List<String> result;
 
         query = getSingleSampleIndexQuery(new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,processed_transcript")
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,nonsense_mediated_decay")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained"));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:20:A:T"), result);
 
         query = getSingleSampleIndexQuery(new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "processed_transcript")
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "nonsense_mediated_decay")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
@@ -127,7 +127,7 @@ public class SampleIndexEntryFilterTest {
         Assert.assertEquals(Arrays.asList("1:20:A:T"), result);
 
         query = getSingleSampleIndexQuery(new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,processed_transcript")
+                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,nonsense_mediated_decay")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
         result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T"), result);
@@ -164,16 +164,16 @@ public class SampleIndexEntryFilterTest {
         Map<String, byte[]> map = new AnnotationIndexPutBuilder()
                 .add(converter.convert(annot(
                         ct("missense_variant", "protein_coding"),
-                        ct("start_lost", "processed_transcript"),
+                        ct("start_lost", "nonsense_mediated_decay"),
                         ct("start_lost", "protein_coding"),
-                        ct("stop_lost", "processed_transcript"),
+                        ct("stop_lost", "nonsense_mediated_decay"),
                         ct("stop_gained", "other"))))
                 .add(converter.convert(annot(
                         ct("missense_variant", "protein_coding"),
-                        ct("start_lost", "processed_transcript"),
+                        ct("start_lost", "nonsense_mediated_decay"),
                         ct("start_lost", "protein_coding"),
                         ct("stop_lost", "protein_coding"),
-                        ct("stop_gained", "processed_transcript"))))
+                        ct("stop_gained", "nonsense_mediated_decay"))))
                 .buildAndReset(new Put(new byte[1]), "0/1", new byte[1])
                 .getFamilyCellMap()
                 .get(new byte[1])

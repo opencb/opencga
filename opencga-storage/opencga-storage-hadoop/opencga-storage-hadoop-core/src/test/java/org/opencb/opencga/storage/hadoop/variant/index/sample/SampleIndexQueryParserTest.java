@@ -28,6 +28,7 @@ import java.util.function.Function;
 
 import static org.junit.Assert.*;
 import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.ANTISENSE;
+import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.PROTEIN_CODING;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.DELTA;
@@ -621,12 +622,14 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parseBiotypeTypeMaskTest() {
-        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype")).getBiotypeMask());
+        assertEquals(BT_OTHER_NON_PSEUDOGENE, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype")).getBiotypeMask());
         assertEquals(BT_PROTEIN_CODING_MASK | BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getBiotypeMask());
         assertEquals(BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "miRNA")).getBiotypeMask());
         assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA")).getBiotypeMask());
         assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lincRNA")).getBiotypeMask());
         assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA,lincRNA")).getBiotypeMask());
+        assertEquals(BT_OTHER_NON_PSEUDOGENE | BT_PROTEIN_CODING_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype,protein_coding")).getBiotypeMask());
+        assertEquals(0, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype,protein_coding,pseudogene")).getBiotypeMask());
 
         // Ensure PROTEIN_CODING_MASK is not added to the summary
         assertEquals(INTERGENIC_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getAnnotationIndexMask());
@@ -1048,7 +1051,7 @@ public class SampleIndexQueryParserTest {
         // The params can not be removed from the query, as the BT is filter is only an approximation.
         // CT has to remain to check the combination.
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
-                .append(ANNOT_BIOTYPE.key(), ANTISENSE);
+                .append(ANNOT_BIOTYPE.key(), ANTISENSE + "," + PROTEIN_CODING);
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
         assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());

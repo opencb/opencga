@@ -43,7 +43,7 @@ public class AnnotationIndexConverter {
     public static final byte LOF_EXTENDED_MASK =                 (byte) (1 << 4);
     public static final byte POP_FREQ_ANY_001_MASK =             (byte) (1 << 5);
     public static final byte CLINICAL_MASK =                     (byte) (1 << 6);
-    public static final byte INTERGENIC_MASK =                   (byte) (1 << 7);  // ONLY INTERGENIC!!
+    public static final byte INTERGENIC_MASK =                   (byte) (1 << 7);  // INTERGENIC (and maybe regulatory)
 
 
     public static final short CT_MISSENSE_VARIANT_MASK =         (short) (1 << 0);
@@ -67,10 +67,10 @@ public class AnnotationIndexConverter {
     public static final byte BT_NONSENSE_MEDIATED_DECAY_MASK =   (byte) (1 << 0);
     public static final byte BT_LNCRNA_MASK =                    (byte) (1 << 1);
     public static final byte BT_MIRNA_MASK =                     (byte) (1 << 2);
-    public static final byte BT_PROCESSED_TRANSCRIPT_MASK =      (byte) (1 << 3);
+    public static final byte BT_RETAINED_INTRON_MASK =           (byte) (1 << 3);
     public static final byte BT_SNRNA_MASK =                     (byte) (1 << 4);
     public static final byte BT_SNORNA_MASK =                    (byte) (1 << 5);
-    public static final byte BT_NON_STOP_DECAY_MASK =            (byte) (1 << 6);
+    public static final byte BT_OTHER_NON_PSEUDOGENE =           (byte) (1 << 6); // -> Other, non_pseudogene
     public static final byte BT_PROTEIN_CODING_MASK =            (byte) (1 << 7);
 
     public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
@@ -307,7 +307,7 @@ public class AnnotationIndexConverter {
     }
 
     public static boolean isImpreciseCtMask(short ctMask) {
-        return ctMask == CT_MIRNA_TFBS_MASK || ctMask == CT_UTR_MASK;
+        return IndexUtils.testIndexAny(ctMask, ((short) (CT_MIRNA_TFBS_MASK | CT_UTR_MASK)));
     }
 
     public static short getMaskFromSoName(String soName) {
@@ -396,7 +396,7 @@ public class AnnotationIndexConverter {
     }
 
     public static boolean isImpreciseBtMask(byte btMask) {
-        return btMask == BT_LNCRNA_MASK;
+        return IndexUtils.testIndexAny(btMask, ((byte) (BT_LNCRNA_MASK | BT_OTHER_NON_PSEUDOGENE)));
     }
 
     public static byte getMaskFromBiotype(String biotype) {
@@ -408,26 +408,37 @@ public class AnnotationIndexConverter {
             case NONSENSE_MEDIATED_DECAY:
                 return BT_NONSENSE_MEDIATED_DECAY_MASK;
 
+            // See http://www.ensembl.info/2019/05/20/whats-coming-in-ensembl-97-ensembl-genomes-44/
             case LNCRNA:
+            case NON_CODING:
             case LINCRNA:
+            case "macro_lncRNA":
             case ANTISENSE:
+            case SENSE_INTRONIC:
+            case SENSE_OVERLAPPING:
+            case THREEPRIME_OVERLAPPING_NCRNA:
+            case "bidirectional_promoter_lncRNA":
                 return BT_LNCRNA_MASK;
 
 
             case MIRNA:
                 return BT_MIRNA_MASK;
-            case PROCESSED_TRANSCRIPT:
-                return BT_PROCESSED_TRANSCRIPT_MASK;
+            case RETAINED_INTRON:
+                return BT_RETAINED_INTRON_MASK;
             case SNRNA:
                 return BT_SNRNA_MASK;
             case SNORNA:
                 return BT_SNORNA_MASK;
             case NON_STOP_DECAY:
-                return BT_NON_STOP_DECAY_MASK;
+                return BT_OTHER_NON_PSEUDOGENE;
             case PROTEIN_CODING:
                 return BT_PROTEIN_CODING_MASK;
             default:
-                return 0;
+                if (biotype.contains("pseudogene")) {
+                    return 0;
+                } else {
+                    return BT_OTHER_NON_PSEUDOGENE;
+                }
         }
     }
 
