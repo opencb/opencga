@@ -223,7 +223,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
-            QueryResult queryResult = catalogManager.getFileManager().get(studyStr, query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().search(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -254,7 +254,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "variableSet") @QueryParam("variableSet") String variableSet,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
-            QueryResult queryResult = catalogManager.getSampleManager().get(studyStr, query, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -288,7 +288,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
                                @QueryParam("outputFiles") String outputFiles) {
         try {
-            return createOkResponse(catalogManager.getJobManager().get(studyStr, new Query(), null, sessionId));
+            return createOkResponse(catalogManager.getJobManager().search(studyStr, new Query(), null, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -315,9 +315,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getFileManager().get(studyStr,
-                    query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING),
-                    queryOptions, sessionId).getResult();
+            List<File> missingFiles = catalogManager.getFileManager().search(studyStr, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 

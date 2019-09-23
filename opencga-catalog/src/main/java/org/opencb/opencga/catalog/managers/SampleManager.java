@@ -249,35 +249,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public QueryResult<Sample> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-
-        fixQueryObject(study, query, userId);
-
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, query);
-        AnnotationUtils.fixQueryOptionAnnotation(options);
-
-        query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, userId);
-
-        if (sampleQueryResult.getNumResults() == 0 && query.containsKey(SampleDBAdaptor.QueryParams.UID.key())) {
-            List<Long> sampleIds = query.getAsLongList(SampleDBAdaptor.QueryParams.UID.key());
-            for (Long sampleId : sampleIds) {
-                authorizationManager.checkSamplePermission(study.getUid(), sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
-            }
-        }
-
-        return sampleQueryResult;
-    }
-
-    @Override
     public DBIterator<Sample> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -304,11 +275,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("options", options)
                 .append("token", token);
         try {
+            fixQueryObject(study, query, userId);
+
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, query);
             AnnotationUtils.fixQueryOptionAnnotation(options);
-
-            fixQueryObject(study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
@@ -886,7 +857,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (StringUtils.isNotEmpty(sampleAclParams.getIndividual())) {
                 Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), sampleAclParams.getIndividual());
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLES.key());
-                QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyId, query, options, token);
+                QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().search(studyId, query, options, token);
 
                 Set<String> sampleSet = new HashSet<>();
                 for (Individual individual : indQueryResult.getResult()) {
@@ -913,7 +884,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (StringUtils.isNotEmpty(sampleAclParams.getCohort())) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), sampleAclParams.getCohort());
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
-                QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().get(studyId, query, options, token);
+                QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().search(studyId, query, options, token);
 
                 Set<String> sampleSet = new HashSet<>();
                 for (Cohort cohort : cohortQueryResult.getResult()) {

@@ -33,7 +33,7 @@ public class AddFilePathToStudyConfigurationMigration {
     public String getFilePath(String studyName, String fileName, String sessionId) throws CatalogException {
         // Search filePath in catalog
         logger.info("Register path from file = " + fileName);
-        QueryResult<File> queryResult = catalogManager.getFileManager().get(studyName, new Query()
+        QueryResult<File> queryResult = catalogManager.getFileManager().search(studyName, new Query()
                 .append(ID.key(), fileName), QUERY_OPTIONS, sessionId);
         File file = null;
         if (queryResult.getResult().size() == 1) {

@@ -702,30 +702,6 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public QueryResult<Panel> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-
-        long studyUid;
-        if (studyStr.equals(INSTALLATION_PANELS)) {
-            studyUid = -1;
-        } else {
-            studyUid = catalogManager.getStudyManager().resolveId(studyStr, userId).getUid();
-        }
-
-        QueryResult<Panel> panelQueryResult = search(studyStr, query, options, sessionId);
-
-        if (panelQueryResult.getNumResults() == 0 && query.containsKey(PanelDBAdaptor.QueryParams.UID.key())) {
-            List<Long> panelIds = query.getAsLongList(PanelDBAdaptor.QueryParams.UID.key());
-            for (Long panelId : panelIds) {
-                authorizationManager.checkPanelPermission(studyUid, panelId, userId,
-                        PanelAclEntry.PanelPermissions.VIEW);
-            }
-        }
-
-        return panelQueryResult;
-    }
-
-    @Override
     public DBIterator<Panel> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);

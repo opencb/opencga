@@ -136,8 +136,7 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyFqn, query, QueryOptions.empty(),
-                userSessionId);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
 
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
         for (File file : folderFiles) {
@@ -175,7 +174,7 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), folder.getPath())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyFqn, query, QueryOptions.empty(), userSessionId);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
 
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
         for (File file : folderFiles) {
@@ -244,7 +243,7 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyFqn, query, QueryOptions.empty(), userSessionId);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
 
         file = fileQueryResult.first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);

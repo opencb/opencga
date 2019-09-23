@@ -598,7 +598,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
-        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, new Query(), QueryOptions
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().search(studyFqn, new Query(), QueryOptions
                 .empty(), sessionIdUser);
         assertTrue(sampleQueryResult.getNumResults() > 0);
 
@@ -646,7 +646,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("@members", groupQueryResult.first().getId());
 
         // Obtain all samples from study
-        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyFqn, new Query(), QueryOptions
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().search(studyFqn, new Query(), QueryOptions
                 .empty(), sessionIdUser);
         assertTrue(sampleQueryResult.getNumResults() > 0);
 
@@ -726,10 +726,10 @@ public class CatalogManagerTest extends AbstractManagerTest {
         query = new Query()
                 .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(Job.JobStatus.PREPARED, Job.JobStatus.QUEUED,
                         Job.JobStatus.RUNNING, Job.JobStatus.DONE));
-        QueryResult<Job> unfinishedJobs = catalogManager.getJobManager().get(String.valueOf(studyId), query, null, sessionIdUser);
+        QueryResult<Job> unfinishedJobs = catalogManager.getJobManager().search(String.valueOf(studyId), query, null, sessionIdUser);
         assertEquals(2, unfinishedJobs.getNumResults());
 
-        QueryResult<Job> allJobs = catalogManager.getJobManager().get(String.valueOf(studyId), (Query) null, null, sessionIdUser);
+        QueryResult<Job> allJobs = catalogManager.getJobManager().search(String.valueOf(studyId), (Query) null, null, sessionIdUser);
         assertEquals(4, allJobs.getNumResults());
     }
 
@@ -740,7 +740,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob").setToolId("samtools"), null, sessionIdUser);
 
-        QueryResult<Job> allJobs = catalogManager.getJobManager().get(studyId, (Query) null, null, sessionIdUser);
+        QueryResult<Job> allJobs = catalogManager.getJobManager().search(studyId, (Query) null, null, sessionIdUser);
 
         assertEquals(1, allJobs.getNumTotalResults());
         assertEquals(1, allJobs.getNumResults());
@@ -979,31 +979,28 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .setSamples(Arrays.asList(sampleId5, sampleId3)), null, sessionIdUser).first();
 
         long numResults;
-        numResults = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId1.getId()),
-                new QueryOptions(), sessionIdUser).getNumResults();
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId1.getId()), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId1.getId()
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId1.getId()
                 + "," + sampleId5.getId()), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(3, numResults);
 
-        numResults = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "MyCohort2"), new
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "MyCohort2"), new
                 QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "~MyCohort."), new
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "~MyCohort."), new
                 QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(4, numResults);
 
-        numResults = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(), Study.Type.FAMILY),
-                new QueryOptions(), sessionIdUser).getNumResults();
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(), Study.Type.FAMILY), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(), "CASE_CONTROL"),
-                new QueryOptions(), sessionIdUser).getNumResults();
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(), "CASE_CONTROL"), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.UID.key(), myCohort1.getUid() +
+        numResults = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.UID.key(), myCohort1.getUid() +
                 "," + myCohort2.getUid() + "," + myCohort3.getUid()), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(3, numResults);
     }
@@ -1097,7 +1094,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid())
                 .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Cohort.CohortStatus.READY);
-        Cohort cohort = catalogManager.getCohortManager().get(studyId, query, null, sessionIdUser).first();
+        Cohort cohort = catalogManager.getCohortManager().search(studyId, query, null, sessionIdUser).first();
         assertEquals(Status.DELETED, cohort.getStatus().getName());
     }
 
@@ -1164,20 +1161,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), sessionIdUser);
 
         List<String> individuals;
-        individuals = catalogManager.getIndividualManager().get(studyFqn,
-                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":NAME=~^INDIVIDUAL_"), null,
-                sessionIdUser)
+        individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":NAME=~^INDIVIDUAL_"), null, sessionIdUser)
                 .getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getIndividualManager().get(studyFqn,
-                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":AGE>10"), null, sessionIdUser)
+        individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":AGE>10"), null, sessionIdUser)
                 .getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getIndividualManager().get(studyFqn,
-                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":AGE>10;" + variableSet.getId()
-                        + ":PHEN=CASE"), null, sessionIdUser)
+        individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":AGE>10;" + variableSet.getId()
+                + ":PHEN=CASE"), null, sessionIdUser)
                 .getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
     }

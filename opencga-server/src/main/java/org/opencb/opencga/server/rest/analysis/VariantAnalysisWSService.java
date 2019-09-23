@@ -614,7 +614,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             if (StringUtils.isNotEmpty(sampleAnnotation)) {
                 Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
                 QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
-                List<String> samplesList = catalogManager.getSampleManager().get(studyStr, sampleQuery, options, sessionId)
+                List<String> samplesList = catalogManager.getSampleManager().search(studyStr, sampleQuery, options, sessionId)
                         .getResult()
                         .stream()
                         .map(Sample::getId)
@@ -641,8 +641,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 sampleNames = samplesInAnyVariants.keySet();
             }
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), String.join(",", sampleNames));
-            QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyStr, sampleQuery, queryOptions,
-                    sessionId);
+            QueryResult<Sample> allSamples = catalogManager.getSampleManager().search(studyStr, sampleQuery, queryOptions, sessionId);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);

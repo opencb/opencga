@@ -160,10 +160,8 @@ public class FileMetadataReaderTest {
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(4, file.getSamples().size());
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
-        catalogManager.getSampleManager().get(study.getFqn(),
-                new Query(SampleDBAdaptor.QueryParams.ID.key(),
-                        file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(),
-                sessionIdUser).getResult();
+        catalogManager.getSampleManager().search(study.getFqn(), new Query(SampleDBAdaptor.QueryParams.ID.key(),
+                file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(), sessionIdUser).getResult();
 
         assertTrue(expectedSampleNames.containsAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())));
     }

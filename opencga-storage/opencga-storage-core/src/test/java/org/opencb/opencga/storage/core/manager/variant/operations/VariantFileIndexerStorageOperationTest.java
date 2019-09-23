@@ -88,8 +88,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         variantManager.index(studyId, getFile(2).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
-        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId,
-                new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(2).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
@@ -104,8 +103,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(4).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
-        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId,
-                new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
     }
 
@@ -198,7 +196,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File file = getFile(0);
         Path pathParent = Paths.get(file.getPath()).getParent();
 
-        File parent = catalogManager.getFileManager().get(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), pathParent.toString() + "/"), null, sessionId).first();
+        File parent = catalogManager.getFileManager().search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), pathParent.toString() + "/"), null, sessionId).first();
         indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
     }
 

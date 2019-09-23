@@ -686,7 +686,7 @@ public class ProjectManager extends AbstractManager {
 
                     Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "file://" + vcfFile);
                     QueryResult<org.opencb.opencga.core.models.File> fileQueryResult = catalogManager.getFileManager()
-                            .get(studyStr, query, skipCount, ownerToken);
+                            .search(studyStr, query, skipCount, ownerToken);
                     if (fileQueryResult.getNumResults() == 0) {
                         logger.error("File " + vcfFile + " not found. Skipping...");
                         continue;
@@ -707,16 +707,16 @@ public class ProjectManager extends AbstractManager {
                                         // TODO: I think I will need to perform the query some other way to capture bigwigs...
                                         org.opencb.opencga.core.models.File.Format.BIGWIG));
 
-                        QueryResult<org.opencb.opencga.core.models.File> otherFiles = catalogManager.getFileManager().get(studyStr, query,
-                                skipCount, ownerToken);
+                        QueryResult<org.opencb.opencga.core.models.File> otherFiles = catalogManager.getFileManager()
+                                .search(studyStr, query, skipCount, ownerToken);
                         if (otherFiles.getNumResults() > 0) {
                             fileList.addAll(otherFiles.getResult());
                         }
 
                         // Look for the whole sample information
                         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleUids);
-                        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyStr, query, skipCount,
-                                ownerToken);
+                        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager()
+                                .search(studyStr, query, skipCount, ownerToken);
                         if (sampleQueryResult.getNumResults() == 0 || sampleQueryResult.getNumResults() != sampleUids.size()) {
                             logger.error("Unexpected error when looking for whole sample information. Could only find {} results. "
                                     + "Samples ids {}", sampleQueryResult.getNumResults(), sampleUids);
@@ -735,8 +735,8 @@ public class ProjectManager extends AbstractManager {
                         // Get the list of individuals
                         // Look for the whole sample information
                         query = new Query(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
-                        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager().get(studyStr, query,
-                                skipCount, ownerToken);
+                        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager()
+                                .search(studyStr, query, skipCount, ownerToken);
 
 //                        for (Individual individual : individualQueryResult.getResult()) {
 //                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getIndividualManager()
@@ -755,8 +755,8 @@ public class ProjectManager extends AbstractManager {
                         query = new Query()
                                 .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
                                 .append(CohortDBAdaptor.QueryParams.NAME.key(), "!=ALL");
-                        QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().get(studyStr, query, skipCount,
-                                ownerToken);
+                        QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager()
+                                .search(studyStr, query, skipCount, ownerToken);
 
 //                        for (Cohort cohort : cohortQueryResult.getResult()) {
 //                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getCohortManager()

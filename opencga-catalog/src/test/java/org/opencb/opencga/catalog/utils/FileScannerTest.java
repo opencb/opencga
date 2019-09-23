@@ -122,9 +122,8 @@ public class FileScannerTest {
     }
 
     public File getFile(long id) throws CatalogException {
-        return catalogManager.getFileManager().get(String.valueOf(study.getFqn()), new Query(FileDBAdaptor.QueryParams.UID.key(), id)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY)
-                , null, sessionIdUser)
+        return catalogManager.getFileManager().search(String.valueOf(study.getFqn()), new Query(FileDBAdaptor.QueryParams.UID.key(), id)
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY), null, sessionIdUser)
                 .first();
     }
 
@@ -139,11 +138,9 @@ public class FileScannerTest {
         catalogManager.getFileManager().delete(study.getFqn(),
                 new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(study.getFqn(),
-                new Query()
-                        .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
-                new QueryOptions(), sessionIdUser);
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(study.getFqn(), new Query()
+                .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"), new QueryOptions(), sessionIdUser);
         file = fileQueryResult.first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());
     }
@@ -218,7 +215,7 @@ public class FileScannerTest {
 
         URI studyUri = study.getUri();
         CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
-        File root = catalogManager.getFileManager().get(study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
+        File root = catalogManager.getFileManager().search(study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());

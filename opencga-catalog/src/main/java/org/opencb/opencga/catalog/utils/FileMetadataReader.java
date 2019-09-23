@@ -432,7 +432,7 @@ public class FileMetadataReader {
             //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions(QueryOptions.INCLUDE, includeSampleNameId);
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sortedSampleNames);
-            sampleList = catalogManager.getSampleManager().get(study.getFqn(), sampleQuery, sampleQueryOptions, sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().search(study.getFqn(), sampleQuery, sampleQueryOptions, sessionId).getResult();
 
             //check if all file samples exists in Catalog
             if (sampleList.size() != sortedSampleNames.size()) {   //Size does not match. Find the missing samples.
@@ -454,7 +454,7 @@ public class FileMetadataReader {
                             } catch (CatalogException e) {
                                 Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleName);
                                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeSampleNameId);
-                                if (catalogManager.getSampleManager().get(study.getFqn(), query, queryOptions, sessionId).getResult()
+                                if (catalogManager.getSampleManager().search(study.getFqn(), query, queryOptions, sessionId).getResult()
                                         .isEmpty()) {
                                     throw e; //Throw exception if sample does not exist.
                                 } else {
@@ -480,7 +480,7 @@ public class FileMetadataReader {
             //Get samples from file.sampleIds
             Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), file.getSamples().stream().map(Sample::getId)
                     .collect(Collectors.toList()));
-            sampleList = catalogManager.getSampleManager().get(study.getFqn(), query, new QueryOptions(), sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().search(study.getFqn(), query, new QueryOptions(), sessionId).getResult();
         }
 
         List<String> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());

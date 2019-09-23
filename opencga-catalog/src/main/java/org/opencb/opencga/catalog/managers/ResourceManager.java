@@ -156,18 +156,6 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     }
 
     /**
-     * Fetch all the R objects matching the query.
-     *
-     * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param query     Query object.
-     * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param sessionId sessionId
-     * @return All matching elements.
-     * @throws CatalogException CatalogException.
-     */
-    public abstract QueryResult<R> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
-
-    /**
      * Obtain an entry iterator to iterate over the matching entries.
      *
      * @param studyStr  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].

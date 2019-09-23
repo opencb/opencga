@@ -751,9 +751,8 @@ public class VariantStorageManager extends StorageManager {
             } else {
                 List<String> includeSamples = new LinkedList<>();
                 for (Study study : studies) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
-                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true),
-                            sessionId);
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().search(study.getFqn(), new Query(),
+                                    new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true), sessionId);
                     samplesQueryResult.getResult().sort(Comparator.comparing(Sample::getId));
                     samplesMap.put(study.getFqn(), samplesQueryResult.getResult());
                     int studyId = mm.getStudyId(study.getFqn());

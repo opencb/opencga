@@ -257,33 +257,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    @Override
-    public QueryResult<Family> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, query);
-        AnnotationUtils.fixQueryOptionAnnotation(options);
-
-        query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
-
-        if (familyQueryResult.getNumResults() == 0 && query.containsKey(FamilyDBAdaptor.QueryParams.UID.key())) {
-            List<Long> idList = query.getAsLongList(FamilyDBAdaptor.QueryParams.UID.key());
-            for (Long myId : idList) {
-                authorizationManager.checkFamilyPermission(study.getUid(), myId, userId, FamilyAclEntry.FamilyPermissions.VIEW);
-            }
-        }
-
-        return familyQueryResult;
-    }
-
     public QueryResult<Family> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         Query finalQuery = new Query(query);
@@ -299,11 +272,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("options", options)
                 .append("token", token);
         try {
+            fixQueryObject(study, finalQuery, token);
+
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
             AnnotationUtils.fixQueryOptionAnnotation(options);
-
-            fixQueryObject(study, finalQuery, token);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -350,8 +323,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Query newQuery = new Query()
                     .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
-            QueryResult<Individual> individualResult = catalogManager.getIndividualManager().get(study.getFqn(), newQuery, options,
-                    sessionId);
+            QueryResult<Individual> individualResult = catalogManager.getIndividualManager()
+                    .search(study.getFqn(), newQuery, options, sessionId);
 
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
             if (individualResult.getNumResults() == 0) {

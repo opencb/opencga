@@ -176,8 +176,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    QueryResult<File> fileQueryResult = fileManager.get(studyFQNByInputFileId, query,
-                            FILE_GET_QUERY_OPTIONS, sessionId);
+                    QueryResult<File> fileQueryResult = fileManager.search(studyFQNByInputFileId, query, FILE_GET_QUERY_OPTIONS, sessionId);
 //                    fileQueryResult.getResult().sort(Comparator.comparing(File::getName));
                     inputFiles.addAll(fileQueryResult.getResult());
                 } else {
@@ -497,8 +496,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-                QueryResult<Cohort> queryResult = catalogManager.getCohortManager().get(study.getFqn(), query, new QueryOptions(),
-                        sessionId);
+                QueryResult<Cohort> queryResult = catalogManager.getCohortManager()
+                        .search(study.getFqn(), query, new QueryOptions(), sessionId);
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
@@ -573,13 +572,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     private Cohort createDefaultCohortIfNeeded(Study study, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        Cohort cohort = catalogManager.getCohortManager().get(study.getFqn(), query, null, sessionId).first();
+        Cohort cohort = catalogManager.getCohortManager().search(study.getFqn(), query, null, sessionId).first();
         if (cohort == null) {
             try {
                 return createDefaultCohort(study, sessionId);
             } catch (CatalogDBException e) {
                 if (e.getMessage().contains("already exists")) {
-                    cohort = catalogManager.getCohortManager().get(study.getFqn(), query, null, sessionId).first();
+                    cohort = catalogManager.getCohortManager().search(study.getFqn(), query, null, sessionId).first();
                     if (cohort == null) {
                         throw e;
                     } else {
@@ -610,7 +609,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     private String updateDefaultCohortStatus(Study study, String status, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-        Cohort defaultCohort = catalogManager.getCohortManager().get(study.getFqn(), query, new QueryOptions(), sessionId).first();
+        Cohort defaultCohort = catalogManager.getCohortManager().search(study.getFqn(), query, new QueryOptions(), sessionId).first();
         String prevStatus = defaultCohort.getStatus().getName();
 
         catalogManager.getCohortManager().setStatus(study.getFqn(), defaultCohort.getId(), status, null,
@@ -804,8 +803,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
                 long fileUid = relatedFile.getFile().getUid();
                 // FIXME!!!
-                vcfId = catalogManager.getFileManager().get(study,
-                        new Query(UID.key(), fileUid),
+                vcfId = catalogManager.getFileManager().search(study, new Query(UID.key(), fileUid),
                         new QueryOptions(QueryOptions.INCLUDE, ID.key()), sessionId).first().getId();
                 break;
             }

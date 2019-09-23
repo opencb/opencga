@@ -161,7 +161,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
 
                 for (String study : studies) {
-                    for (File file : catalogManager.getFileManager().get(study, fileQuery, fileOptions, sessionId)
+                    for (File file : catalogManager.getFileManager().search(study, fileQuery, fileOptions, sessionId)
                             .getResult()) {
                         includeFiles.add(file.getName());
                     }
@@ -179,8 +179,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     QueryOptions cohortOptions = new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key());
                     // Get default cohort. It contains the list of indexed samples. If it doesn't exist, or is empty, do not include any
                     // sample from this study.
-                    QueryResult<Cohort> result = catalogManager.getCohortManager().get(study, cohortQuery, cohortOptions,
-                            sessionId);
+                    QueryResult<Cohort> result = catalogManager.getCohortManager().search(study, cohortQuery, cohortOptions, sessionId);
                     if (result.first() != null || result.first().getSamples().isEmpty()) {
                         Set<String> sampleIds = result
                                 .first()
@@ -188,8 +187,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                 .stream()
                                 .map(Sample::getId)
                                 .collect(Collectors.toSet());
-                        for (Sample s : catalogManager.getSampleManager().get(study, sampleQuery, sampleOptions,
-                                sessionId).getResult()) {
+                        for (Sample s : catalogManager.getSampleManager().search(study, sampleQuery, sampleOptions, sessionId)
+                                .getResult()) {
                             if (sampleIds.contains(s.getId())) {
                                 includeSamples.add(s.getId());
                             }
@@ -205,7 +204,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), defaultStudyStr);
             QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
-            List<String> sampleIds = catalogManager.getSampleManager().get(defaultStudyStr, sampleQuery, options, sessionId)
+            List<String> sampleIds = catalogManager.getSampleManager().search(defaultStudyStr, sampleQuery, options, sessionId)
                     .getResult()
                     .stream()
                     .map(Sample::getId)
@@ -296,13 +295,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 throw VariantQueryException.malformedParam(FAMILY, familyId, "Family not indexed in storage");
             }
 
-            List<Sample> samples = catalogManager.getSampleManager()
-                    .get(defaultStudyStr,
-                            new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleUids),
-                            new QueryOptions(INCLUDE, Arrays.asList(
-                                    SampleDBAdaptor.QueryParams.ID.key(),
-                                    SampleDBAdaptor.QueryParams.UID.key())), sessionId)
-                    .getResult();
+            List<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
+                    new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleUids), new QueryOptions(INCLUDE, Arrays.asList(
+                    SampleDBAdaptor.QueryParams.ID.key(),
+                    SampleDBAdaptor.QueryParams.UID.key())), sessionId).getResult();
             Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, s -> s));
 
             // By default, include all samples from the family
@@ -680,7 +676,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             if (CollectionUtils.isNotEmpty(individual.getSamples())) {
                 for (Sample sample : individual.getSamples()) {
-                    sample = catalogManager.getSampleManager().get(studyFqn,
+                    sample = catalogManager.getSampleManager().search(studyFqn,
                             new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
                             new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
                     Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
@@ -694,7 +690,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Individual father = members.get(individual.getFather().getUid());
                 if (CollectionUtils.isNotEmpty(father.getSamples())) {
                     for (Sample sample : father.getSamples()) {
-                        sample = catalogManager.getSampleManager().get(studyFqn,
+                        sample = catalogManager.getSampleManager().search(studyFqn,
                                 new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
                                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
                         Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);
@@ -709,7 +705,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Individual mother = members.get(individual.getMother().getUid());
                 if (CollectionUtils.isNotEmpty(mother.getSamples())) {
                     for (Sample sample : mother.getSamples()) {
-                        sample = catalogManager.getSampleManager().get(studyFqn,
+                        sample = catalogManager.getSampleManager().search(studyFqn,
                                 new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()),
                                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId).first();
                         Integer sampleId = metadataManager.getSampleId(studyId, sample.getId(), true);

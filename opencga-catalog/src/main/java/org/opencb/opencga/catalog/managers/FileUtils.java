@@ -433,8 +433,8 @@ public class FileUtils {
 
             //Search if there is any existing file in the folder with the path to use.
             Query pathsQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), new LinkedList<>(uriPathMap.values()));
-            List<File> existingFiles = catalogManager.getFileManager().get(study.getFqn(), pathsQuery, new QueryOptions(),
-                    sessionId).getResult();
+            List<File> existingFiles = catalogManager.getFileManager()
+                    .search(study.getFqn(), pathsQuery, new QueryOptions(), sessionId).getResult();
             if (!relink) {
                 if (existingFiles.size() != 0) {
                     for (File f : existingFiles) {
@@ -495,7 +495,7 @@ public class FileUtils {
         if (file.getType().equals(File.Type.DIRECTORY)) {
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
-            List<File> files = catalogManager.getFileManager().get(String.valueOf(studyId), query, new QueryOptions(), sessionId)
+            List<File> files = catalogManager.getFileManager().search(String.valueOf(studyId), query, new QueryOptions(), sessionId)
                     .getResult();
             for (File f : files) {
                 if (!f.getStatus().getName().equals(File.FileStatus.TRASHED)) {

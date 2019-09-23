@@ -22,8 +22,6 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
@@ -97,7 +95,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 
-        List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
+        List<Sample> samples = catalogManager.getSampleManager().search(studyId, new Query(), new QueryOptions(), sessionId).getResult();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getId).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), someSamples);

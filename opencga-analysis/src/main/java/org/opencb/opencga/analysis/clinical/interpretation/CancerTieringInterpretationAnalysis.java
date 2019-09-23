@@ -585,7 +585,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     }
 
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
-        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().get(studyId, query, QueryOptions.empty(), sessionId);
+        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().search(studyId, query, QueryOptions.empty(), sessionId);
         for (Panel panel : panelQueryResult.getResult()) {
             panels.add(panel);
         }

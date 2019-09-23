@@ -252,34 +252,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return cohortDBAdaptor.getStudyId(cohortId);
     }
 
-    @Override
-    public QueryResult<Cohort> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, query);
-        AnnotationUtils.fixQueryOptionAnnotation(options);
-        fixQueryObject(study, query, userId);
-
-        query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, options, userId);
-
-        if (cohortQueryResult.getNumResults() == 0 && query.containsKey(CohortDBAdaptor.QueryParams.UID.key())) {
-            List<Long> idList = query.getAsLongList(CohortDBAdaptor.QueryParams.UID.key());
-            for (Long myId : idList) {
-                authorizationManager.checkCohortPermission(study.getUid(), myId, userId, CohortAclEntry.CohortPermissions.VIEW);
-            }
-        }
-
-        return cohortQueryResult;
-    }
-
     /**
      * Fetch all the samples from a cohort.
      *
@@ -344,7 +316,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
-//        authorizationManager.filterCohorts(userId, studyId, queryResultAux.getResult());
 
             auditManager.auditSearch(userId, AuditRecord.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

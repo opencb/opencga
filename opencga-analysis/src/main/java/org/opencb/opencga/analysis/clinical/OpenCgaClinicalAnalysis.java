@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.core.Exon;
@@ -242,10 +241,9 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
         // Look for the bam file of the proband
         QueryResult<File> fileQueryResult;
         try {
-            fileQueryResult = catalogManager.getFileManager().get(studyId, new Query()
-                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
-                            .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
-                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), sessionId);
+            fileQueryResult = catalogManager.getFileManager().search(studyId, new Query()
+                    .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
+                    .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM), new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), sessionId);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }

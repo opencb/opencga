@@ -985,11 +985,6 @@ public class FileManager extends AnnotationSetManager<File> {
         return get(null, String.valueOf(fileId), options, sessionId);
     }
 
-    @Override
-    public QueryResult<File> get(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
-        return search(studyId, query, options, token);
-    }
-
     public QueryResult<FileTree> getTree(@Nullable String studyId, String fileId, Query query, QueryOptions options, int maxDepth,
                                          String token) throws CatalogException {
         long startTime = System.currentTimeMillis();
@@ -1088,7 +1083,7 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogDBException("File {path:'" + file.getPath() + "'} is not a folder.");
         }
         Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), file.getPath());
-        return get(studyStr, query, options, sessionId);
+        return search(studyStr, query, options, sessionId);
     }
 
     @Override
@@ -2343,7 +2338,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
                                 if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
                                     Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), relatedFile.getFile().getUid());
-                                    file = get(studyStr, query, null, sessionId).first();
+                                    file = search(studyStr, query, null, sessionId).first();
                                     break;
                                 }
                             }
@@ -2555,7 +2550,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
                         sampleQueryResult.getResult().stream().map(Sample::getUid).collect(Collectors.toList()));
 
-                extendedFileList = catalogManager.getFileManager().get(studyId, query, EXCLUDE_FILE_ATTRIBUTES, token).getResult();
+                extendedFileList = catalogManager.getFileManager().search(studyId, query, EXCLUDE_FILE_ATTRIBUTES, token).getResult();
             } else {
                 extendedFileList = internalGet(study.getUid(), fileStrList, EXCLUDE_FILE_ATTRIBUTES, user, false).getResult();
             }

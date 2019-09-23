@@ -168,29 +168,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
-
-        if (queryResult.getNumResults() == 0 && query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.UID.key())) {
-            List<Long> analysisList = query.getAsLongList(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
-            for (Long analysisId : analysisList) {
-                authorizationManager.checkClinicalAnalysisPermission(study.getUid(), analysisId, userId,
-                        ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW);
-            }
-        }
-
-        return queryResult;
-    }
-
-    @Override
     public DBIterator<ClinicalAnalysis> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -430,8 +407,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         .append(FileDBAdaptor.QueryParams.ID.key(), entry.getValue().stream().map(File::getId).collect(Collectors.toList()))
                         .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleMap.get(entry.getKey()));
 
-                QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(study.getFqn(), query, QueryOptions.empty(),
-                        sessionId);
+                QueryResult<File> fileQueryResult = catalogManager.getFileManager()
+                        .search(study.getFqn(), query, QueryOptions.empty(), sessionId);
                 if (fileQueryResult.getNumResults() < entry.getValue().size()) {
                     throw new CatalogException("Some or all of the files associated to sample " + entry.getKey() + " could not be found"
                             + " or are not actually associated to the sample");
@@ -736,16 +713,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return true;
     }
 
-    public QueryResult<ClinicalAnalysis> search(String studyId, Query query, QueryOptions options, String token)
-            throws CatalogException {
+    public QueryResult<ClinicalAnalysis> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         fixQueryObject(study, query, userId);
-
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
         QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
-//            authorizationManager.filterClinicalAnalysis(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
     }

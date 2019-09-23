@@ -143,7 +143,7 @@ public class FileScanner {
         linkedFolders.put("", studyUri);
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
-        catalogManager.getFileManager().get(String.valueOf(studyId), query, queryOptions, sessionId).getResult()
+        catalogManager.getFileManager().search(String.valueOf(studyId), query, queryOptions, sessionId).getResult()
                 .forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
         Map<String, URI> untrackedFiles = new HashMap<>();
@@ -159,8 +159,8 @@ public class FileScanner {
                 URI uri = iterator.next();
                 String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
-                QueryResult<File> searchFile = catalogManager.getFileManager().get(String.valueOf(studyId), new Query("path", filePath),
-                        new QueryOptions("include", "projects.studies.files.id"), sessionId);
+                QueryResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
+                        new Query("path", filePath), new QueryOptions("include", "projects.studies.files.id"), sessionId);
                 if (searchFile.getResult().isEmpty()) {
                     untrackedFiles.put(filePath, uri);
                 } /*else {
@@ -243,7 +243,7 @@ public class FileScanner {
             }
 
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
-            QueryResult<File> searchFile = catalogManager.getFileManager().get(study.getFqn(), query, null, sessionId);
+            QueryResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null, sessionId);
             File file = null;
             boolean overwrite = true;
             boolean returnFile = false;

@@ -222,7 +222,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (count) {
                 result = catalogManager.getJobManager().count(studyStr, query, sessionId);
             } else {
-                result = catalogManager.getJobManager().get(studyStr, query, queryOptions, sessionId);
+                result = catalogManager.getJobManager().search(studyStr, query, queryOptions, sessionId);
             }
             return createOkResponse(result);
         } catch (Exception e) {

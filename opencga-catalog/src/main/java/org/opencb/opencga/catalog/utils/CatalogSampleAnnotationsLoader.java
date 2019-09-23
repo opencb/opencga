@@ -108,7 +108,7 @@ public class CatalogSampleAnnotationsLoader {
         //Add Samples
         Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getSampleManager().get(study.getFqn(), samplesQuery, null, sessionId).getResult()) {
+        for (Sample sample : catalogManager.getSampleManager().search(study.getFqn(), samplesQuery, null, sessionId).getResult()) {
             loadedSamples.put(sample.getId(), sample);
         }
 
@@ -146,8 +146,8 @@ public class CatalogSampleAnnotationsLoader {
 
         //TODO: Create Cohort
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
-                new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" +  variableSetId), null, sessionId);
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().search(study.getFqn(),
+                new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), null, sessionId);
         return new QueryResult<>("loadPedigree", (int) (System.currentTimeMillis() - startTime),
                 sampleMap.size(), sampleMap.size(), null, null, sampleQueryResult.getResult());
     }

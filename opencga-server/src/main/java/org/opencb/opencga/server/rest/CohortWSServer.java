@@ -255,7 +255,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                              List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
             throws CatalogException {
         //TODO CHANGE THIS for can insert the name also id(number)
-        QueryResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, query, queryOptions, sessionId);
+        QueryResult<Sample> queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, sessionId);
         //TODO FOR THIS. Its possible change the param query to a String
         Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, queryResult.getResult(), annotationSetList, -1, null)
                 .setName(cohortName);

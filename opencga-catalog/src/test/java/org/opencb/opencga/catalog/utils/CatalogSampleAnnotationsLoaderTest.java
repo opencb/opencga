@@ -120,19 +120,19 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Query query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";family=GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
-        QueryResult<Sample> allSamples = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
+        QueryResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumResults());
 
         query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=2;Population=ITU");
-        QueryResult<Sample> femaleIta = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
+        QueryResult<Sample> femaleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, femaleIta.getNumResults());
 
         query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=1;Population=ITU");
-        QueryResult<Sample> maleIta = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
+        QueryResult<Sample> maleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, maleIta.getNumResults());
 
         query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";Population=ITU");
-        QueryResult<Sample> ita = catalogManager.getSampleManager().get(studyId, query, options, sessionId);
+        QueryResult<Sample> ita = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, ita.getNumResults());
 
         Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());

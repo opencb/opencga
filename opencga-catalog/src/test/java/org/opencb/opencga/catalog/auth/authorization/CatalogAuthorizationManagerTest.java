@@ -786,7 +786,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllSamplesOwner() throws CatalogException {
-        Map<Long, Sample> sampleMap = catalogManager.getSampleManager().get(studyFqn, new Query(), new QueryOptions(), ownerSessionId)
+        Map<Long, Sample> sampleMap = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), ownerSessionId)
                 .getResult().stream().collect(Collectors.toMap(Sample::getUid, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1.getUid()));
@@ -806,7 +806,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllSamplesMember() throws CatalogException {
-        Map<Long, Sample> sampleMap = catalogManager.getSampleManager().get(studyFqn, new Query(), new QueryOptions(), externalSessionId)
+        Map<Long, Sample> sampleMap = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), externalSessionId)
                 .getResult().stream().collect(Collectors.toMap(Sample::getUid, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1.getUid()));
@@ -816,8 +816,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readCohort() throws CatalogException {
-        assertEquals(1, catalogManager.getCohortManager().get(studyFqn, new Query(), null, ownerSessionId).getNumResults());
-        assertEquals(0, catalogManager.getCohortManager().get(studyFqn, new Query(), null, externalSessionId).getNumResults());
+        assertEquals(1, catalogManager.getCohortManager().search(studyFqn, new Query(), null, ownerSessionId).getNumResults());
+        assertEquals(0, catalogManager.getCohortManager().search(studyFqn, new Query(), null, externalSessionId).getNumResults());
     }
 
     /*--------------------------*/
@@ -842,9 +842,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllIndividuals() throws CatalogException {
-        assertEquals(2, catalogManager.getIndividualManager().get(studyFqn, new Query(), null, ownerSessionId).getNumResults());
-        assertEquals(2, catalogManager.getIndividualManager().get(studyFqn, new Query(), null, studyAdmin1SessionId).getNumResults());
-        assertEquals(0, catalogManager.getIndividualManager().get(studyFqn, new Query(), null, externalSessionId).getNumResults());
+        assertEquals(2, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, ownerSessionId).getNumResults());
+        assertEquals(2, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, studyAdmin1SessionId).getNumResults());
+        assertEquals(0, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, externalSessionId).getNumResults());
     }
 
 
@@ -876,7 +876,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     }
 
     private void checkGetAllJobs(Collection<Long> expectedJobs, String sessionId) throws CatalogException {
-        QueryResult<Job> allJobs = catalogManager.getJobManager().get(studyFqn, (Query) null, null, sessionId);
+        QueryResult<Job> allJobs = catalogManager.getJobManager().search(studyFqn, (Query) null, null, sessionId);
 
         assertEquals(expectedJobs.size(), allJobs.getNumResults());
         allJobs.getResult().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job

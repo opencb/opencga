@@ -89,7 +89,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
         if (StringUtils.isNotEmpty(options.job)) {
             Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), Long.parseLong(options.job));
-            QueryResult<Job> jobQueryResult = catalogManager.getJobManager().get(options.study, query, QueryOptions.empty(), token);
+            QueryResult<Job> jobQueryResult = catalogManager.getJobManager().search(options.study, query, QueryOptions.empty(), token);
 
             if (jobQueryResult.getNumResults() == 0) {
                 throw new AnalysisException("Job '" + options.job + "' not found");
@@ -165,7 +165,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
         if (StringUtils.isNotEmpty(options.job)) {
             Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), Long.parseLong(options.job));
-            QueryResult<Job> jobQueryResult = catalogManager.getJobManager().get(options.study, query, QueryOptions.empty(), token);
+            QueryResult<Job> jobQueryResult = catalogManager.getJobManager().search(options.study, query, QueryOptions.empty(), token);
 
             if (jobQueryResult.getNumResults() == 0) {
                 throw new AnalysisException("Job '" + options.job + "' not found");

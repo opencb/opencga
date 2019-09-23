@@ -335,12 +335,19 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public QueryResult<Interpretation> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public DBIterator<Interpretation> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token)
+            throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -365,18 +372,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         queryResult.setNumTotalResults(results.size());
         queryResult.setNumResults(results.size());
         return queryResult;
-    }
-
-    @Override
-    public DBIterator<Interpretation> iterator(String studyStr, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token)
-            throws CatalogException {
-        return get(studyId, query, options, token);
     }
 
     @Override

@@ -355,38 +355,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public QueryResult<Individual> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
-                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, query);
-        AnnotationUtils.fixQueryOptionAnnotation(options);
-        fixQuery(study, query, userId);
-
-        query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
-
-        if (individualQueryResult.getNumResults() == 0 && query.containsKey(IndividualDBAdaptor.QueryParams.UID.key())) {
-            List<Long> idList = query.getAsLongList(IndividualDBAdaptor.QueryParams.UID.key());
-            for (Long myId : idList) {
-                authorizationManager.checkIndividualPermission(study.getUid(), myId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
-            }
-        }
-
-        return individualQueryResult;
-    }
-
-    public QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return get(String.valueOf(studyId), query, options, sessionId);
-    }
-
-    @Override
     public DBIterator<Individual> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
@@ -981,7 +949,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             if (StringUtils.isNotEmpty(aclParams.getSample())) {
                 Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), aclParams.getSample());
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
-                QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().get(studyId, query, options, token);
+                QueryResult<Individual> indQueryResult = catalogManager.getIndividualManager().search(studyId, query, options, token);
 
                 individualStrList = indQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
             }

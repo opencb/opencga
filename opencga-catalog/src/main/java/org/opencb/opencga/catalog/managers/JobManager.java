@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -337,36 +336,6 @@ public class JobManager extends ResourceManager<Job> {
         return get(null, jobIds, options, silent, sessionId);
     }
 
-    @Override
-    public QueryResult<Job> get(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        String userId = userManager.getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyId", studyId)
-                .append("query", new Query(query))
-                .append("options", options)
-                .append("token", token);
-        try {
-            query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
-            fixQueryObject(study, query, userId);
-
-            QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
-            auditManager.auditSearch(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return jobQueryResult;
-        } catch (CatalogException e) {
-            auditManager.auditSearch(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-    }
-
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         if (query.containsKey("inputFiles")) {
             List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(), query.getAsStringList("inputFiles"),
@@ -394,7 +363,32 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     public QueryResult<Job> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
-        throw new NotImplementedException("To be implemented");
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("token", token);
+        try {
+            query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            fixQueryObject(study, query, userId);
+
+            QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
+            auditManager.auditSearch(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return jobQueryResult;
+        } catch (CatalogException e) {
+            auditManager.auditSearch(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     @Override

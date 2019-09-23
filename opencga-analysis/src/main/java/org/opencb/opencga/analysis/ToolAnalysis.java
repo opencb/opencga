@@ -53,7 +53,7 @@ public class ToolAnalysis {
             // We get the job information.
             Query query = new Query();
             query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);
-            Job job = jobManager.get(null, query, QueryOptions.empty(), sessionId).first();
+            Job job = jobManager.search(null, query, QueryOptions.empty(), sessionId).first();
             long studyUid = jobManager.getStudyId(jobId);
 
             // get the study FQN we need
