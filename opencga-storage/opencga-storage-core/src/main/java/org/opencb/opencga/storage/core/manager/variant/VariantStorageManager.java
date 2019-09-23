@@ -696,8 +696,8 @@ public class VariantStorageManager extends StorageManager {
             logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().audit(userId, "", "", "", "", new Query(), new ObjectMap(), AuditRecord.Entity.VARIANT,
-                    auditAction, AuditRecord.SUCCESS, auditAttributes);
+            catalogManager.getAuditManager().audit(userId, auditAction, AuditRecord.Resource.VARIANT, "", "", "", "", new ObjectMap(),
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), auditAttributes);
         }
     }
 

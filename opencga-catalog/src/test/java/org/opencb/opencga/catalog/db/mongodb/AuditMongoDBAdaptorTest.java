@@ -81,15 +81,18 @@ public class AuditMongoDBAdaptorTest {
 
     @Test
     public void testInsertAuditRecord() throws Exception {
-        auditDbAdaptor.insertAuditRecord(new AuditRecord("user", "api", UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                "sampleId", "sampleUuid", "studyId", "studyUuid", new ObjectMap(), AuditRecord.Entity.SAMPLE,
-                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap(), ));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord("user", "api", UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                "sampleId2", "sampleUuid2", "studyId", "studyUuid", new ObjectMap(), AuditRecord.Entity.SAMPLE,
-                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap(), ));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord("user", "api", UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                "sampleId3", "sampleUuid3", "studyId", "studyUuid", new ObjectMap(), AuditRecord.Entity.SAMPLE,
-                AuditRecord.Action.CREATE, AuditRecord.SUCCESS, TimeUtils.getDate(), new ObjectMap(), ));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
+                AuditRecord.Resource.SAMPLE, "sampleId", "sampleUuid", "studyId", "studyUuid", new ObjectMap(),
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
+                AuditRecord.Resource.SAMPLE, "sampleId2", "sampleUuid2", "studyId", "studyUuid", new ObjectMap(),
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
+                AuditRecord.Resource.SAMPLE, "sampleId3", "sampleUuid3", "studyId", "studyUuid", new ObjectMap(),
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
     }
 
 //    @Test

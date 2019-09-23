@@ -52,8 +52,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
-import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
@@ -79,8 +77,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    AuditRecord.Entity getEntity() {
-        return AuditRecord.Entity.CLINICAL;
+    AuditRecord.Resource getEntity() {
+        return AuditRecord.Resource.CLINICAL;
     }
 
     @Override
@@ -283,8 +281,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.CLINICAL));
             WriteResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
 
-            auditManager.auditCreate(userId, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, AuditRecord.Entity.CLINICAL, SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             QueryResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
                     QueryOptions.empty());
@@ -292,8 +290,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, clinicalAnalysis.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.CLINICAL, ERROR);
+            auditManager.auditCreate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -587,8 +585,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         try {
             clinicalAnalysis = internalGet(study.getUid(), clinicalId, QueryOptions.empty(), userId).first();
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, clinicalId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.CLINICAL,
-                    ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalId, "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -678,13 +676,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     QueryOptions.empty());
             queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
 
-            auditManager.auditUpdate(userId, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, AuditRecord.Entity.CLINICAL, SUCCESS);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, AuditRecord.Entity.CLINICAL, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }

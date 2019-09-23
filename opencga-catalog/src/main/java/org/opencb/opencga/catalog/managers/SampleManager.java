@@ -57,8 +57,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
-import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 /**
@@ -86,8 +84,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    AuditRecord.Entity getEntity() {
-        return AuditRecord.Entity.SAMPLE;
+    AuditRecord.Resource getEntity() {
+        return AuditRecord.Resource.SAMPLE;
     }
 
     @Override
@@ -239,12 +237,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             // We create the sample
             sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
             QueryResult<Sample> queryResult = getSample(study.getUid(), sample.getUuid(), options);
-            auditManager.auditCreate(userId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.SAMPLE, SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, sample.getId(), "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.SAMPLE,
-                    ERROR);
+            auditManager.auditCreate(userId, AuditRecord.Resource.SAMPLE, sample.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -314,11 +312,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
 
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, SUCCESS);
+            auditManager.auditSearch(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, ERROR);
+            auditManager.auditSearch(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -355,12 +355,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryResult<Long> queryResultAux = sampleDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, SUCCESS);
+            auditManager.auditCount(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                     queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, ERROR);
+            auditManager.auditCount(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -412,8 +414,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(userId, operationUuid, "", "", study.getId(), study.getUuid(), auditQuery, auditParams,
-                    AuditRecord.Entity.SAMPLE, ERROR);
+            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -431,14 +433,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 writeResult.append(sampleDBAdaptor.delete(sample.getUid()));
 
-                auditManager.auditDelete(userId, operationUuid, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
-                        auditQuery, auditParams, AuditRecord.Entity.SAMPLE, SUCCESS);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (Exception e) {
                 writeResult.getFailed().add(new WriteResult.Fail(sample.getId(), e.getMessage()));
                 logger.debug("Cannot delete sample {}: {}", sample.getId(), e.getMessage(), e);
 
-                auditManager.auditDelete(userId, operationUuid, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
-                        auditQuery, auditParams, AuditRecord.Entity.SAMPLE, ERROR);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             }
         }
 
@@ -622,7 +624,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         try {
             sample = internalGet(study.getUid(), sampleId, INCLUDE_SAMPLE_IDS, userId).first();
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, sampleId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.SAMPLE, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.SAMPLE, sampleId, "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -686,8 +689,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             WriteResult result = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
-            auditManager.auditUpdate(userId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.SAMPLE, SUCCESS);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             QueryResult<Sample> queryResult = sampleDBAdaptor.get(sample.getUid(),
                     new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
@@ -695,8 +698,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.SAMPLE, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -802,11 +805,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         allSampleAcls.setId(sampleId);
                         sampleAclList.add(allSampleAcls);
 
-                        auditManager.audit(user, operationId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.SAMPLE, AuditRecord.Action.FETCH_ACLS, SUCCESS, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
+                                sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     } catch (CatalogException e) {
-                        auditManager.audit(user, operationId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.SAMPLE, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
+                                sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
 
                         if (!silent) {
                             throw e;
@@ -820,16 +825,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     sampleAclList.add(new QueryResult<>(sampleId, queryResult.getDbTime(), 0, 0, "", missingMap.get(sampleId).getErrorMsg(),
                             Collections.emptyList()));
 
-                    auditManager.audit(user, operationId, sampleId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.SAMPLE, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
 
             return sampleAclList;
         } catch (CatalogException e) {
             for (String sampleId : sampleList) {
-                auditManager.audit(user, operationId, sampleId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                        AuditRecord.Entity.SAMPLE, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                        new ObjectMap());
             }
             throw e;
         }
@@ -929,8 +936,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } catch (CatalogException e) {
             if (sampleStringList != null) {
                 for (String sampleId : sampleStringList) {
-                    auditManager.audit(user, operationId, sampleId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.SAMPLE, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
             throw e;
@@ -978,21 +986,24 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 aclResultList.addAll(queryResults);
 
                 for (Sample sample : batchSampleList) {
-                    auditManager.audit(user, operationId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), new Query(),
-                            auditParams, AuditRecord.Entity.SAMPLE, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
+                            sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                 }
             } catch (CatalogException e) {
                 // Process current batch
                 for (Sample sample : batchSampleList) {
-                    auditManager.audit(user, operationId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), new Query(),
-                            auditParams, AuditRecord.Entity.SAMPLE, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
+                            sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
                 }
 
                 // Process remaining unprocessed batches
                 while (numProcessed < sampleList.size()) {
                     Sample sample = sampleList.get(numProcessed);
-                    auditManager.audit(user, operationId, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(), new Query(),
-                            auditParams, AuditRecord.Entity.SAMPLE, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
+                            sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
                 }
 
                 throw e;
@@ -1042,10 +1053,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             FacetQueryResult result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query, options,
                     userId);
 
-            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, SUCCESS);
+            auditManager.auditFacet(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException | IOException e) {
-            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.SAMPLE, ERROR);
+            auditManager.auditFacet(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }

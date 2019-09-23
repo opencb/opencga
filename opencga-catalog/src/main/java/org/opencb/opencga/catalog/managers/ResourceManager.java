@@ -25,9 +25,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
-import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
-
 /**
  * Created by pfurio on 07/08/17.
  */
@@ -38,7 +35,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
-    abstract AuditRecord.Entity getEntity();
+    abstract AuditRecord.Resource getEntity();
 
     QueryResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
         return internalGet(studyUid, entry, null, options, user);
@@ -144,14 +141,15 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             }
 
             for (QueryResult<R> queryResult : resultList) {
-                auditManager.auditInfo(userId, operationUuid, queryResult.first().getId(), queryResult.first().getUuid(), study.getId(),
-                        study.getUuid(), auditParams, getEntity(), SUCCESS);
+                auditManager.auditInfo(operationUuid, userId, getEntity(), queryResult.first().getId(), queryResult.first().getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             }
 
             return resultList;
         } catch (CatalogException e) {
             for (String entryId : entryList) {
-                auditManager.auditInfo(userId, operationUuid, entryId, "", study.getId(), study.getUuid(), auditParams, getEntity(), ERROR);
+                auditManager.auditInfo(operationUuid, userId, getEntity(), entryId, "", study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             }
             throw e;
         }

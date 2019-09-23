@@ -36,9 +36,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 
-import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
-import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
-
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
     protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
@@ -60,8 +57,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    AuditRecord.Entity getEntity() {
-        return AuditRecord.Entity.INTERPRETATION;
+    AuditRecord.Resource getEntity() {
+        return AuditRecord.Resource.INTERPRETATION;
     }
 
     @Override
@@ -256,13 +253,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             queryOptions.put(Constants.ACTIONS, actionMap);
             clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, queryOptions);
 
-            auditManager.auditCreate(userId, interpretation.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.INTERPRETATION, SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, interpretation.getId(), "", study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.INTERPRETATION, ERROR);
+            auditManager.auditCreate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -297,8 +294,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         try {
             interpretation = internalGet(study.getUid(), interpretationId, QueryOptions.empty(), userId).first();
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, interpretationId, "", study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.INTERPRETATION, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretationId, "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -322,8 +319,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
 
             WriteResult writeResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
-            auditManager.auditUpdate(userId, interpretation.getId(), interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.INTERPRETATION, SUCCESS);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), interpretation.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
                     new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
@@ -331,8 +328,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, interpretation.getId(), interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.INTERPRETATION, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), interpretation.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }

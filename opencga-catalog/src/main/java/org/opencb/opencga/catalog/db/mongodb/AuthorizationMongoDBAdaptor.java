@@ -119,7 +119,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     private void initCollectionConnections() {
         this.dbCollectionMap.put(Entity.STUDY, dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection());
         this.dbCollectionMap.put(Entity.COHORT, dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection());
-        this.dbCollectionMap.put(Entity.DATASET, dbAdaptorFactory.getCatalogDatasetDBAdaptor().getDatasetCollection());
         this.dbCollectionMap.put(Entity.FILE, dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection());
         this.dbCollectionMap.put(Entity.INDIVIDUAL, dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection());
         this.dbCollectionMap.put(Entity.JOB, dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection());
@@ -140,7 +139,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case STUDY:
             case COHORT:
             case INDIVIDUAL:
-            case DATASET:
             case JOB:
             case FILE:
             case SAMPLE:
@@ -308,12 +306,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 retList = new ArrayList<>(myMap.size());
                 for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
                     retList.add((E) new IndividualAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case DATASET:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new DatasetAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
                 }
                 break;
             case JOB:
@@ -680,7 +672,6 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
                 removePermissions(clientSession, studyId, members, Entity.COHORT);
-                removePermissions(clientSession, studyId, members, Entity.DATASET);
                 removePermissions(clientSession, studyId, members, Entity.FILE);
                 removePermissions(clientSession, studyId, members, Entity.INDIVIDUAL);
                 removePermissions(clientSession, studyId, members, Entity.JOB);

@@ -66,8 +66,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance;
-import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
-import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -95,8 +93,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    AuditRecord.Entity getEntity() {
-        return AuditRecord.Entity.FAMILY;
+    AuditRecord.Resource getEntity() {
+        return AuditRecord.Resource.FAMILY;
     }
 
     @Override
@@ -247,14 +245,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
             QueryResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
 
-            auditManager.auditCreate(userId, family.getId(), family.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FAMILY, SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, family.getId(), "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FAMILY,
-                    ERROR);
-
+            auditManager.auditCreate(userId, AuditRecord.Resource.FAMILY, family.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -310,11 +307,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             QueryResult<Family> queryResult = familyDBAdaptor.get(finalQuery, options, userId);
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FAMILY, SUCCESS);
+            auditManager.auditSearch(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FAMILY, ERROR);
+            auditManager.auditSearch(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -385,12 +384,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
 
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FAMILY, SUCCESS);
+            auditManager.auditCount(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                     queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FAMILY, ERROR);
+            auditManager.auditCount(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -429,8 +430,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(userId, operationUuid, "", "", study.getId(), study.getUuid(), auditQuery, auditParams,
-                    AuditRecord.Entity.FAMILY, ERROR);
+            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -448,14 +449,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // Delete the family
                 writeResult.append(familyDBAdaptor.delete(family.getUid()));
 
-                auditManager.auditDelete(userId, operationUuid, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
-                        auditQuery, auditParams, AuditRecord.Entity.FAMILY, SUCCESS);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (Exception e) {
                 writeResult.getFailed().add(new WriteResult.Fail(family.getId(), e.getMessage()));
                 logger.debug("Cannot delete family {}: {}", family.getId(), e.getMessage(), e);
 
-                auditManager.auditDelete(userId, operationUuid, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
-                        auditQuery, auditParams, AuditRecord.Entity.FAMILY, ERROR);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             }
         }
 
@@ -597,8 +598,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         try {
             storedFamily = internalGet(study.getUid(), familyId, QueryOptions.empty(), userId).first();
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, familyId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FAMILY,
-                    ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FAMILY, familyId, "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -699,8 +700,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             WriteResult result = familyDBAdaptor.update(storedFamily.getUid(), parameters, study.getVariableSets(), options);
 
-            auditManager.auditUpdate(userId, storedFamily.getId(), storedFamily.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FAMILY, SUCCESS);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FAMILY, storedFamily.getId(), storedFamily.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             QueryResult<Family> queryResult = familyDBAdaptor.get(storedFamily.getUid(),
                     new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
@@ -708,8 +709,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, storedFamily.getId(), storedFamily.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FAMILY, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FAMILY, storedFamily.getId(), storedFamily.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -814,11 +815,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         allFamilyAcls.setId(familyId);
                         familyAclList.add(allFamilyAcls);
 
-                        auditManager.audit(user, operationId, family.getId(), family.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.FAMILY, AuditRecord.Action.FETCH_ACLS, SUCCESS, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, family.getId(),
+                                family.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     } catch (CatalogException e) {
-                        auditManager.audit(user, operationId, family.getId(), family.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.FAMILY, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, family.getId(),
+                                family.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
 
                         if (!silent) {
                             throw e;
@@ -832,15 +835,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     familyAclList.add(new QueryResult<>(familyId, familyQueryResult.getDbTime(), 0, 0, "",
                             missingMap.get(familyId).getErrorMsg(), Collections.emptyList()));
 
-                    auditManager.audit(user, operationId, familyId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.FAMILY, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, familyId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
             return familyAclList;
         } catch (CatalogException e) {
             for (String familyId : familyList) {
-                auditManager.audit(user, operationId, familyId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                        AuditRecord.Entity.FAMILY, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, familyId, "",
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                        new ObjectMap());
             }
             throw e;
         }
@@ -911,15 +916,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
 
             for (Family family : familyList) {
-                auditManager.audit(user, operationId, family.getId(), family.getUuid(), study.getId(), study.getUuid(), new Query(),
-                        auditParams, AuditRecord.Entity.FAMILY, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
+                auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.FAMILY, family.getId(),
+                        family.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
             return aclResults;
         } catch (CatalogException e) {
             if (familyStrList != null) {
                 for (String familyId : familyStrList) {
-                    auditManager.audit(user, operationId, familyId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.FAMILY, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.FAMILY, familyId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
             throw e;
@@ -954,11 +961,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
             FacetQueryResult result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, options,
                     userId);
-            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FAMILY, SUCCESS);
+            auditManager.auditFacet(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException | IOException e) {
-            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FAMILY, ERROR);
+            auditManager.auditFacet(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }

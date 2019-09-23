@@ -22,20 +22,15 @@ import org.opencb.commons.datastore.core.result.Error;
 
 import java.util.Date;
 
-/**
- * Created on 18/08/15.
- *
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- */
 public class AuditRecord {
 
     /**
-     * AuditRecord timestamp UUID
+     * AuditRecord timestamp UUID.
      */
     private String id;
 
     /**
-     * operationID timestamp UUID
+     * operationID timestamp UUID.
      */
     private String operationId;
 
@@ -44,7 +39,7 @@ public class AuditRecord {
 
     private Action action;
 
-    private Entity entity;
+    private Resource resource;
     private String resourceId;
     private String resourceUuid;
 
@@ -61,7 +56,7 @@ public class AuditRecord {
     public AuditRecord() {
     }
 
-    public AuditRecord(String id, String operationId, String userId, String apiVersion, Action action, Entity entity, String resourceId,
+    public AuditRecord(String id, String operationId, String userId, String apiVersion, Action action, Resource resource, String resourceId,
                        String resourceUuid, String studyId, String studyUuid, ObjectMap params, Status status, Date date,
                        ObjectMap attributes) {
         this.id = id;
@@ -69,7 +64,7 @@ public class AuditRecord {
         this.userId = userId;
         this.apiVersion = apiVersion;
         this.action = action;
-        this.entity = entity;
+        this.resource = resource;
         this.resourceId = resourceId;
         this.resourceUuid = resourceUuid;
         this.studyId = studyId;
@@ -88,7 +83,7 @@ public class AuditRecord {
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", apiVersion='").append(apiVersion).append('\'');
         sb.append(", action=").append(action);
-        sb.append(", entity=").append(entity);
+        sb.append(", resource=").append(resource);
         sb.append(", resourceId='").append(resourceId).append('\'');
         sb.append(", resourceUuid='").append(resourceUuid).append('\'');
         sb.append(", studyId='").append(studyId).append('\'');
@@ -146,12 +141,12 @@ public class AuditRecord {
         return this;
     }
 
-    public Entity getEntity() {
-        return entity;
+    public Resource getResource() {
+        return resource;
     }
 
-    public AuditRecord setEntity(Entity entity) {
-        this.entity = entity;
+    public AuditRecord setResource(Resource resource) {
+        this.resource = resource;
         return this;
     }
 
@@ -276,8 +271,7 @@ public class AuditRecord {
         }
     }
 
-// Resource
-    public enum Entity {
+    public enum Resource {
         USER,
         PROJECT,
         STUDY,

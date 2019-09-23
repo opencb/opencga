@@ -69,8 +69,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
-import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
@@ -134,8 +132,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    AuditRecord.Entity getEntity() {
-        return AuditRecord.Entity.FILE;
+    AuditRecord.Resource getEntity() {
+        return AuditRecord.Resource.FILE;
     }
 
     @Override
@@ -516,8 +514,8 @@ public class FileManager extends AnnotationSetManager<File> {
         }
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
         fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
-        auditManager.auditUpdate(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                SUCCESS);
+        auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
         return new QueryResult<>("Update file index", 0, 1, 1, "", "", Arrays.asList(index));
     }
@@ -624,12 +622,12 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("token", token);
         try {
             QueryResult<File> result = create(study, file, parents, content, options, token);
-            auditManager.auditCreate(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FILE, SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, file.getId(), "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Resource.FILE, file.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -970,13 +968,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("Upload file failed. Could not register the file in the DB: " + e.getMessage());
             }
 
-            auditManager.auditCreate(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FILE, AuditRecord.Action.UPLOAD, SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Action.UPLOAD, AuditRecord.Resource.FILE, file.getId(), file.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return fileDBAdaptor.get(query, QueryOptions.empty());
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, file.getId(), "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.UPLOAD, ERROR);
+            auditManager.auditCreate(userId, AuditRecord.Action.UPLOAD, AuditRecord.Resource.FILE, file.getId(), "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -1063,13 +1061,13 @@ public class FileManager extends AnnotationSetManager<File> {
             int dbTime = (int) (System.currentTimeMillis() - startTime);
             int numResults = countFilesInTree(fileTree);
 
-            auditManager.audit(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.TREE, SUCCESS);
+            auditManager.audit(userId, AuditRecord.Action.TREE, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new QueryResult<>("File tree", dbTime, numResults, numResults, "", "", Arrays.asList(fileTree));
         } catch (CatalogException e) {
-            auditManager.audit(userId, fileId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.TREE, ERROR);
+            auditManager.audit(userId, AuditRecord.Action.TREE, AuditRecord.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -1127,11 +1125,13 @@ public class FileManager extends AnnotationSetManager<File> {
             finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             QueryResult<File> queryResult = fileDBAdaptor.get(finalQuery, options, userId);
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FILE, SUCCESS);
+            auditManager.auditSearch(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FILE, ERROR);
+            auditManager.auditSearch(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -1175,12 +1175,14 @@ public class FileManager extends AnnotationSetManager<File> {
             query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryResult<Long> queryResultAux = fileDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FILE, SUCCESS);
+            auditManager.auditCount(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                     queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FILE, ERROR);
+            auditManager.auditCount(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -1225,8 +1227,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
             fileIterator = fileDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(userId, operationUuid, "", "", study.getId(), study.getUuid(), auditQuery, auditParams,
-                    AuditRecord.Entity.FILE, ERROR);
+            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             throw e;
         }
 
@@ -1295,8 +1297,8 @@ public class FileManager extends AnnotationSetManager<File> {
                     processedPaths.add(file.getPath());
                 }
 
-                auditManager.auditDelete(userId, operationUuid, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditQuery,
-                        auditParams, AuditRecord.Entity.FILE, SUCCESS);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (Exception e) {
                 numMatches += 1;
 
@@ -1307,8 +1309,8 @@ public class FileManager extends AnnotationSetManager<File> {
                     logger.debug("Cannot delete folder {}: {}", file.getId(), e.getMessage(), e);
                 }
 
-                auditManager.auditDelete(userId, operationUuid, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditQuery,
-                        auditParams, AuditRecord.Entity.FILE, ERROR);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             }
         }
 
@@ -1371,13 +1373,13 @@ public class FileManager extends AnnotationSetManager<File> {
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
             QueryResult<File> result = fileDBAdaptor.get(query, new QueryOptions(), userId);
-            auditManager.audit(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.UNLINK, SUCCESS);
+            auditManager.audit(userId, AuditRecord.Action.UNLINK, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(userId, fileId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.UNLINK, ERROR);
+            auditManager.audit(userId, AuditRecord.Action.UNLINK, AuditRecord.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -1698,8 +1700,8 @@ public class FileManager extends AnnotationSetManager<File> {
         try {
             file = internalGet(study.getUid(), fileId, QueryOptions.empty(), userId).first();
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, fileId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, fileId, "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -1758,8 +1760,8 @@ public class FileManager extends AnnotationSetManager<File> {
             String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
             WriteResult writeResult = fileDBAdaptor.update(file.getUid(), parameters, study.getVariableSets(), options);
 
-            auditManager.auditUpdate(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FILE, SUCCESS);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             QueryResult<File> queryResult = fileDBAdaptor.get(file.getUid(), options);
             queryResult.setDbTime(writeResult.getDbTime() + queryResult.getDbTime());
@@ -1767,8 +1769,8 @@ public class FileManager extends AnnotationSetManager<File> {
             userDBAdaptor.updateUserLastModified(ownerId);
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FILE, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -1825,12 +1827,12 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             QueryResult<File> queryResult = unsafeUpdate(study, file, parameters, options, userId);
-            auditManager.auditUpdate(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FILE, SUCCESS);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FILE, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -2067,18 +2069,20 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("token", token);
         try {
             QueryResult<File> result = privateLink(study, uriOrigin, pathDestiny, params, token);
-            auditManager.auditCreate(userId, result.first().getId(), result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.FILE, AuditRecord.Action.LINK, SUCCESS);
+            auditManager.auditCreate(userId, AuditRecord.Action.LINK, AuditRecord.Resource.FILE, result.first().getId(),
+                    result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException | IOException e) {
             try {
                 QueryResult<File> result = privateLink(study, uriOrigin, pathDestiny, params, token);
-                auditManager.auditCreate(userId, result.first().getId(), result.first().getUuid(), study.getId(), study.getUuid(),
-                        auditParams, AuditRecord.Entity.FILE, AuditRecord.Action.LINK, SUCCESS);
+                auditManager.auditCreate(userId, AuditRecord.Action.LINK, AuditRecord.Resource.FILE, result.first().getId(),
+                        result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
                 return result;
             } catch (CatalogException | IOException e2) {
-                auditManager.auditCreate(userId, uriOrigin.toString(), "", study.getId(), study.getUuid(), auditParams,
-                        AuditRecord.Entity.FILE, AuditRecord.Action.LINK, ERROR);
+                auditManager.auditCreate(userId, AuditRecord.Action.LINK, AuditRecord.Resource.FILE, uriOrigin.toString(), "",
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
                 throw e2;
             }
         }
@@ -2210,13 +2214,13 @@ public class FileManager extends AnnotationSetManager<File> {
             boolean multi = options.getBoolean("multi");
             DataInputStream inputStream = catalogIOManagerFactory.get(fileUri).getGrepFileObject(fileUri, pattern, ignoreCase, multi);
 
-            auditManager.audit(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.GREP, SUCCESS);
+            auditManager.audit(userId, AuditRecord.Action.GREP, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return inputStream;
         } catch (CatalogException e) {
-            auditManager.audit(userId, fileId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.GREP, ERROR);
+            auditManager.audit(userId, AuditRecord.Action.GREP, AuditRecord.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -2234,20 +2238,16 @@ public class FileManager extends AnnotationSetManager<File> {
         File file;
         try {
             file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
-        } catch (CatalogException e) {
-            auditManager.audit(userId, fileId, "", study.getId(), study.getUuid(), new Query(), auditParams, AuditRecord.Entity.FILE,
-                    AuditRecord.Action.DOWNLOAD, ERROR, new ObjectMap());
-            throw e;
-        }
-
-        try {
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DOWNLOAD);
             URI fileUri = getUri(file);
             DataInputStream dataInputStream = catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
+
+            auditManager.audit(userId, AuditRecord.Action.DOWNLOAD, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return dataInputStream;
         } catch (CatalogException e) {
-            auditManager.audit(userId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), new Query(), auditParams,
-                    AuditRecord.Entity.FILE, AuditRecord.Action.DOWNLOAD, ERROR, new ObjectMap());
+            auditManager.audit(userId, AuditRecord.Action.DOWNLOAD, AuditRecord.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -2474,11 +2474,13 @@ public class FileManager extends AnnotationSetManager<File> {
                         allFileAcls.setId(fileId);
                         fileAclList.add(allFileAcls);
 
-                        auditManager.audit(user, operationId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.FILE, AuditRecord.Action.FETCH_ACLS, SUCCESS, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FILE, file.getId(),
+                                file.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     } catch (CatalogException e) {
-                        auditManager.audit(user, operationId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.FILE, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FILE, file.getId(),
+                                file.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
 
                         if (!silent) {
                             throw e;
@@ -2492,15 +2494,16 @@ public class FileManager extends AnnotationSetManager<File> {
                     fileAclList.add(new QueryResult<>(fileId, fileQueryResult.getDbTime(), 0, 0, "", missingMap.get(fileId).getErrorMsg(),
                             Collections.emptyList()));
 
-                    auditManager.audit(user, operationId, fileId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.FILE, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FILE, fileId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
             return fileAclList;
         } catch (CatalogException e) {
             for (String fileId : fileList) {
-                auditManager.audit(user, operationId, fileId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                        AuditRecord.Entity.FILE, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FILE, fileId, "", study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
             }
             throw e;
         }
@@ -2592,15 +2595,17 @@ public class FileManager extends AnnotationSetManager<File> {
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
             for (File file : extendedFileList) {
-                auditManager.audit(user, operationId, file.getId(), file.getUuid(), study.getId(), study.getUuid(), new Query(),
-                        auditParams, AuditRecord.Entity.FILE, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
+                auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.FILE, file.getId(),
+                        file.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
             return queryResultList;
         } catch (CatalogException e) {
             if (fileStrList != null) {
                 for (String fileId : fileStrList) {
-                    auditManager.audit(user, operationId, fileId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.FILE, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.FILE, fileId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
             throw e;
@@ -2994,11 +2999,13 @@ public class FileManager extends AnnotationSetManager<File> {
             CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
             FacetQueryResult result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FILE_SOLR_COLLECTION, query, options,
                     userId);
-            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FILE, SUCCESS);
+            auditManager.auditFacet(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException | IOException e) {
-            auditManager.auditFacet(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.FILE, ERROR);
+            auditManager.auditFacet(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }

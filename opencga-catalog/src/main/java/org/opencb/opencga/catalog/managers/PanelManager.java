@@ -51,8 +51,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
-import static org.opencb.opencga.catalog.audit.AuditRecord.ERROR;
-import static org.opencb.opencga.catalog.audit.AuditRecord.SUCCESS;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 
 public class PanelManager extends ResourceManager<Panel> {
@@ -78,8 +76,8 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    AuditRecord.Entity getEntity() {
-        return AuditRecord.Entity.PANEL;
+    AuditRecord.Resource getEntity() {
+        return AuditRecord.Resource.PANEL;
     }
 
     @Override
@@ -221,13 +219,13 @@ public class PanelManager extends ResourceManager<Panel> {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
             panelDBAdaptor.insert(study.getUid(), panel, options);
-            auditManager.auditCreate(userId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.PANEL, ERROR);
+            auditManager.auditCreate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return getPanel(study.getUid(), panel.getUuid(), options);
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, panel.getId(), "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.PANEL,
-                    ERROR);
+            auditManager.auditCreate(userId, AuditRecord.Resource.PANEL, panel.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -255,16 +253,16 @@ public class PanelManager extends ResourceManager<Panel> {
                 dbTime += panelQueryResult.getDbTime();
                 counter++;
 
-                auditManager.audit(userId, operationId, panelQueryResult.first().getId(), panelQueryResult.first().getUuid(), study.getId(),
-                        study.getUuid(), new Query(), auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL,
-                        SUCCESS, new ObjectMap());
+                auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL,
+                        panelQueryResult.first().getId(), panelQueryResult.first().getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
             iterator.close();
 
             return new QueryResult<>("Import panel", dbTime, counter, counter, "", "", Collections.emptyList());
         } catch (CatalogException e) {
-            auditManager.audit(userId, operationId, "", "", study.getId(), study.getUuid(), new Query(), auditParams,
-                    AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL, ERROR, new ObjectMap());
+            auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL, "", "",
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
             throw e;
         }
     }
@@ -295,9 +293,9 @@ public class PanelManager extends ResourceManager<Panel> {
                 importedPanels.add(panelQueryResult.first());
                 dbTime += panelQueryResult.getDbTime();
 
-                auditManager.audit(userId, operationId, panelQueryResult.first().getId(), panelQueryResult.first().getUuid(), study.getId(),
-                        study.getUuid(), new Query(), auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL,
-                        SUCCESS, new ObjectMap());
+                auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL,
+                        panelQueryResult.first().getId(), panelQueryResult.first().getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
 
             if (importedPanels.size() > 5) {
@@ -310,8 +308,9 @@ public class PanelManager extends ResourceManager<Panel> {
         } catch (CatalogException e) {
             // Audit panels that could not be imported
             for (int i = counter; i < panelIds.size(); i++) {
-                auditManager.audit(userId, operationId, panelIds.get(i), "", study.getId(), study.getUuid(), new Query(), auditParams,
-                        AuditRecord.Entity.PANEL, AuditRecord.Action.IMPORT_GLOBAL_PANEL, ERROR, new ObjectMap());
+                auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL, panelIds.get(i),
+                        "", study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                        new ObjectMap());
             }
             throw e;
         }
@@ -631,7 +630,8 @@ public class PanelManager extends ResourceManager<Panel> {
         try {
             panel = internalGet(study.getUid(), panelId, INCLUDE_PANEL_IDS, userId).first();
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, panelId, "", study.getId(), study.getUuid(), auditParams, AuditRecord.Entity.PANEL, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.PANEL, panelId, "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -661,8 +661,8 @@ public class PanelManager extends ResourceManager<Panel> {
             }
 
             WriteResult result = panelDBAdaptor.update(panel.getUid(), parameters, options);
-            auditManager.auditUpdate(userId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.PANEL, SUCCESS);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             QueryResult<Panel> queryResult = panelDBAdaptor.get(panel.getUid(),
                     new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
@@ -670,8 +670,8 @@ public class PanelManager extends ResourceManager<Panel> {
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditParams,
-                    AuditRecord.Entity.PANEL, ERROR);
+            auditManager.auditUpdate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -762,10 +762,12 @@ public class PanelManager extends ResourceManager<Panel> {
                 result = panelDBAdaptor.get(query, options, userId);
             }
 
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, SUCCESS);
+            auditManager.auditSearch(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, ERROR);
+            auditManager.auditSearch(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -802,12 +804,14 @@ public class PanelManager extends ResourceManager<Panel> {
                 queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
             }
 
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, SUCCESS);
+            auditManager.auditCount(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                     queryResultAux.getErrorMsg(), Collections.emptyList());
         } catch (CatalogException e) {
-            auditManager.auditCount(userId, study.getId(), study.getUuid(), query, auditParams, AuditRecord.Entity.PANEL, ERROR);
+            auditManager.auditCount(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
     }
@@ -842,8 +846,8 @@ public class PanelManager extends ResourceManager<Panel> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(userId, operationUuid, "", "", study.getId(), study.getUuid(), auditQuery, auditParams,
-                    AuditRecord.Entity.PANEL, ERROR);
+            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.PANEL, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             throw e;
         }
 
@@ -862,14 +866,14 @@ public class PanelManager extends ResourceManager<Panel> {
                 // Delete the panel
                 writeResult.append(panelDBAdaptor.delete(panel.getUid()));
 
-                auditManager.auditDelete(userId, operationUuid, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditQuery,
-                        auditParams, AuditRecord.Entity.PANEL, SUCCESS);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (Exception e) {
                 writeResult.getFailed().add(new WriteResult.Fail(panel.getId(), e.getMessage()));
                 logger.debug("Cannot delete panel {}: {}", panel.getId(), e.getMessage(), e);
 
-                auditManager.auditDelete(userId, operationUuid, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), auditQuery,
-                        auditParams, AuditRecord.Entity.PANEL, ERROR);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
             }
         }
 
@@ -959,11 +963,13 @@ public class PanelManager extends ResourceManager<Panel> {
                         }
                         allPanelAcls.setId(panelId);
                         panelAclList.add(allPanelAcls);
-                        auditManager.audit(user, operationId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, SUCCESS, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panel.getId(),
+                                panel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     } catch (CatalogException e) {
-                        auditManager.audit(user, operationId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), new Query(),
-                                auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panel.getId(),
+                                panel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
 
                         if (!silent) {
                             throw e;
@@ -977,15 +983,16 @@ public class PanelManager extends ResourceManager<Panel> {
                     panelAclList.add(new QueryResult<>(panelId, queryResult.getDbTime(), 0, 0, "", missingMap.get(panelId).getErrorMsg(),
                             Collections.emptyList()));
 
-                    auditManager.audit(user, operationId, panelId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panelId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
             return panelAclList;
         } catch (CatalogException e) {
             for (String panelId : panelList) {
-                auditManager.audit(user, operationId, panelId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                        AuditRecord.Entity.PANEL, AuditRecord.Action.FETCH_ACLS, ERROR, new ObjectMap());
+                auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panelId, "", study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR), new ObjectMap());
             }
             throw e;
         }
@@ -1054,15 +1061,17 @@ public class PanelManager extends ResourceManager<Panel> {
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
             for (Panel panel : panelQueryResult.getResult()) {
-                auditManager.audit(user, operationId, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(), new Query(),
-                        auditParams, AuditRecord.Entity.PANEL, AuditRecord.Action.UPDATE_ACLS, SUCCESS, new ObjectMap());
+                auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.PANEL, panel.getId(),
+                        panel.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
             return queryResultList;
         } catch (CatalogException e) {
             if (panelStrList != null) {
                 for (String panelId : panelStrList) {
-                    auditManager.audit(user, operationId, panelId, "", study.getId(), study.getUuid(), new Query(), auditParams,
-                            AuditRecord.Entity.PANEL, AuditRecord.Action.UPDATE_ACLS, ERROR, new ObjectMap());
+                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.PANEL, panelId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR),
+                            new ObjectMap());
                 }
             }
             throw e;

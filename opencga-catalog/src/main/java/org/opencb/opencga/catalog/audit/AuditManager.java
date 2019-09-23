@@ -69,85 +69,88 @@ public class AuditManager {
         }
     }
 
-    public void auditCreate(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
-                            AuditRecord.Entity entity, int status) {
-        audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.CREATE, status, new ObjectMap());
+    public void auditCreate(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                            String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.CREATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditCreate(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
-                            AuditRecord.Entity entity, AuditRecord.Action action, int status) {
+    public void auditCreate(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                            String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
-        audit(userId, operationUuid, id, uuid, studyId, studyUuid, new Query(), params, entity, action, status, new ObjectMap());
+        audit(operationUuid, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditUpdate(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
-                            AuditRecord.Entity entity, int status) {
-        audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.UPDATE, status, new ObjectMap());
+    public void auditUpdate(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                            String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditDelete(String userId, String id, String uuid, String studyId, String studyUuid, Query query, ObjectMap params,
-                            AuditRecord.Entity entity, int status) {
-        audit(userId, id, uuid, studyId, studyUuid, query, params, entity, AuditRecord.Action.UPDATE, status, new ObjectMap());
+    public void auditDelete(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                            String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditDelete(String userId, String operationUuid, String id, String uuid, String studyId, String studyUuid, Query query,
-                            ObjectMap params, AuditRecord.Entity entity, int status) {
-        audit(userId, operationUuid, id, uuid, studyId, studyUuid, query, params, entity, AuditRecord.Action.UPDATE, status,
+    public void auditDelete(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                            String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(operationId, userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
                 new ObjectMap());
     }
 
-    public void auditUser(String userId, String id, AuditRecord.Action action, int status) {
-        audit(userId, id, "", "", "", new Query(), new ObjectMap(), AuditRecord.Entity.USER, action, status, new ObjectMap());
+    public void auditUser(String userId, AuditRecord.Action action, String resourceId, AuditRecord.Status status) {
+        audit(userId, action, AuditRecord.Resource.USER, resourceId, "", "", "", new ObjectMap(), status, new ObjectMap());
     }
 
-    public void auditUser(String userId, String id, ObjectMap params, AuditRecord.Action action, int status) {
-        audit(userId, id, "", "", "", new Query(), params, AuditRecord.Entity.USER, action, status, new ObjectMap());
+    public void auditUser(String userId, AuditRecord.Action action, String resourceId, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, action, AuditRecord.Resource.USER, resourceId, "", "", "", params, status, new ObjectMap());
     }
 
-    public void auditInfo(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
-                          AuditRecord.Entity entity, int status) {
-        audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.INFO, status, new ObjectMap());
+    public void auditInfo(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                          String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditInfo(String userId, String operationUuid, String id, String uuid, String studyId, String studyUuid, ObjectMap params,
-                          AuditRecord.Entity entity, int status) {
-        audit(userId, operationUuid, id, uuid, studyId, studyUuid, new Query(), params, entity, AuditRecord.Action.INFO, status,
+    public void auditInfo(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                          String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(operationId, userId, AuditRecord.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
                 new ObjectMap());
     }
 
-    public void auditSearch(String userId, String studyId, String studyUuid, Query query, ObjectMap params, AuditRecord.Entity entity,
-                            int status) {
-        audit(userId, "", "", studyId, studyUuid, query, params, entity, AuditRecord.Action.SEARCH, status, new ObjectMap());
+    public void auditSearch(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+                            AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.SEARCH, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditCount(String userId, String studyId, String studyUuid, Query query, ObjectMap params, AuditRecord.Entity entity,
-                            int status) {
-        audit(userId, "", "", studyId, studyUuid, query, params, entity, AuditRecord.Action.COUNT, status, new ObjectMap());
+    public void auditCount(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+                           AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.COUNT, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditFacet(String userId, String studyId, String studyUuid, Query query, ObjectMap params, AuditRecord.Entity entity,
-                           int status) {
-        audit(userId, "", "", studyId, studyUuid, query, params, entity, AuditRecord.Action.FACET, status, new ObjectMap());
+    public void auditFacet(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+                           AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.FACET, resource, "", "", studyUuid, studyId, params, status, new ObjectMap());
     }
 
-    public void audit(String userId, String id, String uuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Entity entity,
-                      AuditRecord.Action action, int status) {
-        audit(userId, id, uuid, studyId, studyUuid, new Query(), params, entity, action, status, new ObjectMap());
+    public void audit(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                      String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void audit(String userId, String id, String uuid, String studyId, String studyUuid, Query query,
-                      ObjectMap params, AuditRecord.Entity entity, AuditRecord.Action action, int status, ObjectMap attributes) {
-        audit(userId, UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), id, uuid, studyId, studyUuid, query, params, entity, action,
-                status, attributes);
+    public void audit(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                      String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status, ObjectMap attributes) {
+        audit(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), userId, action, resource, resourceId, resourceUuid, studyId, studyUuid,
+                params, status, attributes);
     }
 
-    public void audit(String userId, String operationUuid, String id, String uuid, String studyId, String studyUuid, Query query,
-                      ObjectMap params, AuditRecord.Entity entity, AuditRecord.Action action, int status, ObjectMap attributes) {
+    public void audit(String operationId, String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId,
+                      String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
+                      ObjectMap attributes) {
         String apiVersion = GitRepositoryState.get().getBuildVersion();
         Date date = TimeUtils.getDate();
 
-        AuditRecord auditRecord = new AuditRecord(userId, apiVersion, operationUuid, id, uuid, studyId, studyUuid, params, entity,
-                action, status, date, attributes, );
+        String auditId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        AuditRecord auditRecord = new AuditRecord(auditId, operationId, userId, apiVersion, action, resource, resourceId, resourceUuid,
+                studyId, studyUuid, params, status, date, attributes);
         try {
             auditDBAdaptor.insertAuditRecord(auditRecord);
         } catch (CatalogDBException e) {

@@ -6,10 +6,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
@@ -142,7 +142,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
             @QueryParam("fields") String fields,
-            @ApiParam(value = "Entity to be grouped by.", required = true) @QueryParam("entity") AuditRecord.Entity entity,
+            @ApiParam(value = "Entity to be grouped by.", required = true) @QueryParam("entity") Entity entity,
             @ApiParam(value = "Action performed") @DefaultValue("") @QueryParam("action") String action,
             @ApiParam(value = "Object before update") @DefaultValue("") @QueryParam("before") String before,
             @ApiParam(value = "Object after update") @DefaultValue("") @QueryParam("after") String after,
