@@ -285,7 +285,9 @@ public class AuditRecord {
         CLINICAL,
         INTERPRETATION,
         VARIANT,
-        ALIGNMENT
+        ALIGNMENT,
+
+        CATALOG // Goes with Action INDEX for Solr indexing
     }
 
     public enum Action {
@@ -332,7 +334,7 @@ public class AuditRecord {
 
         VISIT,
 
-//        IMPORT_GLOBAL_PANEL,
+        IMPORT,
 
         IMPORT_EXTERNAL_USERS,
         IMPORT_EXTERNAL_GROUP_OF_USERS,

@@ -1411,7 +1411,7 @@ public class StudyManager extends AbstractManager {
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.getVariableSets(query, new QueryOptions(), userId);
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogException("Unable to find " + variableSetId);
+            throw new CatalogException(variableSetId + " not found.");
         }
         return queryResult.first();
     }
@@ -1599,44 +1599,52 @@ public class StudyManager extends AbstractManager {
     }
 
     public boolean indexCatalogIntoSolr(String token) throws CatalogException {
-
         String userId = catalogManager.getUserManager().getUserId(token);
 
-        if (authorizationManager.checkIsAdmin(userId)) {
-            // Get all the studies
-            Query query = new Query();
-            QueryOptions options = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(),
-                            StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true);
-            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options);
-            if (studyQueryResult.getNumResults() == 0) {
-                throw new CatalogException("Could not index catalog into solr. No studies found");
+        try {
+            if (authorizationManager.checkIsAdmin(userId)) {
+                // Get all the studies
+                Query query = new Query();
+                QueryOptions options = new QueryOptions()
+                        .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
+                                StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
+                        .append(DBAdaptor.INCLUDE_ACLS, true);
+                QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, options);
+                if (studyQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Could not index catalog into solr. No studies found");
+                }
+
+                CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
+                // Create solr collections if they don't exist
+                catalogSolrManager.createSolrCollections();
+
+                ExecutorService threadPool = Executors.newFixedThreadPool(4);
+                for (Study study : studyQueryResult.getResult()) {
+                    Map<String, Set<String>> studyAcls = SolrConverterUtil
+                            .parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+                    // We replace the current studyAcls for the parsed one
+                    study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+                    threadPool.submit(() -> indexCohort(catalogSolrManager, study));
+                    threadPool.submit(() -> indexFile(catalogSolrManager, study));
+                    threadPool.submit(() -> indexFamily(catalogSolrManager, study));
+                    threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
+                    threadPool.submit(() -> indexSample(catalogSolrManager, study));
+                }
+
+                threadPool.shutdown();
+
+                auditManager.audit(userId, AuditRecord.Action.INDEX, AuditRecord.Resource.CATALOG, "", "", "", "", new ObjectMap(),
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return true;
             }
-
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
-            // Create solr collections if they don't exist
-            catalogSolrManager.createSolrCollections();
-
-            ExecutorService threadPool = Executors.newFixedThreadPool(4);
-            for (Study study : studyQueryResult.getResult()) {
-                Map<String, Set<String>> studyAcls =
-                        SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
-                // We replace the current studyAcls for the parsed one
-                study.getAttributes().put("OPENCGA_ACL", studyAcls);
-
-                threadPool.submit(() -> indexCohort(catalogSolrManager, study));
-                threadPool.submit(() -> indexFile(catalogSolrManager, study));
-                threadPool.submit(() -> indexFamily(catalogSolrManager, study));
-                threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
-                threadPool.submit(() -> indexSample(catalogSolrManager, study));
-            }
-
-            threadPool.shutdown();
-
-            return true;
+            throw new CatalogException("Only the " + ROOT + " user can index in Solr");
+        } catch (CatalogException e) {
+            auditManager.audit(userId, AuditRecord.Action.INDEX, AuditRecord.Resource.CATALOG, "", "", "", "", new ObjectMap(),
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+            throw e;
         }
-        return false;
     }
 
     public Map<String, Object> facet(String studyStr, String fileFields, String sampleFields, String individualFields, String cohortFields,
