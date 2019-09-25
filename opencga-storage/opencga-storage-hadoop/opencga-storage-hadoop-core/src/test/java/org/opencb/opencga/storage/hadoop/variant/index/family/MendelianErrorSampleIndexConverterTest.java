@@ -3,7 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter.MendelianErrorSampleIndexVariantIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,15 +39,19 @@ public class MendelianErrorSampleIndexConverterTest {
             }
         }
 
-        checkIterator(variants01, variants11, () -> MendelianErrorSampleIndexConverter.toVariants(stream.toByteArray(), 0, stream.size()));
+        checkIterator(variants01, variants11, () -> {
+            SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart, SampleIndexConfiguration.defaultConfiguration());
+            entry.setMendelianVariants(stream.toByteArray(), 0, stream.size());
+            return entry;
+        });
     }
 
-    private void checkIterator(List<Variant> variants01, List<Variant> variants11, Supplier<MendelianErrorSampleIndexVariantIterator> factory) {
+    private void checkIterator(List<Variant> variants01, List<Variant> variants11, Supplier<SampleIndexEntry> factory) {
         checkIterator(variants01, variants11, factory.get(), false);
         checkIterator(variants01, variants11, factory.get(), true);
     }
 
-    private void checkIterator(List<Variant> variants01, List<Variant> variants11, MendelianErrorSampleIndexVariantIterator iterator, boolean annotated) {
+    private void checkIterator(List<Variant> variants01, List<Variant> variants11, SampleIndexEntry entry, boolean annotated) {
         if (annotated) {
             byte[] annot = new byte[numVariants];
             for (int i = 0; i < numVariants; i++) {
@@ -54,9 +59,11 @@ public class MendelianErrorSampleIndexConverterTest {
                     annot[i] = AnnotationIndexConverter.INTERGENIC_MASK;
                 }
             }
-            iterator.addAnnotationIndex("0/1", annot);
-            iterator.addAnnotationIndex("1/1", annot);
+            entry.getGtEntry("0/1").setAnnotationIndexGt(annot);
+            entry.getGtEntry("1/1").setAnnotationIndexGt(annot);
         }
+
+        MendelianErrorSampleIndexEntryIterator iterator = entry.mendelianIterator();
 
         int c = 0;
         while (iterator.hasNext()) {

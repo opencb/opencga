@@ -812,7 +812,8 @@ public class SampleIndexQueryParser {
                 }
             }
         }
-        if (btCovered && ctCovered && !isValidParam(query, GENE) && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
+        if (completeIndex && btCovered && ctCovered && !isValidParam(query, GENE)
+                && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
             query.remove(ANNOT_BIOTYPE.key());
             query.remove(ANNOT_CONSEQUENCE_TYPE.key());
         }

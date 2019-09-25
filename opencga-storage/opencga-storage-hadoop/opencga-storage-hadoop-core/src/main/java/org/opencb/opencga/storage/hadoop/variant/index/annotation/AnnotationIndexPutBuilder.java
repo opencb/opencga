@@ -41,8 +41,10 @@ public class AnnotationIndexPutBuilder {
         for (byte popFreqIndex : indexEntry.getPopFreqIndex()) {
             popFreq.write(popFreqIndex, AnnotationIndexConverter.POP_FREQ_SIZE);
         }
-        for (byte ctBtIndex : indexEntry.getCtBtMatrix()) {
-            ctBt.write(ctBtIndex, indexEntry.getNumBts());
+        AnnotationIndexEntry.CtBtCombination ctBtCombination = indexEntry.getCtBtCombination();
+        byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
+        for (int i = 0; i < ctBtCombination.getNumCt(); i++) {
+            ctBt.write(ctBtMatrix[i], ctBtCombination.getNumBt());
         }
         return this;
     }

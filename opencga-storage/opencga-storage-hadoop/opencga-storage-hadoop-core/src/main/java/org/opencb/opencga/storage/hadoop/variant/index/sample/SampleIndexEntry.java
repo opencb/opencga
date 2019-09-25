@@ -2,14 +2,17 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.core.io.bit.BitInputStream;
-import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter.MendelianErrorSampleIndexVariantIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created on 18/04/19.
+ * Model representing an entry (row) of the SampleIndex.
  *
+ * Use the {@link SampleIndexEntryIterator} to read the variants and the annotation from the entry.
+ *
+ * Created on 18/04/19.
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleIndexEntry {
@@ -18,15 +21,17 @@ public class SampleIndexEntry {
     private String chromosome;
     private int batchStart;
     private Map<String, SampleIndexGtEntry> gts;
-    private MendelianErrorSampleIndexVariantIterator mendelianVariants;
+    private byte[] mendelianVariantsValue;
+    private int mendelianVariantsLength;
+    private int mendelianVariantsOffset;
+    private SampleIndexConfiguration configuration;
 
-    public SampleIndexEntry(int sampleId, String chromosome, int batchStart,
-                            Map<String, SampleIndexGtEntry> gts, MendelianErrorSampleIndexVariantIterator mendelianVariants) {
+    public SampleIndexEntry(int sampleId, String chromosome, int batchStart, SampleIndexConfiguration configuration) {
         this.sampleId = sampleId;
         this.chromosome = chromosome;
         this.batchStart = batchStart;
-        this.gts = gts;
-        this.mendelianVariants = mendelianVariants;
+        this.gts = new HashMap<>(4);
+        this.configuration = configuration;
     }
 
     public String getChromosome() {
@@ -51,27 +56,62 @@ public class SampleIndexEntry {
         return gts;
     }
 
+    public SampleIndexGtEntry getGtEntry(String gt) {
+        return gts.computeIfAbsent(gt, SampleIndexGtEntry::new);
+    }
+
     public SampleIndexEntry setGts(Map<String, SampleIndexGtEntry> gts) {
         this.gts = gts;
         return this;
     }
 
-    public MendelianErrorSampleIndexVariantIterator getMendelianVariants() {
-        return mendelianVariants;
+    public byte[] getMendelianVariantsValue() {
+        return mendelianVariantsValue;
     }
 
-    public SampleIndexEntry setMendelianVariants(MendelianErrorSampleIndexVariantIterator mendelianVariants) {
-        this.mendelianVariants = mendelianVariants;
+    public SampleIndexEntry setMendelianVariants(byte[] mendelianVariantsValue, int offset, int length) {
+        this.mendelianVariantsValue = mendelianVariantsValue;
+        this.mendelianVariantsLength = length;
+        this.mendelianVariantsOffset = offset;
         return this;
+    }
+
+    public int getMendelianVariantsLength() {
+        return mendelianVariantsLength;
+    }
+
+    public SampleIndexEntry setMendelianVariantsLength(int mendelianVariantsLength) {
+        this.mendelianVariantsLength = mendelianVariantsLength;
+        return this;
+    }
+
+    public int getMendelianVariantsOffset() {
+        return mendelianVariantsOffset;
+    }
+
+    public SampleIndexEntry setMendelianVariantsOffset(int mendelianVariantsOffset) {
+        this.mendelianVariantsOffset = mendelianVariantsOffset;
+        return this;
+    }
+
+    public SampleIndexConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public SampleIndexEntryIterator iterator(String gt) {
+        return new SampleIndexVariantBiConverter().toVariantsIterator(this, gt);
+    }
+
+    public MendelianErrorSampleIndexEntryIterator mendelianIterator() {
+        return new MendelianErrorSampleIndexEntryIterator(this);
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
                 .append("chromosome", chromosome)
-                .append("chunkStart", batchStart)
+                .append("batchStart", batchStart)
                 .append("gts", gts)
-                .append("mendelianVariants", mendelianVariants)
                 .toString();
     }
 
@@ -84,33 +124,37 @@ public class SampleIndexEntry {
         return this;
     }
 
-    public static class SampleIndexGtEntry {
+    public class SampleIndexGtEntry {
         private String gt;
 
         private int count;
-        private SampleIndexVariantBiConverter.SampleIndexVariantIterator variants;
+
+        private byte[] variants;
+        private int variantsLength;
+        private int variantsOffset;
         private byte[] fileIndexGt;
         private byte[] annotationIndexGt;
         private int[] annotationCounts;
         private byte[] consequenceTypeIndexGt;
         private byte[] biotypeIndexGt;
-        private BitInputStream ctBtIndexGt;
+        private byte[] ctBtIndexGt;
         private byte[] populationFrequencyIndexGt;
         private byte[] parentsGt;
 
         public SampleIndexGtEntry(String gt) {
             this.gt = gt;
-            variants = SampleIndexVariantBiConverter.SampleIndexVariantIterator.emptyIterator();
         }
 
-        public SampleIndexGtEntry(SampleIndexVariantBiConverter.SampleIndexVariantIterator variants, byte[] fileIndexGt,
-                                  byte[] annotationIndexGt, int[] annotationCounts, byte[] parentsGt) {
-            this.setVariants(variants);
-            this.setFileIndexGt(fileIndexGt);
-            this.setAnnotationIndexGt(annotationIndexGt);
-            this.setAnnotationCounts(annotationCounts);
-            this.setParentsGt(parentsGt);
-            this.count = -1;
+        public SampleIndexEntryIterator iterator() {
+            return iterator(false);
+        }
+
+        public SampleIndexEntryIterator iterator(boolean onlyCount) {
+            if (onlyCount) {
+                return new SampleIndexVariantBiConverter().toVariantsCountIterator(SampleIndexEntry.this, gt);
+            } else {
+                return new SampleIndexVariantBiConverter().toVariantsIterator(SampleIndexEntry.this, gt);
+            }
         }
 
         public String getGt() {
@@ -131,23 +175,39 @@ public class SampleIndexEntry {
             return this;
         }
 
-        public int getApproxNumVariants() {
-            if (count > 0) {
-                return count;
-            } else {
-                return variants.getApproxSize();
-            }
-        }
-
-        public SampleIndexVariantBiConverter.SampleIndexVariantIterator getVariants() {
+        public byte[] getVariants() {
             return variants;
         }
 
-        public SampleIndexGtEntry setVariants(SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
+        public SampleIndexGtEntry setVariants(byte[] variants, int offset, int length) {
             this.variants = variants;
-            if (annotationIndexGt != null) {
-                variants.setAnnotationIndex(annotationIndexGt);
-            }
+            this.variantsLength = length;
+            this.variantsOffset = offset;
+            return this;
+        }
+
+        public SampleIndexGtEntry setVariants(byte[] variants) {
+            this.variants = variants;
+            this.variantsOffset = 0;
+            this.variantsLength = variants.length;
+            return this;
+        }
+
+        public int getVariantsLength() {
+            return variantsLength;
+        }
+
+        public SampleIndexGtEntry setVariantsLength(int variantsLength) {
+            this.variantsLength = variantsLength;
+            return this;
+        }
+
+        public int getVariantsOffset() {
+            return variantsOffset;
+        }
+
+        public SampleIndexGtEntry setVariantsOffset(int variantsOffset) {
+            this.variantsOffset = variantsOffset;
             return this;
         }
 
@@ -166,9 +226,6 @@ public class SampleIndexEntry {
 
         public SampleIndexGtEntry setAnnotationIndexGt(byte[] annotationIndexGt) {
             this.annotationIndexGt = annotationIndexGt;
-            if (annotationIndexGt != null && variants != null) {
-                variants.setAnnotationIndex(annotationIndexGt);
-            }
             return this;
         }
 
@@ -203,12 +260,12 @@ public class SampleIndexEntry {
             return this;
         }
 
-        public BitInputStream getCtBtIndexGt() {
+        public byte[] getCtBtIndexGt() {
             return ctBtIndexGt;
         }
 
         public SampleIndexGtEntry setCtBtIndexGt(byte[] ctBtIndexGt) {
-            this.ctBtIndexGt = new BitInputStream(ctBtIndexGt);
+            this.ctBtIndexGt = ctBtIndexGt;
             return this;
         }
 

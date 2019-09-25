@@ -167,7 +167,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
         return hBaseManager.act(tableName, table -> {
             Get get = new Get(SampleIndexSchema.toRowKey(sample, chromosome, position));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
             try {
                 Result result = table.get(get);
                 if (result != null) {
@@ -188,7 +188,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
             Scan scan = new Scan();
             scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
             try {
                 ResultScanner scanner = table.getScanner(scan);
                 Iterator<Result> resultIterator = scanner.iterator();
@@ -206,7 +206,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
             Scan scan = new Scan();
             scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
-            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+            HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
             try {
                 ResultScanner scanner = table.getScanner(scan);
                 Iterator<Result> resultIterator = scanner.iterator();
@@ -252,8 +252,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     // Split region in countable regions
                     List<Region> subRegions = region == null ? Collections.singletonList((Region) null) : splitRegion(region);
                     for (Region subRegion : subRegions) {
-                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+                        HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(configuration);
                         boolean noRegionFilter = subRegion == null || startsAtBatch(subRegion) && endsAtBatch(subRegion);
+                        // Don't need to parse the variant to filter
                         boolean simpleCount = CollectionUtils.isEmpty(query.getVariantTypes()) && noRegionFilter;
                         try {
                             if (query.emptyOrRegionFilter() && simpleCount) {
@@ -265,23 +266,16 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                                     count += converter.convertToCount(result);
                                     result = scanner.next();
                                 }
-                            } else if (simpleCount) {
-                                // Fast filter and count
-                                SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(query, subRegion);
-                                Scan scan = parseCountAndFilter(query, subRegion);
-
-                                ResultScanner scanner = table.getScanner(scan);
-                                Result result = scanner.next();
-                                while (result != null) {
-                                    SampleIndexEntry sampleIndexEntry = converter.convertCountersOnly(result);
-                                    count += filter.filterAndCount(sampleIndexEntry);
-                                    result = scanner.next();
-                                }
                             } else {
-                                // Parse, filter and count
                                 SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(query, subRegion);
-                                Scan scan = parse(query, subRegion);
-
+                                Scan scan;
+                                if (simpleCount) {
+                                    // Fast filter and count. Don't need to parse the variant to filter
+                                    scan = parseCountAndFilter(query, subRegion);
+                                } else {
+                                    // Need to parse the variant to finish filtering. Create a normal scan query.
+                                    scan = parse(query, subRegion);
+                                }
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
                                 while (result != null) {
@@ -304,6 +298,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     public SampleIndexQueryParser getSampleIndexQueryParser() {
         return parser;
+    }
+
+    public SampleIndexConfiguration getConfiguration() {
+        return configuration;
     }
 
     protected int toStudyId(String study) {
@@ -373,7 +371,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public SampleIndexEntryFilter buildSampleIndexEntryFilter(SingleSampleIndexQuery query, Region region) {
-        return new SampleIndexEntryFilter(query, configuration, region);
+        return new SampleIndexEntryFilter(query, region);
     }
 
     public Scan parse(SingleSampleIndexQuery query, Region region) {

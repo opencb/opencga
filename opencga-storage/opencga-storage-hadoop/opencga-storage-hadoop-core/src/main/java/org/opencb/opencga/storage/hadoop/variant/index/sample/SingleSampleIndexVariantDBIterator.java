@@ -41,7 +41,7 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
                 .map(region -> {
                     // One scan per region
                     Scan scan = dbAdaptor.parse(query, region);
-                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
+                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(dbAdaptor.getConfiguration());
                     SampleIndexEntryFilter filter = dbAdaptor.buildSampleIndexEntryFilter(query, region);
                     try {
                         ResultScanner scanner = table.getScanner(scan);

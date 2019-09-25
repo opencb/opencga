@@ -116,7 +116,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     if (entry.getValue().getVariants() == null) {
                         actualVariants = Collections.emptyList();
                     } else {
-                        actualVariants = Lists.newArrayList(entry.getValue().getVariants())
+                        actualVariants = Lists.newArrayList(entry.getValue().iterator())
                                 .stream()
                                 .map(Variant::toString)
                                 .collect(toList());
@@ -266,7 +266,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("biotypeMask        = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getBiotypeMask()));
         System.out.println("ctMask             = " + IndexUtils.shortToString(indexQuery.getAnnotationIndexQuery().getConsequenceTypeMask()));
 //        for (String sample : indexQuery.getSamplesMap().keySet()) {
-//            System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.getFileIndex(sample)));
+//            System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.nextFileIndex(sample)));
 //        }
         System.out.println("Query SampleIndex             = " + onlyIndex);
         System.out.println("Query DBAdaptor               = " + onlyDBAdaptor);

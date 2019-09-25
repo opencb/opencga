@@ -25,7 +25,8 @@ public class AnnotationIndexPutBuilderTest {
                     (byte) i,
                     new byte[]{
                             (byte) ((i & 0b1100) >> 2),
-                            (byte) (i & 0b0011)}, new byte[0]));
+                            (byte) (i & 0b0011)},
+                    new byte[Integer.bitCount((short) i)]));
         }
 
         Put put = new Put(new byte[]{0});

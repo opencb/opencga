@@ -9,10 +9,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.Converter;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter.MendelianErrorSampleIndexVariantIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter.SampleIndexVariantIterator;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,8 +27,10 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
 public class HBaseToSampleIndexConverter implements Converter<Result, SampleIndexEntry> {
 
     private final SampleIndexVariantBiConverter converter;
+    private final SampleIndexConfiguration configuration;
 
-    public HBaseToSampleIndexConverter() {
+    public HBaseToSampleIndexConverter(SampleIndexConfiguration configuration) {
+        this.configuration = configuration;
         converter = new SampleIndexVariantBiConverter();
     }
 
@@ -53,78 +52,57 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
 
     @Override
     public SampleIndexEntry convert(Result result) {
-        return convert(result, false);
-    }
-
-    public SampleIndexEntry convertCountersOnly(Result result) {
-        return convert(result, true);
-    }
-
-    private SampleIndexEntry convert(Result result, boolean countOnly) {
-        final Map<String, SampleIndexGtEntry> gts = new HashMap<>();
-        MendelianErrorSampleIndexVariantIterator mendelianIterator = null;
-
         byte[] row = result.getRow();
         int sampleId = SampleIndexSchema.sampleIdFromRowKey(row);
         String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
         int batchStart = SampleIndexSchema.batchStartFromRowKey(row);
 
+        SampleIndexEntry entry = new SampleIndexEntry(sampleId, chromosome, batchStart, configuration);
+
         for (Cell cell : result.rawCells()) {
+            // TODO: Remove all CellUtil.cloneValue
             if (columnStartsWith(cell, META_PREFIX_BYTES)) {
                 if (columnStartsWith(cell, GENOTYPE_COUNT_PREFIX_BYTES)) {
-                    SampleIndexGtEntry gtEntry = gts.computeIfAbsent(getGt(cell, GENOTYPE_COUNT_PREFIX_BYTES), SampleIndexGtEntry::new);
-                    gtEntry.setCount(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
-                    if (countOnly && !gtEntry.getVariants().hasNext()) {
-                        // By default, gtEntry has an empty iterator. If so, use the counter.
-                        gtEntry.setVariants(converter.toVariantsCountIterator(gtEntry.getCount()));
-                    }
+                    entry.getGtEntry(getGt(cell, GENOTYPE_COUNT_PREFIX_BYTES))
+                            .setCount(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
                 } else if (columnStartsWith(cell, ANNOTATION_SUMMARY_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_SUMMARY_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, ANNOTATION_SUMMARY_PREFIX_BYTES))
                             .setAnnotationIndexGt(CellUtil.cloneValue(cell));
                 } else if (columnStartsWith(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES))
                             .setAnnotationCounts(IndexUtils.countPerBitToObject(CellUtil.cloneValue(cell)));
                 } else if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, FILE_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, FILE_PREFIX_BYTES))
                             .setFileIndexGt(CellUtil.cloneValue(cell));
                 } else if (columnStartsWith(cell, PARENTS_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, PARENTS_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, PARENTS_PREFIX_BYTES))
                             .setParentsGt(CellUtil.cloneValue(cell));
                 } else if (columnStartsWith(cell, ANNOTATION_CT_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_CT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, ANNOTATION_CT_PREFIX_BYTES))
                             .setConsequenceTypeIndexGt(CellUtil.cloneValue(cell));
                 } else if (columnStartsWith(cell, ANNOTATION_BT_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_BT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, ANNOTATION_BT_PREFIX_BYTES))
                             .setBiotypeIndexGt(CellUtil.cloneValue(cell));
                 } else if (columnStartsWith(cell, ANNOTATION_CT_BT_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_CT_BT_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, ANNOTATION_CT_BT_PREFIX_BYTES))
                             .setCtBtIndexGt(CellUtil.cloneValue(cell));
                 } else if (columnStartsWith(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES)) {
-                    gts.computeIfAbsent(getGt(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES), SampleIndexGtEntry::new)
+                    entry.getGtEntry(getGt(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES))
                             .setPopulationFrequencyIndexGt(CellUtil.cloneValue(cell));
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
-                    mendelianIterator = MendelianErrorSampleIndexConverter.toVariants(
-                            cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                    entry.setMendelianVariants(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else {
                     String gt = Bytes.toString(CellUtil.cloneQualifier(cell));
-                    SampleIndexGtEntry gtEntry = gts.computeIfAbsent(gt, SampleIndexGtEntry::new);
+                    SampleIndexGtEntry gtEntry = entry.getGtEntry(gt);
 
-                    SampleIndexVariantIterator variants = converter.toVariantsIterator(chromosome, batchStart,
-                            cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
-                    gtEntry.setVariants(variants);
+                    gtEntry.setVariants(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 }
             }
         }
 
-        if (mendelianIterator != null) {
-            for (SampleIndexGtEntry gtEntry : gts.values()) {
-                mendelianIterator.addAnnotationIndex(gtEntry.getGt(), gtEntry.getAnnotationIndexGt());
-            }
-        }
-
-        return new SampleIndexEntry(sampleId, chromosome, batchStart, gts, mendelianIterator);
+        return entry;
     }
 
     public static boolean columnStartsWith(Cell cell, byte[] prefix) {

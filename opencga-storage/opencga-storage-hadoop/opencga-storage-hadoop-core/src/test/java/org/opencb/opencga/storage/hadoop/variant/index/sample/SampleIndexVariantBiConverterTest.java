@@ -123,36 +123,51 @@ public class SampleIndexVariantBiConverterTest {
         }
 
         byte[] bytes = converter.toBytes(variants);
-        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytes, 0, bytes.length));
+        checkIterator(numVariants, variants, () -> toSampleIndexEntry(batchStart, bytes, 0, bytes.length));
 
         int bytes3offset = bytes.length + 10;
         byte[] bytes3 = new byte[bytes.length + bytes3offset];
         int length = converter.toBytes(variants, bytes3, bytes3offset);
-        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytes3, bytes3offset, length));
+        checkIterator(numVariants, variants, () -> toSampleIndexEntry(batchStart, bytes3, bytes3offset, length));
 
 
         byte[] bytesOld = converter.toBytesSimpleString(variants);
-        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytesOld, 0, bytesOld.length));
+        checkIterator(numVariants, variants, () -> toSampleIndexEntry(batchStart, bytesOld, 0, bytesOld.length));
 
         byte[] bytesOldOffset = new byte[bytesOld.length + 10];
         System.arraycopy(bytesOld, 0, bytesOldOffset, 10, bytesOld.length);
-        checkIterator(numVariants, variants, () -> converter.toVariantsIterator("1", batchStart, bytesOldOffset, 10, bytesOld.length));
+        checkIterator(numVariants, variants, () -> toSampleIndexEntry(batchStart, bytesOldOffset, 10, bytesOld.length));
 
 
         List<Variant> dummyVariants = new ArrayList<>(numVariants);
         for (int i = 0; i < numVariants; i++) {
             dummyVariants.add(new Variant("1:10:A:T"));
         }
-        checkIterator(numVariants, dummyVariants, () -> converter.toVariantsCountIterator(variants.size()));
+        checkIterator(numVariants, dummyVariants, () -> {
+            SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart, SampleIndexConfiguration.defaultConfiguration());
+            SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGtEntry("0/1");
+            return gtEntry.setCount(variants.size());
+        }, true);
 
     }
 
-    private void checkIterator(int numVariants, List<Variant> variants, Supplier<SampleIndexVariantBiConverter.SampleIndexVariantIterator> factory) {
-        checkIterator(numVariants, variants, factory.get(), false);
-        checkIterator(numVariants, variants, factory.get(), true);
+    private SampleIndexEntry.SampleIndexGtEntry toSampleIndexEntry(int batchStart, byte[] bytes, int offset, int length) {
+        SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart, SampleIndexConfiguration.defaultConfiguration());
+        SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGtEntry("0/1");
+        gtEntry.setVariants(bytes, offset, length);
+        return gtEntry;
     }
 
-    private void checkIterator(int numVariants, List<Variant> variants, SampleIndexVariantBiConverter.SampleIndexVariantIterator iterator, boolean annotated) {
+    private void checkIterator(int numVariants, List<Variant> variants, Supplier<SampleIndexEntry.SampleIndexGtEntry> factory) {
+        checkIterator(numVariants, variants, factory, false);
+    }
+
+    private void checkIterator(int numVariants, List<Variant> variants, Supplier<SampleIndexEntry.SampleIndexGtEntry> factory, boolean onlyCount) {
+        checkIterator(numVariants, variants, factory.get(), false, onlyCount);
+        checkIterator(numVariants, variants, factory.get(), true, onlyCount);
+    }
+
+    private void checkIterator(int numVariants, List<Variant> variants, SampleIndexEntry.SampleIndexGtEntry entry, boolean annotated, boolean onlyCount) {
         if (annotated) {
             byte[] annot = new byte[numVariants];
             for (int i = 0; i < numVariants; i++) {
@@ -160,9 +175,9 @@ public class SampleIndexVariantBiConverterTest {
                     annot[i] = AnnotationIndexConverter.INTERGENIC_MASK;
                 }
             }
-            iterator.setAnnotationIndex(annot);
+            entry.setAnnotationIndexGt(annot);
         }
-
+        SampleIndexEntryIterator iterator = entry.iterator(onlyCount);
         int i = 0;
         int nonIntergenicIndex = 0;
         while (iterator.hasNext()) {

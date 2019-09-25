@@ -52,27 +52,28 @@ public class SampleIndexEntryFilterTest {
 
         // Partial OR query should always return ALL values
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, true, buildPopulationFrequencyQuery("s2", 0, 1));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T", "1:30:A:T", "1:40:A:T", "1:50:A:T"), result);
-        Assert.assertEquals(5, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry1()));
+        Assert.assertEquals(5, new SampleIndexEntryFilter(query).filterAndCount(getSampleIndexEntry1()));
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, false, buildPopulationFrequencyQuery("s2", 0, 1));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
-        Assert.assertEquals(1, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry1()));
+        Assert.assertEquals(1, new SampleIndexEntryFilter(query).filterAndCount(getSampleIndexEntry1()));
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.OR, false,
                 buildPopulationFrequencyQuery("s2", 0, 3),
                 buildPopulationFrequencyQuery("s3", 0, 3));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T", "1:30:A:T", "1:50:A:T"), result);
-        Assert.assertEquals(4, new SampleIndexEntryFilter(query, configuration).filterAndCount(getSampleIndexEntry1()));
+        Assert.assertEquals(4, new SampleIndexEntryFilter(query).filterAndCount(getSampleIndexEntry1()));
 
         SampleIndexEntry e = getSampleIndexEntry1();
         for (SampleIndexEntry.SampleIndexGtEntry value : e.getGts().values()) {
-            value.setVariants(new SampleIndexVariantBiConverter().toVariantsCountIterator(value.getCount()));
+//            value.setVariants(new SampleIndexVariantBiConverter().toVariantsCountIterator(value.getCount()));
+            value.setCount(value.getCount());
         }
-        Assert.assertEquals(4, new SampleIndexEntryFilter(query, configuration).filterAndCount(e));
+        Assert.assertEquals(4, new SampleIndexEntryFilter(query).filterAndCount(e));
     }
 
     @Test
@@ -80,26 +81,26 @@ public class SampleIndexEntryFilterTest {
         SingleSampleIndexQuery query;
         List<String> result;
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, true, buildPopulationFrequencyQuery("s2", 0, 1));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
 
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, false, buildPopulationFrequencyQuery("s2", 0, 1));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
 
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, false,
                 buildPopulationFrequencyQuery("s2",  2, 4),
                 buildPopulationFrequencyQuery("s3",  2, 4));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:30:A:T", "1:40:A:T"), result);
 
         query = getSingleSampleIndexQuery(VariantQueryUtils.QueryOperation.AND, false,
                 buildPopulationFrequencyQuery("s2", 0, 4),
                 buildPopulationFrequencyQuery("s3", 1, 4),
                 buildPopulationFrequencyQuery("s4", 2, 4));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry1()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:20:A:T", "1:40:A:T"), result);
     }
 
@@ -111,25 +112,25 @@ public class SampleIndexEntryFilterTest {
         query = getSingleSampleIndexQuery(new Query()
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,nonsense_mediated_decay")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained"));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:20:A:T"), result);
 
         query = getSingleSampleIndexQuery(new Query()
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "nonsense_mediated_decay")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T"), result);
 
         query = getSingleSampleIndexQuery(new Query()
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:20:A:T"), result);
 
         query = getSingleSampleIndexQuery(new Query()
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding,nonsense_mediated_decay")
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
-        result = new SampleIndexEntryFilter(query, configuration).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
+        result = new SampleIndexEntryFilter(query).filter(getSampleIndexEntry2()).stream().map(Variant::toString).collect(Collectors.toList());
         Assert.assertEquals(Arrays.asList("1:10:A:T", "1:20:A:T"), result);
     }
 
@@ -145,17 +146,18 @@ public class SampleIndexEntryFilterTest {
                 .stream()
                 .collect(Collectors.toMap(cell -> Bytes.toString(CellUtil.cloneQualifier(cell)), CellUtil::cloneValue)).get("_PF_0/1");
 
-
-        return new SampleIndexEntry(0, "1", 0, Collections.singletonMap("S1", new SampleIndexEntry.SampleIndexGtEntry("0/1")
+        SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0, configuration);
+        entry.getGtEntry("0/1")
                 .setPopulationFrequencyIndexGt(pf)
                 .setCount(5)
-                .setVariants(buildIterator(
+                .setVariants(toBytes(
                         "1:10:A:T",
                         "1:20:A:T",
                         "1:30:A:T",
                         "1:40:A:T",
                         "1:50:A:T"
-                        ))), null);
+                        ));
+        return entry;
     }
 
     private SampleIndexEntry getSampleIndexEntry2() {
@@ -181,24 +183,26 @@ public class SampleIndexEntryFilterTest {
                 .collect(Collectors.toMap(cell -> Bytes.toString(CellUtil.cloneQualifier(cell)), CellUtil::cloneValue));
 
 
-        return new SampleIndexEntry(0, "1", 0, Collections.singletonMap("S1", new SampleIndexEntry.SampleIndexGtEntry("0/1")
+        SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0, configuration);
+        entry.getGtEntry("0/1")
                 .setAnnotationIndexGt(map.get("_A_0/1"))
                 .setCtBtIndexGt(map.get("_CB_0/1"))
                 .setConsequenceTypeIndexGt(map.get("_CT_0/1"))
                 .setBiotypeIndexGt(map.get("_BT_0/1"))
                 .setCount(5)
-                .setVariants(buildIterator(
+                .setVariants(toBytes(
                         "1:10:A:T",
                         "1:20:A:T"
 //                        "1:30:A:T",
 //                        "1:40:A:T",
 //                        "1:50:A:T"
-                        ))), null);
+                ));
+        return entry;
     }
 
-    private SampleIndexVariantBiConverter.SampleIndexVariantIterator buildIterator(String... variants) {
+    private byte[] toBytes(String... variants) {
         String str = String.join(",", variants);
-        return new SampleIndexVariantBiConverter().toVariantsIterator("1", 0, Bytes.toBytes(str), 0, str.length());
+        return Bytes.toBytes(str);
     }
 
     private PopulationFrequencyQuery buildPopulationFrequencyQuery(String study, int minFreqInclusive, int maxFreqExclusive) {

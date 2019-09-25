@@ -4,14 +4,19 @@ import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
 public class AnnotationIndexEntry {
 
-    public static final byte MISSING_ANNOTATION = (byte) 0xFF;
-    private final byte summaryIndex;
-    private final boolean intergenic;
-    private final short ctIndex;
-    private final byte btIndex;
-    private final CtBtCombination ctBtCombination;
-    private final byte[] popFreqIndex;
+    private boolean hasSummaryIndex;
+    private byte summaryIndex;
+    private boolean intergenic;
+    private boolean hasCtIndex;
+    private short ctIndex;
+    private boolean hasBtIndex;
+    private byte btIndex;
+    private CtBtCombination ctBtCombination;
+    private byte[] popFreqIndex;
 
+
+    public AnnotationIndexEntry() {
+    }
 
     public AnnotationIndexEntry(
             byte summaryIndex, boolean intergenic, short ctIndex, byte btIndex, byte[] popFreqIndex, byte[] ctBtCombination) {
@@ -57,9 +62,9 @@ public class AnnotationIndexEntry {
      */
     public static class CtBtCombination {
         public static final CtBtCombination EMPTY = new CtBtCombination(new byte[0], 0, 0);
-        private final byte[] ctBtMatrix;
-        private final int numCt;
-        private final int numBt;
+        private byte[] ctBtMatrix;
+        private int numCt;
+        private int numBt;
 
         public CtBtCombination(byte[] ctBtMatrix, int numCt, int numBt) {
             this.ctBtMatrix = ctBtMatrix;
@@ -71,12 +76,27 @@ public class AnnotationIndexEntry {
             return ctBtMatrix;
         }
 
+        public CtBtCombination setCtBtMatrix(byte[] ctBtMatrix) {
+            this.ctBtMatrix = ctBtMatrix;
+            return this;
+        }
+
         public int getNumCt() {
             return numCt;
         }
 
+        public CtBtCombination setNumCt(int numCt) {
+            this.numCt = numCt;
+            return this;
+        }
+
         public int getNumBt() {
             return numBt;
+        }
+
+        public CtBtCombination setNumBt(int numBt) {
+            this.numBt = numBt;
+            return this;
         }
 
         public static CtBtCombination empty() {
@@ -85,45 +105,91 @@ public class AnnotationIndexEntry {
     }
 
     public static AnnotationIndexEntry empty(int numPopFreq) {
-        return new AnnotationIndexEntry(
-                MISSING_ANNOTATION,
-                false,
-                IndexUtils.EMPTY_MASK,
-                IndexUtils.EMPTY_MASK,
-                new byte[numPopFreq],
-                new byte[0]);
+        return new AnnotationIndexEntry().setPopFreqIndex(new byte[numPopFreq]);
+    }
+
+    public boolean hasSummaryIndex() {
+        return hasSummaryIndex;
+    }
+
+    public AnnotationIndexEntry setHasSummaryIndex(boolean hasSummaryIndex) {
+        this.hasSummaryIndex = hasSummaryIndex;
+        return this;
     }
 
     public byte getSummaryIndex() {
         return summaryIndex;
     }
 
+    public AnnotationIndexEntry setSummaryIndex(byte summaryIndex) {
+        this.hasSummaryIndex = true;
+        this.summaryIndex = summaryIndex;
+        return this;
+    }
+
     public boolean isIntergenic() {
         return intergenic;
+    }
+
+    public AnnotationIndexEntry setIntergenic(boolean intergenic) {
+        this.intergenic = intergenic;
+        return this;
+    }
+
+    public boolean hasCtIndex() {
+        return hasCtIndex;
+    }
+
+    public AnnotationIndexEntry setHasCtIndex(boolean hasCtIndex) {
+        this.hasCtIndex = hasCtIndex;
+        return this;
     }
 
     public short getCtIndex() {
         return ctIndex;
     }
 
+    public AnnotationIndexEntry setCtIndex(short ctIndex) {
+        hasCtIndex = true;
+        this.ctIndex = ctIndex;
+        return this;
+    }
+
+    public boolean hasBtIndex() {
+        return hasBtIndex;
+    }
+
+    public AnnotationIndexEntry setHasBtIndex(boolean hasBtIndex) {
+        this.hasBtIndex = hasBtIndex;
+        return this;
+    }
+
     public byte getBtIndex() {
         return btIndex;
     }
 
-    public byte[] getCtBtMatrix() {
-        return ctBtCombination.ctBtMatrix;
+    public AnnotationIndexEntry setBtIndex(byte btIndex) {
+        setHasBtIndex(true);
+        this.btIndex = btIndex;
+        return this;
     }
 
-    public int getNumCts() {
-        return ctBtCombination.numCt;
+    public CtBtCombination getCtBtCombination() {
+        return ctBtCombination;
     }
 
-    public int getNumBts() {
-        return ctBtCombination.numBt;
+    public AnnotationIndexEntry setCtBtCombination(CtBtCombination ctBtCombination) {
+        this.ctBtCombination = ctBtCombination;
+        return this;
     }
 
     public byte[] getPopFreqIndex() {
         return popFreqIndex;
+    }
+
+    public AnnotationIndexEntry setPopFreqIndex(byte[] popFreqIndex) {
+        this.popFreqIndex = popFreqIndex;
+        return this;
     }
 
     @Override

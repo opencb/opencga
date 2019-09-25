@@ -88,25 +88,25 @@ public class AnnotationIndexConverterTest {
     @Test
     public void testCtBtCombination() {
         AnnotationIndexEntry entry = converter.convert(annot(ct("missense_variant", "pseudogene"), ct("pseudogene", "protein_coding")));
-        byte[] ctBtIndex = entry.getCtBtMatrix();
+        byte[] ctBtIndex = entry.getCtBtCombination().getCtBtMatrix();
         assertEquals(1, ctBtIndex.length);
-        assertEquals(1, entry.getNumCts());
-        assertEquals(1, entry.getNumBts());
+        assertEquals(1, entry.getCtBtCombination().getNumCt());
+        assertEquals(1, entry.getCtBtCombination().getNumBt());
         assertEquals(0, ctBtIndex[0]); // No combination
 
         entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding")));
-        ctBtIndex = entry.getCtBtMatrix();
+        ctBtIndex = entry.getCtBtCombination().getCtBtMatrix();
         assertEquals(2, ctBtIndex.length);
-        assertEquals(2, entry.getNumCts());
-        assertEquals(1, entry.getNumBts());
+        assertEquals(2, entry.getCtBtCombination().getNumCt());
+        assertEquals(1, entry.getCtBtCombination().getNumBt());
         assertEquals(1, ctBtIndex[0]); // missense_variant
         assertEquals(1, ctBtIndex[1]); // stop_lost
 
         entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding"), ct("stop_gained", "pseudogene")));
-        ctBtIndex = entry.getCtBtMatrix();
+        ctBtIndex = entry.getCtBtCombination().getCtBtMatrix();
         assertEquals(3, ctBtIndex.length);
-        assertEquals(3, entry.getNumCts());
-        assertEquals(1, entry.getNumBts());
+        assertEquals(3, entry.getCtBtCombination().getNumCt());
+        assertEquals(1, entry.getCtBtCombination().getNumBt());
         assertEquals(1, ctBtIndex[0]); // missense_variant
         assertEquals(0, ctBtIndex[1]); // stop_gained
         assertEquals(1, ctBtIndex[2]); // stop_lost
@@ -117,10 +117,10 @@ public class AnnotationIndexConverterTest {
                 ct("start_lost", "protein_coding"),
                 ct("stop_lost", "processed_transcript"),
                 ct("stop_gained", "pseudogene")));
-        ctBtIndex = entry.getCtBtMatrix();
+        ctBtIndex = entry.getCtBtCombination().getCtBtMatrix();
         assertEquals(4, ctBtIndex.length);
-        assertEquals(4, entry.getNumCts());
-        assertEquals(2, entry.getNumBts()); // protein_coding + processed_transcript. biotype "other" does not count
+        assertEquals(4, entry.getCtBtCombination().getNumCt());
+        assertEquals(2, entry.getCtBtCombination().getNumBt()); // protein_coding + processed_transcript. biotype "other" does not count
 
                  //protein_coding | processed_transcript
         assertEquals(0b10, ctBtIndex[0]); // missense_variant

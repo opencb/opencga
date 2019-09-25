@@ -75,6 +75,14 @@ public class BitInputStream {
         return (byte) r;
     }
 
+    public byte[] readBytes(int numValues, int valueBitLength) {
+        byte[] bytes = new byte[numValues];
+        for (int i = 0; i < numValues; i++) {
+            bytes[i] = readByte(valueBitLength);
+        }
+        return bytes;
+    }
+
     public byte[] read(int length) {
         int bytes = length / Byte.SIZE;
         int bits = length % Byte.SIZE;
