@@ -175,7 +175,7 @@ public class SampleIndexVariantBiConverterTest {
                     annot[i] = AnnotationIndexConverter.INTERGENIC_MASK;
                 }
             }
-            entry.setAnnotationIndexGt(annot);
+            entry.setAnnotationIndex(annot);
         }
         SampleIndexEntryIterator iterator = entry.iterator(onlyCount);
         int i = 0;

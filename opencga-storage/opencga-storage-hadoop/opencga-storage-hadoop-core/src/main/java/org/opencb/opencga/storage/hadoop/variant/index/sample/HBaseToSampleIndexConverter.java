@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
@@ -60,41 +59,42 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         SampleIndexEntry entry = new SampleIndexEntry(sampleId, chromosome, batchStart, configuration);
 
         for (Cell cell : result.rawCells()) {
-            // TODO: Remove all CellUtil.cloneValue
             if (columnStartsWith(cell, META_PREFIX_BYTES)) {
                 if (columnStartsWith(cell, GENOTYPE_COUNT_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, GENOTYPE_COUNT_PREFIX_BYTES))
                             .setCount(Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
                 } else if (columnStartsWith(cell, ANNOTATION_SUMMARY_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_SUMMARY_PREFIX_BYTES))
-                            .setAnnotationIndexGt(CellUtil.cloneValue(cell));
+                            .setAnnotationIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES)) {
+                    int[] annotationCounts = IndexUtils.countPerBitToObject(
+                            cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                     entry.getGtEntry(getGt(cell, ANNOTATION_SUMMARY_COUNT_PREFIX_BYTES))
-                            .setAnnotationCounts(IndexUtils.countPerBitToObject(CellUtil.cloneValue(cell)));
+                            .setAnnotationCounts(annotationCounts);
                 } else if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, FILE_PREFIX_BYTES))
-                            .setFileIndexGt(CellUtil.cloneValue(cell));
+                            .setFileIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, PARENTS_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, PARENTS_PREFIX_BYTES))
-                            .setParentsGt(CellUtil.cloneValue(cell));
+                            .setParentsIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, ANNOTATION_CT_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_CT_PREFIX_BYTES))
-                            .setConsequenceTypeIndexGt(CellUtil.cloneValue(cell));
+                            .setConsequenceTypeIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, ANNOTATION_BT_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_BT_PREFIX_BYTES))
-                            .setBiotypeIndexGt(CellUtil.cloneValue(cell));
+                            .setBiotypeIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, ANNOTATION_CT_BT_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_CT_BT_PREFIX_BYTES))
-                            .setCtBtIndexGt(CellUtil.cloneValue(cell));
+                            .setCtBtIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES))
-                            .setPopulationFrequencyIndexGt(CellUtil.cloneValue(cell));
+                            .setPopulationFrequencyIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
                     entry.setMendelianVariants(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else {
-                    String gt = Bytes.toString(CellUtil.cloneQualifier(cell));
+                    String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                     SampleIndexGtEntry gtEntry = entry.getGtEntry(gt);
 
                     gtEntry.setVariants(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
@@ -112,7 +112,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
     public Map<String, List<Variant>> convertToMap(Result result) {
         Map<String, List<Variant>> map = new HashMap<>();
         for (Cell cell : result.rawCells()) {
-            String gt = Bytes.toString(CellUtil.cloneQualifier(cell));
+            String gt = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
             if (gt.charAt(0) != META_PREFIX) {
                 map.put(gt, converter.toVariants(cell));
             }
@@ -123,7 +123,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
     public int convertToCount(Result result) {
         int count = 0;
         for (Cell cell : result.rawCells()) {
-            String column = Bytes.toString(CellUtil.cloneQualifier(cell));
+            String column = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
             if (column.startsWith(GENOTYPE_COUNT_PREFIX)) {
                 count += Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
             }

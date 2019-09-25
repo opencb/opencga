@@ -148,7 +148,7 @@ public class SampleIndexEntryFilterTest {
 
         SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0, configuration);
         entry.getGtEntry("0/1")
-                .setPopulationFrequencyIndexGt(pf)
+                .setPopulationFrequencyIndex(pf)
                 .setCount(5)
                 .setVariants(toBytes(
                         "1:10:A:T",
@@ -185,10 +185,10 @@ public class SampleIndexEntryFilterTest {
 
         SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0, configuration);
         entry.getGtEntry("0/1")
-                .setAnnotationIndexGt(map.get("_A_0/1"))
-                .setCtBtIndexGt(map.get("_CB_0/1"))
-                .setConsequenceTypeIndexGt(map.get("_CT_0/1"))
-                .setBiotypeIndexGt(map.get("_BT_0/1"))
+                .setAnnotationIndex(map.get("_A_0/1"))
+                .setCtBtIndex(map.get("_CB_0/1"))
+                .setConsequenceTypeIndex(map.get("_CT_0/1"))
+                .setBiotypeIndex(map.get("_BT_0/1"))
                 .setCount(5)
                 .setVariants(toBytes(
                         "1:10:A:T",

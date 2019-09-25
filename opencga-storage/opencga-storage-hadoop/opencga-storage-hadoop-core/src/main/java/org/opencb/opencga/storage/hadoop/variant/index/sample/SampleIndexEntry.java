@@ -130,16 +130,38 @@ public class SampleIndexEntry {
         private int count;
 
         private byte[] variants;
-        private int variantsLength;
         private int variantsOffset;
-        private byte[] fileIndexGt;
-        private byte[] annotationIndexGt;
+        private int variantsLength;
+
+        private byte[] fileIndex;
+        private int fileIndexOffset;
+        private int fileIndexLength;
+
+        private byte[] annotationIndex;
+        private int annotationIndexOffset;
+        private int annotationIndexLength;
+
         private int[] annotationCounts;
-        private byte[] consequenceTypeIndexGt;
-        private byte[] biotypeIndexGt;
-        private byte[] ctBtIndexGt;
-        private byte[] populationFrequencyIndexGt;
-        private byte[] parentsGt;
+
+        private byte[] consequenceTypeIndex;
+        private int consequenceTypeIndexOffset;
+        private int consequenceTypeIndexLength;
+
+        private byte[] biotypeIndex;
+        private int biotypeIndexOffset;
+        private int biotypeIndexLength;
+
+        private byte[] ctBtIndex;
+        private int ctBtIndexOffset;
+        private int ctBtIndexLength;
+
+        private byte[] populationFrequencyIndex;
+        private int populationFrequencyIndexOffset;
+        private int populationFrequencyIndexLength;
+
+        private byte[] parentsIndex;
+        private int parentsIndexOffset;
+        private int parentsIndexLength;
 
         public SampleIndexGtEntry(String gt) {
             this.gt = gt;
@@ -211,21 +233,41 @@ public class SampleIndexEntry {
             return this;
         }
 
-        public byte[] getFileIndexGt() {
-            return fileIndexGt;
+        public byte[] getFileIndex() {
+            return fileIndex;
         }
 
-        public SampleIndexGtEntry setFileIndexGt(byte[] fileIndexGt) {
-            this.fileIndexGt = fileIndexGt;
+        public byte getFileIndex(int idx) {
+            return fileIndex[fileIndexOffset + idx];
+        }
+
+        public SampleIndexGtEntry setFileIndex(byte[] fileIndex) {
+            return setFileIndex(fileIndex, 0, fileIndex.length);
+        }
+
+        public SampleIndexGtEntry setFileIndex(byte[] fileIndex, int offset, int length) {
+            this.fileIndex = fileIndex;
+            this.fileIndexOffset = offset;
+            this.fileIndexLength = length;
             return this;
         }
 
-        public byte[] getAnnotationIndexGt() {
-            return annotationIndexGt;
+        public byte[] getAnnotationIndex() {
+            return annotationIndex;
         }
 
-        public SampleIndexGtEntry setAnnotationIndexGt(byte[] annotationIndexGt) {
-            this.annotationIndexGt = annotationIndexGt;
+        public byte getAnnotationIndex(int idx) {
+            return annotationIndex[idx + annotationIndexOffset];
+        }
+
+        public SampleIndexGtEntry setAnnotationIndex(byte[] annotationIndex) {
+            return setAnnotationIndex(annotationIndex, 0, annotationIndex.length);
+        }
+
+        public SampleIndexGtEntry setAnnotationIndex(byte[] annotationIndex, int offset, int length) {
+            this.annotationIndex = annotationIndex;
+            this.annotationIndexOffset = offset;
+            this.annotationIndexLength = length;
             return this;
         }
 
@@ -238,52 +280,106 @@ public class SampleIndexEntry {
             return this;
         }
 
-        public byte[] getConsequenceTypeIndexGt() {
-            return consequenceTypeIndexGt;
+        public byte[] getConsequenceTypeIndex() {
+            return consequenceTypeIndex;
         }
 
-        public short getConsequenceTypeIndexGt(int nonIntergenicIndex) {
-            return Bytes.toShort(consequenceTypeIndexGt, nonIntergenicIndex * Short.BYTES);
+        public short getConsequenceTypeIndex(int nonIntergenicIndex) {
+            return Bytes.toShort(consequenceTypeIndex, consequenceTypeIndexOffset + nonIntergenicIndex * Short.BYTES);
         }
 
-        public SampleIndexGtEntry setConsequenceTypeIndexGt(byte[] consequenceTypeIndexGt) {
-            this.consequenceTypeIndexGt = consequenceTypeIndexGt;
+        public SampleIndexGtEntry setConsequenceTypeIndex(byte[] consequenceTypeIndex) {
+            return setConsequenceTypeIndex(consequenceTypeIndex, 0, consequenceTypeIndex.length);
+        }
+
+        public SampleIndexGtEntry setConsequenceTypeIndex(byte[] consequenceTypeIndex, int offset, int length) {
+            this.consequenceTypeIndex = consequenceTypeIndex;
+            this.consequenceTypeIndexOffset = offset;
+            this.consequenceTypeIndexLength = length;
             return this;
         }
 
-        public byte[] getBiotypeIndexGt() {
-            return biotypeIndexGt;
+        public byte[] getBiotypeIndex() {
+            return biotypeIndex;
         }
 
-        public SampleIndexGtEntry setBiotypeIndexGt(byte[] biotypeIndexGt) {
-            this.biotypeIndexGt = biotypeIndexGt;
+        public byte getBiotypeIndex(int idx) {
+            return biotypeIndex[biotypeIndexOffset + idx];
+        }
+
+        public SampleIndexGtEntry setBiotypeIndex(byte[] biotypeIndex) {
+            return setBiotypeIndex(biotypeIndex, 0, biotypeIndex.length);
+        }
+
+        public SampleIndexGtEntry setBiotypeIndex(byte[] biotypeIndex, int offset, int length) {
+            this.biotypeIndex = biotypeIndex;
+            this.biotypeIndexOffset = offset;
+            this.biotypeIndexLength = length;
             return this;
         }
 
-        public byte[] getCtBtIndexGt() {
-            return ctBtIndexGt;
+        public byte[] getCtBtIndex() {
+            return ctBtIndex;
         }
 
-        public SampleIndexGtEntry setCtBtIndexGt(byte[] ctBtIndexGt) {
-            this.ctBtIndexGt = ctBtIndexGt;
+        public int getCtBtIndexOffset() {
+            return ctBtIndexOffset;
+        }
+
+        public int getCtBtIndexLength() {
+            return ctBtIndexLength;
+        }
+
+        public SampleIndexGtEntry setCtBtIndex(byte[] ctBtIndex) {
+            return setCtBtIndex(ctBtIndex, 0, ctBtIndex.length);
+        }
+
+        public SampleIndexGtEntry setCtBtIndex(byte[] ctBtIndex, int offset, int length) {
+            this.ctBtIndex = ctBtIndex;
+            this.ctBtIndexOffset = offset;
+            this.ctBtIndexLength = length;
             return this;
         }
 
-        public byte[] getPopulationFrequencyIndexGt() {
-            return populationFrequencyIndexGt;
+        public byte[] getPopulationFrequencyIndex() {
+            return populationFrequencyIndex;
         }
 
-        public SampleIndexGtEntry setPopulationFrequencyIndexGt(byte[] populationFrequencyIndexGt) {
-            this.populationFrequencyIndexGt = populationFrequencyIndexGt;
+        public int getPopulationFrequencyIndexOffset() {
+            return populationFrequencyIndexOffset;
+        }
+
+        public int getPopulationFrequencyIndexLength() {
+            return populationFrequencyIndexLength;
+        }
+
+        public SampleIndexGtEntry setPopulationFrequencyIndex(byte[] populationFrequencyIndex) {
+            return setPopulationFrequencyIndex(populationFrequencyIndex, 0, populationFrequencyIndex.length);
+        }
+
+        public SampleIndexGtEntry setPopulationFrequencyIndex(byte[] populationFrequencyIndex, int offset, int length) {
+            this.populationFrequencyIndex = populationFrequencyIndex;
+            this.populationFrequencyIndexOffset = offset;
+            this.populationFrequencyIndexLength = length;
             return this;
         }
 
-        public byte[] getParentsGt() {
-            return parentsGt;
+        public byte[] getParentsIndex() {
+            return parentsIndex;
         }
 
-        public SampleIndexGtEntry setParentsGt(byte[] parentsGt) {
-            this.parentsGt = parentsGt;
+        public byte getParentsIndex(int idx) {
+            return parentsIndex[parentsIndexOffset + idx];
+        }
+
+        public SampleIndexGtEntry setParentsIndex(byte[] parentsIndex) {
+            return setParentsIndex(parentsIndex, 0, parentsIndex.length);
+        }
+
+        public SampleIndexGtEntry setParentsIndex(byte[] parentsIndex, int offset, int length) {
+            this.parentsIndex = parentsIndex;
+            this.parentsIndexOffset = offset;
+            this.parentsIndexLength = length;
             return this;
         }
 
@@ -292,10 +388,10 @@ public class SampleIndexEntry {
             return new ToStringBuilder(this)
                     .append("gt", gt)
                     .append("variants", variants)
-                    .append("fileIndexGt", fileIndexGt)
-                    .append("annotationIndexGt", annotationIndexGt)
+                    .append("fileIndex", fileIndex)
+                    .append("annotationIndex", annotationIndex)
                     .append("annotationCounts", annotationCounts)
-                    .append("parentsGt", parentsGt)
+                    .append("parentsIndex", parentsIndex)
                     .toString();
         }
     }

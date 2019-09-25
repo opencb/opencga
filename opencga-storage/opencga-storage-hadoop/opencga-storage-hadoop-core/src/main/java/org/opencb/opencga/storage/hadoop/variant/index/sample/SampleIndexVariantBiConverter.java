@@ -182,7 +182,6 @@ public class SampleIndexVariantBiConverter {
         private SampleIndexConfiguration configuration;
         private BitInputStream popFreq;
         private BitInputStream ctBtIndex;
-        private byte[] annotationIndex;
         private int nonIntergenicCount;
 
         // Reuse the annotation index entry. Avoid create a new instance for each variant.
@@ -199,13 +198,14 @@ public class SampleIndexVariantBiConverter {
         SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
             this();
             this.gtEntry = gtEntry;
-            this.ctBtIndex = gtEntry.getCtBtIndexGt() == null
+            this.ctBtIndex = gtEntry.getCtBtIndex() == null
                     ? null
-                    : new BitInputStream(gtEntry.getCtBtIndexGt());
-            this.popFreq = gtEntry.getPopulationFrequencyIndexGt() == null
+                    : new BitInputStream(gtEntry.getCtBtIndex(), gtEntry.getCtBtIndexOffset(), gtEntry.getCtBtIndexLength());
+            this.popFreq = gtEntry.getPopulationFrequencyIndex() == null
                     ? null
-                    : new BitInputStream(gtEntry.getPopulationFrequencyIndexGt());
-            annotationIndex = gtEntry.getAnnotationIndexGt();
+                    : new BitInputStream(gtEntry.getPopulationFrequencyIndex(),
+                    gtEntry.getPopulationFrequencyIndexOffset(),
+                    gtEntry.getPopulationFrequencyIndexLength());
             this.configuration = configuration;
         }
 
@@ -216,22 +216,22 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public boolean hasFileIndex() {
-            return gtEntry.getFileIndexGt() != null;
+            return gtEntry.getFileIndex() != null;
         }
 
         @Override
         public byte nextFileIndex() {
-            return gtEntry.getFileIndexGt()[nextIndex()];
+            return gtEntry.getFileIndex(nextIndex());
         }
 
         @Override
         public boolean hasParentsIndex() {
-            return gtEntry.getParentsGt() != null;
+            return gtEntry.getParentsIndex() != null;
         }
 
         @Override
         public byte nextParentsIndex() {
-            return gtEntry.getParentsGt()[nextIndex()];
+            return gtEntry.getParentsIndex(nextIndex());
         }
 
         public AnnotationIndexEntry nextAnnotationIndexEntry() {
@@ -239,7 +239,7 @@ public class SampleIndexVariantBiConverter {
                 return annotationIndexEntry;
             }
 
-            if (annotationIndex == null && popFreq == null) {
+            if (gtEntry.getAnnotationIndex() == null && popFreq == null) {
                 return null;
             }
 
@@ -251,18 +251,18 @@ public class SampleIndexVariantBiConverter {
             ctBtCombination.setNumCt(0);
             ctBtCombination.setNumBt(0);
 
-            if (annotationIndex != null) {
-                boolean nonIntergenic = SampleIndexEntryFilter.isNonIntergenic(annotationIndex, idx);
-                annotationIndexEntry.setSummaryIndex(annotationIndex[idx]);
+            if (gtEntry.getAnnotationIndex() != null) {
+                annotationIndexEntry.setSummaryIndex(gtEntry.getAnnotationIndex(idx));
+                boolean nonIntergenic = SampleIndexEntryFilter.isNonIntergenic(annotationIndexEntry.getSummaryIndex());
                 annotationIndexEntry.setIntergenic(!nonIntergenic);
 
                 if (nonIntergenic) {
                     int nextNonIntergenic = nextNonIntergenicIndex();
-                    if (gtEntry.getConsequenceTypeIndexGt() != null) {
-                        annotationIndexEntry.setCtIndex(gtEntry.getConsequenceTypeIndexGt(nextNonIntergenic));
+                    if (gtEntry.getConsequenceTypeIndex() != null) {
+                        annotationIndexEntry.setCtIndex(gtEntry.getConsequenceTypeIndex(nextNonIntergenic));
                     }
-                    if (gtEntry.getBiotypeIndexGt() != null) {
-                        annotationIndexEntry.setBtIndex(gtEntry.getBiotypeIndexGt()[nextNonIntergenic]);
+                    if (gtEntry.getBiotypeIndex() != null) {
+                        annotationIndexEntry.setBtIndex(gtEntry.getBiotypeIndex(nextNonIntergenic));
                     }
 
                     if (ctBtIndex != null && annotationIndexEntry.getCtIndex() != 0 && annotationIndexEntry.getBtIndex() != 0) {
@@ -289,9 +289,9 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public int nextNonIntergenicIndex() {
-            if (annotationIndex == null) {
+            if (gtEntry.getAnnotationIndex() == null) {
                 return -1;
-            } else if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, nextIndex())) {
+            } else if (SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
                 return nonIntergenicCount;
             } else {
                 throw new IllegalStateException("Next variant is not intergenic!");
@@ -300,8 +300,8 @@ public class SampleIndexVariantBiConverter {
 
         protected void increaseNonIntergenicCounter() {
             // If the variant to be returned is non-intergenic, increase the number of non-intergenic variants.
-            if (annotationIndex != null) {
-                if (SampleIndexEntryFilter.isNonIntergenic(annotationIndex, nextIndex())) {
+            if (gtEntry.getAnnotationIndex() != null) {
+                if (SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
                     nonIntergenicCount++;
                 }
             }

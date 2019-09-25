@@ -205,7 +205,11 @@ public class SampleIndexEntryFilter {
     }
 
     public static boolean isNonIntergenic(byte[] annotationIndex, int idx) {
-        return IndexUtils.testIndex(annotationIndex[idx], AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
+        return isNonIntergenic(annotationIndex[idx]);
+    }
+
+    public static boolean isNonIntergenic(byte summaryIndex) {
+        return IndexUtils.testIndex(summaryIndex, AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
     }
 
     private boolean filterPopFreq(AnnotationIndexEntry annotationIndexEntry) {

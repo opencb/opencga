@@ -59,8 +59,8 @@ public class MendelianErrorSampleIndexConverterTest {
                     annot[i] = AnnotationIndexConverter.INTERGENIC_MASK;
                 }
             }
-            entry.getGtEntry("0/1").setAnnotationIndexGt(annot);
-            entry.getGtEntry("1/1").setAnnotationIndexGt(annot);
+            entry.getGtEntry("0/1").setAnnotationIndex(annot);
+            entry.getGtEntry("1/1").setAnnotationIndex(annot);
         }
 
         MendelianErrorSampleIndexEntryIterator iterator = entry.mendelianIterator();

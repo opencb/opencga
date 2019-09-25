@@ -202,8 +202,11 @@ public final class IndexUtils {
     }
 
     public static int[] countPerBitToObject(byte[] bytes) {
+        return countPerBitToObject(bytes, 0, bytes.length);
+    }
+
+    public static int[] countPerBitToObject(byte[] bytes, int offset, int length) {
         int[] counts = new int[8];
-        int offset = 0;
         for (int i = 0; i < counts.length; i++) {
             counts[i] = Bytes.toInt(bytes, offset);
             offset += Bytes.SIZEOF_INT;
