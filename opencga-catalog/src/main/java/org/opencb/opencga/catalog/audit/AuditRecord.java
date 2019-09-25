@@ -34,23 +34,59 @@ public class AuditRecord {
      */
     private String operationId;
 
+    /**
+     * User performing the action.
+     */
     private String userId;
+    /**
+     * OpenCGA API version.
+     */
     private String apiVersion;
 
+    /**
+     * Action performed (CREATE, SEARCH, DOWNLOAD...).
+     */
     private Action action;
 
+    /**
+     * Involved resource (User, Study, Sample, File...).
+     */
     private Resource resource;
+    /**
+     * Id of the involved resource.
+     */
     private String resourceId;
+    /**
+     * UUID of the involved resource.
+     */
     private String resourceUuid;
 
+    /**
+     * Study id corresponding to the involved resource. Does not apply to User or Project resources.
+     */
     private String studyId;
+    /**
+     * Study UUID corresponding to the involved resource. Does not apply to User or Project resources.
+     */
     private String studyUuid;
 
+    /**
+     * User params sent by the user. All the parameters considered and sent by the user to perform the action.
+     */
     private ObjectMap params;
 
+    /**
+     * Final result of the action: success or error. In case of error, it will also contain the error code and the error message.
+     */
     private Status status;
 
+    /**
+     * Date of the audit record.
+     */
     private Date date;
+    /**
+     * Any additional information that might have not been covered by the data model.
+     */
     private ObjectMap attributes;
 
     public AuditRecord() {
