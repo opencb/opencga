@@ -113,11 +113,13 @@ public class SampleIndexEntryFilter {
         Map<String, SampleIndexGtEntry> gts = entry.getGts();
         List<List<Variant>> variantsByGt = new ArrayList<>(gts.size());
         int numVariants = 0;
+        // Use countIterator only if don't need to filter by region or by type
+        boolean countIterator = count && regionFilter == null && CollectionUtils.isEmpty(query.getVariantTypes());
         for (SampleIndexGtEntry gtEntry : gts.values()) {
 
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
 
-            SampleIndexEntryIterator variantIterator = gtEntry.iterator(count);
+            SampleIndexEntryIterator variantIterator = gtEntry.iterator(countIterator);
             ArrayList<Variant> variants = new ArrayList<>(variantIterator.getApproxSize());
             variantsByGt.add(variants);
             while (expectedResultsFromAnnotation.intValue() > 0 && variantIterator.hasNext()) {

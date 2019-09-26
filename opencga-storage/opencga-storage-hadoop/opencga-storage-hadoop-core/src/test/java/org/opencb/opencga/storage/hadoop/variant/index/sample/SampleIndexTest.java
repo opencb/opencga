@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Result;
@@ -13,6 +14,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -41,6 +43,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndex
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
@@ -326,5 +329,30 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertNotEquals("sample_index_table", result.getSource());
     }
+
+    @Test
+    public void testCount() throws StorageEngineException {
+        List<List<Region>> regionLists = Arrays.asList(null, Arrays.asList(new Region("1", 1000, 16400000)));
+
+        for (List<Region> regions : regionLists) {
+            StopWatch stopWatch = StopWatch.createStarted();
+            long actualCount = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
+                    .count(regions, STUDY_NAME, "NA19600", Arrays.asList("1|0", "0|1", "1|1"));
+            Query query = new Query(VariantQueryParam.STUDY.key(), STUDY_NAME)
+                    .append(VariantQueryParam.SAMPLE.key(), "NA19600");
+            if (regions != null) {
+                query.append(VariantQueryParam.REGION.key(), regions);
+            }
+            System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+            System.out.println("Count = " + actualCount);
+            stopWatch = StopWatch.createStarted();
+            long expectedCount = dbAdaptor.count(query).first();
+            System.out.println("Count variants   " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+            System.out.println("Count = " + expectedCount);
+            System.out.println("-----------------------------------");
+            assertEquals(expectedCount, actualCount);
+        }
+    }
+
 
 }

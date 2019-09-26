@@ -120,21 +120,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         fileNameCache = new MetadataCache<>((studyId, fileId) -> {
             FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
             if (fileMetadata == null) {
-                throw VariantQueryException.fileNotFound(fileId, studyId);
+                throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.getName();
         });
         fileIdIndexedCache = new MetadataCache<>((studyId, fileId) -> {
             FileMetadata fileMetadata = fileDBAdaptor.getFileMetadata(studyId, fileId, null);
             if (fileMetadata == null) {
-                throw VariantQueryException.fileNotFound(fileId, studyId);
+                throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.isIndexed();
         });
         fileIdsFromSampleIdCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = getSampleMetadata(studyId, sampleId);
             if (sampleMetadata == null) {
-                throw VariantQueryException.sampleNotFound(sampleId, studyId);
+                throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
             return sampleMetadata.getFiles();
         });

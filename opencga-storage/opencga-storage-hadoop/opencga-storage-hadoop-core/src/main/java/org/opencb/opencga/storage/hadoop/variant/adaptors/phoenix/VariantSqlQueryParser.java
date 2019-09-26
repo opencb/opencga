@@ -1208,6 +1208,8 @@ public class VariantSqlQueryParser {
                 addSoFlagCombination(query, filters);
                 break;
             case NONE:
+                // Some values from the TranscriptFlag are not considered for the combinations
+                addQueryFilter(query, ANNOT_TRANSCRIPT_FLAG, VariantColumn.TRANSCRIPT_FLAGS, filters);
                 break;
             default:
                 // This should never happen!

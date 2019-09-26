@@ -29,7 +29,6 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -52,7 +51,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
 @RunWith(Parameterized.class)
 public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageTest {
 
-    private static final boolean FILES = true;
     private static final boolean GROUP_BY = false;
     protected static final boolean MISSING_ALLELE = false;
 
@@ -152,18 +150,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    public void testExcludeFiles() {
-        Assume.assumeTrue(FILES);
-        super.testExcludeFiles();
-    }
-
-    @Override
-    public void testReturnNoneFiles() {
-        Assume.assumeTrue(FILES);
-        super.testReturnNoneFiles();
-    }
-
-    @Override
     public void testGetAllVariants_missingAllele() throws Exception {
         Assume.assumeTrue(MISSING_ALLELE);
         super.testGetAllVariants_missingAllele();
@@ -183,18 +169,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     }
 
     @Override
-    public void testGetAllVariants_files() {
-        Assume.assumeTrue(FILES);
-        super.testGetAllVariants_files();
-    }
-
-    @Override
-    public void testGetAllVariants_filterNoFile() {
-        thrown.expect(VariantQueryException.class);
-        super.testGetAllVariants_filterNoFile();
-    }
-
-    @Override
     public void rank_ct() throws Exception {
         Assume.assumeTrue(GROUP_BY);
         super.rank_ct();
@@ -204,12 +178,6 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void limitSkip(Query query, QueryOptions options) {
         Assume.assumeTrue("Unable to paginate queries without sorting", options.getBoolean(QueryOptions.SORT, false));
         super.limitSkip(query, options);
-    }
-
-    @Override
-    public void testInclude() {
-        Assume.assumeTrue(FILES);
-        super.testInclude();
     }
 
     @Test

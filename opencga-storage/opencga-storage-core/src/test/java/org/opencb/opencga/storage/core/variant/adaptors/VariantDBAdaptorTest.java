@@ -1623,7 +1623,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_fileNotFound() {
-        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyMetadata.getName()));
+        VariantQueryException e = VariantQueryException.fileNotFound("-1", studyMetadata.getName());
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         count(new Query(FILE.key(), -1));

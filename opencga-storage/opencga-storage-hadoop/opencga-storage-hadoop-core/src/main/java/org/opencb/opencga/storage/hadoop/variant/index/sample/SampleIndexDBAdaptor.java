@@ -259,7 +259,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                         try {
                             if (query.emptyOrRegionFilter() && simpleCount) {
                                 // Directly sum counters
-                                Scan scan = parseCount(query, null);
+                                Scan scan = parseCount(query, subRegion);
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
                                 while (result != null) {
@@ -346,6 +346,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             // Consecutive partial batches. Do not split region
             regions = Collections.singletonList(region);
         } else {
+            // Copy region before modifying
+            region = new Region(region.getChromosome(), region.getStart(), region.getEnd());
             regions = new ArrayList<>(3);
             if (!startsAtBatch(region)) {
                 int splitPoint = region.getStart() - region.getStart() % SampleIndexSchema.BATCH_SIZE + SampleIndexSchema.BATCH_SIZE;
@@ -367,7 +369,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     protected static boolean endsAtBatch(Region region) {
-        return region.getEnd() + 1 % SampleIndexSchema.BATCH_SIZE == 0;
+        return (region.getEnd() + 1) % SampleIndexSchema.BATCH_SIZE == 0;
     }
 
     public SampleIndexEntryFilter buildSampleIndexEntryFilter(SingleSampleIndexQuery query, Region region) {

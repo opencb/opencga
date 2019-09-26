@@ -410,7 +410,10 @@ public class VariantHBaseQueryParser {
                     throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
                 }
                 int studyId = defaultStudy.getId();
-                int sampleId = metadataManager.getSampleId(defaultStudy.getId(), entry.getKey(), true);
+                Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), entry.getKey(), true);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(entry.getKey(), defaultStudy.getName());
+                }
                 List<String> genotypes = entry.getValue();
 
                 if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {

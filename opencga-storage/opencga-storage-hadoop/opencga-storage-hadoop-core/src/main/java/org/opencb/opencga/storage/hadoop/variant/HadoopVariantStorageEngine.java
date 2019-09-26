@@ -113,8 +113,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.convertGenesToRegionsQuery;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
 /**
@@ -905,7 +904,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         List<String> studyNames = metadataManager.getStudyNames();
 
         if (isValidParam(query, STUDY) && studyNames.size() == 1) {
-            query.remove(STUDY.key());
+            String study = query.getString(STUDY.key());
+            if (!isNegated(study)) {
+                try {
+                    // Check that study exists
+                    getMetadataManager().getStudyId(study);
+                } catch (StorageEngineException e) {
+                    throw VariantQueryException.internalException(e);
+                }
+                query.remove(STUDY.key());
+            }
         }
 
         convertGenesToRegionsQuery(query, cellBaseUtils);
