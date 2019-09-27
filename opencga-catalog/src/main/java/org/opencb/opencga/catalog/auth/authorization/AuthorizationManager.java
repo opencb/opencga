@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.models.GroupParams;
@@ -141,7 +141,7 @@ public interface AuthorizationManager {
      * @return a list of studyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the study does not have proper permissions.
      */
-    QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException;
+    DataResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -152,7 +152,7 @@ public interface AuthorizationManager {
      * @return the studyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException;
+    DataResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException;
 
     //------------------------- End of study ACL ----------------------
 
@@ -168,7 +168,7 @@ public interface AuthorizationManager {
      * @return a list of sampleAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException;
+    DataResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -181,7 +181,7 @@ public interface AuthorizationManager {
      * @return the SampleAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException;
+    DataResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException;
 
     //------------------------- End of sample ACL ----------------------
 
@@ -201,7 +201,7 @@ public interface AuthorizationManager {
      * @return a list of FileAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission) throws CatalogException;
+    DataResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -214,7 +214,7 @@ public interface AuthorizationManager {
      * @return the FileAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException;
+    DataResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException;
 
     //------------------------- End of file ACL ----------------------
 
@@ -230,7 +230,7 @@ public interface AuthorizationManager {
      * @return a list of IndividualAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException;
+    DataResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -243,7 +243,7 @@ public interface AuthorizationManager {
      * @return the IndividualAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member) throws CatalogException;
+    DataResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member) throws CatalogException;
 
     //------------------------- End of individual ACL ----------------------
 
@@ -259,7 +259,7 @@ public interface AuthorizationManager {
      * @return a list of CohortAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the cohort does not have proper permissions.
      */
-    QueryResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException;
+    DataResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -272,7 +272,7 @@ public interface AuthorizationManager {
      * @return the CohortAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException;
+    DataResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException;
 
     //------------------------- End of cohort ACL ----------------------
 
@@ -288,7 +288,7 @@ public interface AuthorizationManager {
      * @return a list of DiseasePanelAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the panel does not have proper permissions.
      */
-    QueryResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException;
+    DataResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -301,7 +301,7 @@ public interface AuthorizationManager {
      * @return the DiseasePanelAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException;
+    DataResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException;
 
     //------------------------- End of panel ACL ----------------------
 
@@ -317,7 +317,7 @@ public interface AuthorizationManager {
      * @return a list of JobAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException;
+    DataResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -330,7 +330,7 @@ public interface AuthorizationManager {
      * @return the JobAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException;
+    DataResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the family.
@@ -342,7 +342,7 @@ public interface AuthorizationManager {
      * @return a list of FamilyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the family does not have proper permissions.
      */
-    QueryResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException;
+    DataResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -355,7 +355,7 @@ public interface AuthorizationManager {
      * @return the FamilyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException;
+    DataResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the clinical analysis.
@@ -368,7 +368,7 @@ public interface AuthorizationManager {
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the clinical analysis does not have proper
      * permissions.
      */
-    QueryResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+    DataResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
             throws CatalogException;
 
     /**
@@ -382,50 +382,50 @@ public interface AuthorizationManager {
      * @return the ClinicalAnalysisAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
+    DataResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
             throws CatalogException;
 
 
-    List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    List<DataResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    List<QueryResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    List<DataResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    List<QueryResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
+    List<DataResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
             throws CatalogException;
 
-//    <E extends AbstractAclEntry> QueryResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
+//    <E extends AbstractAclEntry> DataResult<E> getAcl(long id, List<String> members, String entity) throws CatalogException;
 
-    default <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
+    default <E extends AbstractAclEntry> List<DataResult<E>> setAcls(long studyId, List<Long> ids, List<String> members,
                                                                       List<String> permissions, Entity entity) throws CatalogException {
         return setAcls(studyId, ids, null, members, permissions, entity, null);
     }
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
+    <E extends AbstractAclEntry> List<DataResult<E>> setAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
                                                               List<String> permissions, Entity entity1, Entity entity2)
             throws CatalogException;
 
-    default <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<String> members,
+    default <E extends AbstractAclEntry> List<DataResult<E>> addAcls(long studyId, List<Long> ids, List<String> members,
                                                                       List<String> permissions, Entity entity) throws CatalogException {
         return addAcls(studyId, ids, null, members, permissions, entity, null);
     }
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
+    <E extends AbstractAclEntry> List<DataResult<E>> addAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
                                                               List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException;
 
-    default <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<String> members,
+    default <E extends AbstractAclEntry> List<DataResult<E>> removeAcls(List<Long> ids, List<String> members,
                                                                          @Nullable List<String> permissions, Entity entity)
             throws CatalogException {
         return removeAcls(ids, null, members, permissions, entity, null);
     }
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids1, List<Long> ids2, List<String> members,
+    <E extends AbstractAclEntry> List<DataResult<E>> removeAcls(List<Long> ids1, List<Long> ids2, List<String> members,
                                                                  @Nullable List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException;
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, Entity entity)
+    <E extends AbstractAclEntry> List<DataResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries, Entity entity)
             throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;

@@ -1,11 +1,10 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -13,7 +12,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -37,19 +36,19 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
 
     abstract AuditRecord.Resource getEntity();
 
-    QueryResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    DataResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
         return internalGet(studyUid, entry, null, options, user);
     }
 
-    abstract QueryResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+    abstract DataResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException;
 
-    InternalGetQueryResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
             throws CatalogException {
         return internalGet(studyUid, entryList, null, options, user, silent);
     }
 
-    abstract InternalGetQueryResult<R> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+    abstract InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                                    String user, boolean silent) throws CatalogException;
 
     /**
@@ -59,10 +58,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param entry     entry that needs to be added in Catalog.
      * @param options   QueryOptions object.
      * @param token Session id of the user logged in.
-     * @return A QueryResult of the object created.
+     * @return A DataResult of the object created.
      * @throws CatalogException if any parameter from the entry is incorrect, the user does not have permissions...
      */
-    public abstract QueryResult<R> create(String studyStr, R entry, QueryOptions options, String token) throws CatalogException;
+    public abstract DataResult<R> create(String studyStr, R entry, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Fetch the R object.
@@ -74,7 +73,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public QueryResult<R> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
+    public DataResult<R> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         return internalGet(study.getUid(), entryStr, options, userId);
@@ -90,16 +89,16 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public List<QueryResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
+    public List<DataResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
         return get(studyStr, entryList, new Query(), options, false, token);
     }
 
-    public List<QueryResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
+    public List<DataResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
             throws CatalogException {
         return get(studyStr, entryList, new Query(), options, silent, token);
     }
 
-    public List<QueryResult<R>> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
+    public List<DataResult<R>> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
@@ -117,30 +116,32 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
         try {
-            List<QueryResult<R>> resultList = new ArrayList<>(entryList.size());
+            List<DataResult<R>> resultList = new ArrayList<>(entryList.size());
 
-            InternalGetQueryResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
+            InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
 
-            Map<String, InternalGetQueryResult.Missing> missingMap = new HashMap<>();
+            Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
             if (responseResult.getMissing() != null) {
                 missingMap = responseResult.getMissing().stream()
-                        .collect(Collectors.toMap(InternalGetQueryResult.Missing::getId, Function.identity()));
+                        .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
             }
 
             List<List<R>> versionedResults = responseResult.getVersionedResults();
             for (int i = 0; i < versionedResults.size(); i++) {
                 String entryId = entryList.get(i);
                 if (versionedResults.get(i).isEmpty()) {
+                    String warning = "Missing " + entryId + ": " + missingMap.get(entryId).getErrorMsg();
                     // Missing
-                    resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), 0, 0, "", missingMap.get(entryId).getErrorMsg(),
-                            Collections.emptyList()));
+                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.singletonList(warning), 0,
+                            Collections.emptyList(), 0));
                 } else {
                     int size = versionedResults.get(i).size();
-                    resultList.add(new QueryResult<>(entryId, responseResult.getDbTime(), size, size, "", "", versionedResults.get(i)));
+                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.emptyList(), size, versionedResults.get(i),
+                            size));
                 }
             }
 
-            for (QueryResult<R> queryResult : resultList) {
+            for (DataResult<R> queryResult : resultList) {
                 auditManager.auditInfo(operationUuid, userId, getEntity(), queryResult.first().getId(), queryResult.first().getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             }
@@ -177,7 +178,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return The list of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract QueryResult<R> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException;
+    public abstract DataResult<R> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Count matching entries in catalog.
@@ -185,10 +186,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param studyId  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query     Query object.
      * @param token Session id of the user logged in.
-     * @return A QueryResult with the total number of entries matching the query.
+     * @return A DataResult with the total number of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract QueryResult<R> count(String studyId, Query query, String token) throws CatalogException;
+    public abstract DataResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
     /**
      * Delete all entries matching the query.
@@ -198,9 +199,9 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param params Map containing additional parameters to be considered for the deletion.
      * @param sessionId Session id of the user logged in.
      * @throws CatalogException if the study or the user do not exist.
-     * @return A WriteResult object containing the number of matching elements, deleted and elements that could not be deleted.
+     * @return A DataResult object containing the number of matching elements, deleted and elements that could not be deleted.
      */
-    public abstract WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) throws CatalogException;
+    public abstract DataResult delete(String studyStr, Query query, ObjectMap params, String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -211,10 +212,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param numResults Maximum number of results to be reported.
      * @param asc        Order in which the results will be reported.
      * @param sessionId  Session id of the user logged in.
-     * @return A QueryResult object containing each of the fields in field and the count of them matching the query.
+     * @return A DataResult object containing each of the fields in field and the count of them matching the query.
      * @throws CatalogException CatalogException
      */
-    public abstract QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
+    public abstract DataResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException;
 
     /**
@@ -225,10 +226,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
      * @param options   QueryOptions object.
      * @param sessionId Session id of the user logged in.
-     * @return A QueryResult object containing the results of the query grouped by the fields.
+     * @return A DataResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public QueryResult groupBy(@Nullable String studyStr, Query query, String fields, QueryOptions options, String sessionId)
+    public DataResult groupBy(@Nullable String studyStr, Query query, String fields, QueryOptions options, String sessionId)
             throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
@@ -244,10 +245,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param options   QueryOptions object.
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
      * @param sessionId Session id of the user logged in.
-     * @return A QueryResult object containing the results of the query grouped by the fields.
+     * @return A DataResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public abstract QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public abstract DataResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException;
 
 }

@@ -20,7 +20,7 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
@@ -89,10 +89,10 @@ public interface AuditDBAdaptor {
     }
 
 
-    QueryResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException;
+    DataResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException;
 
-    QueryResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    DataResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
+    DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
 }

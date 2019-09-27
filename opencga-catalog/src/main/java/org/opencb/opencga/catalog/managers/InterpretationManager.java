@@ -1,11 +1,10 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -17,7 +16,7 @@ import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -62,7 +61,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    QueryResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+    DataResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         ParamUtils.checkIsSingleID(entry);
         Query queryCopy = query == null ? new Query() : new Query(query);
@@ -80,34 +79,34 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
 //                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
 //                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
-        if (interpretationQueryResult.getNumResults() == 0) {
-            interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
-            if (interpretationQueryResult.getNumResults() == 0) {
+        DataResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
+        if (interpretationDataResult.getNumResults() == 0) {
+            interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
+            if (interpretationDataResult.getNumResults() == 0) {
                 throw new CatalogException("Interpretation " + entry + " not found");
             } else {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
                         + entry);
             }
-        } else if (interpretationQueryResult.getNumResults() > 1) {
+        } else if (interpretationDataResult.getNumResults() > 1) {
             throw new CatalogException("More than one interpretation found based on " + entry);
         } else {
             // We perform this query to check permissions because interpretations doesn't have ACLs
             try {
                 catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
-                        interpretationQueryResult.first().getClinicalAnalysisId(),
+                        interpretationDataResult.first().getClinicalAnalysisId(),
                         ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
             } catch (CatalogException e) {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
                         + entry);
             }
 
-            return interpretationQueryResult;
+            return interpretationDataResult;
         }
     }
 
     @Override
-    InternalGetQueryResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
+    InternalGetDataResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                                        String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing interpretation entries.");
@@ -138,14 +137,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
+        DataResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
 
-        if (interpretationQueryResult.getNumResults() != uniqueList.size() && !silent) {
+        if (interpretationDataResult.getNumResults() != uniqueList.size() && !silent) {
             throw CatalogException.notFound("interpretations",
-                    getMissingFields(uniqueList, interpretationQueryResult.getResult(), interpretationStringFunction));
+                    getMissingFields(uniqueList, interpretationDataResult.getResults(), interpretationStringFunction));
         }
 
-        ArrayList<Interpretation> interpretationList = new ArrayList<>(interpretationQueryResult.getResult());
+        ArrayList<Interpretation> interpretationList = new ArrayList<>(interpretationDataResult.getResults());
         Iterator<Interpretation> iterator = interpretationList.iterator();
         while (iterator.hasNext()) {
             Interpretation interpretation = iterator.next();
@@ -164,14 +163,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        interpretationQueryResult.setResult(interpretationList);
-        interpretationQueryResult.setNumResults(interpretationList.size());
-        interpretationQueryResult.setNumTotalResults(interpretationList.size());
+        interpretationDataResult.setResults(interpretationList);
+        interpretationDataResult.setNumResults(interpretationList.size());
+        interpretationDataResult.setNumMatches(interpretationList.size());
 
-        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationQueryResult, silent, false);
+        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, silent, false);
     }
 
-    public QueryResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,
+    public DataResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,
                                   ObjectMap analysisOptions, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
@@ -198,7 +197,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 attributes, token);
     }
 
-    public QueryResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)
+    public DataResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)
             throws CatalogException {
         if (StringUtils.isEmpty(entry.getClinicalAnalysisId())) {
             throw new IllegalArgumentException("Please call to create passing a clinical analysis id");
@@ -206,7 +205,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return create(studyStr, entry.getClinicalAnalysisId(), entry, options, sessionId);
     }
 
-    public QueryResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
+    public DataResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
                                               QueryOptions options, String token) throws CatalogException {
         // We check if the user can create interpretations in the clinical analysis
         String userId = userManager.getUserId(token);
@@ -239,10 +238,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
             interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
 
-            WriteResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, options);
-            QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+            DataResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, options);
+            DataResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
                     QueryOptions.empty());
-            queryResult.setDbTime(result.getDbTime() + queryResult.getDbTime());
+            queryResult.setTime(result.getTime() + queryResult.getTime());
 
             // Now, we add the interpretation to the clinical analysis
             ObjectMap parameters = new ObjectMap();
@@ -272,11 +271,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A QueryResult with the object updated.
+     * @return A DataResult with the object updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public QueryResult<Interpretation> update(String studyStr, String interpretationId, InterpretationUpdateParams updateParams,
+    public DataResult<Interpretation> update(String studyStr, String interpretationId, InterpretationUpdateParams updateParams,
                                               QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -318,13 +317,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         InterpretationDBAdaptor.QueryParams.ID.key());
             }
 
-            WriteResult writeResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
+            DataResult writeResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
             auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), interpretation.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+            DataResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
                     new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setDbTime(queryResult.getDbTime() + writeResult.getDbTime());
+            queryResult.setTime(queryResult.getTime() + writeResult.getTime());
 
             return queryResult;
         } catch (CatalogException e) {
@@ -341,7 +340,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public QueryResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token)
+    public DataResult<Interpretation> search(String studyId, Query query, QueryOptions options, String token)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -351,10 +350,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(query, options, userId);
+        DataResult<Interpretation> queryResult = interpretationDBAdaptor.get(query, options, userId);
 
-        List<Interpretation> results = new ArrayList<>(queryResult.getResult().size());
-        for (Interpretation interpretation : queryResult.getResult()) {
+        List<Interpretation> results = new ArrayList<>(queryResult.getResults().size());
+        for (Interpretation interpretation : queryResult.getResults()) {
             if (StringUtils.isNotEmpty(interpretation.getClinicalAnalysisId())) {
                 try {
                     catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
@@ -368,30 +367,30 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        queryResult.setResult(results);
+        queryResult.setResults(results);
         queryResult.setNumTotalResults(results.size());
         queryResult.setNumResults(results.size());
         return queryResult;
     }
 
     @Override
-    public QueryResult<Interpretation> count(String studyId, Query query, String token) throws CatalogException {
+    public DataResult<Interpretation> count(String studyId, Query query, String token) throws CatalogException {
         return null;
     }
 
     @Override
-    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
+    public DataResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         return null;
     }
 
     @Override
-    public QueryResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
+    public DataResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public DataResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         return null;
     }

@@ -66,7 +66,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
         synchronizeCatalogStudyFromStorage(dataStore, studyInfo.getStudyFQN(), sessionId);
 
         return catalogManager.getFileManager().search(studyInfo.getStudyFQN(),
-                new Query(FileDBAdaptor.QueryParams.PATH.key(), filePaths), new QueryOptions(), sessionId).getResult();
+                new Query(FileDBAdaptor.QueryParams.PATH.key(), filePaths), new QueryOptions(), sessionId).getResults();
     }
 
     public void removeStudy(StudyInfo studyInfo, QueryOptions options, String sessionId)

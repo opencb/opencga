@@ -26,10 +26,10 @@ import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -151,7 +151,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 System.out.println("count           = " + all);
                 System.out.println("get             = " + allVariants.getNumResults());
 
-                List<Variant> nonAnnotatedVariants = allVariants.getResult()
+                List<Variant> nonAnnotatedVariants = allVariants.getResults()
                         .stream()
                         .filter(variant -> variant.getAnnotation() == null)
                         .collect(Collectors.toList());
@@ -178,7 +178,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         VariantQueryResult<Variant> result = variantStorageEngine.get(new Query(),
                 new QueryOptions(VariantField.SUMMARY, true)
                         .append(QueryOptions.LIMIT, 2000));
-        assertEquals(allVariants.getResult().size(), result.getResult().size());
+        assertEquals(allVariants.getResults().size(), result.getResults().size());
 
     }
 
@@ -188,8 +188,8 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(ANNOT_CONSERVATION.key(), "gerp>1")
                 .append(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift>0.01")
                 .append(UNKNOWN_GENOTYPE.key(), "./.");
-        QueryResult<Variant> queryResult = variantStorageEngine.get(query, new QueryOptions());
-//        for (Variant variant : queryResult.getResult()) {
+        DataResult<Variant> queryResult = variantStorageEngine.get(query, new QueryOptions());
+//        for (Variant variant : queryResult.getResults()) {
 //            System.out.println("variant = " + variant);
 //        }
         assertEquals(queryResult.getNumResults(), queryResult.getNumTotalResults());
@@ -226,7 +226,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
     }
 
     private void skipLimit(Query query, QueryOptions options, int batchSize, boolean serverSideSkip) throws StorageEngineException, SolrServerException, IOException {
-        Set<String> expectedResults = dbAdaptor.get(query, null).getResult().stream().map(Variant::toString).collect(Collectors.toSet());
+        Set<String> expectedResults = dbAdaptor.get(query, null).getResults().stream().map(Variant::toString).collect(Collectors.toSet());
         Set<String> results = new HashSet<>();
         int numQueries = (int) Math.ceil(expectedResults.size() / (float) batchSize);
         for (int i = 0; i < numQueries; i++) {
@@ -234,7 +234,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                     .append(QueryOptions.SKIP, i * batchSize)
                     .append(QueryOptions.LIMIT, batchSize);
             VariantQueryResult<Variant> result = variantStorageEngine.get(query, thisOptions);
-            for (Variant variant : result.getResult()) {
+            for (Variant variant : result.getResults()) {
                 assertTrue(results.add(variant.toString()));
             }
             assertNotEquals(0, result.getNumResults());
@@ -254,7 +254,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 
     @Test
     public void testQueryWithIds() throws Exception {
-        List<String> variantIds = allVariants.getResult().stream()
+        List<String> variantIds = allVariants.getResults().stream()
                 .filter(v -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(v.getType()))
                 .map(Variant::toString)
                 .limit(400)

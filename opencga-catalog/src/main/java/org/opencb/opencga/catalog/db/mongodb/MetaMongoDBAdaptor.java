@@ -23,10 +23,9 @@ import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
@@ -77,8 +76,8 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1L);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
-        QueryResult<Document> result = metaCollection.findAndUpdate(clientSession, query, projection, null, inc, queryOptions);
-        return result.getResult().get(0).getLong(field);
+        DataResult<Document> result = metaCollection.findAndUpdate(clientSession, query, projection, null, inc, queryOptions);
+        return result.getResults().get(0).getLong(field);
     }
 
     public void createIndexes() {
@@ -123,9 +122,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     private void createIndexes(MongoDBCollection mongoCollection, List<Map<String, ObjectMap>> indexes) {
-        QueryResult<Document> index = mongoCollection.getIndex();
+        DataResult<Document> index = mongoCollection.getIndex();
         // We store the existing indexes
-        Set<String> existingIndexes = index.getResult()
+        Set<String> existingIndexes = index.getResults()
                 .stream()
                 .map(document -> (String) document.get("name"))
                 .collect(Collectors.toSet());
@@ -179,14 +178,14 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     @Override
     public String getAdminPassword() throws CatalogDBException {
         Bson query = METADATA_QUERY;
-        QueryResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
+        DataResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
         return parseObject((Document) queryResult.first().get("admin"), Admin.class).getPassword();
     }
 
     @Override
     public String readSecretKey() throws CatalogDBException {
         Bson query = METADATA_QUERY;
-        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        DataResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
         if (queryResult.getNumResults() == 1) {
             return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
         }
@@ -196,7 +195,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     @Override
     public String readAlgorithm() throws CatalogDBException {
         Bson query = METADATA_QUERY;
-        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        DataResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
         if (queryResult.getNumResults() == 1) {
             return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
         }
@@ -204,7 +203,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public WriteResult updateJWTParameters(ObjectMap params) throws CatalogDBException {
+    public DataResult updateJWTParameters(ObjectMap params) throws CatalogDBException {
         Bson query = METADATA_QUERY;
 
         Document adminDocument = new Document();
@@ -228,6 +227,6 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             return this.metaCollection.update(query, update, QueryOptions.empty());
         }
 
-        return WriteResult.empty();
+        return DataResult.empty();
     }
 }

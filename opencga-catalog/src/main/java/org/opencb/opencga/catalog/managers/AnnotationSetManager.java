@@ -18,11 +18,10 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -70,7 +69,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
     }
 
     @Override
-    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) throws CatalogException {
+    public DataResult delete(String studyStr, Query query, ObjectMap params, String sessionId) throws CatalogException {
         return null;
     }
 
@@ -146,14 +145,14 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         List<AnnotationSet> annotationSetList = new ArrayList<>();
                         if (action == ParamUtils.UpdateAction.ADD) {
                             // Get all the annotation sets from the entry
-                            QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
+                            DataResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
 
-                            if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
-                                for (AnnotationSet annotationSet : annotationSetQueryResult.getResult()) {
+                            if (annotationSetDataResult != null && annotationSetDataResult.getNumResults() > 0) {
+                                for (AnnotationSet annotationSet : annotationSetDataResult.getResults()) {
                                     annotationSetMap.put(annotationSet.getId(), annotationSet);
                                 }
                                 // We add all the existing annotation sets to the list
-                                annotationSetList.addAll(annotationSetQueryResult.getResult());
+                                annotationSetList.addAll(annotationSetDataResult.getResults());
                             }
                         }
 
@@ -291,10 +290,10 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Obtain all the variable sets from the study
-                QueryResult<Study> studyQueryResult = studyDBAdaptor.get(study.getUid(),
+                DataResult<Study> studyDataResult = studyDBAdaptor.get(study.getUid(),
                         new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-                if (studyQueryResult.getNumResults() == 0) {
+                if (studyDataResult.getNumResults() == 0) {
                     throw new CatalogException("Internal error: Study " + study.getFqn() + " not found. Update could not be performed.");
                 }
                 // Create a map variableSetId - VariableSet
@@ -304,11 +303,11 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Get the annotation set from the entry
-                QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(entry.getUid(), annotationSet.getId());
-                if (annotationSetQueryResult.getNumResults() == 0) {
+                DataResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), annotationSet.getId());
+                if (annotationSetDataResult.getNumResults() == 0) {
                     throw new CatalogException("AnnotationSet " + annotationSet.getId() + " not found. Annotations could not be updated.");
                 }
-                AnnotationSet storedAnnotationSet = annotationSetQueryResult.first();
+                AnnotationSet storedAnnotationSet = annotationSetDataResult.first();
 
                 // We apply the annotation changes to the storedAnotationSet object
                 applyAnnotationChanges(storedAnnotationSet, annotationSet, variableSetMap.get(storedAnnotationSet.getVariableSetId()),

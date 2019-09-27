@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -30,11 +29,10 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -76,18 +74,18 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public boolean exists(long projectId) {
-        QueryResult<Long> count = userCollection.count(new Document(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId));
-        return count.getResult().get(0) != 0;
+        DataResult<Long> count = userCollection.count(new Document(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId));
+        return count.getResults().get(0) != 0;
     }
 
     @Override
-    public WriteResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException {
+    public DataResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException {
         Bson query = Filters.and(Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId),
                 Filters.ne(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), project.get(QueryParams.ID.key())));
         Bson update = Updates.push("projects", getMongoDBDocument(project, "project"));
 
         //Update object
-        WriteResult result = userCollection.update(query, update, null);
+        DataResult result = userCollection.update(query, update, null);
         if (result.getNumInserted() == 0) { // Check if the project has been inserted
             throw new CatalogDBException("Project {" + project.get(QueryParams.ID.key()) + "\"} already exists for this user");
         }
@@ -95,30 +93,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public WriteResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException {
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
+    public DataResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException {
+        return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
-
             logger.debug("Starting project insert transaction for project id '{}'", project.getId());
 
-            try {
-                insert(clientSession, project, userId);
-                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
-            } catch (CatalogDBException e) {
-                logger.error("Could not create project {}: {}", project.getId(), e.getMessage());
-                clientSession.abortTransaction();
-                return endWrite(tmpStartTime, 1, 0, null,
-                        Collections.singletonList(new WriteResult.Fail(project.getId(), e.getMessage())));
-            }
-        };
-
-        WriteResult result = commitTransaction(clientSession, txnBody);
-
-        if (result.getNumInserted() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
-        }
-        return result;
+            insert(clientSession, project, userId);
+            return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+        }, e -> logger.error("Could not create project {}: {}", project.getId(), e.getMessage()));
     }
 
     Project insert(ClientSession clientSession, Project project, String userId) throws CatalogDBException {
@@ -130,8 +112,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         Bson countQuery = Filters.and(Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId),
                 Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), project.getId()));
-        QueryResult<Long> count = userCollection.count(clientSession, countQuery);
-        if (count.getResult().get(0) != 0) {
+        DataResult<Long> count = userCollection.count(clientSession, countQuery);
+        if (count.getResults().get(0) != 0) {
             throw new CatalogDBException("Project {id:\"" + project.getId() + "\"} already exists for this user");
         }
 
@@ -167,13 +149,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public WriteResult incrementCurrentRelease(long projectId) throws CatalogDBException {
+    public DataResult incrementCurrentRelease(long projectId) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.UID.key(), projectId);
         Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
 
-        WriteResult updateQR = userCollection.update(parseQuery(query), update, null);
-        if (updateQR == null || updateQR.getNumMatched() == 0) {
+        DataResult updateQR = userCollection.update(parseQuery(query), update, null);
+        if (updateQR == null || updateQR.getNumMatches() == 0) {
             throw new CatalogDBException("Could not increment release number. Project id " + projectId + " not found");
         } else if (updateQR.getNumUpdated() == 0) {
             throw new CatalogDBException("Internal error. Current release number could not be incremented.");
@@ -195,7 +177,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 .append("projects.$." + QueryParams.ID.key(), newId)
                 .append("projects.$." + QueryParams.FQN.key(), owner + "@" + newId)
         );
-        WriteResult result = userCollection.update(clientSession, query, update, null);
+        DataResult result = userCollection.update(clientSession, query, update, null);
         if (result.getNumUpdated() == 0) {    //Check if the the project id was modified
             throw new CatalogDBException("Project {id:\"" + newId + "\"} already exists");
         }
@@ -213,7 +195,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             projectId = projectId.split("@", 2)[1];
         }
 
-        QueryResult<Document> queryResult = userCollection.find(
+        DataResult<Document> queryResult = userCollection.find(
                 new BsonDocument(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), new BsonString(projectId))
                         .append(UserDBAdaptor.QueryParams.ID.key(), new BsonString(userId)),
                 Projections.fields(Projections.include(UserDBAdaptor.QueryParams.PROJECTS_UID.key()),
@@ -235,40 +217,40 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 //        DBObject projection = new BasicDBObject(UserDBAdaptor.QueryParams.ID.key(), "true");
         Bson projection = Projections.include(UserDBAdaptor.QueryParams.ID.key());
 
-//        QueryResult<DBObject> result = userCollection.find(query, projection, null);
-        QueryResult<Document> result = userCollection.find(query, projection, null);
+//        DataResult<DBObject> result = userCollection.find(query, projection, null);
+        DataResult<Document> result = userCollection.find(query, projection, null);
 
-        if (result.getResult().isEmpty()) {
+        if (result.getResults().isEmpty()) {
             throw CatalogDBException.uidNotFound("Project", projectId);
         } else {
-            return result.getResult().get(0).get(UserDBAdaptor.QueryParams.ID.key()).toString();
+            return result.getResults().get(0).get(UserDBAdaptor.QueryParams.ID.key()).toString();
         }
     }
 
     @Override
-    public QueryResult<Long> count(Query query) throws CatalogDBException {
+    public DataResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return userCollection.count(bson);
     }
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+    public DataResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
         throw new NotImplementedException("Count not implemented for projects");
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) throws CatalogDBException {
+    public DataResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return userCollection.distinct(field, bson);
     }
 
     @Override
-    public QueryResult stats(Query query) {
+    public DataResult stats(Query query) {
         return null;
     }
 
     @Override
-    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         Document updateParams = getDocumentUpdateParams(parameters);
@@ -285,16 +267,15 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         int numMatches = 0;
         int numModified = 0;
-        List<WriteResult.Fail> failList = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         while (iterator.hasNext()) {
             Project project = iterator.next();
             numMatches += 1;
 
-            ClientSession clientSession = getClientSession();
-            TransactionBody<WriteResult> txnBody = () -> {
-                long tmpStartTime = startQuery();
-                try {
+            try {
+                runTransaction(clientSession -> {
+                    long tmpStartTime = startQuery();
                     if (parameters.containsKey(QueryParams.ID.key())) {
                         logger.debug("Update project id '{}'({}) to new id '{}'", project.getId(), project.getUid(),
                                 parameters.getString(QueryParams.ID.key()));
@@ -310,31 +291,18 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                                 updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
                         userCollection.update(clientSession, finalQuery, updates, null);
                     }
-                    return endWrite(tmpStartTime, 1, 1, null, null);
-                } catch (CatalogDBException e) {
-                    logger.error("Error updating project {}({}). {}", project.getId(), project.getUid(), e.getMessage(), e);
-                    clientSession.abortTransaction();
-                    return endWrite(tmpStartTime, 1, 0, null,
-                            Collections.singletonList(new WriteResult.Fail(project.getId(), e.getMessage())));
-                }
-            };
-
-            WriteResult result = commitTransaction(clientSession, txnBody);
-
-            if (result.getNumUpdated() == 1) {
+                    return endWrite(tmpStartTime, 1, 1, null);
+                });
                 logger.info("Project {} successfully updated", project.getId());
                 numModified += 1;
-            } else {
-                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
-                    logger.error("Could not update project {}: {}", project.getId(), result.getFailed().get(0).getMessage());
-                    failList.addAll(result.getFailed());
-                } else {
-                    logger.error("Could not update project {}", project.getId());
-                }
+            } catch (CatalogDBException e) {
+                String errorMsg = "Could not update project " + project.getId() + ": " + e.getMessage();
+                logger.error(errorMsg);
+                warnings.add(errorMsg);
             }
         }
 
-        return endWrite(startTime, numMatches, numModified, null, failList);
+        return endWrite(startTime, numMatches, numModified, warnings);
     }
 
     Document getDocumentUpdateParams(ObjectMap parameters) {
@@ -381,28 +349,29 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
-        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
+        DataResult update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
         if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update project with id " + id);
         }
         return update;
     }
 
-    public WriteResult delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        WriteResult delete = delete(query);
-        if (delete.getNumMatched() == 0) {
-            throw new CatalogDBException("Could not delete project. Uid " + id + " not found.");
+    @Override
+    public DataResult delete(Project project) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), project.getUid());
+        DataResult delete = delete(query);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete project. " + project.getId() + " not found.");
         } else if (delete.getNumUpdated() == 0) {
-            throw new CatalogDBException("Could not delete project. " + delete.getFailed().get(0).getMessage());
+            throw new CatalogDBException("Could not delete project " + project.getId());
         }
         return delete;
     }
 
     @Override
-    public WriteResult delete(Query query) throws CatalogDBException {
+    public DataResult delete(Query query) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
         DBIterator<Project> iterator = iterator(query, options);
@@ -410,7 +379,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         long startTime = startQuery();
         int numMatches = 0;
         int numModified = 0;
-        List<WriteResult.Fail> failList = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         StudyMongoDBAdaptor studyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
 
@@ -418,19 +387,18 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             Project project = iterator.next();
             numMatches += 1;
 
-            ClientSession clientSession = getClientSession();
-            TransactionBody<WriteResult> txnBody = () -> {
-                long tmpStartTime = startQuery();
-                try {
+            try {
+                runTransaction(clientSession -> {
+                    long tmpStartTime = startQuery();
                     logger.info("Deleting project {} ({})", project.getId(), project.getUid());
 
                     // First, we delete the studies
                     Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                     List<Study> studyList = studyDBAdaptor.get(studyQuery, new QueryOptions(QueryOptions.INCLUDE,
-                            Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key()))).getResult();
+                            Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key()))).getResults();
                     if (studyList != null) {
                         for (Study study : studyList) {
-                            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(clientSession, study);
+                            dbAdaptorFactory.getCatalogStudyDBAdaptor().transactionalDelete(clientSession, study);
                         }
                     }
 
@@ -448,43 +416,30 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     logger.debug("Delete project {}: Query: {}, update: {}", project.getId(),
                             bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                             updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    WriteResult updateResult = userCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+                    DataResult updateResult = userCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
                     if (updateResult.getNumUpdated() == 1) {
                         logger.debug("Project {} successfully deleted", project.getId());
-                        return endWrite(tmpStartTime, 1, 1, null, null);
+                        return endWrite(tmpStartTime, 1, 1, null);
                     } else {
                         logger.error("Project {} could not be deleted", project.getId());
                         throw new CatalogDBException("Project " + project.getId() + " could not be deleted");
                     }
-                } catch (CatalogDBException e) {
-                    logger.error("Error deleting project {}({}). {}", project.getId(), project.getUid(), e.getMessage(), e);
-                    clientSession.abortTransaction();
-                    return endWrite(tmpStartTime, 1, 0, null,
-                            Collections.singletonList(new WriteResult.Fail(project.getId(), e.getMessage())));
-                }
-            };
-
-            WriteResult result = commitTransaction(clientSession, txnBody);
-
-            if (result.getNumUpdated() == 1) {
+                });
                 logger.info("Project {} successfully deleted", project.getId());
                 numModified += 1;
-            } else {
-                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
-                    logger.error("Could not delete project {}: {}", project.getId(), result.getFailed().get(0).getMessage());
-                    failList.addAll(result.getFailed());
-                } else {
-                    logger.error("Could not delete project {}", project.getId());
-                }
+            } catch (CatalogDBException e) {
+                String errorMsg = "Could not delete project " + project.getId() + ": " + e.getMessage();
+                logger.error(errorMsg);
+                warnings.add(errorMsg);
             }
         }
 
-        return endWrite(startTime, numMatches, numModified, null, failList);
+        return endWrite(startTime, numMatches, numModified, warnings);
     }
 
     @Deprecated
     @Override
-    public WriteResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         // Check the project is active
         Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
@@ -512,42 +467,42 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     // TODO: Make this transactional
     @Override
-    public WriteResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.append(QueryParams.STATUS_NAME.key(), Status.READY);
-        QueryResult<Project> projectQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
-        WriteResult writeResult = new WriteResult();
-        for (Project project : projectQueryResult.getResult()) {
+        DataResult<Project> projectDataResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
+        DataResult writeResult = new DataResult();
+        for (Project project : projectDataResult.getResults()) {
             writeResult.append(delete(project.getUid(), queryOptions));
         }
         return writeResult;
     }
 
-    WriteResult setStatus(Query query, String status) throws CatalogDBException {
+    DataResult setStatus(Query query, String status) throws CatalogDBException {
         return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    private WriteResult setStatus(long projectId, String status) throws CatalogDBException {
+    private DataResult setStatus(long projectId, String status) throws CatalogDBException {
         return update(projectId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
-    public WriteResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public WriteResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
         return setStatus(query, Status.READY);
     }
 
     @Override
-    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
 
         checkId(id);
         // Check if the cohort is active
@@ -562,14 +517,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Project> get(String userId, QueryOptions options) throws CatalogDBException {
+    public DataResult<Project> get(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.USER_ID.key(), userId);
-        return endQuery("User projects list", startTime, get(query, options).getResult());
+        return endQuery(startTime, get(query, options).getResults());
     }
 
     @Override
-    public QueryResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
+    public DataResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
         checkId(projectId);
         Query query = new Query(QueryParams.UID.key(), projectId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
@@ -581,25 +536,25 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
-        QueryResult<Project> queryResult;
+        DataResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
                 && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
-            for (Project project : queryResult.getResult()) {
+            for (Project project : queryResult.getResults()) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                 try {
-                    QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
-                    project.setStudies(studyQueryResult.getResult());
+                    DataResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
+                    project.setStudies(studyDataResult.getResults());
                 } catch (CatalogDBException e) {
                     logger.error("{}", e.getMessage(), e);
                 }
@@ -610,26 +565,26 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult<Project> get(Query query, QueryOptions options, String user)
+    public DataResult<Project> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
-        QueryResult<Project> queryResult;
+        DataResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
                 && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
-            for (Project project : queryResult.getResult()) {
+            for (Project project : queryResult.getResults()) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                 try {
-                    QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
-                    project.setStudies(studyQueryResult.getResult());
+                    DataResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
+                    project.setStudies(studyDataResult.getResults());
                 } catch (CatalogDBException e) {
                     logger.error("{}", e.getMessage(), e);
                 }
@@ -640,7 +595,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
@@ -648,11 +603,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 documentList.add(dbIterator.next());
             }
         }
-        return endQuery("Native get", startTime, documentList);
+        return endQuery(startTime, documentList);
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
@@ -660,7 +615,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 documentList.add(dbIterator.next());
             }
         }
-        return endQuery("Native get", startTime, documentList);
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -712,7 +667,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
+        DataResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
 
         query.remove(QueryParams.STUDY_UID.key());
         query.remove(QueryParams.STUDY_ID.key());
@@ -720,7 +675,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         // We build a map of projectId - list<studies>
 //        Map<Long, List<Study>> studyMap = new HashMap<>();
 //        StudyConverter studyConverter = new StudyConverter();
-//        for (Document studyDocument : queryResult.getResult()) {
+//        for (Document studyDocument : queryResult.getResults()) {
 //            Long projectId = studyDocument.getLong("_projectId");
 //            if (!studyMap.containsKey(projectId)) {
 //                studyMap.put(projectId, new ArrayList<>());
@@ -745,7 +700,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         } else {
             // We get all the projects the user can see
-            projectUids = queryResult.getResult().stream()
+            projectUids = queryResult.getResults().stream()
                     .map(document -> ((Document) document.get("_project")).getLong("uid"))
                     .collect(Collectors.toList());
         }
@@ -799,28 +754,28 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) {
         throw new NotImplementedException("Rank project is not implemented");
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+    public DataResult groupBy(Query query, String field, QueryOptions options) {
         throw new NotImplementedException("GroupBy in project is not implemented");
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) {
         throw new NotImplementedException("GroupBy in project is not implemented");
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }

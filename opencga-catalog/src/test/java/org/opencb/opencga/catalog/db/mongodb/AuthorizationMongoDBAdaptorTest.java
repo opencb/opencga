@@ -21,9 +21,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -113,12 +113,12 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor.addToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1", "user2", "user3"),
                 Arrays.asList("VIEW", "UPDATE"), Entity.SAMPLE);
 
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Entity.SAMPLE);
+        DataResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Entity.SAMPLE);
         assertEquals(4, sampleAcl.getNumResults());
 
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1", "user2"), Entity.SAMPLE);
         assertEquals(2, sampleAcl.getNumResults());
-        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
+        for (SampleAclEntry sampleAclEntry : sampleAcl.getResults()) {
             assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
             assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
         }
@@ -126,7 +126,7 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor.setToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1"), Arrays.asList("DELETE"), Entity.SAMPLE);
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1", "user2"), Entity.SAMPLE);
         assertEquals(2, sampleAcl.getNumResults());
-        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
+        for (SampleAclEntry sampleAclEntry : sampleAcl.getResults()) {
             if (sampleAclEntry.getMember().equals("user1")) {
                 assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("DELETE")));
             } else {
@@ -156,7 +156,7 @@ public class AuthorizationMongoDBAdaptorTest {
 
         sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Entity.SAMPLE);
         assertEquals(2, sampleAcl.getNumResults());
-        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
+        for (SampleAclEntry sampleAclEntry : sampleAcl.getResults()) {
             if (sampleAclEntry.getMember().equals("user2")) {
                 assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
                 assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
@@ -177,7 +177,7 @@ public class AuthorizationMongoDBAdaptorTest {
 
     @Test
     public void getSampleAcl() throws Exception {
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user1.getId()),
+        DataResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user1.getId()),
                 Entity.SAMPLE);
         SampleAclEntry acl = sampleAcl.first();
         assertNotNull(acl);
@@ -190,23 +190,23 @@ public class AuthorizationMongoDBAdaptorTest {
 
     @Test
     public void getSampleAclWrongUser() throws Exception {
-        QueryResult<SampleAclEntry> wrongUser = aclDBAdaptor.get(s1.getUid(), Arrays.asList("wrongUser"),
+        DataResult<SampleAclEntry> wrongUser = aclDBAdaptor.get(s1.getUid(), Arrays.asList("wrongUser"),
                 Entity.SAMPLE);
         assertEquals(0, wrongUser.getNumResults());
     }
 
     @Test
     public void getSampleAclFromUserWithoutAcl() throws Exception {
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user3.getId()),
+        DataResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user3.getId()),
                 Entity.SAMPLE);
-        assertTrue(sampleAcl.getResult().isEmpty());
+        assertTrue(sampleAcl.getResults().isEmpty());
     }
 
     // Remove some concrete permissions
     @Test
     public void unsetSampleAcl2() throws Exception {
         // Unset permissions
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()),
+        DataResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()),
                 Entity.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(3, sampleAcl.first().getPermissions().size());
@@ -253,9 +253,9 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor.applyPermissionRules(studyId, pr, Study.Entity.SAMPLES);
 
         // All the samples should have view permissions for user user2
-        List<QueryResult<AbstractAclEntry>> queryResults = aclDBAdaptor.get(Arrays.asList(s1.getUid(), s2.getUid()),
+        List<DataResult<AbstractAclEntry>> queryResults = aclDBAdaptor.get(Arrays.asList(s1.getUid(), s2.getUid()),
                 Arrays.asList(user3.getId()), Entity.SAMPLE);
-        for (QueryResult<AbstractAclEntry> queryResult : queryResults) {
+        for (DataResult<AbstractAclEntry> queryResult : queryResults) {
             assertEquals(1, queryResult.first().getPermissions().size());
             assertTrue(queryResult.first().getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
         }

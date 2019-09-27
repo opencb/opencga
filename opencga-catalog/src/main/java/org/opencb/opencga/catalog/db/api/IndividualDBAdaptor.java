@@ -17,11 +17,10 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -147,32 +146,32 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         }
     }
 
-    WriteResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
+    DataResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
 
-    WriteResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
+    DataResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
 
-    QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
+    DataResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+    DataResult<Individual> get(long individualId, QueryOptions options, String userId)
             throws CatalogDBException, CatalogAuthorizationException;
 
 //    @Deprecated
-//    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
+//    DataResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 
-//    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+//    DataResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
 //    @Deprecated
-//    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
+//    DataResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
 
-//    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
+//    DataResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
 //            CatalogDBException;
 
-//    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
+//    DataResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
 
     long getStudyId(long individualId) throws CatalogDBException;
 
-    WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -180,9 +179,9 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return WriteResult object.
+     * @return DataResult object.
      * @throws CatalogException if there is any database error.
      */
-    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

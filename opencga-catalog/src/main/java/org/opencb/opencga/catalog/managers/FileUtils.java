@@ -434,7 +434,7 @@ public class FileUtils {
             //Search if there is any existing file in the folder with the path to use.
             Query pathsQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), new LinkedList<>(uriPathMap.values()));
             List<File> existingFiles = catalogManager.getFileManager()
-                    .search(study.getFqn(), pathsQuery, new QueryOptions(), sessionId).getResult();
+                    .search(study.getFqn(), pathsQuery, new QueryOptions(), sessionId).getResults();
             if (!relink) {
                 if (existingFiles.size() != 0) {
                     for (File f : existingFiles) {
@@ -496,7 +496,7 @@ public class FileUtils {
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
             List<File> files = catalogManager.getFileManager().search(String.valueOf(studyId), query, new QueryOptions(), sessionId)
-                    .getResult();
+                    .getResults();
             for (File f : files) {
                 if (!f.getStatus().getName().equals(File.FileStatus.TRASHED)) {
                     throw new CatalogIOException("Only deleted files can be physically deleted");

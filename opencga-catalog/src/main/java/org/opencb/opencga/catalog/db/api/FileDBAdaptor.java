@@ -17,11 +17,10 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -203,7 +202,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
     long getStudyIdByFileId(long fileId) throws CatalogDBException;
 
-    WriteResult nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
+    DataResult nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
 
     /***
      * Inserts the passed file in the database.
@@ -212,30 +211,30 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param file The file to be inserted in the database.
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
-     * @return A WriteResult object containing the time spent.
+     * @return A DataResult object containing the time spent.
      * @throws CatalogDBException when the file could not be inserted due to different reasons.
      */
-    WriteResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
+    DataResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves the file from the database containing the fileId given.
      *
      * @param fileId File ID of the required file.
      * @param options Options to filter the output.
-     * @return A QueryResult object containing the required file.
+     * @return A DataResult object containing the required file.
      * @throws CatalogDBException when the file could not be found in the database.
      */
-    QueryResult<File> get(long fileId, QueryOptions options) throws CatalogDBException;
+    DataResult<File> get(long fileId, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves all the files belonging to the given study.
      *
      * @param studyId Study id where the files will be extracted from.
      * @param options Options to filter the output.
-     * @return A QueryResult object containing all the files belonging to the study.
+     * @return A DataResult object containing all the files belonging to the study.
      * @throws CatalogDBException when the study does not exist.
      */
-    QueryResult<File> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    DataResult<File> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves all the files present in the folder.
@@ -243,10 +242,10 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param studyId Study id where the files will be extracted from.
      * @param path Directory where the files will be extracted from.
      * @param options Options to filter the file output.
-     * @return A QueryResult object containing the files present in the folder of the given study.
+     * @return A DataResult object containing the files present in the folder of the given study.
      * @throws CatalogDBException when the study or the path does not exist.
      */
-    QueryResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
+    DataResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
 
     /***
      * Renames the file.
@@ -255,20 +254,20 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param filePath New file or directory name (containing the full path).
      * @param fileUri New file uri (containing the full path).
      * @param options Options to filter the file output.
-     * @return A WriteResult object.
+     * @return A DataResult object.
      * @throws CatalogDBException when the filePath already exists.
      */
-    WriteResult rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
+    DataResult rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
 
     /**
      * Add the samples to the array of samples in the file entry.
      *
      * @param fileId file id corresponding to the file being updated.
      * @param samples List of samples to be added to the array.
-     * @return WriteResult object.
+     * @return DataResult object.
      * @throws CatalogDBException CatalogDBException.
      */
-    WriteResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
+    DataResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -276,29 +275,29 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return WriteResult object.
+     * @return DataResult object.
      * @throws CatalogException if there is any database error.
      */
-    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
     /**
      * Delete file.
      *
      * @param fileUid Delete the file.
      * @param status Deletion status we want to set.
-     * @return a WriteResult object.
+     * @return a DataResult object.
      * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
      */
-    WriteResult delete(long fileUid, String status) throws CatalogDBException;
+    DataResult delete(long fileUid, String status) throws CatalogDBException;
 
     /**
      * Delete file.
      *
      * @param query Delete all the files matching the query.
      * @param status Deletion status we want to set.
-     * @return a WriteResult object.
+     * @return a DataResult object.
      * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
      */
-    WriteResult delete(Query query, String status) throws CatalogDBException;
+    DataResult delete(Query query, String status) throws CatalogDBException;
 
 }

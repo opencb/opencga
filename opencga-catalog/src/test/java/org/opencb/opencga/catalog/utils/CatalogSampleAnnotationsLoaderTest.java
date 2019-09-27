@@ -22,9 +22,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -67,14 +67,14 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         catalogManager.getUserManager().create(userId, userId, "asdasd@asd.asd", userId, "", -1L, Account.Type.FULL, null);
         sessionId = catalogManager.getUserManager().login(userId, userId);
         Project project = catalogManager.getProjectManager().create("def", "default", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", Study.Type.FAMILY, null, "", null, null, null, null, null, null, null, null, sessionId).getResult().get(0);
+                null, null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
+        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", Study.Type.FAMILY, null, "", null, null, null, null, null, null, null, null, sessionId).getResults().get(0);
         studyId = study.getFqn();
         pedFile = catalogManager.getFileManager().create(studyId, File.Type.FILE, File.Format.PED, File.Bioformat
                 .OTHER_PED, "data/" + pedFileName, "", null, 0, null, (long) -1, null, null, true, null, null, sessionId)
-                .getResult().get(0);
+                .getResults().get(0);
         new FileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
-        pedFile = catalogManager.getFileManager().get(studyId, pedFile.getPath(), null, sessionId).getResult().get(0);
+        pedFile = catalogManager.getFileManager().get(studyId, pedFile.getPath(), null, sessionId).getResults().get(0);
     }
 
     @AfterClass
@@ -114,25 +114,25 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
     @Test
     public void testLoadPedigreeCatalog() throws Exception {
-        QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
-        String variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
+        DataResult<Sample> sampleDataResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
+        String variableSetId = sampleDataResult.getResults().get(0).getAnnotationSets().get(0).getVariableSetId();
 
         Query query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";family=GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
-        QueryResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumResults());
 
         query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=2;Population=ITU");
-        QueryResult<Sample> femaleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> femaleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, femaleIta.getNumResults());
 
         query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=1;Population=ITU");
-        QueryResult<Sample> maleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> maleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, maleIta.getNumResults());
 
         query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";Population=ITU");
-        QueryResult<Sample> ita = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
+        DataResult<Sample> ita = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, ita.getNumResults());
 
         Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());

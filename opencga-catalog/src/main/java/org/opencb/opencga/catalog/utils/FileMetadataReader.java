@@ -20,10 +20,10 @@ import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -85,7 +85,7 @@ public class FileMetadataReader {
      * @return The created file with status {@link File.FileStatus#STAGE}
      * @throws CatalogException  if a Catalog error occurs
      */
-    public QueryResult<File> create(String studyId, URI fileUri, String path, String description, boolean parents,
+    public DataResult<File> create(String studyId, URI fileUri, String path, String description, boolean parents,
                                     QueryOptions options, String sessionId) throws CatalogException {
 
         File.Type type = fileUri.getPath().endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
@@ -96,7 +96,7 @@ public class FileMetadataReader {
             path += Paths.get(fileUri.getPath()).getFileName().toString();
         }
 
-        QueryResult<File> fileResult = catalogManager.getFileManager().create(studyId, type, format, bioformat, path,
+        DataResult<File> fileResult = catalogManager.getFileManager().create(studyId, type, format, bioformat, path,
                 description, new File.FileStatus(File.FileStatus.STAGE), (long) 0, null, (long) -1, null, null, parents,
                 null, options, sessionId);
 
@@ -107,7 +107,7 @@ public class FileMetadataReader {
         } catch (CatalogException e) {
             logger.error("Fail at getting the metadata information", e);
         }
-        fileResult.setResult(Collections.singletonList(modifiedFile));
+        fileResult.setResults(Collections.singletonList(modifiedFile));
 
         return fileResult;
     }
@@ -432,7 +432,7 @@ public class FileMetadataReader {
             //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions(QueryOptions.INCLUDE, includeSampleNameId);
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sortedSampleNames);
-            sampleList = catalogManager.getSampleManager().search(study.getFqn(), sampleQuery, sampleQueryOptions, sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().search(study.getFqn(), sampleQuery, sampleQueryOptions, sessionId).getResults();
 
             //check if all file samples exists in Catalog
             if (sampleList.size() != sortedSampleNames.size()) {   //Size does not match. Find the missing samples.
@@ -454,7 +454,7 @@ public class FileMetadataReader {
                             } catch (CatalogException e) {
                                 Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleName);
                                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeSampleNameId);
-                                if (catalogManager.getSampleManager().search(study.getFqn(), query, queryOptions, sessionId).getResult()
+                                if (catalogManager.getSampleManager().search(study.getFqn(), query, queryOptions, sessionId).getResults()
                                         .isEmpty()) {
                                     throw e; //Throw exception if sample does not exist.
                                 } else {
@@ -480,7 +480,7 @@ public class FileMetadataReader {
             //Get samples from file.sampleIds
             Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), file.getSamples().stream().map(Sample::getId)
                     .collect(Collectors.toList()));
-            sampleList = catalogManager.getSampleManager().search(study.getFqn(), query, new QueryOptions(), sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().search(study.getFqn(), query, new QueryOptions(), sessionId).getResults();
         }
 
         List<String> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());

@@ -1,12 +1,12 @@
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class InternalGetQueryResult<T> extends QueryResult<T> {
+public class InternalGetDataResult<T> extends DataResult<T> {
 
     private List<Missing> missing;
 
@@ -20,29 +20,21 @@ public class InternalGetQueryResult<T> extends QueryResult<T> {
      */
     private List<Integer> groups;
 
-    public InternalGetQueryResult() {
+    public InternalGetDataResult() {
     }
 
-    public InternalGetQueryResult(String id) {
-        super(id);
-    }
-
-    public InternalGetQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
-                                  List<T> result) {
-        super(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result);
-    }
-
-    public InternalGetQueryResult(QueryResult<T> queryResult) {
-        super(queryResult.getId(), queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults(),
-                queryResult.getWarningMsg(), queryResult.getErrorMsg(), queryResult.getResult());
-
+    public InternalGetDataResult(DataResult<T> dataResult) {
+        super(dataResult.getTime(), dataResult.getWarnings(), dataResult.getNumResults(), dataResult.getResults(),
+                dataResult.getNumMatches(), dataResult.getNumInserted(), dataResult.getNumUpdated(), dataResult.getNumDeleted(),
+                dataResult.getAttributes());
+        this.groups = new ArrayList<>();
     }
 
     public List<Missing> getMissing() {
         return missing != null ? missing : Collections.emptyList();
     }
 
-    public InternalGetQueryResult<T> setMissing(List<Missing> missing) {
+    public InternalGetDataResult<T> setMissing(List<Missing> missing) {
         this.missing = missing;
         return this;
     }
@@ -51,13 +43,13 @@ public class InternalGetQueryResult<T> extends QueryResult<T> {
         return groups != null ? groups : Collections.emptyList();
     }
 
-    public InternalGetQueryResult<T> setGroups(List<Integer> groups) {
+    public InternalGetDataResult<T> setGroups(List<Integer> groups) {
         this.groups = groups;
         return this;
     }
 
     public List<List<T>> getVersionedResults() {
-        List<T> result = getResult();
+        List<T> result = getResults();
 
         if (groups == null || groups.size() == 1) {
             return Collections.singletonList(result);

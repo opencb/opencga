@@ -4,10 +4,10 @@ import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -64,7 +64,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         throw new UnsupportedOperationException();
     }
 
@@ -162,7 +162,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
             return VariantDBIterator.wrapper(variantIterator);
         } else {
             VariantQueryResult<Variant> result = VariantDBIterator.wrapper(variantIterator)
-                    .toQueryResult(Collections.singletonMap(study, includeSample));
+                    .toDataResult(Collections.singletonMap(study, includeSample));
             if ((limit + skip) < samplingSize && compoundHeterozygous.size() < samplingSize) {
                 result.setApproximateCount(false);
                 result.setNumTotalResults(compoundHeterozygous.size());

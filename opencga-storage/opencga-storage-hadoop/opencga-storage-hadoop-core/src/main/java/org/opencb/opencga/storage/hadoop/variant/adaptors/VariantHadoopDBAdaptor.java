@@ -261,8 +261,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        VariantQueryResult<Variant> result = new VariantQueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(),
-                numTotalResults, warn, error, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+        VariantQueryResult<Variant> result = new VariantQueryResult<>(((int) iterator.getTimeFetching()), variants.size(),
+                numTotalResults, warn, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
     }
 

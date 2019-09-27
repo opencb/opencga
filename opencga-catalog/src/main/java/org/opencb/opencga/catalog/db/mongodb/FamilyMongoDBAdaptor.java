@@ -19,17 +19,15 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
@@ -83,37 +81,27 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public WriteResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException {
+    public DataResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(family, "family");
         return familyCollection.insert(document, null);
     }
 
     @Override
-    public WriteResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+    public DataResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
-            long tmpStartTime = startQuery();
+        try {
+            return runTransaction(clientSession -> {
+                long tmpStartTime = startQuery();
+                logger.debug("Starting family insert transaction for family id '{}'", family.getId());
 
-            logger.debug("Starting family insert transaction for family id '{}'", family.getId());
-
-            try {
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
                 insert(clientSession, studyId, family, variableSetList);
-                return endWrite(tmpStartTime, 1, 1, 0, 0, null, null);
-            } catch (CatalogDBException e) {
-                logger.error("Could not create family {}: {}", family.getId(), e.getMessage(), e);
-                clientSession.abortTransaction();
-                return endWrite(tmpStartTime, 1, 0, null,
-                        Collections.singletonList(new WriteResult.Fail(family.getId(), e.getMessage())));
-            }
-        };
-        WriteResult result = commitTransaction(clientSession, txnBody);
-
-        if (result.getNumInserted() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+            });
+        } catch (Exception e) {
+            logger.error("Could not create family {}: {}", family.getId(), e.getMessage(), e);
+            throw e;
         }
-        return result;
     }
 
     Family insert(ClientSession clientSession, long studyId, Family family, List<VariableSet> variableSetList) throws CatalogDBException {
@@ -155,7 +143,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Query tmpQuery = new Query()
                 .append(QueryParams.ID.key(), family.getId())
                 .append(QueryParams.STUDY_UID.key(), studyId);
-        if (!get(clientSession, tmpQuery, new QueryOptions()).getResult().isEmpty()) {
+        if (!get(clientSession, tmpQuery, new QueryOptions()).getResults().isEmpty()) {
             throw CatalogDBException.alreadyExists("Family", "id", family.getId());
         }
 
@@ -207,23 +195,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public QueryResult<Long> count(Query query) throws CatalogDBException {
+    public DataResult<Long> count(Query query) throws CatalogDBException {
         return count(null, query);
     }
 
-    QueryResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    DataResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return familyCollection.count(clientSession, bson);
     }
 
     @Override
-    public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
+    public DataResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         return count(null, query, user, studyPermissions);
     }
 
-    public QueryResult<Long> count(ClientSession clientSession, final Query query, final String user,
-                                   final StudyAclEntry.StudyPermissions studyPermissions)
+    public DataResult<Long> count(ClientSession clientSession, final Query query, final String user,
+                                  final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         filterOutDeleted(query);
 
@@ -232,7 +220,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
+        DataResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -252,23 +240,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) throws CatalogDBException {
+    public DataResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return familyCollection.distinct(field, bson);
     }
 
     @Override
-    public QueryResult stats(Query query) {
+    public DataResult stats(Query query) {
         return null;
     }
 
     @Override
-    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(id, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
-    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+    public DataResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
         QueryOptions queryOptions = new QueryOptions();
         List<String> includeList = new ArrayList<>();
 
@@ -279,35 +267,33 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         queryOptions.put(QueryOptions.INCLUDE, includeList);
 
-        QueryResult<Family> familyQueryResult = get(id, queryOptions);
-        if (familyQueryResult.first().getAnnotationSets().isEmpty()) {
-            return new QueryResult<>("Get annotation set", familyQueryResult.getDbTime(), 0, 0, familyQueryResult.getWarningMsg(),
-                    familyQueryResult.getErrorMsg(), Collections.emptyList());
+        DataResult<Family> familyDataResult = get(id, queryOptions);
+        if (familyDataResult.first().getAnnotationSets().isEmpty()) {
+            return new DataResult<>(familyDataResult.getTime(), familyDataResult.getWarnings(), 0, Collections.emptyList(), 0);
         } else {
-            List<AnnotationSet> annotationSets = familyQueryResult.first().getAnnotationSets();
+            List<AnnotationSet> annotationSets = familyDataResult.first().getAnnotationSets();
             int size = annotationSets.size();
-            return new QueryResult<>("Get annotation set", familyQueryResult.getDbTime(), size, size, familyQueryResult.getWarningMsg(),
-                    familyQueryResult.getErrorMsg(), annotationSets);
+            return new DataResult<>(familyDataResult.getTime(), familyDataResult.getWarnings(), size, annotationSets, size);
         }
     }
 
     @Override
-    public WriteResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public DataResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
-        WriteResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
+        DataResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
         if (update.getNumUpdated() != 1) {
-            throw new CatalogDBException("Could not update family with id " + id + ": " + update.getFailed().get(0).getMessage());
+            throw new CatalogDBException("Could not update family with id " + id);
         }
         return update;
     }
 
     @Override
-    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
-    public WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public DataResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         long startTime = startQuery();
 
@@ -324,16 +310,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         int numMatches = 0;
         int numModified = 0;
-        List<WriteResult.Fail> failList = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         while (iterator.hasNext()) {
             Family family = iterator.next();
             numMatches += 1;
 
-            ClientSession clientSession = getClientSession();
-            TransactionBody<WriteResult> txnBody = () -> {
-                long tmpStartTime = startQuery();
-                try {
+            try {
+                runTransaction(clientSession -> {
+                    long tmpStartTime = startQuery();
                     Query tmpQuery = new Query()
                             .append(QueryParams.STUDY_UID.key(), family.getStudyUid())
                             .append(QueryParams.UID.key(), family.getUid());
@@ -358,31 +343,18 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         familyCollection.update(clientSession, finalQuery, familyUpdate, new QueryOptions("multi", true));
                     }
 
-                    return endWrite(tmpStartTime, 1, 1, null, null);
-                } catch (CatalogDBException e) {
-                    logger.error("Error updating family {}({}). {}", family.getId(), family.getUid(), e.getMessage(), e);
-                    clientSession.abortTransaction();
-                    return endWrite(tmpStartTime, 1, 0, null,
-                            Collections.singletonList(new WriteResult.Fail(family.getId(), e.getMessage())));
-                }
-            };
+                    return endWrite(tmpStartTime, 1, 1, null);
+                });
 
-            WriteResult result = commitTransaction(clientSession, txnBody);
-
-            if (result.getNumUpdated() == 1) {
                 logger.info("Family {} successfully updated", family.getId());
                 numModified += 1;
-            } else {
-                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
-                    logger.error("Could not update family {}: {}", family.getId(), result.getFailed().get(0).getMessage());
-                    failList.addAll(result.getFailed());
-                } else {
-                    logger.error("Could not update family {}", family.getId());
-                }
+            } catch (Exception e) {
+                String errorMsg = "Could not update family " + family.getId();
+                logger.error("{}", errorMsg);
+                warnings.add(errorMsg);
             }
         }
-
-        return endWrite(startTime, numMatches, numModified, null, failList);
+        return endWrite(startTime, numMatches, numModified, warnings);
     }
 
     private void getLastVersionOfMembers(ClientSession clientSession, Query query, ObjectMap parameters) throws CatalogDBException {
@@ -392,7 +364,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.MEMBERS.key());
-        QueryResult<Family> queryResult = get(clientSession, query, options);
+        DataResult<Family> queryResult = get(clientSession, query, options);
 
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Family not found.");
@@ -413,16 +385,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.VERSION.key()
         ));
-        QueryResult<Individual> individualQueryResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor()
+        DataResult<Individual> individualDataResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor()
                 .get(clientSession, individualQuery, options);
-        parameters.put(QueryParams.MEMBERS.key(), individualQueryResult.getResult());
+        parameters.put(QueryParams.MEMBERS.key(), individualDataResult.getResults());
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long familyUid) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), familyUid);
-        QueryResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+        DataResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
 
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not find family '" + familyUid + "'");
@@ -455,19 +427,19 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STUDY_UID.key());
 
-            QueryResult<Family> familyQueryResult = get(clientSession, tmpQuery, queryOptions);
-            if (familyQueryResult.getNumResults() == 0) {
+            DataResult<Family> familyDataResult = get(clientSession, tmpQuery, queryOptions);
+            if (familyDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update family: No family found to be updated");
             }
-            if (familyQueryResult.getNumResults() > 1) {
+            if (familyDataResult.getNumResults() > 1) {
                 throw new CatalogDBException("Update family: Cannot set the same name parameter for different families");
             }
 
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
-                    .append(QueryParams.STUDY_UID.key(), familyQueryResult.first().getStudyUid());
-            QueryResult<Long> count = count(clientSession, tmpQuery);
-            if (count.getResult().get(0) > 0) {
+                    .append(QueryParams.STUDY_UID.key(), familyDataResult.first().getStudyUid());
+            DataResult<Long> count = count(clientSession, tmpQuery);
+            if (count.getResults().get(0) > 0) {
                 throw new CatalogDBException("Cannot set '" + QueryParams.ID.key() + "' for family. A family with { '"
                         + QueryParams.ID.key() + "': '" + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
@@ -494,7 +466,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public WriteResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException {
+    public DataResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException {
         Bson bson = parseQuery(query);
         Document update = new Document("$pull", new Document(QueryParams.MEMBERS.key(),
                 new Document(IndividualDBAdaptor.QueryParams.UID.key(), new Document("$in", individualUids))));
@@ -502,19 +474,19 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public WriteResult delete(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        WriteResult delete = delete(query);
-        if (delete.getNumMatched() == 0) {
-            throw new CatalogDBException("Could not delete family. Uid " + id + " not found.");
+    public DataResult delete(Family family) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), family.getUid());
+        DataResult delete = delete(query);
+        if (delete.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not delete family. " + family.getId() + " not found.");
         } else if (delete.getNumUpdated() == 0) {
-            throw new CatalogDBException("Could not delete family. " + delete.getFailed().get(0).getMessage());
+            throw new CatalogDBException("Could not delete family. " + family.getId());
         }
         return delete;
     }
 
     @Override
-    public WriteResult delete(Query query) throws CatalogDBException {
+    public DataResult delete(Query query) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Family> iterator = iterator(query, options);
@@ -522,16 +494,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         long startTime = startQuery();
         int numMatches = 0;
         int numModified = 0;
-        List<WriteResult.Fail> failList = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         while (iterator.hasNext()) {
             Family family = iterator.next();
             numMatches += 1;
 
-            ClientSession clientSession = getClientSession();
-            TransactionBody<WriteResult> txnBody = () -> {
-                long tmpStartTime = startQuery();
-                try {
+            try {
+                runTransaction(clientSession -> {
+                    long tmpStartTime = startQuery();
                     logger.info("Deleting family {} ({})", family.getId(), family.getUid());
 
                     // Look for all the different family versions
@@ -563,7 +534,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         logger.debug("Delete version {} of family: Query: {}, update: {}", tmpFamily.getVersion(),
                                 bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                        WriteResult result = familyCollection.update(clientSession, bsonQuery, updateDocument,
+                        DataResult result = familyCollection.update(clientSession, bsonQuery, updateDocument,
                                 QueryOptions.empty());
                         if (result.getNumUpdated() == 1) {
                             logger.debug("Family version {} successfully deleted", tmpFamily.getVersion());
@@ -574,34 +545,22 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
                     logger.info("Family {}({}) deleted", family.getId(), family.getUid());
 
-                    return endWrite(tmpStartTime, 1, 1, null, null);
-                } catch (CatalogDBException e) {
-                    logger.error("Error deleting family {}({}). {}", family.getId(), family.getUid(), e.getMessage(), e);
-                    clientSession.abortTransaction();
-                    return endWrite(tmpStartTime, 1, 0, null,
-                            Collections.singletonList(new WriteResult.Fail(family.getId(), e.getMessage())));
-                }
-            };
-            WriteResult result = commitTransaction(clientSession, txnBody);
-
-            if (result.getNumUpdated() == 1) {
+                    return endWrite(tmpStartTime, 1, 1, null);
+                });
                 logger.info("Family {} successfully deleted", family.getId());
                 numModified += 1;
-            } else {
-                if (result.getFailed() != null && !result.getFailed().isEmpty()) {
-                    logger.error("Could not delete family {}: {}", family.getId(), result.getFailed().get(0).getMessage());
-                    failList.addAll(result.getFailed());
-                } else {
-                    logger.error("Could not delete family {}", family.getId());
-                }
+            } catch (Exception e) {
+                String errorMsg = "Could not delete family " + family.getId() + ": " + e.getMessage();
+                logger.error("{}", errorMsg);
+                warnings.add(errorMsg);
             }
         }
 
-        return endWrite(startTime, numMatches, numModified, null, failList);
+        return endWrite(startTime, numMatches, numModified, null);
     }
 
     @Override
-    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         // Check if the family is active
         Query query = new Query(QueryParams.UID.key(), id)
@@ -615,26 +574,26 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
         return setStatus(query, Status.READY);
     }
 
     @Override
-    public QueryResult<Family> get(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult<Family> get(Query query, QueryOptions options) throws CatalogDBException {
         return get(null, query, options);
     }
 
-    public QueryResult<Family> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult<Family> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Family> documentList = new ArrayList<>();
-        QueryResult<Family> queryResult;
+        DataResult<Family> queryResult;
         try (DBIterator<Family> dbIterator = iterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 //        addMemberInfoToFamily(queryResult);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
@@ -643,27 +602,27 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(clientSession, query);
+            DataResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         return nativeGet(null, query, options);
     }
 
-    QueryResult nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    DataResult nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        QueryResult<Document> queryResult;
+        DataResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -671,28 +630,28 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(clientSession, query);
+            DataResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         return nativeGet(null, query, options, user);
     }
 
-    QueryResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+    DataResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        QueryResult<Document> queryResult;
+        DataResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -700,14 +659,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(clientSession, query);
+            DataResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
+    public DataResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
         checkId(familyId);
         Query query = new Query(QueryParams.UID.key(), familyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(familyId));
@@ -715,22 +674,22 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public QueryResult<Family> get(Query query, QueryOptions options, String user)
+    public DataResult<Family> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return get(null, query, options, user);
     }
 
-    public QueryResult<Family> get(ClientSession clientSession, Query query, QueryOptions options, String user)
+    public DataResult<Family> get(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Family> documentList = new ArrayList<>();
-        QueryResult<Family> queryResult;
+        DataResult<Family> queryResult;
         try (DBIterator<Family> dbIterator = iterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
@@ -738,7 +697,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+            DataResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -842,28 +801,28 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return rank(familyCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(familyCollection, bsonQuery, field, "name", options);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(familyCollection, bsonQuery, fields, "name", options);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, query);
         Document queryForAuthorisedEntries;
@@ -882,7 +841,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, query);
         Document queryForAuthorisedEntries;
@@ -924,10 +883,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public long getStudyId(long familyId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, familyId);
         Bson projection = Projections.include(PRIVATE_STUDY_UID);
-        QueryResult<Document> queryResult = familyCollection.find(query, projection, null);
+        DataResult<Document> queryResult = familyCollection.find(query, projection, null);
 
-        if (!queryResult.getResult().isEmpty()) {
-            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
+        if (!queryResult.getResults().isEmpty()) {
+            Object studyId = queryResult.getResults().get(0).get(PRIVATE_STUDY_UID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.uidNotFound("Family", familyId);
@@ -935,7 +894,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public WriteResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+    public DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
@@ -950,15 +909,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+    public DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         return unmarkPermissionRule(familyCollection, studyId, permissionRuleId);
     }
 
-    private WriteResult setStatus(long familyId, String status) throws CatalogDBException {
+    private DataResult setStatus(long familyId, String status) throws CatalogDBException {
         return update(familyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    private WriteResult setStatus(Query query, String status) throws CatalogDBException {
+    private DataResult setStatus(Query query, String status) throws CatalogDBException {
         return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 

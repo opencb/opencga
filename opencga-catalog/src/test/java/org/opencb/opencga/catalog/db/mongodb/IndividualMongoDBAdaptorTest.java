@@ -20,11 +20,10 @@ import org.bson.Document;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Individual;
@@ -116,7 +115,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_6", "ind_6", IndividualProperty.Sex.FEMALE, "",
                 new Individual.Population(), 1, Collections.emptyList(), null), null, null);
 
-        QueryResult<Individual> result;
+        DataResult<Individual> result;
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.ID.key(),
                 "~ind_[1-3]").append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId), new QueryOptions());
 
@@ -174,7 +173,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 Collections.emptyList(), null), Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "in1").getUid();
 
-        WriteResult result = catalogIndividualDBAdaptor.update(individualUid,
+        DataResult result = catalogIndividualDBAdaptor.update(individualUid,
                 new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), -1), QueryOptions.empty());
         assertEquals(1, result.getNumUpdated());
 
@@ -220,7 +219,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         // Update samples
         ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
-        WriteResult result = catalogIndividualDBAdaptor.update(individualStored.getUid(), params, QueryOptions.empty());
+        DataResult result = catalogIndividualDBAdaptor.update(individualStored.getUid(), params, QueryOptions.empty());
         assertEquals(1, result.getNumUpdated());
 
         individual = catalogIndividualDBAdaptor.get(individualStored.getUid(),
@@ -326,19 +325,19 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Individual individual2 = new Individual("in2", "Another Individual", IndividualProperty.Sex.FEMALE, "", new Individual.Population(),
                 1, Collections.emptyList(), null);
         catalogIndividualDBAdaptor.insert(studyId, individual2, Collections.emptyList(), null);
-        List<QueryResult> queryResults = catalogIndividualDBAdaptor.nativeGet(Arrays.asList(
+        List<DataResult> queryResults = catalogIndividualDBAdaptor.nativeGet(Arrays.asList(
                 new Query(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId()),
                 new Query(IndividualDBAdaptor.QueryParams.ID.key(), individual2.getId())), new QueryOptions());
 
         assertEquals(2, queryResults.size());
 
         // Individual
-        List<Document> results = queryResults.get(0).getResult();
+        List<Document> results = queryResults.get(0).getResults();
         assertEquals(1, results.size());
         assertEquals("MALE", results.get(0).get("sex"));
 
         // Individual2
-        results = queryResults.get(1).getResult();
+        results = queryResults.get(1).getResults();
         assertEquals(1, results.size());
         assertEquals("FEMALE", results.get(0).get("sex"));
     }

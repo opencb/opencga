@@ -17,11 +17,10 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
@@ -135,13 +134,13 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         }
     }
 
-    WriteResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
+    DataResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    WriteResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException;
+    DataResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException;
+    DataResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
+    DataResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 
@@ -151,9 +150,9 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return WriteResult object.
+     * @return DataResult object.
      * @throws CatalogException if there is any database error.
      */
-    WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.opencb.commons.datastore.core.result.WriteResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -173,7 +173,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public WriteResult resetPassword(String userId) throws CatalogException {
+    public DataResult resetPassword(String userId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 

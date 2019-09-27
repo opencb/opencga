@@ -19,8 +19,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationProvider;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -343,7 +343,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public WriteResult resetPassword(String userId) throws CatalogException {
+    public DataResult resetPassword(String userId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 

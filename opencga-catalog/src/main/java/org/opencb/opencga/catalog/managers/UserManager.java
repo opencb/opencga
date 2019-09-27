@@ -17,12 +17,11 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -166,7 +165,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public QueryResult<User> create(User user, @Nullable String token) throws CatalogException {
+    public DataResult<User> create(User user, @Nullable String token) throws CatalogException {
         // Check if the users can be registered publicly or just the admin.
         ObjectMap auditParams = new ObjectMap("user", user);
 
@@ -223,7 +222,7 @@ public class UserManager extends AbstractManager {
             auditManager.auditCreate(userId, AuditRecord.Resource.USER, user.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            QueryResult<User> queryResult = userDBAdaptor.get(user.getId(), QueryOptions.empty(), null);
+            DataResult<User> queryResult = userDBAdaptor.get(user.getId(), QueryOptions.empty(), null);
 
             if (StringUtils.isNotEmpty(password)) {
                 authenticationManagerMap.get(INTERNAL_AUTHORIZATION).newPassword(user.getId(), password);
@@ -257,7 +256,7 @@ public class UserManager extends AbstractManager {
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
-    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
+    public DataResult<User> create(String id, String name, String email, String password, String organization, Long quota,
                                     Account.Type type, String token) throws CatalogException {
         User user = new User(id, name, email, password, organization, User.UserStatus.READY)
                 .setAccount(new Account(type, "", "", null))
@@ -271,10 +270,10 @@ public class UserManager extends AbstractManager {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
-        QueryResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
+        DataResult<Group> allGroups = catalogManager.getStudyManager().getGroup(study, null, token);
 
         boolean foundAny = false;
-        for (Group group : allGroups.getResult()) {
+        for (Group group : allGroups.getResults()) {
             if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(authOrigin)) {
                 logger.info("Fetching users of group '{}' from authentication origin '{}'", group.getSyncedFrom().getRemoteGroup(),
                         group.getSyncedFrom().getAuthOrigin());
@@ -378,7 +377,7 @@ public class UserManager extends AbstractManager {
 
             if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
                 // Check if the group already exists
-                QueryResult<Group> groupResult = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
+                DataResult<Group> groupResult = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
                 if (groupResult.getNumResults() == 1) {
                     logger.error("Cannot synchronise with group {}. The group already exists and is already in use.", internalGroup);
                     throw new CatalogException("Cannot synchronise with group " +  internalGroup
@@ -471,7 +470,7 @@ public class UserManager extends AbstractManager {
             if (StringUtils.isNotEmpty(internalGroup) && StringUtils.isNotEmpty(study)) {
                 // Check if the group already exists
                 try {
-                    QueryResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
+                    DataResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
                     if (group.getNumResults() == 1) {
                         // We will add those users to the existing group
                         catalogManager.getStudyManager().updateGroup(study, internalGroup,
@@ -507,7 +506,7 @@ public class UserManager extends AbstractManager {
      * @return The specified object
      * @throws CatalogException CatalogException
      */
-    public QueryResult<User> get(String userId, QueryOptions options, String sessionId) throws CatalogException {
+    public DataResult<User> get(String userId, QueryOptions options, String sessionId) throws CatalogException {
         return get(userId, null, options, sessionId);
     }
 
@@ -515,13 +514,13 @@ public class UserManager extends AbstractManager {
      * Gets the user information.
      *
      * @param userId       User id
-     * @param lastModified If lastModified matches with the one in Catalog, return an empty QueryResult.
+     * @param lastModified If lastModified matches with the one in Catalog, return an empty DataResult.
      * @param options      QueryOptions
      * @param token    SessionId of the user performing this operation.
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    public QueryResult<User> get(String userId, String lastModified, QueryOptions options, String token)
+    public DataResult<User> get(String userId, String lastModified, QueryOptions options, String token)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
@@ -534,10 +533,10 @@ public class UserManager extends AbstractManager {
                 .append("token", token);
         try {
             validateUserAndToken(userId, token);
-            QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, lastModified);
+            DataResult<User> userDataResult = userDBAdaptor.get(userId, options, lastModified);
 
             // Remove some unnecessary and prohibited parameters
-            for (User user : userQueryResult.getResult()) {
+            for (User user : userDataResult.getResults()) {
                 user.setPassword(null);
                 if (user.getProjects() != null) {
                     for (Project project : user.getProjects()) {
@@ -552,7 +551,7 @@ public class UserManager extends AbstractManager {
 
             auditManager.auditInfo(userId, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return userQueryResult;
+            return userDataResult;
         } catch (CatalogException e) {
             auditManager.auditInfo(userId, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -560,7 +559,7 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+    public DataResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
         String loggedUser = getUserId(token);
 
         ObjectMap auditParams = new ObjectMap()
@@ -584,12 +583,12 @@ public class UserManager extends AbstractManager {
                 checkEmail(parameters.getString("email"));
             }
             userDBAdaptor.updateUserLastModified(userId);
-            WriteResult result = userDBAdaptor.update(userId, parameters);
+            DataResult result = userDBAdaptor.update(userId, parameters);
             auditManager.auditUpdate(loggedUser, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            QueryResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()), "");
-            queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+            DataResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()), "");
+            queryResult.setTime(queryResult.getTime() + result.getTime());
 
             return queryResult;
         } catch (CatalogException e) {
@@ -608,7 +607,7 @@ public class UserManager extends AbstractManager {
      * @return A list with the deleted objects
      * @throws CatalogException CatalogException.
      */
-    public List<QueryResult<User>> delete(String userIdList, QueryOptions options, String token) throws CatalogException {
+    public List<DataResult<User>> delete(String userIdList, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(userIdList, "userIdList");
         ParamUtils.checkParameter(token, "token");
 
@@ -621,11 +620,11 @@ public class UserManager extends AbstractManager {
                 .append("token", token);
 
         List<String> userIds = Arrays.asList(userIdList.split(","));
-        List<QueryResult<User>> deletedUsers = new ArrayList<>(userIds.size());
+        List<DataResult<User>> deletedUsers = new ArrayList<>(userIds.size());
         for (String userId : userIds) {
             if ("admin".equals(tokenUser) || userId.equals(tokenUser)) {
                 try {
-                    WriteResult result = userDBAdaptor.delete(userId, options);
+                    DataResult result = userDBAdaptor.delete(userId, options);
 
                     auditManager.auditDelete(operationUuid, tokenUser, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -633,8 +632,8 @@ public class UserManager extends AbstractManager {
                     Query query = new Query()
                             .append(UserDBAdaptor.QueryParams.ID.key(), userId)
                             .append(UserDBAdaptor.QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
-                    QueryResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
-                    deletedUser.setDbTime(deletedUser.getDbTime() + result.getDbTime());
+                    DataResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
+                    deletedUser.setTime(deletedUser.getTime() + result.getTime());
 
                     deletedUsers.add(deletedUser);
                 } catch (CatalogException e) {
@@ -656,25 +655,25 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException CatalogException
      * @throws IOException      IOException.
      */
-    public List<QueryResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+    public List<DataResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
-        List<String> userIds = userQueryResult.getResult().stream().map(User::getId).collect(Collectors.toList());
+        DataResult<User> userDataResult = userDBAdaptor.get(query, queryOptions);
+        List<String> userIds = userDataResult.getResults().stream().map(User::getId).collect(Collectors.toList());
         String userIdStr = StringUtils.join(userIds, ",");
         return delete(userIdStr, options, sessionId);
     }
 
-    public List<QueryResult<User>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+    public List<DataResult<User>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
-    public WriteResult resetPassword(String userId, String sessionId) throws CatalogException {
+    public DataResult resetPassword(String userId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         try {
             validateUserAndToken(userId, sessionId);
             String authOrigin = getAuthenticationOriginId(userId);
-            WriteResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
+            DataResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
             auditManager.auditUser(userId, AuditRecord.Action.RESET_USER_PASSWORD, userId,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return writeResult;
@@ -793,7 +792,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
      *                          session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
+    public DataResult<User.Filter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
                                               QueryOptions queryOptions, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
@@ -828,10 +827,10 @@ public class UserManager extends AbstractManager {
             }
 
             User.Filter filter = new User.Filter(name, description, bioformat, query, queryOptions);
-            WriteResult result = userDBAdaptor.addFilter(userId, filter);
+            DataResult result = userDBAdaptor.addFilter(userId, filter);
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return new QueryResult<>("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(filter));
+            return new DataResult<>(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(filter), 1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -850,7 +849,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
      *                          the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> updateFilter(String userId, String name, ObjectMap params, String token) throws CatalogException {
+    public DataResult<User.Filter> updateFilter(String userId, String name, ObjectMap params, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
@@ -874,14 +873,14 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("There is no filter called " + name + " for user " + userId);
             }
 
-            WriteResult result = userDBAdaptor.updateFilter(userId, name, params);
+            DataResult result = userDBAdaptor.updateFilter(userId, name, params);
             User.Filter filter = getFilter(userId, name);
             if (filter == null) {
                 throw new CatalogException("Internal error: The filter " + name + " could not be found.");
             }
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return new QueryResult<>("Update filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
+            return new DataResult<>(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(filter), 1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -899,7 +898,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
      *                          session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> deleteFilter(String userId, String name, String token) throws CatalogException {
+    public DataResult<User.Filter> deleteFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
@@ -920,10 +919,10 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("There is no filter called " + name + " for user " + userId);
             }
 
-            WriteResult result = userDBAdaptor.deleteFilter(userId, name);
+            DataResult result = userDBAdaptor.deleteFilter(userId, name);
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return new QueryResult<>("Delete filter", result.getDbTime(), 1, 1, "", "", Arrays.asList(filter));
+            return new DataResult<>(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(filter), 1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -940,7 +939,7 @@ public class UserManager extends AbstractManager {
      * @return the filter.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> getFilter(String userId, String name, String token) throws CatalogException {
+    public DataResult<User.Filter> getFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -961,9 +960,9 @@ public class UserManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             if (filter == null) {
-                return new QueryResult<>("Get filter", 0, 0, 0, "", "Filter not found", Arrays.asList());
+                throw new CatalogException("Filter " + name + " not found.");
             } else {
-                return new QueryResult<>("Get filter", 0, 1, 1, "", "", Arrays.asList(filter));
+                return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(filter), 1);
             }
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
@@ -980,7 +979,7 @@ public class UserManager extends AbstractManager {
      * @return the filters.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult<User.Filter> getAllFilters(String userId, String token) throws CatalogException {
+    public DataResult<User.Filter> getAllFilters(String userId, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
 
@@ -997,17 +996,17 @@ public class UserManager extends AbstractManager {
             Query query = new Query()
                     .append(UserDBAdaptor.QueryParams.ID.key(), userId);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-            QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
+            DataResult<User> userDataResult = userDBAdaptor.get(query, queryOptions);
 
-            if (userQueryResult.getNumResults() != 1) {
+            if (userDataResult.getNumResults() != 1) {
                 throw new CatalogException("Internal error: User " + userId + " not found.");
             }
 
-            List<User.Filter> filters = userQueryResult.first().getConfigs().getFilters();
+            List<User.Filter> filters = userDataResult.first().getConfigs().getFilters();
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new QueryResult<>("Get filters", 0, filters.size(), filters.size(), "", "", filters);
+            return new DataResult<>(0, Collections.emptyList(), filters.size(), filters, filters.size());
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1025,7 +1024,7 @@ public class UserManager extends AbstractManager {
      * @return the set configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
-    public QueryResult setConfig(String userId, String name, Map<String, Object> config, String token) throws CatalogException {
+    public DataResult setConfig(String userId, String name, Map<String, Object> config, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -1044,11 +1043,11 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("User " + userIdAux + " is not authorised to set configuration for user " + userId);
             }
 
-            WriteResult result = userDBAdaptor.setConfig(userId, name, config);
+            DataResult result = userDBAdaptor.setConfig(userId, name, config);
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new QueryResult("", result.getDbTime(), 1, 1, "", "", Collections.singletonList(config));
+            return new DataResult(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(config), 1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1066,7 +1065,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
      *                          did not exist.
      */
-    public QueryResult deleteConfig(String userId, String name, String token) throws CatalogException {
+    public DataResult deleteConfig(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         ParamUtils.checkParameter(name, "name");
@@ -1084,12 +1083,12 @@ public class UserManager extends AbstractManager {
             }
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-            QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
-            if (userQueryResult.getNumResults() == 0) {
+            DataResult<User> userDataResult = userDBAdaptor.get(userId, options, "");
+            if (userDataResult.getNumResults() == 0) {
                 throw new CatalogException("Internal error: Could not get user " + userId);
             }
 
-            User.UserConfiguration configs = userQueryResult.first().getConfigs();
+            User.UserConfiguration configs = userDataResult.first().getConfigs();
             if (configs == null) {
                 throw new CatalogException("Internal error: Configuration object is null.");
             }
@@ -1098,10 +1097,10 @@ public class UserManager extends AbstractManager {
                 throw new CatalogException("Error: Cannot delete configuration with name " + name + ". Configuration name not found.");
             }
 
-            WriteResult result = userDBAdaptor.deleteConfig(userId, name);
+            DataResult result = userDBAdaptor.deleteConfig(userId, name);
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return new QueryResult("Delete configuration", result.getDbTime(), 1, 1, "", "", Arrays.asList(configs.get(name)));
+            return new DataResult(result.getTime(), Collections.emptyList(), 1, Collections.singletonList(configs.get(name)), 1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.CHANGE_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1119,7 +1118,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
      *                          does not exist.
      */
-    public QueryResult getConfig(String userId, String name, String sessionId) throws CatalogException {
+    public DataResult getConfig(String userId, String name, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
@@ -1135,12 +1134,12 @@ public class UserManager extends AbstractManager {
             }
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-            QueryResult<User> userQueryResult = userDBAdaptor.get(userId, options, "");
-            if (userQueryResult.getNumResults() == 0) {
+            DataResult<User> userDataResult = userDBAdaptor.get(userId, options, "");
+            if (userDataResult.getNumResults() == 0) {
                 throw new CatalogException("Internal error: Could not get user " + userId);
             }
 
-            User.UserConfiguration configs = userQueryResult.first().getConfigs();
+            User.UserConfiguration configs = userDataResult.first().getConfigs();
             if (configs == null) {
                 throw new CatalogException("Internal error: Configuration object is null.");
             }
@@ -1155,8 +1154,7 @@ public class UserManager extends AbstractManager {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new QueryResult("Get configuration", userQueryResult.getDbTime(), 1, 1, userQueryResult.getWarningMsg(),
-                    userQueryResult.getErrorMsg(), Arrays.asList(configMap));
+            return new DataResult(userDataResult.getTime(), userDataResult.getWarnings(), 1, Collections.singletonList(configMap), 1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1169,13 +1167,13 @@ public class UserManager extends AbstractManager {
         Query query = new Query()
                 .append(UserDBAdaptor.QueryParams.ID.key(), userId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.CONFIGS.key());
-        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
+        DataResult<User> userDataResult = userDBAdaptor.get(query, queryOptions);
 
-        if (userQueryResult.getNumResults() != 1) {
+        if (userDataResult.getNumResults() != 1) {
             throw new CatalogException("Internal error: User " + userId + " not found.");
         }
 
-        for (User.Filter filter : userQueryResult.first().getConfigs().getFilters()) {
+        for (User.Filter filter : userDataResult.first().getConfigs().getFilters()) {
             if (name.equals(filter.getName())) {
                 return filter;
             }
@@ -1221,7 +1219,7 @@ public class UserManager extends AbstractManager {
     }
 
     private String getAuthenticationOriginId(String userId) throws CatalogException {
-        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
+        DataResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");
         }

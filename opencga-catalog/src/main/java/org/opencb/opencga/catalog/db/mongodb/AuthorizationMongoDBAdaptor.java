@@ -19,18 +19,16 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
@@ -194,7 +192,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             logger.debug("Get Acl: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         }
 
-        QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
+        DataResult<Document> aggregate = collection.aggregate(aggregation, null);
 
         Map<String, Map<String, List<String>>> permissions = entryPermission.getPermissions();
 
@@ -280,7 +278,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public <E extends AbstractAclEntry> QueryResult<E> get(long resourceId, List<String> members, Entity entry) throws CatalogException {
+    public <E extends AbstractAclEntry> DataResult<E> get(long resourceId, List<String> members, Entity entry) throws CatalogException {
 
         validateEntry(entry);
         long startTime = startQuery();
@@ -348,13 +346,13 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
         }
 
-        return endQuery(entryPermission.getId(), startTime, retList);
+        return endQuery(startTime, retList);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> get(List<Long> resourceIds, List<String> members, Entity entry)
+    public <E extends AbstractAclEntry> List<DataResult<E>> get(List<Long> resourceIds, List<String> members, Entity entry)
             throws CatalogException {
-        List<QueryResult<E>> retList = new ArrayList<>(resourceIds.size());
+        List<DataResult<E>> retList = new ArrayList<>(resourceIds.size());
         for (Long resourceId : resourceIds) {
             retList.add(get(resourceId, members, entry));
         }
@@ -362,7 +360,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public WriteResult removeFromStudy(long studyId, String member, Entity entity) throws CatalogException {
+    public DataResult removeFromStudy(long studyId, String member, Entity entity) throws CatalogException {
         validateEntry(entity);
 
         Document query = new Document()
@@ -379,68 +377,37 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public WriteResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
-                             List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
+    public DataResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
+                                   List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
+        return runTransaction(clientSession -> {
             long startTime = startQuery();
+            // We obtain which of those members are actually users to add them to the @members group automatically
+            addToMembersGroupInStudy(studyId, members, clientSession);
 
-            try {
-                // We obtain which of those members are actually users to add them to the @members group automatically
-                addToMembersGroupInStudy(studyId, members, clientSession);
+            setToMembers(resourceIds, members, permissionList, entity, clientSession);
 
-                setToMembers(resourceIds, members, permissionList, entity, clientSession);
-
-                if (ListUtils.isNotEmpty(resourceIds2) && entity2 != null) {
-                    setToMembers(resourceIds2, members, permissionList, entity2, clientSession);
-                }
-
-                // We store that those members have internal permissions
-                setMembersHaveInternalPermissionsDefined(studyId, members, permissionList, entity.name(), clientSession);
-
-            } catch (CatalogDBException e) {
-                logger.error("{}", e.getMessage(), e);
-                clientSession.abortTransaction();
-                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+            if (ListUtils.isNotEmpty(resourceIds2) && entity2 != null) {
+                setToMembers(resourceIds2, members, permissionList, entity2, clientSession);
             }
 
-            return endWrite(startTime, 1, 1, null, null);
-        };
-        WriteResult result = commitTransaction(clientSession, txnBody);
+            // We store that those members have internal permissions
+            setMembersHaveInternalPermissionsDefined(studyId, members, permissionList, entity.name(), clientSession);
 
-        if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
-        }
-        return result;
+            return endWrite(startTime, 1, 1, null);
+        });
     }
 
     @Override
-    public WriteResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
+    public DataResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
+        return runTransaction(clientSession -> {
             long startTime = startQuery();
-
-            try {
-                for (Long studyId : studyIds) {
-                    addToMembersGroupInStudy(studyId, members, clientSession);
-                }
-
-                setToMembers(studyIds, members, permissions, Entity.STUDY, clientSession);
-
-            } catch (CatalogDBException e) {
-                logger.error("{}", e.getMessage(), e);
-                clientSession.abortTransaction();
-                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+            for (Long studyId : studyIds) {
+                addToMembersGroupInStudy(studyId, members, clientSession);
             }
+            setToMembers(studyIds, members, permissions, Entity.STUDY, clientSession);
 
-            return endWrite(startTime, 1, 1, null, null);
-        };
-        WriteResult result = commitTransaction(clientSession, txnBody);
-
-        if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
-        }
-        return result;
+            return endWrite(startTime, 1, 1, null);
+        });
     }
 
     private void setToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, Entity entity,
@@ -488,37 +455,21 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public WriteResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
-                             List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
+    public DataResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
+                                   List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
+        return runTransaction(clientSession -> {
             long startTime = startQuery();
+            addToMembersGroupInStudy(studyId, members, clientSession);
+            addToMembers(resourceIds, members, permissionList, entity, clientSession);
 
-            try {
-                addToMembersGroupInStudy(studyId, members, clientSession);
-
-                addToMembers(resourceIds, members, permissionList, entity, clientSession);
-
-                if (ListUtils.isNotEmpty(resourceIds2) && entity2 != null) {
-                    addToMembers(resourceIds2, members, permissionList, entity2, clientSession);
-                }
-
-                // We store that those members have internal permissions
-                setMembersHaveInternalPermissionsDefined(studyId, members, permissionList, entity.name(), clientSession);
-            } catch (CatalogDBException e) {
-                logger.error("{}", e.getMessage(), e);
-                clientSession.abortTransaction();
-                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+            if (ListUtils.isNotEmpty(resourceIds2) && entity2 != null) {
+                addToMembers(resourceIds2, members, permissionList, entity2, clientSession);
             }
 
-            return endWrite(startTime, 1, 1, null, null);
-        };
-        WriteResult result = commitTransaction(clientSession, txnBody);
-
-        if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
-        }
-        return result;
+            // We store that those members have internal permissions
+            setMembersHaveInternalPermissionsDefined(studyId, members, permissionList, entity.name(), clientSession);
+            return endWrite(startTime, 1, 1, null);
+        });
     }
 
     private void addToMembers(List<Long> resourceIds, List<String> members, List<String> permissionList, Entity entity,
@@ -552,32 +503,17 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public WriteResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
+    public DataResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
+        return runTransaction((clientSession) -> {
             long startTime = startQuery();
-
-            try {
-                for (Long studyId : studyIds) {
-                    addToMembersGroupInStudy(studyId, members, clientSession);
-                }
-
-                addToMembers(studyIds, members, permissions, Entity.STUDY, clientSession);
-
-            } catch (CatalogDBException e) {
-                logger.error("{}", e.getMessage(), e);
-                clientSession.abortTransaction();
-                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+            for (Long studyId : studyIds) {
+                addToMembersGroupInStudy(studyId, members, clientSession);
             }
 
-            return endWrite(startTime, 1, 1, null, null);
-        };
-        WriteResult result = commitTransaction(clientSession, txnBody);
+            addToMembers(studyIds, members, permissions, Entity.STUDY, clientSession);
 
-        if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
-        }
-        return result;
+            return endWrite(startTime, 1, 1, null);
+        });
     }
 
     private void addToMembersGroupInStudy(long studyId, List<String> members, ClientSession clientSession) throws CatalogDBException {
@@ -593,36 +529,22 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public WriteResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissionList,
-                                  Entity entity, Entity entity2) throws CatalogDBException {
+    public DataResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissionList,
+                                        Entity entity, Entity entity2) throws CatalogDBException {
         if (members == null || members.isEmpty()) {
             throw new CatalogDBException("Missing members list");
         }
 
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
+        return runTransaction(clientSession -> {
             long startTime = startQuery();
 
-            try {
-                removeFromMembers(clientSession, resourceIds, members, permissionList, entity);
+            removeFromMembers(clientSession, resourceIds, members, permissionList, entity);
 
-                if (ListUtils.isNotEmpty(resourceIds2) && entity2 != null) {
-                    removeFromMembers(clientSession, resourceIds2, members, permissionList, entity2);
-                }
-            } catch (CatalogDBException e) {
-                logger.error("{}", e.getMessage(), e);
-                clientSession.abortTransaction();
-                return endWrite(startTime, -1, 0, null, Collections.singletonList(new WriteResult.Fail("", e.getMessage())));
+            if (ListUtils.isNotEmpty(resourceIds2) && entity2 != null) {
+                removeFromMembers(clientSession, resourceIds2, members, permissionList, entity2);
             }
-
-            return endWrite(startTime, 1, 1, null, null);
-        };
-        WriteResult result = commitTransaction(clientSession, txnBody);
-
-        if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
-        }
-        return result;
+            return endWrite(startTime, 1, 1, null);
+        });
     }
 
     private void removeFromMembers(ClientSession clientSession, List<Long> resourceIds, List<String> members, List<String> permissionList,
@@ -657,49 +579,34 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         collection.update(clientSession, queryDocument, update, new QueryOptions("multi", true));
     }
 
-    // TODO: Make this method transactional
     @Override
-    public WriteResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
+    public DataResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
         if (members == null || members.isEmpty()) {
             throw new CatalogDBException("Missing 'members' array.");
         }
 
-        ClientSession clientSession = getClientSession();
-        TransactionBody<WriteResult> txnBody = () -> {
+        return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Resetting permissions of users '{}' for study '{}'", members, studyId);
 
-            try {
-                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                removePermissions(clientSession, studyId, members, Entity.COHORT);
-                removePermissions(clientSession, studyId, members, Entity.FILE);
-                removePermissions(clientSession, studyId, members, Entity.INDIVIDUAL);
-                removePermissions(clientSession, studyId, members, Entity.JOB);
-                removePermissions(clientSession, studyId, members, Entity.SAMPLE);
-                removePermissions(clientSession, studyId, members, Entity.DISEASE_PANEL);
-                removePermissions(clientSession, studyId, members, Entity.FAMILY);
-                removePermissions(clientSession, studyId, members, Entity.CLINICAL_ANALYSIS);
-                removeFromMembers(clientSession, Arrays.asList(studyId), members, null, Entity.STUDY);
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+            removePermissions(clientSession, studyId, members, Entity.COHORT);
+            removePermissions(clientSession, studyId, members, Entity.FILE);
+            removePermissions(clientSession, studyId, members, Entity.INDIVIDUAL);
+            removePermissions(clientSession, studyId, members, Entity.JOB);
+            removePermissions(clientSession, studyId, members, Entity.SAMPLE);
+            removePermissions(clientSession, studyId, members, Entity.DISEASE_PANEL);
+            removePermissions(clientSession, studyId, members, Entity.FAMILY);
+            removePermissions(clientSession, studyId, members, Entity.CLINICAL_ANALYSIS);
+            removeFromMembers(clientSession, Arrays.asList(studyId), members, null, Entity.STUDY);
 
-                return endWrite(tmpStartTime, -1, -1, null, null);
-            } catch (CatalogDBException e) {
-                logger.error("Could reset permissions of users. {}", e.getMessage());
-                clientSession.abortTransaction();
-                return endWrite(tmpStartTime, 1, 0, null, Collections.singletonList(new WriteResult.Fail("id", e.getMessage())));
-            }
-        };
-
-        WriteResult result = commitTransaction(clientSession, txnBody);
-
-        if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException(result.getFailed().get(0).getMessage());
-        }
-        return result;
+            return endWrite(tmpStartTime, -1, -1, null);
+        });
     }
 
     // TODO: Make this method transactional
     @Override
-    public <E extends AbstractAclEntry> WriteResult setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException {
+    public <E extends AbstractAclEntry> DataResult setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException {
         validateEntry(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
@@ -736,7 +643,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
-        return WriteResult.empty();
+        return DataResult.empty();
     }
 
     private void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity,
@@ -760,7 +667,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public WriteResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
+    public DataResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
         MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
 
         // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
@@ -789,7 +696,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     //TODO: Make transactional !
     @Override
-    public WriteResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public DataResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -864,7 +771,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             logger.debug("Remove permission rule id and permissions from {}: Query {}, Update {}", entry,
                     tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            WriteResult result = collection.update(tmpQuery, update, new QueryOptions("multi", true));
+            DataResult result = collection.update(tmpQuery, update, new QueryOptions("multi", true));
             if (result.getNumUpdated() == 0) {
                 throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
             }
@@ -873,11 +780,11 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         // 2. Remove the permission rule from the map in the study
         removeReferenceToPermissionRuleInStudy(study.getUid(), permissionRuleToDeleteId, entry);
 
-        return WriteResult.empty();
+        return DataResult.empty();
     }
 
     @Override
-    public WriteResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public DataResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -948,7 +855,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             logger.debug("Remove permission rule id and restoring permissions from {}: Query {}, Update {}", entry,
                     tmpQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            WriteResult result = collection.update(tmpQuery, update, new QueryOptions("multi", true));
+            DataResult result = collection.update(tmpQuery, update, new QueryOptions("multi", true));
             if (result.getNumUpdated() == 0) {
                 throw new CatalogException("Could not update and remove permission rule from entry " + myDocument.get(PRIVATE_UID));
             }
@@ -957,12 +864,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         // 2. Remove the permission rule from the map in the study
         removeReferenceToPermissionRuleInStudy(study.getUid(), permissionRuleToDeleteId, entry);
 
-        return WriteResult.empty();
+        return DataResult.empty();
     }
 
     //TODO: Make transactional !
     @Override
-    public WriteResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException {
+    public DataResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException {
         // Remove the __TODELETE tag...
         String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
 
@@ -976,7 +883,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
-        WriteResult result = collection.update(query, update, new QueryOptions("multi", true));
+        DataResult result = collection.update(query, update, new QueryOptions("multi", true));
         if (result.getNumUpdated() == 0) {
             throw new CatalogException("Could not remove permission rule id " + permissionRuleId + " from all " + entry);
         }
@@ -984,7 +891,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         // Remove the permission rule from the map in the study
         removeReferenceToPermissionRuleInStudy(studyId, permissionRuleToDelete, entry);
 
-        return WriteResult.empty();
+        return DataResult.empty();
     }
 
     private boolean isPermissionRuleEntity(Entity entity) {
@@ -1008,7 +915,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         logger.debug("Remove permission rule from the study {}: Query {}, Update {}", studyId,
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        WriteResult result = dbCollectionMap.get(Entity.STUDY).update(query, update, new QueryOptions("multi", true));
+        DataResult result = dbCollectionMap.get(Entity.STUDY).update(query, update, new QueryOptions("multi", true));
         if (result.getNumUpdated() == 0) {
             throw new CatalogException("Could not remove permission rule " + permissionRuleToDelete + " from study " + studyId);
         }

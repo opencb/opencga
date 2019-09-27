@@ -10,8 +10,8 @@ import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.pedigree.Multiples;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
@@ -60,7 +60,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void tearDown() throws Exception {
     }
 
-    private QueryResult<Family> createDummyFamily() throws CatalogException {
+    private DataResult<Family> createDummyFamily() throws CatalogException {
         Phenotype disease1 = new Phenotype("dis1", "Disease 1", "HPO");
         Phenotype disease2 = new Phenotype("dis2", "Disease 2", "HPO");
 
@@ -104,7 +104,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
 
-    private QueryResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily) throws CatalogException {
+    private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily) throws CatalogException {
 
         createDummyFamily();
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
@@ -122,7 +122,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void createClinicalAnalysisTest() throws CatalogException {
-        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 
         assertEquals(1, dummyEnvironment.getNumResults());
         assertEquals(0, dummyEnvironment.first().getInterpretations().size());
@@ -146,7 +146,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     @Test
     public void checkFamilyMembersOrder() throws CatalogException {
-        QueryResult<Family> dummyFamily = createDummyFamily();
+        DataResult<Family> dummyFamily = createDummyFamily();
 
         // Remove all samples from the dummy family to avoid errors
         for (Individual member : dummyFamily.first().getMembers()) {
@@ -158,19 +158,19 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setDueDate("20180510100000")
                 .setProband(new Individual().setId("child1"));
         clinicalAnalysis.setFamily(dummyFamily.first());
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
+        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
                 clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
-        assertEquals("child1", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(0).getId());
-        assertEquals("father", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(1).getId());
-        assertEquals("mother", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(2).getId());
-        assertEquals("child2", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(3).getId());
-        assertEquals("child3", clinicalAnalysisQueryResult.first().getFamily().getMembers().get(4).getId());
+        assertEquals("child1", clinicalAnalysisDataResult.first().getFamily().getMembers().get(0).getId());
+        assertEquals("father", clinicalAnalysisDataResult.first().getFamily().getMembers().get(1).getId());
+        assertEquals("mother", clinicalAnalysisDataResult.first().getFamily().getMembers().get(2).getId());
+        assertEquals("child2", clinicalAnalysisDataResult.first().getFamily().getMembers().get(3).getId());
+        assertEquals("child3", clinicalAnalysisDataResult.first().getFamily().getMembers().get(4).getId());
     }
 
     @Test
     public void createInterpretationTest() throws CatalogException {
-        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true);
 
         Interpretation i = new Interpretation()
                 .setId("interpretationId")
@@ -181,26 +181,26 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setComments(Collections.singletonList(new Comment("author", "type", "comment 1", "date")))
                 .setPrimaryFindings(Collections.emptyList());
 
-        QueryResult<Interpretation> interpretationQueryResult = catalogManager.getInterpretationManager()
+        DataResult<Interpretation> interpretationDataResult = catalogManager.getInterpretationManager()
                 .create(STUDY, dummyEnvironment.first().getId(), i, QueryOptions.empty(), sessionIdUser);
-        System.out.println(interpretationQueryResult.first());
+        System.out.println(interpretationDataResult.first());
 
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
+        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
                 dummyEnvironment.first().getId(), QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, clinicalAnalysisQueryResult.first().getInterpretations().size());
-        assertEquals("interpretationId", clinicalAnalysisQueryResult.first().getInterpretations().get(0).getId());
-        assertEquals("description", clinicalAnalysisQueryResult.first().getInterpretations().get(0).getDescription());
+        assertEquals(1, clinicalAnalysisDataResult.first().getInterpretations().size());
+        assertEquals("interpretationId", clinicalAnalysisDataResult.first().getInterpretations().get(0).getId());
+        assertEquals("description", clinicalAnalysisDataResult.first().getInterpretations().get(0).getDescription());
 
-        clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
+        clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
                 dummyEnvironment.first().getId(), new QueryOptions(QueryOptions.INCLUDE, "interpretations.id"), sessionIdUser);
-        assertEquals(1, clinicalAnalysisQueryResult.first().getInterpretations().size());
-        assertEquals("interpretationId", clinicalAnalysisQueryResult.first().getInterpretations().get(0).getId());
-        assertEquals(null, clinicalAnalysisQueryResult.first().getInterpretations().get(0).getDescription());
+        assertEquals(1, clinicalAnalysisDataResult.first().getInterpretations().size());
+        assertEquals("interpretationId", clinicalAnalysisDataResult.first().getInterpretations().get(0).getId());
+        assertEquals(null, clinicalAnalysisDataResult.first().getInterpretations().get(0).getDescription());
     }
 
     @Test
     public void createClinicalAnalysisNoFamilyTest() throws CatalogException {
-        QueryResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(false);
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(false);
 
         assertEquals(1, dummyEnvironment.getNumResults());
         assertEquals(0, dummyEnvironment.first().getInterpretations().size());
@@ -220,7 +220,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new ClinicalUpdateParams.ProbandParam()
                         .setId("child1")
                         .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))));
-        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
+        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
                 QueryOptions.empty(), sessionIdUser);
 
         assertEquals(1, updateResult.getNumResults());
@@ -246,7 +246,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         .setMembers(Collections.singletonList(new ClinicalUpdateParams.ProbandParam()
                                 .setId("child1")
                                 .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))));
-        QueryResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
+        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
                 QueryOptions.empty(), sessionIdUser);
 
         assertEquals(1, updateResult.getNumResults());

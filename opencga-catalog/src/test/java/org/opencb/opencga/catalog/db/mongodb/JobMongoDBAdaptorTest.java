@@ -17,11 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -66,7 +65,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                         Collections.emptyList(), 1), null);
         Job job = getJob(studyId, "name");
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
-        catalogJobDBAdaptor.delete(job.getUid());
+        catalogJobDBAdaptor.delete(job);
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
@@ -76,7 +75,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void getAllJobTest() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        QueryResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyId, null);
+        DataResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyId, null);
         System.out.println(allJobs);
     }
 
@@ -146,20 +145,20 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
 
-        QueryResult<Job> jobQueryResult1 = catalogJobDBAdaptor.get(new Query(), queryOptions);
+        DataResult<Job> jobDataResult1 = catalogJobDBAdaptor.get(new Query(), queryOptions);
 
-        assertTrue("job1".equals(jobQueryResult1.getResult().get(0).getId()));
-        assertTrue("job2".equals(jobQueryResult1.getResult().get(1).getId()));
+        assertTrue("job1".equals(jobDataResult1.getResults().get(0).getId()));
+        assertTrue("job2".equals(jobDataResult1.getResults().get(1).getId()));
 
         // Obtain the jobs in ascending order
         queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
-        QueryResult<Job> jobQueryResult2 = catalogJobDBAdaptor.get(new Query(), queryOptions);
+        DataResult<Job> jobDataResult2 = catalogJobDBAdaptor.get(new Query(), queryOptions);
 
-        assertTrue("job2".equals(jobQueryResult2.getResult().get(0).getId()));
-        assertTrue("job1".equals(jobQueryResult2.getResult().get(1).getId()));
+        assertTrue("job2".equals(jobDataResult2.getResults().get(0).getId()));
+        assertTrue("job1".equals(jobDataResult2.getResults().get(1).getId()));
     }
 
     @Test
@@ -186,10 +185,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)
                 .append(JobDBAdaptor.QueryParams.OUTPUT.key(), fileOutput);
 
-        WriteResult result = catalogJobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
+        DataResult result = catalogJobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
         assertEquals(1, result.getNumUpdated());
 
-        QueryResult<Job> queryResult = catalogJobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+        DataResult<Job> queryResult = catalogJobDBAdaptor.get(job.getUid(), QueryOptions.empty());
         assertEquals(3, queryResult.first().getInput().size());
         assertEquals(3, queryResult.first().getOutput().size());
 

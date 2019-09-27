@@ -101,7 +101,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             return variantIterator;
         } else {
             VariantQueryResult<Variant> result =
-                    addSamplesMetadataIfRequested(variantIterator.toQueryResult(), query, options, getMetadataManager());
+                    addSamplesMetadataIfRequested(variantIterator.toDataResult(), query, options, getMetadataManager());
 //                if (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false)) {
 //
 //                }
@@ -141,7 +141,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
                         }
                     }, query, options, batchSize);
             VariantQueryResult<Variant> result =
-                    addSamplesMetadataIfRequested(variantDBIterator.toQueryResult(), query, options, getMetadataManager());
+                    addSamplesMetadataIfRequested(variantDBIterator.toDataResult(), query, options, getMetadataManager());
 
             if (result.getNumResults() < tmpLimit) {
                 // Not an approximate count!

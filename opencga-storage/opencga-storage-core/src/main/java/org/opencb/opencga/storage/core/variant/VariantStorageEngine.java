@@ -31,7 +31,7 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -420,12 +420,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         newVariantAnnotationManager(params).deleteAnnotation(name, params);
     }
 
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) throws StorageEngineException {
+    public DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) throws StorageEngineException {
         options = addDefaultLimit(options, getOptions());
         return getDBAdaptor().getAnnotation(name, query, options);
     }
 
-    public QueryResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name) throws StorageEngineException {
+    public DataResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name) throws StorageEngineException {
         StopWatch started = StopWatch.createStarted();
         ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         ProjectMetadata.VariantAnnotationSets annotation = projectMetadata.getAnnotation();
@@ -448,7 +448,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
             }
         }
-        return new QueryResult<>(name, ((int) started.getTime(TimeUnit.MILLISECONDS)), list.size(), list.size(), null, null, list);
+        return new DataResult<>(((int) started.getTime(TimeUnit.MILLISECONDS)), Collections.emptyList(), list.size(), list, list.size());
     }
 
     /**
@@ -987,7 +987,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return get(query, options);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
+    public DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
         return new VariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
     }
 
@@ -1070,27 +1070,27 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return new VariantQueryParser(getCellBaseUtils(), getMetadataManager());
     }
 
-    public QueryResult distinct(Query query, String field) throws StorageEngineException {
+    public DataResult distinct(Query query, String field) throws StorageEngineException {
         return getDBAdaptor().distinct(query, field);
     }
 
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) throws StorageEngineException {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) throws StorageEngineException {
         return getDBAdaptor().rank(query, field, numResults, asc);
     }
 
-    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
+    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) throws StorageEngineException {
         return getDBAdaptor().getFrequency(query, region, regionIntervalSize);
     }
 
-    public QueryResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {
+    public DataResult groupBy(Query query, String field, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, field, options);
     }
 
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws StorageEngineException {
         return getDBAdaptor().groupBy(query, fields, options);
     }
 
-    public QueryResult<Long> count(Query query) throws StorageEngineException {
+    public DataResult<Long> count(Query query) throws StorageEngineException {
         query = preProcessQuery(query, null);
         VariantQueryExecutor variantQueryExecutor = getVariantQueryExecutor(query, new QueryOptions(QueryOptions.COUNT, true));
         return variantQueryExecutor.count(query);

@@ -24,11 +24,10 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -77,13 +76,13 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<Long> count(Query query) throws CatalogDBException {
+    public DataResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return clinicalCollection.count(bson);
     }
 
     @Override
-    public QueryResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
+    public DataResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         filterOutDeleted(query);
 
@@ -95,7 +94,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        DataResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -115,17 +114,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) throws CatalogDBException {
+    public DataResult distinct(Query query, String field) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult stats(Query query) {
+    public DataResult stats(Query query) {
         return null;
     }
 
     @Override
-    public WriteResult update(long id, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
+    public DataResult update(long id, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, options);
 
@@ -136,15 +135,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
             logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
-            WriteResult result = clinicalCollection.update(bsonQuery, updateOperation, null);
+            DataResult result = clinicalCollection.update(bsonQuery, updateOperation, null);
 
-            if (result.getNumMatched() == 0) {
+            if (result.getNumMatches() == 0) {
                 throw CatalogDBException.uidNotFound("Clinical Analysis", id);
             }
             return result;
         }
 
-        return WriteResult.empty();
+        return DataResult.empty();
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
@@ -155,22 +154,22 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             // That can only be done to one individual...
             Query tmpQuery = new Query(query);
 
-            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = get(tmpQuery, new QueryOptions());
-            if (clinicalAnalysisQueryResult.getNumResults() == 0) {
+            DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = get(tmpQuery, new QueryOptions());
+            if (clinicalAnalysisDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update clinical analysis: No clinical analysis found to be updated");
             }
-            if (clinicalAnalysisQueryResult.getNumResults() > 1) {
+            if (clinicalAnalysisDataResult.getNumResults() > 1) {
                 throw new CatalogDBException("Update clinical analysis: Cannot set the same id parameter for different clinical analyses");
             }
 
             // Check that the new clinical analysis id will be unique
-            long studyId = getStudyId(clinicalAnalysisQueryResult.first().getUid());
+            long studyId = getStudyId(clinicalAnalysisDataResult.first().getUid());
 
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            QueryResult<Long> count = count(tmpQuery);
-            if (count.getResult().get(0) > 0) {
+            DataResult<Long> count = count(tmpQuery);
+            if (count.getResults().get(0) > 0) {
                 throw new CatalogDBException("Cannot set id for clinical analysis. A clinical analysis with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
@@ -240,37 +239,37 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public WriteResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+    public DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         return unmarkPermissionRule(clinicalCollection, studyId, permissionRuleId);
     }
 
     @Override
-    public WriteResult delete(long id) throws CatalogDBException {
+    public DataResult delete(ClinicalAnalysis clinicalAnalysis) throws CatalogDBException {
         throw new NotImplementedException("Delete not implemented");
     }
 
     @Override
-    public WriteResult delete(Query query) throws CatalogDBException {
+    public DataResult delete(Query query) throws CatalogDBException {
         throw new NotImplementedException("Delete not implemented");
     }
 
     @Override
-    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult<ClinicalAnalysis> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<ClinicalAnalysis> documentList = new ArrayList<>();
         try (DBIterator<ClinicalAnalysis> dbIterator = iterator(query, options)) {
@@ -278,7 +277,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 documentList.add(dbIterator.next());
             }
         }
-        QueryResult<ClinicalAnalysis> queryResult = endQuery("Get", startTime, documentList);
+        DataResult<ClinicalAnalysis> queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -286,23 +285,23 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            DataResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        QueryResult<Document> queryResult;
+        DataResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -310,23 +309,23 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            DataResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        QueryResult<Document> queryResult;
+        DataResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -334,7 +333,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            DataResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -414,7 +413,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        DataResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -423,26 +422,26 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(clinicalCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(clinicalCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
@@ -454,7 +453,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
@@ -476,21 +475,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public WriteResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException {
+    public DataResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(clinicalAnalysis, "clinicalAnalysis");
         return clinicalCollection.insert(document, null);
     }
 
     @Override
-    public WriteResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException {
+    public DataResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), clinicalAnalysis.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
 
         Bson bson = Filters.and(filterList);
-        QueryResult<Long> count = clinicalCollection.count(bson);
-        if (count.getResult().get(0) > 0) {
+        DataResult<Long> count = clinicalCollection.count(bson);
+        if (count.getResults().get(0) > 0) {
             throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { id: '"
                     + clinicalAnalysis.getId() + "'} already exists.");
         }
@@ -514,30 +513,30 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException {
+    public DataResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException {
         checkId(clinicalAnalysisUid);
         return get(new Query(QueryParams.UID.key(), clinicalAnalysisUid).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(clinicalAnalysisUid)), options);
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException {
+    public DataResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException {
         return get(new Query(QueryParams.ID.key(), clinicalAnalysisId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
                 .append(QueryParams.STUDY_UID.key(), studyUid), options);
     }
 
     @Override
-    public QueryResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user)
+    public DataResult<ClinicalAnalysis> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<ClinicalAnalysis> documentList = new ArrayList<>();
-        QueryResult<ClinicalAnalysis> queryResult;
+        DataResult<ClinicalAnalysis> queryResult;
         try (DBIterator<ClinicalAnalysis> dbIterator = iterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -545,7 +544,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
+            DataResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -555,10 +554,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public long getStudyId(long clinicalAnalysisId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, clinicalAnalysisId);
         Bson projection = Projections.include(PRIVATE_STUDY_UID);
-        QueryResult<Document> queryResult = clinicalCollection.find(query, projection, null);
+        DataResult<Document> queryResult = clinicalCollection.find(query, projection, null);
 
-        if (!queryResult.getResult().isEmpty()) {
-            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
+        if (!queryResult.getResults().isEmpty()) {
+            Object studyId = queryResult.getResults().get(0).get(PRIVATE_STUDY_UID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.uidNotFound("ClinicalAnalysis", clinicalAnalysisId);

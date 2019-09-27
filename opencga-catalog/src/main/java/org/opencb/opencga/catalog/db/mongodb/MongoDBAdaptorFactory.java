@@ -23,7 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -238,8 +238,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     @Override
     public boolean isCatalogDBReady() {
-        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("id", METADATA_OBJECT_ID));
-        return queryResult.getResult().get(0) == 1;
+        DataResult<Long> queryResult = metaCollection.count(new BasicDBObject("id", METADATA_OBJECT_ID));
+        return queryResult.getResults().get(0) == 1;
     }
 
     @Override

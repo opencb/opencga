@@ -18,22 +18,22 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.TransactionBody;
 import com.mongodb.client.model.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBRuntimeException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -80,12 +80,34 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         super(logger);
     }
 
-    protected ClientSession getClientSession() {
-        return dbAdaptorFactory.getMongoDataStore().startSession();
+    public interface TransactionBodyWithException<T> {
+        T execute(ClientSession session) throws CatalogDBException;
     }
 
-    protected WriteResult commitTransaction(ClientSession clientSession, TransactionBody<WriteResult> txnBody) {
-        return dbAdaptorFactory.getMongoDataStore().commitSession(clientSession, txnBody);
+    protected <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogDBException {
+        return runTransaction(body, null);
+    }
+
+    protected <T> T runTransaction(TransactionBodyWithException<T> body, Consumer<CatalogDBException> onException)
+            throws CatalogDBException {
+        ClientSession session = dbAdaptorFactory.getMongoDataStore().startSession();
+        try {
+            return session.withTransaction(() -> {
+                try {
+                    return body.execute(session);
+                } catch (CatalogDBException e) {
+                    throw new CatalogDBRuntimeException(e);
+                }
+            });
+        } catch (CatalogDBRuntimeException e) {
+            CatalogDBException cause = (CatalogDBException) e.getCause();
+            if (onException != null) {
+                onException.accept(cause);
+            }
+            throw cause;
+        } finally {
+            session.close();
+        }
     }
 
     protected long getNewUid() {
@@ -162,9 +184,9 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected QueryResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
+    protected DataResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new DataResult();
         }
 
         if (groupByField.contains(",")) {
@@ -186,11 +208,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected QueryResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
+    protected DataResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
                                boolean asc) {
 
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new DataResult();
         }
 
         if (groupByField.size() == 1) {
@@ -222,9 +244,9 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected QueryResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
+    protected DataResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new DataResult();
         }
 
         if (groupByField.contains(",")) {
@@ -235,10 +257,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
+    protected DataResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
                                   QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new DataResult();
         }
 
         List<String> groupByFields = new ArrayList<>(groupByField);
@@ -449,7 +471,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return queryOptions;
     }
 
-    protected WriteResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
+    protected DataResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
                 .append(PRIVATE_STUDY_UID, studyId)
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
@@ -491,7 +513,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        WriteResult updateResult = dbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
+        DataResult updateResult = dbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
 
         if (updateResult.getNumUpdated() == 0) {
             throw new CatalogDBException("Internal error: Could not update previous version");
@@ -513,12 +535,12 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     protected Document getStudyDocument(ClientSession clientSession, Query query) throws CatalogDBException {
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(PRIVATE_STUDY_UID));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+        DataResult<Document> dataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
                 QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
+        if (dataResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(PRIVATE_STUDY_UID) + " not found");
         }
-        return queryResult.first();
+        return dataResult.first();
     }
 
     public class UpdateDocument {

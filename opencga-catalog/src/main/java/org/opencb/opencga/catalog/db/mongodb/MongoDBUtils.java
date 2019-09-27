@@ -80,44 +80,44 @@ class MongoDBUtils {
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
-        QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
-//        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
-        return result.getResult().get(0).getInteger(field);
+        DataResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
+//        return (int) Float.parseFloat(result.getResults().get(0).get(field).toString());
+        return result.getResults().get(0).getInteger(field);
     }
 
     /*
      * Helper methods
      ********************/
 
-    static User parseUser(QueryResult<Document> result) throws CatalogDBException {
+    static User parseUser(DataResult<Document> result) throws CatalogDBException {
         return parseObject(result, User.class);
     }
 
-    static List<Study> parseStudies(QueryResult<Document> result) throws CatalogDBException {
+    static List<Study> parseStudies(DataResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Study.class);
     }
 
-    static List<File> parseFiles(QueryResult<Document> result) throws CatalogDBException {
+    static List<File> parseFiles(DataResult<Document> result) throws CatalogDBException {
         return parseObjects(result, File.class);
     }
 
-    static Job parseJob(QueryResult<Document> result) throws CatalogDBException {
+    static Job parseJob(DataResult<Document> result) throws CatalogDBException {
         return parseObject(result, Job.class);
     }
 
-    static List<Job> parseJobs(QueryResult<Document> result) throws CatalogDBException {
+    static List<Job> parseJobs(DataResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Job.class);
     }
 
-    static List<Sample> parseSamples(QueryResult<Document> result) throws CatalogDBException {
+    static List<Sample> parseSamples(DataResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Sample.class);
     }
 
-    static <T> List<T> parseObjects(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
+    static <T> List<T> parseObjects(DataResult<Document> result, Class<T> tClass) throws CatalogDBException {
         LinkedList<T> objects = new LinkedList<>();
         ObjectReader objectReader = getObjectReader(tClass);
         try {
-            for (Document document : result.getResult()) {
+            for (Document document : result.getResults()) {
 //                document.remove("_id");
 //                document.remove("_projectId");
                 objects.add(objectReader.<T>readValue(restoreDotsInKeys(jsonObjectWriter.writeValueAsString(document))));
@@ -128,8 +128,8 @@ class MongoDBUtils {
         return objects;
     }
 
-    static <T> T parseObject(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
-        if (result.getResult().isEmpty()) {
+    static <T> T parseObject(DataResult<Document> result, Class<T> tClass) throws CatalogDBException {
+        if (result.getResults().isEmpty()) {
             return null;
         }
         try {

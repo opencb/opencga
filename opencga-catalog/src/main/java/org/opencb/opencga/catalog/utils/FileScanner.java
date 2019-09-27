@@ -16,12 +16,10 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -143,7 +141,7 @@ public class FileScanner {
         linkedFolders.put("", studyUri);
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
-        catalogManager.getFileManager().search(String.valueOf(studyId), query, queryOptions, sessionId).getResult()
+        catalogManager.getFileManager().search(String.valueOf(studyId), query, queryOptions, sessionId).getResults()
                 .forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
         Map<String, URI> untrackedFiles = new HashMap<>();
@@ -159,9 +157,9 @@ public class FileScanner {
                 URI uri = iterator.next();
                 String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
-                QueryResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
+                DataResult<File> searchFile = catalogManager.getFileManager().search(String.valueOf(studyId),
                         new Query("path", filePath), new QueryOptions("include", "projects.studies.files.id"), sessionId);
-                if (searchFile.getResult().isEmpty()) {
+                if (searchFile.getResults().isEmpty()) {
                     untrackedFiles.put(filePath, uri);
                 } /*else {
                     iterator.remove(); //Remove the ones that have an entry in Catalog
@@ -243,7 +241,7 @@ public class FileScanner {
             }
 
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
-            QueryResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null, sessionId);
+            DataResult<File> searchFile = catalogManager.getFileManager().search(study.getFqn(), query, null, sessionId);
             File file = null;
             boolean overwrite = true;
             boolean returnFile = false;
@@ -254,13 +252,9 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { uid:" + existingFile.getUid() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        WriteResult result = catalogManager.getFileManager().delete(study.getFqn(),
+                        catalogManager.getFileManager().delete(study.getFqn(),
                                 new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid()),
                                 new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
-                        if (ListUtils.isNotEmpty(result.getFailed())) {
-                            throw new CatalogException(result.getFailed().get(0).getMessage());
-                        }
-
                         overwrite = false;
                         break;
                     case REPLACE:

@@ -16,11 +16,10 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Project;
 
@@ -126,15 +125,15 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         }
     }
 
-    WriteResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
+    DataResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    WriteResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
+    DataResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
+    DataResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
+    DataResult<Project> get(long project, QueryOptions options) throws CatalogDBException;
 
-    WriteResult incrementCurrentRelease(long projectId) throws CatalogDBException;
+    DataResult incrementCurrentRelease(long projectId) throws CatalogDBException;
 
     long getId(String userId, String projectAlias) throws CatalogDBException;
 

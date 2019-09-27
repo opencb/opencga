@@ -296,7 +296,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
         int onlyIndex = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
-                .iterator(indexQuery).toQueryResult().getNumResults();
+                .iterator(indexQuery).toDataResult().getNumResults();
 
         // Query SampleIndex+DBAdaptor
         System.out.println("Query SampleIndex+DBAdaptor");

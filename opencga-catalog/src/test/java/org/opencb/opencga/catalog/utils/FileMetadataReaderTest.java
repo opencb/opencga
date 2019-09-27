@@ -19,9 +19,9 @@ package org.opencb.opencga.catalog.utils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -40,7 +40,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -87,10 +90,10 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testCreate() throws CatalogException {
-        QueryResult<File> fileQueryResult = FileMetadataReader.get(catalogManager).
+        DataResult<File> fileDataResult = FileMetadataReader.get(catalogManager).
                 create(study.getFqn(), vcfFileUri, folder.getPath() + VCF_FILE_NAME, "", false, null, sessionIdUser);
 
-        File file = fileQueryResult.first();
+        File file = fileDataResult.first();
 
         assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
@@ -161,7 +164,7 @@ public class FileMetadataReaderTest {
         assertEquals(4, file.getSamples().size());
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
         catalogManager.getSampleManager().search(study.getFqn(), new Query(SampleDBAdaptor.QueryParams.ID.key(),
-                file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(), sessionIdUser).getResult();
+                file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(), sessionIdUser).getResults();
 
         assertTrue(expectedSampleNames.containsAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())));
     }

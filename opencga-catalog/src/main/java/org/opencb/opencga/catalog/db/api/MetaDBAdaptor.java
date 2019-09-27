@@ -20,8 +20,8 @@ package org.opencb.opencga.catalog.db.api;
  * Created by pfurio on 23/05/16.
  */
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 public interface MetaDBAdaptor {
@@ -35,6 +35,6 @@ public interface MetaDBAdaptor {
 
     String readAlgorithm() throws CatalogDBException;
 
-    WriteResult updateJWTParameters(ObjectMap params) throws CatalogDBException;
+    DataResult updateJWTParameters(ObjectMap params) throws CatalogDBException;
 
 }

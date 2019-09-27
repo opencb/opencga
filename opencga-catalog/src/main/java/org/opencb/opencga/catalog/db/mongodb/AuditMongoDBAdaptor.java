@@ -21,9 +21,9 @@ import com.mongodb.DBObject;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
@@ -48,17 +48,17 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
     }
 
     @Override
-    public QueryResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException {
+    public DataResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException {
         long startQuery = startQuery();
 
         Document auditRecordDbObject = MongoDBUtils.getMongoDBDocument(auditRecord, "AuditRecord");
         auditCollection.insert(auditRecordDbObject, new QueryOptions());
 
-        return endQuery("insertAuditRecord", startQuery, Collections.singletonList(auditRecord));
+        return endQuery(startQuery, Collections.singletonList(auditRecord));
     }
 
     @Override
-    public QueryResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
@@ -80,13 +80,13 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
                 throw new CatalogDBException(e);
             }
         }
-        QueryResult<Document> result = auditCollection.find(new BasicDBObject("$and", mongoQueryList), queryOptions);
+        DataResult<Document> result = auditCollection.find(new BasicDBObject("$and", mongoQueryList), queryOptions);
         List<AuditRecord> individuals = MongoDBUtils.parseObjects(result, AuditRecord.class);
-        return endQuery("getAuditRecord", startTime, individuals);
+        return endQuery(startTime, individuals);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(auditCollection, bsonQuery, fields, "name", options);
     }

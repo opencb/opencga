@@ -17,11 +17,10 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -46,88 +45,88 @@ public interface DBAdaptor<T> extends Iterable<T> {
     @Deprecated
     String FORCE = "force";
 
-    default QueryResult<Long> count() throws CatalogDBException {
+    default DataResult<Long> count() throws CatalogDBException {
         return count(new Query());
     }
 
-    QueryResult<Long> count(Query query) throws CatalogDBException;
+    DataResult<Long> count(Query query) throws CatalogDBException;
 
-    QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    DataResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    default QueryResult distinct(String field) throws CatalogDBException {
+    default DataResult distinct(String field) throws CatalogDBException {
         return distinct(new Query(), field);
     }
 
-    QueryResult distinct(Query query, String field) throws CatalogDBException;
+    DataResult distinct(Query query, String field) throws CatalogDBException;
 
 
-    default QueryResult stats() {
+    default DataResult stats() {
         return stats(new Query());
     }
 
-    QueryResult stats(Query query);
+    DataResult stats(Query query);
 
 
-    QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
+    DataResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    DataResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
+    default List<DataResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
-        List<QueryResult<T>> queryResults = new ArrayList<>(queries.size());
+        List<DataResult<T>> queryResults = new ArrayList<>(queries.size());
         for (Query query : queries) {
             queryResults.add(get(query, options));
         }
         return queryResults;
     }
 
-    QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
+    DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    default List<QueryResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
+    default List<DataResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
-        List<QueryResult> queryResults = new ArrayList<>(queries.size());
+        List<DataResult> queryResults = new ArrayList<>(queries.size());
         for (Query query : queries) {
             queryResults.add(nativeGet(query, options));
         }
         return queryResults;
     }
 
-    WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    WriteResult delete(long id) throws CatalogDBException;
+    DataResult delete(T id) throws CatalogDBException;
 
-    WriteResult delete(Query query) throws CatalogDBException;
+    DataResult delete(Query query) throws CatalogDBException;
 
-    default WriteResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    default DataResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default WriteResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    default DataResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default WriteResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    default DataResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default WriteResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    default DataResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
-    WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+    DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException;
 
-    WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
 
-//    QueryResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;
+//    DataResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;
 
 
     @Override
@@ -155,18 +154,18 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     DBIterator nativeIterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-//    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+//    DataResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
+    DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException;
+    DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
+    DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    DataResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
 

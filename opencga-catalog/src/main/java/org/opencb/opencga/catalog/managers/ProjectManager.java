@@ -18,12 +18,11 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -70,7 +69,7 @@ public class ProjectManager extends AbstractManager {
      *
      * @param projectStr string that can contain the full qualified name (owner@projectId) or just the projectId.
      * @param userId     user asking for the project information.
-     * @return a QueryResult containing the project.
+     * @return a DataResult containing the project.
      * @throws CatalogException if multiple projects are found.
      */
     Project resolveId(String projectStr, String userId) throws CatalogException {
@@ -113,11 +112,11 @@ public class ProjectManager extends AbstractManager {
                 query.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ID.key(), auxProject);
             }
 
-            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, projectOptions);
-            if (projectQueryResult.getNumResults() > 1) {
+            DataResult<Project> projectDataResult = projectDBAdaptor.get(query, projectOptions);
+            if (projectDataResult.getNumResults() > 1) {
                 throw new CatalogException("Please be more concrete with the project. More than one project found for " + userId + " user");
-            } else if (projectQueryResult.getNumResults() == 1) {
-                return projectQueryResult.first();
+            } else if (projectDataResult.getNumResults() == 1) {
+                return projectDataResult.first();
             }
         }
 
@@ -131,11 +130,11 @@ public class ProjectManager extends AbstractManager {
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions, userId);
+        DataResult<Study> studyDataResult = studyDBAdaptor.get(query, queryOptions, userId);
 
-        if (studyQueryResult.getNumResults() > 0) {
+        if (studyDataResult.getNumResults() > 0) {
             Set<String> projectFqnSet = new HashSet<>();
-            for (Study study : studyQueryResult.getResult()) {
+            for (Study study : studyDataResult.getResults()) {
                 projectFqnSet.add(StringUtils.split(study.getFqn(), ":")[0]);
             }
 
@@ -160,7 +159,7 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    private QueryResult<Project> getProject(String userId, String projectUuid, QueryOptions options) throws CatalogDBException {
+    private DataResult<Project> getProject(String userId, String projectUuid, QueryOptions options) throws CatalogDBException {
         Query query = new Query()
                 .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.UUID.key(), projectUuid);
@@ -173,14 +172,14 @@ public class ProjectManager extends AbstractManager {
      * @param userId       user whose projects and studies are being shared with.
      * @param queryOptions QueryOptions object.
      * @param sessionId    Session id which should correspond to userId.
-     * @return A QueryResult object containing the list of projects and studies that are shared with the user.
+     * @return A DataResult object containing the list of projects and studies that are shared with the user.
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+    public DataResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
     }
 
-    public QueryResult<Project> create(String id, String name, String description, String organization, String scientificName,
+    public DataResult<Project> create(String id, String name, String description, String organization, String scientificName,
                                        String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(name, ProjectDBAdaptor.QueryParams.NAME.key());
@@ -196,7 +195,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         // Check that the account type is not guest
-        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), null);
+        DataResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), null);
         if (user.getNumResults() == 0) {
             throw new CatalogException("Internal error happened. Could not find user " + userId);
         }
@@ -235,8 +234,8 @@ public class ProjectManager extends AbstractManager {
 
         project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
         projectDBAdaptor.insert(project, userId, options);
-        QueryResult<Project> queryResult = getProject(userId, project.getUuid(), options);
-        project = queryResult.getResult().get(0);
+        DataResult<Project> queryResult = getProject(userId, project.getUuid(), options);
+        project = queryResult.getResults().get(0);
 
         try {
             catalogIOManagerFactory.getDefault().createProject(userId, project.getId());
@@ -244,7 +243,7 @@ public class ProjectManager extends AbstractManager {
             auditManager.auditCreate(userId, AuditRecord.Resource.PROJECT, id, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
-                projectDBAdaptor.delete(project.getUid());
+                projectDBAdaptor.delete(project);
             } catch (Exception e1) {
                 logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
                 throw e;
@@ -267,7 +266,7 @@ public class ProjectManager extends AbstractManager {
      * @return The specified object
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Project> get(String projectId, QueryOptions options, String token) throws CatalogException {
+    public DataResult<Project> get(String projectId, QueryOptions options, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
 
         ObjectMap auditParams = new ObjectMap()
@@ -276,7 +275,7 @@ public class ProjectManager extends AbstractManager {
                 .append("token", token);
         try {
             Project project = resolveId(projectId, userId);
-            QueryResult<Project> queryResult = projectDBAdaptor.get(project.getUid(), options);
+            DataResult<Project> queryResult = projectDBAdaptor.get(project.getUid(), options);
             auditManager.auditInfo(userId, AuditRecord.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;
@@ -287,19 +286,22 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    public List<QueryResult<Project>> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
+    public List<DataResult<Project>> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
             throws CatalogException {
-        List<QueryResult<Project>> results = new ArrayList<>(projectList.size());
+        List<DataResult<Project>> results = new ArrayList<>(projectList.size());
 
         for (int i = 0; i < projectList.size(); i++) {
             String project = projectList.get(i);
             try {
-                QueryResult<Project> projectResult = get(project, options, sessionId);
+                DataResult<Project> projectResult = get(project, options, sessionId);
                 results.add(projectResult);
             } catch (CatalogException e) {
+                String warning = "Missing " + projectList.get(i) + ": " + e.getMessage();
                 if (silent) {
-                    results.add(new QueryResult<>(projectList.get(i), 0, 0, 0, "", e.toString(), new ArrayList<>(0)));
+                    logger.error(warning, e);
+                    results.add(new DataResult<>(0, Collections.singletonList(warning), 0, Collections.emptyList(), 0));
                 } else {
+                    logger.error(warning);
                     throw e;
                 }
             }
@@ -316,7 +318,7 @@ public class ProjectManager extends AbstractManager {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Project> get(Query query, QueryOptions options, String token) throws CatalogException {
+    public DataResult<Project> get(Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -336,7 +338,7 @@ public class ProjectManager extends AbstractManager {
                 query.put(ProjectDBAdaptor.QueryParams.STUDY_UID.key(), studies.stream().map(Study::getUid).collect(Collectors.toList()));
             }
 
-            QueryResult<Project> queryResult = projectDBAdaptor.get(query, options, userId);
+            DataResult<Project> queryResult = projectDBAdaptor.get(query, options, userId);
             auditManager.auditSearch(userId, AuditRecord.Resource.PROJECT, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;
@@ -358,7 +360,7 @@ public class ProjectManager extends AbstractManager {
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Project> update(String projectId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+    public DataResult<Project> update(String projectId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
         String userId = this.catalogManager.getUserManager().getUserId(token);
 
         ObjectMap auditParams = new ObjectMap()
@@ -397,7 +399,7 @@ public class ProjectManager extends AbstractManager {
                     || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
                     || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
                     || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
-                QueryResult<Project> projectQR = projectDBAdaptor
+                DataResult<Project> projectQR = projectDBAdaptor
                         .get(projectUid, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
                 if (projectQR.getNumResults() == 0) {
                     throw new CatalogException("Project " + projectUid + " not found");
@@ -439,13 +441,13 @@ public class ProjectManager extends AbstractManager {
             }
 
             userDBAdaptor.updateUserLastModified(userId);
-            WriteResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
+            DataResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
             auditManager.auditUpdate(userId, AuditRecord.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            QueryResult<Project> queryResult = projectDBAdaptor.get(projectUid,
+            DataResult<Project> queryResult = projectDBAdaptor.get(projectUid,
                     new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setDbTime(queryResult.getDbTime() + result.getDbTime());
+            queryResult.setTime(queryResult.getTime() + result.getTime());
 
             return queryResult;
         } catch (CatalogException e) {
@@ -461,11 +463,11 @@ public class ProjectManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Project project = resolveId(projectStr, userId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(query, new QueryOptions(QueryOptions.INCLUDE,
+        DataResult<Study> studyDataResult = catalogManager.getStudyManager().get(query, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), sessionId);
 
         Map<String, Object> result = new HashMap<>();
-        for (Study study : studyQueryResult.getResult()) {
+        for (Study study : studyDataResult.getResults()) {
             result.put(study.getId(), catalogManager.getStudyManager().facet(study.getFqn(), fileFields, sampleFields, individualFields,
                     cohortFields, familyFields, defaultStats, sessionId));
         }
@@ -473,7 +475,7 @@ public class ProjectManager extends AbstractManager {
         return result;
     }
 
-    public QueryResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
+    public DataResult<Integer> incrementRelease(String projectStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         try {
@@ -493,11 +495,11 @@ public class ProjectManager extends AbstractManager {
 
             if (checkCurrentReleaseInUse(allStudiesInProject, currentRelease)) {
                 // Increment current project release
-                WriteResult writeResult = projectDBAdaptor.incrementCurrentRelease(projectUid);
-                QueryResult<Project> projectQueryResult = projectDBAdaptor.get(projectUid,
+                DataResult writeResult = projectDBAdaptor.incrementCurrentRelease(projectUid);
+                DataResult<Project> projectDataResult = projectDBAdaptor.get(projectUid,
                         new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
-                QueryResult<Integer> queryResult = new QueryResult<>("", projectQueryResult.getDbTime() + writeResult.getDbTime(), 1, 1,
-                        "", "", Collections.singletonList(projectQueryResult.first().getCurrentRelease()));
+                DataResult<Integer> queryResult = new DataResult<>(projectDataResult.getTime() + writeResult.getTime(),
+                        Collections.emptyList(), 1, Collections.singletonList(projectDataResult.first().getCurrentRelease()), 1);
 
                 // Upgrade release in sample, family and individuals
                 for (Study study : allStudiesInProject) {
@@ -528,9 +530,9 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
         }
 
-        QueryResult<User> userQueryResult = userDBAdaptor.get(owner, new QueryOptions(QueryOptions.INCLUDE,
+        DataResult<User> userDataResult = userDBAdaptor.get(owner, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(UserDBAdaptor.QueryParams.ACCOUNT.key(), UserDBAdaptor.QueryParams.PROJECTS.key())), null);
-        if (userQueryResult.getNumResults() == 0) {
+        if (userDataResult.getNumResults() == 0) {
             throw new CatalogException("User " + owner + " not found");
         }
 
@@ -660,16 +662,16 @@ public class ProjectManager extends AbstractManager {
         QueryOptions skipCount = new QueryOptions(QueryOptions.SKIP_COUNT, true);
 
         // We obtain the owner of the study
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr,
+        DataResult<Study> studyDataResult = catalogManager.getStudyManager().get(studyStr,
                 new QueryOptions(QueryOptions.INCLUDE,
                         Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
                                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key())), token);
 
         // Export the list of variable sets
-        List<Object> variableSetList = studyQueryResult.first().getVariableSets().stream().collect(Collectors.toList());
+        List<Object> variableSetList = studyDataResult.first().getVariableSets().stream().collect(Collectors.toList());
         exportToFile(variableSetList, outputDir.toPath().resolve("variablesets.json").toFile(), objectMapper);
 
-        String owner = studyQueryResult.first().getFqn().split("@")[0];
+        String owner = studyDataResult.first().getFqn().split("@")[0];
 
         String ownerToken = catalogManager.getUserManager().getSystemTokenForUser(owner, token);
 
@@ -685,16 +687,16 @@ public class ProjectManager extends AbstractManager {
                     List cohortList = null;
 
                     Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "file://" + vcfFile);
-                    QueryResult<org.opencb.opencga.core.models.File> fileQueryResult = catalogManager.getFileManager()
+                    DataResult<org.opencb.opencga.core.models.File> fileDataResult = catalogManager.getFileManager()
                             .search(studyStr, query, skipCount, ownerToken);
-                    if (fileQueryResult.getNumResults() == 0) {
+                    if (fileDataResult.getNumResults() == 0) {
                         logger.error("File " + vcfFile + " not found. Skipping...");
                         continue;
                     }
                     // Add file information
-                    fileList.add(fileQueryResult.first());
+                    fileList.add(fileDataResult.first());
 
-                    List<Sample> samples = fileQueryResult.first().getSamples();
+                    List<Sample> samples = fileDataResult.first().getSamples();
                     if (ListUtils.isNotEmpty(samples)) {
                         List<Long> sampleUids = samples.stream().map(Sample::getUid).collect(Collectors.toList());
 
@@ -707,47 +709,47 @@ public class ProjectManager extends AbstractManager {
                                         // TODO: I think I will need to perform the query some other way to capture bigwigs...
                                         org.opencb.opencga.core.models.File.Format.BIGWIG));
 
-                        QueryResult<org.opencb.opencga.core.models.File> otherFiles = catalogManager.getFileManager()
+                        DataResult<org.opencb.opencga.core.models.File> otherFiles = catalogManager.getFileManager()
                                 .search(studyStr, query, skipCount, ownerToken);
                         if (otherFiles.getNumResults() > 0) {
-                            fileList.addAll(otherFiles.getResult());
+                            fileList.addAll(otherFiles.getResults());
                         }
 
                         // Look for the whole sample information
                         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleUids);
-                        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager()
+                        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager()
                                 .search(studyStr, query, skipCount, ownerToken);
-                        if (sampleQueryResult.getNumResults() == 0 || sampleQueryResult.getNumResults() != sampleUids.size()) {
+                        if (sampleDataResult.getNumResults() == 0 || sampleDataResult.getNumResults() != sampleUids.size()) {
                             logger.error("Unexpected error when looking for whole sample information. Could only find {} results. "
-                                    + "Samples ids {}", sampleQueryResult.getNumResults(), sampleUids);
+                                    + "Samples ids {}", sampleDataResult.getNumResults(), sampleUids);
                             continue;
                         }
 
-//                        for (Sample sample : sampleQueryResult.getResult()) {
-//                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getSampleManager()
+//                        for (Sample sample : sampleDataResult.getResults()) {
+//                            DataResult<ObjectMap> annotationSetAsMap = catalogManager.getSampleManager()
 //                                    .getAnnotationSetAsMap(String.valueOf(sample.getId()), studyStr, null, ownerToken);
 //                            // We store the annotationsets as map in the attributes field to avoid issues
-//                            sample.getAttributes().put("_annotationSets", annotationSetAsMap.getResult());
+//                            sample.getAttributes().put("_annotationSets", annotationSetAsMap.getResults());
 //                        }
-                        sampleList = sampleQueryResult.getResult();
+                        sampleList = sampleDataResult.getResults();
 
 
                         // Get the list of individuals
                         // Look for the whole sample information
                         query = new Query(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
-                        QueryResult<Individual> individualQueryResult = catalogManager.getIndividualManager()
+                        DataResult<Individual> individualDataResult = catalogManager.getIndividualManager()
                                 .search(studyStr, query, skipCount, ownerToken);
 
-//                        for (Individual individual : individualQueryResult.getResult()) {
-//                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getIndividualManager()
+//                        for (Individual individual : individualDataResult.getResults()) {
+//                            DataResult<ObjectMap> annotationSetAsMap = catalogManager.getIndividualManager()
 //                                    .getAnnotationSetAsMap(String.valueOf(individual.getId()), studyStr, null, ownerToken);
 //                            // We store the annotationsets as map in the attributes field to avoid issues
-//                            individual.getAttributes().put("_annotationSets", annotationSetAsMap.getResult());
+//                            individual.getAttributes().put("_annotationSets", annotationSetAsMap.getResults());
 //                        }
-                        individualList = individualQueryResult.getResult();
+                        individualList = individualDataResult.getResults();
 
 
-                        if (individualQueryResult.getNumResults() == 0) {
+                        if (individualDataResult.getNumResults() == 0) {
                             logger.info("No individuals found for samples '{}'", sampleUids);
                         }
 
@@ -755,38 +757,38 @@ public class ProjectManager extends AbstractManager {
                         query = new Query()
                                 .append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
                                 .append(CohortDBAdaptor.QueryParams.NAME.key(), "!=ALL");
-                        QueryResult<Cohort> cohortQueryResult = catalogManager.getCohortManager()
+                        DataResult<Cohort> cohortDataResult = catalogManager.getCohortManager()
                                 .search(studyStr, query, skipCount, ownerToken);
 
-//                        for (Cohort cohort : cohortQueryResult.getResult()) {
-//                            QueryResult<ObjectMap> annotationSetAsMap = catalogManager.getCohortManager()
+//                        for (Cohort cohort : cohortDataResult.getResults()) {
+//                            DataResult<ObjectMap> annotationSetAsMap = catalogManager.getCohortManager()
 //                                    .getAnnotationSetAsMap(String.valueOf(cohort.getId()), studyStr, null, ownerToken);
 //                            // We store the annotationsets as map in the attributes field to avoid issues
-//                            cohort.getAttributes().put("_annotationSets", annotationSetAsMap.getResult());
+//                            cohort.getAttributes().put("_annotationSets", annotationSetAsMap.getResults());
 //                        }
-                        cohortList = cohortQueryResult.getResult();
+                        cohortList = cohortDataResult.getResults();
 
-                        if (cohortQueryResult.getNumResults() == 0) {
+                        if (cohortDataResult.getNumResults() == 0) {
                             logger.info("No cohorts found for samples {}", sampleUids);
                         } else {
-                            cohortList = cohortQueryResult.getResult();
+                            cohortList = cohortDataResult.getResults();
                         }
                     }
 
                     // Create a directory where we will store all the information to be exported
-                    Path exportDir = outputDir.toPath().resolve(fileQueryResult.first().getName());
+                    Path exportDir = outputDir.toPath().resolve(fileDataResult.first().getName());
                     if (Files.exists(exportDir)) {
-                        logger.warn("Replicated file found: {}", fileQueryResult.first().getName());
+                        logger.warn("Replicated file found: {}", fileDataResult.first().getName());
 
                         int count = 1;
-                        exportDir = outputDir.toPath().resolve(fileQueryResult.first().getName() + count);
+                        exportDir = outputDir.toPath().resolve(fileDataResult.first().getName() + count);
                         while (Files.exists(exportDir)) {
-                            exportDir = outputDir.toPath().resolve(fileQueryResult.first().getName() + count++);
+                            exportDir = outputDir.toPath().resolve(fileDataResult.first().getName() + count++);
                         }
                     }
                     Files.createDirectory(exportDir);
 
-                    logger.info("Exporting data from " + fileQueryResult.first().getName());
+                    logger.info("Exporting data from " + fileDataResult.first().getName());
                     exportToFile(fileList, exportDir.resolve("file.json").toFile(), objectMapper);
                     exportToFile(sampleList, exportDir.resolve("sample.json").toFile(), objectMapper);
                     exportToFile(individualList, exportDir.resolve("individual.json").toFile(), objectMapper);
@@ -877,16 +879,16 @@ public class ProjectManager extends AbstractManager {
         query = new Query()
                 .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
                 .append(StudyDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query,
+        DataResult<Study> studyDataResult = studyDBAdaptor.get(query,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key()));
-        if (studyQueryResult.getNumResults() == 0) {
+        if (studyDataResult.getNumResults() == 0) {
             logger.info("The project does not contain any study under the specified release");
             return;
         }
         dbIterator = studyDBAdaptor.nativeIterator(query, QueryOptions.empty());
         exportToFile(dbIterator, outputDir.resolve("studies.json").toFile(), objectMapper, "studies");
 
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getUid).collect(Collectors.toList());
+        List<Long> studyIds = studyDataResult.getResults().stream().map(Study::getUid).collect(Collectors.toList());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
@@ -967,7 +969,7 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    public QueryResult rank(String userId, Query query, String field, int numResults, boolean asc, String sessionId)
+    public DataResult rank(String userId, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
@@ -983,16 +985,16 @@ public class ProjectManager extends AbstractManager {
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
 //        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        QueryResult queryResult = null;
+        DataResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
             queryResult = projectDBAdaptor.rank(query, field, numResults, asc);
         }
 
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
+        return ParamUtils.defaultObject(queryResult, DataResult::new);
     }
 
-    public QueryResult groupBy(String userId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+    public DataResult groupBy(String userId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(field, "field");
@@ -1007,16 +1009,16 @@ public class ProjectManager extends AbstractManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        QueryResult queryResult = null;
+        DataResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
             queryResult = projectDBAdaptor.groupBy(query, field, options);
         }
 
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
+        return ParamUtils.defaultObject(queryResult, DataResult::new);
     }
 
-    public QueryResult groupBy(String userId, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public DataResult groupBy(String userId, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1032,13 +1034,13 @@ public class ProjectManager extends AbstractManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        QueryResult queryResult = null;
+        DataResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
             queryResult = projectDBAdaptor.groupBy(query, fields, options);
         }
 
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
+        return ParamUtils.defaultObject(queryResult, DataResult::new);
     }
 
     // Return true if currentRelease is found in any entry

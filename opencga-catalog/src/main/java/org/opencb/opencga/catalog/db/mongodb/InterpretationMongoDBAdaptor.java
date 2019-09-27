@@ -8,11 +8,10 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
@@ -50,13 +49,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public WriteResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException {
+    public DataResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(interpretation, "clinicalAnalysis");
         return interpretationCollection.insert(document, null);
     }
 
     @Override
-    public WriteResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException {
+    public DataResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
@@ -64,8 +63,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         filterList.add(Filters.eq(QueryParams.STATUS.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
-        QueryResult<Long> count = interpretationCollection.count(bson);
-        if (count.getResult().get(0) > 0) {
+        DataResult<Long> count = interpretationCollection.count(bson);
+        if (count.getResults().get(0) > 0) {
             throw new CatalogDBException("Cannot create interpretation. An interpretation with { id: '"
                     + interpretation.getId() + "'} already exists.");
         }
@@ -87,14 +86,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException {
+    public DataResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException {
         checkId(interpretationUid);
         return get(new Query(QueryParams.UID.key(), interpretationUid).append(QueryParams.STUDY_UID.key(),
                 getStudyId(interpretationUid)), options);
     }
 
     @Override
-    public QueryResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException {
+    public DataResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException {
         return get(new Query(QueryParams.ID.key(), interpretationId).append(QueryParams.STUDY_UID.key(), studyUid), options);
     }
 
@@ -102,10 +101,10 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     public long getStudyId(long interpretationId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, interpretationId);
         Bson projection = Projections.include(PRIVATE_STUDY_UID);
-        QueryResult<Document> queryResult = interpretationCollection.find(query, projection, null);
+        DataResult<Document> queryResult = interpretationCollection.find(query, projection, null);
 
-        if (!queryResult.getResult().isEmpty()) {
-            Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_UID);
+        if (!queryResult.getResults().isEmpty()) {
+            Object studyId = queryResult.getResults().get(0).get(PRIVATE_STUDY_UID);
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.uidNotFound("Interpretation", interpretationId);
@@ -113,7 +112,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult<Long> count(Query query) throws CatalogDBException {
+    public DataResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         logger.debug("Interpretation count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
@@ -121,23 +120,23 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public DataResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException {
         return count(query);
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) throws CatalogDBException {
+    public DataResult distinct(Query query, String field) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult stats(Query query) {
+    public DataResult stats(Query query) {
         return null;
     }
 
     @Override
-    public QueryResult<Interpretation> get(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult<Interpretation> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Interpretation> documentList = new ArrayList<>();
         try (DBIterator<Interpretation> dbIterator = iterator(query, options)) {
@@ -145,7 +144,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 documentList.add(dbIterator.next());
             }
         }
-        QueryResult<Interpretation> queryResult = endQuery("Get", startTime, documentList);
+        DataResult<Interpretation> queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -153,29 +152,29 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            DataResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public QueryResult<Interpretation> get(Query query, QueryOptions options, String user)
+    public DataResult<Interpretation> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return get(query, options);
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        QueryResult<Document> queryResult;
+        DataResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery("Native get", startTime, documentList);
+        queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -183,19 +182,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query);
+            DataResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
         return nativeGet(query, options);
     }
 
     @Override
-    public WriteResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
         UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
 
@@ -210,15 +209,15 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
             logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
                     MongoClient.getDefaultCodecRegistry()), updateDocument);
-            WriteResult update = interpretationCollection.update(bsonQuery, updateOperation, null);
+            DataResult update = interpretationCollection.update(bsonQuery, updateOperation, null);
 
-            if (update.getNumMatched() == 0) {
+            if (update.getNumMatches() == 0) {
                 throw CatalogDBException.uidNotFound("Interpretation", id);
             }
             return update;
         }
 
-        return WriteResult.empty();
+        return DataResult.empty();
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
@@ -229,22 +228,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             // That can only be done to one individual...
             Query tmpQuery = new Query(query);
 
-            QueryResult<Interpretation> interpretationQueryResult = get(tmpQuery, new QueryOptions());
-            if (interpretationQueryResult.getNumResults() == 0) {
+            DataResult<Interpretation> interpretationDataResult = get(tmpQuery, new QueryOptions());
+            if (interpretationDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update interpretation: No interpretation found to be updated");
             }
-            if (interpretationQueryResult.getNumResults() > 1) {
+            if (interpretationDataResult.getNumResults() > 1) {
                 throw new CatalogDBException("Update interpretation: Cannot set the same id parameter for different interpretations");
             }
 
             // Check that the new clinical analysis id will be unique
-            long studyId = getStudyId(interpretationQueryResult.first().getUid());
+            long studyId = getStudyId(interpretationDataResult.first().getUid());
 
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            QueryResult<Long> count = count(tmpQuery);
-            if (count.getResult().get(0) > 0) {
+            DataResult<Long> count = count(tmpQuery);
+            if (count.getResults().get(0) > 0) {
                 throw new CatalogDBException("Cannot set id for interpretation. A interpretation with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
@@ -310,9 +309,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
      * @param query Query object.
      */
     private void createNewVersion(Query query) throws CatalogDBException {
-        QueryResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+        DataResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
 
-        for (Document document : queryResult.getResult()) {
+        for (Document document : queryResult.getResults()) {
             Document updateOldVersion = new Document();
 
             updateOldVersion.put(LAST_OF_VERSION, false);
@@ -322,7 +321,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
                     .append(QueryParams.VERSION.key(), document.getInteger(QueryParams.VERSION.key()))
                     .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
-            WriteResult result = interpretationCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
+            DataResult result = interpretationCollection.update(queryDocument, new Document("$set", updateOldVersion), null);
             if (result.getNumUpdated() == 0) {
                 throw new CatalogDBException("Internal error: Could not update interpretation");
             }
@@ -337,27 +336,27 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public WriteResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public WriteResult delete(long id) throws CatalogDBException {
+    public DataResult delete(Interpretation interpretation) throws CatalogDBException {
         throw new NotImplementedException("Delete not implemented");
     }
 
     @Override
-    public WriteResult delete(Query query) throws CatalogDBException {
+    public DataResult delete(Query query) throws CatalogDBException {
         throw new NotImplementedException("Delete not implemented");
     }
 
     @Override
-    public WriteResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public WriteResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         return null;
     }
 
@@ -403,28 +402,28 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }

@@ -139,7 +139,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testRelease() throws Exception {
-        List<Variant> variants = query(new Query(), new QueryOptions()).getResult();
+        List<Variant> variants = query(new Query(), new QueryOptions()).getResults();
         for (Variant variant : variants) {
             Integer minFileId = variant.getStudies().stream()
                     .flatMap(s -> s.getFiles().stream())
@@ -171,7 +171,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_FILE.key(), file12877);
         queryResult = query(query, options);
         assertEquals(dbAdaptor.count(null).first().intValue(), queryResult.getNumResults());
-        for (Variant variant : queryResult.getResult()) {
+        for (Variant variant : queryResult.getResults()) {
             assertTrue(variant.getStudies().size() <= 1);
             StudyEntry s_1 = variant.getStudy(study1);
             if (s_1 != null) {

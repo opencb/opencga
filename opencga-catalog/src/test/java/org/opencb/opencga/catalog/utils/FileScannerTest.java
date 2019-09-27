@@ -20,9 +20,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -105,7 +105,7 @@ public class FileScannerTest {
 
     @Test
     public void testDeleteExisting() throws IOException, CatalogException {
-        QueryResult<File> queryResult;
+        DataResult<File> queryResult;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
             queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
@@ -129,7 +129,7 @@ public class FileScannerTest {
 
     @Test
     public void testDeleteTrashed() throws IOException, CatalogException {
-        QueryResult<File> queryResult;
+        DataResult<File> queryResult;
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
             queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
@@ -138,10 +138,10 @@ public class FileScannerTest {
         catalogManager.getFileManager().delete(study.getFqn(),
                 new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(study.getFqn(), new Query()
+        DataResult<File> fileDataResult = catalogManager.getFileManager().search(study.getFqn(), new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"), new QueryOptions(), sessionIdUser);
-        file = fileQueryResult.first();
+        file = fileDataResult.first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());
     }
 

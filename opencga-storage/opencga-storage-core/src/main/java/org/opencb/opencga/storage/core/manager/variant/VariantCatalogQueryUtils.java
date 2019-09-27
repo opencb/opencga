@@ -28,10 +28,10 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
@@ -162,7 +162,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
                 for (String study : studies) {
                     for (File file : catalogManager.getFileManager().search(study, fileQuery, fileOptions, sessionId)
-                            .getResult()) {
+                            .getResults()) {
                         includeFiles.add(file.getName());
                     }
                 }
@@ -179,7 +179,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     QueryOptions cohortOptions = new QueryOptions(INCLUDE, CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key());
                     // Get default cohort. It contains the list of indexed samples. If it doesn't exist, or is empty, do not include any
                     // sample from this study.
-                    QueryResult<Cohort> result = catalogManager.getCohortManager().search(study, cohortQuery, cohortOptions, sessionId);
+                    DataResult<Cohort> result = catalogManager.getCohortManager().search(study, cohortQuery, cohortOptions, sessionId);
                     if (result.first() != null || result.first().getSamples().isEmpty()) {
                         Set<String> sampleIds = result
                                 .first()
@@ -188,7 +188,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                 .map(Sample::getId)
                                 .collect(Collectors.toSet());
                         for (Sample s : catalogManager.getSampleManager().search(study, sampleQuery, sampleOptions, sessionId)
-                                .getResult()) {
+                                .getResults()) {
                             if (sampleIds.contains(s.getId())) {
                                 includeSamples.add(s.getId());
                             }
@@ -205,7 +205,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), defaultStudyStr);
             QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
             List<String> sampleIds = catalogManager.getSampleManager().search(defaultStudyStr, sampleQuery, options, sessionId)
-                    .getResult()
+                    .getResults()
                     .stream()
                     .map(Sample::getId)
                     .collect(Collectors.toList());
@@ -298,7 +298,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             List<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
                     new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleUids), new QueryOptions(INCLUDE, Arrays.asList(
                     SampleDBAdaptor.QueryParams.ID.key(),
-                    SampleDBAdaptor.QueryParams.UID.key())), sessionId).getResult();
+                    SampleDBAdaptor.QueryParams.UID.key())), sessionId).getResults();
             Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, s -> s));
 
             // By default, include all samples from the family
@@ -827,9 +827,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                                                           Function<T, String> getId, Function<T, Integer> getRelease,
                                                                           Consumer<T> valueValidator, String sessionId)
                 throws CatalogException {
-            List<QueryResult<T>> queryResults = manager.get(defaultStudyStr, values, RELEASE_OPTIONS, sessionId);
+            List<DataResult<T>> queryResults = manager.get(defaultStudyStr, values, RELEASE_OPTIONS, sessionId);
             List<String> validatedValues = new ArrayList<>(values.size());
-            for (QueryResult<T> queryResult : queryResults) {
+            for (DataResult<T> queryResult : queryResults) {
                 T value = queryResult.first();
                 if (valueValidator != null) {
                     valueValidator.accept(value);
@@ -854,8 +854,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 return studies.stream().map(Study::getFqn).collect(Collectors.toList());
             } else {
                 List<String> validatedValues = new ArrayList<>(values.size());
-                List<QueryResult<Study>> queryResults = catalogManager.getStudyManager().get(values, RELEASE_OPTIONS, false, sessionId);
-                for (QueryResult<Study> queryResult : queryResults) {
+                List<DataResult<Study>> queryResults = catalogManager.getStudyManager().get(values, RELEASE_OPTIONS, false, sessionId);
+                for (DataResult<Study> queryResult : queryResults) {
                     Study study = queryResult.first();
                     validatedValues.add(study.getFqn());
                     checkRelease(release, study.getRelease(), param, study.getFqn());
@@ -872,9 +872,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                         String sessionId)
                 throws CatalogException {
             if (release == null) {
-                List<QueryResult<File>> files = catalogManager.getFileManager().get(defaultStudyStr, values,
+                List<DataResult<File>> files = catalogManager.getFileManager().get(defaultStudyStr, values,
                         FileManager.INCLUDE_FILE_IDS, sessionId);
-                return files.stream().map(QueryResult::first).map(File::getName).collect(Collectors.toList());
+                return files.stream().map(DataResult::first).map(File::getName).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
                         file -> ((int) file.getIndex().getRelease()), file -> {
@@ -897,9 +897,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                List<QueryResult<Sample>> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+                List<DataResult<Sample>> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
                         SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
-                return samples.stream().map(QueryResult::first).map(Sample::getId).collect(Collectors.toList());
+                return samples.stream().map(DataResult::first).map(Sample::getId).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getSampleManager(),
                         Sample::getId, Sample::getRelease, null, sessionId);
@@ -959,9 +959,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                     return validated;
                 } else {
-                    List<QueryResult<Cohort>> cohorts = catalogManager.getCohortManager().get(defaultStudyStr, values,
+                    List<DataResult<Cohort>> cohorts = catalogManager.getCohortManager().get(defaultStudyStr, values,
                             CohortManager.INCLUDE_COHORT_IDS, sessionId);
-                    return cohorts.stream().map(QueryResult::first).map(Cohort::getId).collect(Collectors.toList());
+                    return cohorts.stream().map(DataResult::first).map(Cohort::getId).collect(Collectors.toList());
                 }
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getCohortManager(),

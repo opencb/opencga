@@ -19,10 +19,10 @@ package org.opencb.opencga.storage.core.manager.variant.operations;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -107,7 +107,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // Check the output directory does not correspond with a catalog directory
         Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), outdir.toUri().toString());
-        QueryResult<File> count = fileManager.count(studyInfo.getStudyFQN(), query, sessionId);
+        DataResult<File> count = fileManager.count(studyInfo.getStudyFQN(), query, sessionId);
         if (count.getNumTotalResults() > 0) {
             throw new CatalogException("The output directory is pointing to one in catalog. Please, choose other out of catalog "
                     + "boundaries.");
@@ -146,7 +146,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         options.put(VariantStorageEngine.Options.STUDY.key(), studyFQNByInputFileId);
         options.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
 
-//        Study study = catalogManager.getStudyManager().get(studyUidByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
+//        Study study = catalogManager.getStudyManager().get(studyUidByInputFileId, new QueryOptions(), sessionId).getResults().get(0);
         Study study = studyInfo.getStudy();
 
         // We get the credentials of the Datastore to insert the variants
@@ -176,9 +176,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    QueryResult<File> fileQueryResult = fileManager.search(studyFQNByInputFileId, query, FILE_GET_QUERY_OPTIONS, sessionId);
-//                    fileQueryResult.getResult().sort(Comparator.comparing(File::getName));
-                    inputFiles.addAll(fileQueryResult.getResult());
+                    DataResult<File> fileDataResult = fileManager.search(studyFQNByInputFileId, query, FILE_GET_QUERY_OPTIONS, sessionId);
+//                    fileDataResult.getResults().sort(Comparator.comparing(File::getName));
+                    inputFiles.addAll(fileDataResult.getResults());
                 } else {
                     throw new CatalogException(String.format("Expected file type %s or %s instead of %s",
                             File.Type.FILE, File.Type.DIRECTORY, inputFile.getType()));
@@ -198,11 +198,11 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
 
-        QueryResult<Project> projectQueryResult = catalogManager
+        DataResult<Project> projectDataResult = catalogManager
                 .getProjectManager()
                 .get(studyInfo.getProjectId(),
                         new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()), sessionId);
-        int release = projectQueryResult.first().getCurrentRelease();
+        int release = projectDataResult.first().getCurrentRelease();
 
         // Add species, assembly and release
         updateProjectMetadata(variantStorageEngine.getMetadataManager(), studyInfo.getOrganism(), release);
@@ -263,9 +263,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             for (File file : filesToIndex) {
-                QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus,
+                DataResult<FileIndex> fileIndexDataResult = fileManager.updateFileIndexStatus(file, fileStatus,
                         fileStatusMessage, release, sessionId);
-                file.setIndex(fileIndexQueryResult.first());
+                file.setIndex(fileIndexDataResult.first());
             }
         }
 
@@ -496,7 +496,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
-                QueryResult<Cohort> queryResult = catalogManager.getCohortManager()
+                DataResult<Cohort> queryResult = catalogManager.getCohortManager()
                         .search(study.getFqn(), query, new QueryOptions(), sessionId);
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
@@ -544,21 +544,21 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //        Query query = new Query()
 //                .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getInput())
 //                .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-//        QueryResult<File> fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
-//        if (fileQueryResult.getResult().isEmpty()) {
+//        DataResult<File> fileDataResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
+//        if (fileDataResult.getResults().isEmpty()) {
 //            return;
 //        }
-//        File inputFile = fileQueryResult.first();
+//        File inputFile = fileDataResult.first();
 //        if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
 //            query = new Query()
 //                    .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
 //                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".file");
-//            fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
-//            if (fileQueryResult.getResult().isEmpty()) {
+//            fileDataResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
+//            if (fileDataResult.getResults().isEmpty()) {
 //                return;
 //            }
 //
-//            File variantsFile = fileQueryResult.first();
+//            File variantsFile = fileDataResult.first();
 //            URI fileUri = catalogManager.getFileUri(variantsFile);
 //            try (InputStream is = FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
 //                VariantSource variantSource = new com.fasterxml.jackson.databind.ObjectMapper().readValue(is, VariantSource.class);
@@ -812,19 +812,19 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
             throw new CatalogException("Internal error. No vcf file could be found for file " + file.getPath());
         }
-        QueryResult<File> vcfQueryResult = fileManager.get(study, vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
-        if (vcfQueryResult.getNumResults() != 1) {
+        DataResult<File> vcfDataResult = fileManager.get(study, vcfId, FILE_GET_QUERY_OPTIONS, sessionId);
+        if (vcfDataResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
             throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
         }
-        file = vcfQueryResult.first();
+        file = vcfDataResult.first();
         return file;
     }
 
     private File getTransformedFromOriginal(String sessionId, File file)
             throws CatalogException, URISyntaxException {
         long transformedFileId = getTransformedFileIdFromOriginal(file);
-        QueryResult<File> queryResult = fileManager.get(transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
+        DataResult<File> queryResult = fileManager.get(transformedFileId, FILE_GET_QUERY_OPTIONS, sessionId);
         if (queryResult.getNumResults() != 1) {
             logger.error("This code should never be executed. No transformed file could be found under ");
             throw new CatalogException("Internal error. No transformed file could be found under id " + transformedFileId);

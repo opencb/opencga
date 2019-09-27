@@ -112,7 +112,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
         Set<Long> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key
                 (), FileIndex.IndexStatus.READY), null, sessionId)
-                .getResult()
+                .getResults()
                 .stream()
                 .flatMap(f -> f.getSamples().stream())
                 .map(Sample::getUid)

@@ -120,9 +120,9 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions, user).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions, user).getResults();
                 } else {
-                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the samples associated to the cohorts: {}", e.getMessage(), e);

@@ -16,11 +16,10 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Variable;
@@ -43,13 +42,13 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      * @return a queryResult containing either all the annotation sets or just the one corresponding to the annotation set name if provided.
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
      */
-    QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName)
+    DataResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName)
             throws CatalogDBException;
 
-    WriteResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    DataResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException;
 
-    WriteResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    DataResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException;
 
     /**
@@ -57,10 +56,10 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      *
      * @param variableSetId variable set id to identify the annotations that will add a new annotation.
      * @param variable new variable that will be added.
-     * @return a WriteResult object.
+     * @return a DataResult object.
      * @throws CatalogDBException if the variable could not be added to an existing annotationSet.
      */
-    WriteResult addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
+    DataResult addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
 
 //    /**
 //     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
@@ -72,17 +71,17 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
 //     * @return the number of annotations that renamed the name.
 //     * @throws CatalogDBException when there is an error with database transactions.
 //     */
-//    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
+//    DataResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
 
     /**
      * Remove the annotation with annotationName from the annotation set.
      *
      * @param variableSetId variable set id for which the annotationSets have to delete the annotation.
      * @param annotationName Annotation name.
-     * @return a WriteResult object.
+     * @return a DataResult object.
      * @throws CatalogDBException when there is an error in the database.
      */
-    WriteResult removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException;
+    DataResult removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException;
 
     /**
      * Makes a groupBy to obtain the different values that every annotation has and the total number of each.
@@ -93,5 +92,5 @@ public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
      * @return a list of Feature count with every different value.
      * @throws CatalogDBException when there is an error in the database.
      */
-    QueryResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException;
+    DataResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException;
 }

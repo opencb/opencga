@@ -23,10 +23,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -117,11 +117,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         Properties tagmap = new Properties();
         tagmap.load(new FileInputStream(tagmapPath));
         Map<String, Cohort> cohorts = catalogManager.getCohortManager().search(studyId, new Query(), null, sessionId)
-                .getResult().stream().collect(Collectors.toMap(Cohort::getId, c->c));
+                .getResults().stream().collect(Collectors.toMap(Cohort::getId, c->c));
         Set<String> catalogCohorts = cohorts.keySet();
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
+                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
                         .setId(cohortName)
                         .setName(cohortName)
                         .setSamples(Collections.emptyList())
@@ -355,7 +355,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(options, cohortIds);
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResult();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)
@@ -376,7 +376,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(options, Arrays.asList("AFR", "ALL", "AMR", "EAS", "FIN", "NFE", "OTH", "SAS"));
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResult();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)
@@ -431,7 +431,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(options);
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResult();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)

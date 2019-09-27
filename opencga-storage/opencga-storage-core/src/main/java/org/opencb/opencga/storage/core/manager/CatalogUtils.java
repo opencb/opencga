@@ -106,7 +106,7 @@ public class CatalogUtils {
             String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
             return catalogManager.getStudyManager()
                     .get(project, new Query(), new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
-                    .getResult()
+                    .getResults()
                     .stream()
                     .map(Study::getFqn)
                     .collect(Collectors.toList());

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.results;
 
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +26,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantQueryResult<T> extends QueryResult<T> {
+public class VariantQueryResult<T> extends DataResult<T> {
 
     private Map<String, List<String>> samples;
     private Integer numTotalSamples;
@@ -40,15 +40,15 @@ public class VariantQueryResult<T> extends QueryResult<T> {
     }
 
 
-    public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
-                              List<T> result, Map<String, List<String>> samples, String source) {
-        this(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result, samples, source, null, null, null);
+    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<String> warnings, List<T> result,
+                              Map<String, List<String>> samples, String source) {
+        this(dbTime, numResults, numMatches, warnings, result, samples, source, null, null, null);
     }
 
-    public VariantQueryResult(String id, int dbTime, int numResults, long numTotalResults, String warningMsg, String errorMsg,
-                              List<T> result, Map<String, List<String>> samples, String source,
-                              Boolean approximateCount, Integer approximateCountSamplingSize, Integer numTotalSamples) {
-        super(id, dbTime, numResults, numTotalResults, warningMsg, errorMsg, result);
+    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<String> warnings, List<T> result,
+                              Map<String, List<String>> samples, String source, Boolean approximateCount,
+                              Integer approximateCountSamplingSize, Integer numTotalSamples) {
+        super(dbTime, warnings, numResults, result, numMatches);
         this.samples = samples;
         this.source = source;
         this.approximateCount = approximateCount;
@@ -61,20 +61,15 @@ public class VariantQueryResult<T> extends QueryResult<T> {
         this.numTotalSamples = numTotalSamples;
     }
 
-    public VariantQueryResult(QueryResult<T> queryResult, Map<String, List<String>> samples) {
+    public VariantQueryResult(DataResult<T> queryResult, Map<String, List<String>> samples) {
         this(queryResult, samples, null);
     }
 
-    public VariantQueryResult(QueryResult<T> queryResult, Map<String, List<String>> samples, String source) {
-        super(queryResult.getId(),
-                queryResult.getDbTime(),
-                queryResult.getNumResults(),
-                queryResult.getNumTotalResults(),
-                queryResult.getWarningMsg(),
-                queryResult.getErrorMsg(),
-                queryResult.getResult());
+    public VariantQueryResult(DataResult<T> dataResult, Map<String, List<String>> samples, String source) {
+        super(dataResult.getTime(), dataResult.getWarnings(), dataResult.getNumResults(), dataResult.getResults(),
+                dataResult.getNumMatches());
         this.samples = samples;
-        if (numTotalResults >= 0) {
+        if (getNumMatches() >= 0) {
             approximateCount = false;
         }
         if (samples == null) {

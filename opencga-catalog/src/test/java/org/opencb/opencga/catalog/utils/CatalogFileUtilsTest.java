@@ -20,10 +20,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -85,11 +85,11 @@ public class CatalogFileUtilsTest {
         //Create USER
         catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.Type.FULL, null);
         userSessionId = catalogManager.getUserManager().login("user", "asdf");
-//        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
+//        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), userSessionId).getResult().get(0).getId();
+                null, null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();
         Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", Study.Type.CONTROL_SET, null, "", null, null,
-                null, null, null, null, null, null, userSessionId).getResult().get(0);
+                null, null, null, null, null, null, userSessionId).getResults().get(0);
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
@@ -110,7 +110,7 @@ public class CatalogFileUtilsTest {
 
     @Test
     public void deleteFilesTest2() throws CatalogException, IOException {
-        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
+        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
                 File.Bioformat.NONE, "my.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, false,
                 StringUtils.randomString(200), null, userSessionId);
         File file = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, userSessionId).first();
@@ -136,9 +136,9 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
+        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
 
-        assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
+        assertTrue(ioManager.exists(fileDataResult.first().getUri()));
         for (File file : folderFiles) {
             assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
         }
@@ -155,7 +155,7 @@ public class CatalogFileUtilsTest {
         }
 
         //Create deleted files inside the folder
-        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, null, null, userSessionId);
+        DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, null, null, userSessionId);
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult1.first(), userSessionId, false, false, true);
 
         File toDelete = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, userSessionId).first();
@@ -163,7 +163,7 @@ public class CatalogFileUtilsTest {
                 null, userSessionId);
 //        catalogFileUtils.delete(toDelete.getId(), userSessionId);
 
-        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, null, null, userSessionId);
+        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, null, null, userSessionId);
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult.first(), userSessionId, false, false, true);
         File toTrash = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, userSessionId).first();
         catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), toTrash.getUid()),
@@ -174,9 +174,9 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), folder.getPath())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
+        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
 
-        assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
+        assertTrue(ioManager.exists(fileDataResult.first().getUri()));
         for (File file : folderFiles) {
             assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
         }
@@ -243,9 +243,9 @@ public class CatalogFileUtilsTest {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
+        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
 
-        file = fileQueryResult.first();
+        file = fileDataResult.first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertSame(file, returnedFile);

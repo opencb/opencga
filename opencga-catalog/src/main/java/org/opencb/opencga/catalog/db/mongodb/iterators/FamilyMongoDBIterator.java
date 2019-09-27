@@ -123,9 +123,9 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> memberList;
             try {
                 if (user != null) {
-                    memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResult();
+                    memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResults();
                 } else {
-                    memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResult();
+                    memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the members associated to the families: {}", e.getMessage(), e);

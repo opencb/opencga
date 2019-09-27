@@ -103,9 +103,9 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> individualList;
             try {
                 if (user != null) {
-                    individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResult();
+                    individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResults();
                 } else {
-                    individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResult();
+                    individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the individuals containing the samples: {}", e.getMessage(), e);

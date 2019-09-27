@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.db;
 
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.slf4j.Logger;
 
@@ -37,51 +37,42 @@ public abstract class AbstractDBAdaptor {
         return System.currentTimeMillis();
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result) throws CatalogDBException {
-        return endQuery(queryId, startTime, result, null, null);
+    protected <T> DataResult<T> endQuery(long startTime, List<T> result) {
+        return endQuery(startTime, result, null);
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime) throws CatalogDBException {
-        return endQuery(queryId, startTime, Collections.<T>emptyList(), null, null);
+    protected <T> DataResult<T> endQuery(long startTime) {
+        return endQuery(startTime, Collections.emptyList(), null);
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result) throws CatalogDBException {
-        result.setId(queryId);
-        result.setDbTime((int) (System.currentTimeMillis() - startTime));
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(),
-                result.getNumResults(), result.getNumTotalResults());
-        if (result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()) {
-            throw new CatalogDBException(result.getErrorMsg());
-        }
+    protected <T> DataResult<T> endQuery(long startTime, DataResult<T> result) {
+        result.setTime((int) (System.currentTimeMillis() - startTime));
+        logger.trace("DbTime: {}, numResults: {}, numTotalResults: {}", result.getTime(), result.getNumResults(),
+                result.getNumTotalResults());
         return result;
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result, String errorMessage, String warnMessage)
-            throws CatalogDBException {
+    protected <T> DataResult<T> endQuery(long startTime, List<T> results, List<String> warnings) {
         long end = System.currentTimeMillis();
-        if (result == null) {
-            result = new LinkedList<>();
+        if (results == null) {
+            results = new LinkedList<>();
         }
-        int numResults = result.size();
-        QueryResult<T> queryResult = new QueryResult<>(queryId, (int) (end - startTime), numResults, numResults,
-                warnMessage, errorMessage, result);
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", queryResult.getId(), queryResult.getDbTime(),
-                queryResult.getNumResults(), queryResult.getNumTotalResults());
-        if (errorMessage != null && !errorMessage.isEmpty()) {
-            throw new CatalogDBException(queryResult.getErrorMsg());
-        }
-        return queryResult;
+        int numResults = results.size();
+        DataResult<T> result = new DataResult<>((int) (end - startTime), warnings, numResults, results, numResults, new ObjectMap());
+        logger.trace("DbTime: {}, numResults: {}, numTotalResults: {}", result.getTime(), result.getNumResults(),
+                result.getNumTotalResults());
+        return result;
     }
 
-    protected WriteResult endWrite(long startTime, long numMatches, long numUpdated, List<String> warnings, List<WriteResult.Fail> failed) {
+    protected <T> DataResult<T> endWrite(long startTime, long numMatches, long numUpdated, List<String> warnings) {
         long end = System.currentTimeMillis();
-        return new WriteResult((int) (end - startTime), numMatches, 0, numUpdated, 0, warnings, failed);
+        return new DataResult<>((int) (end - startTime), warnings, numMatches, 0, numUpdated, 0, new ObjectMap());
     }
 
-    protected WriteResult endWrite(long startTime, long numMatches, long numInserted, long numUpdated, long numDeleted,
-                                   List<String> warnings, List<WriteResult.Fail> failed) {
+    protected <T> DataResult<T> endWrite(long startTime, long numMatches, long numInserted, long numUpdated, long numDeleted,
+                                         List<String> warnings) {
         long end = System.currentTimeMillis();
-        return new WriteResult((int) (end - startTime), numMatches, numInserted, numUpdated, numDeleted, warnings, failed);
+        return new DataResult<T>((int) (end - startTime), warnings, numMatches, numInserted, numUpdated, numDeleted, new ObjectMap());
     }
 
     protected void checkParameter(Object param, String name) throws CatalogDBException {

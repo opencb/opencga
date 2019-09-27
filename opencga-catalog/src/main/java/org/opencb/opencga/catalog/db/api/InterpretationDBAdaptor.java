@@ -1,11 +1,10 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.Interpretation;
 
@@ -99,13 +98,13 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         }
     }
 
-    WriteResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
+    DataResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
 
-    WriteResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException;
+    DataResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException;
+    DataResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException;
+    DataResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long interpretationId) throws CatalogDBException;
 

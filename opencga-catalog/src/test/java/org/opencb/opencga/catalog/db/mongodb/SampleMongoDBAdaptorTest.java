@@ -19,10 +19,10 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -83,7 +83,7 @@ public class SampleMongoDBAdaptorTest {
                 Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), null);
     }
 
-    QueryResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException {
+    DataResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
@@ -133,14 +133,14 @@ public class SampleMongoDBAdaptorTest {
 //    public void testRenameFieldFromAnnotation() throws Exception {
 //        createAnnotationExample();
 //        // Rename
-//        QueryResult<Long> longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "newKey4");
-//        assertEquals(3, longQueryResult.first().longValue());
+//        DataResult<Long> longDataResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "newKey4");
+//        assertEquals(3, longDataResult.first().longValue());
 //
-//        longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(1, "key4", "newKey4");
-//        assertEquals(0, longQueryResult.first().longValue());
+//        longDataResult = catalogSampleDBAdaptor.renameAnnotationField(1, "key4", "newKey4");
+//        assertEquals(0, longDataResult.first().longValue());
 //
-//        longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "renewkey4");
-//        assertEquals(0, longQueryResult.first().longValue());
+//        longDataResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "renewkey4");
+//        assertEquals(0, longDataResult.first().longValue());
 //
 //    }
 
@@ -167,14 +167,14 @@ public class SampleMongoDBAdaptorTest {
 //    @Test
 //    public void testRemoveFieldFromAnnotations() throws Exception {
 //        createAnnotationExample();
-//        QueryResult<Long> longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(3, "key4");
-//        assertEquals(3, longQueryResult.first().longValue());
+//        DataResult<Long> longDataResult = catalogSampleDBAdaptor.removeAnnotationField(3, "key4");
+//        assertEquals(3, longDataResult.first().longValue());
 //
-//        longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(1, "key3");
-//        assertEquals(0, longQueryResult.first().longValue());
+//        longDataResult = catalogSampleDBAdaptor.removeAnnotationField(1, "key3");
+//        assertEquals(0, longDataResult.first().longValue());
 //
-//        longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(3, "nonExistentKey");
-//        assertEquals(0, longQueryResult.first().longValue());
+//        longDataResult = catalogSampleDBAdaptor.removeAnnotationField(3, "nonExistentKey");
+//        assertEquals(0, longDataResult.first().longValue());
 //    }
 
 //    @Test
@@ -230,30 +230,30 @@ public class SampleMongoDBAdaptorTest {
                 .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "=hpo:456,hpo:xxx")
                 .append(SampleDBAdaptor.QueryParams.ID.key(), "=sample2");
 
-        QueryResult<Sample> sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
-        assertEquals(1, sampleQueryResult.getNumResults());
-        assertEquals(sample2.getId(), sampleQueryResult.first().getId());
+        DataResult<Sample> sampleDataResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals(sample2.getId(), sampleDataResult.first().getId());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "hpo:456,hpo:xxx");
-        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
-        assertEquals(2, sampleQueryResult.getNumResults());
+        sampleDataResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(2, sampleDataResult.getNumResults());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "My go term");
-        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
-        assertEquals(2, sampleQueryResult.getNumResults());
+        sampleDataResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(2, sampleDataResult.getNumResults());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "go:123");
-        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
-        assertEquals(1, sampleQueryResult.getNumResults());
-        assertEquals(sample1.getId(), sampleQueryResult.first().getId());
+        sampleDataResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals(sample1.getId(), sampleDataResult.first().getId());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), "=hpo:456,My go term");
-        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
-        assertEquals(2, sampleQueryResult.getNumResults());
+        sampleDataResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(2, sampleDataResult.getNumResults());
     }
 
     @Test
@@ -266,7 +266,7 @@ public class SampleMongoDBAdaptorTest {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.ID.key(), "HG0097")
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        QueryResult<Sample> result = catalogSampleDBAdaptor.get(query, QueryOptions.empty());
+        DataResult<Sample> result = catalogSampleDBAdaptor.get(query, QueryOptions.empty());
 
         assertEquals(hg0097.getId(), result.first().getId());
         assertEquals(hg0097.getDescription(), result.first().getDescription());
@@ -297,27 +297,27 @@ public class SampleMongoDBAdaptorTest {
                 .append(SampleDBAdaptor.QueryParams.ID.key(), "~^sample");
 
         query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), ">2005");
-        QueryResult<Sample> sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
-        assertEquals(1, sampleQueryResult.getNumResults());
-        assertEquals("sample2", sampleQueryResult.first().getId());
+        DataResult<Sample> sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample2", sampleDataResult.first().getId());
 
         query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), ">200401");
-        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
-        assertEquals(2, sampleQueryResult.getNumResults());
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(2, sampleDataResult.getNumResults());
 
         query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "2003-2005");
-        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
-        assertEquals(1, sampleQueryResult.getNumResults());
-        assertEquals("sample1", sampleQueryResult.first().getId());
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample1", sampleDataResult.first().getId());
 
         query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "2003-2018");
-        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
-        assertEquals(2, sampleQueryResult.getNumResults());
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(2, sampleDataResult.getNumResults());
 
         query.put(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<201611");
-        sampleQueryResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
-        assertEquals(1, sampleQueryResult.getNumResults());
-        assertEquals("sample1", sampleQueryResult.first().getId());
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample1", sampleDataResult.first().getId());
     }
 
 
@@ -344,13 +344,13 @@ public class SampleMongoDBAdaptorTest {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "individualName");
-        QueryResult<Sample> individualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
+        DataResult<Sample> individualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals("sample1", individualQuery.first().getId());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), "non-existing");
-        QueryResult<Sample> inexistentIndividualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
+        DataResult<Sample> inexistentIndividualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals(0, inexistentIndividualQuery.getNumResults());
     }
 
@@ -362,17 +362,18 @@ public class SampleMongoDBAdaptorTest {
         Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
 
-        long sampleUid = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first().getUid();
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sampleUid);
+        Sample sample = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first();
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample);
 
-        QueryResult<Sample> sampleQueryResult = catalogSampleDBAdaptor.get(sampleUid, QueryOptions.empty());
-        assertEquals(0, sampleQueryResult.getNumResults());
+        DataResult<Sample> sampleDataResult = catalogSampleDBAdaptor.get(sample.getUid(), QueryOptions.empty());
+        assertEquals(0, sampleDataResult.getNumResults());
     }
 
     @Test
     public void deleteSampleFail1Test() throws Exception {
+        Sample sample = new Sample().setId("non-existing").setUid(55555555);
         thrown.expect(CatalogDBException.class);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(55555555);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample);
     }
 
     @Test
@@ -385,11 +386,11 @@ public class SampleMongoDBAdaptorTest {
         Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
 
-        long sampleUid = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first().getUid();
-        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleUid),
+        Sample sample = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first();
+        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), sample.getUid()),
                 QueryOptions.empty());
 
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sampleUid);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample);
     }
 
     @Test
@@ -406,7 +407,7 @@ public class SampleMongoDBAdaptorTest {
                 Collections.singletonList(sample), 1, null), null, null);
 
         thrown.expect(CatalogDBException.class);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample.getUid());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample);
     }
 
     @Test
@@ -443,7 +444,7 @@ public class SampleMongoDBAdaptorTest {
 
         assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
         List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
-                new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId), null).getResult();
+                new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId), null).getResults();
         assertEquals(numCohorts, cohorts.size());
         Set<String> names = cohorts.stream().map(Cohort::getId).collect(Collectors.toSet());
         for (int c = 0; c < numCohorts; c++) {

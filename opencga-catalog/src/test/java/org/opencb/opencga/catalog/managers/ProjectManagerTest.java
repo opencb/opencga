@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -90,8 +90,8 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void getOwnProjectNoStudies() throws CatalogException {
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
-        assertEquals(1, projectQueryResult.getNumResults());
+        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
+        assertEquals(1, projectDataResult.getNumResults());
     }
 
     @Test
@@ -108,7 +108,7 @@ public class ProjectManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateGroup(s2, "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser2);
 
-        QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
+        DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(1, queryResult.first().getStudies().size());
         assertEquals("s2", queryResult.first().getStudies().get(0).getId());
@@ -128,7 +128,7 @@ public class ProjectManagerTest extends GenericTest {
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(2, queryResult.getNumResults());
-        for (Project project : queryResult.getResult()) {
+        for (Project project : queryResult.getResults()) {
             if (project.getId().equals(project2)) {
                 assertEquals(2, project.getStudies().size());
             } else {
@@ -149,9 +149,9 @@ public class ProjectManagerTest extends GenericTest {
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
-        QueryResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
+        DataResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
         assertEquals(1, update.getNumResults());
-        QueryResult<Project> queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
+        DataResult<Project> queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
 
         assertEquals("Homo sapiens", queryResult.first().getOrganism().getScientificName());
         assertEquals("", queryResult.first().getOrganism().getCommonName());

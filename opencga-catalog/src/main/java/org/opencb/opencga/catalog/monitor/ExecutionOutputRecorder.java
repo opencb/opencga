@@ -229,7 +229,7 @@ public class ExecutionOutputRecorder {
         // TODO: Create output directory in catalog
         File outDir;
         try {
-            outDir = catalogManager.getFileManager().get(job.getOutDir().getUid(), new QueryOptions(), sessionId).getResult().get(0);
+            outDir = catalogManager.getFileManager().get(job.getOutDir().getUid(), new QueryOptions(), sessionId).getResults().get(0);
         } catch (CatalogException e) {
             logger.error("Cannot find file {}. Error: {}", job.getOutDir().getUid(), e.getMessage());
             throw e;

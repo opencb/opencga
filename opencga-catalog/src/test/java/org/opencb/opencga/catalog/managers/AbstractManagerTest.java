@@ -3,9 +3,9 @@ package org.opencb.opencga.catalog.managers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -98,7 +98,7 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, testFolder.getPath(), new FileUpdateParams().setAttributes(attributes),
                 new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
+        DataResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_1K.txt.gz"), false, StringUtils.randomString(1000), null, sessionIdUser);
 
         File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), null, sessionIdUser).first();
@@ -110,7 +110,7 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(), new FileUpdateParams().setAttributes(attributes),
                 new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
+        DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_0.5K.txt").setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION), false,
                 StringUtils.randomString(500), null, sessionIdUser);
 
@@ -123,7 +123,7 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, fileTest05k.getPath(), new FileUpdateParams().setAttributes(attributes),
                 new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
+        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_0.1K.png").setFormat(File.Format.IMAGE), false,
                 StringUtils.randomString(100), null, sessionIdUser);
 

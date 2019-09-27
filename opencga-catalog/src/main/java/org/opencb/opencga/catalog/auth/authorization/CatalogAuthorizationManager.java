@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -182,7 +182,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        QueryResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
+        DataResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
         if (groupBelonging.getNumResults() == 0) {
             throw new CatalogAuthorizationException("Only the members of the study are allowed to see it");
         }
@@ -288,8 +288,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
 
     private boolean isAdministrativeUser(long studyId, String user) throws CatalogException {
-        QueryResult<Group> groupBelonging = getGroupBelonging(studyId, user);
-        for (Group group : groupBelonging.getResult()) {
+        DataResult<Group> groupBelonging = getGroupBelonging(studyId, user);
+        for (Group group : groupBelonging.getResults()) {
             if (group.getId().equals(ADMINS_GROUP)) {
                 return true;
             }
@@ -586,13 +586,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
+    public DataResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(studyId, null, Entity.STUDY);
     }
 
     @Override
-    public QueryResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
+    public DataResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -605,7 +605,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -615,13 +615,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
+    public DataResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(sampleId, null, Entity.SAMPLE);
     }
 
     @Override
-    public QueryResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException {
+    public DataResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -634,7 +634,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -649,7 +649,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
+    public DataResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
             throws CatalogException {
         if (checkPermission) {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -658,7 +658,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException {
+    public DataResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -671,7 +671,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -681,13 +681,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException {
+    public DataResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(individualId, null, Entity.INDIVIDUAL);
     }
 
     @Override
-    public QueryResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member)
+    public DataResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -701,7 +701,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -711,13 +711,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
+    public DataResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(cohortId, null, Entity.COHORT);
     }
 
     @Override
-    public QueryResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException {
+    public DataResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -730,7 +730,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -740,13 +740,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
+    public DataResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(panelId, null, Entity.DISEASE_PANEL);
     }
 
     @Override
-    public QueryResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
+    public DataResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -758,13 +758,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
+    public DataResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(jobId, null, Entity.JOB);
     }
 
     @Override
-    public QueryResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException {
+    public DataResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -777,7 +777,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -787,13 +787,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
+    public DataResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(familyId, null, Entity.FAMILY);
     }
 
     @Override
-    public QueryResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException {
+    public DataResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -805,14 +805,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+    public DataResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(clinicalAnalysisId, null, Entity.CLINICAL_ANALYSIS);
     }
 
     @Override
-    public QueryResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
+    public DataResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -827,7 +827,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
         if (member.startsWith("@")) { //group
             // If the userId does not belong to the group...
-            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
+            DataResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
             if (groupBelonging.getNumResults() != 1 || !groupBelonging.first().getId().equals(member)) {
                 throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
                         + member);
@@ -842,32 +842,32 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public List<QueryResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    public List<DataResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
         aclDBAdaptor.setToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
-    public List<QueryResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    public List<DataResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
         aclDBAdaptor.addToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
-    public List<QueryResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
+    public List<DataResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
             throws CatalogException {
         aclDBAdaptor.removeFromMembers(studyIds, members, permissions, Entity.STUDY);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
-    private <E extends AbstractAclEntry> List<QueryResult<E>> getAcls(List<Long> ids, List<String> members, Entity entity)
+    private <E extends AbstractAclEntry> List<DataResult<E>> getAcls(List<Long> ids, List<String> members, Entity entity)
             throws CatalogException {
         return aclDBAdaptor.get(ids, members, entity);
     }
 
-    public <E extends AbstractAclEntry> List<QueryResult<E>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+    public <E extends AbstractAclEntry> List<DataResult<E>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
                                                                      List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
@@ -882,7 +882,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+    public <E extends AbstractAclEntry> List<DataResult<E>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
                                                                      List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
@@ -897,7 +897,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
+    public <E extends AbstractAclEntry> List<DataResult<E>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
                                                                         @Nullable List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
@@ -911,20 +911,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return getAclResultList(ids, members, entity, startTime);
     }
 
-    <E extends AbstractAclEntry> List<QueryResult<E>> getAclResultList(List<Long> ids, List<String> members, Entity entity, long startTime)
+    <E extends AbstractAclEntry> List<DataResult<E>> getAclResultList(List<Long> ids, List<String> members, Entity entity, long startTime)
             throws CatalogException {
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
-        List<QueryResult<E>> aclResultList = getAcls(ids, members, entity);
+        List<DataResult<E>> aclResultList = getAcls(ids, members, entity);
 
-        for (QueryResult<E> aclEntryQueryResult : aclResultList) {
-            aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
+        for (DataResult<E> aclEntryDataResult : aclResultList) {
+            aclEntryDataResult.setTime(aclEntryDataResult.getTime() + dbTime);
         }
         return aclResultList;
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<QueryResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries,
+    public <E extends AbstractAclEntry> List<DataResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries,
                                                                            Entity entity) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             logger.warn("Missing identifiers to set acls");
@@ -935,10 +935,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         aclDBAdaptor.setAcls(ids, aclEntries, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
-        List<QueryResult<E>> aclResultList = getAcls(ids, null, entity);
+        List<DataResult<E>> aclResultList = getAcls(ids, null, entity);
 
-        for (QueryResult<E> aclEntryQueryResult : aclResultList) {
-            aclEntryQueryResult.setDbTime(aclEntryQueryResult.getDbTime() + dbTime);
+        for (DataResult<E> aclEntryDataResult : aclResultList) {
+            aclEntryDataResult.setTime(aclEntryDataResult.getTime() + dbTime);
         }
 
         return aclResultList;
@@ -998,11 +998,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @return the group id of the user. Null if the user does not take part of any group.
      * @throws CatalogException when there is any database error.
      */
-    QueryResult<Group> getGroupBelonging(long studyId, List<String> members) throws CatalogException {
+    DataResult<Group> getGroupBelonging(long studyId, List<String> members) throws CatalogException {
         return studyDBAdaptor.getGroup(studyId, null, members);
     }
 
-    QueryResult<Group> getGroupBelonging(long studyId, String members) throws CatalogException {
+    DataResult<Group> getGroupBelonging(long studyId, String members) throws CatalogException {
         return getGroupBelonging(studyId, Arrays.asList(members.split(",")));
     }
 
