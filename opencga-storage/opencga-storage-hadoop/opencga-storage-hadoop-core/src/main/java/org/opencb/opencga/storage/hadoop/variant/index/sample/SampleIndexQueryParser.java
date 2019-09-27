@@ -826,6 +826,10 @@ public class SampleIndexQueryParser {
             annotationIndex |= LOF_EXTENDED_MASK;
         }
 
+        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
+            annotationIndex |= CLINICAL_MASK;
+        }
+
         List<PopulationFrequencyQuery> popFreqQuery = new ArrayList<>();
         QueryOperation popFreqOp = QueryOperation.AND;
         boolean popFreqPartial = false;
