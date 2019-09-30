@@ -17,21 +17,15 @@
 package org.opencb.opencga.analysis.variant.gwas;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.oskar.analysis.AnalysisResult;
-import org.opencb.oskar.analysis.variant.gwas.AbstractGwasExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
+import org.opencb.oskar.analysis.variant.gwas.GwasExecutor;
 import org.opencb.oskar.core.annotations.AnalysisExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutorRequirement;
 
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.opencb.oskar.core.annotations.AnalysisExecutorRequirement.AnalysisRequirementFramework;
-import static org.opencb.oskar.core.annotations.AnalysisExecutorRequirement.AnalysisRequirementSource;
-
-@AnalysisExecutor(id = "HBaseIter", analysis = "GWAS")
-@AnalysisExecutorRequirement(source = AnalysisRequirementSource.HBASE, framework = AnalysisRequirementFramework.ITERATOR)
-public class GwasHBaseIterAnalysisExecutor extends AbstractGwasExecutor {
+@AnalysisExecutor(id = "HBaseIter", analysis = "GWAS", source = AnalysisExecutor.Source.HBASE, framework = AnalysisExecutor.Framework.MAP_REDUCE)
+public class GwasHBaseIterAnalysisExecutor extends GwasExecutor {
 
     public GwasHBaseIterAnalysisExecutor() {
     }
@@ -42,8 +36,7 @@ public class GwasHBaseIterAnalysisExecutor extends AbstractGwasExecutor {
 
 
     @Override
-    public AnalysisResult exec() {
+    public void exec() {
         System.out.println("This class must be moved to opencga-storage-hadoop");
-        return null;
     }
 }
