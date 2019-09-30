@@ -4,14 +4,6 @@ This document contains information related to the deployment of OpenCGA to Azure
 
 ## Deploy to Azure
 
-### With the Portal
-
-Click the following link the ensure you fill in the parameters according to their descriptions.
-
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fopencb%2Fopencga%2Fazure%2Fopencga-app%2Fapp%2Fscripts%2Fazure%2Farm%2Fazuredeploy.json" target="_blank">
-    <img src="http://azuredeploy.net/deploybutton.png"/>
-</a>
-
 ### With `az cli`
 
 1. Clone the repository and move into the `ARM` directory with `cd ./opencga-app/app/scripts/azure/arm`. 
