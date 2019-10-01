@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.core.results;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.List;
 import java.util.Map;
@@ -26,19 +28,18 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@JsonIgnoreProperties({"samples", "numTotalSamples", "numSamples", "source", "approximateCount", "approximateCountSamplingSize"})
 public class VariantQueryResult<T> extends DataResult<T> {
 
-    private Map<String, List<String>> samples;
-    private Integer numTotalSamples;
-    private Integer numSamples;
-    private String source;
-    private Boolean approximateCount;
-    private Integer approximateCountSamplingSize;
+    private static String SAMPLES = "samples";
+    private static String NUM_TOTAL_SAMPLES = "numTotalSamples";
+    private static String NUM_SAMPLES = "numSamples";
+    private static String SOURCE = "source";
+    private static String APPROXIMATE_COUNT = "approximateCount";
+    private static String APPROXIMATE_COUNT_SAMPLING_SIZE = "approximateCountSamplingSize";
 
     public VariantQueryResult() {
-        this.samples = null;
     }
-
 
     public VariantQueryResult(int dbTime, int numResults, long numMatches, List<String> warnings, List<T> result,
                               Map<String, List<String>> samples, String source) {
@@ -49,16 +50,25 @@ public class VariantQueryResult<T> extends DataResult<T> {
                               Map<String, List<String>> samples, String source, Boolean approximateCount,
                               Integer approximateCountSamplingSize, Integer numTotalSamples) {
         super(dbTime, warnings, numResults, result, numMatches);
-        this.samples = samples;
-        this.source = source;
-        this.approximateCount = approximateCount;
-        this.approximateCountSamplingSize = approximateCountSamplingSize;
-        if (samples == null) {
-            this.numSamples = null;
-        } else {
-            this.numSamples = samples.values().stream().mapToInt(List::size).sum();
+        setSamples(samples);
+        setSource(source);
+        setApproximateCount(approximateCount);
+        setApproximateCountSamplingSize(approximateCountSamplingSize);
+        if (samples != null) {
+            setNumSamples(samples.values().stream().mapToInt(List::size).sum());
         }
-        this.numTotalSamples = numTotalSamples;
+        setNumTotalSamples(numTotalSamples);
+    }
+
+    public VariantQueryResult(DataResult<T> dataResult) {
+        super(dataResult.getTime(),
+                dataResult.getWarnings(),
+                dataResult.getNumMatches(),
+                dataResult.getNumInserted(),
+                dataResult.getNumUpdated(),
+                dataResult.getNumDeleted(),
+                dataResult.getAttributes());
+        setResults(dataResult.getResults());
     }
 
     public VariantQueryResult(DataResult<T> queryResult, Map<String, List<String>> samples) {
@@ -66,72 +76,84 @@ public class VariantQueryResult<T> extends DataResult<T> {
     }
 
     public VariantQueryResult(DataResult<T> dataResult, Map<String, List<String>> samples, String source) {
-        super(dataResult.getTime(), dataResult.getWarnings(), dataResult.getNumResults(), dataResult.getResults(),
-                dataResult.getNumMatches());
-        this.samples = samples;
+        this(dataResult);
+        setSamples(samples);
         if (getNumMatches() >= 0) {
-            approximateCount = false;
+            setApproximateCount(false);
         }
-        if (samples == null) {
-            this.numSamples = null;
-        } else {
-            this.numSamples = samples.values().stream().mapToInt(List::size).sum();
+        if (samples != null) {
+            this.setNumSamples(samples.values().stream().mapToInt(List::size).sum());
         }
-        this.numTotalSamples = numSamples;
-        this.source = source;
+        this.setNumTotalSamples(getNumSamples());
+        this.setSource(source);
     }
 
     public Map<String, List<String>> getSamples() {
-        return samples;
+        Object o = getAttributes().get(SAMPLES);
+        if (!(o instanceof Map)) {
+            return null;
+        } else {
+            return ((Map<String, List<String>>) o);
+        }
     }
 
     public VariantQueryResult<T> setSamples(Map<String, List<String>> samples) {
-        this.samples = samples;
+        getAttributes().put(SAMPLES, samples);
         return this;
     }
 
     public Integer getNumTotalSamples() {
-        return numTotalSamples;
+        return getAttributes().containsKey(NUM_TOTAL_SAMPLES) ? getAttributes().getInt(NUM_TOTAL_SAMPLES) : null;
     }
 
-    public VariantQueryResult<T> setNumTotalSamples(int numTotalSamples) {
-        this.numTotalSamples = numTotalSamples;
+    public VariantQueryResult<T> setNumTotalSamples(Integer numTotalSamples) {
+        getAttributes().put(NUM_TOTAL_SAMPLES, numTotalSamples);
         return this;
     }
 
     public Integer getNumSamples() {
-        return numSamples;
+        return getAttributes().containsKey(NUM_SAMPLES) ? getAttributes().getInt(NUM_SAMPLES) : null;
     }
 
-    public VariantQueryResult<T> setNumSamples(int numSamples) {
-        this.numSamples = numSamples;
+    public VariantQueryResult<T> setNumSamples(Integer numSamples) {
+        getAttributes().put(NUM_SAMPLES, numSamples);
         return this;
     }
 
     public Boolean getApproximateCount() {
-        return approximateCount;
+        return getAttributes().containsKey(APPROXIMATE_COUNT) ? getAttributes().getBoolean(APPROXIMATE_COUNT) : null;
     }
 
     public VariantQueryResult<T> setApproximateCount(Boolean approximateCount) {
-        this.approximateCount = approximateCount;
+        getAttributes().put(APPROXIMATE_COUNT, approximateCount);
         return this;
     }
 
     public Integer getApproximateCountSamplingSize() {
-        return approximateCountSamplingSize;
+        return getAttributes().containsKey(APPROXIMATE_COUNT_SAMPLING_SIZE) ? getAttributes().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE) : null;
     }
 
     public VariantQueryResult setApproximateCountSamplingSize(Integer approximateCountSamplingSize) {
-        this.approximateCountSamplingSize = approximateCountSamplingSize;
+        getAttributes().put(APPROXIMATE_COUNT_SAMPLING_SIZE, approximateCountSamplingSize);
         return this;
     }
 
     public String getSource() {
-        return source;
+        return getAttributes().getString(SOURCE);
     }
 
     public VariantQueryResult<T> setSource(String source) {
-        this.source = source;
+        getAttributes().put(SOURCE, source);
         return this;
+    }
+
+    @Override
+    public ObjectMap getAttributes() {
+        ObjectMap attributes = super.getAttributes();
+        if (attributes == null) {
+            attributes = new ObjectMap();
+            setAttributes(attributes);
+        }
+        return attributes;
     }
 }
