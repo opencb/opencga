@@ -343,7 +343,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
 
-        DataResult writeResult = new DataResult();
+        DataResult result = DataResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
@@ -402,20 +402,24 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Check if the sample can be deleted
                 checkSampleCanBeDeleted(study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
 
-                writeResult.append(sampleDBAdaptor.delete(sample));
+                result.append(sampleDBAdaptor.delete(sample));
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                logger.debug("Cannot delete sample {}: {}", sample.getId(), e.getMessage());
+                String errorMsg = "Cannot delete sample " + sample.getId() + ": " + e.getMessage();
+
+                result.getWarnings().add(errorMsg);
+
+                logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-                throw new CatalogException("Cannot delete sample " + sample.getId() + ": " + e.getMessage(), e.getCause());
+                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
-        return writeResult;
+        return result;
     }
 
     public DataResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,

@@ -199,7 +199,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
     @Override
     InternalGetDataResult<File> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                             String user, boolean silent) throws CatalogException {
+                                            String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing file entries.");
         }
@@ -536,7 +536,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public DataResult<File> createFolder(String studyStr, String path, File.FileStatus status, boolean parents, String description,
-                                          QueryOptions options, String sessionId) throws CatalogException {
+                                         QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkPath(path, "folderPath");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -572,7 +572,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public DataResult<File> createFile(String studyStr, String path, String description, boolean parents, String content,
-                                        String sessionId) throws CatalogException {
+                                       String sessionId) throws CatalogException {
         ParamUtils.checkPath(path, "filePath");
 
         String userId = userManager.getUserId(sessionId);
@@ -595,9 +595,9 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public DataResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                    String description, File.FileStatus status, long size, List<Sample> samples, long jobId,
-                                    Map<String, Object> stats, Map<String, Object> attributes, boolean parents, String content,
-                                    QueryOptions options, String sessionId) throws CatalogException {
+                                   String description, File.FileStatus status, long size, List<Sample> samples, long jobId,
+                                   Map<String, Object> stats, Map<String, Object> attributes, boolean parents, String content,
+                                   QueryOptions options, String sessionId) throws CatalogException {
         File file = new File(type, format, bioformat, path, description, status, size, samples, jobId, null, stats, attributes);
         return create(studyStr, file, parents, content, options, sessionId);
     }
@@ -826,7 +826,7 @@ public class FileManager extends AnnotationSetManager<File> {
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public DataResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                    boolean calculateChecksum, String token) throws CatalogException {
+                                   boolean calculateChecksum, String token) throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
 
@@ -984,7 +984,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public DataResult<FileTree> getTree(@Nullable String studyId, String fileId, Query query, QueryOptions options, int maxDepth,
-                                         String token) throws CatalogException {
+                                        String token) throws CatalogException {
         long startTime = System.currentTimeMillis();
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1187,7 +1187,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
 
-        DataResult writeResult = new DataResult();
+        DataResult dataResult = DataResult.empty();
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -1266,20 +1266,20 @@ public class FileManager extends AnnotationSetManager<File> {
                 if (file.isExternal()) {
                     // unlink
                     DataResult result = unlink(study.getUid(), file);
-                    writeResult.setNumUpdated(writeResult.getNumUpdated() + result.getNumUpdated());
-                    writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
+                    dataResult.setNumUpdated(dataResult.getNumUpdated() + result.getNumUpdated());
+                    dataResult.setNumMatches(dataResult.getNumMatches() + result.getNumMatches());
                 } else {
                     // local
                     if (physicalDelete) {
                         // physicalDelete
                         DataResult result = physicalDelete(study.getUid(), file, params.getBoolean(FORCE_DELETE, false));
-                        writeResult.setNumUpdated(writeResult.getNumUpdated() + result.getNumUpdated());
-                        writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
+                        dataResult.setNumUpdated(dataResult.getNumUpdated() + result.getNumUpdated());
+                        dataResult.setNumMatches(dataResult.getNumMatches() + result.getNumMatches());
                     } else {
                         // sendToTrash
                         DataResult result = sendToTrash(study.getUid(), file);
-                        writeResult.setNumUpdated(writeResult.getNumUpdated() + result.getNumUpdated());
-                        writeResult.setNumMatches(writeResult.getNumMatches() + result.getNumMatches());
+                        dataResult.setNumUpdated(dataResult.getNumUpdated() + result.getNumUpdated());
+                        dataResult.setNumMatches(dataResult.getNumMatches() + result.getNumMatches());
                     }
                 }
 
@@ -1291,22 +1291,26 @@ public class FileManager extends AnnotationSetManager<File> {
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                if (file.getType() == File.Type.FILE) {
-                    logger.debug("Cannot delete file {}: {}", file.getId(), e.getMessage(), e);
-                } else {
-                    logger.debug("Cannot delete folder {}: {}", file.getId(), e.getMessage(), e);
-                }
+                String errorMsg;
 
+                if (file.getType() == File.Type.FILE) {
+                    errorMsg = "Cannot delete file " + file.getPath() + ": " + e.getMessage();
+                } else {
+                    errorMsg = "Cannot delete folder " + file.getPath() + ": " + e.getMessage();
+                }
+                dataResult.getWarnings().add(errorMsg);
+
+                logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-                throw new CatalogException("Could not delete file '" + file.getPath() + "': " + e.getMessage(), e.getCause());
+                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
-        writeResult.setTime((int) watch.getTime(TimeUnit.MILLISECONDS));
-        writeResult.setNumMatches(writeResult.getNumMatches() + numMatches);
+        dataResult.setTime((int) watch.getTime(TimeUnit.MILLISECONDS));
+        dataResult.setNumMatches(dataResult.getNumMatches() + numMatches);
 
-        return writeResult;
+        return dataResult;
     }
 
     public DataResult<File> unlink(@Nullable String studyId, String fileId, String token) throws CatalogException {
@@ -1631,8 +1635,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public DataResult<File> updateAnnotations(String studyStr, String fileStr, String annotationSetId,
-                                               Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
-                                               QueryOptions options, String token) throws CatalogException {
+                                              Map<String, Object> annotations, ParamUtils.CompleteUpdateAction action,
+                                              QueryOptions options, String token) throws CatalogException {
         if (annotations == null || annotations.isEmpty()) {
             throw new CatalogException("Missing array of annotations.");
         }
@@ -1645,13 +1649,13 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public DataResult<File> removeAnnotations(String studyStr, String fileStr, String annotationSetId,
-                                               List<String> annotations, QueryOptions options, String token) throws CatalogException {
+                                              List<String> annotations, QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, fileStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.REMOVE, options, token);
     }
 
     public DataResult<File> resetAnnotations(String studyStr, String fileStr, String annotationSetId, List<String> annotations,
-                                              QueryOptions options, String token) throws CatalogException {
+                                             QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, fileStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
@@ -2239,179 +2243,199 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public DataResult<Job> index(String studyStr, List<String> fileList, String type, Map<String, String> params, String sessionId)
+    public DataResult<Job> index(String studyStr, List<String> fileList, String type, Map<String, String> params, String token)
             throws CatalogException {
         params = ParamUtils.defaultObject(params, HashMap::new);
 
-        String userId = userManager.getUserId(sessionId);
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("fileList", fileList)
+                .append("type", type)
+                .append("params", params)
+                .append("token", token);
+
+        String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
-        List<File> fileFolderIdList = internalGet(study.getUid(), fileList, QueryOptions.empty(), userId, false).getResults();
 
-        long studyUid = study.getUid();
-
-        // Define the output directory where the indexes will be put
-        String outDirPath = ParamUtils.defaultString(params.get("outdir"), "/").replace(":", "/");
-        if (outDirPath.contains("/") && !outDirPath.endsWith("/")) {
-            outDirPath = outDirPath + "/";
-        }
-
-        File outDir;
         try {
-            outDir = internalGet(studyUid, outDirPath, QueryOptions.empty(), userId).first();
-        } catch (CatalogException e) {
-            logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
-            DataResult<File> folder = createFolder(studyStr, outDirPath, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
-            outDir = folder.first();
-        }
+            List<File> fileFolderIdList = internalGet(study.getUid(), fileList, QueryOptions.empty(), userId, false).getResults();
 
-        authorizationManager.checkFilePermission(studyUid, outDir.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+            long studyUid = study.getUid();
 
-        DataResult<Job> jobDataResult;
-        List<File> fileIdList = new ArrayList<>();
-        String indexDaemonType = null;
-        String jobName = null;
-        String description = null;
-
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                FileDBAdaptor.QueryParams.NAME.key(),
-                FileDBAdaptor.QueryParams.PATH.key(),
-                FileDBAdaptor.QueryParams.URI.key(),
-                FileDBAdaptor.QueryParams.TYPE.key(),
-                FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                FileDBAdaptor.QueryParams.FORMAT.key(),
-                FileDBAdaptor.QueryParams.INDEX.key())
-        );
-
-        if (type.equals("VCF")) {
-
-            indexDaemonType = IndexDaemon.VARIANT_TYPE;
-            Boolean transform = Boolean.valueOf(params.get("transform"));
-            Boolean load = Boolean.valueOf(params.get("load"));
-            if (transform && !load) {
-                jobName = "variant_transform";
-                description = "Transform variants from " + fileList;
-            } else if (load && !transform) {
-                description = "Load variants from " + fileList;
-                jobName = "variant_load";
-            } else {
-                description = "Index variants from " + fileList;
-                jobName = "variant_index";
+            // Define the output directory where the indexes will be put
+            String outDirPath = ParamUtils.defaultString(params.get("outdir"), "/").replace(":", "/");
+            if (outDirPath.contains("/") && !outDirPath.endsWith("/")) {
+                outDirPath = outDirPath + "/";
             }
 
-            for (File file : fileFolderIdList) {
-                if (File.Type.DIRECTORY.equals(file.getType())) {
-                    // Retrieve all the VCF files that can be found within the directory
-                    String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
-                    Query query = new Query()
-                            .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
-                            .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
-                            .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    DataResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
+            File outDir;
+            try {
+                outDir = internalGet(studyUid, outDirPath, QueryOptions.empty(), userId).first();
+            } catch (CatalogException e) {
+                logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
+                DataResult<File> folder = createFolder(studyStr, outDirPath, new File.FileStatus(), true, "", new QueryOptions(), token);
+                outDir = folder.first();
+            }
 
-                    if (fileDataResult.getNumResults() == 0) {
-                        throw new CatalogException("No VCF files could be found in directory " + file.getPath());
-                    }
+            authorizationManager.checkFilePermission(studyUid, outDir.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                    for (File fileTmp : fileDataResult.getResults()) {
-                        authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                        authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+            DataResult<Job> jobDataResult;
+            List<File> fileIdList = new ArrayList<>();
+            String indexDaemonType = null;
+            String jobName = null;
+            String description = null;
 
-                        fileIdList.add(fileTmp);
-                    }
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    FileDBAdaptor.QueryParams.NAME.key(),
+                    FileDBAdaptor.QueryParams.PATH.key(),
+                    FileDBAdaptor.QueryParams.URI.key(),
+                    FileDBAdaptor.QueryParams.TYPE.key(),
+                    FileDBAdaptor.QueryParams.BIOFORMAT.key(),
+                    FileDBAdaptor.QueryParams.FORMAT.key(),
+                    FileDBAdaptor.QueryParams.INDEX.key())
+            );
 
+            if (type.equals("VCF")) {
+
+                indexDaemonType = IndexDaemon.VARIANT_TYPE;
+                Boolean transform = Boolean.valueOf(params.get("transform"));
+                Boolean load = Boolean.valueOf(params.get("load"));
+                if (transform && !load) {
+                    jobName = "variant_transform";
+                    description = "Transform variants from " + fileList;
+                } else if (load && !transform) {
+                    description = "Load variants from " + fileList;
+                    jobName = "variant_load";
                 } else {
-                    if (isTransformedFile(file.getName())) {
-                        if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-                            catalogManager.getFileManager().matchUpVariantFiles(studyStr, Collections.singletonList(file), sessionId);
+                    description = "Index variants from " + fileList;
+                    jobName = "variant_index";
+                }
+
+                for (File file : fileFolderIdList) {
+                    if (File.Type.DIRECTORY.equals(file.getType())) {
+                        // Retrieve all the VCF files that can be found within the directory
+                        String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
+                        Query query = new Query()
+                                .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
+                                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
+                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+                        DataResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
+
+                        if (fileDataResult.getNumResults() == 0) {
+                            throw new CatalogException("No VCF files could be found in directory " + file.getPath());
                         }
-                        if (file.getRelatedFiles() != null) {
-                            for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
-                                if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
-                                    Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), relatedFile.getFile().getUid());
-                                    file = search(studyStr, query, null, sessionId).first();
-                                    break;
+
+                        for (File fileTmp : fileDataResult.getResults()) {
+                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
+                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId,
+                                    FileAclEntry.FilePermissions.WRITE);
+
+                            fileIdList.add(fileTmp);
+                        }
+
+                    } else {
+                        if (isTransformedFile(file.getName())) {
+                            if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
+                                catalogManager.getFileManager().matchUpVariantFiles(studyStr, Collections.singletonList(file), token);
+                            }
+                            if (file.getRelatedFiles() != null) {
+                                for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
+                                    if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
+                                        Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), relatedFile.getFile().getUid());
+                                        file = search(studyStr, query, null, token).first();
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (!File.Format.VCF.equals(file.getFormat()) && !File.Format.GVCF.equals(file.getFormat())) {
-                        throw new CatalogException("The file " + file.getName() + " is not a VCF file.");
-                    }
+                        if (!File.Format.VCF.equals(file.getFormat()) && !File.Format.GVCF.equals(file.getFormat())) {
+                            throw new CatalogException("The file " + file.getName() + " is not a VCF file.");
+                        }
 
-                    authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                    authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
+                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
-                    fileIdList.add(file);
+                        fileIdList.add(file);
+                    }
                 }
+
+                if (fileIdList.size() == 0) {
+                    throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
+                }
+
+                params.put("sid", token);
+
+            } else if (type.equals("BAM")) {
+
+                indexDaemonType = IndexDaemon.ALIGNMENT_TYPE;
+                jobName = "AlignmentIndex";
+
+                for (File file : fileFolderIdList) {
+                    if (File.Type.DIRECTORY.equals(file.getType())) {
+                        // Retrieve all the BAM files that can be found within the directory
+                        String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
+                        Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.SAM, File.Format.BAM))
+                                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
+                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+                        DataResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
+
+                        if (fileDataResult.getNumResults() == 0) {
+                            throw new CatalogException("No SAM/BAM files could be found in directory " + file.getPath());
+                        }
+
+                        for (File fileTmp : fileDataResult.getResults()) {
+                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId,
+                                    FileAclEntry.FilePermissions.VIEW);
+                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId,
+                                    FileAclEntry.FilePermissions.WRITE);
+
+                            fileIdList.add(fileTmp);
+                        }
+
+                    } else {
+                        if (!File.Format.BAM.equals(file.getFormat()) && !File.Format.SAM.equals(file.getFormat())) {
+                            throw new CatalogException("The file " + file.getName() + " is not a SAM/BAM file.");
+                        }
+
+                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
+                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+
+                        fileIdList.add(file);
+                    }
+                }
+
             }
 
             if (fileIdList.size() == 0) {
                 throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
             }
 
-            params.put("sid", sessionId);
-
-        } else if (type.equals("BAM")) {
-
-            indexDaemonType = IndexDaemon.ALIGNMENT_TYPE;
-            jobName = "AlignmentIndex";
-
-            for (File file : fileFolderIdList) {
-                if (File.Type.DIRECTORY.equals(file.getType())) {
-                    // Retrieve all the BAM files that can be found within the directory
-                    String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
-                    Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.SAM, File.Format.BAM))
-                            .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
-                            .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    DataResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
-
-                    if (fileDataResult.getNumResults() == 0) {
-                        throw new CatalogException("No SAM/BAM files could be found in directory " + file.getPath());
-                    }
-
-                    for (File fileTmp : fileDataResult.getResults()) {
-                        authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                        authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-                        fileIdList.add(fileTmp);
-                    }
-
-                } else {
-                    if (!File.Format.BAM.equals(file.getFormat()) && !File.Format.SAM.equals(file.getFormat())) {
-                        throw new CatalogException("The file " + file.getName() + " is not a SAM/BAM file.");
-                    }
-
-                    authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                    authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-                    fileIdList.add(file);
-                }
+            if (!params.containsKey("study") && !params.containsKey("studyId")) {
+                params.put("study", study.getFqn());
             }
 
+            params.put("outdir", outDir.getPath());
+            String fileIds = fileIdList.stream().map(File::getPath).collect(Collectors.joining(","));
+            params.put("file", fileIds);
+            List<File> outputList = outDir.getUid() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
+            ObjectMap attributes = new ObjectMap();
+            attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
+            attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDirPath);
+            attributes.putIfNotNull(Job.OPENCGA_STUDY, study.getFqn());
+
+            logger.info("job description: " + description);
+            jobDataResult = catalogManager.getJobManager().queue(studyStr, jobName, jobName, description, null,
+                    Job.Type.INDEX, params, fileIdList, outputList, outDir, attributes, token);
+
+            auditManager.audit(userId, AuditRecord.Action.INDEX, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return jobDataResult;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, AuditRecord.Action.INDEX, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
-
-        if (fileIdList.size() == 0) {
-            throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
-        }
-
-        if (!params.containsKey("study") && !params.containsKey("studyId")) {
-            params.put("study", study.getFqn());
-        }
-
-        params.put("outdir", outDir.getPath());
-        String fileIds = fileIdList.stream().map(File::getPath).collect(Collectors.joining(","));
-        params.put("file", fileIds);
-        List<File> outputList = outDir.getUid() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
-        ObjectMap attributes = new ObjectMap();
-        attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
-        attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDirPath);
-        attributes.putIfNotNull(Job.OPENCGA_STUDY, study.getFqn());
-
-        logger.info("job description: " + description);
-        jobDataResult = catalogManager.getJobManager().queue(studyStr, jobName, jobName, description, null,
-                Job.Type.INDEX, params, fileIdList, outputList, outDir, attributes, sessionId);
-
-        return jobDataResult;
     }
 
     public void setFileIndex(String studyStr, String fileId, FileIndex index, String sessionId) throws CatalogException {
@@ -2499,7 +2523,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public List<DataResult<FileAclEntry>> updateAcl(String studyId, List<String> fileStrList, String memberList,
-                                                     File.FileAclParams aclParams, String token) throws CatalogException {
+                                                    File.FileAclParams aclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -2574,11 +2598,11 @@ public class FileManager extends AnnotationSetManager<File> {
                     break;
                 case REMOVE:
                     queryResultList = authorizationManager.removeAcls(extendedFileList.stream().map(File::getUid)
-                                    .collect(Collectors.toList()), members, permissions, Entity.FILE);
+                            .collect(Collectors.toList()), members, permissions, Entity.FILE);
                     break;
                 case RESET:
                     queryResultList = authorizationManager.removeAcls(extendedFileList.stream().map(File::getUid)
-                                    .collect(Collectors.toList()), members, null, Entity.FILE);
+                            .collect(Collectors.toList()), members, null, Entity.FILE);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

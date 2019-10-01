@@ -372,7 +372,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     @Override
     public DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        DataResult result = new DataResult();
+        DataResult result = DataResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -424,11 +424,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                logger.debug("Cannot delete family {}: {}", family.getId(), e.getMessage(), e);
+                String errorMsg = "Cannot delete family " + family.getId() + ": " + e.getMessage();
+                result.getWarnings().add(errorMsg);
+
+                logger.debug(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-                throw new CatalogException("Cannot delete family " + family.getId() + ": " + e.getMessage(), e.getCause());
+                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 

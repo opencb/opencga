@@ -439,7 +439,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     @Override
     public DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        DataResult writeResult = new DataResult();
+        DataResult result = DataResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
@@ -506,20 +506,23 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
 
                 // Add the results to the current write result
-                writeResult.append(individualDBAdaptor.delete(individual));
+                result.append(individualDBAdaptor.delete(individual));
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                logger.debug("Cannot delete individual {}: {}", individual.getId(), e.getMessage());
+                String errorMsg = "Cannot delete individual " + individual.getId() + ": " + e.getMessage();
+                result.getWarnings().add(errorMsg);
+
+                logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-                throw new CatalogException("Cannot delete individual " + individual.getId() + ": " + e.getMessage(), e.getCause());
+                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
-        return writeResult;
+        return result;
     }
 
     public DataResult<Individual> updateAnnotationSet(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,

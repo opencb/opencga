@@ -437,14 +437,13 @@ public class JobManager extends ResourceManager<Job> {
     @Override
     public DataResult delete(String studyId, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        DataResult writeResult = new DataResult();
+        DataResult result = DataResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
-        Query auditQuery = new Query(query);
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
                 .append("query", new Query(query))
@@ -481,20 +480,24 @@ public class JobManager extends ResourceManager<Job> {
                 // Check if the job can be deleted
                 checkJobCanBeDeleted(job);
 
-                writeResult.append(jobDBAdaptor.delete(job));
+                result.append(jobDBAdaptor.delete(job));
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                logger.debug("Cannot delete job {}: {}", job.getId(), e.getMessage());
+                String errorMsg = "Cannot delete job " + job.getId() + ": " + e.getMessage();
+
+                result.getWarnings().add(errorMsg);
+
+                logger.debug(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-                throw new CatalogException("Cannot delete job " + job.getId() + ": " + e.getMessage(), e.getCause());
+                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
-        return writeResult;
+        return result;
     }
 
     private void checkJobCanBeDeleted(Job job) throws CatalogException {

@@ -807,7 +807,7 @@ public class PanelManager extends ResourceManager<Panel> {
     @Override
     public DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        DataResult writeResult = new DataResult();
+        DataResult result = DataResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
@@ -852,20 +852,24 @@ public class PanelManager extends ResourceManager<Panel> {
                 // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
 
                 // Delete the panel
-                writeResult.append(panelDBAdaptor.delete(panel));
+                result.append(panelDBAdaptor.delete(panel));
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                logger.debug("Cannot delete panel {}: {}", panel.getId(), e.getMessage());
+                String errorMsg = "Cannot delete panel " + panel.getId() + ": " + e.getMessage();
+
+                result.getWarnings().add(errorMsg);
+
+                logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-                throw new CatalogException("Cannot delete panel " + panel.getId() + ": " + e.getMessage(), e.getCause());
+                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
-        return writeResult;
+        return result;
     }
 
     @Override

@@ -380,7 +380,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     @Override
     public DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        DataResult result = new DataResult();
+        DataResult result = DataResult.empty();
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -429,11 +429,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                logger.error("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage());
+                String errorMsg = "Cannot delete cohort " + cohort.getId() + ": " + e.getMessage();
+                result.getWarnings().add(errorMsg);
+
+                logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-                throw new CatalogException("Cannot delete cohort " + cohort.getId() + ": " + e.getMessage(), e.getCause());
+                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
