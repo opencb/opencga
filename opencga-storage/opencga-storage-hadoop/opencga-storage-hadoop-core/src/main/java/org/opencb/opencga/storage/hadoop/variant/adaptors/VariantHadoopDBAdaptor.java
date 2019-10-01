@@ -242,8 +242,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         VariantDBIterator iterator = iterator(query, options);
         iterator.forEachRemaining(variants::add);
         long numTotalResults;
-        String warn = "";
-        String error = "";
 
         if (options == null) {
             numTotalResults = variants.size();
@@ -261,7 +259,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
 
         VariantQueryResult<Variant> result = new VariantQueryResult<>(((int) iterator.getTimeFetching()), variants.size(),
-                numTotalResults, Collections.singletonList(warn), variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+                numTotalResults, null, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
     }
 
