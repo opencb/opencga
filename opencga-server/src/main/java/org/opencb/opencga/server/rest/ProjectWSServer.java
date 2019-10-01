@@ -19,18 +19,16 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -61,7 +59,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             String projectId = StringUtils.isEmpty(project.id) ? project.alias : project.id;
 
-            QueryResult queryResult = catalogManager.getProjectManager()
+            DataResult queryResult = catalogManager.getProjectManager()
                     .create(projectId, project.name, project.description, project.organization,
                             project.organism != null ? project.organism.getScientificName() : null,
                             project.organism != null ? project.organism.getCommonName() : null,
@@ -129,7 +127,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
             }
 
-            QueryResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, sessionId);
+            DataResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -268,7 +266,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 params.remove("organism");
             }
 
-            QueryResult result = catalogManager.getProjectManager().update(projectStr, params, queryOptions, sessionId);
+            DataResult result = catalogManager.getProjectManager().update(projectStr, params, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -21,10 +21,9 @@ import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -60,12 +59,12 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    public DataResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         return getStudyConfiguration(null, studyName, timeStamp, options);
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public DataResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         return getStudyConfiguration(studyId, null, timeStamp, options);
     }
 
@@ -94,7 +93,7 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
         unLock(studyId, lockId);
     }
 
-    private QueryResult<StudyConfiguration> getStudyConfiguration(Integer studyId, String studyName, Long timeStamp,
+    private DataResult<StudyConfiguration> getStudyConfiguration(Integer studyId, String studyName, Long timeStamp,
                                                                   QueryOptions options) {
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration;
@@ -112,8 +111,8 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
             query.append("timeStamp", new Document("$ne", timeStamp));
         }
 
-        QueryResult<StudyConfiguration> queryResult = collection.find(query, null, studyConfigurationConverter, null);
-        if (queryResult.getResult().isEmpty()) {
+        DataResult<StudyConfiguration> queryResult = collection.find(query, null, studyConfigurationConverter, null);
+        if (queryResult.getResults().isEmpty()) {
             studyConfiguration = null;
         } else {
             if (queryResult.first().getName() == null) {
@@ -125,22 +124,22 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
         }
 
         if (studyConfiguration == null) {
-            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 0, 0, "", "", Collections.emptyList());
+            return new DataResult<>(((int) (System.currentTimeMillis() - start)), Collections.emptyList(), 0, Collections.emptyList(), 0);
         } else {
-            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 1, 1, "", "",
-                    Collections.singletonList(studyConfiguration));
+            return new DataResult<>(((int) (System.currentTimeMillis() - start)), Collections.emptyList(), 1,
+                    Collections.singletonList(studyConfiguration), 1);
         }
     }
 
     @Override
-    public WriteResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         Document studyMongo = new DocumentToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
         Document query = new Document("_id", studyConfiguration.getId());
         List<Bson> updates = new ArrayList<>(studyMongo.size());
         studyMongo.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
-        WriteResult writeResult = collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
+        DataResult writeResult = collection.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
 //        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
 
         return writeResult;
@@ -148,13 +147,13 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
-        List<String> studyNames = collection.distinct("name", new Document("name", new Document("$exists", 1))).getResult();
+        List<String> studyNames = collection.distinct("name", new Document("name", new Document("$exists", 1))).getResults();
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }
 
     @Override
     public List<Integer> getStudyIds(QueryOptions options) {
-        return collection.distinct("_id", null, Integer.class).getResult();
+        return collection.distinct("_id", null, Integer.class).getResults();
     }
 
     @Override

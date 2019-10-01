@@ -116,7 +116,7 @@ public class NewVariantMetadataMigration {
                 QueryOptions.INCLUDE, Arrays.asList(
                 ProjectDBAdaptor.QueryParams.NAME.key(),
                 ProjectDBAdaptor.QueryParams.ID.key()
-        )), sessionId).getResult();
+        )), sessionId).getResults();
 
         Set<DataStore> dataStores = new HashSet<>();
         for (Project project : projects) {

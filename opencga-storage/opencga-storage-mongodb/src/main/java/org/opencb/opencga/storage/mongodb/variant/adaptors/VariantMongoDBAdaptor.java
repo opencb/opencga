@@ -34,11 +34,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -190,9 +189,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      *
      * @param query   Query to be executed in the database
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A WriteResult with the number of deleted variants
+     * @return A DataResult with the number of deleted variants
      */
-    public WriteResult remove(Query query, QueryOptions options) {
+    public DataResult remove(Query query, QueryOptions options) {
         Bson mongoQuery = queryParser.parseQuery(query);
         logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
         return variantsCollection.remove(mongoQuery, options);
@@ -205,9 +204,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @param files     The file name to be deleted, it must belong to the study
      * @param timestamp Timestamp of the operation
      * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the file deleted
+     * @return A DataResult with the file deleted
      */
-    public WriteResult removeFiles(String study, List<String> files, long timestamp, QueryOptions options) {
+    public DataResult removeFiles(String study, List<String> files, long timestamp, QueryOptions options) {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         Integer studyId = studyMetadata.getId();
         List<Integer> fileIds = metadataManager.getFileIds(studyId, files);
@@ -279,7 +278,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.info("Removed " + removedStageDocuments + " documents from stage");
     }
 
-    private WriteResult removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyMetadata sm,
+    private DataResult removeFilesFromVariantsCollection(Bson studiesToRemoveQuery, StudyMetadata sm,
                                                                         List<Integer> fileIds, long timestamp) {
         Set<Integer> sampleIds = new HashSet<>();
         for (Integer fileId : fileIds) {
@@ -323,7 +322,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeFile: update = " + update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         logger.info("Remove files from variants collection - step 2/3"); // Other studies
-        WriteResult result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
+        DataResult result2 = getVariantsCollection().update(query, update, new QueryOptions(MULTI, true));
         logger.debug("removeFile: matched  = " + result2.getNumMatches());
         logger.debug("removeFile: modified = " + result2.getNumUpdated());
 
@@ -341,9 +340,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @param studyName The study name to delete
      * @param timestamp Timestamp of the operation
      * @param options   Query modifiers, accepted values are: purge
-     * @return A QueryResult with the study deleted
+     * @return A DataResult with the study deleted
      */
-    public WriteResult removeStudy(String studyName, long timestamp, QueryOptions options) {
+    public DataResult removeStudy(String studyName, long timestamp, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -354,7 +353,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         boolean purge = options.getBoolean("purge", true);
 
         logger.info("Remove study from variants collection - step 1/" + (purge ? '2' : '1'));
-        WriteResult result = removeStudyFromVariants(studyId, query, timestamp);
+        DataResult result = removeStudyFromVariants(studyId, query, timestamp);
 
         if (purge) {
             logger.info("Remove study from variants collection - step 2/2");
@@ -375,7 +374,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return result;
     }
 
-    private WriteResult removeStudyFromVariants(int studyId, Bson query, long timestamp) {
+    private DataResult removeStudyFromVariants(int studyId, Bson query, long timestamp) {
         // { $pull : { files : {  sid : <studyId> } } }
         Bson update = combine(
                 pull(DocumentToVariantConverter.STUDIES_FIELD, eq(STUDYID_FIELD, studyId)),
@@ -385,7 +384,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("removeStudy: query = {}", query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         logger.debug("removeStudy: update = {}", update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        WriteResult result = variantsCollection.update(query, update, new QueryOptions(MULTI, true));
+        DataResult result = variantsCollection.update(query, update, new QueryOptions(MULTI, true));
         logger.debug("removeStudy: matched  = {}", result.getNumMatches());
         logger.debug("removeStudy: modified = {}", result.getNumUpdated());
 
@@ -541,7 +540,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     query.remove(INCLUDE_STUDY.key());
                     query.remove(INCLUDE_SAMPLE.key());
                     queryResult = get(query, new QueryOptions(QueryOptions.SORT, true));
-                    Iterator<Variant> iterator = queryResult.getResult().iterator();
+                    Iterator<Variant> iterator = queryResult.getResults().iterator();
                     while (iterator.hasNext()) {
                         Variant next = iterator.next();
                         if (!next.getStudies().isEmpty()) {
@@ -550,11 +549,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             }
                         }
                     }
-                    queryResult.setNumResults(queryResult.getResult().size());
-                    queryResult.setNumTotalResults(queryResult.getResult().size());
+                    queryResult.setNumResults(queryResult.getResults().size());
+                    queryResult.setNumMatches(queryResult.getResults().size());
                     watch.stop();
-                    queryResult.setDbTime(((int) watch.getTime()));
-                    queryResult.setId("getPhased");
+                    queryResult.setTime(((int) watch.getTime()));
                     return addSamplesMetadataIfRequested(queryResult, query, options, metadataManager);
                 }
             }
@@ -565,7 +563,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
+    public DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
         query = query == null ? new Query() : query;
         validateAnnotationQuery(query);
         options = validateAnnotationQueryOptions(options);
@@ -582,25 +580,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ANNOTATION), metadataManager);
 
         DocumentToVariantConverter converter = getDocumentToVariantConverter(new Query(), selectVariantElements);
-        QueryResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter, options);
+        DataResult<Variant> result = annotationCollection.find(mongoQuery, projection, converter, options);
 
-        List<VariantAnnotation> annotations = result.getResult()
+        List<VariantAnnotation> annotations = result.getResults()
                 .stream()
                 .map(Variant::getAnnotation)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        return new QueryResult<>("getAnnotation", result.getDbTime(), annotations.size(), result.getNumTotalResults(),
-                result.getWarningMsg(), result.getErrorMsg(), annotations);
+        return new DataResult<>(result.getTime(), result.getWarnings(), annotations.size(), annotations, result.getNumMatches());
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         Document mongoQuery = queryParser.parseQuery(query);
         return variantsCollection.count(mongoQuery);
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) {
+    public DataResult distinct(Query query, String field) {
         String documentPath;
         switch (field) {
             case "gene":
@@ -683,7 +680,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
+    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) {
         // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }},
         //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]},
         // 20000] } ] },
@@ -746,12 +743,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        System.out.println(sort.toString());
 
         long dbTimeStart = System.currentTimeMillis();
-        QueryResult output = variantsCollection.aggregate(/*"$histogram", */Arrays.asList(match, group, sort), options);
+        DataResult output = variantsCollection.aggregate(/*"$histogram", */Arrays.asList(match, group, sort), options);
         long dbTimeEnd = System.currentTimeMillis();
 
         Map<Long, Document> ids = new HashMap<>();
         // Create DBObject for intervals with features inside them
-        for (Document intervalObj : (List<Document>) output.getResult()) {
+        for (Document intervalObj : (List<Document>) output.getResults()) {
             Long auxId = Math.round((Double) intervalObj.get("_id")); //is double
 
             Document intervalVisited = ids.get(auxId);
@@ -786,12 +783,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             resultList.add(intervalObj);
         }
 
-        return new QueryResult(region.toString(), ((Long) (dbTimeEnd - dbTimeStart)).intValue(),
-                resultList.size(), resultList.size(), null, null, resultList);
+        return new DataResult(((Long) (dbTimeEnd - dbTimeStart)).intValue(), Collections.emptyList(), resultList.size(), resultList,
+                resultList.size());
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) {
         QueryOptions options = new QueryOptions();
         options.put("limit", numResults);
         options.put("count", true);
@@ -801,7 +798,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+    public DataResult groupBy(Query query, String field, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         } else {
@@ -898,32 +895,32 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         operations.add(limitStep);
         logger.debug("db." + collectionName + ".aggregate( " + operations + " )");
-        QueryResult<Document> queryResult = variantsCollection.aggregate(operations, options);
+        DataResult<Document> queryResult = variantsCollection.aggregate(operations, options);
 
-//            List<Map<String, Object>> results = new ArrayList<>(queryResult.getResult().size());
-//            results.addAll(queryResult.getResult().stream().map(dbObject -> new ObjectMap("id", dbObject.get("_id")).append("count",
+//            List<Map<String, Object>> results = new ArrayList<>(queryResult.getResults().size());
+//            results.addAll(queryResult.getResults().stream().map(dbObject -> new ObjectMap("id", dbObject.get("_id")).append("count",
 // dbObject.get("count"))).collect(Collectors.toList()));
 
         return queryResult;
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) {
         String warningMsg = "Unimplemented VariantMongoDBAdaptor::groupBy list of fields. Using field[0] : '" + fields.get(0) + "'";
         logger.warn(warningMsg);
-        QueryResult queryResult = groupBy(query, fields.get(0), options);
-        queryResult.setWarningMsg(warningMsg);
+        DataResult queryResult = groupBy(query, fields.get(0), options);
+        queryResult.setWarnings(Collections.singletonList(warningMsg));
         return queryResult;
     }
 
     @Override
-    public WriteResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions options) {
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions options) {
         StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
         return updateStats(variantStatsWrappers, sm, timestamp, options);
     }
 
     @Override
-    public WriteResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                    long timestamp, QueryOptions options) {
 //        MongoCollection<Document> coll = db.getDb().getCollection(collectionName);
 //        BulkWriteOperation pullBuilder = coll.initializeUnorderedBulkOperation();
@@ -994,7 +991,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (overwrite) {
             variantsCollection.update(pullQueriesBulkList, pullUpdatesBulkList, new QueryOptions());
         }
-        WriteResult writeResult = variantsCollection.update(pushQueriesBulkList, pushUpdatesBulkList, new QueryOptions());
+        DataResult writeResult = variantsCollection.update(pushQueriesBulkList, pushUpdatesBulkList, new QueryOptions());
         if (writeResult.getNumMatches() != pushQueriesBulkList.size()) {
             logger.warn("Could not update stats from some variants: {} != {}, {} non loaded stats", writeResult.getNumMatches(),
                     pushQueriesBulkList.size(), (pushQueriesBulkList.size() - writeResult.getNumMatches()));
@@ -1003,7 +1000,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return writeResult;
     }
 
-    public WriteResult removeStats(String studyName, String cohortName, QueryOptions options) {
+    public DataResult removeStats(String studyName, String cohortName, QueryOptions options) {
         StudyMetadata sm = metadataManager.getStudyMetadata(studyName);
         int cohortId = metadataManager.getCohortId(sm.getId(), cohortName);
 
@@ -1028,7 +1025,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public WriteResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
+    public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
         List<Bson> queries = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
 
@@ -1061,7 +1058,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public WriteResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
+    public DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
                                                QueryOptions options) {
         Document queryDocument = queryParser.parseQuery(query);
         Document updateDocument = DocumentToVariantAnnotationConverter.convertToStorageType(attribute);
@@ -1071,7 +1068,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 new QueryOptions(MULTI, true));
     }
 
-    public WriteResult removeAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
+    public DataResult removeAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         Document mongoQuery = queryParser.parseQuery(query);
         logger.debug("deleteAnnotation: query = {}", mongoQuery);
 

@@ -19,9 +19,9 @@ package org.opencb.opencga.server.grpc;
 import ga4gh.Reads;
 import htsjdk.samtools.SAMRecord;
 import io.grpc.stub.StreamObserver;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -51,13 +51,9 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
             String fileIdStr = query.getString("fileId");
             String sessionId = query.getString("sid");
 
-            QueryResult<Long> countQueryResult = alignmentStorageManager.count(studyIdStr, fileIdStr, query, queryOptions, sessionId);
+            DataResult<Long> countDataResult = alignmentStorageManager.count(studyIdStr, fileIdStr, query, queryOptions, sessionId);
 
-            if (countQueryResult.getNumResults() != 1) {
-                throw new Exception(countQueryResult.getErrorMsg());
-            }
-
-            long count = countQueryResult.first();
+            long count = countDataResult.first();
             ServiceTypesModel.LongResponse longResponse = ServiceTypesModel.LongResponse.newBuilder().setValue(count).build();
             responseObserver.onNext(longResponse);
             responseObserver.onCompleted();

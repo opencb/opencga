@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
@@ -57,7 +57,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
 
         String subCommandString = getParsedSubCommand(studiesCommandOptions.jCommander);
-        QueryResponse queryResponse = null;
+        DataResponse queryResponse = null;
         logger.debug("Executing studies command line: {}", subCommandString);
         switch (subCommandString) {
             case "create":
@@ -155,7 +155,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
     /**********************************************  Administration Commands  ***********************************************/
 
-    private QueryResponse<Study> create() throws CatalogException, IOException {
+    private DataResponse<Study> create() throws CatalogException, IOException {
         logger.debug("Creating a new study");
 
         StudyCommandOptions.CreateCommandOptions commandOptions = studiesCommandOptions.createCommandOptions;
@@ -169,7 +169,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().create(commandOptions.project, commandOptions.id, params);
     }
 
-    private QueryResponse<Study> info() throws CatalogException, IOException {
+    private DataResponse<Study> info() throws CatalogException, IOException {
         logger.debug("Getting the study info");
 
         studiesCommandOptions.infoCommandOptions.study = getSingleValidStudy(studiesCommandOptions.infoCommandOptions.study);
@@ -179,7 +179,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.study, queryOptions);
     }
 
-    private QueryResponse<Study> update() throws CatalogException, IOException {
+    private DataResponse<Study> update() throws CatalogException, IOException {
         logger.debug("Updating the study");
 
         StudyCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
@@ -201,7 +201,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().update(commandOptions.study, null, params);
     }
 
-    private QueryResponse<Study> delete() throws CatalogException, IOException {
+    private DataResponse<Study> delete() throws CatalogException, IOException {
         logger.debug("Deleting a study");
 
         return openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.study, new ObjectMap());
@@ -209,7 +209,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
     /************************************************  Summary and help Commands  ***********************************************/
 
-    private QueryResponse<ObjectMap> stats() throws CatalogException, IOException {
+    private DataResponse<ObjectMap> stats() throws CatalogException, IOException {
         logger.debug("Study stats");
 
         Query query = new Query("default", studiesCommandOptions.statsCommandOptions.defaultStats);
@@ -224,7 +224,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
     /************************************************  Search Commands  ***********************************************/
 
-    private QueryResponse<Study> search() throws CatalogException, IOException {
+    private DataResponse<Study> search() throws CatalogException, IOException {
         logger.debug("Searching study");
 
         Query query = new Query();
@@ -257,20 +257,20 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().search(query, queryOptions);
     }
 
-    private QueryResponse scanFiles() throws CatalogException, IOException {
+    private DataResponse scanFiles() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes.\n");
 
         return openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.study, null);
     }
 
-    private QueryResponse resyncFiles() throws CatalogException, IOException {
+    private DataResponse resyncFiles() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes.\n");
 
         return openCGAClient.getStudyClient().resyncFiles(studiesCommandOptions.resyncFilesCommandOptions.study, null);
     }
 
     /************************************************* Groups commands *********************************************************/
-    private QueryResponse<ObjectMap> groups() throws CatalogException,IOException {
+    private DataResponse<ObjectMap> groups() throws CatalogException,IOException {
         logger.debug("Groups");
 
         studiesCommandOptions.groupsCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsCommandOptions.study);
@@ -281,7 +281,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.study, params);
     }
 
-    private QueryResponse<ObjectMap> groupsCreate() throws CatalogException,IOException {
+    private DataResponse<ObjectMap> groupsCreate() throws CatalogException,IOException {
         logger.debug("Creating groups");
 
         studiesCommandOptions.groupsCreateCommandOptions.study =
@@ -292,7 +292,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.groupsCreateCommandOptions.groupName, studiesCommandOptions.groupsCreateCommandOptions.users);
     }
 
-    private QueryResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {
+    private DataResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {
         logger.debug("Deleting groups");
 
         studiesCommandOptions.groupsDeleteCommandOptions.study =
@@ -303,7 +303,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.groupsDeleteCommandOptions.groupId, queryOptions);
     }
 
-    private QueryResponse<ObjectMap> groupsUpdate() throws CatalogException,IOException {
+    private DataResponse<ObjectMap> groupsUpdate() throws CatalogException,IOException {
         logger.debug("Updating groups");
 
         studiesCommandOptions.groupsUpdateCommandOptions.study =
@@ -317,7 +317,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.groupsUpdateCommandOptions.groupId, params);
     }
 
-    private QueryResponse<ObjectMap> membersUpdate() throws CatalogException,IOException {
+    private DataResponse<ObjectMap> membersUpdate() throws CatalogException,IOException {
         logger.debug("Updating users from members group");
 
         studiesCommandOptions.memberGroupUpdateCommandOptions.study =
@@ -330,7 +330,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().updateGroupMember(studiesCommandOptions.memberGroupUpdateCommandOptions.study, params);
     }
 
-    private QueryResponse<ObjectMap> adminsUpdate() throws CatalogException,IOException {
+    private DataResponse<ObjectMap> adminsUpdate() throws CatalogException,IOException {
         logger.debug("Updating users from admins group");
 
         studiesCommandOptions.adminsGroupUpdateCommandOptions.study =
@@ -345,7 +345,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
     /************************************************* Variable set commands *********************************************************/
 
-    private QueryResponse<VariableSet> variableSets() throws CatalogException, IOException {
+    private DataResponse<VariableSet> variableSets() throws CatalogException, IOException {
         logger.debug("Get variable sets");
         StudyCommandOptions.VariableSetsCommandOptions commandOptions = studiesCommandOptions.variableSetsCommandOptions;
 
@@ -357,7 +357,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().getVariableSets(commandOptions.study, query);
     }
 
-    private QueryResponse<VariableSet> variableSetUpdate() throws CatalogException, IOException {
+    private DataResponse<VariableSet> variableSetUpdate() throws CatalogException, IOException {
         logger.debug("Update variable set");
         StudyCommandOptions.VariableSetsUpdateCommandOptions commandOptions = studiesCommandOptions.variableSetsUpdateCommandOptions;
 
@@ -372,7 +372,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().updateVariableSet(commandOptions.study, query, variableSet);
     }
 
-    private QueryResponse<VariableSet> variableSetVariableUpdate() throws CatalogException, IOException {
+    private DataResponse<VariableSet> variableSetVariableUpdate() throws CatalogException, IOException {
         logger.debug("Update variable");
         StudyCommandOptions.VariablesUpdateCommandOptions commandOptions = studiesCommandOptions.variablesUpdateCommandOptions;
 
@@ -388,7 +388,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     }
 
     /************************************************* Acl commands *********************************************************/
-    private QueryResponse<StudyAclEntry> getAcl() throws IOException, CatalogException {
+    private DataResponse<StudyAclEntry> getAcl() throws IOException, CatalogException {
         logger.debug("Get Acl");
         studiesCommandOptions.aclsCommandOptions.study =
                 getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
@@ -398,7 +398,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
     }
 
-    private QueryResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {
         StudyCommandOptions.AclsUpdateCommandOptions commandOptions = studiesCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap bodyParams = new ObjectMap();

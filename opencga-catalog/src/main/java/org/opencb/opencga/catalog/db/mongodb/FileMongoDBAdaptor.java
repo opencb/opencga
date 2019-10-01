@@ -283,7 +283,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
-                logger.info("File {} successfully updated", file.getId());
+                logger.debug("File {} successfully updated", file.getId());
                 numModified += 1;
             } catch (CatalogDBException e) {
                 String errorMsg = "Could not update file " + file.getId() + ": " + e.getMessage();

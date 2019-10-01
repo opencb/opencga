@@ -1,10 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -61,7 +61,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         throw new UnsupportedOperationException("Count not implemented in " + getClass());
     }
 
@@ -77,8 +77,8 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
      *
      * @param inputQuery Query
      * @param options    Options
-     * @param iterator   Shall the resulting object be an iterator instead of a QueryResult
-     * @return           QueryResult or Iterator with the variants that matches the query
+     * @param iterator   Shall the resulting object be an iterator instead of a DataResult
+     * @return           DataResult or Iterator with the variants that matches the query
      */
     @Override
     protected Object getOrIterator(Query inputQuery, QueryOptions options, boolean iterator) {
@@ -154,7 +154,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
 
             // Ensure limit
             if (result.getNumResults() > limit) {
-                result.setResult(result.getResult().subList(0, limit));
+                result.setResults(result.getResults().subList(0, limit));
                 result.setNumResults(limit);
             }
 

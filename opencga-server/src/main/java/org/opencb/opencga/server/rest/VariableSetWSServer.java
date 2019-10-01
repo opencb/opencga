@@ -19,8 +19,8 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
@@ -85,7 +85,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                 fixVariable(variable);
             }
 
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name,
+            DataResult<VariableSet> queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name,
                     params.unique, params.confidential, params.description, null, params.variables,
                     getAnnotableDataModelsList(params.entities), sessionId);
             return createOkResponse(queryResult);
@@ -118,7 +118,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variableset) {
         try {
-            QueryResult<VariableSet> queryResult =
+            DataResult<VariableSet> queryResult =
                     catalogManager.getStudyManager().getVariableSet(studyStr, variableset, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -136,7 +136,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId) {
         try {
             ParamUtils.checkIsSingleID(variablesetId);
-            QueryResult<VariableSetSummary> queryResult = catalogManager.getStudyManager().getVariableSetSummary(studyStr, variablesetId,
+            DataResult<VariableSetSummary> queryResult = catalogManager.getStudyManager().getVariableSetSummary(studyStr, variablesetId,
                     sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -176,7 +176,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                 query.remove("study");
             }
 
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().searchVariableSets(studyStr, query, queryOptions,
+            DataResult<VariableSet> queryResult = catalogManager.getStudyManager().searchVariableSets(studyStr, query, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -197,7 +197,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
             @ApiParam(value = "Variable set id or name", required = true) @PathParam("variableset") String variablesetId) {
         try {
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, variablesetId, sessionId);
+            DataResult<VariableSet> queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, variablesetId, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -215,7 +215,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(variable, new Variable());
 
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().addFieldToVariableSet(studyStr, variablesetId,
+            DataResult<VariableSet> queryResult = catalogManager.getStudyManager().addFieldToVariableSet(studyStr, variablesetId,
                     variable, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -232,7 +232,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Variable name to delete", required = true) @QueryParam("name") String name) {
         try {
             ParamUtils.checkIsSingleID(variablesetId);
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(studyStr, variablesetId,
+            DataResult<VariableSet> queryResult = catalogManager.getStudyManager().removeFieldFromVariableSet(studyStr, variablesetId,
                     name, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -250,7 +250,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiParam(value = "New name for the variable", required = true) @QueryParam("newName") String newName) {
         try {
             ParamUtils.checkIsSingleID(variablesetId);
-            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().renameFieldFromVariableSet(studyStr, variablesetId,
+            DataResult<VariableSet> queryResult = catalogManager.getStudyManager().renameFieldFromVariableSet(studyStr, variablesetId,
                     oldName, newName, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

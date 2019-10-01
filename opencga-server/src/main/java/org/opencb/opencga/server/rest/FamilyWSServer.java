@@ -23,10 +23,10 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -89,7 +89,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            List<QueryResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, sessionId);
+            List<DataResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, sessionId);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -149,7 +149,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             }
 
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            QueryResult<Family> queryResult;
+            DataResult<Family> queryResult;
             if (count) {
                 queryResult = familyManager.count(studyStr, query, sessionId);
             } else {
@@ -172,7 +172,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing family information", required = true) FamilyPOST family) {
         try {
             family = ObjectUtils.defaultIfNull(family, new FamilyPOST());
-            QueryResult<Family> queryResult = familyManager.create(studyStr,
+            DataResult<Family> queryResult = familyManager.create(studyStr,
                     family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), getIdList(members), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -215,7 +215,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            QueryResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, parameters, queryOptions,
+            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, parameters, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -306,7 +306,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("study");
             query.remove("fields");
 
-            QueryResult result = familyManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = familyManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -347,12 +347,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Family> search = familyManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
+            DataResult<Family> search = familyManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
                     sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
-                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
-                        search.first().getAnnotationSets()));
+                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);
             }
@@ -374,10 +373,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<QueryResult<Family>> queryResults = familyManager.get(studyStr, getIdList(familiesStr), null, sessionId);
+            List<DataResult<Family>> queryResults = familyManager.get(studyStr, getIdList(familiesStr), null, sessionId);
 
             Query query = new Query(FamilyDBAdaptor.QueryParams.UID.key(),
-                    queryResults.stream().map(QueryResult::first).map(Family::getUid).collect(Collectors.toList()));
+                    queryResults.stream().map(DataResult::first).map(Family::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -385,11 +384,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Family> search = familyManager.search(studyStr, query, queryOptions, sessionId);
+            DataResult<Family> search = familyManager.search(studyStr, query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
-                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
-                        search.getErrorMsg(), search.first().getAnnotationSets()));
+                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);
             }
@@ -419,11 +417,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             familyManager.update(studyStr, familyStr, new FamilyUpdateParams().setAnnotationSets(Collections.singletonList(
                     new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), sessionId);
-            QueryResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, new QueryOptions(QueryOptions.INCLUDE,
+            DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, new QueryOptions(QueryOptions.INCLUDE,
                     Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
             List<AnnotationSet> annotationSets = familyQueryResult.first().getAnnotationSets();
-            QueryResult<AnnotationSet> queryResult = new QueryResult<>(familyStr, familyQueryResult.getDbTime(), annotationSets.size(),
-                    annotationSets.size(), "", "", annotationSets);
+            DataResult<AnnotationSet> queryResult = new DataResult<>(familyQueryResult.getTime(), Collections.emptyList(),
+                    annotationSets.size(), annotationSets, annotationSets.size());
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);

@@ -1249,7 +1249,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
 
-                logger.info("Study {} successfully updated", study.getId());
+                logger.debug("Study {} successfully updated", study.getId());
                 numModified += 1;
             } catch (CatalogDBException e) {
                 String errorMsg = "Error updating study " + study.getId() + "(" + study.getUid() + "):" +  e.getMessage();

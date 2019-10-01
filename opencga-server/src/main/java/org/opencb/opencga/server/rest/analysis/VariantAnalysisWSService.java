@@ -24,10 +24,10 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
@@ -201,7 +201,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            QueryResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, sessionId);
+            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -342,8 +342,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 ) {
 
         try {
-            List<QueryResult> queryResults = new LinkedList<>();
-            QueryResult queryResult = null;
+            List<DataResult> queryResults = new LinkedList<>();
+            DataResult queryResult = null;
             // Get all query options
 
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -483,8 +483,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public Response getVariants(@ApiParam(name = "params", value = "Query parameters", required = true) VariantQueryParams params) {
         logger.info("count {} , limit {} , skip {}", count, limit, skip);
         try {
-            List<QueryResult> queryResults = new LinkedList<>();
-            QueryResult queryResult;
+            List<DataResult> queryResults = new LinkedList<>();
+            DataResult queryResult;
             // Get all query options
             QueryOptions postParams = new QueryOptions(getUpdateObjectMapper().writeValueAsString(params));
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -530,7 +530,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Query query = getVariantQuery(queryOptions);
             logger.debug("query = {}, queryOptions = {}" + query.toJson(), queryOptions.toJson());
 
-            QueryResult<VariantAnnotation> result = variantManager.getAnnotation(annotationId, query, queryOptions, sessionId);
+            DataResult<VariantAnnotation> result = variantManager.getAnnotation(annotationId, query, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -543,7 +543,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public Response getAnnotationMetadata(@ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId,
                                           @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam("project") String project) {
         try {
-            QueryResult<ProjectMetadata.VariantAnnotationMetadata> result =
+            DataResult<ProjectMetadata.VariantAnnotationMetadata> result =
                     variantManager.getAnnotationMetadata(annotationId, project, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -615,7 +615,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
                 QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
                 List<String> samplesList = catalogManager.getSampleManager().search(studyStr, sampleQuery, options, sessionId)
-                        .getResult()
+                        .getResults()
                         .stream()
                         .map(Sample::getId)
                         .collect(Collectors.toList());
@@ -641,7 +641,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 sampleNames = samplesInAnyVariants.keySet();
             }
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), String.join(",", sampleNames));
-            QueryResult<Sample> allSamples = catalogManager.getSampleManager().search(studyStr, sampleQuery, queryOptions, sessionId);
+            DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyStr, sampleQuery, queryOptions, sessionId);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -665,7 +665,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     ) {
         try {
             queryOptions.putAll(query);
-            QueryResult<VariantSampleData> sampleData = variantManager.getSampleData(variant, studyStr, queryOptions, sessionId);
+            DataResult<VariantSampleData> sampleData = variantManager.getSampleData(variant, studyStr, queryOptions, sessionId);
             return createOkResponse(sampleData);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -697,7 +697,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Map<String, String> params = new HashMap<>();
             params.put("input", file);
 
-            QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, "", "", "opencga-analysis", "variant validate",
+            DataResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, "", "", "opencga-analysis", "variant validate",
                     null, params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {

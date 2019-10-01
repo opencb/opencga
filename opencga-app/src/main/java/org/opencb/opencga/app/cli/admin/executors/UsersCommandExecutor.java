@@ -18,9 +18,10 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -124,18 +125,16 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void printImportReport(QueryResult<User> ldapImportResult) {
+    private void printImportReport(DataResult<User> ldapImportResult) {
         if (ldapImportResult.getNumResults() > 0) {
             System.out.println("New users registered: "
-                    + ldapImportResult.getResult().stream().map(User::getId).collect(Collectors.joining(", ")));
+                    + ldapImportResult.getResults().stream().map(User::getId).collect(Collectors.joining(", ")));
         }
 
-        if (StringUtils.isNotEmpty(ldapImportResult.getWarningMsg())) {
-            System.out.println(ldapImportResult.getWarningMsg());
-        }
-
-        if (StringUtils.isNotEmpty(ldapImportResult.getErrorMsg())) {
-            System.out.println("ERROR: " + ldapImportResult.getErrorMsg());
+        if (ListUtils.isNotEmpty(ldapImportResult.getWarnings())) {
+            for (String warning : ldapImportResult.getWarnings()) {
+                System.out.printf(warning);
+            }
         }
     }
 
@@ -174,14 +173,12 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
-            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager()
+            List<DataResult<User>> deletedUsers = catalogManager.getUserManager()
                     .delete(usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
-            for (QueryResult<User> deletedUser : deletedUsers) {
+            for (DataResult<User> deletedUser : deletedUsers) {
                 User user = deletedUser.first();
                 if (user != null) {
                     System.out.println("The user has been successfully deleted from the database: " + user.toString());
-                } else {
-                    System.out.println(deletedUser.getErrorMsg());
                 }
             }
         }

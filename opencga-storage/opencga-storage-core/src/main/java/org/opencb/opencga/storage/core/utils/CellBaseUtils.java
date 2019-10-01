@@ -23,7 +23,7 @@ import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +84,7 @@ public class CellBaseUtils {
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
-            for (DataResult<Gene> result : response.getResponse()) {
+            for (QueryResult<Gene> result : response.getResponse()) {
                 Gene gene = null;
                 String geneStr = result.getId();
                 // It may happen that CellBase returns more than 1 result for the same gene name.
@@ -137,9 +137,9 @@ public class CellBaseUtils {
         Set<String> genes = new HashSet<>();
         QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
         try {
-            List<DataResult<Gene>> responses = cellBaseClient.getGeneClient().get(goValues, params)
+            List<QueryResult<Gene>> responses = cellBaseClient.getGeneClient().get(goValues, params)
                     .getResponse();
-            for (DataResult<Gene> response : responses) {
+            for (QueryResult<Gene> response : responses) {
                 for (Gene gene : response.getResult()) {
                     genes.add(gene.getName());
                 }
@@ -162,9 +162,9 @@ public class CellBaseUtils {
                 Query cellbaseQuery = new Query(2)
                         .append(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_TISSUE.key(), expressionValue)
                         .append(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_VALUE.key(), "UP");
-                List<DataResult<Gene>> responses = cellBaseClient.getGeneClient().search(cellbaseQuery, params)
+                List<QueryResult<Gene>> responses = cellBaseClient.getGeneClient().search(cellbaseQuery, params)
                         .getResponse();
-                for (DataResult<Gene> response : responses) {
+                for (QueryResult<Gene> response : responses) {
                     for (Gene gene : response.getResult()) {
                         genes.add(gene.getName());
                     }

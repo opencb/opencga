@@ -18,8 +18,8 @@ package org.opencb.opencga.storage.core.variant.io.db;
 
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -48,7 +48,7 @@ public class VariantAnnotationDBWriter implements Task<VariantAnnotation, Object
 
     @Override
     public List<Object> apply(List<VariantAnnotation> list) throws IOException {
-        WriteResult writeResult = dbAdaptor.updateAnnotations(list, timestamp, options);
+        DataResult writeResult = dbAdaptor.updateAnnotations(list, timestamp, options);
         logUpdate(list);
         return Collections.singletonList(writeResult);
     }

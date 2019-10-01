@@ -265,7 +265,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
-                logger.info("Job {} successfully updated", job.getId());
+                logger.debug("Job {} successfully updated", job.getId());
                 numModified += 1;
             } catch (CatalogDBException e) {
                 String errorMsg = "Could not update job " + job.getId() + ": " + e.getMessage();

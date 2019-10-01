@@ -25,9 +25,9 @@ import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.StageDocumentToVariantConverter;
@@ -177,7 +177,7 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
         }
 
         try {
-            final WriteResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS);
+            final DataResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS);
             result.setNewVariants(mongoResult.getNumInserted())
                     .setUpdatedVariants(mongoResult.getNumUpdated());
         } catch (MongoBulkWriteException e) {

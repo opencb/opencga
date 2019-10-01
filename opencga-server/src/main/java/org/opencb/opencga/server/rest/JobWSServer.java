@@ -19,8 +19,8 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
@@ -135,7 +135,7 @@ public class JobWSServer extends OpenCGAWSServer {
                     parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
                     inputJob.resourceManagerAttributes);
 
-            QueryResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, sessionId);
+            DataResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -218,7 +218,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 query.remove(JobDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
-            QueryResult<Job> result;
+            DataResult<Job> result;
             if (count) {
                 result = catalogManager.getJobManager().count(studyStr, query, sessionId);
             } else {
@@ -297,7 +297,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (StringUtils.isEmpty(fields)) {
                 throw new CatalogException("Empty fields parameter.");
             }
-            QueryResult result = catalogManager.getJobManager().groupBy(studyStr, query, Arrays.asList(fields.split(",")), queryOptions,
+            DataResult result = catalogManager.getJobManager().groupBy(studyStr, query, Arrays.asList(fields.split(",")), queryOptions,
                     sessionId);
             return createOkResponse(result);
         } catch (Exception e) {

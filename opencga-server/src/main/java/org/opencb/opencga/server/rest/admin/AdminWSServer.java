@@ -2,9 +2,9 @@ package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -49,7 +49,7 @@ public class AdminWSServer extends OpenCGAWSServer {
                 user.type = Account.Type.GUEST;
             }
 
-            QueryResult queryResult = catalogManager.getUserManager()
+            DataResult queryResult = catalogManager.getUserManager()
                     .create(user.id, user.name, user.email, user.password, user.organization, null, user.type, sessionId);
 
             return createOkResponse(queryResult);
@@ -180,7 +180,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallParams installParams) {
         try {
             catalogManager.installCatalogDB(installParams.secretKey, installParams.password);
-            return createOkResponse(new QueryResult<>("install ok"));
+            return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -271,7 +271,7 @@ public class AdminWSServer extends OpenCGAWSServer {
         params.putIfNotNull(MetaDBAdaptor.SECRET_KEY, jwtParams.secretKey);
         try {
             catalogManager.updateJWTParameters(params, sessionId);
-            return createOkResponse(new QueryResult<>("jwt"));
+            return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
         }

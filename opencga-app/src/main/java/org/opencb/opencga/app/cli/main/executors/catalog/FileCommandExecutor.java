@@ -60,7 +60,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing files command line");
 
         String subCommandString = getParsedSubCommand(filesCommandOptions.jCommander);
-        QueryResponse queryResponse = null;
+        DataResponse queryResponse = null;
         switch (subCommandString) {
 //            case "copy":
 //                queryResponse = copy();
@@ -143,7 +143,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private QueryResponse createFolder() throws CatalogException, IOException {
+    private DataResponse createFolder() throws CatalogException, IOException {
         logger.debug("Creating a new folder");
 
         ObjectMap params = new ObjectMap();
@@ -155,7 +155,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private QueryResponse<File> info() throws CatalogException, IOException {
+    private DataResponse<File> info() throws CatalogException, IOException {
         logger.debug("Getting file information");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -167,7 +167,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.files, queryOptions);
     }
 
-    private QueryResponse download() throws CatalogException, IOException {
+    private DataResponse download() throws CatalogException, IOException {
         logger.debug("Downloading file");
 
         ObjectMap params = new ObjectMap();
@@ -175,7 +175,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.file, params);
     }
 
-    private QueryResponse grep() throws CatalogException, IOException {
+    private DataResponse grep() throws CatalogException, IOException {
         logger.debug("Grep command: File content");
 
         ObjectMap params = new ObjectMap();
@@ -186,7 +186,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.grepCommandOptions.pattern, params);
     }
 
-    private QueryResponse search() throws CatalogException, IOException {
+    private DataResponse search() throws CatalogException, IOException {
         logger.debug("Searching files");
 
         //FIXME check and put the correct format for type and bioformat. See StudiesCommandExecutor search param type. Is better
@@ -226,7 +226,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private QueryResponse<File> list() throws CatalogException, IOException {
+    private DataResponse<File> list() throws CatalogException, IOException {
         logger.debug("Listing files in folder");
 
         ObjectMap params = new ObjectMap();
@@ -244,7 +244,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().list(folder, params);
     }
 
-//    private QueryResponse<Job> index() throws CatalogException, IOException {
+//    private DataResponse<Job> index() throws CatalogException, IOException {
 //        logger.debug("Indexing variant(s)");
 //
 //        String fileIds = filesCommandOptions.indexCommandOptions.file;
@@ -266,7 +266,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 //        return openCGAClient.getFileClient().index(fileIds, params);
 //    }
 
-    private QueryResponse<FileTree> tree() throws CatalogException, IOException {
+    private DataResponse<FileTree> tree() throws CatalogException, IOException {
         logger.debug("Obtain a tree view of the files and folders within a folder");
 
         ObjectMap params = new ObjectMap();
@@ -278,7 +278,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().tree(filesCommandOptions.treeCommandOptions.folderId, params);
     }
 
-    private QueryResponse content() throws CatalogException, IOException {
+    private DataResponse content() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.contentCommandOptions.study);
         objectMap.put("start", filesCommandOptions.contentCommandOptions.start);
@@ -286,13 +286,13 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().content(filesCommandOptions.contentCommandOptions.file, objectMap);
     }
 
-    private QueryResponse fetch() throws CatalogException {
+    private DataResponse fetch() throws CatalogException {
         logger.debug("File Fetch. [DEPRECATED]  Use .../files/{fileId}/[variants|alignments] or " +
                 ".../studies/{studyId}/[variants|alignments] instead");
         return null;
     }
 
-    private QueryResponse update() throws CatalogException, IOException {
+    private DataResponse update() throws CatalogException, IOException {
         logger.debug("updating file");
 
         ObjectMap params = new ObjectMap();
@@ -310,7 +310,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 resolveStudy(filesCommandOptions.updateCommandOptions.study), params);
     }
 
-    private QueryResponse<File> upload() throws CatalogException, IOException {
+    private DataResponse<File> upload() throws CatalogException, IOException {
         logger.debug("uploading file");
 
         ObjectMap params = new ObjectMap()
@@ -334,7 +334,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.uploadCommandOptions.inputFile, params);
     }
 
-    private QueryResponse<File> delete() throws CatalogException, IOException {
+    private DataResponse<File> delete() throws CatalogException, IOException {
         logger.debug("Deleting file");
 
         ObjectMap objectMap = new ObjectMap()
@@ -345,7 +345,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
     }
 
-    private QueryResponse<File> link() throws CatalogException, IOException, URISyntaxException {
+    private DataResponse<File> link() throws CatalogException, IOException, URISyntaxException {
         logger.debug("Linking the file or folder into catalog.");
 
         ObjectMap objectMap = new ObjectMap()
@@ -363,7 +363,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             return null;
         }
 
-        List<QueryResult<File>> linkQueryResultList = new ArrayList<>(filesCommandOptions.linkCommandOptions.inputs.size());
+        List<DataResult<File>> linkQueryResultList = new ArrayList<>(filesCommandOptions.linkCommandOptions.inputs.size());
 
         for (String input : filesCommandOptions.linkCommandOptions.inputs) {
             URI uri = UriUtils.createUri(input);
@@ -373,10 +373,10 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                     filesCommandOptions.linkCommandOptions.path, objectMap, sessionId));
         }
 
-        return new QueryResponse<>(new QueryOptions(), linkQueryResultList);
+        return new DataResponse<>(new ObjectMap(), linkQueryResultList);
     }
 
-    private QueryResponse relink() throws CatalogException, IOException {
+    private DataResponse relink() throws CatalogException, IOException {
         logger.debug("Change file location. Provided file must be either STAGED or an external file. [DEPRECATED]");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -386,7 +386,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.relinkCommandOptions.uri, queryOptions);
     }
 
-    private QueryResponse<File> unlink() throws CatalogException, IOException {
+    private DataResponse<File> unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
 
         // LOCAL EXECUTION
@@ -400,16 +400,16 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 //            logger.error("The database could not be found. Are you running this from the server?");
 //            return;
 //        }
-//        QueryResult<File> unlinkQueryResult = catalogManager.unlink(filesCommandOptions.unlinkCommandOptions.id, new QueryOptions(),
+//        DataResult<File> unlinkQueryResult = catalogManager.unlink(filesCommandOptions.unlinkCommandOptions.id, new QueryOptions(),
 //                sessionId);
 //
-//        QueryResponse<File> unlink = new QueryResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
+//        DataResponse<File> unlink = new DataResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.unlinkCommandOptions.study);
         return openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.file, params);
     }
 
-    private QueryResponse refresh() throws CatalogException, IOException {
+    private DataResponse refresh() throws CatalogException, IOException {
         logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
 
         ObjectMap params = new ObjectMap();
@@ -418,7 +418,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private QueryResponse groupBy() throws CatalogException, IOException {
+    private DataResponse groupBy() throws CatalogException, IOException {
         logger.debug("Grouping files by several fields");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -444,7 +444,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.groupByCommandOptions.fields, queryOptions);
     }
 
-    private QueryResponse<FileAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<FileAclEntry> updateAcl() throws IOException, CatalogException {
         FileCommandOptions.FileAclCommandOptions.AclsUpdateCommandOptions commandOptions = filesCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
@@ -459,7 +459,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
-    private QueryResponse stats() throws IOException {
+    private DataResponse stats() throws IOException {
         logger.debug("File stats");
 
         FileCommandOptions.StatsCommandOptions commandOptions = filesCommandOptions.statsCommandOptions;

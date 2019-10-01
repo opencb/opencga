@@ -16,9 +16,8 @@
 
 package org.opencb.opencga.storage.core.metadata.adaptors;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.Locked;
@@ -51,13 +50,13 @@ public interface StudyMetadataDBAdaptor extends AutoCloseable {
     }
 
     @Deprecated
-    QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options);
+    DataResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options);
 
     @Deprecated
-    QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
+    DataResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
     @Deprecated
-    WriteResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+    DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
     StudyMetadata getStudyMetadata(int id, Long timeStamp);
 

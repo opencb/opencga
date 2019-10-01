@@ -5,9 +5,8 @@ import com.mongodb.WriteConcern;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -55,12 +54,12 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public QueryResult<ProjectMetadata> getProjectMetadata() {
+    public DataResult<ProjectMetadata> getProjectMetadata() {
         return collection.find(QUERY, new Document(), converter, new QueryOptions());
     }
 
     @Override
-    public WriteResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
+    public DataResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
         Document mongo = new GenericDocumentComplexConverter<>(ProjectMetadata.class).convertToStorageType(projectMetadata);
 
         // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
@@ -86,7 +85,7 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
-        QueryResult<Document> result = collection.findAndUpdate(QUERY, projection, null, inc, queryOptions);
+        DataResult<Document> result = collection.findAndUpdate(QUERY, projection, null, inc, queryOptions);
         if (result.first() == null) {
             if (retry) {
                 ensureProjectMetadataExists();
@@ -95,7 +94,7 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
                 throw new StorageEngineException("Error creating new ID. Project Metadata not found");
             }
         } else {
-            Document document = result.getResult().get(0);
+            Document document = result.getResults().get(0);
             Document counters = document.get(COUNTERS_FIELD, Document.class);
             Integer id = counters.getInteger(idType);
 //            System.out.println("New ID " + idType + " : " + id);

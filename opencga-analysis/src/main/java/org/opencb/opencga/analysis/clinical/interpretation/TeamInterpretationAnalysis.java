@@ -40,12 +40,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.*;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance;
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.DE_NOVO;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
@@ -196,7 +196,7 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
                 reportedVariants = getCompoundHeterozygousReportedVariants(compoundAnalysis.execute().getResult(), creator);
             }
         } else {
-            reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResult());
+            reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResults());
         }
         return reportedVariants;
     }

@@ -23,10 +23,10 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -113,7 +113,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove("individuals");
 
             List<String> individualList = getIdList(individualStr);
-            List<QueryResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
+            List<DataResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
                     silent, sessionId);
             return createOkResponse(individualQueryResult);
         } catch (Exception e) {
@@ -191,7 +191,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult<Individual> queryResult;
+            DataResult<Individual> queryResult;
             if (count) {
                 queryResult = individualManager.count(studyStr, query, sessionId);
             } else {
@@ -237,12 +237,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Individual> search = individualManager.search(studyStr, query,
+            DataResult<Individual> search = individualManager.search(studyStr, query,
                     new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap), sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
-                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
-                        search.first().getAnnotationSets()));
+                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);
             }
@@ -264,10 +263,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
             @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<QueryResult<Individual>> queryResults = individualManager.get(studyStr, getIdList(individualsStr), null, sessionId);
+            List<DataResult<Individual>> queryResults = individualManager.get(studyStr, getIdList(individualsStr), null, sessionId);
 
             Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(),
-                    queryResults.stream().map(QueryResult::first).map(Individual::getUid).collect(Collectors.toList()));
+                    queryResults.stream().map(DataResult::first).map(Individual::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -275,11 +274,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Individual> search = individualManager.search(studyStr, query, queryOptions, sessionId);
+            DataResult<Individual> search = individualManager.search(studyStr, query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
-                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
-                        search.getErrorMsg(), search.first().getAnnotationSets()));
+                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);
             }
@@ -310,11 +308,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
             individualManager.update(studyStr, individualStr, new IndividualUpdateParams()
                             .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, variableSet, params.annotations))),
                     QueryOptions.empty(), sessionId);
-            QueryResult<Individual> sampleQueryResult = individualManager.get(studyStr, individualStr,
+            DataResult<Individual> sampleQueryResult = individualManager.get(studyStr, individualStr,
                     new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
             List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
-            QueryResult<AnnotationSet> queryResult = new QueryResult<>(individualStr, sampleQueryResult.getDbTime(), annotationSets.size(),
-                    annotationSets.size(), "", "", annotationSets);
+            DataResult<AnnotationSet> queryResult = new DataResult<>(sampleQueryResult.getTime(), Collections.emptyList(),
+                    annotationSets.size(), annotationSets, annotationSets.size());
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -361,7 +359,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             actionMap.put(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, updateParams,
+            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualStr, updateParams,
                     queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -489,7 +487,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            QueryResult result = individualManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = individualManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

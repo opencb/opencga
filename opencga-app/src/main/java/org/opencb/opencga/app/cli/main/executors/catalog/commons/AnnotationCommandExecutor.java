@@ -17,11 +17,11 @@
 package org.opencb.opencga.app.cli.main.executors.catalog.commons;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.client.rest.catalog.AnnotationClient;
+import org.opencb.opencga.core.models.AnnotationSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.io.IOException;
 public class AnnotationCommandExecutor<T,U> {
 
     @Deprecated
-    public QueryResponse<AnnotationSet> createAnnotationSet(
+    public DataResponse<AnnotationSet> createAnnotationSet(
             AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
 
@@ -44,7 +44,7 @@ public class AnnotationCommandExecutor<T,U> {
     }
 
     @Deprecated
-    public QueryResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
+    public DataResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
                                      AnnotationClient<T,U> client) throws IOException {
 
         ObjectMap params = new ObjectMap();
@@ -54,7 +54,7 @@ public class AnnotationCommandExecutor<T,U> {
     }
 
     @Deprecated
-    public QueryResponse<AnnotationSet> searchAnnotationSets(
+    public DataResponse<AnnotationSet> searchAnnotationSets(
             AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
         ObjectMap params = new ObjectMap();
@@ -65,7 +65,7 @@ public class AnnotationCommandExecutor<T,U> {
     }
 
     @Deprecated
-    public QueryResponse<AnnotationSet> deleteAnnotationSet(
+    public DataResponse<AnnotationSet> deleteAnnotationSet(
             AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
         ObjectMap params = new ObjectMap();
@@ -74,7 +74,7 @@ public class AnnotationCommandExecutor<T,U> {
         return client.deleteAnnotationSet(deleteCommandOptions.id, deleteCommandOptions.annotationSetName, params);
     }
 
-    public QueryResponse<AnnotationSet> updateAnnotationSet(
+    public DataResponse<AnnotationSet> updateAnnotationSet(
             AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions updateCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
 

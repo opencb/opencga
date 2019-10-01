@@ -262,7 +262,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     update(clientSession, sampleDocument, parameters, variableSetList, queryOptions);
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
-                logger.info("Sample {} successfully updated", sampleId);
+                logger.debug("Sample {} successfully updated", sampleId);
                 numModified += 1;
             } catch (CatalogDBException e) {
                 String errorMsg = "Could not update sample " + sampleId + ": " + e.getMessage();

@@ -17,8 +17,8 @@
 package org.opencb.opencga.app.cli.main.io;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
@@ -43,15 +43,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void print(QueryResponse queryResponse) {
+    public void print(DataResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }
 
-        if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
-            if (queryResponse.first().getNumTotalResults() > 0) {
+        if (queryResponse.getResponses().size() == 0 || ((DataResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
+            if (queryResponse.first().getNumMatches() > 0) {
                 // count
-                ps.println(queryResponse.first().getNumTotalResults());
+                ps.println(queryResponse.first().getNumMatches());
             } else {
                 ps.println("No results found for the query.");
             }
@@ -60,43 +60,43 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
         ps.print(printMetadata(queryResponse));
 
-        List<QueryResult> queryResultList = queryResponse.getResponse();
+        List<DataResult> queryResultList = queryResponse.getResponses();
         String[] split = queryResultList.get(0).getResultType().split("\\.");
         String clazz = split[split.length - 1];
 
         switch (clazz) {
             case "User":
-                printUser(queryResponse.getResponse());
+                printUser(queryResponse.getResponses());
                 break;
             case "Project":
-                printProject(queryResponse.getResponse());
+                printProject(queryResponse.getResponses());
                 break;
             case "Study":
-                printStudy(queryResponse.getResponse());
+                printStudy(queryResponse.getResponses());
                 break;
             case "File":
-                printFiles(queryResponse.getResponse());
+                printFiles(queryResponse.getResponses());
                 break;
             case "Sample":
-                printSamples(queryResponse.getResponse());
+                printSamples(queryResponse.getResponses());
                 break;
             case "Cohort":
-                printCohorts(queryResponse.getResponse());
+                printCohorts(queryResponse.getResponses());
                 break;
             case "Individual":
-                printIndividual(queryResponse.getResponse());
+                printIndividual(queryResponse.getResponses());
                 break;
 //            case "Family":
-//                printFamily(queryResponse.getResponse());
+//                printFamily(queryResponse.getResponses());
 //                break;
             case "Job":
-                printJob(queryResponse.getResponse());
+                printJob(queryResponse.getResponses());
                 break;
             case "VariableSet":
-                printVariableSet(queryResponse.getResponse());
+                printVariableSet(queryResponse.getResponses());
                 break;
             case "AnnotationSet":
-                printAnnotationSet(queryResponse.getResponse());
+                printAnnotationSet(queryResponse.getResponses());
                 break;
             case "FileTree":
                 printTreeFile(queryResponse);
@@ -111,36 +111,36 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
     }
 
-    private String printMetadata(QueryResponse queryResponse) {
+    private String printMetadata(DataResponse queryResponse) {
         StringBuilder sb = new StringBuilder();
         if (writerConfiguration.isMetadata()) {
             int numResults = 0;
 //            int totalResults = 0;
             int time = 0;
 
-            List<QueryResult> queryResultList = queryResponse.getResponse();
-            for (QueryResult queryResult : queryResultList) {
+            List<DataResult> queryResultList = queryResponse.getResponses();
+            for (DataResult queryResult : queryResultList) {
                 numResults += queryResult.getNumResults();
-//                totalResults += queryResult.getNumTotalResults();
-                time += queryResult.getDbTime();
+//                totalResults += queryResult.getNumMatches();
+                time += queryResult.getTime();
             }
 
             sb.append("## Date: ").append(TimeUtils.getTime()).append("\n")
                     .append("## Number of results: ").append(numResults)
-                        .append(". Time: ").append(time).append(" ms\n");
+                    .append(". Time: ").append(time).append(" ms\n");
 
             // TODO: Add query info
             sb.append("## Query: { ")
-                    .append(queryResponse.getQueryOptions()
+                    .append(queryResponse.getParams()
                             .entrySet().stream().map(entry -> entry.getKey() + ": " + entry.getValue()).collect(Collectors.joining(", ")))
                     .append(" }\n");
         }
         return sb.toString();
     }
 
-    private void printUser(List<QueryResult<User>> queryResultList) {
+    private void printUser(List<DataResult<User>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<User> queryResult : queryResultList) {
+        for (DataResult<User> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tSIZE\tQUOTA\n");
@@ -148,7 +148,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 sb.append("#(S)\t\tID\tNAME\tTYPE\tDESCRIPTION\t#GROUPS\tSIZE\n");
             }
 
-            for (User user : queryResult.getResult()) {
+            for (User user : queryResult.getResults()) {
                 sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\t%d\n", "",
                         StringUtils.defaultIfEmpty(user.getId(), "-"), StringUtils.defaultIfEmpty(user.getName(), "-"),
                         StringUtils.defaultIfEmpty(user.getEmail(), "-"), StringUtils.defaultIfEmpty(user.getOrganization(), "-"),
@@ -187,20 +187,20 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printProject(List<QueryResult<Project>> queryResultList) {
+    private void printProject(List<DataResult<Project>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<Project> queryResult : queryResultList) {
+        for (DataResult<Project> queryResult : queryResultList) {
             // Write header
             sb.append("#ID\tNAME\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tSIZE\t#STUDIES\tSTATUS\n");
 
-            for (Project project : queryResult.getResult()) {
+            for (Project project : queryResult.getResults()) {
                 String organism = "NA";
                 String assembly = "NA";
                 if (project.getOrganism() != null) {
                     organism = StringUtils.isNotEmpty(project.getOrganism().getScientificName())
                             ? project.getOrganism().getScientificName()
                             : (StringUtils.isNotEmpty(project.getOrganism().getCommonName())
-                                ? project.getOrganism().getCommonName() : "NA");
+                            ? project.getOrganism().getCommonName() : "NA");
                     if (StringUtils.isNotEmpty(project.getOrganism().getAssembly())) {
                         assembly = project.getOrganism().getAssembly();
                     }
@@ -216,14 +216,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printStudy(List<QueryResult<Study>> queryResultList) {
+    private void printStudy(List<DataResult<Study>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<Study> queryResult : queryResultList) {
+        for (DataResult<Study> queryResult : queryResultList) {
             // Write header
             sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\t#GROUPS\tSIZE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
                     .append("#VARIABLE_SETS\tSTATUS\n");
 
-            for (Study study : queryResult.getResult()) {
+            for (Study study : queryResult.getResults()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
                         StringUtils.defaultIfEmpty(study.getId(), "-"), StringUtils.defaultIfEmpty(study.getName(), "-"),
                         study.getType(), StringUtils.defaultIfEmpty(study.getDescription(), "-"),
@@ -249,14 +249,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
         sb.append(String.format("%s%s\t%s\n", prefix, aclEntry.getMember(), aclEntry.getPermissions().toString()));
     }
 
-    private void printFiles(List<QueryResult<File>> queryResultList) {
+    private void printFiles(List<DataResult<File>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<File> queryResult : queryResultList) {
+        for (DataResult<File> queryResult : queryResultList) {
             // Write header
             sb.append("#ID\tNAME\tTYPE\tFORMAT\tBIOFORMAT\tDESCRIPTION\tCATALOG_PATH\tFILE_SYSTEM_URI\tSTATUS\tSIZE\tINDEX_STATUS"
                     + "\tRELATED_FILES\tSAMPLES\n");
 
-            printFiles(queryResult.getResult(), sb, "");
+            printFiles(queryResult.getResults(), sb, "");
         }
 
         ps.println(sb.toString());
@@ -292,15 +292,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
     }
 
-    private void printSamples(List<QueryResult<Sample>> queryResultList) {
+    private void printSamples(List<DataResult<Sample>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<Sample> queryResult : queryResultList) {
+        for (DataResult<Sample> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#ID\tNAME\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_ID\tINDIVIDUAL_NAME\n");
             }
 
-            printSamples(queryResult.getResult(), sb, "");
+            printSamples(queryResult.getResults(), sb, "");
         }
 
         ps.println(sb.toString());
@@ -317,15 +317,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
     }
 
-    private void printCohorts(List<QueryResult<Cohort>> queryResultList) {
+    private void printCohorts(List<DataResult<Cohort>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<Cohort> queryResult : queryResultList) {
+        for (DataResult<Cohort> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\tFAMILY\n");
             }
 
-            for (Cohort cohort : queryResult.getResult()) {
+            for (Cohort cohort : queryResult.getResults()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\n", StringUtils.defaultIfEmpty(cohort.getId(), "-"),
                         StringUtils.defaultIfEmpty(cohort.getId(), "-"), cohort.getType(),
                         StringUtils.defaultIfEmpty(cohort.getDescription(), "-"),
@@ -338,16 +338,16 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printIndividual(List<QueryResult<Individual>> queryResultList) {
+    private void printIndividual(List<DataResult<Individual>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<Individual> queryResult : queryResultList) {
+        for (DataResult<Individual> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#ID\tNAME\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
                         .append("\tSTATUS\tFATHER_ID\tMOTHER_ID\tCREATION_DATE\n");
             }
 
-            for (Individual individual : queryResult.getResult()) {
+            for (Individual individual : queryResult.getResults()) {
                 String population = "NA";
                 String subpopulation = "NA";
                 if (individual.getPopulation() != null) {
@@ -373,15 +373,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-//    private void printFamily(List<QueryResult<Family>> queryResultList) {
+//    private void printFamily(List<DataResult<Family>> queryResultList) {
 //        StringBuilder sb = new StringBuilder();
-//        for (QueryResult<Family> queryResult : queryResultList) {
+//        for (DataResult<Family> queryResult : queryResultList) {
 //            // Write header
 //            if (writerConfiguration.isHeader()) {
 //                sb.append("#NAME\tID\tMOTHER\tFATHER\tMEMBER\tSTATUS\tCREATION_DATE\n");
 //            }
 //
-//            for (Family family : queryResult.getResult()) {
+//            for (Family family : queryResult.getResults()) {
 //                String mother = (family.getMother() != null && StringUtils.isNotEmpty(family.getMother().getName()))
 //                        ? family.getMother().getName() + "(" + family.getMother().getId() + ")"
 //                        : "NA";
@@ -405,16 +405,16 @@ public class TextOutputWriter extends AbstractOutputWriter {
 //        ps.println(sb.toString());
 //    }
 
-    private void printJob(List<QueryResult<Job>> queryResultList) {
+    private void printJob(List<DataResult<Job>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<Job> queryResult : queryResultList) {
+        for (DataResult<Job> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#ID\tNAME\tTYPE\tTOOL_NAME\tCREATION_DATE\tEXECUTABLE\tEXECUTION\t#VISITED\tSTATUS\tINPUT")
                         .append("\tOUTPUT\tOUTPUT_DIRECTORY\n");
             }
 
-            for (Job job : queryResult.getResult()) {
+            for (Job job : queryResult.getResults()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
                         StringUtils.defaultIfEmpty(job.getId(), "-"), StringUtils.defaultIfEmpty(job.getName(), "-"),
                         job.getType(), StringUtils.defaultIfEmpty(job.getToolId(), "-"),
@@ -430,15 +430,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printVariableSet(List<QueryResult<VariableSet>> queryResultList) {
+    private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<VariableSet> queryResult : queryResultList) {
+        for (DataResult<VariableSet> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#ID\tNAME\tDESCRIPTION\tVARIABLES\n");
             }
 
-            for (VariableSet variableSet : queryResult.getResult()) {
+            for (VariableSet variableSet : queryResult.getResults()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\n", StringUtils.defaultIfEmpty(variableSet.getId(), "-"),
                         StringUtils.defaultIfEmpty(variableSet.getName(), "-"),
                         StringUtils.defaultIfEmpty(variableSet.getDescription(), "-"),
@@ -449,10 +449,10 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printAnnotationSet(List<QueryResult<AnnotationSet>> queryResultList) {
+    private void printAnnotationSet(List<DataResult<AnnotationSet>> queryResultList) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<AnnotationSet> queryResult : queryResultList) {
-            for (AnnotationSet annotationSet : queryResult.getResult()) {
+        for (DataResult<AnnotationSet> queryResult : queryResultList) {
+            for (AnnotationSet annotationSet : queryResult.getResults()) {
                 // Write header
                 if (writerConfiguration.isHeader()) {
                     sb.append("#KEY\tVALUE\n");
@@ -467,10 +467,10 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printTreeFile(QueryResponse<FileTree> queryResponse) {
+    private void printTreeFile(DataResponse<FileTree> queryResponse) {
         StringBuilder sb = new StringBuilder();
-        for (QueryResult<FileTree> fileTreeQueryResult : queryResponse.getResponse()) {
-            printRecursiveTree(fileTreeQueryResult.getResult(), sb, "");
+        for (DataResult<FileTree> fileTreeQueryResult : queryResponse.getResponses()) {
+            printRecursiveTree(fileTreeQueryResult.getResults(), sb, "");
         }
         ps.println(sb.toString());
     }

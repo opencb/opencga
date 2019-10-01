@@ -1,8 +1,8 @@
 package org.opencb.opencga.analysis;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
 import org.opencb.hpg.bigdata.analysis.tools.ToolManager;
 import org.opencb.hpg.bigdata.analysis.tools.manifest.Param;
@@ -82,7 +82,7 @@ public class ToolAnalysis {
                 if (params.containsKey(inputParam.getName())) {
                     // Get the file uri
                     String fileString = params.get(inputParam.getName());
-                    QueryResult<File> fileQueryResult = fileManager.get(studyFqn, fileString, options, sessionId);
+                    DataResult<File> fileQueryResult = fileManager.get(studyFqn, fileString, options, sessionId);
                     if (fileQueryResult.getNumResults() == 0) {
                         throw new CatalogException("File " + fileString + " not found");
                     }

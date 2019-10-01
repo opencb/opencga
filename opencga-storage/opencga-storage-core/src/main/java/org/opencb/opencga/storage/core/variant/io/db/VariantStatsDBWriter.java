@@ -17,8 +17,8 @@
 package org.opencb.opencga.storage.core.variant.io.db;
 
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -58,7 +58,7 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
 
     @Override
     public boolean write(List<VariantStatsWrapper> batch) {
-        WriteResult writeResult = dbAdaptor.updateStats(batch, studyMetadata.getName(), timestamp, options);
+        DataResult writeResult = dbAdaptor.updateStats(batch, studyMetadata.getName(), timestamp, options);
 
         numStats.addAndGet(batch.size());
         numWrites.addAndGet(writeResult.getNumUpdated());

@@ -90,7 +90,7 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis<List<Vari
                 if (variantIds.size() >= BATCH_SIZE) {
                     query.put(VariantQueryParam.ID.key(), variantIds);
                     VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                    variants.addAll(result.getResult());
+                    variants.addAll(result.getResults());
                     variantIds.clear();
                 }
             }
@@ -98,7 +98,7 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis<List<Vari
             if (variantIds.size() > 0) {
                 query.put(VariantQueryParam.ID.key(), variantIds);
                 VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                variants.addAll(result.getResult());
+                variants.addAll(result.getResults());
             }
         }
 

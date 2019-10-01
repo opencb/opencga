@@ -25,9 +25,8 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -69,17 +68,17 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
 
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    public DataResult<StudyConfiguration> getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         logger.debug("Get StudyConfiguration " + studyName + " from DB " + tableName);
         BiMap<String, Integer> studies = getStudies(options);
         Integer studyId = studies.get(studyName);
         if (studyId == null) {
 //            throw VariantQueryException.studyNotFound(studyName, studies.keySet());
-            return new QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
+            return new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), 0);
         }
 
 //        if (StringUtils.isEmpty(studyName)) {
-//            return new QueryResult<>("", (int) watch.getTime(),
+//            return new DataResult<>("", (int) watch.getTime(),
 //                    studyConfigurationList.size(), studyConfigurationList.size(), "", "", studyConfigurationList);
 //        }
 
@@ -108,7 +107,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public DataResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         StopWatch watch = new StopWatch().start();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
@@ -152,12 +151,12 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
         } catch (IOException e) {
             throw new IllegalStateException("Problem reading StudyConfiguration " + studyId + " from table " + tableName, e);
         }
-        return new QueryResult<>("", (int) watch.now(TimeUnit.MILLISECONDS),
-                studyConfigurationList.size(), studyConfigurationList.size(), "", error, studyConfigurationList);
+        return new DataResult<>((int) watch.now(TimeUnit.MILLISECONDS), StringUtils.isEmpty(error) ? Collections.emptyList()
+                : Collections.singletonList(error), studyConfigurationList.size(), studyConfigurationList, studyConfigurationList.size());
     }
 
     @Override
-    public WriteResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getName());
@@ -182,7 +181,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
             throw new UncheckedIOException(e);
         }
 
-        return new WriteResult().setDbTime(((int) (System.currentTimeMillis() - startTime)));
+        return new DataResult().setTime(((int) (System.currentTimeMillis() - startTime)));
     }
 
     @Override

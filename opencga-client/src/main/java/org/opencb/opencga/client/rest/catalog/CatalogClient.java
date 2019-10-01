@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 
@@ -57,23 +57,23 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         }
     }
 
-    public QueryResponse<T> get(String id, ObjectMap params) throws IOException {
+    public DataResponse<T> get(String id, ObjectMap params) throws IOException {
         return execute(category, id, "info", params, GET, clazz);
     }
 
-    public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
+    public DataResponse<T> search(Query query, QueryOptions options) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public QueryResponse<T> count(Query query) throws IOException {
+    public DataResponse<T> count(Query query) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.put("count", true);
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params) throws IOException {
+    public DataResponse<T> update(String id, @Nullable String study, ObjectMap params) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
@@ -82,17 +82,17 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, id, "update", p, POST, clazz);
     }
 
-    public QueryResponse<T> delete(String id, ObjectMap params) throws IOException {
+    public DataResponse<T> delete(String id, ObjectMap params) throws IOException {
         return execute(category, id, "delete", params, GET, clazz);
     }
 
     // Acl methods
 
-    public QueryResponse<A> getAcls(String id, ObjectMap params) throws IOException {
+    public DataResponse<A> getAcls(String id, ObjectMap params) throws IOException {
         return execute(category, id, "acl", params, GET, aclClass);
     }
 
-    public QueryResponse<A> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
+    public DataResponse<A> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
         ObjectMap myParams = new ObjectMap(queryParams);
         myParams.put("body", bodyParams);
         return execute(category, null, "acl", memberId, "update", myParams, POST, aclClass);

@@ -4,8 +4,8 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -107,7 +107,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             }
 
             List<String> idList = getIdList(panelStr);
-            List<QueryResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
+            List<DataResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -159,7 +159,7 @@ public class PanelWSServer extends OpenCGAWSServer {
                 studyStr = PanelManager.INSTALLATION_PANELS;
             }
 
-            QueryResult<Panel> queryResult;
+            DataResult<Panel> queryResult;
             if (count) {
                 queryResult = panelManager.count(studyStr, query, sessionId);
             } else {
@@ -225,7 +225,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             query.remove("study");
             query.remove("fields");
 
-            QueryResult result = panelManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = panelManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

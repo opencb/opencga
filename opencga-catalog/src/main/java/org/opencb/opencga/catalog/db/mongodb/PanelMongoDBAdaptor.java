@@ -398,7 +398,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
-                logger.info("Panel {} successfully updated", panel.getId());
+                logger.debug("Panel {} successfully updated", panel.getId());
                 numModified += 1;
             } catch (CatalogDBException e) {
                 String errorMsg = "Could not update panel " + panel.getId() + ": " + e.getMessage();

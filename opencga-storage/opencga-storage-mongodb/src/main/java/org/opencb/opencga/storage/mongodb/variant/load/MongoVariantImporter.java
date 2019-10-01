@@ -26,8 +26,8 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataManager;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -167,7 +167,7 @@ public class MongoVariantImporter extends VariantImporter {
         @Override
         public boolean write(List<Document> batch) {
 
-            WriteResult result = collection.insert(batch, QueryOptions.empty());
+            DataResult result = collection.insert(batch, QueryOptions.empty());
             insertedCount += result.getNumInserted();
 
             return true;

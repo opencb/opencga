@@ -2,8 +2,7 @@ package org.opencb.opencga.storage.core.variant.dummy;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -38,19 +37,19 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public synchronized QueryResult<ProjectMetadata> getProjectMetadata() {
-        final QueryResult<ProjectMetadata> result = new QueryResult<>("");
+    public synchronized DataResult<ProjectMetadata> getProjectMetadata() {
+        final DataResult<ProjectMetadata> result = new DataResult<>();
         if (projectMetadata == null) {
             projectMetadata = new ProjectMetadata("hsapiens", "grch37", 1);
         }
-        result.setResult(Collections.singletonList(projectMetadata.copy()));
+        result.setResults(Collections.singletonList(projectMetadata.copy()));
         return result;
     }
 
     @Override
-    public synchronized WriteResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
+    public synchronized DataResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
         DummyProjectMetadataAdaptor.projectMetadata = projectMetadata;
-        return new WriteResult();
+        return new DataResult();
     }
 
     @Override

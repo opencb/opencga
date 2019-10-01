@@ -346,7 +346,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
 
-                logger.info("Family {} successfully updated", family.getId());
+                logger.debug("Family {} successfully updated", family.getId());
                 numModified += 1;
             } catch (Exception e) {
                 String errorMsg = "Could not update family " + family.getId();

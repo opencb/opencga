@@ -82,7 +82,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 List<Variant> variants = variantStorageEngine.getDBAdaptor().get(new Query()
                         .append(VariantQueryParam.SAMPLE.key(), sample.getName())
                         .append(VariantQueryParam.REGION.key(),
-                                record.getChromosome() + ":" + record.getBatchStart() + "-" + (record.getBatchStart() + SampleIndexSchema.BATCH_SIZE - 1)), null).getResult();
+                                record.getChromosome() + ":" + record.getBatchStart() + "-" + (record.getBatchStart() + SampleIndexSchema.BATCH_SIZE - 1)), null).getResults();
 
                 Map<String, List<String>> gtsMap = variants.stream().collect(groupingBy(v -> v.getStudies().get(0).getSampleData(0).get(0), mapping(Variant::toString, toList())));
 //                System.out.println("record = " + record);

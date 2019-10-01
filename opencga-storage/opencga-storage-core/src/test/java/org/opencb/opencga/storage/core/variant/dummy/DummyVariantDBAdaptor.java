@@ -28,7 +28,6 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -180,32 +179,32 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     // Update methods
 
     @Override
-    public WriteResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
-        WriteResult queryResult = new WriteResult();
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
+        DataResult queryResult = new DataResult();
         logger.info("Writing " + variantStatsWrappers.size() + " statistics");
-        queryResult.setNumMatched(variantStatsWrappers.size());
+        queryResult.setNumMatches(variantStatsWrappers.size());
         queryResult.setNumUpdated(variantStatsWrappers.size());
         return queryResult;
     }
 
     @Override
-    public WriteResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
-        return new WriteResult();
+    public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
+        return new DataResult();
     }
 
     @Override
-    public WriteResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options) {
+    public DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options) {
         System.out.println("Update custom annotation : " + name);
-        return new WriteResult();
+        return new DataResult();
     }
 
     // Unsupported methods
     @Override
-    public WriteResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
         System.out.println("Update stats : "
                 + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().keySet().toString()));
 
-        return new WriteResult();
+        return new DataResult();
     }
 
     @Override

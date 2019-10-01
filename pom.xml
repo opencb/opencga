@@ -390,6 +390,12 @@
                 <groupId>org.opencb.bionetdb</groupId>
                 <artifactId>bionetdb-core</artifactId>
                 <version>${bionet.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.commons</groupId>
+                        <artifactId>commons-datastore-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- General dependencies -->

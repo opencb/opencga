@@ -82,7 +82,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
     public abstract AnalysisResult<T> execute() throws Exception;
 
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
                     .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
@@ -239,7 +239,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
         Set<String> lowCoverageByGeneDone = new HashSet<>();
 
         // Look for the bam file of the proband
-        QueryResult<File> fileQueryResult;
+        DataResult<File> fileQueryResult;
         try {
             fileQueryResult = catalogManager.getFileManager().search(studyId, new Query()
                     .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
@@ -279,7 +279,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
                     regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyId, bamFileId,
-                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResult();
+                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResults();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
                                 .setGeneName(geneName)
@@ -299,7 +299,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
     protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
-            List<QueryResult<Panel>> queryResults;
+            List<DataResult<Panel>> queryResults;
             try {
                 queryResults = catalogManager.getPanelManager()
                         .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
@@ -311,7 +311,7 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
             }
 
-            for (QueryResult<Panel> queryResult : queryResults) {
+            for (DataResult<Panel> queryResult : queryResults) {
                 if (queryResult.getNumResults() != 1) {
                     throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels " +
                             "queried");

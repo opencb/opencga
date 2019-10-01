@@ -359,7 +359,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     update(clientSession, individual, parameters, variableSetList, queryOptions);
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
-                logger.info("Individual {} successfully updated", individual.getId());
+                logger.debug("Individual {} successfully updated", individual.getId());
                 numModified += 1;
             } catch (CatalogDBException e) {
                 String errorMsg = "Could not update individual " + individual.getId() + ": " + e.getMessage();

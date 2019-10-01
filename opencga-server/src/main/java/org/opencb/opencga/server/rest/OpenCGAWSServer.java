@@ -32,6 +32,7 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -98,7 +99,7 @@ public class OpenCGAWSServer {
 
     protected UriInfo uriInfo;
     protected HttpServletRequest httpServletRequest;
-    protected MultivaluedMap<String, String> params;
+    protected ObjectMap params;
     private String requestDescription;
 
     protected String sessionIp;
@@ -159,7 +160,13 @@ public class OpenCGAWSServer {
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
 
-        this.params = uriInfo.getQueryParameters();
+        this.params = new ObjectMap();
+        for (String key : uriInfo.getQueryParameters().keySet()) {
+            this.params.put(key, uriInfo.getQueryParameters().getFirst(key));
+        }
+        for (String key : uriInfo.getPathParameters().keySet()) {
+            this.params.put(key, uriInfo.getPathParameters().getFirst(key));
+        }
 
         // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
@@ -448,25 +455,23 @@ public class OpenCGAWSServer {
         return createErrorResponse("help", "No help available");
     }
 
-    protected Response createErrorResponse(Exception e) {
+    protected Response createErrorResponse(Exception e) {        
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
         // Now we prepare the response to client
-        QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
+        DataResponse<ObjectMap> queryResponse = new DataResponse<>();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
-        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setParams(params);
         if (StringUtils.isEmpty(e.getMessage())) {
-            queryResponse.setError(e.toString());
+            queryResponse.setError(new Error(-1, "error", e.toString()));
         } else {
-            queryResponse.setError(e.getMessage());
+            queryResponse.setError(new Error(-1, "error", e.getMessage()));
         }
 
-        QueryResult<ObjectMap> result = new QueryResult<>();
-        result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
-        result.setErrorMsg("DEPRECATED: " + e.toString());
-        queryResponse.setResponse(Arrays.asList(result));
+        DataResult<ObjectMap> result = new DataResult<>();
+        queryResponse.setResponses(Arrays.asList(result));
 
         Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
         if (e instanceof CatalogAuthorizationException) {
@@ -480,17 +485,15 @@ public class OpenCGAWSServer {
         return response;
     }
 
-    protected Response createErrorResponse(String errorMessage, QueryResult result) {
+    protected Response createErrorResponse(String errorMessage, DataResult result) {
+        DataResponse<ObjectMap> dataResponse = new DataResponse<>();
+        dataResponse.setApiVersion(apiVersion);
+        dataResponse.setParams(params);
+        dataResponse.setError(new Error(-1, "error", errorMessage));
+        dataResponse.setResponses(Arrays.asList(result));
 
-        QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
-        queryResponse.setApiVersion(apiVersion);
-        queryResponse.setQueryOptions(queryOptions);
-        queryResponse.setError("true");
-        result.setErrorMsg("DEPRECATED: " + errorMessage);
-        queryResponse.setResponse(Arrays.asList(result));
-
-        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
-        logResponse(response.getStatusInfo(), queryResponse);
+        Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        logResponse(response.getStatusInfo(), dataResponse);
         return response;
     }
 
@@ -508,27 +511,27 @@ public class OpenCGAWSServer {
     }
 
     // TODO: Change signature
-    //    protected <T> Response createOkResponse(QueryResult<T> result)
-    //    protected <T> Response createOkResponse(List<QueryResult<T>> results)
+    //    protected <T> Response createOkResponse(DataResult<T> result)
+    //    protected <T> Response createOkResponse(List<DataResult<T>> results)
     protected Response createOkResponse(Object obj) {
-        QueryResponse queryResponse = new QueryResponse();
+        DataResponse queryResponse = new DataResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
-        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setParams(params);
 
-        // Guarantee that the QueryResponse object contains a list of results
+        // Guarantee that the DataResponse object contains a list of results
         List list;
         if (obj instanceof List) {
             list = (List) obj;
         } else {
             list = new ArrayList();
-            if (!(obj instanceof QueryResult)) {
-                list.add(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(obj)));
+            if (!(obj instanceof DataResult)) {
+                list.add(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
             } else {
                 list.add(obj);
             }
         }
-        queryResponse.setResponse(list);
+        queryResponse.setResponses(list);
 
         Response response = createJsonResponse(queryResponse);
         logResponse(response.getStatusInfo(), queryResponse);
@@ -563,7 +566,7 @@ public class OpenCGAWSServer {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
-            return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            return createErrorResponse("", "Error parsing DataResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
 
         return response;
@@ -582,7 +585,7 @@ public class OpenCGAWSServer {
         logResponse(statusInfo, null);
     }
 
-    private void logResponse(Response.StatusType statusInfo, QueryResponse<?> queryResponse) {
+    private void logResponse(Response.StatusType statusInfo, DataResponse<?> queryResponse) {
         StringBuilder sb = new StringBuilder();
         try {
             if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
@@ -596,8 +599,8 @@ public class OpenCGAWSServer {
                 sb.append(", ").append(System.currentTimeMillis() - startTime).append("ms");
             } else {
                 sb.append(", ").append(queryResponse.getTime()).append("ms");
-                if (queryResponse.getResponse().size() == 1) {
-                    QueryResult<?> result = queryResponse.getResponse().get(0);
+                if (queryResponse.getResponses().size() == 1) {
+                    DataResult<?> result = queryResponse.getResponses().get(0);
                     if (result != null) {
                         sb.append(", num: ").append(result.getNumResults());
                         if (result.getNumTotalResults() >= 0) {
@@ -614,13 +617,13 @@ public class OpenCGAWSServer {
         }
     }
 
-    protected Response createJsonResponse(QueryResponse queryResponse) {
+    protected Response createJsonResponse(DataResponse queryResponse) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
-            return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            return createErrorResponse("", "Error parsing DataResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }
 
@@ -644,7 +647,7 @@ public class OpenCGAWSServer {
         }
 
         if (StringUtils.isEmpty(this.sessionId)) {
-            this.sessionId = this.params.getFirst("sid");
+            this.sessionId = this.params.getString("sid");
         }
     }
 

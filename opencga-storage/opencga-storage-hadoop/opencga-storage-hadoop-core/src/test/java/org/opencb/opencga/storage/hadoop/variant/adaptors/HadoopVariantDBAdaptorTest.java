@@ -316,9 +316,9 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
         if (onlyDBAdaptor != indexAndDBAdaptor) {
             queryResult = variantStorageEngine.get(query, new QueryOptions());
-            List<String> indexAndDB = queryResult.getResult().stream().map(Variant::toString).sorted().collect(Collectors.toList());
+            List<String> indexAndDB = queryResult.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList());
             queryResult = query(query, new QueryOptions());
-            List<String> noIndex = queryResult.getResult().stream().map(Variant::toString).sorted().collect(Collectors.toList());
+            List<String> noIndex = queryResult.getResults().stream().map(Variant::toString).sorted().collect(Collectors.toList());
 
             for (String s : indexAndDB) {
                 if (!noIndex.contains(s)) {

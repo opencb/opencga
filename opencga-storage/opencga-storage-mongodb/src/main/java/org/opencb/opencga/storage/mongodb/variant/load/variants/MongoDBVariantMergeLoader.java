@@ -23,9 +23,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -148,7 +147,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         existingVariants.stop();
         StopWatch fillGapsVariants = StopWatch.createStarted();
         if (!mongoDBOps.getExistingStudy().getQueries().isEmpty()) {
-            WriteResult update = variantsCollection.update(mongoDBOps.getExistingStudy().getQueries(),
+            DataResult update = variantsCollection.update(mongoDBOps.getExistingStudy().getQueries(),
                     mongoDBOps.getExistingStudy().getUpdates(), QUERY_OPTIONS);
             if (update.getNumMatches() != mongoDBOps.getExistingStudy().getQueries().size()) {
                 onUpdateError("fill gaps", update, mongoDBOps.getExistingStudy().getQueries(), mongoDBOps.getExistingStudy().getIds());
@@ -198,7 +197,7 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
 
         MongoDBOperations.StageSecondaryAlternates alternates = mongoDBOps.getSecondaryAlternates();
         if (!alternates.getQueries().isEmpty()) {
-            WriteResult update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
+            DataResult update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
             if (update.getNumMatches() != alternates.getQueries().size()) {
                 onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds(), stageCollection);
             }
@@ -256,13 +255,13 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
                     queriesExisting.add(and(bson, nin(STUDIES_FIELD + "." + FILES_FIELD + "." + FILEID_FIELD, fileIds)));
                 }
                 // Update those existing variants
-                WriteResult update = variantsCollection.update(queriesExisting, newStudy.getUpdates(), QUERY_OPTIONS);
+                DataResult update = variantsCollection.update(queriesExisting, newStudy.getUpdates(), QUERY_OPTIONS);
                 //                if (update.first().getModifiedCount() != mongoDBOps.queriesExisting.size()) {
                 //                    // FIXME: Don't know if there is some error inserting. Query already existing?
                 //                    onUpdateError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
                 //                }
             } else {
-                WriteResult update = variantsCollection.update(newStudy.getQueries(), newStudy.getUpdates(), UPSERT);
+                DataResult update = variantsCollection.update(newStudy.getQueries(), newStudy.getUpdates(), UPSERT);
 //                if (update.getNumUpdated() + update.first().getUpserts().size() != newStudy.getQueries().size()) {
                 if (update.getNumUpdated() + update.getNumInserted() != newStudy.getQueries().size()) {
                     onUpdateError("existing variants", update, newStudy.getQueries(), newStudy.getIds());
@@ -313,21 +312,21 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         return newVariants;
     }
 
-    protected void onUpdateError(String updateName, WriteResult update, List<Bson> queries, List<String> queryIds) {
+    protected void onUpdateError(String updateName, DataResult update, List<Bson> queries, List<String> queryIds) {
         onUpdateError(updateName, update, queries, queryIds, variantsCollection);
     }
 
-    protected void onUpdateError(String updateName, WriteResult update, List<Bson> queries, List<String> queryIds,
+    protected void onUpdateError(String updateName, DataResult update, List<Bson> queries, List<String> queryIds,
                                  MongoDBCollection collection) {
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
                 + "(ModifiedCount = " + update.getNumUpdated() + "). MatchedCount:" + update.getNumMatches());
         logger.info("QueryIDs: {}", queryIds);
-        List<QueryResult<Document>> queryResults = collection.find(queries, null);
+        List<DataResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: {}", queryResults.size());
 
-        for (QueryResult<Document> r : queryResults) {
+        for (DataResult<Document> r : queryResults) {
             logger.info("result: '{}'", r);
-            if (!r.getResult().isEmpty()) {
+            if (!r.getResults().isEmpty()) {
                 String id = r.first().get("_id", String.class);
                 boolean remove = queryIds.remove(id);
                 logger.info("remove({}): {}", id, remove);

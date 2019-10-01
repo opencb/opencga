@@ -164,7 +164,7 @@ public class InterpretationWSService extends AnalysisWSService {
             query.remove("clinicalAnalyses");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
-            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, silent, sessionId);
+            List<DataResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, silent, sessionId);
             return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -204,7 +204,7 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             query.remove("study");
 
-            QueryResult<ClinicalAnalysis> queryResult;
+            DataResult<ClinicalAnalysis> queryResult;
             if (count) {
                 queryResult = clinicalManager.count(studyStr, query, sessionId);
             } else {
@@ -244,7 +244,7 @@ public class InterpretationWSService extends AnalysisWSService {
 //            query.remove("study");
 //            query.remove("fields");
 //
-//            QueryResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
+//            DataResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
 //            return createOkResponse(result);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);

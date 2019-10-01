@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
@@ -42,14 +42,14 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         this.aclClass = StudyAclEntry.class;
     }
 
-    public QueryResponse<Study> create(String projectId, String studyId, ObjectMap params) throws IOException {
+    public DataResponse<Study> create(String projectId, String studyId, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "id", studyId);
         ObjectMap p = new ObjectMap("body", params);
         p = addParamsToObjectMap(p, "projectId", projectId);
         return execute(STUDY_URL, "create", p, POST, Study.class);
     }
 
-    public QueryResponse<ObjectMap> getStats(String studyId, Query query, QueryOptions options) throws IOException {
+    public DataResponse<ObjectMap> getStats(String studyId, Query query, QueryOptions options) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
 
@@ -57,29 +57,29 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     }
 
     @Deprecated
-    public QueryResponse<Sample> getSamples(String studyId, QueryOptions options) throws IOException {
+    public DataResponse<Sample> getSamples(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "samples", options, GET, Sample.class);
     }
 
     @Deprecated
-    public QueryResponse<File> getFiles(String studyId, QueryOptions options) throws IOException {
+    public DataResponse<File> getFiles(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "files", options, GET, File.class);
     }
 
     @Deprecated
-    public QueryResponse<Job> getJobs(String studyId, QueryOptions options) throws IOException {
+    public DataResponse<Job> getJobs(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "jobs", options, GET, Job.class);
     }
 
-    public QueryResponse scanFiles(String studyId, QueryOptions options) throws IOException {
+    public DataResponse scanFiles(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "scanFiles", options, GET, Object.class);
     }
 
-    public QueryResponse resyncFiles(String studyId, QueryOptions options) throws IOException {
+    public DataResponse resyncFiles(String studyId, QueryOptions options) throws IOException {
         return execute(STUDY_URL, studyId, "resyncFiles", options, GET, Object.class);
     }
 
-    public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String groupName, String users) throws IOException {
+    public DataResponse<ObjectMap> createGroup(String studyId, String groupId, String groupName, String users) throws IOException {
         ObjectMap queryParams = new ObjectMap();
         queryParams.append("action", "ADD");
 
@@ -90,7 +90,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", null, "update", queryParams.append("body", bodyParams), POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options) throws IOException {
+    public DataResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options) throws IOException {
         ObjectMap queryParams = new ObjectMap();
         queryParams.append("action", "REMOVE");
 
@@ -100,49 +100,49 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", null, "update", queryParams.append("body", bodyParams), POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> updateGroup(String studyId, String groupId, ObjectMap objectMap) throws IOException {
+    public DataResponse<ObjectMap> updateGroup(String studyId, String groupId, ObjectMap objectMap) throws IOException {
         ObjectMap bodyParams = new ObjectMap("body", objectMap);
         return execute(STUDY_URL, studyId, "groups", groupId, "update", bodyParams, POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> updateGroupMember(String studyId, ObjectMap objectMap) throws IOException {
+    public DataResponse<ObjectMap> updateGroupMember(String studyId, ObjectMap objectMap) throws IOException {
         ObjectMap bodyParams = new ObjectMap("body", objectMap);
         return execute(STUDY_URL, studyId, "groups", "members", "update", bodyParams, POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> updateGroupAdmins(String studyId, ObjectMap objectMap) throws IOException {
+    public DataResponse<ObjectMap> updateGroupAdmins(String studyId, ObjectMap objectMap) throws IOException {
         ObjectMap bodyParams = new ObjectMap("body", objectMap);
         return execute(STUDY_URL, studyId, "groups", "admins", "update", bodyParams, POST, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws IOException {
+    public DataResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws IOException {
         ObjectMap params = new ObjectMap(objectMap);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws IOException {
+    public DataResponse<Study> update(String studyId, String study, ObjectMap params) throws IOException {
         ObjectMapper mapper = JacksonUtils.getUpdateObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
         return execute(STUDY_URL, studyId, "update", p, POST, Study.class);
     }
 
-    public QueryResponse<Study> delete(String studyId, ObjectMap params) throws IOException {
+    public DataResponse<Study> delete(String studyId, ObjectMap params) throws IOException {
         return execute(STUDY_URL, studyId, "delete", params, GET, Study.class);
     }
 
-    public QueryResponse<VariableSet> getVariableSets(String studyId, Query query) throws IOException {
+    public DataResponse<VariableSet> getVariableSets(String studyId, Query query) throws IOException {
         return execute(STUDY_URL, studyId, "variableSets", query, GET, VariableSet.class);
     }
 
-    public QueryResponse<VariableSet> updateVariableSet(String studyId, Query query, ObjectMap variableSet) throws IOException {
+    public DataResponse<VariableSet> updateVariableSet(String studyId, Query query, ObjectMap variableSet) throws IOException {
         ObjectMapper mapper = JacksonUtils.getUpdateObjectMapper();
         String json = mapper.writeValueAsString(variableSet);
         query.append("body", json);
         return execute(STUDY_URL, studyId, "variableSets", "", "update", query, POST, VariableSet.class);
     }
 
-    public QueryResponse<VariableSet> updateVariableSetVariable(String studyId, String variableSet, Query query, ObjectMap variable)
+    public DataResponse<VariableSet> updateVariableSetVariable(String studyId, String variableSet, Query query, ObjectMap variable)
             throws IOException {
         ObjectMapper mapper = JacksonUtils.getUpdateObjectMapper();
         String json = mapper.writeValueAsString(variable);

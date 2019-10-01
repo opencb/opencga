@@ -18,10 +18,10 @@ package org.opencb.opencga.app.cli.analysis.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
@@ -89,7 +89,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
         if (StringUtils.isNotEmpty(options.job)) {
             Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), Long.parseLong(options.job));
-            QueryResult<Job> jobQueryResult = catalogManager.getJobManager().search(options.study, query, QueryOptions.empty(), token);
+            DataResult<Job> jobQueryResult = catalogManager.getJobManager().search(options.study, query, QueryOptions.empty(), token);
 
             if (jobQueryResult.getNumResults() == 0) {
                 throw new AnalysisException("Job '" + options.job + "' not found");
@@ -165,7 +165,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
         if (StringUtils.isNotEmpty(options.job)) {
             Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), Long.parseLong(options.job));
-            QueryResult<Job> jobQueryResult = catalogManager.getJobManager().search(options.study, query, QueryOptions.empty(), token);
+            DataResult<Job> jobQueryResult = catalogManager.getJobManager().search(options.study, query, QueryOptions.empty(), token);
 
             if (jobQueryResult.getNumResults() == 0) {
                 throw new AnalysisException("Job '" + options.job + "' not found");

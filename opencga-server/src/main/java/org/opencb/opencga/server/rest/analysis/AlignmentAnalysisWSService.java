@@ -29,13 +29,12 @@ import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
-import org.opencb.biodata.tools.feature.BigWigManager;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -93,7 +92,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            QueryResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, sessionId);
+            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -143,10 +142,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             if (StringUtils.isNotEmpty(regions)) {
                 String[] regionList = regions.split(",");
-                List<QueryResult<ReadAlignment>> queryResultList = new ArrayList<>(regionList.length);
+                List<DataResult<ReadAlignment>> queryResultList = new ArrayList<>(regionList.length);
                 for (String region : regionList) {
                     query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
-                    QueryResult<ReadAlignment> queryResult = alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId);
+                    DataResult<ReadAlignment> queryResult = alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId);
                     queryResultList.add(queryResult);
                 }
                 return createOkResponse(queryResultList);
@@ -187,11 +186,11 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
-                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
+                List<DataResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
                 if (StringUtils.isEmpty(threshold)) {
                     for (Region region : regionList) {
-                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, sessionId);
-                        if (coverage.getResult().size() > 0) {
+                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, sessionId);
+                        if (coverage.getResults().size() > 0) {
                             queryResultList.add(coverage);
                         }
                     }
@@ -226,9 +225,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     }
 
                     for (Region region : regionList) {
-                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, minCoverage,
+                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, minCoverage,
                                 maxCoverage, sessionId);
-                        if (coverage.getResult().size() > 0) {
+                        if (coverage.getResults().size() > 0) {
                             queryResultList.add(coverage);
                         }
                     }
@@ -274,32 +273,32 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 // Getting total counts for file #1: somatic file
-                QueryResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(studyStr, somaticFileIdStr, sessionId);
-                if (CollectionUtils.isEmpty(somaticResult.getResult()) || somaticResult.getResult().get(0) == 0) {
+                DataResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(studyStr, somaticFileIdStr, sessionId);
+                if (CollectionUtils.isEmpty(somaticResult.getResults()) || somaticResult.getResults().get(0) == 0) {
                     return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + somaticFileIdStr);
                 }
-                long somaticTotalCounts = somaticResult.getResult().get(0);
+                long somaticTotalCounts = somaticResult.getResults().get(0);
 
                 // Getting total counts for file #2: germline file
-                QueryResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(studyStr, germlineFileIdStr, sessionId);
-                if (CollectionUtils.isEmpty(germlineResult.getResult()) || germlineResult.getResult().get(0) == 0) {
+                DataResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(studyStr, germlineFileIdStr, sessionId);
+                if (CollectionUtils.isEmpty(germlineResult.getResults()) || germlineResult.getResults().get(0) == 0) {
                     return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + germlineFileIdStr);
                 }
-                long germlineTotalCounts = germlineResult.getResult().get(0);
+                long germlineTotalCounts = germlineResult.getResults().get(0);
 
                 // Compute log2 coverage ratio for each region given
-                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
+                List<DataResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
                 for (Region region : regionList) {
-                    QueryResult<RegionCoverage> somaticCoverage = alignmentStorageManager.coverage(studyStr, somaticFileIdStr, region, windowSize, sessionId);
-                    QueryResult<RegionCoverage> germlineCoverage = alignmentStorageManager.coverage(studyStr, germlineFileIdStr, region, windowSize, sessionId);
-                    if (somaticCoverage.getResult().size() == 1 && germlineCoverage.getResult().size() == 1) {
+                    DataResult<RegionCoverage> somaticCoverage = alignmentStorageManager.coverage(studyStr, somaticFileIdStr, region, windowSize, sessionId);
+                    DataResult<RegionCoverage> germlineCoverage = alignmentStorageManager.coverage(studyStr, germlineFileIdStr, region, windowSize, sessionId);
+                    if (somaticCoverage.getResults().size() == 1 && germlineCoverage.getResults().size() == 1) {
                         try {
                             StopWatch watch = StopWatch.createStarted();
-                            RegionCoverage coverage = BamUtils.log2CoverageRatio(somaticCoverage.getResult().get(0), somaticTotalCounts,
-                                    germlineCoverage.getResult().get(0), germlineTotalCounts);
-                            int dbTime = somaticResult.getDbTime() + somaticCoverage.getDbTime()
-                                    + germlineResult.getDbTime() + germlineCoverage.getDbTime() + ((int) watch.getTime());
-                            queryResultList.add(new QueryResult<>(region.toString(), dbTime, 1, 1, null, null, Collections.singletonList(coverage)));
+                            RegionCoverage coverage = BamUtils.log2CoverageRatio(somaticCoverage.getResults().get(0), somaticTotalCounts,
+                                    germlineCoverage.getResults().get(0), germlineTotalCounts);
+                            int dbTime = somaticResult.getTime() + somaticCoverage.getTime()
+                                    + germlineResult.getTime() + germlineCoverage.getTime() + ((int) watch.getTime());
+                            queryResultList.add(new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
                         } catch (AlignmentCoverageException e) {
                             logger.error("log2CoverageRatio: " + e.getMessage() + ": somatic file = " + somaticFileIdStr + ", germline file = " + germlineFileIdStr + ", region = " + region.toString());
                         }
@@ -345,7 +344,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 // Compute low coverage regions from the given input regions
-                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
+                List<DataResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
                 for (Region region : regionList) {
                     queryResultList.add(alignmentStorageManager.getLowCoverageRegions(studyStr, fileIdStr, region, minCoverage, sessionId));
                 }
@@ -385,7 +384,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (StringUtils.isNotEmpty(region)) {
                 String[] regionList = region.split(",");
-                List<QueryResult<AlignmentGlobalStats>> queryResultList = new ArrayList<>(regionList.length);
+                List<DataResult<AlignmentGlobalStats>> queryResultList = new ArrayList<>(regionList.length);
                 for (String regionAux : regionList) {
                     query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
                     queryResultList.add(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, sessionId));
@@ -416,7 +415,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         // Get species and assembly from catalog
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+        DataResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
         if (projectQueryResult.getNumResults() != 1) {

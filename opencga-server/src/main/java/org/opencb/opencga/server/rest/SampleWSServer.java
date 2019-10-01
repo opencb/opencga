@@ -19,10 +19,10 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -87,7 +87,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            List<QueryResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
+            List<DataResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -148,7 +148,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileIdStr, null, sessionId).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
-            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, sessionId);
+            DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -229,7 +229,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
 
-            QueryResult<Sample> queryResult;
+            DataResult<Sample> queryResult;
             if (count) {
                 queryResult = sampleManager.count(studyStr, query, sessionId);
             } else {
@@ -392,7 +392,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 }
                 query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
-            QueryResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -433,12 +433,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
-            QueryResult<Sample> search = sampleManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
+            DataResult<Sample> search = sampleManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
                     sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new QueryResult<>("Search", search.getDbTime(), search.first().getAnnotationSets().size(),
-                        search.first().getAnnotationSets().size(), search.getWarningMsg(), search.getErrorMsg(),
-                        search.first().getAnnotationSets()));
+                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);
             }
@@ -459,10 +458,10 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
             @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<QueryResult<Sample>> queryResults = sampleManager.get(studyStr, getIdList(samplesStr), null, sessionId);
+            List<DataResult<Sample>> queryResults = sampleManager.get(studyStr, getIdList(samplesStr), null, sessionId);
 
             Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
-                    queryResults.stream().map(QueryResult::first).map(Sample::getUid).collect(Collectors.toList()));
+                    queryResults.stream().map(DataResult::first).map(Sample::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
@@ -470,11 +469,10 @@ public class SampleWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            QueryResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, sessionId);
+            DataResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new QueryResult<>("List annotationSets", search.getDbTime(),
-                        search.first().getAnnotationSets().size(), search.first().getAnnotationSets().size(), search.getWarningMsg(),
-                        search.getErrorMsg(), search.first().getAnnotationSets()));
+                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);
             }
@@ -504,11 +502,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             sampleManager.update(studyStr, sampleStr, new SampleUpdateParams()
                     .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, variableSet, params.annotations))),
                     QueryOptions.empty(), sessionId);
-            QueryResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,
+            DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,
                     Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
             List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
-            QueryResult<AnnotationSet> queryResult = new QueryResult<>(sampleStr, sampleQueryResult.getDbTime(), annotationSets.size(),
-                    annotationSets.size(), "", "", annotationSets);
+            DataResult<AnnotationSet> queryResult = new DataResult<>(sampleQueryResult.getTime(), Collections.emptyList(),
+                    annotationSets.size(), annotationSets, annotationSets.size());
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);

@@ -21,9 +21,9 @@ import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converters.proto.VariantAvroToVariantProtoConverter;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -48,8 +48,8 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
         try {
             Query query = genericGrpcService.createQuery(request);
             logger.info("Count variants query : {} " + query.toJson());
-            QueryResult<Long> count = genericGrpcService.variantStorageManager.count(query, request.getSessionId());
-            responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(count.getResult().get(0)).build());
+            DataResult<Long> count = genericGrpcService.variantStorageManager.count(query, request.getSessionId());
+            responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(count.getResults().get(0)).build());
             responseObserver.onCompleted();
         } catch (Exception e) {
             logger.error("Error on count", e);

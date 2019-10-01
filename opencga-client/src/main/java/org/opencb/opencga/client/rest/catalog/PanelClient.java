@@ -17,7 +17,7 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Panel;
@@ -39,7 +39,7 @@ public class PanelClient extends CatalogClient<Panel, PanelAclEntry> {
         this.aclClass = PanelAclEntry.class;
     }
 
-    public QueryResponse<Panel> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
+    public DataResponse<Panel> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
         if (bodyParams == null || bodyParams.size() == 0) {
             throw new ClientException("Missing body parameters");
         }
@@ -49,7 +49,7 @@ public class PanelClient extends CatalogClient<Panel, PanelAclEntry> {
         return execute(PANEL_URL, "create", params, POST, Panel.class);
     }
 
-    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+    public DataResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(PANEL_URL, "groupBy", params, GET, ObjectMap.class);
     }

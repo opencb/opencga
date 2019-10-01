@@ -21,7 +21,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.catalog.StudyClient;
@@ -84,7 +84,7 @@ public class StudyClientTest {
     @Test
     public void get() throws Exception {
         studyClient = openCGAClient.getStudyClient();
-        QueryResponse<Study> info = studyClient.get("2", null);
+        DataResponse<Study> info = studyClient.get("2", null);
         assertNotNull(info.firstResult());
     }
 

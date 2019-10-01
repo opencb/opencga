@@ -418,7 +418,7 @@ public class VariantHbaseTestUtils {
             DataWriter<Variant> writer = new VariantWriterFactory(dbAdaptor).newDataWriter(VariantWriterFactory.VariantOutputFormat.VCF, os, query, queryOptions);
             writer.open();
             writer.pre();
-            writer.write(dbAdaptor.get(query, queryOptions).getResult());
+            writer.write(dbAdaptor.get(query, queryOptions).getResults());
             writer.post();
             writer.close();
         }

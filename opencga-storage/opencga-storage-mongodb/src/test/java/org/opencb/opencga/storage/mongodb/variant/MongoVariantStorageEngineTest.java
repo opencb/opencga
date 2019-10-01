@@ -213,7 +213,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         long stageCount = stage.count().first();
         System.out.println("stage count : " + stageCount);
         int i = 0;
-        for (Document document : stage.find(new Document(), Projections.include("_id"), null).getResult()) {
+        for (Document document : stage.find(new Document(), Projections.include("_id"), null).getResults()) {
             stage.remove(document, null).getNumDeleted();
             i++;
             if (i >= stageCount / 2) {
@@ -1194,8 +1194,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
 //        assertEquals(variantsCollection.count().first(), stageCollection.count().first());
 
-        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
-        Set<String> stageIds = stageCollection.find(Filters.exists(String.valueOf(studyId)), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResult().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
+        Set<String> variantIds = variantsCollection.find(new Document(DocumentToVariantConverter.STUDIES_FIELD + '.' + STUDYID_FIELD, studyId), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResults().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
+        Set<String> stageIds = stageCollection.find(Filters.exists(String.valueOf(studyId)), new QueryOptions(QueryOptions.INCLUDE, "_id")).getResults().stream().map(document -> document.getString("_id")).collect(Collectors.toSet());
 
         if (!variantIds.equals(stageIds)) {
             for (String id : variantIds) {

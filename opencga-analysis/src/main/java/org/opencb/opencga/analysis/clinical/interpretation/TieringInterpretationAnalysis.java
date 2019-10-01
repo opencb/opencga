@@ -21,7 +21,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
@@ -30,10 +29,10 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
@@ -106,7 +105,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
 
         Query query = new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key());
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(query, options, sessionId);
+        DataResult<Project> projectQueryResult = catalogManager.getProjectManager().get(query, options, sessionId);
 
         if (projectQueryResult.getNumResults() != 1) {
             throw new CatalogException("Project not found for study " + studyId + ". Found " + projectQueryResult.getNumResults()
@@ -318,7 +317,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         logger.debug("Region query: {}", query.safeToString());
 
         try {
-            result.addAll(variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult());
+            result.addAll(variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResults());
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
             return false;
@@ -377,7 +376,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
 
         logger.debug("MoI: {}; Query: {}", moi, query.safeToString());
         try {
-            resultMap.put(moi, variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult());
+            resultMap.put(moi, variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResults());
         } catch (CatalogException | StorageEngineException | IOException e) {
             logger.error(e.getMessage(), e);
             return false;

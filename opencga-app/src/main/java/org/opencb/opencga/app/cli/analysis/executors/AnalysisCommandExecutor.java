@@ -55,7 +55,7 @@ public abstract class AnalysisCommandExecutor extends CommandExecutor {
     protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {
         return catalogManager.getStudyManager().get(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies" +
                 ".alias"), sessionId)
-                .getResult()
+                .getResults()
                 .stream()
                 .collect(Collectors.toMap(Study::getUid, Study::getId));
     }

@@ -21,7 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.catalog.UserClient;
@@ -67,14 +67,14 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void get() throws Exception {
-        QueryResponse<User> login = userClient.get(null);
+        DataResponse<User> login = userClient.get(null);
         assertNotNull(login.firstResult());
         assertEquals(1, login.allResultsSize());
     }
 
     @Test
     public void getProjects() throws Exception {
-        QueryResponse<Project> projects = userClient.getProjects(null);
+        DataResponse<Project> projects = userClient.getProjects(null);
         assertEquals(1, projects.allResultsSize());
     }
 
@@ -83,8 +83,8 @@ public class UserClientTest extends WorkEnvironmentTest {
     public void getProjectsLogout() throws IOException, ClientException {
         openCGAClient.logout();
 
-        QueryResponse<Project> projects = userClient.getProjects(new QueryOptions("userId", "user1"));
-        assertTrue(projects.getError().contains("session id"));
+        DataResponse<Project> projects = userClient.getProjects(new QueryOptions("userId", "user1"));
+        assertTrue(projects.getError().getDescription().contains("session id"));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Missing user id");
@@ -93,7 +93,7 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void changePassword() throws Exception {
-        QueryResponse<User> passwordResponse = userClient.changePassword("user1_pass", "user1_newPass", null);
+        DataResponse<User> passwordResponse = userClient.changePassword("user1_pass", "user1_newPass", null);
         assertEquals("", passwordResponse.getError());
         String lastSessionId = openCGAClient.getSessionId();
         String newSessionId = openCGAClient.login(openCGAClient.getUserId(), "user1_newPass");

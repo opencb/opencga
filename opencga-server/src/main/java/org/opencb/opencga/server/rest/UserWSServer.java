@@ -20,11 +20,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -38,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -67,7 +65,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
-            QueryResult queryResult = catalogManager.getUserManager()
+            DataResult queryResult = catalogManager.getUserManager()
                     .create(user.id, user.name, user.email, user.password, user.organization, null, Account.Type.FULL, null);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -91,7 +89,7 @@ public class UserWSServer extends OpenCGAWSServer {
                             @QueryParam("lastModified") String lastModified) {
         try {
             ParamUtils.checkIsSingleID(userId);
-            QueryResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, sessionId);
+            DataResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -118,13 +116,8 @@ public class UserWSServer extends OpenCGAWSServer {
                 throw new Exception("Neither a password nor a token was provided.");
             }
 
-            ObjectMap sessionMap = new ObjectMap()
-                    .append("sessionId", token)
-                    .append("id", token)
-                    .append("token", token);
-
-            QueryResult<ObjectMap> response = new QueryResult<>("You successfully logged in", 0, 1, 1,
-                    "'sessionId' and 'id' deprecated", "", Arrays.asList(sessionMap));
+            ObjectMap sessionMap = new ObjectMap("token", token);
+            DataResult<ObjectMap> response = new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(sessionMap), 1);
 
             return createOkResponse(response);
         } catch (Exception e) {
@@ -145,8 +138,7 @@ public class UserWSServer extends OpenCGAWSServer {
             }
             params.newPassword = StringUtils.isNotEmpty(params.newPassword) ? params.newPassword : params.npassword;
             catalogManager.getUserManager().changePassword(userId, params.password, params.newPassword);
-            QueryResult result = new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
-            return createOkResponse(result);
+            return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -158,7 +150,7 @@ public class UserWSServer extends OpenCGAWSServer {
             notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            WriteResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
+            DataResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -200,7 +192,7 @@ public class UserWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(parameters, new UserUpdatePOST());
 
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
-            QueryResult result = catalogManager.getUserManager().update(userId, params, null, sessionId);
+            DataResult result = catalogManager.getUserManager().update(userId, params, null, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

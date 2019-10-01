@@ -290,7 +290,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     return endWrite(tmpStartTime, 1, 1, null);
                 });
 
-                logger.info("Cohort {} successfully updated", cohort.getId());
+                logger.debug("Cohort {} successfully updated", cohort.getId());
                 numModified += 1;
             } catch (Exception e) {
                 String errorMsg = "Could not update cohort " +  cohort.getId() + ": " + e.getMessage();

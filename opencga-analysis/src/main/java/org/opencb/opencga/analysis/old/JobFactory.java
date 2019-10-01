@@ -17,13 +17,13 @@
 package org.opencb.opencga.analysis.old;
 
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ public class JobFactory {
     }
 
     @Deprecated
-    public QueryResult<Job> createJob(long studyId, String jobName, String toolName, String description,
+    public DataResult<Job> createJob(long studyId, String jobName, String toolName, String description,
                                       File outDir, List<File> inputFiles, final String sessionId,
                                       String randomString, URI temporalOutDirUri, String commandLine,
                                       boolean execute, boolean simulate, Map<String, Object> attributes,
@@ -83,23 +83,23 @@ public class JobFactory {
      * @throws AnalysisExecutionException
      * @throws CatalogException
      */
-    public QueryResult<Job> createJob(long studyId, String jobName, String toolName, String executor, Map<String, String> params, String commandLine, String description,
+    public DataResult<Job> createJob(long studyId, String jobName, String toolName, String executor, Map<String, String> params, String commandLine, String description,
                                       File outDir, URI temporalOutDirUri, List<File> inputFiles, String jobSchedulerName, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, final String sessionId,
                                       boolean simulate, boolean execute)
             throws AnalysisExecutionException, CatalogException {
         logger.debug("Creating job {}: simulate {}, execute {}", jobName, simulate, execute);
         long start = System.currentTimeMillis();
 
-        QueryResult<Job> jobQueryResult;
+        DataResult<Job> jobQueryResult;
         if (resourceManagerAttributes == null) {
             resourceManagerAttributes = new HashMap<>();
         }
 
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
         if (simulate) { //Simulate a job. Do not create it.
-            jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(jobName, catalogManager.getUserManager().getUserId(sessionId), toolName, description, commandLine, outDir,
-                            inputFiles, 1)));
+            jobQueryResult = new DataResult<>((int) (System.currentTimeMillis() - start), Collections.emptyList(), 1,
+                    Collections.singletonList(new Job(jobName, catalogManager.getUserManager().getUserId(sessionId), toolName, description,
+                            commandLine, outDir, inputFiles, 1)), 1);
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/

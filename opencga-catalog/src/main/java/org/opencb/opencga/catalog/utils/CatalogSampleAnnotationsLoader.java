@@ -21,10 +21,12 @@ import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
@@ -134,13 +136,15 @@ public class CatalogSampleAnnotationsLoader {
 
         //Annotate Samples
         auxTime = System.currentTimeMillis();
+        QueryOptions options = new QueryOptions()
+                .append(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD));
         for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
             catalogManager.getSampleManager().update(study.getFqn(), entry.getValue().getId(), new SampleUpdateParams()
                             .setAnnotationSets(Collections.singletonList(
                                     new AnnotationSet("pedigreeAnnotation", variableSet.getId(), annotations)
-                            )), QueryOptions.empty(), sessionId);
+                            )), options, sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
