@@ -25,10 +25,6 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.biodata.tools.variant.VariantNormalizer;
-import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
@@ -45,7 +41,6 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
@@ -53,7 +48,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
@@ -69,12 +63,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
@@ -139,11 +130,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     }
 
     @Override
-    protected StopWatch transformProto(URI input, String fileName, URI output,
-                                              VariantFileMetadata fileMetadata, URI outputVariantsFile,
-                                              URI outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
-                                              int batchSize, String extension, String compression,
-                                              BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
+    protected ParallelTaskRunner transformProto(VariantFileMetadata fileMetadata, URI outputVariantsFile,
+                                                DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
             throws StorageEngineException {
 
         //Writer
@@ -154,125 +142,30 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             throw StorageEngineException.ioException(e);
         }
 
-        // Normalizer
-        VariantNormalizer normalizer = new VariantNormalizer(true, true, false);
-        normalizer.configure(fileMetadata.getHeader());
-        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
-
-        // Stats calculator
-        VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(String.valueOf(getStudyId()), fileMetadata);
-
-        final DataReader<Variant> dataReader;
-        String studyId = String.valueOf(getStudyId());
-        if (VariantReaderUtils.isVcf(input.toString())) {
-            VariantVcfHtsjdkReader reader = variantReaderUtils.getVariantVcfReader(input, fileMetadata.toVariantStudyMetadata(studyId));
-            if (null != malformatedHandler) {
-                reader.registerMalformatedVcfHandler(malformatedHandler);
-                reader.setFailOnError(failOnError);
-            }
-            dataReader = reader.then(normalizer);
-        } else {
-            dataReader = variantReaderUtils.getVariantReader(input, fileMetadata.toVariantStudyMetadata(studyId));
-        }
+        final DataReader<Variant> dataReader = stringReader.then(task.get());
 
         // Transformer
         ArchiveTableHelper helper = new ArchiveTableHelper(conf, getStudyId(), fileMetadata);
-        ProgressLogger progressLogger = new ProgressLogger("Transform proto:").setBatchSize(100000);
 
         logger.info("Generating output file {}", outputVariantsFile);
 
-        StopWatch stopWatch = StopWatch.createStarted();
-        // FIXME
-        if (options.getBoolean("transform.proto.parallel", true)) {
-            VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
-                    helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
+        VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader,
+                helper.getStudyId(), Integer.valueOf(helper.getFileMetadata().getId()));
 
-            // Use a supplier to avoid concurrent modifications of non thread safe objects.
-            Supplier<Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> supplier =
-                    () -> ((Task<ImmutablePair<Long, List<Variant>>, ImmutablePair<Long, List<Variant>>>) ((batch) -> {
-                        for (ImmutablePair<Long, List<Variant>> pair : batch) {
-                            statsCalculator.apply(pair.getRight()
-                                    .stream()
-                                    .filter(variant -> variant.getStart() >= pair.getKey())
-                                    .collect(Collectors.toList()));
-                        }
-                        return batch;
-                    })).then(new VariantToVcfSliceConverterTask(progressLogger));
+        // Use a supplier to avoid concurrent modifications of non thread safe objects.
+        Supplier<Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> supplier = VariantToVcfSliceConverterTask::new;
 
-            ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
-                    .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))
-                    .setBatchSize(1)
-                    .setAbortOnFail(true)
-                    .setSorted(false)
-                    .setCapacity(1)
-                    .build();
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))
+                .setBatchSize(1)
+                .setAbortOnFail(true)
+                .setSorted(true)
+                .setCapacity(1)
+                .build();
 
-            ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr;
-            ptr = new ParallelTaskRunner<>(sliceReader, supplier, dataWriter, config);
-
-            try {
-                ptr.run();
-            } catch (ExecutionException e) {
-                throw new StorageEngineException(String.format("Error while Transforming file %s into %s", input, outputVariantsFile), e);
-            }
-        } else {
-            VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper);
-            long[] t = new long[]{0, 0, 0};
-            long last = System.nanoTime();
-
-            try {
-                dataReader.open();
-                dataReader.pre();
-                dataWriter.open();
-                dataWriter.pre();
-                transformTask.pre();
-                statsCalculator.pre();
-
-                last = System.nanoTime();
-                // Process data
-                List<Variant> read = dataReader.read(batchSize);
-                t[0] += System.nanoTime() - last;
-                last = System.nanoTime();
-                while (!read.isEmpty()) {
-                    progressLogger.increment(read.size());
-                    statsCalculator.apply(read);
-                    List<VcfSliceProtos.VcfSlice> slices = transformTask.apply(read);
-                    t[1] += System.nanoTime() - last;
-                    last = System.nanoTime();
-                    dataWriter.write(slices);
-                    t[2] += System.nanoTime() - last;
-                    last = System.nanoTime();
-                    read = dataReader.read(batchSize);
-                    t[0] += System.nanoTime() - last;
-                    last = System.nanoTime();
-                }
-                List<VcfSliceProtos.VcfSlice> drain = transformTask.drain();
-                t[1] += System.nanoTime() - last;
-                last = System.nanoTime();
-                dataWriter.write(drain);
-                t[2] += System.nanoTime() - last;
+        return new ParallelTaskRunner<>(sliceReader, supplier, dataWriter, config);
 
 
-//                fileMetadata.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
-                statsCalculator.post();
-                transformTask.post();
-                dataReader.post();
-                dataWriter.post();
-
-                stopWatch.stop();
-                logger.info("Times for reading: {}, transforming {}, writing {}",
-                        TimeUnit.NANOSECONDS.toSeconds(t[0]),
-                        TimeUnit.NANOSECONDS.toSeconds(t[1]),
-                        TimeUnit.NANOSECONDS.toSeconds(t[2]));
-            } catch (Exception e) {
-                throw new StorageEngineException(String.format("Error while Transforming file %s into %s", input, outputVariantsFile), e);
-            } finally {
-                dataWriter.close();
-                dataReader.close();
-            }
-        }
-        stopWatch.stop();
-        return stopWatch;
     }
 
     @Override

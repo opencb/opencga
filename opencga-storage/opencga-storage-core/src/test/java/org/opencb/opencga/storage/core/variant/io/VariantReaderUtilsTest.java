@@ -41,6 +41,9 @@ public class VariantReaderUtilsTest {
         assertFalse(VariantReaderUtils.isJson("fileName.json.vcf.gz"));
         assertFalse(VariantReaderUtils.isJson("json"));
         assertFalse(VariantReaderUtils.isJson("json.gz"));
+        assertTrue(VariantReaderUtils.isGvcf("file.gvcf.gz"));
+        assertTrue(VariantReaderUtils.isGvcf("file.genomes.vcf.gz"));
+        assertFalse(VariantReaderUtils.isGvcf("gvcf.gz"));
     }
 
 

@@ -370,6 +370,10 @@ public class VariantReaderUtils {
         return hasFormat(fileName, "vcf") || hasFormat(fileName, "gvcf");
     }
 
+    public static boolean isGvcf(String fileName) {
+        return hasFormat(fileName, "gvcf") || hasFormat(fileName, "genome.vcf") || hasFormat(fileName, "genomes.vcf");
+    }
+
     public static boolean hasFormat(String fileName, String format) {
         if (fileName.endsWith("." + format)) {
             return true;

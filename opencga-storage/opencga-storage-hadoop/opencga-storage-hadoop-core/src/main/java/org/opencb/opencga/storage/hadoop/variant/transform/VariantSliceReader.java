@@ -99,7 +99,7 @@ public class VariantSliceReader implements DataReader<ImmutablePair<Long, List<V
             List<Variant> read;
             while (numSlices < MAX_SLICES) {
                 read = reader.read(10);
-                if (read.isEmpty()) {
+                if (read == null || read.isEmpty()) {
                     break;
                 }
                 if (progressLogger != null) {

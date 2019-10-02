@@ -30,9 +30,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.VariantReferenceBlockCreatorTask;
+import org.opencb.biodata.tools.variant.VariantSorterTask;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.run.Task;
@@ -43,9 +44,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
@@ -54,16 +53,16 @@ import java.util.function.BiConsumer;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class VariantTransformTask<T> implements Task<String, T> {
+public class VariantTransformTask implements Task<String, Variant> {
 
     protected final VariantFactory factory;
     protected final VariantFileMetadata fileMetadata;
     protected boolean includeSrc = false;
 
-    protected final Logger logger = LoggerFactory.getLogger(VariantAvroTransformTask.class);
+    protected final Logger logger = LoggerFactory.getLogger(VariantTransformTask.class);
     protected final VCFCodec vcfCodec;
     protected final VariantContextToVariantConverter converter;
-    protected final VariantNormalizer normalizer;
+    protected final Task<Variant, Variant> normalizer;
     protected final VariantSetStatsCalculator variantStatsTask;
     protected final AtomicLong htsConvertTime = new AtomicLong(0);
     protected final AtomicLong biodataConvertTime = new AtomicLong(0);
@@ -75,34 +74,47 @@ public abstract class VariantTransformTask<T> implements Task<String, T> {
     public VariantTransformTask(VariantFactory factory,
                                 String studyId, VariantFileMetadata fileMetadata,
                                 VariantSetStatsCalculator variantStatsTask,
-                                boolean includesrc, boolean generateReferenceBlocks) {
+                                boolean generateReferenceBlocks) {
         this.factory = factory;
         this.fileMetadata = fileMetadata;
         this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
         this.variantStatsTask = variantStatsTask;
-        this.includeSrc = includesrc;
 
         this.vcfCodec = null;
         this.converter = null;
-        this.normalizer = new VariantNormalizer(true, true, false);
-        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
+        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks);
+
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
                                 String studyId, VariantFileMetadata fileMetadata,
                                 VariantSetStatsCalculator variantStatsTask,
-                                boolean includeSrc, boolean generateReferenceBlocks) {
+                                boolean generateReferenceBlocks) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.fileMetadata = fileMetadata;
         this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
-        this.includeSrc = includeSrc;
 
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(studyId, fileMetadata.getId(), fileMetadata.getSampleIds());
-        this.normalizer = new VariantNormalizer(true, true, false);
-        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
+        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks);
+    }
+
+    private Task<Variant, Variant> initNormalizer(VariantFileMetadata fileMetadata, boolean generateReferenceBlocks) {
+        VariantNormalizer.VariantNormalizerConfig normalizerConfig = new VariantNormalizer.VariantNormalizerConfig()
+                .setReuseVariants(true)
+                .setNormalizeAlleles(true)
+                .setDecomposeMNVs(false)
+                .setGenerateReferenceBlocks(generateReferenceBlocks);
+        Task<Variant, Variant> normalizer = new VariantNormalizer(normalizerConfig)
+                .configure(fileMetadata.getHeader());
+        if (generateReferenceBlocks) {
+            normalizer = normalizer
+                    .then(new VariantSorterTask(100)) // Sort before generating reference blocks
+                    .then(new VariantReferenceBlockCreatorTask(fileMetadata.getHeader()));
+        }
+        return normalizer;
     }
 
     @Override
@@ -113,7 +125,7 @@ public abstract class VariantTransformTask<T> implements Task<String, T> {
     }
 
     @Override
-    public List<T> apply(List<String> batch) {
+    public List<Variant> apply(List<String> batch) {
         List<Variant> transformedVariants = new ArrayList<>(batch.size());
         logger.debug("Transforming {} lines", batch.size());
         long curr;
@@ -178,7 +190,7 @@ public abstract class VariantTransformTask<T> implements Task<String, T> {
             transformedVariants.addAll(normalizedVariants);
         }
 
-        return encodeVariants(transformedVariants);
+        return transformedVariants;
     }
 
     public List<Variant> normalize(List<Variant> variants) {
@@ -187,10 +199,14 @@ public abstract class VariantTransformTask<T> implements Task<String, T> {
         List<Variant> normalizedVariants = new ArrayList<>((int) (variants.size() * 1.1));
         for (Variant variant : variants) {
             try {
-                normalizedVariants.addAll(normalizer.normalize(Collections.singletonList(variant), true));
+                normalizedVariants.addAll(normalizer.apply(Collections.singletonList(variant)));
             } catch (Exception e) {
                 logger.error("Error parsing variant " + variant);
-                throw new IllegalStateException(e);
+                if (e instanceof RuntimeException) {
+                    throw ((RuntimeException) e);
+                } else {
+                    throw new IllegalStateException(e);
+                }
             }
         }
         this.normTime.addAndGet(System.currentTimeMillis() - curr);
@@ -205,6 +221,13 @@ public abstract class VariantTransformTask<T> implements Task<String, T> {
         if (failOnError) {
             throw e;
         }
+    }
+
+    @Override
+    public List<Variant> drain() throws Exception {
+        List<Variant> drain = normalizer.drain();
+        variantStatsTask.apply(drain);
+        return drain;
     }
 
     @Override
@@ -232,26 +255,19 @@ public abstract class VariantTransformTask<T> implements Task<String, T> {
         return includeSrc;
     }
 
-    public VariantTransformTask<T> setIncludeSrc(boolean includeSrc) {
+    public VariantTransformTask setIncludeSrc(boolean includeSrc) {
         this.includeSrc = includeSrc;
         return this;
     }
 
-    public VariantTransformTask<T> addMalformedErrorHandler(BiConsumer<String, RuntimeException> handler) {
+    public VariantTransformTask addMalformedErrorHandler(BiConsumer<String, RuntimeException> handler) {
         errorHandlers.add(handler);
         return this;
     }
 
-    public VariantTransformTask<T> setFailOnError(boolean failOnError) {
+    public VariantTransformTask setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
         return this;
     }
-
-    public VariantTransformTask<T> configureNormalizer(VariantFileHeader header) {
-        normalizer.configure(header);
-        return this;
-    }
-
-    protected abstract List<T> encodeVariants(List<Variant> variants);
 
 }
