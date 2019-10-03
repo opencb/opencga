@@ -303,6 +303,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             ptr = buildTransformPtr(parallelParse, stringReader, task, encoder, dataWriter, config);
         } else if ("json".equals(format)) {
+            Supplier<Task<Variant, String>> encoder = () -> Task.forEach(Variant::toJson);
+
             //Writers
             StringDataWriter dataWriter;
             if (stdout) {
@@ -316,7 +318,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 }
             }
 
-            ptr = buildTransformPtr(parallelParse, stringReader, task, () -> Task.forEach(Variant::toJson), dataWriter, config);
+            ptr = buildTransformPtr(parallelParse, stringReader, task, encoder, dataWriter, config);
         } else if ("proto".equals(format)) {
             ptr = transformProto(metadata, outputVariantsFile, stringReader, task);
         } else {
@@ -360,16 +362,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", config.getNumTasks());
         if (parallelParse) {
-            return new ParallelTaskRunner<Variant, W>(
-                    stringReader.then(task.get()),
-                    encoder,
+            return new ParallelTaskRunner<String, W>(
+                    stringReader,
+                    () -> task.get().then(encoder.get()),
                     dataWriter,
                     config
             );
         } else {
-            return new ParallelTaskRunner<String, W>(
-                    stringReader,
-                    () -> task.get().then(encoder.get()),
+            return new ParallelTaskRunner<Variant, W>(
+                    stringReader.then(task.get()),
+                    encoder,
                     dataWriter,
                     config
             );
