@@ -489,10 +489,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
                 Object o = method.invoke(clazz.newInstance(), args, conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());
+                if (((Number) o).intValue() != 0) {
+                    throw new RuntimeException("Exit code = " + o);
+                }
                 return ((Number) o).intValue();
             } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
+//                e.printStackTrace();
+//                return -1;
+                throw new RuntimeException(e);
             }
         }
 
@@ -509,11 +513,15 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
                 Object o = method.invoke(clazz.newInstance(), Commandline.translateCommandline(args), conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());
+                if (((Number) o).intValue() != 0) {
+                    throw new RuntimeException("Exit code = " + o);
+                }
                 return ((Number) o).intValue();
 
             } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
+//                e.printStackTrace();
+//                return -1;
+                throw new RuntimeException(e);
             }
 //            return 0;
         }

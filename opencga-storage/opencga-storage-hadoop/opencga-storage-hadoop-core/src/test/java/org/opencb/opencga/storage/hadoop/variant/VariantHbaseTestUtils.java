@@ -179,7 +179,9 @@ public class VariantHbaseTestUtils {
                     } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
 //                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
-                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX) || key.endsWith(VariantPhoenixHelper.COHORT_STATS_FREQ_SUFFIX)) {
+                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)
+                            || key.endsWith(VariantPhoenixHelper.COHORT_STATS_FREQ_SUFFIX)
+                            || key.endsWith(VariantPhoenixHelper.VARIANT_SCORE_SUFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
@@ -436,7 +438,7 @@ public class VariantHbaseTestUtils {
             // Skip table
             return true;
         }
-        Path fileName = outDir.resolve(sampleGtTableName + ".txt");
+        Path fileName = outDir.resolve("sample." + sampleGtTableName + ".txt");
         try (
                 FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
         ) {

@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import com.beust.jcommander.converters.CommaParameterSplitter;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -68,6 +69,7 @@ public class VariantCommandOptions {
 //    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
+    public final VariantScoreIndexCommandOptions variantScoreIndexCommandOptions;
     public final SampleIndexCommandOptions sampleIndexCommandOptions;
     public final FamilyIndexCommandOptions familyIndexCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
@@ -102,6 +104,7 @@ public class VariantCommandOptions {
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
+        this.variantScoreIndexCommandOptions = new VariantScoreIndexCommandOptions();
         this.sampleIndexCommandOptions = new SampleIndexCommandOptions();
         this.familyIndexCommandOptions = new FamilyIndexCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
@@ -512,6 +515,42 @@ public class VariantCommandOptions {
         @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
                 + "transformed files will not be registered in catalog.", arity = 1)
         public String catalogPath = null;
+    }
+
+    @Parameters(commandNames = {VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
+    public class VariantScoreIndexCommandOptions extends GeneralCliOptions.StudyOption {
+        public static final String SCORE_INDEX_COMMAND = "score-index";
+        public static final String SCORE_INDEX_COMMAND_DESCRIPTION = "Index a variant score in the database.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--name"}, description = "Unique name of the score within the study", required = true)
+        public String scoreName;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        public boolean resume;
+
+        @Parameter(names = {"--cohort1"}, description = "Cohort used to compute the score. "
+                + "Use the cohort '" + StudyEntry.DEFAULT_COHORT + "' if all samples from the study where used to compute the score", required = true)
+        public String cohort1;
+
+        @Parameter(names = {"--cohort2"}, description = "Second cohort used to compute the score, typically to compare against the first cohort. "
+                + "If only one cohort was used to compute the score, leave empty")
+        public String cohort2;
+
+        @Parameter(names = {"-i", "--input"}, description = "Input file to load", required = true)
+        public String input;
+
+        @Parameter(names = {"--input-columns"}, description = "Indicate which columns to load from the input file. "
+                + "Provide the column position (starting in 0) for the column with the score with 'SCORE=n'. "
+                + "Optionally, the PValue column with 'PVALUE=n'. "
+                + "The, to indicate the variant associated with the score, provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], "
+                + "or the column 'VAR' containing a variant representation with format 'chr:start:ref:alt'. "
+                + "e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'", required = true)
+        public String columns;
+
+
     }
 
     @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)

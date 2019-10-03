@@ -428,6 +428,20 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<StudyEntry> withScore(final String scoreId, Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<StudyEntry, Float>(subMatcher, "with score " + scoreId, "Score") {
+            @Override
+            protected Float featureValueOf(StudyEntry actual) {
+                for (VariantScore variantScore : actual.getScores()) {
+                    if (variantScore.getId().equals(scoreId)) {
+                        return variantScore.getScore();
+                    }
+                }
+                return null;
+            }
+        };
+    }
+
     public static <T, R> Matcher<T> with(String name, Function<T, R> f, Matcher<? super R> subMatcher) {
         return new FeatureMatcher<T, R>(subMatcher, "with " + name, name) {
             @Override

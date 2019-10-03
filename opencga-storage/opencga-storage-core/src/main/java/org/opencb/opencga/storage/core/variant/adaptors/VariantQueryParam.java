@@ -177,6 +177,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam MISSING_GENOTYPES
             = new VariantQueryParam("missingGenotypes", TEXT_ARRAY, MISSING_GENOTYPES_DESCR);
 
+    public static final String SCORE_DESCR
+            = "Filter by variant score: [{study:}]{score}[<|>|<=|>=]{number}";
+    public static final VariantQueryParam SCORE
+            = new VariantQueryParam("score", TEXT_ARRAY, MISSING_GENOTYPES_DESCR);
 
     public static final String ANNOT_EXISTS_DESCR
             = "Return only annotated variants";

@@ -24,9 +24,11 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +85,10 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
         return studyCohortStatsMap;
     }
 
+    public VariantStats convert(VariantRow.StatsColumn statsColumn) {
+        return convert(statsColumn.toProto());
+    }
+
     public Map<Integer, Map<Integer, VariantStats>> convert(ResultSet resultSet) {
 //        String studyIdStr = String.valueOf(studyConfiguration.getStudyId());
         Map<Integer, Map<Integer, VariantStats>> studyCohortStatsMap = new HashMap<>();
@@ -116,36 +122,39 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
     }
 
     protected VariantStats convert(byte[] data) {
-        VariantStats stats = new VariantStats();
         try {
-            VariantProto.VariantStats protoStats = VariantProto.VariantStats.parseFrom(data);
-
-            stats.setMgf(protoStats.getMgf());
-            stats.setMgfGenotype(protoStats.getMgfGenotype());
-            stats.setMaf(protoStats.getMaf());
-            stats.setMafAllele(protoStats.getMafAllele());
-            stats.setAlleleCount(protoStats.getAlleleCount());
-            stats.setAltAlleleCount(protoStats.getAltAlleleCount());
-            stats.setAltAlleleFreq(protoStats.getAltAlleleFreq());
-            stats.setRefAlleleCount(protoStats.getRefAlleleCount());
-            stats.setRefAlleleFreq(protoStats.getRefAlleleFreq());
-
-            Map<Genotype, Float> genotypesFreq = new HashMap<>();
-            for (Map.Entry<String, Integer> entry : protoStats.getGenotypeCountMap().entrySet()) {
-                Genotype g = new Genotype(entry.getKey());
-                stats.addGenotype(g, entry.getValue(), false);
-                Float freq = protoStats.getGenotypeFreqMap().get(entry.getKey());
-                if (freq != null) {
-                    genotypesFreq.put(g, freq);
-                }
-            }
-            stats.setGenotypeFreq(genotypesFreq);
-            stats.setMissingAlleleCount(protoStats.getMissingAlleleCount());
-            stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
-
+            return convert(VariantProto.VariantStats.parseFrom(data));
         } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
+            throw VariantQueryException.internalException(e);
         }
+    }
+
+    protected VariantStats convert(VariantProto.VariantStats protoStats) {
+        VariantStats stats = new VariantStats();
+
+        stats.setMgf(protoStats.getMgf());
+        stats.setMgfGenotype(protoStats.getMgfGenotype());
+        stats.setMaf(protoStats.getMaf());
+        stats.setMafAllele(protoStats.getMafAllele());
+        stats.setAlleleCount(protoStats.getAlleleCount());
+        stats.setAltAlleleCount(protoStats.getAltAlleleCount());
+        stats.setAltAlleleFreq(protoStats.getAltAlleleFreq());
+        stats.setRefAlleleCount(protoStats.getRefAlleleCount());
+        stats.setRefAlleleFreq(protoStats.getRefAlleleFreq());
+
+        Map<Genotype, Float> genotypesFreq = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : protoStats.getGenotypeCountMap().entrySet()) {
+            Genotype g = new Genotype(entry.getKey());
+            stats.addGenotype(g, entry.getValue(), false);
+            Float freq = protoStats.getGenotypeFreqMap().get(entry.getKey());
+            if (freq != null) {
+                genotypesFreq.put(g, freq);
+            }
+        }
+        stats.setGenotypeFreq(genotypesFreq);
+        stats.setMissingAlleleCount(protoStats.getMissingAlleleCount());
+        stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
+
         return stats;
     }
 

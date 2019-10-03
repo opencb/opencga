@@ -157,7 +157,7 @@ public abstract class AbstractPhoenixConverter {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> List<T> toList(PhoenixArray value) {
+    public static <T> List<T> toList(PhoenixArray value) {
         try {
             if (value.isPrimitiveType()) {
                 return toModifiableList(value);

@@ -298,6 +298,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--qual"}, description = QUAL_DESCR)
         public String qual;
 
+        @Parameter(names = {"--score"}, description = SCORE_DESCR)
+        public String score;
+
         @Parameter(names = {"--biotype"}, description = ANNOT_BIOTYPE_DESCR)
         public String geneBiotype;
 

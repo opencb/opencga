@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 
@@ -370,6 +371,29 @@ public class VariantQueryParser {
                 if (!TaskMetadata.Status.READY.equals(sampleMetadata.getMendelianErrorStatus())) {
                     throw VariantQueryException.malformedParam(param, "Sample \"" + sampleMetadata.getName()
                             + "\" does not have the Mendelian Errors precomputed yet");
+                }
+            }
+        }
+
+        if (isValidParam(query, SCORE)) {
+            String value = query.getString(SCORE.key());
+            List<String> values = splitValue(value).getValue();
+            for (String scoreFilter : values) {
+                String variantScore = splitOperator(scoreFilter)[0];
+                VariantScoreMetadata variantScoreMetadata;
+                String[] studyScore = splitStudyResource(variantScore);
+                if (studyScore.length == 2) {
+                    int studyId = metadataManager.getStudyId(studyScore[0]);
+                    variantScoreMetadata = metadataManager.getVariantScoreMetadata(studyId, studyScore[1]);
+                } else {
+                    if (defaultStudy == null) {
+                        throw VariantQueryException.missingStudyFor("score", variantScore, metadataManager.getStudyNames());
+                    } else {
+                        variantScoreMetadata = metadataManager.getVariantScoreMetadata(defaultStudy, variantScore);
+                    }
+                }
+                if (variantScoreMetadata == null) {
+                    throw VariantQueryException.scoreNotFound(variantScore, defaultStudy.getName());
                 }
             }
         }

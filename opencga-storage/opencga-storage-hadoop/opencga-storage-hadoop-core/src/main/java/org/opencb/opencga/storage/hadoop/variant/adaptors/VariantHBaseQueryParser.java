@@ -29,10 +29,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -46,8 +48,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildFileColumnKey;
@@ -365,6 +367,14 @@ public class VariantHBaseQueryParser {
                     scan.addColumn(family, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
                 }
             });
+            if (selectElements.getFields().contains(VariantField.STUDIES_SCORES)) {
+                for (StudyMetadata studyMetadata : selectElements.getStudyMetadatas().values()) {
+                    for (VariantScoreMetadata sore : studyMetadata.getVariantScores()) {
+                        PhoenixHelper.Column column = VariantPhoenixHelper.getVariantScoreColumn(sore.getStudyId(), sore.getId());
+                        scan.addColumn(family, column.bytes());
+                    }
+                }
+            }
         }
 
         // If we already add a filter that requires a sample from a certain study, we can skip latter the filter for that study
@@ -410,7 +420,10 @@ public class VariantHBaseQueryParser {
                     throw VariantQueryException.missingStudyForSample(entry.getKey().toString(), studyNames);
                 }
                 int studyId = defaultStudy.getId();
-                int sampleId = metadataManager.getSampleId(defaultStudy.getId(), entry.getKey(), true);
+                Integer sampleId = metadataManager.getSampleId(defaultStudy.getId(), entry.getKey(), true);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(entry.getKey(), defaultStudy.getName());
+                }
                 List<String> genotypes = entry.getValue();
 
                 if (genotypes.stream().allMatch(VariantQueryUtils::isNegated)) {

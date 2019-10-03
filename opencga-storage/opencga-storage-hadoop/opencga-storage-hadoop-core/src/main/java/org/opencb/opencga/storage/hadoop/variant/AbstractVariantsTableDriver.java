@@ -40,7 +40,6 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillMissingFromArchiveTask;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,6 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
     public static final String NONE_TIMESTAMP                      = "none";
-    public static final String COUNTER_GROUP_NAME = VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
     private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
     private GenomeHelper helper;
@@ -326,14 +324,6 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     protected Map<String, String> getParams() {
         return Collections.emptyMap();
-    }
-
-    protected String getParam(String key) {
-        return getParam(key, null);
-    }
-
-    protected String getParam(String key, String defaultValue) {
-        return getConf().get(key, getConf().get("--" + key, defaultValue));
     }
 
     public static void setNoneTimestamp(Job job) {

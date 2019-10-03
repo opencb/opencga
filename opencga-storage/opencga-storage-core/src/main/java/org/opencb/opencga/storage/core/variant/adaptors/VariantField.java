@@ -44,6 +44,7 @@ public enum VariantField {
     STUDIES_SAMPLES_DATA(STUDIES, "studies.samplesData", "samples", "samplesData"),
     STUDIES_FILES(STUDIES, "studies.files", "files"),
     STUDIES_STATS(STUDIES, "studies.stats", "studies.cohortStats", "stats", "sourceEntries.stats"),
+    STUDIES_SCORES(STUDIES, "studies.scores"),
     STUDIES_SECONDARY_ALTERNATES(STUDIES, "studies.secondaryAlternates"),
     STUDIES_STUDY_ID(STUDIES, "studies.studyId"),
 
