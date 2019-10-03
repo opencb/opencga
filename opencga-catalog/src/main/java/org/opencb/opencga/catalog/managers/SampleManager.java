@@ -19,10 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.ListUtils;
@@ -72,7 +69,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public static final QueryOptions INCLUDE_SAMPLE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.UUID.key(),
-            SampleDBAdaptor.QueryParams.VERSION.key()));
+            SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -329,7 +326,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             auditManager.auditCount(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
@@ -350,7 +347,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
-        Query auditQuery = new Query(query);
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", new Query(query))
@@ -409,7 +405,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete sample " + sample.getId() + ": " + e.getMessage();
 
-                result.getWarnings().add(errorMsg);
+                Event event = new Event(Event.Type.ERROR, sample.getId(), e.getMessage());
+                result.getEvents().add(event);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
@@ -786,15 +783,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         if (!silent) {
                             throw e;
                         } else {
-                            String warning = "Missing " + sampleId + ": " + missingMap.get(sampleId).getErrorMsg();
-                            sampleAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                            Event event = new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg());
+                            sampleAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                                     Collections.emptyList(), 0));
                         }
                     }
                     counter += 1;
                 } else {
-                    String warning = "Missing " + sampleId + ": " + missingMap.get(sampleId).getErrorMsg();
-                    sampleAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                    Event event = new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg());
+                    sampleAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",

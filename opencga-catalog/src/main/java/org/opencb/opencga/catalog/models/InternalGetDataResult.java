@@ -24,7 +24,7 @@ public class InternalGetDataResult<T> extends DataResult<T> {
     }
 
     public InternalGetDataResult(DataResult<T> dataResult) {
-        super(dataResult.getTime(), dataResult.getWarnings(), dataResult.getNumResults(), dataResult.getResults(),
+        super(dataResult.getTime(), dataResult.getEvents(), dataResult.getNumResults(), dataResult.getResults(),
                 dataResult.getNumMatches(), dataResult.getNumInserted(), dataResult.getNumUpdated(), dataResult.getNumDeleted(),
                 dataResult.getAttributes());
         this.groups = new ArrayList<>();

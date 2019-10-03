@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -143,8 +144,8 @@ public class MetaWSServer extends OpenCGAWSServer {
             }
         } else {
             logger.info("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            queryResult.setWarnings(Collections.singletonList("HealthCheck results from cache at "
-                    + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
+            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, "HealthCheck results from cache at "
+                    + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
         }
 
         queryResult.setResults(Arrays.asList(healthCheckResults));

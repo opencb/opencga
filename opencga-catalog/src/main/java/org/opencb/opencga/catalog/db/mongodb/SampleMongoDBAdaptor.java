@@ -25,10 +25,7 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
@@ -189,11 +186,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        return update(id, parameters, Collections.emptyList(), queryOptions);
-    }
-
-    @Override
     public DataResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
         QueryOptions queryOptions = new QueryOptions();
         List<String> includeList = new ArrayList<>();
@@ -207,22 +199,39 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         DataResult<Sample> sampleDataResult = get(id, queryOptions);
         if (sampleDataResult.first().getAnnotationSets().isEmpty()) {
-            return new DataResult<>(sampleDataResult.getTime(), sampleDataResult.getWarnings(), 0, Collections.emptyList(), 0);
+            return new DataResult<>(sampleDataResult.getTime(), sampleDataResult.getEvents(), 0, Collections.emptyList(), 0);
         } else {
             List<AnnotationSet> annotationSets = sampleDataResult.first().getAnnotationSets();
             int size = annotationSets.size();
-            return new DataResult<>(sampleDataResult.getTime(), sampleDataResult.getWarnings(), size, annotationSets, size);
+            return new DataResult<>(sampleDataResult.getTime(), sampleDataResult.getEvents(), size, annotationSets, size);
         }
     }
 
     @Override
-    public DataResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        return update(id, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public DataResult update(long uid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
-        DataResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumUpdated() != 1) {
-            throw new CatalogDBException("Could not update sample with id " + id + ":" + update.getWarnings().get(0));
+        Query query = new Query(QueryParams.UID.key(), uid);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
+                        PRIVATE_INDIVIDUAL_UID));
+        DataResult<Document> documentResult = nativeGet(query, options);
+        if (documentResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not update sample. Sample uid '" + uid + "' not found.");
         }
-        return update;
+        String sampleId = documentResult.first().getString(QueryParams.ID.key());
+
+        try {
+            return runTransaction(clientSession -> privateUpdate(clientSession, documentResult.first(), parameters, variableSetList,
+                    queryOptions));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
+            throw new CatalogDBException("Could not update sample " + sampleId + ": " + e.getMessage(), e.getCause());
+        }
     }
 
     @Override
@@ -233,8 +242,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public DataResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
-        long startTime = startQuery();
-
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single sample
             if (count(query).first() != 1) {
@@ -247,36 +254,28 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         PRIVATE_INDIVIDUAL_UID));
         DBIterator<Document> iterator = nativeIterator(query, options);
 
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
+        DataResult<Sample> result = DataResult.empty();
 
         while (iterator.hasNext()) {
             Document sampleDocument = iterator.next();
             String sampleId = sampleDocument.getString(QueryParams.ID.key());
-
-            numMatches += 1;
             try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-                    update(clientSession, sampleDocument, parameters, variableSetList, queryOptions);
-                    return endWrite(tmpStartTime, 1, 1, null);
-                });
-                logger.debug("Sample {} successfully updated", sampleId);
-                numModified += 1;
+                result.append(runTransaction(clientSession -> privateUpdate(clientSession, sampleDocument, parameters, variableSetList,
+                        queryOptions)));
             } catch (CatalogDBException e) {
-                String errorMsg = "Could not update sample " + sampleId + ": " + e.getMessage();
-                logger.error(errorMsg);
-                warnings.add(errorMsg);
+                logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, sampleId, e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
             }
         }
 
-        return endWrite(startTime, numMatches, numModified, warnings);
+        return result;
     }
 
-    private void update(ClientSession clientSession, Document sampleDocument, ObjectMap parameters, List<VariableSet> variableSetList,
-                        QueryOptions queryOptions) throws CatalogDBException {
-
+    DataResult<Object> privateUpdate(ClientSession clientSession, Document sampleDocument, ObjectMap parameters,
+                                     List<VariableSet> variableSetList, QueryOptions queryOptions) throws CatalogDBException {
+        long tmpStartTime = startQuery();
+        String sampleId = sampleDocument.getString(QueryParams.ID.key());
         long sampleUid = sampleDocument.getLong(QueryParams.UID.key());
         int version = sampleDocument.getInteger(QueryParams.VERSION.key());
         long studyUid = sampleDocument.getLong(QueryParams.STUDY_UID.key());
@@ -291,18 +290,26 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         // Perform the update
-        updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
+        DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
         UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, tmpQuery, parameters);
         Document sampleUpdate = updateParams.toFinalUpdateDocument();
 
+        if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
+            if (!parameters.isEmpty()) {
+                logger.error("Non-processed update parameters: {}", parameters.keySet());
+            }
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        List<Event> events = new ArrayList<>();
         if (!sampleUpdate.isEmpty()) {
             Bson finalQuery = parseQuery(tmpQuery);
 
             logger.debug("Sample update: query : {}, update: {}",
                     finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                     sampleUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
+            result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
 
             if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
                 long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
@@ -322,7 +329,17 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     }
                 }
             }
+
+            if (result.getNumMatches() == 0) {
+                throw new CatalogDBException("Sample " + sampleId + " not found");
+            }
+            if (result.getNumUpdated() == 0) {
+                events.add(new Event(Event.Type.WARNING, sampleId, "Sample was already updated"));
+            }
+            logger.debug("Sample {} successfully updated", sampleId);
         }
+
+        return endWrite(tmpStartTime, 1, 1, events);
     }
 
     private void updateSampleFromIndividualCollection(ClientSession clientSession, Sample sample, long individualUid,
@@ -607,14 +624,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public DataResult delete(Sample sample) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), sample.getUid());
-        DataResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not delete sample. " + sample.getId() + " not found.");
-        } else if (delete.getNumUpdated() == 0) {
-            throw new CatalogDBException("Could not delete sample " + sample.getId());
+        try {
+            return runTransaction(clientSession -> privateDelete(clientSession, sample));
+        } catch (CatalogDBException e) {
+            logger.error("Could not delete sample {}: {}", sample.getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not delete sample " + sample.getId() + ": " + e.getMessage(), e.getCause());
         }
-        return delete;
     }
 
     @Override
@@ -623,73 +638,75 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Sample> iterator = iterator(query, options);
 
-        long startTime = startQuery();
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
+        DataResult<Sample> result = DataResult.empty();
 
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
-            numMatches += 1;
-
             try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-                    logger.info("Deleting sample {} ({})", sample.getId(), sample.getUid());
-
-                    removeSampleReferences(clientSession, sample.getStudyUid(), sample.getUid());
-
-                    // Look for all the different sample versions
-                    Query sampleQuery = new Query()
-                            .append(QueryParams.UID.key(), sample.getUid())
-                            .append(QueryParams.STUDY_UID.key(), sample.getStudyUid())
-                            .append(Constants.ALL_VERSIONS, true);
-                    DBIterator<Sample> sampleDBIterator = iterator(sampleQuery, options);
-
-                    String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-
-                    while (sampleDBIterator.hasNext()) {
-                        Sample tmpSample = sampleDBIterator.next();
-
-                        sampleQuery = new Query()
-                                .append(QueryParams.UID.key(), tmpSample.getUid())
-                                .append(QueryParams.VERSION.key(), tmpSample.getVersion())
-                                .append(QueryParams.STUDY_UID.key(), tmpSample.getStudyUid());
-                        // Mark the sample as deleted
-                        ObjectMap updateParams = new ObjectMap()
-                                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                                .append(QueryParams.ID.key(), tmpSample.getId() + deleteSuffix);
-
-                        Bson bsonQuery = parseQuery(sampleQuery);
-                        Document updateDocument = parseAndValidateUpdateParams(clientSession, sampleQuery, updateParams)
-                                .toFinalUpdateDocument();
-
-                        logger.debug("Delete version {} of sample: Query: {}, update: {}", tmpSample.getVersion(),
-                                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                        DataResult sampleResult = sampleCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
-                        if (sampleResult.getNumUpdated() == 1) {
-                            logger.debug("Sample version {} successfully deleted", tmpSample.getVersion());
-                        } else {
-                            logger.error("Sample version {} could not be deleted", tmpSample.getVersion());
-                        }
-                    }
-
-                    logger.info("Sample {}({}) deleted", sample.getId(), sample.getUid());
-
-                    return endWrite(tmpStartTime, 1, 1, null);
-                });
-                logger.info("Sample {} successfully deleted", sample.getId());
-                numModified += 1;
+                result.append(runTransaction(clientSession -> privateDelete(clientSession, sample)));
             } catch (CatalogDBException e) {
-                String errorMsg = "Could not delete sample " + sample.getId() + ": " + e.getMessage();
-                logger.error(errorMsg);
-                warnings.add(errorMsg);
+                logger.error("Could not delete sample {}: {}", sample.getId(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, sample.getId(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
             }
         }
 
-        return endWrite(startTime, numMatches, numModified, warnings);
+        return result;
+    }
+
+    DataResult<Object> privateDelete(ClientSession clientSession, Sample sample) throws CatalogDBException {
+        long tmpStartTime = startQuery();
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
+
+        logger.debug("Deleting sample {} ({})", sample.getId(), sample.getUid());
+
+        removeSampleReferences(clientSession, sample.getStudyUid(), sample.getUid());
+
+        // Look for all the different sample versions
+        Query sampleQuery = new Query()
+                .append(QueryParams.UID.key(), sample.getUid())
+                .append(QueryParams.STUDY_UID.key(), sample.getStudyUid())
+                .append(Constants.ALL_VERSIONS, true);
+        DBIterator<Sample> sampleDBIterator = iterator(sampleQuery, options);
+
+        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        while (sampleDBIterator.hasNext()) {
+            Sample tmpSample = sampleDBIterator.next();
+
+            sampleQuery = new Query()
+                    .append(QueryParams.UID.key(), tmpSample.getUid())
+                    .append(QueryParams.VERSION.key(), tmpSample.getVersion())
+                    .append(QueryParams.STUDY_UID.key(), tmpSample.getStudyUid());
+            // Mark the sample as deleted
+            ObjectMap updateParams = new ObjectMap()
+                    .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                    .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                    .append(QueryParams.ID.key(), tmpSample.getId() + deleteSuffix);
+
+            Bson bsonQuery = parseQuery(sampleQuery);
+            Document updateDocument = parseAndValidateUpdateParams(clientSession, sampleQuery, updateParams)
+                    .toFinalUpdateDocument();
+
+            logger.debug("Delete version {} of sample: Query: {}, update: {}", tmpSample.getVersion(),
+                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            DataResult sampleResult = sampleCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+
+            if (sampleResult.getNumMatches() == 0) {
+                throw new CatalogDBException("Family " + tmpSample.getId() + " not found");
+            }
+
+            if (sampleResult.getNumUpdated() == 1) {
+                logger.debug("Sample version {} successfully deleted", tmpSample.getVersion());
+            } else {
+                logger.error("Sample version {} could not be deleted", tmpSample.getVersion());
+            }
+        }
+
+        logger.debug("Sample {}({}) deleted", sample.getId(), sample.getUid());
+        return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
     private void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {

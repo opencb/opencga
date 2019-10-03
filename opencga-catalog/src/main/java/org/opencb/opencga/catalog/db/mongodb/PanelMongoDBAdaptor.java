@@ -24,10 +24,7 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
@@ -341,18 +338,25 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        DataResult update = update(new Query(QueryParams.UID.key(), id), parameters, queryOptions);
-        if (update.getNumUpdated() != 1) {
-            throw new CatalogDBException("Could not update panel with id " + id);
+    public DataResult update(long panelUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
+        DataResult<Panel> dataResult = get(panelUid, options);
+
+        if (dataResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not update panel. Panel '" + panelUid + "' not found.");
         }
-        return update;
+
+        try {
+            return runTransaction(clientSession -> privateUpdate(clientSession, dataResult.first(), parameters, queryOptions));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update panel {}: {}", dataResult.first().getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not update panel '" + dataResult.first().getId() + "': " + e.getMessage(), e.getCause());
+        }
     }
 
     @Override
     public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single panel
             if (count(query).first() != 1) {
@@ -364,50 +368,59 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Panel> iterator = iterator(query, options);
 
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
+        DataResult<Panel> result = DataResult.empty();
 
         while (iterator.hasNext()) {
             Panel panel = iterator.next();
-            numMatches += 1;
-
             try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-                    Query tmpQuery = new Query()
-                            .append(QueryParams.STUDY_UID.key(), panel.getStudyUid())
-                            .append(QueryParams.UID.key(), panel.getUid());
-
-                    if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-                        createNewVersion(clientSession, panel.getStudyUid(), panel.getUid());
-                    }
-
-                    Document panelUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
-
-                    if (!panelUpdate.isEmpty()) {
-                        Bson finalQuery = parseQuery(tmpQuery);
-
-                        logger.debug("Panel update: query : {}, update: {}",
-                                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                                panelUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-                        panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),
-                                new QueryOptions("multi", true));
-                    }
-
-                    return endWrite(tmpStartTime, 1, 1, null);
-                });
-                logger.debug("Panel {} successfully updated", panel.getId());
-                numModified += 1;
+                result.append(runTransaction(clientSession -> privateUpdate(clientSession, panel, parameters, queryOptions)));
             } catch (CatalogDBException e) {
-                String errorMsg = "Could not update panel " + panel.getId() + ": " + e.getMessage();
-                logger.error(errorMsg);
-                warnings.add(errorMsg);
+                logger.error("Could not update panel {}: {}", panel.getId(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, panel.getId(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
             }
         }
+        return result;
+    }
 
-        return endWrite(startTime, numMatches, numModified, null);
+    private DataResult<Object> privateUpdate(ClientSession clientSession, Panel panel, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException {
+        long tmpStartTime = startQuery();
+        Query tmpQuery = new Query()
+                .append(QueryParams.STUDY_UID.key(), panel.getStudyUid())
+                .append(QueryParams.UID.key(), panel.getUid());
+
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            createNewVersion(clientSession, panel.getStudyUid(), panel.getUid());
+        }
+
+        Document panelUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
+
+        if (panelUpdate.isEmpty()) {
+            if (!parameters.isEmpty()) {
+                logger.error("Non-processed update parameters: {}", parameters.keySet());
+            }
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        Bson finalQuery = parseQuery(tmpQuery);
+        logger.debug("Panel update: query : {}, update: {}",
+                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                panelUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        DataResult result = panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),
+                new QueryOptions("multi", true));
+
+        if (result.getNumMatches() == 0) {
+            throw new CatalogDBException("Panel " + panel.getId() + " not found");
+        }
+        List<Event> events = new ArrayList<>();
+        if (result.getNumUpdated() == 0) {
+            events.add(new Event(Event.Type.WARNING, panel.getId(), "Panel was already updated"));
+        }
+        logger.debug("Panel {} successfully updated", panel.getId());
+
+        return endWrite(tmpStartTime, 1, 1, events);
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long panelUid) throws CatalogDBException {
@@ -490,14 +503,12 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public DataResult delete(Panel panel) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), panel.getUid());
-        DataResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not delete panel. Panel " + panel.getId() + " not found.");
-        } else if (delete.getNumUpdated() == 0) {
-            throw new CatalogDBException("Could not delete panel " + panel.getId());
+        try {
+            return runTransaction(clientSession -> privateDelete(clientSession, panel));
+        } catch (CatalogDBException e) {
+            logger.error("Could not delete panel {}: {}", panel.getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not delete panel '" + panel.getId() + "': " + e.getMessage(), e.getCause());
         }
-        return delete;
     }
 
     @Override
@@ -506,57 +517,57 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Panel> iterator = iterator(query, options);
 
-        long startTime = startQuery();
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
+        DataResult<Panel> result = DataResult.empty();
 
         while (iterator.hasNext()) {
             Panel panel = iterator.next();
-            numMatches += 1;
             try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-                    logger.info("Deleting panel {} ({})", panel.getId(), panel.getUid());
-
-                    String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-
-                    Query panelQuery = new Query()
-                            .append(QueryParams.UID.key(), panel.getUid())
-                            .append(QueryParams.VERSION.key(), panel.getVersion())
-                            .append(QueryParams.STUDY_UID.key(), panel.getStudyUid());
-                    // Mark the panel as deleted
-                    ObjectMap updateParams = new ObjectMap()
-                            .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                            .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                            .append(QueryParams.ID.key(), panel.getId() + deleteSuffix);
-
-                    Bson bsonQuery = parseQuery(panelQuery);
-                    Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, panelQuery);
-
-                    logger.debug("Delete panel '{}': Query: {}, update: {}", panel.getId(),
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    DataResult panelResult = panelCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
-                            QueryOptions.empty());
-                    if (panelResult.getNumUpdated() == 1) {
-                        logger.info("Panel {}({}) deleted", panel.getId(), panel.getUid());
-                        return endWrite(tmpStartTime, 1, 1, null);
-                    } else {
-                        logger.error("Panel {}({}) could not be deleted", panel.getId(), panel.getUid());
-                        return endWrite(tmpStartTime, 1, 0, null);
-                    }
-                });
-                logger.info("Panel {} successfully deleted", panel.getId());
-                numModified += 1;
+                result.append(runTransaction(clientSession -> privateDelete(clientSession, panel)));
             } catch (CatalogDBException e) {
-                String errorMsg = "Could not delete panel " + panel.getId() + ": " + e.getMessage();
-                logger.error(errorMsg);
-                warnings.add(errorMsg);
+                logger.error("Could not delete panel {}: {}", panel.getId(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, panel.getId(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
             }
         }
 
-        return endWrite(startTime, numMatches, numModified, warnings);
+        return result;
+    }
+
+    private DataResult<Object> privateDelete(ClientSession clientSession, Panel panel) throws CatalogDBException {
+        long tmpStartTime = startQuery();
+        logger.debug("Deleting panel {} ({})", panel.getId(), panel.getUid());
+
+        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        Query panelQuery = new Query()
+                .append(QueryParams.UID.key(), panel.getUid())
+                .append(QueryParams.VERSION.key(), panel.getVersion())
+                .append(QueryParams.STUDY_UID.key(), panel.getStudyUid());
+        // Mark the panel as deleted
+        ObjectMap updateParams = new ObjectMap()
+                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                .append(QueryParams.ID.key(), panel.getId() + deleteSuffix);
+
+        Bson bsonQuery = parseQuery(panelQuery);
+        Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, panelQuery);
+
+        logger.debug("Delete panel '{}': Query: {}, update: {}", panel.getId(),
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        DataResult result = panelCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
+                QueryOptions.empty());
+
+        if (result.getNumMatches() == 0) {
+            throw new CatalogDBException("Panel " + panel.getId() + " not found");
+        }
+        List<Event> events = new ArrayList<>();
+        if (result.getNumUpdated() == 0) {
+            events.add(new Event(Event.Type.WARNING, panel.getId(), "Panel was already deleted"));
+        }
+        logger.debug("Panel {} successfully deleted", panel.getId());
+
+        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
     }
 
     @Override

@@ -20,10 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.stats.VariantSetStats;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.CollectionUtils;
@@ -104,13 +101,15 @@ public class FileManager extends AnnotationSetManager<File> {
 
     static {
         INCLUDE_FILE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key()));
+                FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
+                FileDBAdaptor.QueryParams.STUDY_UID.key()));
         INCLUDE_FILE_URI = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.URI.key()));
+                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.STUDY_UID.key()));
         INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.EXTERNAL.key()));
+                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.EXTERNAL.key(),
+                FileDBAdaptor.QueryParams.STUDY_UID.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -517,7 +516,7 @@ public class FileManager extends AnnotationSetManager<File> {
         auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
                 auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-        return new DataResult<>(update.getTime(), update.getWarnings(), 1, Collections.singletonList(index), 1);
+        return new DataResult<>(update.getTime(), update.getEvents(), 1, Collections.singletonList(index), 1);
     }
 
     @Deprecated
@@ -561,7 +560,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(FileDBAdaptor.QueryParams.PATH.key(), path);
                 fileDataResult = fileDBAdaptor.get(query, options, userId);
-                fileDataResult.getWarnings().add("Folder '" + path + "' was already created");
+                fileDataResult.getEvents().add(new Event(Event.Type.WARNING, path, "Folder already existed"));
                 break;
             case FILE_EXISTS:
             default:
@@ -1173,7 +1172,7 @@ public class FileManager extends AnnotationSetManager<File> {
             auditManager.auditCount(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
@@ -1217,7 +1216,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
-            fileIterator = fileDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            fileIterator = fileDBAdaptor.iterator(finalQuery, INCLUDE_FILE_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1298,12 +1297,12 @@ public class FileManager extends AnnotationSetManager<File> {
                 } else {
                     errorMsg = "Cannot delete folder " + file.getPath() + ": " + e.getMessage();
                 }
-                dataResult.getWarnings().add(errorMsg);
+                dataResult.getEvents().add(new Event(Event.Type.ERROR, file.getPath(), e.getMessage()));
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-                throw new CatalogException(errorMsg, e.getCause());
+//                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
@@ -1400,7 +1399,7 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("The file is already being deleted");
         }
 
-        return fileDBAdaptor.delete(file.getUid(), File.FileStatus.PENDING_DELETE);
+        return fileDBAdaptor.delete(file, File.FileStatus.PENDING_DELETE);
 
 
 //        URI fileUri = getUri(file);
@@ -1566,13 +1565,13 @@ public class FileManager extends AnnotationSetManager<File> {
 //                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
 //
 //        return fileDBAdaptor.update(query, params, QueryOptions.empty()).setId("trash");
-        return fileDBAdaptor.delete(file.getUid(), File.FileStatus.TRASHED);
+        return fileDBAdaptor.delete(file, File.FileStatus.TRASHED);
     }
 
     private DataResult unlink(long studyId, File file) throws CatalogDBException {
 //        StopWatch watch = StopWatch.createStarted();
 
-        DataResult unlink = fileDBAdaptor.delete(file.getUid(), File.FileStatus.REMOVED);
+        DataResult unlink = fileDBAdaptor.delete(file, File.FileStatus.REMOVED);
         return unlink;
 
 //        String suffixName = INTERNAL_DELIMITER + File.FileStatus.REMOVED + "_" + TimeUtils.getTime();
@@ -2138,7 +2137,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         if (file.getName().equals(newName)) {
             DataResult result = DataResult.empty();
-            result.setWarnings(Collections.singletonList("Nothing to do. File name was already '" + newName + "'."));
+            result.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, newName, "File already had that name.")));
             return result;
         }
 
@@ -2495,15 +2494,15 @@ public class FileManager extends AnnotationSetManager<File> {
                         if (!silent) {
                             throw e;
                         } else {
-                            String warning = "Missing " + fileId + ": " + missingMap.get(fileId).getErrorMsg();
-                            fileAclList.add(new DataResult<>(fileDataResult.getTime(), Collections.singletonList(warning), 0,
+                            Event event = new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg());
+                            fileAclList.add(new DataResult<>(fileDataResult.getTime(), Collections.singletonList(event), 0,
                                     Collections.emptyList(), 0));
                         }
                     }
                     counter += 1;
                 } else {
-                    String warning = "Missing " + fileId + ": " + missingMap.get(fileId).getErrorMsg();
-                    fileAclList.add(new DataResult<>(fileDataResult.getTime(), Collections.singletonList(warning), 0,
+                    Event event = new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg());
+                    fileAclList.add(new DataResult<>(fileDataResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FILE, fileId, "",

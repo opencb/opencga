@@ -275,13 +275,15 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             // We convert the results to the data models
             annotableList.add(getConverter().convertToDataModelType(document, options));
         }
-        return new DataResult<>(documentDataResult.getTime(), documentDataResult.getWarnings(), documentDataResult.getNumResults(),
+        return new DataResult<>(documentDataResult.getTime(), documentDataResult.getEvents(), documentDataResult.getNumResults(),
                 annotableList, documentDataResult.getNumMatches(), new ObjectMap());
     }
 
-    void updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters, List<VariableSet> variableSetList,
-                              QueryOptions options, boolean isVersioned) throws CatalogDBException {
+    DataResult<? extends Annotable> updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters,
+                                                         List<VariableSet> variableSetList, QueryOptions options, boolean isVersioned)
+            throws CatalogDBException {
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+        long startTime = startQuery();
 
         if (actionMap.containsKey(ANNOTATION_SETS)) {
             List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
@@ -290,7 +292,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     ParamUtils.UpdateAction.ADD);
 
             if (annotationSetList == null) {
-                return;
+                return DataResult.empty();
             }
 
             // Create or remove a new annotation set
@@ -376,6 +378,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             // 3. Add new list of annotations
             addNewAnnotations(clientSession, entryId, annotationDocumentList, isVersioned);
         }
+
+        return endWrite(startTime, 1, 1, new ArrayList<>());
     }
 
     private void removePrivateVariableMap(ClientSession clientSession, long entryId, Map<String, String> privateVariableMapToSet,

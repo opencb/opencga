@@ -362,7 +362,10 @@ public class SampleMongoDBAdaptorTest {
         Sample hg0097 = new Sample("HG0097", "1000g", null, "A description", 1);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
 
-        Sample sample = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first();
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.UID.key(),
+                        SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
+        Sample sample = getSample(studyId, "HG0097", options).first();
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample);
 
         DataResult<Sample> sampleDataResult = catalogSampleDBAdaptor.get(sample.getUid(), QueryOptions.empty());

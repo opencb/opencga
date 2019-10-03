@@ -24,10 +24,7 @@ import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -215,84 +212,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         DataResult<File> fileDataResult = get(id, queryOptions);
         if (fileDataResult.first().getAnnotationSets().isEmpty()) {
-            return new DataResult<>(fileDataResult.getTime(), fileDataResult.getWarnings(), 0, Collections.emptyList(), 0);
+            return new DataResult<>(fileDataResult.getTime(), fileDataResult.getEvents(), 0, Collections.emptyList(), 0);
         } else {
             List<AnnotationSet> annotationSets = fileDataResult.first().getAnnotationSets();
             int size = annotationSets.size();
-            return new DataResult<>(fileDataResult.getTime(), fileDataResult.getWarnings(), size, annotationSets, size);
+            return new DataResult<>(fileDataResult.getTime(), fileDataResult.getEvents(), size, annotationSets, size);
         }
-    }
-
-    @Override
-    public DataResult update(long id, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
-        DataResult update = update(new Query(QueryParams.UID.key(), id), parameters, variableSetList, queryOptions);
-        if (update.getNumUpdated() != 1) {
-            throw new CatalogDBException("Could not update file with id " + id);
-        }
-        return update;
-    }
-
-    @Override
-    public DataResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.SIZE.key(), QueryParams.STUDY_UID.key()));
-        DBIterator<File> iterator = iterator(query, options);
-
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
-
-        while (iterator.hasNext()) {
-            File file = iterator.next();
-            numMatches += 1;
-
-            try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-
-                    Query tmpQuery = new Query()
-                            .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
-                            .append(QueryParams.UID.key(), file.getUid());
-
-                    // We perform the update.
-                    Bson queryBson = parseQuery(tmpQuery);
-                    updateAnnotationSets(clientSession, file.getUid(), parameters, variableSetList, queryOptions, false);
-
-                    Document updateDocument = getValidatedUpdateParams(clientSession, parameters, queryOptions).toFinalUpdateDocument();
-
-                    if (!updateDocument.isEmpty()) {
-                        logger.debug("Update file. Query: {}, Update: {}",
-                                queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-                        DataResult result = fileCollection.update(clientSession, queryBson, updateDocument,
-                                new QueryOptions("multi", true));
-
-                        // If the size of some of the files have been changed, notify to the correspondent study
-                        if (parameters.containsKey(QueryParams.SIZE.key())) {
-                            long newDiskUsage = parameters.getLong(QueryParams.SIZE.key());
-                            long difDiskUsage = newDiskUsage - file.getSize();
-                            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, file.getStudyUid(), difDiskUsage);
-                        }
-                        return endWrite(startTime, (int) result.getNumUpdated(), (int) result.getNumUpdated(), null);
-                    }
-
-                    return endWrite(tmpStartTime, 1, 1, null);
-                });
-                logger.debug("File {} successfully updated", file.getId());
-                numModified += 1;
-            } catch (CatalogDBException e) {
-                String errorMsg = "Could not update file " + file.getId() + ": " + e.getMessage();
-                logger.error("{}", errorMsg);
-                warnings.add(errorMsg);
-            }
-        }
-
-        return endWrite(startTime, numMatches, numModified, warnings);
     }
 
     @Override
@@ -301,8 +226,99 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
+    public DataResult update(long fileUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.SIZE.key(), QueryParams.STUDY_UID.key()));
+        DataResult<File> fileDataResult = get(fileUid, options);
+
+        if (fileDataResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not update file. File uid '" + fileUid + "' not found.");
+        }
+
+        try {
+            return runTransaction(clientSession -> privateUpdate(clientSession, fileDataResult.first(), parameters,
+                    variableSetList, queryOptions));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update file {}: {}", fileDataResult.first().getPath(), e.getMessage(), e);
+            throw new CatalogDBException("Could not update file " + fileDataResult.first().getPath() + ": " + e.getMessage(), e.getCause());
+        }
+    }
+
+    @Override
     public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
+    }
+
+    @Override
+    public DataResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.SIZE.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<File> iterator = iterator(query, options);
+
+        DataResult<File> result = DataResult.empty();
+
+        while (iterator.hasNext()) {
+            File file = iterator.next();
+            try {
+                result.append(runTransaction(clientSession -> privateUpdate(clientSession, file, parameters, variableSetList,
+                        queryOptions)));
+            } catch (CatalogDBException e) {
+                logger.error("Could not update file {}: {}", file.getPath(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, file.getPath(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
+            }
+        }
+        return result;
+    }
+
+    DataResult<Object> privateUpdate(ClientSession clientSession, File file, ObjectMap parameters, List<VariableSet> variableSetList,
+                                     QueryOptions queryOptions) throws CatalogDBException {
+        long tmpStartTime = startQuery();
+
+        Query tmpQuery = new Query()
+                .append(QueryParams.STUDY_UID.key(), file.getStudyUid())
+                .append(QueryParams.UID.key(), file.getUid());
+
+        // We perform the update.
+        Bson queryBson = parseQuery(tmpQuery);
+        DataResult result = updateAnnotationSets(clientSession, file.getUid(), parameters, variableSetList, queryOptions, false);
+
+        Document updateDocument = getValidatedUpdateParams(clientSession, parameters, queryOptions).toFinalUpdateDocument();
+
+        if (updateDocument.isEmpty() && result.getNumUpdated() == 0) {
+            if (!parameters.isEmpty()) {
+                logger.error("Non-processed update parameters: {}", parameters.keySet());
+            }
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        List<Event> events = new ArrayList<>();
+        if (!updateDocument.isEmpty()) {
+            logger.debug("Update file. Query: {}, Update: {}",
+                    queryBson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            result = fileCollection.update(clientSession, queryBson, updateDocument, null);
+
+            // If the size of some of the files have been changed, notify to the correspondent study
+            if (parameters.containsKey(QueryParams.SIZE.key())) {
+                long newDiskUsage = parameters.getLong(QueryParams.SIZE.key());
+                long difDiskUsage = newDiskUsage - file.getSize();
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(clientSession, file.getStudyUid(), difDiskUsage);
+            }
+
+            if (result.getNumMatches() == 0) {
+                throw new CatalogDBException("File " + file.getPath() + " not found");
+            }
+            if (result.getNumUpdated() == 0) {
+                events.add(new Event(Event.Type.WARNING, file.getPath(), "File was already updated"));
+            }
+            logger.debug("File {} successfully updated", file.getPath());
+        }
+
+        return endWrite(tmpStartTime, 1, 1, events);
     }
 
     private UpdateDocument getValidatedUpdateParams(ClientSession clientSession, ObjectMap parameters, QueryOptions queryOptions)
@@ -428,15 +444,24 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public DataResult delete(long fileUid, String status) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), fileUid);
-        DataResult delete = delete(query, status);
-        if (delete.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not delete file. Uid " + fileUid + " not found.");
-        } else if (delete.getNumUpdated() == 0) {
-            throw new CatalogDBException("Could not delete file.");
+    public DataResult delete(File file, String status) throws CatalogDBException {
+        switch (status) {
+            case File.FileStatus.TRASHED:
+            case File.FileStatus.REMOVED:
+            case File.FileStatus.PENDING_DELETE:
+            case File.FileStatus.DELETING:
+            case File.FileStatus.DELETED:
+                break;
+            default:
+                throw new CatalogDBException("Invalid status '" + status + "' for deletion of file.");
         }
-        return delete;
+
+        try {
+            return runTransaction(clientSession -> privateDelete(clientSession, file, status));
+        } catch (CatalogDBException e) {
+            logger.error("Could not delete file {}: {}", file.getPath(), e.getMessage(), e);
+            throw new CatalogDBException("Could not delete file " + file.getPath() + ": " + e.getMessage(), e.getCause());
+        }
     }
 
     @Override
@@ -457,72 +482,69 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         QueryParams.STATUS.key(), QueryParams.STUDY_UID.key(), QueryParams.TYPE.key()));
         DBIterator<File> iterator = iterator(query, options);
 
-        long startTime = startQuery();
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
+        DataResult<File> result = DataResult.empty();
 
         while (iterator.hasNext()) {
             File file = iterator.next();
-            numMatches += 1;
-
             try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-
-                    logger.info("Deleting file {} ({})", file.getPath(), file.getUid());
-
-                    dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, file.getStudyUid(), file.getUid(),
-                            fileConverter.convertToStorageType(file, null));
-
-                    String deleteSuffix = "";
-                    if (File.FileStatus.PENDING_DELETE.equals(status)) {
-                        deleteSuffix = INTERNAL_DELIMITER + File.FileStatus.DELETED + "_" + TimeUtils.getTime();
-                    } else if (File.FileStatus.REMOVED.equals(status)) {
-                        deleteSuffix = INTERNAL_DELIMITER + File.FileStatus.REMOVED + "_" + TimeUtils.getTime();
-                    }
-
-                    Query fileQuery = new Query()
-                            .append(QueryParams.UID.key(), file.getUid())
-                            .append(QueryParams.STUDY_UID.key(), file.getStudyUid());
-                    // Mark the file as deleted
-                    UpdateDocument document = new UpdateDocument();
-                    document.getSet().put(QueryParams.STATUS_NAME.key(), status);
-                    document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
-                    document.getSet().put(QueryParams.ID.key(), file.getId() + deleteSuffix);
-                    if (file.getType() == File.Type.DIRECTORY && file.getPath().endsWith("/")) {
-                        // Remove the last /
-                        document.getSet().put(QueryParams.PATH.key(), file.getPath().substring(0, file.getPath().length() - 1)
-                                + deleteSuffix);
-                    } else {
-                        document.getSet().put(QueryParams.PATH.key(), file.getPath() + deleteSuffix);
-                    }
-
-                    Bson bsonQuery = parseQuery(fileQuery);
-                    Document updateDocument = document.toFinalUpdateDocument();
-
-                    logger.debug("Delete file '{}': Query: {}, update: {}", file.getPath(),
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    DataResult result = fileCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
-                    if (result.getNumUpdated() == 1) {
-                        logger.info("File {}({}) deleted", file.getPath(), file.getUid());
-                    } else {
-                        logger.info("File {}({}) could not be deleted", file.getPath(), file.getUid());
-                    }
-
-                    return endWrite(tmpStartTime, 1, 1, null);
-                });
-                logger.info("File {} successfully deleted", file.getId());
-                numModified += 1;
-            } catch (Exception e) {
-                String errorMsg = "Could not delete file " + file.getId() + ": " + e.getMessage();
-                logger.error("{}", errorMsg);
-                warnings.add(errorMsg);
+                result.append(runTransaction(clientSession -> privateDelete(clientSession, file, status)));
+            } catch (CatalogDBException e) {
+                logger.error("Could not delete file {}: {}", file.getPath(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, file.getId(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
             }
         }
 
-        return endWrite(startTime, numMatches, numModified, warnings);
+        return result;
+    }
+
+    DataResult<Object> privateDelete(ClientSession clientSession, File file, String status) throws CatalogDBException {
+        long tmpStartTime = startQuery();
+        logger.debug("Deleting file {} ({})", file.getPath(), file.getUid());
+
+        dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, file.getStudyUid(), file.getUid(),
+                fileConverter.convertToStorageType(file, null));
+
+        String deleteSuffix = "";
+        if (File.FileStatus.PENDING_DELETE.equals(status)) {
+            deleteSuffix = INTERNAL_DELIMITER + File.FileStatus.DELETED + "_" + TimeUtils.getTime();
+        } else if (File.FileStatus.REMOVED.equals(status)) {
+            deleteSuffix = INTERNAL_DELIMITER + File.FileStatus.REMOVED + "_" + TimeUtils.getTime();
+        }
+
+        Query fileQuery = new Query()
+                .append(QueryParams.UID.key(), file.getUid())
+                .append(QueryParams.STUDY_UID.key(), file.getStudyUid());
+        // Mark the file as deleted
+        UpdateDocument document = new UpdateDocument();
+        document.getSet().put(QueryParams.STATUS_NAME.key(), status);
+        document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        document.getSet().put(QueryParams.ID.key(), file.getId() + deleteSuffix);
+        if (file.getType() == File.Type.DIRECTORY && file.getPath().endsWith("/")) {
+            // Remove the last /
+            document.getSet().put(QueryParams.PATH.key(), file.getPath().substring(0, file.getPath().length() - 1)
+                    + deleteSuffix);
+        } else {
+            document.getSet().put(QueryParams.PATH.key(), file.getPath() + deleteSuffix);
+        }
+
+        Bson bsonQuery = parseQuery(fileQuery);
+        Document updateDocument = document.toFinalUpdateDocument();
+
+        logger.debug("Delete file '{}': Query: {}, update: {}", file.getPath(),
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        DataResult result = fileCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+        if (result.getNumMatches() == 0) {
+            throw new CatalogDBException("File " + file.getId() + " not found");
+        }
+        List<Event> events = new ArrayList<>();
+        if (result.getNumUpdated() == 0) {
+            events.add(new Event(Event.Type.WARNING, file.getId(), "File was already deleted"));
+        }
+        logger.debug("File {} successfully deleted", file.getId());
+
+        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
     }
 
     @Override

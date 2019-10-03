@@ -283,12 +283,12 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
     /**
      * Delete file.
      *
-     * @param fileUid Delete the file.
+     * @param file File to be deleted.
      * @param status Deletion status we want to set.
      * @return a DataResult object.
      * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
      */
-    DataResult delete(long fileUid, String status) throws CatalogDBException;
+    DataResult delete(File file, String status) throws CatalogDBException;
 
     /**
      * Delete file.

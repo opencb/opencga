@@ -18,10 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.ListUtils;
@@ -73,12 +70,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     public static final QueryOptions INCLUDE_INDIVIDUAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
             IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
-            IndividualDBAdaptor.QueryParams.MOTHER.key()));
+            IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final QueryOptions INCLUDE_INDIVIDUAL_DISORDERS_PHENOTYPES = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
             IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
             IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.DISORDERS.key(),
-            IndividualDBAdaptor.QueryParams.PHENOTYPES.key()));
+            IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), IndividualDBAdaptor.QueryParams.STUDY_UID.key()));
 
     private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 
@@ -427,7 +424,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             auditManager.auditCount(userId, AuditRecord.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
@@ -512,7 +509,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete individual " + individual.getId() + ": " + e.getMessage();
-                result.getWarnings().add(errorMsg);
+
+                Event event = new Event(Event.Type.ERROR, individual.getId(), e.getMessage());
+                result.getEvents().add(event);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -882,15 +881,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         if (!silent) {
                             throw e;
                         } else {
-                            String warning = "Missing " + individualId + ": " + missingMap.get(individualId).getErrorMsg();
-                            individualAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                            Event event = new Event(Event.Type.ERROR, individualId, missingMap.get(individualId).getErrorMsg());
+                            individualAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                                     Collections.emptyList(), 0));
                         }
                     }
                     counter += 1;
                 } else {
-                    String warning = "Missing " + individualId + ": " + missingMap.get(individualId).getErrorMsg();
-                    individualAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                    Event event = new Event(Event.Type.ERROR, individualId, missingMap.get(individualId).getErrorMsg());
+                    individualAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.INDIVIDUAL, individualId, "",

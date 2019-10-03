@@ -26,10 +26,7 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.ListUtils;
@@ -82,7 +79,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     public static final QueryOptions INCLUDE_FAMILY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
-            FamilyDBAdaptor.QueryParams.VERSION.key()));
+            FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key()));
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -360,7 +357,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             auditManager.auditCount(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
@@ -397,7 +394,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             fixQueryObject(study, finalQuery, token);
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = familyDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = familyDBAdaptor.iterator(finalQuery, INCLUDE_FAMILY_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -425,7 +422,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete family " + family.getId() + ": " + e.getMessage();
-                result.getWarnings().add(errorMsg);
+
+                Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
+                result.getEvents().add(event);
 
                 logger.debug(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
@@ -796,15 +795,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         if (!silent) {
                             throw e;
                         } else {
-                            String warning = "Missing " + familyId + ": " + missingMap.get(familyId).getErrorMsg();
-                            familyAclList.add(new DataResult<>(familyDataResult.getTime(), Collections.singletonList(warning), 0,
+                            Event event = new Event(Event.Type.ERROR, familyId, missingMap.get(familyId).getErrorMsg());
+                            familyAclList.add(new DataResult<>(familyDataResult.getTime(), Collections.singletonList(event), 0,
                                     Collections.emptyList(), 0));
                         }
                     }
                     counter += 1;
                 } else {
-                    String warning = "Missing " + familyId + ": " + missingMap.get(familyId).getErrorMsg();
-                    familyAclList.add(new DataResult<>(familyDataResult.getTime(), Collections.singletonList(warning), 0,
+                    Event event = new Event(Event.Type.ERROR, familyId, missingMap.get(familyId).getErrorMsg());
+                    familyAclList.add(new DataResult<>(familyDataResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, familyId, "",

@@ -19,10 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -770,7 +767,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             auditManager.auditCount(userId, AuditRecord.Resource.CLINICAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.CLINICAL, study.getId(), study.getUuid(), auditParams,
@@ -844,15 +841,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     if (!silent) {
                         throw e;
                     } else {
-                        String warning = "Missing " + clinicalAnalysis + ": " + missingMap.get(clinicalAnalysis).getErrorMsg();
-                        clinicalAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                        Event event = new Event(Event.Type.ERROR, clinicalAnalysis, missingMap.get(clinicalAnalysis).getErrorMsg());
+                        clinicalAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                                 Collections.emptyList(), 0));
                     }
                 }
                 counter += 1;
             } else {
-                String warning = "Missing " + clinicalAnalysis + ": " + missingMap.get(clinicalAnalysis).getErrorMsg();
-                clinicalAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                Event event = new Event(Event.Type.ERROR, clinicalAnalysis, missingMap.get(clinicalAnalysis).getErrorMsg());
+                clinicalAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                         Collections.emptyList(), 0));
             }
         }

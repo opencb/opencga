@@ -17,10 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -443,9 +440,10 @@ public class StudyManager extends AbstractManager {
                 results.add(studyObj);
             } catch (CatalogException e) {
                 String warning = "Missing " + study + ": " + e.getMessage();
+                Event event = new Event(Event.Type.ERROR, study, e.getMessage());
                 if (silent) {
                     logger.error(warning, e);
-                    results.add(new DataResult<>(0, Collections.singletonList(warning), 0, Collections.emptyList(), 0));
+                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 } else {
                     logger.error(warning);
                     throw e;
@@ -499,9 +497,10 @@ public class StudyManager extends AbstractManager {
                 results.add(studyObj);
             } catch (CatalogException e) {
                 String warning = "Missing studies from project " + project + ": " + e.getMessage();
+                Event event = new Event(Event.Type.ERROR, project, e.getMessage());
                 if (silent) {
                     logger.error(warning, e);
-                    results.add(new DataResult<>(0, Collections.singletonList(warning), 0, Collections.emptyList(), 0));
+                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 } else {
                     logger.error(warning);
                     throw e;
@@ -632,7 +631,7 @@ public class StudyManager extends AbstractManager {
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(result.getTime(), result.getWarnings(), 1, Collections.singletonList(permissionRule), 1,
+            return new DataResult<>(result.getTime(), result.getEvents(), 1, Collections.singletonList(permissionRule), 1,
                     result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), new ObjectMap());
         } catch (CatalogException e) {
             auditManager.audit(userId, AuditRecord.Action.ADD_STUDY_PERMISSION_RULE, AuditRecord.Resource.STUDY, study.getId(),
@@ -811,8 +810,8 @@ public class StudyManager extends AbstractManager {
                 results.add(summaryObj);
             } catch (CatalogException e) {
                 if (silent) {
-                    String warning = "Missing " + study + ": " + e.getMessage();
-                    results.add(new DataResult<>(0, Collections.singletonList(warning), 0, Collections.emptyList(), 0));
+                    Event event = new Event(Event.Type.ERROR, study, e.getMessage());
+                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 } else {
                     throw e;
                 }
@@ -927,8 +926,8 @@ public class StudyManager extends AbstractManager {
                 results.add(groupObj);
             } catch (CatalogException e) {
                 if (silent) {
-                    String warning = "Missing " + study + ": " + e.getMessage();
-                    results.add(new DataResult<>(0, Collections.singletonList(warning), 0, Collections.emptyList(), 0));
+                    Event event = new Event(Event.Type.ERROR, study, e.getMessage());
+                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 } else {
                     throw e;
                 }
@@ -1475,8 +1474,8 @@ public class StudyManager extends AbstractManager {
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 if (silent) {
-                    String warning = "Missing " + study.getFqn() + ": " + e.getMessage();
-                    studyAclList.add(new DataResult<>(0, Collections.singletonList(warning), 0, Collections.emptyList(), 0));
+                    Event event = new Event(Event.Type.ERROR, study.getFqn(), e.getMessage());
+                    studyAclList.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 } else {
                     throw e;
                 }

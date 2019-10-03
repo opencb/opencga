@@ -452,7 +452,7 @@ public class VariantStorageManager extends StorageManager {
                 result.getTime(),
                 result.getNumResults(),
                 result.getNumMatches(),
-                result.getWarnings(),
+                result.getEvents(),
                 variants,
                 result.getSamples(),
                 result.getSource(),

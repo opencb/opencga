@@ -436,7 +436,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             DataResult<Sample> search = sampleManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
                     sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);
@@ -471,7 +471,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             DataResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, sessionId);
             if (search.getNumResults() == 1) {
-                return createOkResponse(new DataResult<>(search.getTime(), search.getWarnings(), search.first().getAnnotationSets().size(),
+                return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
             } else {
                 return createOkResponse(search);

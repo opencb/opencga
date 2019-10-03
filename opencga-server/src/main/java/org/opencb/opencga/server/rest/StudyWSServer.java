@@ -734,7 +734,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 DataResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyStr, options, sessionId);
 
                 if (studyQueryResult.getNumResults() == 1) {
-                    queryResult = new DataResult<>(studyQueryResult.getTime(), studyQueryResult.getWarnings(),
+                    queryResult = new DataResult<>(studyQueryResult.getTime(), studyQueryResult.getEvents(),
                             studyQueryResult.first().getVariableSets().size(), studyQueryResult.first().getVariableSets(),
                             studyQueryResult.first().getVariableSets().size());
                 } else {

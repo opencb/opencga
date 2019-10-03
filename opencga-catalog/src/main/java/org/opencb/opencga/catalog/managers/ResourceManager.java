@@ -1,10 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -130,9 +127,9 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             for (int i = 0; i < versionedResults.size(); i++) {
                 String entryId = entryList.get(i);
                 if (versionedResults.get(i).isEmpty()) {
-                    String warning = "Missing " + entryId + ": " + missingMap.get(entryId).getErrorMsg();
+                    Event event = new Event(Event.Type.ERROR, entryId, missingMap.get(entryId).getErrorMsg());
                     // Missing
-                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.singletonList(warning), 0,
+                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
                 } else {
                     int size = versionedResults.get(i).size();

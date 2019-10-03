@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
@@ -131,9 +132,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     + ldapImportResult.getResults().stream().map(User::getId).collect(Collectors.joining(", ")));
         }
 
-        if (ListUtils.isNotEmpty(ldapImportResult.getWarnings())) {
-            for (String warning : ldapImportResult.getWarnings()) {
-                System.out.printf(warning);
+        if (ListUtils.isNotEmpty(ldapImportResult.getEvents())) {
+            for (Event event : ldapImportResult.getEvents()) {
+                System.out.println(event.getType() + ": " + event.getId() + " " + event.getDescription());
             }
         }
     }

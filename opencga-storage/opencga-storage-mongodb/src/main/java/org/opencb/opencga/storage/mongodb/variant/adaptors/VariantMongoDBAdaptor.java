@@ -34,10 +34,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -587,7 +584,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .map(Variant::getAnnotation)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        return new DataResult<>(result.getTime(), result.getWarnings(), annotations.size(), annotations, result.getNumMatches());
+        return new DataResult<>(result.getTime(), result.getEvents(), annotations.size(), annotations, result.getNumMatches());
     }
 
     @Override
@@ -909,7 +906,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         String warningMsg = "Unimplemented VariantMongoDBAdaptor::groupBy list of fields. Using field[0] : '" + fields.get(0) + "'";
         logger.warn(warningMsg);
         DataResult queryResult = groupBy(query, fields.get(0), options);
-        queryResult.setWarnings(Collections.singletonList(warningMsg));
+        queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, warningMsg)));
         return queryResult;
     }
 

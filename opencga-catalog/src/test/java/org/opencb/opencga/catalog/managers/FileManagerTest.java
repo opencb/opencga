@@ -443,8 +443,7 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(folder.getPath().contains(folderPath.toString()));
 
         // When creating the same folder, we should not complain and return it directly
-        File sameFolder = fileManager.createFolder(studyFqn3, folderPath.toString(), null, true,
-                null, null, sessionIdUser2).first();
+        File sameFolder = fileManager.createFolder(studyFqn3, folderPath.toString(), null, true, null, null, sessionIdUser2).first();
         assertNotNull(sameFolder);
         assertEquals(folder.getPath(), sameFolder.getPath());
         assertEquals(folder.getUid(), sameFolder.getUid());

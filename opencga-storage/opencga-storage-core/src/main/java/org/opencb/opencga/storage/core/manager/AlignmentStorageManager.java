@@ -185,7 +185,7 @@ public class AlignmentStorageManager extends StorageManager {
                 if (value != null && value instanceof String) {
                     ObjectReader reader = new ObjectMapper().reader(AlignmentGlobalStats.class);
                     AlignmentGlobalStats globalStats = reader.readValue((String) value);
-                    return new DataResult<>(fileDataResult.getTime(), fileDataResult.getWarnings(), 1, Arrays.asList(globalStats), 1);
+                    return new DataResult<>(fileDataResult.getTime(), fileDataResult.getEvents(), 1, Arrays.asList(globalStats), 1);
                 }
 
             }

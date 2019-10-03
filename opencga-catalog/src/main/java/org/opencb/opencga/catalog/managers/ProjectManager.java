@@ -18,10 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -296,10 +293,11 @@ public class ProjectManager extends AbstractManager {
                 DataResult<Project> projectResult = get(project, options, sessionId);
                 results.add(projectResult);
             } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, projectList.get(i), e.getMessage());
                 String warning = "Missing " + projectList.get(i) + ": " + e.getMessage();
                 if (silent) {
                     logger.error(warning, e);
-                    results.add(new DataResult<>(0, Collections.singletonList(warning), 0, Collections.emptyList(), 0));
+                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 } else {
                     logger.error(warning);
                     throw e;

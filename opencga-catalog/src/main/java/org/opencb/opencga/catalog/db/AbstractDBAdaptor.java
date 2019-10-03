@@ -17,10 +17,12 @@
 package org.opencb.opencga.catalog.db;
 
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,41 +40,39 @@ public abstract class AbstractDBAdaptor {
     }
 
     protected <T> DataResult<T> endQuery(long startTime, List<T> result) {
-        return endQuery(startTime, result, null);
+        return endQuery(startTime, result, new ArrayList<>());
     }
 
     protected <T> DataResult<T> endQuery(long startTime) {
-        return endQuery(startTime, Collections.emptyList(), null);
+        return endQuery(startTime, Collections.emptyList(), new ArrayList<>());
     }
 
     protected <T> DataResult<T> endQuery(long startTime, DataResult<T> result) {
         result.setTime((int) (System.currentTimeMillis() - startTime));
-        logger.trace("DbTime: {}, numResults: {}, numTotalResults: {}", result.getTime(), result.getNumResults(),
-                result.getNumTotalResults());
+        logger.trace("DbTime: {}, numResults: {}, numMatches: {}", result.getTime(), result.getNumResults(), result.getNumMatches());
         return result;
     }
 
-    protected <T> DataResult<T> endQuery(long startTime, List<T> results, List<String> warnings) {
+    protected <T> DataResult<T> endQuery(long startTime, List<T> results, List<Event> events) {
         long end = System.currentTimeMillis();
         if (results == null) {
             results = new LinkedList<>();
         }
         int numResults = results.size();
-        DataResult<T> result = new DataResult<>((int) (end - startTime), warnings, numResults, results, numResults, new ObjectMap());
-        logger.trace("DbTime: {}, numResults: {}, numTotalResults: {}", result.getTime(), result.getNumResults(),
-                result.getNumTotalResults());
+        DataResult<T> result = new DataResult<>((int) (end - startTime), events, numResults, results, numResults, new ObjectMap());
+        logger.trace("DbTime: {}, numResults: {}, numMatches: {}", result.getTime(), result.getNumResults(), result.getNumMatches());
         return result;
     }
 
-    protected <T> DataResult<T> endWrite(long startTime, long numMatches, long numUpdated, List<String> warnings) {
+    protected <T> DataResult<T> endWrite(long startTime, long numMatches, long numUpdated, List<Event> events) {
         long end = System.currentTimeMillis();
-        return new DataResult<>((int) (end - startTime), warnings, numMatches, 0, numUpdated, 0, new ObjectMap());
+        return new DataResult<>((int) (end - startTime), events, numMatches, 0, numUpdated, 0, new ObjectMap());
     }
 
     protected <T> DataResult<T> endWrite(long startTime, long numMatches, long numInserted, long numUpdated, long numDeleted,
-                                         List<String> warnings) {
+                                         List<Event> events) {
         long end = System.currentTimeMillis();
-        return new DataResult<T>((int) (end - startTime), warnings, numMatches, numInserted, numUpdated, numDeleted, new ObjectMap());
+        return new DataResult<>((int) (end - startTime), events, numMatches, numInserted, numUpdated, numDeleted, new ObjectMap());
     }
 
     protected void checkParameter(Object param, String name) throws CatalogDBException {

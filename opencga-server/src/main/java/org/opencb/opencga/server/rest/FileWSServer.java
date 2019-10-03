@@ -917,7 +917,8 @@ public class FileWSServer extends OpenCGAWSServer {
                         queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, sessionId));
                     } catch (URISyntaxException | CatalogException | IOException e) {
                         logger.error(e.getMessage(), e);
-                        queryResultList.add(new DataResult<>(-1, Collections.singletonList(e.getMessage()), 0, Collections.emptyList(), 0));
+                        queryResultList.add(new DataResult<>(-1, Collections.singletonList(new Event(Event.Type.ERROR, uri, e.getMessage())),
+                                0, Collections.emptyList(), 0));
                     }
                 }
             }
@@ -968,7 +969,8 @@ public class FileWSServer extends OpenCGAWSServer {
                         queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.path, objectMap, sessionId));
                     } catch (URISyntaxException | CatalogException | IOException e) {
                         logger.error(e.getMessage(), e);
-                        queryResultList.add(new DataResult<>(-1, Collections.singletonList(e.getMessage()), 0, Collections.emptyList(), 0));
+                        queryResultList.add(new DataResult<>(-1, Collections.singletonList(new Event(Event.Type.ERROR, uri, e.getMessage())),
+                                0, Collections.emptyList(), 0));
                     }
                 }
             }

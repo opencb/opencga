@@ -17,10 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -69,7 +66,8 @@ public class JobManager extends ResourceManager<Job> {
     private StudyManager studyManager;
 
     public static final QueryOptions INCLUDE_JOB_IDS = new QueryOptions(QueryOptions.INCLUDE,
-            Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key()));
+            Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
+                    JobDBAdaptor.QueryParams.STUDY_UID.key()));
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -425,7 +423,7 @@ public class JobManager extends ResourceManager<Job> {
             auditManager.auditCount(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
@@ -459,7 +457,7 @@ public class JobManager extends ResourceManager<Job> {
             fixQueryObject(study, query, userId);
             finalQuery.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = jobDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = jobDBAdaptor.iterator(finalQuery, INCLUDE_JOB_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -487,7 +485,8 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete job " + job.getId() + ": " + e.getMessage();
 
-                result.getWarnings().add(errorMsg);
+                Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
+                result.getEvents().add(event);
 
                 logger.debug(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -703,15 +702,15 @@ public class JobManager extends ResourceManager<Job> {
                         if (!silent) {
                             throw e;
                         } else {
-                            String warning = "Missing " + jobId + ": " + missingMap.get(jobId).getErrorMsg();
-                            jobAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                            Event event = new Event(Event.Type.ERROR, jobId, missingMap.get(jobId).getErrorMsg());
+                            jobAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                                     Collections.emptyList(), 0));
                         }
                     }
                     counter += 1;
                 } else {
-                    String warning = "Missing " + jobId + ": " + missingMap.get(jobId).getErrorMsg();
-                    jobAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                    Event event = new Event(Event.Type.ERROR, jobId, missingMap.get(jobId).getErrorMsg());
+                    jobAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.JOB, jobId, "", study.getId(),

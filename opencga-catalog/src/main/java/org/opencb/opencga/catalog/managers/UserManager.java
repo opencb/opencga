@@ -1154,7 +1154,7 @@ public class UserManager extends AbstractManager {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult(userDataResult.getTime(), userDataResult.getWarnings(), 1, Collections.singletonList(configMap), 1);
+            return new DataResult(userDataResult.getTime(), userDataResult.getEvents(), 1, Collections.singletonList(configMap), 1);
         } catch (CatalogException e) {
             auditManager.auditUser(userIdAux, AuditRecord.Action.FETCH_USER_CONFIG, userId, auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

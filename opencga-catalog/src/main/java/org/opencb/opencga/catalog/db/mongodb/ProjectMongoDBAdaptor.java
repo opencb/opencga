@@ -29,10 +29,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -250,59 +247,84 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+    public DataResult update(long projectUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(),
+                QueryParams.FQN.key()));
+        DataResult<Project> projectDataResult = get(projectUid, options);
 
-        Document updateParams = getDocumentUpdateParams(parameters);
-
-        if (updateParams.isEmpty() && !parameters.containsKey(QueryParams.ID.key())) {
-            throw new CatalogDBException("Nothing to update");
+        if (projectDataResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not update project. Project uid '" + projectUid + "' not found.");
         }
 
-        Document updates = new Document("$set", updateParams);
+        try {
+            return runTransaction(clientSession -> privateUpdate(clientSession, projectDataResult.first(), parameters));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update project {}: {}", projectDataResult.first().getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not update project '" + projectDataResult.first().getId() + "': " + e.getMessage(),
+                    e.getCause());
+        }
+    }
 
+    @Override
+    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(),
                 QueryParams.FQN.key()));
         DBIterator<Project> iterator = iterator(query, options);
 
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
+        DataResult<Project> result = DataResult.empty();
 
         while (iterator.hasNext()) {
             Project project = iterator.next();
-            numMatches += 1;
-
             try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-                    if (parameters.containsKey(QueryParams.ID.key())) {
-                        logger.debug("Update project id '{}'({}) to new id '{}'", project.getId(), project.getUid(),
-                                parameters.getString(QueryParams.ID.key()));
-                        editId(clientSession, project.getFqn().split("@")[0], project.getUid(), parameters.getString(QueryParams.ID.key()));
-                    }
-
-                    if (!updateParams.isEmpty()) {
-                        Query tmpQuery = new Query(QueryParams.UID.key(), project.getUid());
-                        Bson finalQuery = parseQuery(tmpQuery);
-
-                        logger.debug("Update project. Query: {}, update: {}",
-                                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                                updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                        userCollection.update(clientSession, finalQuery, updates, null);
-                    }
-                    return endWrite(tmpStartTime, 1, 1, null);
-                });
-                logger.info("Project {} successfully updated", project.getId());
-                numModified += 1;
+                result.append(runTransaction(clientSession -> privateUpdate(clientSession, project, parameters)));
             } catch (CatalogDBException e) {
-                String errorMsg = "Could not update project " + project.getId() + ": " + e.getMessage();
-                logger.error(errorMsg);
-                warnings.add(errorMsg);
+                logger.error("Could not update project {}: {}", project.getId(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
             }
         }
+        return result;
+    }
 
-        return endWrite(startTime, numMatches, numModified, warnings);
+    DataResult<Object> privateUpdate(ClientSession clientSession, Project project, ObjectMap parameters) throws CatalogDBException {
+        Document updateParams = getDocumentUpdateParams(parameters);
+
+        if (updateParams.isEmpty() && !parameters.containsKey(QueryParams.ID.key())) {
+            if (!parameters.isEmpty()) {
+                logger.error("Non-processed update parameters: {}", parameters.keySet());
+            }
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        Document updates = new Document("$set", updateParams);
+
+        long tmpStartTime = startQuery();
+        if (parameters.containsKey(QueryParams.ID.key())) {
+            logger.debug("Update project id '{}'({}) to new id '{}'", project.getId(), project.getUid(),
+                    parameters.getString(QueryParams.ID.key()));
+            editId(clientSession, project.getFqn().split("@")[0], project.getUid(), parameters.getString(QueryParams.ID.key()));
+        }
+
+        if (!updateParams.isEmpty()) {
+            Query tmpQuery = new Query(QueryParams.UID.key(), project.getUid());
+            Bson finalQuery = parseQuery(tmpQuery);
+
+            logger.debug("Update project. Query: {}, update: {}",
+                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    updates.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+            DataResult result = userCollection.update(clientSession, finalQuery, updates, null);
+
+            if (result.getNumMatches() == 0) {
+                throw new CatalogDBException("Project " + project.getId() + " not found");
+            }
+            List<Event> events = new ArrayList<>();
+            if (result.getNumUpdated() == 0) {
+                events.add(new Event(Event.Type.WARNING, project.getId(), "Project was already updated"));
+            }
+        }
+        logger.debug("Project {} successfully updated", project.getId());
+
+        return endWrite(tmpStartTime, 1, 1, null);
     }
 
     Document getDocumentUpdateParams(ObjectMap parameters) {
@@ -348,95 +370,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return projectParameters;
     }
 
-    @Override
-    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        DataResult update = update(new Query(QueryParams.UID.key(), id), parameters, QueryOptions.empty());
-        if (update.getNumUpdated() != 1) {
-            throw new CatalogDBException("Could not update project with id " + id);
-        }
-        return update;
-    }
-
-    @Override
-    public DataResult delete(Project project) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), project.getUid());
-        DataResult delete = delete(query);
-        if (delete.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not delete project. " + project.getId() + " not found.");
-        } else if (delete.getNumUpdated() == 0) {
-            throw new CatalogDBException("Could not delete project " + project.getId());
-        }
-        return delete;
-    }
-
-    @Override
-    public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
-        DBIterator<Project> iterator = iterator(query, options);
-
-        long startTime = startQuery();
-        int numMatches = 0;
-        int numModified = 0;
-        List<String> warnings = new ArrayList<>();
-
-        StudyMongoDBAdaptor studyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
-
-        while (iterator.hasNext()) {
-            Project project = iterator.next();
-            numMatches += 1;
-
-            try {
-                runTransaction(clientSession -> {
-                    long tmpStartTime = startQuery();
-                    logger.info("Deleting project {} ({})", project.getId(), project.getUid());
-
-                    // First, we delete the studies
-                    Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-                    List<Study> studyList = studyDBAdaptor.get(studyQuery, new QueryOptions(QueryOptions.INCLUDE,
-                            Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key()))).getResults();
-                    if (studyList != null) {
-                        for (Study study : studyList) {
-                            dbAdaptorFactory.getCatalogStudyDBAdaptor().transactionalDelete(clientSession, study);
-                        }
-                    }
-
-                    String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
-
-                    // Mark the study as deleted
-                    ObjectMap updateParams = new ObjectMap()
-                            .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                            .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                            .append(QueryParams.ID.key(), project.getId() + deleteSuffix);
-
-                    Bson bsonQuery = parseQuery(studyQuery);
-                    Document updateDocument = getDocumentUpdateParams(updateParams);
-
-                    logger.debug("Delete project {}: Query: {}, update: {}", project.getId(),
-                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                            updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-                    DataResult updateResult = userCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
-                    if (updateResult.getNumUpdated() == 1) {
-                        logger.debug("Project {} successfully deleted", project.getId());
-                        return endWrite(tmpStartTime, 1, 1, null);
-                    } else {
-                        logger.error("Project {} could not be deleted", project.getId());
-                        throw new CatalogDBException("Project " + project.getId() + " could not be deleted");
-                    }
-                });
-                logger.info("Project {} successfully deleted", project.getId());
-                numModified += 1;
-            } catch (CatalogDBException e) {
-                String errorMsg = "Could not delete project " + project.getId() + ": " + e.getMessage();
-                logger.error(errorMsg);
-                warnings.add(errorMsg);
-            }
-        }
-
-        return endWrite(startTime, numMatches, numModified, warnings);
-    }
-
     @Deprecated
     @Override
     public DataResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
@@ -465,7 +398,16 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return setStatus(id, Status.DELETED);
     }
 
-    // TODO: Make this transactional
+    @Override
+    public DataResult delete(Project project) throws CatalogDBException {
+        try {
+            return runTransaction(clientSession -> privateDelete(clientSession, project));
+        } catch (CatalogDBException e) {
+            logger.error("Could not delete project {}: {}", project.getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not delete project '" + project.getId() + "': " + e.getMessage(), e.getCause());
+        }
+    }
+
     @Override
     public DataResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.append(QueryParams.STATUS_NAME.key(), Status.READY);
@@ -475,6 +417,72 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             writeResult.append(delete(project.getUid(), queryOptions));
         }
         return writeResult;
+    }
+
+    @Override
+    public DataResult delete(Query query) throws CatalogDBException {
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
+        DBIterator<Project> iterator = iterator(query, options);
+
+        DataResult<Project> result = DataResult.empty();
+
+        while (iterator.hasNext()) {
+            Project project = iterator.next();
+
+            try {
+                result.append(runTransaction(clientSession -> privateDelete(clientSession, project)));
+            } catch (CatalogDBException e) {
+                logger.error("Could not delete project {}: {}", project.getId(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
+            }
+        }
+
+        return result;
+    }
+
+    DataResult<Project> privateDelete(ClientSession clientSession, Project project) throws CatalogDBException {
+        long tmpStartTime = startQuery();
+        logger.debug("Deleting project {} ({})", project.getId(), project.getUid());
+
+        StudyMongoDBAdaptor studyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
+
+        // First, we delete the studies
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
+        List<Study> studyList = studyDBAdaptor.get(studyQuery, new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key()))).getResults();
+        if (studyList != null) {
+            for (Study study : studyList) {
+                studyDBAdaptor.privateDelete(clientSession, study);
+            }
+        }
+
+        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+
+        // Mark the study as deleted
+        ObjectMap updateParams = new ObjectMap()
+                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
+                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
+                .append(QueryParams.ID.key(), project.getId() + deleteSuffix);
+
+        Bson bsonQuery = parseQuery(studyQuery);
+        Document updateDocument = getDocumentUpdateParams(updateParams);
+
+        logger.debug("Delete project {}: Query: {}, update: {}", project.getId(),
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        DataResult result = userCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+
+        if (result.getNumMatches() == 0) {
+            throw new CatalogDBException("Project " + project.getId() + " not found");
+        }
+        List<Event> events = new ArrayList<>();
+        if (result.getNumUpdated() == 0) {
+            events.add(new Event(Event.Type.WARNING, project.getId(), "Project was already deleted"));
+        }
+        logger.debug("Project {} successfully deleted", project.getId());
+
+        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
     }
 
     DataResult setStatus(Query query, String status) throws CatalogDBException {

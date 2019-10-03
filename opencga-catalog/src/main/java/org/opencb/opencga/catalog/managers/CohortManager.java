@@ -18,10 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.ListUtils;
@@ -72,7 +69,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private final String defaultFacet = "creationYear>>creationMonth;status;numSamples[0..10]:1";
 
     public static final QueryOptions INCLUDE_COHORT_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-            CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(), CohortDBAdaptor.QueryParams.UUID.key()));
+            CohortDBAdaptor.QueryParams.STUDY_UID.key(), CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.UID.key(),
+            CohortDBAdaptor.QueryParams.UUID.key()));
 
     CohortManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -273,7 +271,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             return DataResult.empty();
         }
 
-        return new DataResult<>(cohortDataResult.getTime(), cohortDataResult.getWarnings(), cohortDataResult.first().getSamples().size(),
+        return new DataResult<>(cohortDataResult.getTime(), cohortDataResult.getEvents(), cohortDataResult.first().getSamples().size(),
                 cohortDataResult.first().getSamples(), cohortDataResult.first().getSamples().size());
     }
 
@@ -368,7 +366,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             auditManager.auditCount(userId, AuditRecord.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
@@ -429,14 +427,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                String errorMsg = "Cannot delete cohort " + cohort.getId() + ": " + e.getMessage();
-                result.getWarnings().add(errorMsg);
+                Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
+                result.getEvents().add(event);
 
-                logger.error(errorMsg);
+                logger.error("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage());
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-
-                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
@@ -615,7 +611,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
                     // Override sample list of ids with sample list
                     parameters.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleResult.getResults());
-                    // TODO: Until we support "action" in the cohort WS, the action behaviour will always be SET
                     options.put(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                             ParamUtils.UpdateAction.SET.name()));
                 }
@@ -774,15 +769,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         if (!silent) {
                             throw e;
                         } else {
-                            String warning = "Missing " + cohortId + ": " + missingMap.get(cohortId).getErrorMsg();
-                            cohortAclList.add(new DataResult<>(cohortDataResult.getTime(), Collections.singletonList(warning), 0,
+                            Event event = new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg());
+                            cohortAclList.add(new DataResult<>(cohortDataResult.getTime(), Collections.singletonList(event), 0,
                                     Collections.emptyList(), 0));
                         }
                     }
                     counter += 1;
                 } else {
-                    String warning = "Missing " + cohortId + ": " + missingMap.get(cohortId).getErrorMsg();
-                    cohortAclList.add(new DataResult<>(cohortDataResult.getTime(), Collections.singletonList(warning), 0,
+                    Event event = new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg());
+                    cohortAclList.add(new DataResult<>(cohortDataResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.COHORT, cohortId, "",

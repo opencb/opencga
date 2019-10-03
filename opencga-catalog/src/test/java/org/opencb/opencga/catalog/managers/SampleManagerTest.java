@@ -1184,7 +1184,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "SAMPLE_1");
         DataResult delete = catalogManager.getSampleManager().delete("1000G:phase1", query, null, sessionIdUser);
-        assertEquals(1, delete.getNumUpdated());
+        assertEquals(1, delete.getNumDeleted());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUid)

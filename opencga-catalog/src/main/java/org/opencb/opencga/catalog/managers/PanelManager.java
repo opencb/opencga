@@ -5,10 +5,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Xref;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -64,7 +61,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
     public static final QueryOptions INCLUDE_PANEL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             PanelDBAdaptor.QueryParams.ID.key(), PanelDBAdaptor.QueryParams.UID.key(), PanelDBAdaptor.QueryParams.UUID.key(),
-            PanelDBAdaptor.QueryParams.VERSION.key()));
+            PanelDBAdaptor.QueryParams.VERSION.key(), PanelDBAdaptor.QueryParams.STUDY_UID.key()));
 
     PanelManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                  DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -795,7 +792,7 @@ public class PanelManager extends ResourceManager<Panel> {
             auditManager.auditCount(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getWarnings(), 0, Collections.emptyList(),
+            return new DataResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
@@ -829,7 +826,7 @@ public class PanelManager extends ResourceManager<Panel> {
         try {
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = panelDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = panelDBAdaptor.iterator(finalQuery, INCLUDE_PANEL_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -859,13 +856,14 @@ public class PanelManager extends ResourceManager<Panel> {
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete panel " + panel.getId() + ": " + e.getMessage();
 
-                result.getWarnings().add(errorMsg);
+                Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
+                result.getEvents().add(event);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-                throw new CatalogException(errorMsg, e.getCause());
+//                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
@@ -961,15 +959,15 @@ public class PanelManager extends ResourceManager<Panel> {
                         if (!silent) {
                             throw e;
                         } else {
-                            String warning = "Missing " + panelId + ": " + missingMap.get(panelId).getErrorMsg();
-                            panelAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                            Event event = new Event(Event.Type.ERROR, panelId, missingMap.get(panelId).getErrorMsg());
+                            panelAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                                     Collections.emptyList(), 0));
                         }
                     }
                     counter += 1;
                 } else {
-                    String warning = "Missing " + panelId + ": " + missingMap.get(panelId).getErrorMsg();
-                    panelAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(warning), 0,
+                    Event event = new Event(Event.Type.ERROR, panelId, missingMap.get(panelId).getErrorMsg());
+                    panelAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
                             Collections.emptyList(), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panelId, "",

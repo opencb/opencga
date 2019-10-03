@@ -193,33 +193,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return nativeGet(query, options);
     }
 
-    @Override
-    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), id);
-        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
-
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            createNewVersion(query);
-        }
-
-        Document updateOperation = updateDocument.toFinalUpdateDocument();
-
-        if (!updateOperation.isEmpty()) {
-            Bson bsonQuery = Filters.eq(PRIVATE_UID, id);
-
-            logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
-                    MongoClient.getDefaultCodecRegistry()), updateDocument);
-            DataResult update = interpretationCollection.update(bsonQuery, updateOperation, null);
-
-            if (update.getNumMatches() == 0) {
-                throw CatalogDBException.uidNotFound("Interpretation", id);
-            }
-            return update;
-        }
-
-        return DataResult.empty();
-    }
-
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, Query query, QueryOptions queryOptions)
             throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
@@ -333,6 +306,33 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             // Insert the new version document
             interpretationCollection.insert(document, QueryOptions.empty());
         }
+    }
+
+    @Override
+    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+        Query query = new Query(QueryParams.UID.key(), id);
+        UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
+
+        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
+            createNewVersion(query);
+        }
+
+        Document updateOperation = updateDocument.toFinalUpdateDocument();
+
+        if (!updateOperation.isEmpty()) {
+            Bson bsonQuery = Filters.eq(PRIVATE_UID, id);
+
+            logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
+                    MongoClient.getDefaultCodecRegistry()), updateDocument);
+            DataResult update = interpretationCollection.update(bsonQuery, updateOperation, null);
+
+            if (update.getNumMatches() == 0) {
+                throw CatalogDBException.uidNotFound("Interpretation", id);
+            }
+            return update;
+        }
+
+        return DataResult.empty();
     }
 
     @Override

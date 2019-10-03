@@ -285,7 +285,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     file.getSamples() != null ?
                             StringUtils.join(file.getSamples()
                                     .stream()
-                                    .map(Sample::getUid)
+                                    .map(Sample::getId)
                                     .collect(Collectors.toList()), ", ")
                             : "-")
             );

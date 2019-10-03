@@ -26,6 +26,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -152,7 +153,8 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
             throw new IllegalStateException("Problem reading StudyConfiguration " + studyId + " from table " + tableName, e);
         }
         return new DataResult<>((int) watch.now(TimeUnit.MILLISECONDS), StringUtils.isEmpty(error) ? Collections.emptyList()
-                : Collections.singletonList(error), studyConfigurationList.size(), studyConfigurationList, studyConfigurationList.size());
+                : Collections.singletonList(new Event(Event.Type.ERROR, error)), studyConfigurationList.size(), studyConfigurationList,
+                studyConfigurationList.size());
     }
 
     @Override

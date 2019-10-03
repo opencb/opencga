@@ -18,6 +18,7 @@ package org.opencb.opencga.core.results;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.List;
@@ -41,15 +42,15 @@ public class VariantQueryResult<T> extends DataResult<T> {
     public VariantQueryResult() {
     }
 
-    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<String> warnings, List<T> result,
+    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<Event> events, List<T> result,
                               Map<String, List<String>> samples, String source) {
-        this(dbTime, numResults, numMatches, warnings, result, samples, source, null, null, null);
+        this(dbTime, numResults, numMatches, events, result, samples, source, null, null, null);
     }
 
-    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<String> warnings, List<T> result,
+    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<Event> events, List<T> result,
                               Map<String, List<String>> samples, String source, Boolean approximateCount,
                               Integer approximateCountSamplingSize, Integer numTotalSamples) {
-        super(dbTime, warnings, numResults, result, numMatches);
+        super(dbTime, events, numResults, result, numMatches);
         setSamples(samples);
         setSource(source);
         setApproximateCount(approximateCount);
@@ -62,7 +63,7 @@ public class VariantQueryResult<T> extends DataResult<T> {
 
     public VariantQueryResult(DataResult<T> dataResult) {
         super(dataResult.getTime(),
-                dataResult.getWarnings(),
+                dataResult.getEvents(),
                 dataResult.getNumMatches(),
                 dataResult.getNumInserted(),
                 dataResult.getNumUpdated(),
