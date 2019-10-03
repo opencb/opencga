@@ -560,15 +560,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public <E extends Exception> FileMetadata updateFileMetadata(int studyId, int fileId, UpdateFunction<FileMetadata, E> update)
             throws E, StorageEngineException {
-        FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
-        Locked lock = fileDBAdaptor.lock(studyId, fileMetadata.getId(), DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        getFileName(studyId, fileId); // Check file exists
+        Locked lock = fileDBAdaptor.lock(studyId, fileId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
+            FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
             fileMetadata = update.update(fileMetadata);
             unsecureUpdateFileMetadata(studyId, fileMetadata);
+            return fileMetadata;
         } finally {
             lock.unlock();
         }
-        return fileMetadata;
     }
 
     private Integer getFileId(int studyId, String fileName) {
@@ -718,15 +719,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public <E extends Exception> SampleMetadata updateSampleMetadata(int studyId, int sampleId, UpdateFunction<SampleMetadata, E> update)
             throws E, StorageEngineException {
-        SampleMetadata sample = getSampleMetadata(studyId, sampleId);
-        Locked lock = sampleDBAdaptor.lock(studyId, sample.getId(), DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        getSampleName(studyId, sampleId); // Check sample exists
+        Locked lock = sampleDBAdaptor.lock(studyId, sampleId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
+            SampleMetadata sample = getSampleMetadata(studyId, sampleId);
             sample = update.update(sample);
             unsecureUpdateSampleMetadata(studyId, sample);
+            return sample;
         } finally {
             lock.unlock();
         }
-        return sample;
     }
 
     public Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
@@ -837,15 +839,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public <E extends Exception> CohortMetadata updateCohortMetadata(int studyId, int cohortId, UpdateFunction<CohortMetadata, E> update)
             throws E, StorageEngineException {
-        CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
-        Locked lock = cohortDBAdaptor.lock(studyId, cohortMetadata.getId(), DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        getCohortName(studyId, cohortId); // Check cohort exists
+        Locked lock = cohortDBAdaptor.lock(studyId, cohortId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
+            CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
             cohortMetadata = update.update(cohortMetadata);
             unsecureUpdateCohortMetadata(studyId, cohortMetadata);
+            return cohortMetadata;
         } finally {
             lock.unlock();
         }
-        return cohortMetadata;
     }
 
     public void removeCohort(int studyId, Object cohort) {
@@ -1035,15 +1038,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public <E extends Exception> TaskMetadata updateTask(int studyId, int taskId, UpdateFunction<TaskMetadata, E> update)
             throws E, StorageEngineException {
-        TaskMetadata task = getTask(studyId, taskId);
-        Locked lock = taskDBAdaptor.lock(studyId, task.getId(), DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        getTask(studyId, taskId); // Check task exists
+        Locked lock = taskDBAdaptor.lock(studyId, taskId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
+            TaskMetadata task = getTask(studyId, taskId);
             task = update.update(task);
             unsecureUpdateTask(studyId, task);
+            return task;
         } finally {
             lock.unlock();
         }
-        return task;
     }
 
     private Pair<Integer, Integer> getResourcePair(Object obj, boolean skipNegated, StudyMetadata defaultStudy,
