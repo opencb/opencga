@@ -349,9 +349,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 .putAll(getOtherStorageConfigurationOptions());
 
         manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
-        manager.mrExecutor = new TestMRExecutor(conf);
+        manager.mrExecutor = getMrExecutor();
         manager.conf = conf;
         return manager;
+    }
+
+    default TestMRExecutor getMrExecutor() {
+        return new TestMRExecutor(configuration.get());
     }
 
     static StorageConfiguration getStorageConfiguration(Configuration conf) throws IOException {

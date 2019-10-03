@@ -30,8 +30,8 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsCalculator;
-import org.opencb.oskar.analysis.variant.FisherExactTest;
-import org.opencb.oskar.analysis.variant.FisherTestResult;
+import org.opencb.oskar.analysis.stats.FisherExactTest;
+import org.opencb.oskar.analysis.stats.FisherTestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

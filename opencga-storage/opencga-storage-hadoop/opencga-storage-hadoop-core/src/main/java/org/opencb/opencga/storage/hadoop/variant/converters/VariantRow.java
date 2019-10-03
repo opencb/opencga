@@ -225,6 +225,8 @@ public class VariantRow {
 
         Double getQual();
 
+        String getQualString();
+
         String getFilter();
 
         String getString(int idx);
@@ -425,12 +427,17 @@ public class VariantRow {
 
         @Override
         public Double getQual() {
-            String qualStr = getString(HBaseToStudyEntryConverter.FILE_QUAL_IDX);
+            String qualStr = getQualString();
             if (StringUtils.isNotEmpty(qualStr) && !(".").equals(qualStr)) {
                 return Double.valueOf(qualStr);
             } else {
                 return null;
             }
+        }
+
+        @Override
+        public String getQualString() {
+            return getString(HBaseToStudyEntryConverter.FILE_QUAL_IDX);
         }
 
         @Override
