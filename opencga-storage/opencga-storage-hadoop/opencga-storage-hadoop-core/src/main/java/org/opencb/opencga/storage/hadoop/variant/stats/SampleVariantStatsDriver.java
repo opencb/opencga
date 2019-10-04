@@ -9,6 +9,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
@@ -24,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -79,33 +81,42 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         List<String> samples = Arrays.asList(samplesStr.split(","));
         StringBuilder trios = new StringBuilder();
+        Set<Integer> includeSample = new LinkedHashSet<>();
         if (samples.size() == 1 && (samples.get(0).equals("auto") || samples.get(0).equals("all"))) {
             boolean all = samples.get(0).equals("all");
-            sampleIds = new LinkedList<>();
             metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
                 if (sampleMetadata.isIndexed()) {
                     if (all || sampleMetadata.getStats() == null || MapUtils.isEmpty(sampleMetadata.getStats().getBiotypeCount())) {
-                        sampleIds.add(sampleMetadata.getId());
-                        addTrio(trios, sampleMetadata);
+                        addTrio(trios, includeSample, sampleMetadata);
                     }
                 }
             });
         } else {
-            sampleIds = new ArrayList<>(samples.size());
             for (String sample : samples) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, study);
                 }
-                sampleIds.add(sampleId);
-                addTrio(trios, metadataManager.getSampleMetadata(studyId, sampleId));
+                addTrio(trios, includeSample, metadataManager.getSampleMetadata(studyId, sampleId));
             }
+        }
+        sampleIds = new ArrayList<>(includeSample);
+        if (sampleIds.isEmpty()) {
+            throw new IllegalArgumentException("Nothing to do!");
         }
         this.trios = trios.toString();
     }
 
-    private void addTrio(StringBuilder trios, SampleMetadata sampleMetadata) {
+    private void addTrio(StringBuilder trios, Set<Integer> includeSample, SampleMetadata sampleMetadata) {
+        includeSample.add(sampleMetadata.getId());
         if (sampleMetadata.getFather() != null || sampleMetadata.getMother() != null) {
+            // Make sure parents are included in the query
+            if (sampleMetadata.getFather() != null) {
+                includeSample.add(sampleMetadata.getFather());
+            }
+            if (sampleMetadata.getMother() != null) {
+                includeSample.add(sampleMetadata.getMother());
+            }
             trios.append(sampleMetadata.getId())
                     .append(",")
                     .append(sampleMetadata.getFather() == null ? "0" : sampleMetadata.getFather())
@@ -128,7 +139,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
                 member.setFather(new Member(members[1], Member.Sex.MALE, Member.AffectionStatus.UNKNOWN));
             }
             if (!members[2].equals("0")) {
-                member.setFather(new Member(members[2], Member.Sex.FEMALE, Member.AffectionStatus.UNKNOWN));
+                member.setMother(new Member(members[2], Member.Sex.FEMALE, Member.AffectionStatus.UNKNOWN));
             }
             pedigree.getMembers().add(member);
         }
@@ -146,10 +157,13 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
 
-        Query query = new Query();
+        boolean skipSampleIndex = true;
+        Query query = new Query()
+                .append(VariantQueryParam.STUDY.key(), getStudyId())
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_STATS);
         VariantMapReduceUtil.initVariantRowMapperJob(job, SampleVariantStatsMapper.class,
-                variantTable, metadataManager, query, queryOptions, true);
+                variantTable, metadataManager, query, queryOptions, skipSampleIndex);
 
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
         job.getConfiguration().setInt(STUDY_ID, getStudyId());
@@ -161,8 +175,10 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(SampleVariantStatsWritable.class);
 
+        job.setOutputFormatClass(NullOutputFormat.class);
+
         int numReduceTasks = Math.min(sampleIds.size(), 10);
-        LOGGER.info("Using " + numReduceTasks + " recude tasks");
+        LOGGER.info("Using " + numReduceTasks + " reduce tasks");
         job.setNumReduceTasks(numReduceTasks);
         VariantMapReduceUtil.setNoneTimestamp(job);
 
@@ -356,6 +372,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         @Override
         protected void reduce(IntWritable sampleId, Iterable<SampleVariantStatsWritable> values, Context context)
                 throws IOException, InterruptedException {
+            // Create a new instance, as the input values may be overwritten
             SampleVariantStatsWritable stats = new SampleVariantStatsWritable(sampleId.get());
 
             for (SampleVariantStatsWritable value : values) {
@@ -384,7 +401,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         @Override
         protected void reduce(IntWritable sampleId, Iterable<SampleVariantStatsWritable> values, Context context)
                 throws IOException, InterruptedException {
-
+            // Create a new instance, as the input values may be overwritten
             SampleVariantStatsWritable statsWritable = new SampleVariantStatsWritable(sampleId.get());
 
             for (SampleVariantStatsWritable value : values) {
