@@ -1,7 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.avro.io.BinaryDecoder;
+import org.apache.avro.io.BinaryEncoder;
+import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.io.EncoderFactory;
+import org.apache.avro.specific.SpecificDatumReader;
+import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -35,9 +39,7 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -191,7 +193,6 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     }
 
     public static class SampleVariantStatsWritable implements Writable {
-        private static ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         private int sampleId;
         private int ti;
         private int tv;
@@ -200,15 +201,29 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         private double qualSumSq;
         private SampleVariantStats sampleStats;
 
+        private static SpecificDatumWriter<SampleVariantStats> writer = new SpecificDatumWriter<>(SampleVariantStats.class);
+        private static SpecificDatumReader<SampleVariantStats> reader = new SpecificDatumReader<>(SampleVariantStats.class);
+        private final BinaryEncoder binaryEncoder;
+        private final BinaryDecoder binaryDecoder;
+        private final DataInputAsInputStream is;
+        private final DataOutputAsOutputStream os;
+
+
         public SampleVariantStatsWritable() {
+            os = new DataOutputAsOutputStream(null);
+            is = new DataInputAsInputStream(null);
+            binaryEncoder = EncoderFactory.get().directBinaryEncoder(os, null);
+            binaryDecoder = DecoderFactory.get().directBinaryDecoder(is, null);
         }
 
         public SampleVariantStatsWritable(int sampleId) {
+            this();
             this.sampleId = sampleId;
         }
 
         public SampleVariantStatsWritable(int sampleId, int ti, int tv, int qualCount, double qualSum, double qualSumSq,
                                           SampleVariantStats sampleStats) {
+            this();
             this.sampleId = sampleId;
             this.ti = ti;
             this.tv = tv;
@@ -226,7 +241,8 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             out.writeInt(qualCount);
             out.writeDouble(qualSum);
             out.writeDouble(qualSumSq);
-            objectMapper.writeValue(out, sampleStats);
+            os.setOut(out); // Replace the DataOutput used by the encoder
+            writer.write(sampleStats, binaryEncoder);
         }
 
         @Override
@@ -237,12 +253,13 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             qualCount = in.readInt();
             qualSum = in.readDouble();
             qualSumSq = in.readDouble();
-            sampleStats = objectMapper.readValue(in, SampleVariantStats.class);
+            is.setIn(in); // Replace the DataInput used by the decoder
+            sampleStats = reader.read(sampleStats, binaryDecoder);
         }
 
         public void merge(SampleVariantStatsWritable other) {
             if (sampleStats == null) {
-                sampleStats = other.sampleStats;
+                sampleStats = SampleVariantStats.newBuilder(other.sampleStats).build();
             } else {
                 SampleVariantStatsCalculator.merge(sampleStats, other.sampleStats);
             }
@@ -254,6 +271,63 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             this.qualSumSq += other.qualSumSq;
         }
 
+        private static class DataOutputAsOutputStream extends OutputStream {
+            private DataOutput out;
+
+            DataOutputAsOutputStream(DataOutput out) {
+                this.out = out;
+            }
+
+            public DataOutputAsOutputStream setOut(DataOutput out) {
+                this.out = out;
+                return this;
+            }
+
+            @Override
+            public void write(int b) throws IOException {
+                out.write(b);
+            }
+
+            @Override
+            public void write(byte[] b) throws IOException {
+                out.write(b);
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                out.write(b, off, len);
+            }
+        }
+
+        private static class DataInputAsInputStream extends InputStream {
+            private DataInput in;
+
+            DataInputAsInputStream(DataInput in) {
+                this.in = in;
+            }
+
+            public DataInputAsInputStream setIn(DataInput in) {
+                this.in = in;
+                return this;
+            }
+
+            @Override
+            public int read() throws IOException {
+                return ((int) in.readByte());
+            }
+
+            @Override
+            public int read(byte[] b) throws IOException {
+                in.readFully(b);
+                return b.length;
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                in.readFully(b, off, len);
+                return len;
+            }
+        }
     }
 
     public static class DistributedSampleVariantStatsCalculator extends SampleVariantStatsCalculator {
