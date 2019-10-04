@@ -5,8 +5,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -174,6 +177,28 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             return job.waitForCompletion(true);
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
+        }
+    }
+
+    /**
+     * Concatenate all generated files from a MapReduce job into one single local file.
+     * @param mrOutdir      MapReduce output directory
+     * @param localOutput   Local file
+     * @throws IOException  on IOException
+     */
+    protected void concatMrOutputToLocal(Path mrOutdir, Path localOutput) throws IOException {
+        FileSystem fileSystem = mrOutdir.getFileSystem(getConf());
+        RemoteIterator<LocatedFileStatus> it = fileSystem.listFiles(mrOutdir, false);
+        try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
+            while (it.hasNext()) {
+                Path path = it.next().getPath();
+                if (!path.getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)
+                        && !path.getName().equals(FileOutputCommitter.PENDING_DIR_NAME)) {
+                    try (FSDataInputStream is = fileSystem.open(path)) {
+                        IOUtils.copyBytes(is, os, getConf(), false);
+                    }
+                }
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.clinical.pedigree.Member;
@@ -8,6 +9,8 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -15,8 +18,10 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
+import java.io.File;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SampleVariantStatsTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
@@ -26,30 +31,31 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
     private static String mother = "NA12878";
     private static String child = "NA12879";  // Maybe this is not accurate, but works file for the example
     private static List<SampleVariantStats> stats;
+    private static int studyId;
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
-    private int studyId;
+    private HadoopVariantStorageEngine engine;
 
     @Before
     public void before() throws Exception {
+        engine = getVariantStorageEngine();
         if (!loaded) {
             loaded = true;
-            HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
             URI outputUri = newOutputUri();
 
             ObjectMap params = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                     .append(VariantStorageEngine.Options.STUDY.key(), study);
-            runETL(variantStorageEngine, getPlatinumFile(12877), outputUri, params, true, true, true);
-            runETL(variantStorageEngine, getPlatinumFile(12878), outputUri, params, true, true, true);
-            runETL(variantStorageEngine, getPlatinumFile(12879), outputUri, params, true, true, true);
+            runETL(engine, getPlatinumFile(12877), outputUri, params, true, true, true);
+            runETL(engine, getPlatinumFile(12878), outputUri, params, true, true, true);
+            runETL(engine, getPlatinumFile(12879), outputUri, params, true, true, true);
 
 
 
 
             List<String> family = Arrays.asList(father, mother, child);
-            VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+            VariantStorageMetadataManager mm = engine.getMetadataManager();
             studyId = mm.getStudyId(study);
             mm.updateSampleMetadata(studyId, mm.getSampleId(studyId, child), sampleMetadata -> {
                 sampleMetadata.setFather(mm.getSampleId(studyId, father));
@@ -57,13 +63,17 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
                 return sampleMetadata;
             });
 
-            variantStorageEngine.annotate(new Query(), new ObjectMap());
-            variantStorageEngine.fillGaps(study, family, new ObjectMap());
+            engine.annotate(new Query(), new ObjectMap());
+            engine.fillGaps(study, family, new ObjectMap());
 
-
-            VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+            VariantHbaseTestUtils.printVariants(engine.getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
 
             stats = computeSampleVariantStatsDirectly();
+        }
+        VariantStorageMetadataManager mm = engine.getMetadataManager();
+        List<Integer> samples = mm.getIndexedSamples(studyId);
+        for (Integer sample : samples) {
+            mm.updateSampleMetadata(studyId, sample, sampleMetadata -> sampleMetadata.setStats(null));
         }
     }
 
@@ -73,36 +83,87 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
     }
 
     @Test
-    public void test() throws Exception {
-
-        HadoopVariantStorageEngine engine = getVariantStorageEngine();
-
+    public void testOne() throws Exception {
 
         ObjectMap params = new ObjectMap(SampleVariantStatsDriver.SAMPLES, father);
 
         getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
 
-        List<SampleVariantStats> actualStats = new ArrayList<>(3);
-        engine.getMetadataManager()
-                .sampleMetadataIterator(studyId)
-                .forEachRemaining(s -> actualStats.add(s.getStats()));
+        List<SampleVariantStats> actualStats = readStatsFromMeta();
 
+        Assert.assertEquals(1, actualStats.size());
         Assert.assertEquals(stats.get(0), actualStats.get(0));
-        Assert.assertNull(actualStats.get(1));
-        Assert.assertNull(actualStats.get(2));
+    }
 
-        params.put(SampleVariantStatsDriver.SAMPLES, "auto");
+    @Test
+    public void testAuto() throws Exception {
+
+        // Child already has stats! Should not be calculated
+        Integer childId = engine.getMetadataManager().getSampleId(studyId, child);
+        engine.getMetadataManager().updateSampleMetadata(studyId, childId, sampleMetadata -> sampleMetadata.setStats(stats.get(2)));
+
+        URI localOutputUri = newOutputUri();
+        ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, "auto")
+                .append(SampleVariantStatsDriver.OUTPUT, localOutputUri);
         getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
 
-        actualStats.clear();
-        engine.getMetadataManager()
-                .sampleMetadataIterator(studyId)
-                .forEachRemaining(s -> actualStats.add(s.getStats()));
+
+        List<SampleVariantStats> actualStats = readStatsFromMeta();
+        Assert.assertEquals(stats, actualStats);
 
 
+        List<File> files = new ArrayList<>(FileUtils.listFiles(new File(localOutputUri), null, true));
+        Assert.assertEquals(1, files.size());
+        List<SampleVariantStats> statsFromFile = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(files.get(0)).readAll();
+        Map<String, SampleVariantStats> statsFromFileMap = statsFromFile.stream().collect(Collectors.toMap(SampleVariantStats::getId, i -> i));
+        Assert.assertEquals(stats.get(0), statsFromFileMap.get(father));
+        Assert.assertEquals(stats.get(1), statsFromFileMap.get(mother));
+        Assert.assertNull(statsFromFileMap.get(child));
+
+    }
+
+    @Test
+    public void testSingleSample() throws Exception {
+
+        URI localOutputUri = newOutputUri();
+        ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, mother)
+                .append(SampleVariantStatsDriver.OUTPUT, localOutputUri.resolve("mother_stats.json"));
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
+
+
+        List<SampleVariantStats> actualStats = readStatsFromMeta();
+
+        Assert.assertEquals(1, actualStats.size());
+        Assert.assertEquals(stats.get(1), actualStats.get(0));
+    }
+
+    @Test
+    public void testChild() throws Exception {
+
+        URI localOutputUri = newOutputUri();
+        ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, child)
+                .append(SampleVariantStatsDriver.OUTPUT, localOutputUri.resolve("child_stats.json"));
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
+
+
+        List<SampleVariantStats> actualStats = readStatsFromMeta();
+
+        // When processing a child, its parents must be processed as well
+        Assert.assertEquals(3, actualStats.size());
         Assert.assertEquals(stats, actualStats);
     }
 
+    public List<SampleVariantStats> readStatsFromMeta() throws StorageEngineException {
+        List<SampleVariantStats> actualStats = new ArrayList<>(3);
+        engine.getMetadataManager()
+                .sampleMetadataIterator(studyId)
+                .forEachRemaining(s -> {
+                    if (s.getStats() != null) {
+                        actualStats.add(s.getStats());
+                    }
+                });
+        return actualStats;
+    }
 
     public List<SampleVariantStats> computeSampleVariantStatsDirectly() throws Exception {
         HadoopVariantStorageEngine engine = getVariantStorageEngine();

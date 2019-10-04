@@ -9,11 +9,16 @@ import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
@@ -22,6 +27,7 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -51,18 +57,23 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final String SAMPLES = "samples";
+    public static final String OUTPUT = "output";
 //    public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     //    public static final boolean STATS_PARTIAL_RESULTS_DEFAULT = true;
     private static final String TRIOS = "trios";
+    private static final String WRITE_TO_DISK = "write";
     private static final String STATS_OPERATION_NAME = "sample_stats";
     private List<Integer> sampleIds;
     private String trios;
+    private Path outdir;
+    private Path localOutput;
 
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>*");
         params.put("--" + SAMPLES, "<samples|all|auto>*");
+        params.put("--" + OUTPUT, "<output>");
         return params;
     }
 
@@ -107,6 +118,34 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             throw new IllegalArgumentException("Nothing to do!");
         }
         this.trios = trios.toString();
+
+
+        String outdirStr = getParam(OUTPUT);
+        if (StringUtils.isNotEmpty(outdirStr)) {
+            outdir = new Path(outdirStr);
+
+            if (outdir.toUri().getScheme().equals("file")) {
+                localOutput = outdir;
+                FileSystem localFs = localOutput.getFileSystem(getConf());
+                if (localFs.exists(localOutput)) {
+                    if (localFs.isDirectory(localOutput)) {
+                        localOutput = new Path(localOutput,
+                                "sample_variant_stats."
+                                        + (samples.size() < 10 ? "." + String.join("_", samples) : "")
+                                        + TimeUtils.getTime() + ".json");
+                    } else {
+                        throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
+                    }
+                } else {
+                    if (!localFs.exists(localOutput.getParent())) {
+                        throw new IOException("No such file or directory");
+                    }
+                }
+                outdir = new Path(getConf().get("hadoop.tmp.dir"), "opencga_sample_variant_stats_" + TimeUtils.getTime());
+                outdir.getFileSystem(getConf()).deleteOnExit(outdir);
+            }
+        }
+
     }
 
     private void addTrio(StringBuilder trios, Set<Integer> includeSample, SampleMetadata sampleMetadata) {
@@ -177,7 +216,22 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(SampleVariantStatsWritable.class);
 
-        job.setOutputFormatClass(NullOutputFormat.class);
+        job.setOutputKeyClass(NullWritable.class);
+        job.setOutputValueClass(Text.class);
+
+        if (outdir == null) {
+            job.setOutputFormatClass(NullOutputFormat.class);
+        } else {
+            job.setOutputFormatClass(TextOutputFormat.class);
+            TextOutputFormat.setOutputPath(job, outdir);
+            job.getConfiguration().setBoolean(WRITE_TO_DISK, true);
+            if (localOutput == null) {
+                LOGGER.info("Output directory : " + outdir);
+            } else {
+                LOGGER.info("Temporary output directory : " + outdir);
+                LOGGER.info("Local output file : " + localOutput);
+            }
+        }
 
         int numReduceTasks = Math.min(sampleIds.size(), 10);
         LOGGER.info("Using " + numReduceTasks + " reduce tasks");
@@ -190,6 +244,19 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     @Override
     protected String getJobOperationName() {
         return STATS_OPERATION_NAME;
+    }
+
+    @Override
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+        super.postExecution(succeed);
+        if (succeed) {
+            if (localOutput != null) {
+                concatMrOutputToLocal(outdir, localOutput);
+                FileSystem fileSystem = outdir.getFileSystem(getConf());
+                fileSystem.delete(outdir, true);
+                fileSystem.cancelDeleteOnExit(outdir);
+            }
+        }
     }
 
     public static class SampleVariantStatsWritable implements Writable {
@@ -458,15 +525,17 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     }
 
     public static class SampleVariantStatsReducer extends Reducer
-            <IntWritable, SampleVariantStatsWritable, IntWritable, SampleVariantStatsWritable> {
+            <IntWritable, SampleVariantStatsWritable, NullWritable, Text> {
 
         private int studyId;
         private VariantStorageMetadataManager vsm;
         private VariantsTableMapReduceHelper mrHelper;
+        private boolean write;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            studyId = context.getConfiguration().getInt("studyId", -1);
+            studyId = context.getConfiguration().getInt(STUDY_ID, -1);
+            write = context.getConfiguration().getBoolean(WRITE_TO_DISK, false);
 
             mrHelper = new VariantsTableMapReduceHelper(context);
             vsm = mrHelper.getMetadataManager();
@@ -486,10 +555,11 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             calculator.post();
             SampleVariantStats stats = calculator.getSampleVariantStats().get(0);
 
+            stats.setMissingPositions(0);
             try {
                 vsm.updateSampleMetadata(studyId, sampleId.get(), sampleMetadata -> {
+                    stats.setId(sampleMetadata.getName());
                     if (sampleMetadata.getStats() == null) {
-                        stats.setId(sampleMetadata.getName());
                         stats.setMissingPositions(0); // Unknown. Unable to calculate using this MR
                         sampleMetadata.setStats(stats);
                     } else {
@@ -514,6 +584,11 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
 
                     return sampleMetadata;
                 });
+
+                if (write) {
+                    context.getCounter(COUNTER_GROUP_NAME, "samples").increment(1);
+                    context.write(NullWritable.get(), new Text(stats.toString()));
+                }
             } catch (StorageEngineException e) {
                 throw new IOException(e);
             }
