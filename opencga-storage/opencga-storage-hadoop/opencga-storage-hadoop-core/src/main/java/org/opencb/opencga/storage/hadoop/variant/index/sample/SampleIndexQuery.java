@@ -39,6 +39,20 @@ public class SampleIndexQuery {
     private final boolean onlyDeNovo;
     private final VariantQueryUtils.QueryOperation queryOperation;
 
+    public SampleIndexQuery(List<Region> regions, SampleIndexQuery query) {
+        this.regions = regions;
+        this.variantTypes = query.variantTypes;
+        this.study = query.study;
+        this.samplesMap = query.samplesMap;
+        this.fatherFilter = query.fatherFilter;
+        this.motherFilter = query.motherFilter;
+        this.fileFilterMap = query.fileFilterMap;
+        this.annotationIndexMask = query.annotationIndexMask;
+        this.mendelianErrorSet = query.mendelianErrorSet;
+        this.onlyDeNovo = query.onlyDeNovo;
+        this.queryOperation = query.queryOperation;
+    }
+
     public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
         this(regions, null, study, samplesMap, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), EMPTY_MASK,
                 Collections.emptySet(), false, queryOperation);

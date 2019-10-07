@@ -125,6 +125,7 @@ public class VariantMapReduceUtil {
                                                      Class<? extends Mapper> mapper) {
         job.setInputFormatClass(CustomPhoenixInputFormat.class);
 
+        LOGGER.info(sql);
         PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTable,  sql);
         job.setMapperClass(mapper);
 
@@ -175,12 +176,13 @@ public class VariantMapReduceUtil {
         initVariantMapperJobFromPhoenix(job, variantTableName, sql, variantMapperClass);
     }
 
-    public static void initVariantMapperJobFromPhoenix(Job job, String variantTableName, String selectQuery,
+    public static void initVariantMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
                                                        Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
         // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
-        PhoenixMapReduceUtil.setInput(job, PhoenixVariantTableInputFormat.VariantDBWritable.class, variantTableName,  selectQuery);
+        PhoenixMapReduceUtil.setInput(job, PhoenixVariantTableInputFormat.VariantDBWritable.class, variantTableName,  sqlQuery);
 
+        LOGGER.info(sqlQuery);
         job.setMapperClass(variantMapperClass);
         job.setOutputFormatClass(PhoenixOutputFormat.class);
 
@@ -225,7 +227,6 @@ public class VariantMapReduceUtil {
             String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
                     .parse(query, queryOptions).getSql();
 
-            LOGGER.info(sql);
             initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
     }
@@ -277,6 +278,8 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJobFromPhoenix(Job job, String variantTableName, String sqlQuery,
                                                        Class<? extends Mapper> variantMapperClass)
             throws IOException {
+
+        LOGGER.info(sqlQuery);
         // VariantDBWritable is the DBWritable class that enables us to process the Result of the query
         PhoenixMapReduceUtil.setInput(job, ExposedResultSetDBWritable.class, variantTableName,  sqlQuery);
 

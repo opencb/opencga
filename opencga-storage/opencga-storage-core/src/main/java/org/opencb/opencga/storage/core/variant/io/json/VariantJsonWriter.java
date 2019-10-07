@@ -139,48 +139,39 @@ public class VariantJsonWriter implements VariantWriter {
     }
 
     @Override
-    public boolean write(Variant variant) {
-        try {
-            variantsGenerator.writeObject(variant);
-            variantsGenerator.writeRaw('\n');
-        } catch (IOException ex) {
-            logger.error(variant.toString(), ex);
-            close();
-            throw new UncheckedIOException(ex);
+    public boolean write(List<Variant> batch) {
+        for (Variant variant : batch) {
+            write(variant);
         }
         return true;
     }
 
     @Override
-    public boolean write(List<Variant> batch) {
-        for (Variant variant : batch) {
-            try {
-                for (StudyEntry studyEntry : variant.getStudies()) {
-                    if (!includeSrc) {
-                        for (FileEntry fileEntry : studyEntry.getFiles()) {
-                            if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
-                                fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
-                            }
+    public boolean write(Variant variant) {
+        try {
+            for (StudyEntry studyEntry : variant.getStudies()) {
+                if (!includeSrc) {
+                    for (FileEntry fileEntry : studyEntry.getFiles()) {
+                        if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
+                            fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
                         }
                     }
-                    if (!includeSamples) {
-                        studyEntry.getSamplesData().clear();
-                    }
-                    if (!includeStats) {
-                        studyEntry.setStats(Collections.emptyMap());
-                    }
                 }
-                variantsGenerator.writeObject(variant);
-                variantsGenerator.writeRaw('\n');
-            } catch (IOException ex) {
-                logger.error(variant.toString(), ex);
-                close();
-                throw new UncheckedIOException(ex);
+                if (!includeSamples) {
+                    studyEntry.getSamplesData().clear();
+                }
+                if (!includeStats) {
+                    studyEntry.setStats(Collections.emptyMap());
+                }
             }
+            variantsGenerator.writeObject(variant);
+            variantsGenerator.writeRaw('\n');
+            numVariantsWritten++;
+        } catch (IOException ex) {
+            logger.error(variant.toString(), ex);
+            close();
+            throw new UncheckedIOException(ex);
         }
-
-        numVariantsWritten += batch.size();
-
         return true;
     }
 
@@ -207,11 +198,12 @@ public class VariantJsonWriter implements VariantWriter {
         try {
             if (closeStreams) {
                 variantsGenerator.close();
-                fileGenerator.close();
+                if (fileGenerator != null) {
+                    fileGenerator.close();
+                }
             }
         } catch (IOException ex) {
-            logger.error("", ex);
-            return false;
+            throw new UncheckedIOException(ex);
         }
         return true;
     }

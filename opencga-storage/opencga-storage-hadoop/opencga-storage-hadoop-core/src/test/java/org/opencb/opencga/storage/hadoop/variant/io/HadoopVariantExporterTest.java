@@ -134,20 +134,31 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
 
     @Test
     public void exportIndex() throws Exception {
-        String fileName = "some_variants.avro";
+        String fileName = "some_variants.sample_index.avro";
         URI uri = URI.create("hdfs:///" + fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
-                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0|1,1|0;NA12878:1|1"), new QueryOptions());
+                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1"), new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
+    public void exportUncompleteIndex() throws Exception {
+        String fileName = "some_variants.phoenix.avro";
+        URI uri = URI.create("hdfs:///" + fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
+                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1")
+                        .append(FORMAT.key(), "NA12877:DP>3;NA12878:DP>3"), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
 
     @Test
     public void exportIndexMultiRegion() throws Exception {
-        String fileName = "some_variants.multiregion.avro";
+        String fileName = "some_variants.sample_index.multiregion.json";
         URI uri = URI.create("hdfs:///" + fileName);
-        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
-                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0|1,1|0;NA12878:1|1")
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.JSON,
+                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1")
                 .append(REGION.key(), "1,2"), new QueryOptions());
 
         copyToLocal(fileName, uri);

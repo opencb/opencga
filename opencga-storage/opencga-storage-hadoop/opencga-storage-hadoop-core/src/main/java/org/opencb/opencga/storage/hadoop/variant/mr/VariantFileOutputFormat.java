@@ -40,18 +40,17 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static org.opencb.opencga.storage.hadoop.variant.io.VariantExporterDriver.OUTPUT_FORMAT_PARAM;
 
 /**
- * Created by mh719 on 21/12/2016.
+ * Writes variants into any format supported by the {@link VariantWriterFactory}.
  *
- * @author Matthias Haimel
+ * @see VariantWriterFactory
+ * @see VariantOutputFormat
  */
 public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWritable> {
 
-    public VariantFileOutputFormat() {
-        // do nothing
-    }
+
+    public static final String VARIANT_OUTPUT_FORMAT = "variant.output_format";
 
     @Override
     public RecordWriter<Variant, NullWritable> getRecordWriter(TaskAttemptContext job)
@@ -70,17 +69,17 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         FileSystem fs = file.getFileSystem(conf);
         FSDataOutputStream fileOut = fs.create(file, false);
         if (!isCompressed) {
-            return new VariantRecordWriter(configureWriter(job, fileOut));
+            return new VariantRecordWriter(configureWriter(job, fileOut), fileOut);
         } else {
             DataOutputStream out = new DataOutputStream(codec.createOutputStream(fileOut));
-            return new VariantRecordWriter(configureWriter(job, out));
+            return new VariantRecordWriter(configureWriter(job, out), out);
         }
     }
 
     private DataWriter<Variant> configureWriter(final TaskAttemptContext job, OutputStream fileOut) throws IOException {
 //        job.getCounter(VcfDataWriter.class.getName(), "failed").increment(0); // init
         final Configuration conf = job.getConfiguration();
-        VariantOutputFormat outputFormat = VariantOutputFormat.valueOf(conf.get(OUTPUT_FORMAT_PARAM));
+        VariantOutputFormat outputFormat = VariantOutputFormat.valueOf(conf.get(VARIANT_OUTPUT_FORMAT));
 
         DataWriter<Variant> dataWriter;
         VariantTableHelper helper = new VariantTableHelper(conf);
@@ -102,9 +101,11 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
 
     protected static class VariantRecordWriter extends RecordWriter<Variant, NullWritable> {
         private final DataWriter<Variant> writer;
+        private final OutputStream outputStream;
 
-        public VariantRecordWriter(DataWriter<Variant> writer) {
+        public VariantRecordWriter(DataWriter<Variant> writer, OutputStream outputStream) {
             this.writer = writer;
+            this.outputStream = outputStream;
         }
 
         @Override
@@ -116,6 +117,7 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         public void close(TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
             writer.post();
             writer.close();
+            outputStream.close();
         }
     }
 

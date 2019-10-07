@@ -11,7 +11,6 @@ import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.util.ToolRunner;
 import org.apache.parquet.Log;
 import org.apache.parquet.avro.AvroParquetOutputFormat;
 import org.apache.parquet.hadoop.ParquetOutputFormat;
@@ -23,7 +22,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
@@ -34,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -56,8 +55,8 @@ import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.
  */
 public class VariantExporterDriver extends AbstractVariantsTableDriver {
 
-    public static final String OUTPUT_FORMAT_PARAM = "--of";
-    public static final String OUTPUT_PARAM = "--output";
+    public static final String OUTPUT_FORMAT_PARAM = "of";
+    public static final String OUTPUT_PARAM = "output";
     private VariantOutputFormat outputFormat;
     private String outFile;
     private Query query = new Query();
@@ -68,8 +67,8 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
     protected void parseAndValidateParameters() throws IOException {
         setStudyId(-1);
         super.parseAndValidateParameters();
-        outputFormat = VariantOutputFormat.valueOf(getConf().get(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
-        outFile = getConf().get(OUTPUT_PARAM);
+        outputFormat = VariantOutputFormat.valueOf(getParam(OUTPUT_FORMAT_PARAM, "avro").toUpperCase());
+        outFile = getParam(OUTPUT_PARAM);
         if (outFile == null || outFile.isEmpty()) {
             throw new IllegalArgumentException(outFile);
         }
@@ -96,7 +95,6 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
 
         if (VariantHBaseQueryParser.isSupportedQuery(query)) {
             logger.info("Init MapReduce job reading from HBase");
-            int caching;
             boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQueryParser.validSampleIndexQuery(query);
             if (useSampleIndex) {
                 // Remove extra fields from the query
@@ -104,15 +102,10 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
 
                 logger.info("Use sample index to read from HBase");
             }
-            caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getHelper(), getMetadataManager());
             List<Scan> scans = parser.parseQueryMultiRegion(query, options);
-            for (Scan scan : scans) {
-                scan.setCaching(caching);
-                scan.setCacheBlocks(false);
-            }
-            logger.info("Set scan caching to " + caching);
+            VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
 
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scans, getMapperClass(), useSampleIndex);
         } else {
@@ -158,6 +151,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
                 job.setOutputKeyClass(Variant.class);
                 break;
         }
+        job.getConfiguration().set(VariantFileOutputFormat.VARIANT_OUTPUT_FORMAT, outputFormat.name());
 
         return job;
     }
@@ -169,6 +163,12 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
 
     public static class VariantExporterMapper extends VariantMapper<Variant, NullWritable> {
         @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(0);
+        }
+
+        @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
             context.write(value, NullWritable.get());
@@ -176,6 +176,12 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
     }
 
     public static class AvroVariantExporterMapper extends VariantMapper<AvroKey<VariantAvro>, NullWritable> {
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(0);
+        }
+
         @Override
         protected void map(Object key, Variant value, Context context) throws IOException, InterruptedException {
             context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
@@ -188,6 +194,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(0);
             silenceParquet();
         }
 
@@ -212,14 +219,8 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static void main(String[] args) {
-        int exitCode;
-        try {
-            exitCode = ToolRunner.run(new VariantExporterDriver(), args);
-        } catch (Exception e) {
-            e.printStackTrace();
-            exitCode = 1;
-        }
-        System.exit(exitCode);
+        main(args, (Class<? extends AbstractVariantsTableDriver>) MethodHandles.lookup().lookupClass());
     }
 }

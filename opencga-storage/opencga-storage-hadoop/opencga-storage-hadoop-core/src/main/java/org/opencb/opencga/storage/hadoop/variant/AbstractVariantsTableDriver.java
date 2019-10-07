@@ -141,6 +141,10 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
             metadataManager.close();
             metadataManager = null;
         }
+        if (hBaseManager != null) {
+            hBaseManager.close();
+            hBaseManager = null;
+        }
     }
 
     protected abstract Class<?> getMapperClass();

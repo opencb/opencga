@@ -241,6 +241,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
                 // Zookeeper always with the same clientPort.
 //                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
+                // Zookeeper increase max client connexions
+                conf.setInt(HConstants.ZOOKEEPER_MAX_CLIENT_CNXNS, 1000);
 
                 // Do not put up web UI
                 conf.setInt("hbase.regionserver.info.port", -1);
