@@ -59,15 +59,18 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> implements SampleDBAdaptor {
 
     private final MongoDBCollection sampleCollection;
+    private final MongoDBCollection deletedSampleCollection;
     private SampleConverter sampleConverter;
     private IndividualMongoDBAdaptor individualDBAdaptor;
 
     private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
 
-    public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection deletedSampleCollection,
+                                MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(SampleMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
+        this.deletedSampleCollection = deletedSampleCollection;
         this.sampleConverter = new SampleConverter();
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
     }
@@ -625,7 +628,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public DataResult delete(Sample sample) throws CatalogDBException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, sample));
+            Query query = new Query()
+                    .append(QueryParams.UID.key(), sample.getUid())
+                    .append(QueryParams.STUDY_UID.key(), sample.getStudyUid());
+            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find sample " + sample.getId() + " with uid " + sample.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete sample {}: {}", sample.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete sample " + sample.getId() + ": " + e.getMessage(), e.getCause());
@@ -634,19 +644,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
-        DBIterator<Sample> iterator = iterator(query, options);
+        DBIterator<Document> iterator = nativeIterator(query, new QueryOptions());
 
         DataResult<Sample> result = DataResult.empty();
-
         while (iterator.hasNext()) {
-            Sample sample = iterator.next();
+            Document sample = iterator.next();
+            String sampleId = sample.getString(QueryParams.ID.key());
+
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, sample)));
             } catch (CatalogDBException e) {
-                logger.error("Could not delete sample {}: {}", sample.getId(), e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, sample.getId(), e.getMessage()));
+                logger.error("Could not delete sample {}: {}", sampleId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, sampleId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
@@ -654,58 +663,58 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Sample sample) throws CatalogDBException {
+    DataResult<Object> privateDelete(ClientSession clientSession, Document sampleDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
 
-        logger.debug("Deleting sample {} ({})", sample.getId(), sample.getUid());
+        String sampleId = sampleDocument.getString(QueryParams.ID.key());
+        long sampleUid = sampleDocument.getLong(PRIVATE_UID);
+        long studyUid = sampleDocument.getLong(PRIVATE_STUDY_UID);
 
-        removeSampleReferences(clientSession, sample.getStudyUid(), sample.getUid());
+        logger.debug("Deleting sample {} ({})", sampleId, sampleUid);
+
+        removeSampleReferences(clientSession, studyUid, sampleUid);
 
         // Look for all the different sample versions
         Query sampleQuery = new Query()
-                .append(QueryParams.UID.key(), sample.getUid())
-                .append(QueryParams.STUDY_UID.key(), sample.getStudyUid())
+                .append(QueryParams.UID.key(), sampleUid)
+                .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(Constants.ALL_VERSIONS, true);
-        DBIterator<Sample> sampleDBIterator = iterator(sampleQuery, options);
+        DBIterator<Document> sampleDBIterator = nativeIterator(sampleQuery, QueryOptions.empty());
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+        // Delete any documents that might have been already deleted with that id
+        Bson query = new Document()
+                .append(QueryParams.ID.key(), sampleId)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        deletedSampleCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
 
         while (sampleDBIterator.hasNext()) {
-            Sample tmpSample = sampleDBIterator.next();
+            Document tmpSample = sampleDBIterator.next();
 
-            sampleQuery = new Query()
-                    .append(QueryParams.UID.key(), tmpSample.getUid())
-                    .append(QueryParams.VERSION.key(), tmpSample.getVersion())
-                    .append(QueryParams.STUDY_UID.key(), tmpSample.getStudyUid());
-            // Mark the sample as deleted
-            ObjectMap updateParams = new ObjectMap()
-                    .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                    .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                    .append(QueryParams.ID.key(), tmpSample.getId() + deleteSuffix);
+            // Set status to DELETED
+            tmpSample.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
 
-            Bson bsonQuery = parseQuery(sampleQuery);
-            Document updateDocument = parseAndValidateUpdateParams(clientSession, sampleQuery, updateParams)
-                    .toFinalUpdateDocument();
+            int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
 
-            logger.debug("Delete version {} of sample: Query: {}, update: {}", tmpSample.getVersion(),
-                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            DataResult sampleResult = sampleCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+            // Insert the document in the DELETE collection
+            deletedSampleCollection.insert(clientSession, tmpSample, null);
+            logger.debug("Inserted sample uid '{}' version '{}' in DELETE collection", sampleUid, sampleVersion);
 
-            if (sampleResult.getNumMatches() == 0) {
-                throw new CatalogDBException("Family " + tmpSample.getId() + " not found");
+            // Remove the document from the main SAMPLE collection
+            query = parseQuery(new Query()
+                    .append(QueryParams.UID.key(), sampleUid)
+                    .append(QueryParams.VERSION.key(), sampleVersion));
+            DataResult remove = sampleCollection.remove(clientSession, query, null);
+            if (remove.getNumMatches() == 0) {
+                throw new CatalogDBException("Sample " + sampleId + " not found");
+            }
+            if (remove.getNumDeleted() == 0) {
+                throw new CatalogDBException("Sample " + sampleId + " could not be deleted");
             }
 
-            if (sampleResult.getNumUpdated() == 1) {
-                logger.debug("Sample version {} successfully deleted", tmpSample.getVersion());
-            } else {
-                logger.error("Sample version {} could not be deleted", tmpSample.getVersion());
-            }
+            logger.debug("Sample uid '{}' version '{}' deleted from main SAMPLE collection", sampleUid, sampleVersion);
         }
 
-        logger.debug("Sample {}({}) deleted", sample.getId(), sample.getUid());
+        logger.debug("Sample {}({}) deleted", sampleId, sampleUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
@@ -872,11 +881,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
+    public DBIterator<Document> nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         return nativeIterator(null, query, options);
     }
 
-    DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);

@@ -62,12 +62,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements ClinicalAnalysisDBAdaptor {
 
     private final MongoDBCollection clinicalCollection;
+    private final MongoDBCollection deletedClinicalCollection;
     private ClinicalAnalysisConverter clinicalConverter;
 
-    public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
+                                          MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(ClinicalAnalysisMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalCollection = clinicalCollection;
+        this.deletedClinicalCollection = deletedClinicalCollection;
         this.clinicalConverter = new ClinicalAnalysisConverter();
     }
 

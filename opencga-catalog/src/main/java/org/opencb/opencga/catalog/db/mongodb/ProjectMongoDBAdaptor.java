@@ -60,12 +60,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAdaptor {
 
     private final MongoDBCollection userCollection;
+    private final MongoDBCollection deletedUserCollection;
     private ProjectConverter projectConverter;
 
-    public ProjectMongoDBAdaptor(MongoDBCollection userCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public ProjectMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection,
+                                 MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
+        this.deletedUserCollection = deletedUserCollection;
         this.projectConverter = new ProjectConverter();
     }
 
@@ -449,10 +452,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
         // First, we delete the studies
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-        List<Study> studyList = studyDBAdaptor.get(studyQuery, new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key()))).getResults();
+        List<Document> studyList = studyDBAdaptor.nativeGet(studyQuery, QueryOptions.empty()).getResults();
         if (studyList != null) {
-            for (Study study : studyList) {
+            for (Document study : studyList) {
                 studyDBAdaptor.privateDelete(clientSession, study);
             }
         }

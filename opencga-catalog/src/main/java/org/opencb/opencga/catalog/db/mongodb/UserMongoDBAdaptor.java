@@ -55,12 +55,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor {
 
     private final MongoDBCollection userCollection;
+    private final MongoDBCollection deletedUserCollection;
     private UserConverter userConverter;
 
-    public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection,
+                              MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(UserMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
+        this.deletedUserCollection = deletedUserCollection;
         this.userConverter = new UserConverter();
     }
 

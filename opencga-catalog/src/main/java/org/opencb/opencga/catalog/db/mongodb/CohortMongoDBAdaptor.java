@@ -58,12 +58,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> implements CohortDBAdaptor {
 
     private final MongoDBCollection cohortCollection;
+    private final MongoDBCollection deletedCohortCollection;
     private CohortConverter cohortConverter;
 
-    public CohortMongoDBAdaptor(MongoDBCollection cohortCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public CohortMongoDBAdaptor(MongoDBCollection cohortCollection, MongoDBCollection deletedCohortCollection,
+                                MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CohortMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.cohortCollection = cohortCollection;
+        this.deletedCohortCollection = deletedCohortCollection;
         this.cohortConverter = new CohortConverter();
     }
 
@@ -404,7 +407,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     @Override
     public DataResult delete(Cohort cohort) throws CatalogDBException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, cohort));
+            Query query = new Query()
+                    .append(QueryParams.UID.key(), cohort.getUid())
+                    .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid());
+            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find cohort " + cohort.getId() + " with uid " + cohort.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete cohort {}: {}", cohort.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete cohort '" + cohort.getId() + "': " + e.getMessage(), e.getCause());
@@ -413,19 +423,17 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(), QueryParams.STATUS.key()));
-        DBIterator<Cohort> iterator = iterator(query, options);
+        DBIterator<Document> iterator = nativeIterator(query, new QueryOptions());
 
         DataResult<Cohort> result = DataResult.empty();
-
         while (iterator.hasNext()) {
-            Cohort cohort = iterator.next();
+            Document cohort = iterator.next();
+            String cohortId = cohort.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, cohort)));
             } catch (CatalogDBException e) {
-                logger.error("Could not delete cohort {}: {}", cohort.getId(), e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, cohort.getId(), e.getMessage()));
+                logger.error("Could not delete cohort {}: {}", cohortId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, cohortId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
@@ -433,53 +441,50 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         return result;
     }
 
-    DataResult<Cohort> privateDelete(ClientSession clientSession, Cohort cohort) throws CatalogDBException {
+    DataResult<Cohort> privateDelete(ClientSession clientSession, Document cohortDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
-        logger.info("Deleting cohort {} ({})", cohort.getId(), cohort.getUid());
 
-        checkCohortCanBeDeleted(cohort);
+        String cohortId = cohortDocument.getString(QueryParams.ID.key());
+        long cohortUid = cohortDocument.getLong(PRIVATE_UID);
+        long studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+        logger.info("Deleting cohort {} ({})", cohortId, cohortUid);
 
-        Query tmpQuery = new Query()
-                .append(QueryParams.UID.key(), cohort.getUid())
-                .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid());
-        // Mark the cohort as deleted
-        ObjectMap updateParams = new ObjectMap()
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                .append(QueryParams.ID.key(), cohort.getId() + deleteSuffix);
+        checkCohortCanBeDeleted(cohortDocument);
 
-        Bson bsonQuery = parseQuery(tmpQuery);
-        Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, tmpQuery, QueryOptions.empty())
-                .toFinalUpdateDocument();
+        // Add status DELETED
+        cohortDocument.put(QueryParams.STATUS.key(), getMongoDBDocument(new Cohort.CohortStatus(Status.DELETED), "status"));
 
-        logger.debug("Delete cohort {} ({}): Query: {}, update: {}", cohort.getId(), cohort.getUid(),
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        DataResult result = cohortCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+        // Upsert the document into the DELETED collection
+        Bson query = new Document()
+                .append(QueryParams.ID.key(), cohortId)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        deletedCohortCollection.update(clientSession, query, cohortDocument, new QueryOptions(MongoDBCollection.UPSERT, true));
 
-        if (result.getNumMatches() == 0) {
-            throw new CatalogDBException("Cohort " + cohort.getId() + " not found");
+        // Delete the document from the main COHORT collection
+        query = new Document()
+                .append(PRIVATE_UID, cohortUid)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        DataResult remove = cohortCollection.remove(clientSession, query, null);
+        if (remove.getNumMatches() == 0) {
+            throw new CatalogDBException("Cohort " + cohortId + " not found");
         }
-        List<Event> events = new ArrayList<>();
-        if (result.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, cohort.getId(), "Cohort was already deleted"));
+        if (remove.getNumDeleted() == 0) {
+            throw new CatalogDBException("Cohort " + cohortId + " could not be deleted");
         }
-        logger.debug("Cohort {} successfully deleted", cohort.getId());
+        logger.debug("Cohort {} successfully deleted", cohortId);
 
-        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
+        return endWrite(tmpStartTime, 1, 0, 0, 1, null);
     }
 
-    private void checkCohortCanBeDeleted(Cohort cohort) throws CatalogDBException {
+    private void checkCohortCanBeDeleted(Document cohortDocument) throws CatalogDBException {
         // Check if the cohort is different from DEFAULT_COHORT
-        if (StudyEntry.DEFAULT_COHORT.equals(cohort.getId())) {
+        if (StudyEntry.DEFAULT_COHORT.equals(cohortDocument.getString(QueryParams.ID.key()))) {
             throw new CatalogDBException("Cohort " + StudyEntry.DEFAULT_COHORT + " cannot be deleted.");
         }
 
-        // Check if the cohort can be deleted
-        if (cohort.getStatus() != null && cohort.getStatus().getName() != null
-                && !cohort.getStatus().getName().equals(Cohort.CohortStatus.NONE)) {
+        if (!cohortDocument.getEmbedded(Arrays.asList(QueryParams.STATUS.key(), "name"), Cohort.CohortStatus.NONE)
+                .equals(Cohort.CohortStatus.NONE)) {
             throw new CatalogDBException("Cohort in use in storage.");
         }
     }

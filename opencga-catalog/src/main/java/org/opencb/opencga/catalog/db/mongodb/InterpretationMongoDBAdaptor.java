@@ -35,12 +35,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements InterpretationDBAdaptor {
 
     private final MongoDBCollection interpretationCollection;
+    private final MongoDBCollection deletedInterpretationCollection;
     private InterpretationConverter interpretationConverter;
 
-    public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection deletedInterpretationCollection,
+                                        MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.interpretationCollection = interpretationCollection;
+        this.deletedInterpretationCollection = deletedInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
     }
 

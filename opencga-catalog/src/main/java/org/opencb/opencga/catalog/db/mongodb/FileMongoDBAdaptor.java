@@ -63,6 +63,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implements FileDBAdaptor {
 
     private final MongoDBCollection fileCollection;
+    private final MongoDBCollection deletedFileCollection;
     private FileConverter fileConverter;
 
     public static final String REVERSE_NAME = "_reverse";
@@ -71,12 +72,15 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
      * CatalogMongoFileDBAdaptor constructor.
      *
      * @param fileCollection MongoDB connection to the file collection.
+     * @param deletedFileCollection MongoDB connection to the file collection containing the deleted documents.
      * @param dbAdaptorFactory Generic dbAdaptorFactory containing all the different collections.
      */
-    public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection,
+                              MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(FileMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
+        this.deletedFileCollection = deletedFileCollection;
         this.fileConverter = new FileConverter();
     }
 

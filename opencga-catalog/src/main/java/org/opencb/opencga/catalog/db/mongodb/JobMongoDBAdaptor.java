@@ -57,12 +57,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     private final MongoDBCollection jobCollection;
+    private final MongoDBCollection deletedJobCollection;
     private JobConverter jobConverter;
 
-    public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection,
+                             MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
+        this.deletedJobCollection = deletedJobCollection;
         this.jobConverter = new JobConverter();
     }
 
@@ -301,7 +304,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public DataResult delete(Job job) throws CatalogDBException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, job));
+            Query query = new Query()
+                    .append(QueryParams.UID.key(), job.getUid())
+                    .append(QueryParams.STUDY_UID.key(), job.getStudyUid());
+            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find job " + job.getId() + " with uid " + job.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete job {}: {}", job.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete job " + job.getId() + ": " + e.getMessage(), e.getCause());
@@ -310,19 +320,17 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
-        DBIterator<Job> iterator = iterator(query, options);
+        DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
         DataResult<Job> result = DataResult.empty();
-
         while (iterator.hasNext()) {
-            Job job = iterator.next();
+            Document job = iterator.next();
+            String jobId = job.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, job)));
             } catch (CatalogDBException e) {
-                logger.error("Could not delete job {}: {}", job.getId(), e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, job.getId(), e.getMessage()));
+                logger.error("Could not delete job {}: {}", jobId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, jobId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
@@ -330,40 +338,38 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Job job) throws CatalogDBException {
+    DataResult<Object> privateDelete(ClientSession clientSession, Document jobDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
-        logger.debug("Deleting job {} ({})", job.getId(), job.getUid());
+        String jobId = jobDocument.getString(QueryParams.ID.key());
+        long jobUid = jobDocument.getLong(PRIVATE_UID);
+        long studyUid = jobDocument.getLong(PRIVATE_STUDY_UID);
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+        logger.debug("Deleting job {} ({})", jobId, jobUid);
 
-        Query tmpQuery = new Query()
-                .append(QueryParams.UID.key(), job.getUid())
-                .append(QueryParams.STUDY_UID.key(), job.getStudyUid());
-        // Mark the job as deleted
-        ObjectMap updateParams = new ObjectMap()
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                .append(QueryParams.ID.key(), job.getId() + deleteSuffix);
+        // Add status DELETED
+        jobDocument.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
 
-        Bson bsonQuery = parseQuery(tmpQuery);
-        Document updateDocument = getValidatedUpdateParams(updateParams);
+        // Upsert the document into the DELETED collection
+        Bson query = new Document()
+                .append(QueryParams.ID.key(), jobId)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        deletedJobCollection.update(clientSession, query, jobDocument, new QueryOptions(MongoDBCollection.UPSERT, true));
 
-        logger.debug("Delete job {}: Query: {}, update: {}", job.getId(),
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        DataResult result = jobCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
-                QueryOptions.empty());
-        if (result.getNumMatches() == 0) {
-            throw new CatalogDBException("Job " + job.getId() + " not found");
+        // Delete the document from the main COHORT collection
+        query = new Document()
+                .append(PRIVATE_UID, jobUid)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        DataResult remove = jobCollection.remove(clientSession, query, null);
+        if (remove.getNumMatches() == 0) {
+            throw new CatalogDBException("Job " + jobId + " not found");
         }
-        List<Event> events = new ArrayList<>();
-        if (result.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, job.getId(), "Job was already deleted"));
+        if (remove.getNumDeleted() == 0) {
+            throw new CatalogDBException("Job " + jobId + " could not be deleted");
         }
-        logger.debug("Job {} successfully deleted", job.getId());
+        logger.debug("Job {} successfully deleted", jobId);
 
-        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
+        return endWrite(tmpStartTime, 1, 0, 0, 1, null);
     }
 
     private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {

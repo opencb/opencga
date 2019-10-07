@@ -48,19 +48,30 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     private final List<String> COLLECTIONS_LIST = Arrays.asList(
-            "user",
-            "study",
-            "file",
-            "job",
-            "sample",
-            "individual",
-            "cohort",
-            "panel",
-            "family",
-            "clinical",
-            "interpretation",
-            "metadata",
-            "audit"
+            USER_COLLECTION,
+            STUDY_COLLECTION,
+            FILE_COLLECTION,
+            JOB_COLLECTION,
+            SAMPLE_COLLECTION,
+            INDIVIDUAL_COLLECTION,
+            COHORT_COLLECTION,
+            PANEL_COLLECTION,
+            FAMILY_COLLECTION,
+            CLINICAL_ANALYSIS_COLLECTION,
+            INTERPRETATION_COLLECTION,
+            DELETED_USER_COLLECTION,
+            DELETED_STUDY_COLLECTION,
+            DELETED_FILE_COLLECTION,
+            DELETED_JOB_COLLECTION,
+            DELETED_SAMPLE_COLLECTION,
+            DELETED_INDIVIDUAL_COLLECTION,
+            DELETED_COHORT_COLLECTION,
+            DELETED_PANEL_COLLECTION,
+            DELETED_FAMILY_COLLECTION,
+            DELETED_CLINICAL_ANALYSIS_COLLECTION,
+            DELETED_INTERPRETATION_COLLECTION,
+            METADATA_COLLECTION,
+            AUDIT_COLLECTION
     );
 
     public static final String USER_COLLECTION = "user";
@@ -74,29 +85,28 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
+
+    public static final String DELETED_USER_COLLECTION = "deleted_user";
+    public static final String DELETED_STUDY_COLLECTION = "deleted_study";
+    public static final String DELETED_FILE_COLLECTION = "deleted_file";
+    public static final String DELETED_JOB_COLLECTION = "deleted_job";
+    public static final String DELETED_SAMPLE_COLLECTION = "deleted_sample";
+    public static final String DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
+    public static final String DELETED_COHORT_COLLECTION = "deleted_cohort";
+    public static final String DELETED_FAMILY_COLLECTION = "deleted_family";
+    public static final String DELETED_PANEL_COLLECTION = "deleted_panel";
+    public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
+    public static final String DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
+
     public static final String METADATA_COLLECTION = "metadata";
     public static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
     private final String database;
-    //    private final DataStoreServerAddress dataStoreServerAddress;
     private MongoDataStore mongoDataStore;
 
     private MongoDBCollection metaCollection;
-    private MongoDBCollection userCollection;
-    private MongoDBCollection studyCollection;
-    private MongoDBCollection fileCollection;
-    private MongoDBCollection sampleCollection;
-    private MongoDBCollection individualCollection;
-    private MongoDBCollection jobCollection;
-    private MongoDBCollection cohortCollection;
-    private MongoDBCollection familyCollection;
-    private MongoDBCollection datasetCollection;
-    private MongoDBCollection panelCollection;
-    private MongoDBCollection clinicalCollection;
-    private MongoDBCollection interpretationCollection;
-    private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private UserMongoDBAdaptor userDBAdaptor;
     private StudyMongoDBAdaptor studyDBAdaptor;
@@ -333,21 +343,36 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         }
 
         metaCollection = mongoDataStore.getCollection(METADATA_COLLECTION);
-        userCollection = mongoDataStore.getCollection(USER_COLLECTION);
-        studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
-        fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
-        sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
-        individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
-        jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
-        cohortCollection = mongoDataStore.getCollection(COHORT_COLLECTION);
-        auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
-        panelCollection = mongoDataStore.getCollection(PANEL_COLLECTION);
-        familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
-        clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
-        interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
+
+        MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
+        MongoDBCollection studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
+        MongoDBCollection fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
+        MongoDBCollection sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
+        MongoDBCollection individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
+        MongoDBCollection jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
+        MongoDBCollection cohortCollection = mongoDataStore.getCollection(COHORT_COLLECTION);
+        MongoDBCollection panelCollection = mongoDataStore.getCollection(PANEL_COLLECTION);
+        MongoDBCollection familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
+        MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
+        MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
+
+        MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
+        MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
+        MongoDBCollection deletedFileCollection = mongoDataStore.getCollection(DELETED_FILE_COLLECTION);
+        MongoDBCollection deletedSampleCollection = mongoDataStore.getCollection(DELETED_SAMPLE_COLLECTION);
+        MongoDBCollection deletedIndividualCollection = mongoDataStore.getCollection(DELETED_INDIVIDUAL_COLLECTION);
+        MongoDBCollection deletedJobCollection = mongoDataStore.getCollection(DELETED_JOB_COLLECTION);
+        MongoDBCollection deletedCohortCollection = mongoDataStore.getCollection(DELETED_COHORT_COLLECTION);
+        MongoDBCollection deletedPanelCollection = mongoDataStore.getCollection(DELETED_PANEL_COLLECTION);
+        MongoDBCollection deletedFamilyCollection = mongoDataStore.getCollection(DELETED_FAMILY_COLLECTION);
+        MongoDBCollection deletedClinicalCollection = mongoDataStore.getCollection(DELETED_CLINICAL_ANALYSIS_COLLECTION);
+        MongoDBCollection deletedInterpretationCollection = mongoDataStore.getCollection(DELETED_INTERPRETATION_COLLECTION);
+
+        MongoDBCollection auditCollection = mongoDataStore.getCollection(AUDIT_COLLECTION);
 
         collections = new HashMap<>();
         collections.put(METADATA_COLLECTION, metaCollection);
+
         collections.put(USER_COLLECTION, userCollection);
         collections.put(STUDY_COLLECTION, studyCollection);
         collections.put(FILE_COLLECTION, fileCollection);
@@ -355,24 +380,37 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(INDIVIDUAL_COLLECTION, individualCollection);
         collections.put(JOB_COLLECTION, jobCollection);
         collections.put(COHORT_COLLECTION, cohortCollection);
-        collections.put(AUDIT_COLLECTION, auditCollection);
         collections.put(PANEL_COLLECTION, panelCollection);
         collections.put(FAMILY_COLLECTION, familyCollection);
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
-        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, this);
-        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, this);
-        jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, this);
-        projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, this);
-        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, this);
-        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, this);
-        userDBAdaptor = new UserMongoDBAdaptor(userCollection, this);
-        cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, this);
-        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, this);
-        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, this);
-        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, this);
-        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, this);
+        collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
+        collections.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
+        collections.put(DELETED_FILE_COLLECTION, deletedFileCollection);
+        collections.put(DELETED_SAMPLE_COLLECTION, deletedSampleCollection);
+        collections.put(DELETED_INDIVIDUAL_COLLECTION, deletedIndividualCollection);
+        collections.put(DELETED_JOB_COLLECTION, deletedJobCollection);
+        collections.put(DELETED_COHORT_COLLECTION, deletedCohortCollection);
+        collections.put(DELETED_PANEL_COLLECTION, deletedPanelCollection);
+        collections.put(DELETED_FAMILY_COLLECTION, deletedFamilyCollection);
+        collections.put(DELETED_CLINICAL_ANALYSIS_COLLECTION, deletedClinicalCollection);
+        collections.put(DELETED_INTERPRETATION_COLLECTION, deletedInterpretationCollection);
+
+        collections.put(AUDIT_COLLECTION, auditCollection);
+
+        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, this);
+        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, deletedIndividualCollection, this);
+        jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, this);
+        projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, this);
+        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, deletedSampleCollection, this);
+        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, this);
+        userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, this);
+        cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, this);
+        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, deletedPanelCollection, this);
+        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, deletedFamilyCollection, this);
+        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, this);
+        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection);
     }

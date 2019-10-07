@@ -59,12 +59,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individual> implements IndividualDBAdaptor {
 
     private final MongoDBCollection individualCollection;
+    private final MongoDBCollection deletedIndividualCollection;
     private IndividualConverter individualConverter;
 
-    public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBCollection deletedIndividualCollection,
+                                    MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(IndividualMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
+        this.deletedIndividualCollection = deletedIndividualCollection;
         this.individualConverter = new IndividualConverter();
     }
 
@@ -678,7 +681,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     @Override
     public DataResult delete(Individual individual) throws CatalogDBException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, individual));
+            Query query = new Query()
+                    .append(QueryParams.UID.key(), individual.getUid())
+                    .append(QueryParams.STUDY_UID.key(), individual.getStudyUid());
+            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find individual " + individual.getId() + " with uid " + individual.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete individual {}: {}", individual.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete individual " + individual.getId() + ": " + e.getMessage(), e.getCause());
@@ -687,20 +697,18 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
-                        QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.UID.key()));
-        DBIterator<Individual> iterator = iterator(query, options);
+        DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
         DataResult<Individual> result = DataResult.empty();
 
         while (iterator.hasNext()) {
-            Individual individual = iterator.next();
+            Document individual = iterator.next();
+            String individualId = individual.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, individual)));
             } catch (CatalogDBException e) {
-                logger.error("Could not delete individual {}: {}", individual.getId(), e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, individual.getId(), e.getMessage()));
+                logger.error("Could not delete individual {}: {}", individualId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, individualId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
@@ -708,24 +716,29 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Individual individual) throws CatalogDBException {
+    DataResult<Object> privateDelete(ClientSession clientSession, Document individualDocument) throws CatalogDBException {
         FamilyMongoDBAdaptor familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
 
+        String individualId = individualDocument.getString(QueryParams.ID.key());
+        long individualUid = individualDocument.getLong(PRIVATE_UID);
+        long studyUid = individualDocument.getLong(PRIVATE_STUDY_UID);
+
         long tmpStartTime = startQuery();
-        logger.debug("Deleting individual {} ({})", individual.getId(), individual.getUid());
+        logger.debug("Deleting individual {} ({})", individualId, individualUid);
 
         // Remove individual reference from the list of samples
-        if (individual.getSamples() != null) {
-            for (Sample sample : individual.getSamples()) {
+        List<Document> sampleList = individualDocument.getList(QueryParams.SAMPLES.key(), Document.class);
+        if (sampleList != null && !sampleList.isEmpty()) {
+            for (Document sample : sampleList) {
                 // We set the individual id for those samples to ""
-                updateIndividualFromSampleCollection(clientSession, individual.getStudyUid(), sample.getUid(), "");
+                updateIndividualFromSampleCollection(clientSession, studyUid, sample.getLong(PRIVATE_UID), "");
             }
         }
 
         // Remove individual from any list of members it might be part of
         Query familyQuery = new Query()
-                .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid())
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
+                .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individualUid)
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(Constants.ALL_VERSIONS, true);
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
@@ -738,7 +751,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
             List<Individual> members = new ArrayList<>();
             for (Individual member : family.getMembers()) {
-                if (member.getUid() != individual.getUid()) {
+                if (member.getUid() != individualUid) {
                     members.add(member);
                 }
             }
@@ -764,50 +777,45 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // Look for all the different individual versions
         Query individualQuery = new Query()
-                .append(QueryParams.UID.key(), individual.getUid())
-                .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
+                .append(QueryParams.UID.key(), individualUid)
+                .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(Constants.ALL_VERSIONS, true);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
-                        QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.UID.key()));
-        DBIterator<Individual> individualDBIterator = iterator(individualQuery, options);
+        DBIterator<Document> individualDBIterator = nativeIterator(individualQuery, QueryOptions.empty());
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+        // Delete any documents that might have been already deleted with that id
+        Bson query = new Document()
+                .append(QueryParams.ID.key(), individualId)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        deletedIndividualCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
 
         while (individualDBIterator.hasNext()) {
-            Individual tmpIndividual = individualDBIterator.next();
+            Document tmpIndividual = individualDBIterator.next();
 
-            individualQuery = new Query()
-                    .append(QueryParams.UID.key(), tmpIndividual.getUid())
-                    .append(QueryParams.VERSION.key(), tmpIndividual.getVersion())
-                    .append(QueryParams.STUDY_UID.key(), tmpIndividual.getStudyUid());
-            // Mark the individual as deleted
-            ObjectMap updateParams = new ObjectMap()
-                    .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                    .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                    .append(QueryParams.ID.key(), tmpIndividual.getId() + deleteSuffix);
+            // Set status to DELETED
+            tmpIndividual.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
 
-            Bson bsonQuery = parseQuery(individualQuery);
-            Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, individualQuery,
-                    QueryOptions.empty()).toFinalUpdateDocument();
+            int individualVersion = tmpIndividual.getInteger(QueryParams.VERSION.key());
 
-            logger.debug("Delete version {} of individual: Query: {}, update: {}", tmpIndividual.getVersion(),
-                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            DataResult result = individualCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+            // Insert the document in the DELETE collection
+            deletedIndividualCollection.insert(clientSession, tmpIndividual, null);
+            logger.debug("Inserted individual uid '{}' version '{}' in DELETE collection", individualUid, individualVersion);
 
-            if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Individual " + tmpIndividual.getId() + " not found");
+            // Remove the document from the main INDIVIDUAL collection
+            query = parseQuery(new Query()
+                    .append(QueryParams.UID.key(), individualUid)
+                    .append(QueryParams.VERSION.key(), individualVersion));
+            DataResult remove = individualCollection.remove(clientSession, query, null);
+            if (remove.getNumMatches() == 0) {
+                throw new CatalogDBException("Individual " + individualId + " not found");
+            }
+            if (remove.getNumDeleted() == 0) {
+                throw new CatalogDBException("Individual " + individualId + " could not be deleted");
             }
 
-            if (result.getNumUpdated() == 1) {
-                logger.debug("Individual version {} successfully deleted", tmpIndividual.getVersion());
-            } else {
-                logger.error("Individual version {} could not be deleted", tmpIndividual.getVersion());
-            }
+            logger.debug("Individual uid '{}' version '{}' deleted from main INDIVIDUAL collection", individualUid, individualVersion);
         }
 
-        logger.debug("Individual {}({}) deleted", individual.getId(), individual.getUid());
+        logger.debug("Individual {}({}) deleted", individualId, individualUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 

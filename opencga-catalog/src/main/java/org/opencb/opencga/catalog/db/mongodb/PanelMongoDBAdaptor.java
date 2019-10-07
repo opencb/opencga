@@ -53,12 +53,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdaptor {
 
     private final MongoDBCollection panelCollection;
+    private final MongoDBCollection deletedPanelCollection;
     private PanelConverter panelConverter;
 
-    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection deletedPanelCollection,
+                               MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
+        this.deletedPanelCollection = deletedPanelCollection;
         this.panelConverter = new PanelConverter();
     }
 
@@ -504,7 +507,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public DataResult delete(Panel panel) throws CatalogDBException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, panel));
+            Query query = new Query()
+                    .append(QueryParams.UID.key(), panel.getUid())
+                    .append(QueryParams.STUDY_UID.key(), panel.getStudyUid());
+            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find panel " + panel.getId() + " with uid " + panel.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete panel {}: {}", panel.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete panel '" + panel.getId() + "': " + e.getMessage(), e.getCause());
@@ -513,19 +523,17 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
-        DBIterator<Panel> iterator = iterator(query, options);
+        DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
         DataResult<Panel> result = DataResult.empty();
-
         while (iterator.hasNext()) {
-            Panel panel = iterator.next();
+            Document panel = iterator.next();
+            String panelId = panel.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, panel)));
             } catch (CatalogDBException e) {
-                logger.error("Could not delete panel {}: {}", panel.getId(), e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, panel.getId(), e.getMessage()));
+                logger.error("Could not delete panel {}: {}", panelId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, panelId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
@@ -533,41 +541,57 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return result;
     }
 
-    private DataResult<Object> privateDelete(ClientSession clientSession, Panel panel) throws CatalogDBException {
+    private DataResult<Object> privateDelete(ClientSession clientSession, Document panelDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
-        logger.debug("Deleting panel {} ({})", panel.getId(), panel.getUid());
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+        String panelId = panelDocument.getString(QueryParams.ID.key());
+        long panelUid = panelDocument.getLong(PRIVATE_UID);
+        long studyUid = panelDocument.getLong(PRIVATE_STUDY_UID);
 
+        logger.debug("Deleting panel {} ({})", panelId, panelUid);
+
+        // Look for all the different panel versions
         Query panelQuery = new Query()
-                .append(QueryParams.UID.key(), panel.getUid())
-                .append(QueryParams.VERSION.key(), panel.getVersion())
-                .append(QueryParams.STUDY_UID.key(), panel.getStudyUid());
-        // Mark the panel as deleted
-        ObjectMap updateParams = new ObjectMap()
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                .append(QueryParams.ID.key(), panel.getId() + deleteSuffix);
+                .append(QueryParams.UID.key(), panelUid)
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(Constants.ALL_VERSIONS, true);
+        DBIterator<Document> panelDBIterator = nativeIterator(panelQuery, QueryOptions.empty());
 
-        Bson bsonQuery = parseQuery(panelQuery);
-        Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, panelQuery);
+        // Delete any documents that might have been already deleted with that id
+        Bson query = new Document()
+                .append(QueryParams.ID.key(), panelId)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        deletedPanelCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
 
-        logger.debug("Delete panel '{}': Query: {}, update: {}", panel.getId(),
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        DataResult result = panelCollection.update(clientSession, bsonQuery, new Document("$set", updateDocument),
-                QueryOptions.empty());
+        while (panelDBIterator.hasNext()) {
+            Document tmpPanel = panelDBIterator.next();
 
-        if (result.getNumMatches() == 0) {
-            throw new CatalogDBException("Panel " + panel.getId() + " not found");
+            // Set status to DELETED
+            tmpPanel.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+
+            int panelVersion = tmpPanel.getInteger(QueryParams.VERSION.key());
+
+            // Insert the document in the DELETE collection
+            deletedPanelCollection.insert(clientSession, tmpPanel, null);
+            logger.debug("Inserted panel uid '{}' version '{}' in DELETE collection", panelUid, panelVersion);
+
+            // Remove the document from the main INDIVIDUAL collection
+            query = parseQuery(new Query()
+                    .append(QueryParams.UID.key(), panelUid)
+                    .append(QueryParams.VERSION.key(), panelVersion));
+            DataResult remove = panelCollection.remove(clientSession, query, null);
+            if (remove.getNumMatches() == 0) {
+                throw new CatalogDBException("Panel " + panelId + " not found");
+            }
+            if (remove.getNumDeleted() == 0) {
+                throw new CatalogDBException("Panel " + panelId + " could not be deleted");
+            }
+
+            logger.debug("Panel uid '{}' version '{}' deleted from main PANEL collection", panelUid, panelVersion);
         }
-        List<Event> events = new ArrayList<>();
-        if (result.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, panel.getId(), "Panel was already deleted"));
-        }
-        logger.debug("Panel {} successfully deleted", panel.getId());
 
-        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
+        logger.debug("Panel {}({}) deleted", panelId, panelUid);
+        return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
     @Override

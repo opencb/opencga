@@ -61,12 +61,15 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> implements FamilyDBAdaptor {
 
     private final MongoDBCollection familyCollection;
+    private final MongoDBCollection deletedFamilyCollection;
     private FamilyConverter familyConverter;
 
-    public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBCollection deletedFamilyCollection,
+                                MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(FamilyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.familyCollection = familyCollection;
+        this.deletedFamilyCollection = deletedFamilyCollection;
         this.familyConverter = new FamilyConverter();
     }
 
@@ -495,7 +498,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public DataResult delete(Family family) throws CatalogDBException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, family));
+            Query query = new Query()
+                    .append(QueryParams.UID.key(), family.getUid())
+                    .append(QueryParams.STUDY_UID.key(), family.getStudyUid());
+            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find family " + family.getId() + " with uid " + family.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete family {}: {}", family.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete family " + family.getId() + ": " + e.getMessage(), e.getCause());
@@ -504,19 +514,18 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
-        DBIterator<Family> iterator = iterator(query, options);
+        DBIterator<Document> iterator = nativeIterator(query, new QueryOptions());
 
         DataResult<Family> result = DataResult.empty();
 
         while (iterator.hasNext()) {
-            Family family = iterator.next();
+            Document family = iterator.next();
+            String familyId = family.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, family)));
             } catch (CatalogDBException e) {
-                logger.error("Could not delete family {}: {}", family.getId(), e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, family.getId(), e.getMessage()));
+                logger.error("Could not delete family {}: {}", familyId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, familyId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
@@ -524,55 +533,56 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Family family) throws CatalogDBException {
+    DataResult<Object> privateDelete(ClientSession clientSession, Document familyDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
-        logger.debug("Deleting family {} ({})", family.getId(), family.getUid());
+
+        String familyId = familyDocument.getString(QueryParams.ID.key());
+        long familyUid = familyDocument.getLong(PRIVATE_UID);
+        long studyUid = familyDocument.getLong(PRIVATE_STUDY_UID);
+
+        logger.debug("Deleting family {} ({})", familyId, familyUid);
 
         // Look for all the different family versions
         Query familyQuery = new Query()
-                .append(QueryParams.UID.key(), family.getUid())
-                .append(QueryParams.STUDY_UID.key(), family.getStudyUid())
+                .append(QueryParams.UID.key(), familyUid)
+                .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(Constants.ALL_VERSIONS, true);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
-        DBIterator<Family> familyDbIterator = iterator(clientSession, familyQuery, options);
+        DBIterator<Document> familyDbIterator = nativeIterator(clientSession, familyQuery, new QueryOptions());
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+        // Delete any documents that might have been already deleted with that id
+        Bson query = new Document()
+                .append(QueryParams.ID.key(), familyId)
+                .append(PRIVATE_STUDY_UID, studyUid);
+        deletedFamilyCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
 
         while (familyDbIterator.hasNext()) {
-            Family tmpFamily = familyDbIterator.next();
+            Document tmpFamily = familyDbIterator.next();
 
-            familyQuery = new Query()
-                    .append(QueryParams.UID.key(), tmpFamily.getUid())
-                    .append(QueryParams.VERSION.key(), tmpFamily.getVersion())
-                    .append(QueryParams.STUDY_UID.key(), tmpFamily.getStudyUid());
-            // Mark the family as deleted
-            ObjectMap updateParams = new ObjectMap()
-                    .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                    .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                    .append(QueryParams.ID.key(), tmpFamily.getId() + deleteSuffix);
+            // Set status to DELETED
+            tmpFamily.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
 
-            Bson bsonQuery = parseQuery(familyQuery);
-            Document updateDocument = parseAndValidateUpdateParams(clientSession, updateParams, familyQuery)
-                    .toFinalUpdateDocument();
+            int sampleVersion = tmpFamily.getInteger(QueryParams.VERSION.key());
 
-            logger.debug("Delete version {} of family: Query: {}, update: {}", tmpFamily.getVersion(),
-                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            DataResult result = familyCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
+            // Insert the document in the DELETE collection
+            deletedFamilyCollection.insert(clientSession, tmpFamily, null);
+            logger.debug("Inserted family uid '{}' version '{}' in DELETE collection", familyUid, sampleVersion);
 
-            if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Family " + tmpFamily.getId() + " not found");
+            // Remove the document from the main SAMPLE collection
+            query = parseQuery(new Query()
+                    .append(QueryParams.UID.key(), familyUid)
+                    .append(QueryParams.VERSION.key(), sampleVersion));
+            DataResult remove = familyCollection.remove(clientSession, query, null);
+            if (remove.getNumMatches() == 0) {
+                throw new CatalogDBException("Family " + familyId + " not found");
+            }
+            if (remove.getNumDeleted() == 0) {
+                throw new CatalogDBException("Family " + familyId + " could not be deleted");
             }
 
-            if (result.getNumUpdated() == 1) {
-                logger.debug("Family version {} successfully deleted", tmpFamily.getVersion());
-            } else {
-                logger.error("Family version {} could not be deleted", tmpFamily.getVersion());
-            }
+            logger.debug("Family uid '{}' version '{}' deleted from main SAMPLE collection", familyUid, sampleVersion);
         }
 
-        logger.debug("Family {}({}) deleted", family.getId(), family.getUid());
+        logger.debug("Family {}({}) deleted", familyId, familyUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 

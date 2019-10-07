@@ -63,13 +63,16 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdaptor {
 
     private final MongoDBCollection studyCollection;
+    private final MongoDBCollection deletedStudyCollection;
     private StudyConverter studyConverter;
     private VariableSetConverter variableSetConverter;
 
-    public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBCollection deletedStudyCollection,
+                               MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;
+        this.deletedStudyCollection = deletedStudyCollection;
         this.studyConverter = new StudyConverter();
         this.variableSetConverter = new VariableSetConverter();
     }
@@ -1372,7 +1375,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public DataResult delete(Study study) throws CatalogDBException {
         try {
-            return runTransaction(clientSession -> privateDelete(clientSession, study));
+            Query query = new Query(QueryParams.UID.key(), study.getUid());
+            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Could not find study " + study.getId() + " with uid " + study.getUid());
+            }
+            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
         } catch (CatalogDBException e) {
             logger.error("Could not delete study {}: {}", study.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete study " + study.getId() + ": " + e.getMessage(), e.getCause());
@@ -1381,57 +1389,57 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public DataResult delete(Query query) throws CatalogDBException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
-        DBIterator<Study> iterator = iterator(query, options);
+        DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
         DataResult<Study> result = DataResult.empty();
-
         while (iterator.hasNext()) {
-            Study study = iterator.next();
+            Document study = iterator.next();
+            String studyId = study.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, study)));
             } catch (CatalogDBException e) {
-                logger.error("Could not delete study {}: {}", study.getId(), e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, study.getId(), e.getMessage()));
+                logger.error("Could not delete study {}: {}", studyId, e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, studyId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Study study) throws CatalogDBException {
+    DataResult<Object> privateDelete(ClientSession clientSession, Document studyDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
-        logger.debug("Deleting study {} ({})", study.getId(), study.getUid());
+
+        String studyId = studyDocument.getString(QueryParams.ID.key());
+        long studyUid = studyDocument.getLong(PRIVATE_UID);
+        long projectUid = studyDocument.getEmbedded(Arrays.asList(PRIVATE_PROJECT, PRIVATE_UID), -1L);
+
+        logger.debug("Deleting study {} ({})", studyId, studyUid);
 
         // TODO: In the future, we will want to delete also all the files, samples, cohorts... associated
 
-        String deleteSuffix = INTERNAL_DELIMITER + "DELETED_" + TimeUtils.getTime();
+        // Add status DELETED
+        studyDocument.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
 
-        Query studyQuery = new Query(QueryParams.UID.key(), study.getUid());
-        // Mark the study as deleted
-        ObjectMap updateParams = new ObjectMap()
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED)
-                .append(QueryParams.STATUS_DATE.key(), TimeUtils.getTime())
-                .append(QueryParams.ID.key(), study.getId() + deleteSuffix);
+        // Upsert the document into the DELETED collection
+        Bson query = new Document()
+                .append(QueryParams.ID.key(), studyId)
+                .append(PRIVATE_PROJECT_UID, projectUid);
+        deletedStudyCollection.update(clientSession, query, studyDocument, new QueryOptions(MongoDBCollection.UPSERT, true));
 
-        Bson bsonQuery = parseQuery(studyQuery);
-        Document updateDocument = getDocumentUpdateParams(updateParams);
-
-        logger.debug("Delete study {}: Query: {}, update: {}", study.getId(),
-                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        DataResult result = studyCollection.update(clientSession, bsonQuery, updateDocument, QueryOptions.empty());
-
-        if (result.getNumMatches() == 0) {
-            throw new CatalogDBException("Study " + study.getId() + " not found");
+        // Delete the document from the main STUDY collection
+        query = new Document()
+                .append(PRIVATE_UID, studyUid)
+                .append(PRIVATE_PROJECT_UID, projectUid);
+        DataResult remove = studyCollection.remove(clientSession, query, null);
+        if (remove.getNumMatches() == 0) {
+            throw new CatalogDBException("Study " + studyId + " not found");
         }
-        List<Event> events = new ArrayList<>();
-        if (result.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, study.getId(), "Study was already deleted"));
+        if (remove.getNumDeleted() == 0) {
+            throw new CatalogDBException("Study " + studyId + " could not be deleted");
         }
-        logger.debug("Study {} successfully deleted", study.getId());
+        logger.debug("Study {} successfully deleted", studyId);
 
-        return endWrite(tmpStartTime, 1, 0, 0, 1, events);
+        return endWrite(tmpStartTime, 1, 0, 0, 1, null);
     }
 
     DataResult setStatus(Query query, String status) throws CatalogDBException {
