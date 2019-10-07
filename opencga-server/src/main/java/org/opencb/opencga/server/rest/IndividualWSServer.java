@@ -98,16 +98,18 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
-    public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids up to a maximum of 100", required = true)
-                                   @PathParam("individuals") String individualStr,
-                                   @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                   @QueryParam("study") String studyStr,
-                                   @ApiParam(value = "Individual version") @QueryParam("version") Integer version,
-                                   @ApiParam(value = "Fetch all individual versions", defaultValue = "false")
-                                   @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
-                                   @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                           + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                           defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response infoIndividual(
+            @ApiParam(value = "Comma separated list of individual names or ids up to a maximum of 100", required = true)
+                @PathParam("individuals") String individualStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Individual version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Fetch all individual versions", defaultValue = "false")
+                @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("individuals");
@@ -155,6 +157,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") String karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus") String affectationStatus,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")

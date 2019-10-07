@@ -62,6 +62,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual
 
+        DELETED("deleted", BOOLEAN, ""),
+
         DISORDERS("disorders", TEXT_ARRAY, ""),
         DISORDERS_ID("disorders.id", TEXT, ""),
 

@@ -55,6 +55,8 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER, ""),
 
+        DELETED("deleted", BOOLEAN, ""),
+
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
 //        VARIABLE_NAME("variableName", TEXT, ""),
 

@@ -20,6 +20,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -162,14 +163,19 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response info(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
-                         @PathParam("jobIds") String jobIds,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response info(
+            @ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
+            @PathParam("jobIds") String jobIds,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIds);
-            return createOkResponse(catalogManager.getJobManager().get(idList, queryOptions, silent, sessionId));
+            return createOkResponse(catalogManager.getJobManager().get(studyStr, idList, new Query("deleted", deleted), queryOptions,
+                    silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -192,10 +198,11 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
             @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
             @ApiParam(value = "Comma separated list of input file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,

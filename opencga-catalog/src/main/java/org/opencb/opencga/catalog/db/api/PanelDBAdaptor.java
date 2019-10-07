@@ -81,6 +81,8 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
 
         AUTHOR("source.author", TEXT, ""),
 
+        DELETED("deleted", BOOLEAN, ""),
+
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
         STUDY_UID("studyUid", INTEGER_ARRAY, "");
 

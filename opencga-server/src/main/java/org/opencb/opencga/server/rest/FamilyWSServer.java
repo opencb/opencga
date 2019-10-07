@@ -80,6 +80,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Family version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
@@ -121,6 +122,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
                 @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
             @QueryParam("annotationsetName") String annotationsetName,
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")

@@ -93,6 +93,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all panel versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
                     boolean allVersions,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
@@ -138,6 +139,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
             @ApiParam(value = "Panel description") @QueryParam("description") String description,
             @ApiParam(value = "Panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")

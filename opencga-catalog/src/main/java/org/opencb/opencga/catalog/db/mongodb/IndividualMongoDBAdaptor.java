@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -246,7 +247,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     DataResult<Long> count(ClientSession clientSession, Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        filterOutDeleted(query);
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS : studyPermissions);
@@ -265,12 +265,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
         return individualCollection.count(clientSession, bson);
-    }
-
-    private void filterOutDeleted(Query query) {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        }
     }
 
     @Override
@@ -526,8 +520,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
             Query tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
-                    .append(QueryParams.STUDY_UID.key(), studyId)
-                    .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+                    .append(QueryParams.STUDY_UID.key(), studyId);
             DataResult<Long> count = count(clientSession, tmpQuery);
             if (count.getResults().get(0) > 0) {
                 throw new CatalogDBException("Cannot set id for individual. An individual with { id: '"
@@ -828,28 +821,18 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     @Override
     public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return setStatus(query, Status.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        // Check if the cohort is active
-        Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        if (count(query).first() == 0) {
-            throw new CatalogDBException("The individual {" + id + "} is not deleted");
-        }
-
-        // Change the status of the cohort to deleted
-        return setStatus(id, File.FileStatus.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
         checkId(individualId);
-        Query query = new Query(QueryParams.UID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+        Query query = new Query(QueryParams.UID.key(), individualId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(individualId));
         return get(query, options);
     }
@@ -860,8 +843,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         long studyId = getStudyId(individualId);
         Query query = new Query()
                 .append(QueryParams.UID.key(), individualId)
-                .append(QueryParams.STUDY_UID.key(), studyId)
-                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+                .append(QueryParams.STUDY_UID.key(), studyId);
         return get(query, options, userId);
     }
 
@@ -1063,7 +1045,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     Entity.INDIVIDUAL.name());
         }
 
-        filterOutDeleted(query);
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
 
         QueryOptions qOptions;
@@ -1080,27 +1061,28 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
 
         logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return individualCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        if (!query.getBoolean(QueryParams.DELETED.key())) {
+            return individualCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        } else {
+            return deletedIndividualCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        }
     }
 
 
     @Override
     public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return rank(individualCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, fields, "name", options);
     }
@@ -1119,7 +1101,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name(),
                     Entity.INDIVIDUAL.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
@@ -1138,7 +1119,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name(),
                     Entity.INDIVIDUAL.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
@@ -1162,6 +1142,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Document annotationDocument = null;
 
         Query queryCopy = new Query(query);
+        queryCopy.remove(QueryParams.DELETED.key());
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
@@ -1317,14 +1298,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     public MongoDBCollection getIndividualCollection() {
         return individualCollection;
-    }
-
-    DataResult setStatus(long individualId, String status) throws CatalogDBException {
-        return update(individualId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    DataResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
 }

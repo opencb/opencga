@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -190,7 +191,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     private DataResult<Long> count(ClientSession clientSession, final Query query, final String user,
                                    final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        filterOutDeleted(query);
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_COHORTS : studyPermissions);
 
@@ -203,12 +203,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Cohort count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return cohortCollection.count(clientSession, bson);
-    }
-
-    private void filterOutDeleted(Query query) {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        }
     }
 
     @Override
@@ -459,7 +453,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Bson query = new Document()
                 .append(QueryParams.ID.key(), cohortId)
                 .append(PRIVATE_STUDY_UID, studyUid);
-        deletedCohortCollection.update(clientSession, query, cohortDocument, new QueryOptions(MongoDBCollection.UPSERT, true));
+        deletedCohortCollection.update(clientSession, query, new Document("$set", cohortDocument),
+                new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main COHORT collection
         query = new Document()
@@ -489,14 +484,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
     }
 
-    DataResult setStatus(long cohortId, String status) throws CatalogDBException {
-        return update(cohortId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    DataResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
     @Override
     public DataResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Operation not yet supported.");
@@ -509,30 +496,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        // Check if the cohort is active
-        Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        if (count(query).first() == 0) {
-            throw new CatalogDBException("The cohort {" + id + "} is not deleted");
-        }
-
-        // Change the status of the cohort to deleted
-        return setStatus(id, Cohort.CohortStatus.NONE);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return setStatus(query, Cohort.CohortStatus.NONE);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.UID.key(), cohortId)
-                .append(QueryParams.STUDY_UID.key(), getStudyId(cohortId))
-                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+                .append(QueryParams.STUDY_UID.key(), getStudyId(cohortId));
         return get(query, options);
     }
 
@@ -713,7 +689,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name(), Entity.COHORT.name());
         }
 
-        filterOutDeleted(query);
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
 
         QueryOptions qOptions;
@@ -727,7 +702,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
 
         logger.debug("Cohort query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return cohortCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        if (!query.getBoolean(QueryParams.DELETED.key())) {
+            return cohortCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        } else {
+            return deletedCohortCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        }
     }
 
     private Document getStudyDocument(Query query) throws CatalogDBException {
@@ -742,21 +721,18 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return rank(cohortCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(cohortCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(cohortCollection, bsonQuery, fields, "name", options);
     }
@@ -774,7 +750,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name(), Entity.COHORT.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(cohortCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
@@ -792,7 +767,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name(), Entity.COHORT.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(cohortCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
@@ -823,11 +797,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         List<Bson> andBsonList = new ArrayList<>();
         Document annotationDocument = null;
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+        Query finalQuery = new Query(query);
+        finalQuery.remove(QueryParams.DELETED.key());
 
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), finalQuery);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), finalQuery);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), finalQuery);
+
+        for (Map.Entry<String, Object> entry : finalQuery.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
@@ -841,46 +818,46 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             try {
                 switch (queryParam) {
                     case UID:
-                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case STUDY_UID:
-                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case BATTRIBUTES:
                         String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case NATTRIBUTES:
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case ANNOTATION:
                         if (annotationDocument == null) {
-                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
-                                    query.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
+                            annotationDocument = createAnnotationQuery(finalQuery.getString(QueryParams.ANNOTATION.key()),
+                                    finalQuery.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
 //                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
 //                                    query.getLong(QueryParams.VARIABLE_SET_UID.key()),
 //                                    query.getString(QueryParams.ANNOTATION_SET_NAME.key()));
                         }
                         break;
                     case SAMPLE_UIDS:
-                        addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
+                        addQueryFilter(queryParam.key(), queryParam.key(), finalQuery, queryParam.type(),
                                 MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
                         break;
                     case CREATION_DATE:
-                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case MODIFICATION_DATE:
-                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case STATUS_NAME:
                         // Convert the status to a positive status
-                        query.put(queryParam.key(),
-                                Status.getPositiveStatus(Cohort.CohortStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        finalQuery.put(queryParam.key(),
+                                Status.getPositiveStatus(Cohort.CohortStatus.STATUS_LIST, finalQuery.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     case UUID:
                     case ID:
@@ -892,7 +869,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case DESCRIPTION:
                     case ANNOTATION_SETS:
 //                    case VARIABLE_NAME:
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     default:
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());

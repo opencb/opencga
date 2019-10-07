@@ -126,19 +126,22 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = Constants.FLATTENED_ANNOTATIONS, value = "Flatten the annotations?", defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of file ids or names up to a maximum of 100")
-                         @PathParam(value = "files") String fileStr,
-                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response info(
+            @ApiParam(value = "Comma separated list of file ids or names up to a maximum of 100")
+                @PathParam(value = "files") String fileStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             query.remove("study");
             query.remove("files");
 
             List<String> idList = getIdList(fileStr);
-            List<DataResult<File>> fileQueryResult = fileManager.get(studyStr, idList, queryOptions, silent, sessionId);
+            List<DataResult<File>> fileQueryResult = fileManager.get(studyStr, idList, new Query("deleted", deleted), queryOptions, silent,
+                    sessionId);
             return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -500,6 +503,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", hidden = true) @QueryParam("jobId") String jobIdOld,
             @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
             @QueryParam("nattributes") String nattributes,
@@ -880,13 +884,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
     @Deprecated
     public Response linkGet(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
-                         @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId") String studyIdStr,
-                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
-                         @ApiParam(value = "Description") @QueryParam("description") String description,
-                         @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
-                         @ApiParam(value = "Size of the folder/file") @QueryParam("size") long size,
-                         @ApiParam(value = "Checksum of something") @QueryParam("checksum") String checksum) {
+                            @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId") String studyIdStr,
+                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+                            @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
+                            @ApiParam(value = "Description") @QueryParam("description") String description,
+                            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
+                            @ApiParam(value = "Size of the folder/file") @QueryParam("size") long size,
+                            @ApiParam(value = "Checksum of something") @QueryParam("checksum") String checksum) {
         try {
 
             if (StringUtils.isNotEmpty(studyIdStr)) {

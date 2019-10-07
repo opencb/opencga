@@ -1088,12 +1088,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         DataResult deleteResult = catalogManager.getCohortManager().delete(studyId,
                 new Query(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid()), null, sessionIdUser);
-
         assertEquals(1, deleteResult.getNumDeleted());
 
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid())
-                .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Cohort.CohortStatus.READY);
+                .append(CohortDBAdaptor.QueryParams.DELETED.key(), true);
         Cohort cohort = catalogManager.getCohortManager().search(studyId, query, null, sessionIdUser).first();
         assertEquals(Status.DELETED, cohort.getStatus().getName());
     }

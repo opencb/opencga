@@ -1335,35 +1335,37 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
+    @Deprecated
     @Override
     public DataResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        // Check the study is active
-        Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
-        if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
-            Study study = get(query, options).first();
-            throw new CatalogDBException("The study {" + id + "} was already " + study.getStatus().getName());
-        }
-
-        // If we don't find the force parameter, we check first if the user does not have an active project.
-        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-            checkCanDelete(id);
-        }
-
-        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
-            // Delete the active studies (if any)
-            query = new Query(PRIVATE_STUDY_UID, id);
-            dbAdaptorFactory.getCatalogFileDBAdaptor().setStatus(query, Status.DELETED);
-            dbAdaptorFactory.getCatalogJobDBAdaptor().setStatus(query, Status.DELETED);
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().setStatus(query, Status.DELETED);
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().setStatus(query, Status.DELETED);
-            dbAdaptorFactory.getCatalogCohortDBAdaptor().setStatus(query, Status.DELETED);
-        }
-
-        // Change the status of the project to deleted
-        return setStatus(id, Status.DELETED);
+        throw new NotImplementedException("Use other delete method");
+//        checkId(id);
+//        // Check the study is active
+//        Query query = new Query(QueryParams.UID.key(), id);
+//        if (count(query).first() == 0) {
+//            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
+//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
+//            Study study = get(query, options).first();
+//            throw new CatalogDBException("The study {" + id + "} was already " + study.getStatus().getName());
+//        }
+//
+//        // If we don't find the force parameter, we check first if the user does not have an active project.
+//        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+//            checkCanDelete(id);
+//        }
+//
+//        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+//            // Delete the active studies (if any)
+//            query = new Query(PRIVATE_STUDY_UID, id);
+//            dbAdaptorFactory.getCatalogFileDBAdaptor().setStatus(query, Status.DELETED);
+//            dbAdaptorFactory.getCatalogJobDBAdaptor().setStatus(query, Status.DELETED);
+//            dbAdaptorFactory.getCatalogSampleDBAdaptor().setStatus(query, Status.DELETED);
+//            dbAdaptorFactory.getCatalogIndividualDBAdaptor().setStatus(query, Status.DELETED);
+//            dbAdaptorFactory.getCatalogCohortDBAdaptor().setStatus(query, Status.DELETED);
+//        }
+//
+//        // Change the status of the project to deleted
+//        return setStatus(id, Status.DELETED);
     }
 
     @Deprecated
@@ -1424,7 +1426,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Bson query = new Document()
                 .append(QueryParams.ID.key(), studyId)
                 .append(PRIVATE_PROJECT_UID, projectUid);
-        deletedStudyCollection.update(clientSession, query, studyDocument, new QueryOptions(MongoDBCollection.UPSERT, true));
+        deletedStudyCollection.update(clientSession, query, new Document("$set", studyDocument),
+                new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main STUDY collection
         query = new Document()
@@ -1442,51 +1445,43 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return endWrite(tmpStartTime, 1, 0, 0, 1, null);
     }
 
-    DataResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    DataResult setStatus(long studyId, String status) throws CatalogDBException {
-        return update(studyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    /**
-     * Checks whether the studyId has any active document in the study.
-     *
-     * @param studyId study id.
-     * @throws CatalogDBException when the study has active documents.
-     */
-    private void checkCanDelete(long studyId) throws CatalogDBException {
-        checkId(studyId);
-        Query query = new Query(PRIVATE_STUDY_UID, studyId)
-                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-
-        Long count = dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first();
-        if (count > 0) {
-            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
-                    + " files in use.");
-        }
-        count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query).first();
-        if (count > 0) {
-            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
-                    + " jobs in use.");
-        }
-        count = dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first();
-        if (count > 0) {
-            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
-                    + " samples in use.");
-        }
-        count = dbAdaptorFactory.getCatalogIndividualDBAdaptor().count(query).first();
-        if (count > 0) {
-            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
-                    + " individuals in use.");
-        }
-        count = dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first();
-        if (count > 0) {
-            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
-                    + " cohorts in use.");
-        }
-    }
+//    /**
+//     * Checks whether the studyId has any active document in the study.
+//     *
+//     * @param studyId study id.
+//     * @throws CatalogDBException when the study has active documents.
+//     */
+//    private void checkCanDelete(long studyId) throws CatalogDBException {
+//        checkId(studyId);
+//        Query query = new Query(PRIVATE_STUDY_UID, studyId)
+//                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+//
+//        Long count = dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first();
+//        if (count > 0) {
+//            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+//                    + " files in use.");
+//        }
+//        count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query).first();
+//        if (count > 0) {
+//            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+//                    + " jobs in use.");
+//        }
+//        count = dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first();
+//        if (count > 0) {
+//            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+//                    + " samples in use.");
+//        }
+//        count = dbAdaptorFactory.getCatalogIndividualDBAdaptor().count(query).first();
+//        if (count > 0) {
+//            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+//                    + " individuals in use.");
+//        }
+//        count = dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first();
+//        if (count > 0) {
+//            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+//                    + " cohorts in use.");
+//        }
+//    }
 
     @Override
     public DataResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
@@ -1500,42 +1495,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return setStatus(query, Status.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        // Check if the cohort is active
-        Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        if (count(query).first() == 0) {
-            throw new CatalogDBException("The study {" + id + "} is not deleted");
-        }
-
-        // Change the status of the cohort to deleted
-        return setStatus(id, Status.READY);
-    }
-
-    public DataResult remove(int studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.UID.key(), studyId);
-        DataResult<Study> studyDataResult = get(query, null);
-        if (studyDataResult.getResults().size() == 1) {
-            DataResult remove = studyCollection.remove(parseQuery(query), null);
-            if (remove.getNumMatches() == 0) {
-                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
-            }
-            return remove;
-        } else {
-            throw CatalogDBException.uidNotFound("Study id '{}' does not exist (or there are too many)", studyId);
-        }
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException {
         checkId(studyId);
-        Query query = new Query(QueryParams.UID.key(), studyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.UID.key(), studyId);
         return get(query, options);
     }
 
@@ -1669,14 +1640,14 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
 
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        }
         Bson bson = parseQuery(query);
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        return studyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        if (!query.getBoolean(QueryParams.DELETED.key())) {
+            return studyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        } else {
+            return deletedStudyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        }
     }
 
     @Override
@@ -1722,14 +1693,17 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
+        Query queryCopy = new Query(query);
+        queryCopy.remove(QueryParams.DELETED.key());
+
+        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
+        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
+        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         // Flag indicating whether and OR between ID and ALIAS has been performed and already added to the andBsonList object
         boolean idOrAliasFlag = false;
 
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
+        for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
@@ -1740,57 +1714,57 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             try {
                 switch (queryParam) {
                     case UID:
-                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PROJECT_UID:
-                        addAutoOrQuery(PRIVATE_PROJECT_UID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_PROJECT_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PROJECT_ID:
-                        addAutoOrQuery(PRIVATE_PROJECT_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_PROJECT_ID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PROJECT_UUID:
-                        addAutoOrQuery(PRIVATE_PROJECT_UUID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_PROJECT_UUID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case BATTRIBUTES:
                         String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case NATTRIBUTES:
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case CREATION_DATE:
-                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case MODIFICATION_DATE:
-                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ID:
                     case ALIAS:
                         // We perform an OR if both ID and ALIAS are present in the query and both have the exact same value
-                        if (StringUtils.isNotEmpty(query.getString(QueryParams.ID.key()))
-                                && StringUtils.isNotEmpty(query.getString(QueryParams.ALIAS.key()))
-                                && query.getString(QueryParams.ID.key()).equals(query.getString(QueryParams.ALIAS.key()))) {
+                        if (StringUtils.isNotEmpty(queryCopy.getString(QueryParams.ID.key()))
+                                && StringUtils.isNotEmpty(queryCopy.getString(QueryParams.ALIAS.key()))
+                                && queryCopy.getString(QueryParams.ID.key()).equals(queryCopy.getString(QueryParams.ALIAS.key()))) {
                             if (!idOrAliasFlag) {
                                 List<Document> orList = Arrays.asList(
-                                        new Document(QueryParams.ID.key(), query.getString(QueryParams.ID.key())),
-                                        new Document(QueryParams.ALIAS.key(), query.getString(QueryParams.ALIAS.key()))
+                                        new Document(QueryParams.ID.key(), queryCopy.getString(QueryParams.ID.key())),
+                                        new Document(QueryParams.ALIAS.key(), queryCopy.getString(QueryParams.ALIAS.key()))
                                 );
                                 andBsonList.add(new Document("$or", orList));
                                 idOrAliasFlag = true;
                             }
                         } else {
-                            addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                            addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         }
                         break;
                     case STATUS_NAME:
                         // Convert the status to a positive status
-                        query.put(queryParam.key(),
-                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        queryCopy.put(queryParam.key(),
+                                Status.getPositiveStatus(Status.STATUS_LIST, queryCopy.getString(queryParam.key())));
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case UUID:
                     case NAME:
@@ -1824,7 +1798,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case VARIABLE_SET_NAME:
                     case VARIABLE_SET_DESCRIPTION:
                     case OWNER:
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:
                         throw new CatalogDBException("Cannot query by parameter " + queryParam.key());

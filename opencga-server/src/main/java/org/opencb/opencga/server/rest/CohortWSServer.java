@@ -165,9 +165,10 @@ public class CohortWSServer extends OpenCGAWSServer {
     })
     public Response infoSample(
             @ApiParam(value = "Comma separated list of cohort names or ids up to a maximum of 100", required = true)
-            @PathParam("cohorts") String cohortsStr,
+                @PathParam("cohorts") String cohortsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
@@ -175,7 +176,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.remove("study");
 
             List<String> cohortList = getIdList(cohortsStr);
-            List<DataResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, queryOptions, silent, sessionId);
+            List<DataResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted),
+                    queryOptions, silent, sessionId);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -205,6 +207,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
                 @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,

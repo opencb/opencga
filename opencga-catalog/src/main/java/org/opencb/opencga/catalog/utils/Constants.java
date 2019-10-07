@@ -122,9 +122,4 @@ public class Constants {
      */
     public static final String JOB_DELETED_OUTPUT_DIRECTORY = "deletedOutputFiles";
 
-    /* **************************************      Utils for queries       ********************************************/
-    /**
-     * String to be used when we want to fetch all the entries matching a query no matter the status.
-     */
-    public static final String ALL_STATUS = "!=NON_EXISTING_STATUS";
 }

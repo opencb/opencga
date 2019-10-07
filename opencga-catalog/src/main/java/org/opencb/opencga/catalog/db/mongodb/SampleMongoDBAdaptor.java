@@ -22,6 +22,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -127,7 +128,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), sample.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
-        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = sampleCollection.count(clientSession, bson);
@@ -558,7 +558,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     public DataResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException {
         Query finalQuery = new Query(query);
-        filterOutDeleted(finalQuery);
 
         if (studyPermission == null) {
             studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLES;
@@ -605,12 +604,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         } else {
             logger.debug("Sample count query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
             return sampleCollection.count(bson);
-        }
-    }
-
-    private void filterOutDeleted(Query query) {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         }
     }
 
@@ -731,31 +724,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return setStatus(query, Status.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-        checkId(id);
-        // Check if the sample is active
-        Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        if (count(query).first() == 0) {
-            throw new CatalogDBException("The sample {" + id + "} is not deleted");
-        }
-
-        // Change the status of the sample to deleted
-        return setStatus(id, Status.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException {
         checkId(sampleId);
-        Query query = new Query(QueryParams.UID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+        Query query = new Query(QueryParams.UID.key(), sampleId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(sampleId));
         return get(query, options);
     }
@@ -945,7 +925,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         Query finalQuery = new Query(query);
-        filterOutDeleted(finalQuery);
 
         QueryOptions qOptions;
         if (options != null) {
@@ -983,7 +962,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         Bson bson = parseQuery(finalQuery, queryForAuthorisedEntries);
         logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return sampleCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+
+        if (!query.getBoolean(QueryParams.DELETED.key())) {
+            return sampleCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        } else {
+            return deletedSampleCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        }
     }
 
     private boolean isQueryingIndividualFields(Query query) {
@@ -1031,21 +1015,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return rank(sampleCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(sampleCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(sampleCollection, bsonQuery, fields, "name", options);
     }
@@ -1063,7 +1044,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name(), Entity.SAMPLE.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
@@ -1081,7 +1061,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_SAMPLES.name(), SampleAclEntry.SamplePermissions.VIEW.name(), Entity.SAMPLE.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(sampleCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
@@ -1105,6 +1084,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Document annotationDocument = null;
 
         Query queryCopy = new Query(query);
+        queryCopy.remove(QueryParams.DELETED.key());
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
@@ -1221,14 +1201,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     public MongoDBCollection getSampleCollection() {
         return sampleCollection;
-    }
-
-    DataResult setStatus(long sampleId, String status) throws CatalogDBException {
-        return update(sampleId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    DataResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
 }

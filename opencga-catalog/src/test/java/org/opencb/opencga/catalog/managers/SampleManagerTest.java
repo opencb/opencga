@@ -1188,12 +1188,12 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUid)
-                .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+                .append(SampleDBAdaptor.QueryParams.DELETED.key(), true);
 
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), sessionIdUser);
 //        DataResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(1, sampleDataResult.getNumResults());
-        assertTrue(sampleDataResult.first().getId().contains("DELETED"));
+        assertEquals(Status.DELETED, sampleDataResult.first().getStatus().getName());
     }
 
     @Test

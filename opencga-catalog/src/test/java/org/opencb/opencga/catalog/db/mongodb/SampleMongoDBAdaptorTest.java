@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -368,8 +369,15 @@ public class SampleMongoDBAdaptorTest {
         Sample sample = getSample(studyId, "HG0097", options).first();
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample);
 
-        DataResult<Sample> sampleDataResult = catalogSampleDBAdaptor.get(sample.getUid(), QueryOptions.empty());
-        assertEquals(0, sampleDataResult.getNumResults());
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid())
+                .append(SampleDBAdaptor.QueryParams.DELETED.key(), true);
+        DataResult<Sample> jobResult = catalogSampleDBAdaptor.get(query, QueryOptions.empty());
+        assertEquals(1, jobResult.getNumResults());
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not exist");
+        catalogSampleDBAdaptor.get(sample.getUid(), QueryOptions.empty());
     }
 
     @Test

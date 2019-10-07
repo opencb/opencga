@@ -104,9 +104,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study full qualified name") @QueryParam("fqn") String fqn,
             @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
@@ -157,13 +158,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response info(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
-                required = true) @PathParam("studies") String studies,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+                    required = true) @PathParam("studies") String studies,
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
+                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
+                    defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
-            return createOkResponse(studyManager.get(idList, queryOptions, silent, sessionId));
+            return createOkResponse(studyManager.get(idList, new Query("deleted", deleted), queryOptions, silent, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -403,7 +405,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateGroupPOST(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -754,7 +756,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog study stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study up to a maximum of 100", required = true)
-                @PathParam("studies") String studies,
+            @PathParam("studies") String studies,
             @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
             @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
                     + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
@@ -821,7 +823,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response createOrRemoveVariableSets(
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
         try {
             if (action == null) {
@@ -866,7 +868,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
                     required = true) Variable variable) {
         try {

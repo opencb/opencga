@@ -75,6 +75,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
         JOB_UID("job.uid", INTEGER_ARRAY, ""),
 
+        DELETED("deleted", BOOLEAN, ""),
+
         INDEX("index", TEXT_ARRAY, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
         INDEX_CREATION_DATE("index.creationDate", TEXT, ""),

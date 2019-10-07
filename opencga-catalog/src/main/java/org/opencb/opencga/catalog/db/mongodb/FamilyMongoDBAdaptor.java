@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -213,8 +214,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public DataResult<Long> count(ClientSession clientSession, final Query query, final String user,
                                   final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
-        filterOutDeleted(query);
-
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_FAMILIES : studyPermissions);
 
@@ -231,12 +230,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Family count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return familyCollection.count(clientSession, bson);
-    }
-
-    private void filterOutDeleted(Query query) {
-        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        }
     }
 
     @Override
@@ -588,22 +581,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     @Override
     public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        // Check if the family is active
-        Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        if (count(query).first() == 0) {
-            throw new CatalogDBException("The family {" + id + "} is not deleted");
-        }
-
-        // Change the status of the family to deleted
-        return setStatus(id, Status.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return setStatus(query, Status.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
@@ -695,7 +678,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     @Override
     public DataResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
         checkId(familyId);
-        Query query = new Query(QueryParams.UID.key(), familyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED)
+        Query query = new Query(QueryParams.UID.key(), familyId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(familyId));
         return get(query, options);
     }
@@ -812,7 +795,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     Entity.FAMILY.name());
         }
 
-        filterOutDeleted(query);
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         QueryOptions qOptions;
         if (options != null) {
@@ -824,26 +806,27 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         qOptions = removeAnnotationProjectionOptions(qOptions);
 
         logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return familyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        if (!query.getBoolean(QueryParams.DELETED.key())) {
+            return familyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        } else {
+            return deletedFamilyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+        }
     }
 
     @Override
     public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return rank(familyCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(familyCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query);
         return groupBy(familyCollection, bsonQuery, fields, "name", options);
     }
@@ -862,7 +845,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
                     Entity.FAMILY.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
@@ -881,7 +863,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
                     Entity.FAMILY.name());
         }
-        filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
@@ -940,14 +921,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         return unmarkPermissionRule(familyCollection, studyId, permissionRuleId);
     }
 
-    private DataResult setStatus(long familyId, String status) throws CatalogDBException {
-        return update(familyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    private DataResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
     Bson parseQuery(Query query) throws CatalogDBException {
         return parseQuery(query, null);
     }
@@ -957,6 +930,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Document annotationDocument = null;
 
         Query queryCopy = new Query(query);
+        queryCopy.remove(QueryParams.DELETED.key());
 
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);

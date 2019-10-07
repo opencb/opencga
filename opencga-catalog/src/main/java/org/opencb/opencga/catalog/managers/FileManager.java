@@ -1357,8 +1357,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             DataResult<File> result = fileDBAdaptor.get(query, new QueryOptions(), userId);
             auditManager.audit(userId, AuditRecord.Action.UNLINK, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1855,20 +1854,17 @@ public class FileManager extends AnnotationSetManager<File> {
         // Find all the jobs containing references to any of the files to be deleted
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.INPUT_UID.key(), resourceList)
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+                .append(JobDBAdaptor.QueryParams.INPUT_UID.key(), resourceList);
         DataResult<Job> jobInputFiles = jobDBAdaptor.get(query, options);
 
         query = new Query()
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), resourceList)
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+                .append(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), resourceList);
         DataResult<Job> jobOutputFiles = jobDBAdaptor.get(query, options);
 
         query = new Query()
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.OUT_DIR_UID.key(), resourceList)
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
+                .append(JobDBAdaptor.QueryParams.OUT_DIR_UID.key(), resourceList);
         DataResult<Job> jobOutDirFolders = jobDBAdaptor.get(query, options);
 
         // We create a job map that will contain all the changes done so far to avoid performing more queries

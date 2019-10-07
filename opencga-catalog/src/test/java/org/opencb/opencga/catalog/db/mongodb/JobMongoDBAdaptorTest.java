@@ -67,8 +67,14 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
         catalogJobDBAdaptor.delete(job);
 
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.UID.key(), job.getUid())
+                .append(JobDBAdaptor.QueryParams.DELETED.key(), true);
+        DataResult<Job> jobResult = catalogJobDBAdaptor.get(query, QueryOptions.empty());
+        assertEquals(1, jobResult.getNumResults());
+
         thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("not found");
+        thrown.expectMessage("not exist");
         catalogJobDBAdaptor.get(job.getUid(), QueryOptions.empty());
     }
 

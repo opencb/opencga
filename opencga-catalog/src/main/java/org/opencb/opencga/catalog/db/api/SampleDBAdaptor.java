@@ -65,6 +65,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
+        DELETED("deleted", BOOLEAN, ""),
+
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 

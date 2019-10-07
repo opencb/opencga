@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -190,9 +191,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     @Override
     public long getStudyIdByFileId(long fileId) throws CatalogDBException {
-        Query query = new Query()
-                .append(QueryParams.UID.key(), fileId)
-                .append(QueryParams.STATUS_NAME.key(), "!=null");
+        Query query = new Query(QueryParams.UID.key(), fileId);
         DataResult queryResult = nativeGet(query, null);
 
         if (!queryResult.getResults().isEmpty()) {
@@ -601,22 +600,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
     @Override
     public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        query.put(QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        return setStatus(query, File.FileStatus.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
     public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        // Check if the cohort is active
-        Query query = new Query(QueryParams.UID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        if (count(query).first() == 0) {
-            throw new CatalogDBException("The file {" + id + "} is not deleted");
-        }
-
-        // Change the status of the cohort to deleted
-        return setStatus(id, File.FileStatus.READY);
+        throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
@@ -848,7 +837,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
 
         logger.debug("File query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return fileCollection.nativeQuery().find(bson, qOptions).iterator();
+        if (!query.getBoolean(QueryParams.DELETED.key())) {
+            return fileCollection.nativeQuery().find(bson, qOptions).iterator();
+        } else {
+            return deletedFileCollection.nativeQuery().find(bson, qOptions).iterator();
+        }
     }
 
     private void filterOutDeleted(Query query) {
@@ -946,6 +939,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Document annotationDocument = null;
 
         Query myQuery = new Query(query);
+        myQuery.remove(QueryParams.DELETED.key());
 
         // If we receive a query by format or bioformat and the user is also trying to filter by type=FILE, we will remove the latter
         // to avoid complexity to mongo database as the results obtained should be the same with or without this latter filter
@@ -1094,14 +1088,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Document query = new Document(PRIVATE_STUDY_UID, studyId).append(QueryParams.PATH.key(), path);
         DataResult<Long> count = fileCollection.count(clientSession, query);
         return count.getResults().get(0) != 0;
-    }
-
-    DataResult setStatus(long fileId, String status) throws CatalogDBException {
-        return update(fileId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
-    }
-
-    DataResult setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override

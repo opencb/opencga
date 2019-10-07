@@ -317,6 +317,8 @@ public interface StudyDBAdaptor extends DBAdaptor<Study> {
         OWNER("_ownerId", TEXT, ""),
         COHORTS("cohorts", TEXT_ARRAY, ""),
 
+        DELETED("deleted", BOOLEAN, ""),
+
         VARIABLE_SET("variableSets", TEXT_ARRAY, ""),
         VARIABLE_SET_UID("variableSets.uid", INTEGER_ARRAY, ""),
         VARIABLE_SET_ID("variableSets.id", TEXT, ""),
