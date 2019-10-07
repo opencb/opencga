@@ -225,6 +225,7 @@ public class VariantMapReduceUtil {
             String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
                     .parse(query, queryOptions).getSql();
 
+            LOGGER.info(sql);
             initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }
     }

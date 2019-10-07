@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -16,6 +17,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -61,7 +63,8 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     private Integer controlCohortId;
     private List<Integer> caseCohort;
     private List<Integer> controlCohort;
-    private String outdir;
+    private Path outdir;
+    private Path localOutput;
     private Query query;
     private QueryOptions queryOptions;
 
@@ -133,11 +136,23 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                         VariantField.STUDIES_SECONDARY_ALTERNATES,
                         VariantField.STUDIES_STATS));
 
-        outdir = getConf().get(OUTDIR);
-        if (StringUtils.isEmpty(outdir)) {
-            outdir = "fisher." + TimeUtils.getTime() + ".tsv";
+        String outdirStr = getConf().get(OUTDIR);
+        if (StringUtils.isEmpty(outdirStr)) {
+            outdir = new Path("fisher." + TimeUtils.getTime() + ".tsv");
+        } else {
+            outdir = new Path(outdirStr);
+            if (isLocal(outdir)) {
+                localOutput = getLocalOutput(outdir, () -> "fisher_test." + TimeUtils.getTime() + ".tsv");
+                outdir = getTempOutdir("opencga_fisher_test_");
+                outdir.getFileSystem(getConf()).deleteOnExit(outdir);
+            }
+            if (localOutput != null) {
+                logger.info(" * Outdir file: " + localOutput.toUri());
+                logger.info(" * Temporary outdir file: " + outdir.toUri());
+            } else {
+                logger.info(" * Outdir file: " + outdir.toUri());
+            }
         }
-        logger.info(" * Outdir file: " + outdir);
     }
 
     private Pair<Integer, List<Integer>> parseCohort(String cohortStr, String cohortDescription) throws IOException {
@@ -186,7 +201,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
 
         job.setOutputFormatClass(TextOutputFormat.class);
         TextOutputFormat.setCompressOutput(job, false);
-        TextOutputFormat.setOutputPath(job, new Path(outdir));
+        TextOutputFormat.setOutputPath(job, outdir);
 
         job.setReducerClass(FisherTestReducer.class);
         job.setMapOutputKeyClass(NullWritable.class);
@@ -202,6 +217,19 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     @Override
     protected String getJobOperationName() {
         return "fisher_test";
+    }
+
+    @Override
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+        super.postExecution(succeed);
+        if (succeed) {
+            if (localOutput != null) {
+                concatMrOutputToLocal(outdir, localOutput);
+                FileSystem fileSystem = outdir.getFileSystem(getConf());
+                fileSystem.delete(outdir, true);
+                fileSystem.cancelDeleteOnExit(outdir);
+            }
+        }
     }
 
     public static class FisherTestMapper  extends VariantRowMapper<NullWritable, Text> {

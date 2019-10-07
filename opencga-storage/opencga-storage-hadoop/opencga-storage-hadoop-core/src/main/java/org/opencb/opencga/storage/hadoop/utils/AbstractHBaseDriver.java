@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Created on 24/04/18.
@@ -178,6 +179,32 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
         }
+    }
+
+    protected boolean isLocal(Path path) {
+        String scheme = path.toUri().getScheme();
+        return "file".equals(scheme) || StringUtils.isEmpty(scheme) && getConf().get(FileSystem.FS_DEFAULT_NAME_KEY).startsWith("file:");
+    }
+
+    protected Path getTempOutdir(String prefix) {
+        return new Path(getConf().get("hadoop.tmp.dir"), prefix + TimeUtils.getTime());
+    }
+
+    protected Path getLocalOutput(Path outdir, Supplier<String> nameGenerator) throws IOException {
+        Path localOutput = outdir;
+        FileSystem localFs = localOutput.getFileSystem(getConf());
+        if (localFs.exists(localOutput)) {
+            if (localFs.isDirectory(localOutput)) {
+                localOutput = new Path(localOutput, nameGenerator.get());
+            } else {
+                throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
+            }
+        } else {
+            if (!localFs.exists(localOutput.getParent())) {
+                throw new IOException("No such file or directory");
+            }
+        }
+        return localOutput;
     }
 
     /**

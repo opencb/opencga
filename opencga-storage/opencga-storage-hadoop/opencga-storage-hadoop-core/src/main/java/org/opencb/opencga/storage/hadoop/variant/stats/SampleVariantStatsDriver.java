@@ -124,29 +124,17 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         if (StringUtils.isNotEmpty(outdirStr)) {
             outdir = new Path(outdirStr);
 
-            if (outdir.toUri().getScheme().equals("file")) {
-                localOutput = outdir;
-                FileSystem localFs = localOutput.getFileSystem(getConf());
-                if (localFs.exists(localOutput)) {
-                    if (localFs.isDirectory(localOutput)) {
-                        localOutput = new Path(localOutput,
-                                "sample_variant_stats."
-                                        + (samples.size() < 10 ? "." + String.join("_", samples) : "")
-                                        + TimeUtils.getTime() + ".json");
-                    } else {
-                        throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
-                    }
-                } else {
-                    if (!localFs.exists(localOutput.getParent())) {
-                        throw new IOException("No such file or directory");
-                    }
-                }
-                outdir = new Path(getConf().get("hadoop.tmp.dir"), "opencga_sample_variant_stats_" + TimeUtils.getTime());
+            if (isLocal(outdir)) {
+                localOutput = getLocalOutput(outdir, () -> "sample_variant_stats."
+                        + (samples.size() < 10 ? "." + String.join("_", samples) : "")
+                        + TimeUtils.getTime() + ".json");
+                outdir = getTempOutdir("opencga_sample_variant_stats_");
                 outdir.getFileSystem(getConf()).deleteOnExit(outdir);
             }
         }
 
     }
+
 
     private void addTrio(StringBuilder trios, Set<Integer> includeSample, SampleMetadata sampleMetadata) {
         includeSample.add(sampleMetadata.getId());
