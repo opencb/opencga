@@ -934,6 +934,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 //            sampleIndexDBAdaptor.get().close();
             sampleIndexDBAdaptor.set(null);
         }
+        if (tableNameGenerator != null) {
+            tableNameGenerator = null;
+        }
     }
 
     private HBaseCredentials buildCredentials(String table) throws StorageEngineException {

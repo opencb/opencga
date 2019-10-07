@@ -50,11 +50,12 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         QueryOptions options = new QueryOptions();
 
         int maxStudies = 2;
-        int studyId = 1;
+        int studyCounter = 1;
         int release = 1;
         List<URI> inputFiles = new ArrayList<>();
         List<String> fileNames = new ArrayList<>();
-        StudyMetadata studyMetadata = new StudyMetadata(studyId, "S_" + studyId);
+        StudyMetadata studyMetadata = metadataManager.createStudy("S_" + studyCounter);
+        int studyId = studyMetadata.getId();
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             URI inputFile = getResourceUri("platinum/" + fileName);
@@ -62,7 +63,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             inputFiles.add(inputFile);
             metadataManager.registerFile(studyMetadata.getId(), fileName, Arrays.asList("NA" + fileId));
             if (inputFiles.size() == 4) {
-                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
+//                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
                 options.put(VariantStorageEngine.Options.STUDY.key(), studyId);
                 storageEngine.getOptions().putAll(options);
                 storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
@@ -122,8 +123,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
                 checkVariantSearchIndex(dbAdaptor);
 
                 /////////// NEW STUDY ///////////
-                studyId++;
-                studyMetadata = new StudyMetadata(studyId, "S_" + studyId);
+                studyCounter++;
+                studyMetadata = metadataManager.createStudy("S_" + studyCounter);
+                studyId = studyMetadata.getId();
                 inputFiles.clear();
                 fileNames.clear();
                 if (studyId > maxStudies) {

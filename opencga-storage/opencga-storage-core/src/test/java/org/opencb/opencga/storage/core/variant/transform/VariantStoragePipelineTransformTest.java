@@ -215,7 +215,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
                 .collect(Collectors.toList());
         assertEquals(2, list.size());
         assertEquals("1:1-10000:N:.", list.get(0).toString());
-        assertEquals("1:31001-249250621:N:.", list.get(1).toString());
+        assertEquals("1:31001-54321:N:.", list.get(1).toString());
     }
 
     public int countLines(File outputFile) throws IOException {

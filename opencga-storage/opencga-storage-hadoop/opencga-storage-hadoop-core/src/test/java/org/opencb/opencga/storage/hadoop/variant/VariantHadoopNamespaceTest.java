@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -55,16 +56,19 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
     @Test
     public void testNamespace() throws Exception {
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
+        variantStorageManager.close();
+        metadataManager = null;
+
         variantStorageManager.getOptions().put(HadoopVariantStorageEngine.HBASE_NAMESPACE, "opencga");
+        assertEquals("opencga:opencga_variants_test_variants", variantStorageManager.getVariantTableName());
+
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
         Admin admin = dbAdaptor.getConnection().getAdmin();
         admin.createNamespace(NamespaceDescriptor.create("opencga").build());
 
 
         runDefaultETL(getResourceUri("s1.genome.vcf"), variantStorageManager, newStudyMetadata(),
-                new ObjectMap()
-                        .append(HadoopVariantStorageEngine.HBASE_NAMESPACE, "opencga")
-                        .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
+                new ObjectMap().append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true));
 
         NamespaceDescriptor[] namespaceDescriptors = admin.listNamespaceDescriptors();
@@ -74,7 +78,10 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
                 System.out.println("\ttableName = " + tableName);
             }
             if (namespaceDescriptor.getName().equals("opencga")) {
-                Assert.assertEquals(4, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
+                Assert.assertEquals(6, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
+            }
+            if (namespaceDescriptor.getName().equals("default")) {
+                Assert.assertEquals(0, admin.listTableNamesByNamespace(namespaceDescriptor.getName()).length);
             }
         }
 

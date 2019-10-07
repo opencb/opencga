@@ -26,8 +26,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 
 @Ignore
@@ -113,12 +112,15 @@ public abstract class VariantScoreLoaderTest extends VariantStorageBaseTest {
             Map<String, VariantScore> scores = variant.getStudies().get(0).getScores().stream().collect(Collectors.toMap(VariantScore::getId, Function.identity()));
             if (scoredVariants1.contains(variant.toString())) {
                 Assert.assertThat(scores.keySet(), hasItem("score1"));
+                Assert.assertThat(scores.get("score1").getScore(), gte(0));
+                Assert.assertTrue(Float.isNaN(scores.get("score1").getPValue()));
                 varsWithScore1++;
             }
             if (scoredVariants2.contains(variant.toString())) {
                 Assert.assertThat(scores.keySet(), hasItem("score2"));
+                Assert.assertThat(scores.get("score2").getPValue(), gte(0));
+                Assert.assertThat(scores.get("score2").getScore(), gte(0));
                 varsWithScore2++;
-                assertEquals(-1, scores.get("scores2").getPValue(), 0);
             }
         }
         assertEquals(scoredVariants1.size(), varsWithScore1);
