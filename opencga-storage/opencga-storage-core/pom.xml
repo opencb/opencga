@@ -114,7 +114,7 @@
         <dependency>
             <groupId>org.opencb.oskar</groupId>
             <artifactId>oskar-analysis</artifactId>
-            <version>0.1.0</version>
+            <version>${oskar.version}</version>
         </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>

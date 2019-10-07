@@ -70,7 +70,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
 
         ObjectMap executorParams = new ObjectMap("ID", "MongoIter");
         Path outDir = null;
-        Gwas gwas = new Gwas(sampleList1, sampleList2, executorParams, outDir, gwasConfiguration);
+        Gwas gwas = new Gwas(executorParams, outDir, gwasConfiguration).setSampleList1(sampleList1).setSampleList2(sampleList2);
         gwas.execute();
         return null;
     }

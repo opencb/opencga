@@ -31,7 +31,9 @@ public class GwasHBaseIterAnalysisExecutor extends GwasExecutor {
     }
 
     public GwasHBaseIterAnalysisExecutor(List<String> list1, List<String> list2, ObjectMap params, Path outDir, GwasConfiguration configuration) {
-        super(list1, list2, params, outDir, configuration);
+        super(params, outDir, configuration);
+        setSampleList1(list1);
+        setSampleList2(list2);
     }
 
 
