@@ -103,7 +103,7 @@ public class VariantRow {
                     } else if (columnName.endsWith(VARIANT_SCORE_SUFIX)) {
                         walker.score(new BytesVariantScoreColumn(bytes, extractStudyId(columnName), extractScoreId(columnName)));
                     } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
-                        int studyId = extractStudyId(columnName);
+                        int studyId = Integer.valueOf(columnName.split("_")[1]);
                         walker.fillMissing(studyId, resultSet.getInt(i));
                     }
                 }
@@ -125,8 +125,9 @@ public class VariantRow {
                 } else if (columnName.endsWith(VARIANT_SCORE_SUFIX)) {
                         walker.score(new BytesVariantScoreColumn(cell, extractStudyId(columnName), extractScoreId(columnName)));
                 } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
-                    int studyId = extractStudyId(columnName);
-                    walker.fillMissing(studyId, Bytes.toInt(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength()));
+                    int studyId = Integer.valueOf(columnName.split("_")[1]);
+                    walker.fillMissing(studyId,
+                            ((Integer) PInteger.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
                 }
             }
         }
