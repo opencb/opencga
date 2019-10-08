@@ -36,6 +36,7 @@ import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,7 +62,10 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
     }
 
     @Override
-    public InterpretationResult execute() throws Exception {
+    protected void exec() throws AnalysisException {
+    }
+
+    public InterpretationResult compute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
         List<ReportedVariant> primaryFindings;
@@ -189,11 +193,11 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         if (moi != null && (moi == DE_NOVO || moi == COMPOUND_HETEROZYGOUS)) {
             if (moi == DE_NOVO) {
                 DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
-                reportedVariants = creator.create(deNovoAnalysis.execute().getResult());
+                reportedVariants = creator.create(deNovoAnalysis.compute().getResult());
             } else {
                 CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query,
                         options, opencgaHome, sessionId);
-                reportedVariants = getCompoundHeterozygousReportedVariants(compoundAnalysis.execute().getResult(), creator);
+                reportedVariants = getCompoundHeterozygousReportedVariants(compoundAnalysis.compute().getResult(), creator);
             }
         } else {
             reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResult());

@@ -22,6 +22,7 @@ import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,11 @@ public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
     }
 
     @Override
-    public InterpretationResult execute() throws Exception {
+    protected void exec() throws AnalysisException {
+
+    }
+
+    public InterpretationResult compute() throws Exception {
 /*
         StopWatch watcher = StopWatch.createStarted();
         // Sanity check

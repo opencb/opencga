@@ -925,7 +925,7 @@ public class InterpretationWSService extends AnalysisWSService {
             // Execute custom analysis
             CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, studyId, query,
                     customAnalysisOptions, opencgaHome.toString(), sessionId);
-            InterpretationResult interpretationResult = customAnalysis.execute();
+            InterpretationResult interpretationResult = customAnalysis.compute();
             return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -997,7 +997,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
             SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleId, clinicalAnalysisId, studyId,
                     null, opencgaHome, sessionId);
-            List<Variant> variants = secondaryFindingsAnalysis.execute().getResult();
+            List<Variant> variants = secondaryFindingsAnalysis.compute().getResult();
 
             return createAnalysisOkResponse(variants);
         } catch (Exception e) {

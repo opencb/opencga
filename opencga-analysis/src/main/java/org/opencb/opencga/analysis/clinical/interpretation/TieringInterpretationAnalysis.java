@@ -101,7 +101,10 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
     }
 
     @Override
-    public InterpretationResult execute() throws Exception {
+    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    }
+
+    public InterpretationResult compute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
         Query query = new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId);
@@ -256,7 +259,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         CompoundHeterozygousAnalysis analysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome,
                 sessionId);
         try {
-            AnalysisResult<Map<String, List<Variant>>> execute = analysis.execute();
+            AnalysisResult<Map<String, List<Variant>>> execute = analysis.compute();
             if (MapUtils.isNotEmpty(execute.getResult())) {
                 resultMap.putAll(execute.getResult());
             }
@@ -272,7 +275,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         Query query = new Query(dominantQuery);
         DeNovoAnalysis analysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
         try {
-            AnalysisResult<List<Variant>> execute = analysis.execute();
+            AnalysisResult<List<Variant>> execute = analysis.compute();
             if (ListUtils.isNotEmpty(execute.getResult())) {
                 resultMap.put(DE_NOVO, execute.getResult());
             }

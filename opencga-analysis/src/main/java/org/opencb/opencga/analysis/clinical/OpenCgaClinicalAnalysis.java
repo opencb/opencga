@@ -30,7 +30,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import java.nio.file.Paths;
 import java.util.*;
 
-public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
+public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
 
     public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
     public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
@@ -78,9 +78,6 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
 //        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
 //        this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 //    }
-
-    @Override
-    public abstract AnalysisResult<T> execute() throws Exception;
 
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
         QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;

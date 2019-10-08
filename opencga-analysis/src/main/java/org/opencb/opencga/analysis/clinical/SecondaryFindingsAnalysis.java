@@ -39,12 +39,11 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
+public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis {
 
     private String sampleId;
 
     public static final int BATCH_SIZE = 1000;
-
 
     public SecondaryFindingsAnalysis(String sampleId, String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome,
                                      String sessionId) {
@@ -52,9 +51,11 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis<List<Vari
         this.sampleId = sampleId;
     }
 
-
     @Override
-    public AnalysisResult<List<Variant>> execute() throws Exception {
+    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    }
+
+    public AnalysisResult<List<Variant>> compute() throws Exception {
         // sampleId has preference over clinicalAnalysisId
         if (StringUtils.isEmpty(this.sampleId)) {
             // Throws an Exception if it cannot fetch analysis ID or proband is null

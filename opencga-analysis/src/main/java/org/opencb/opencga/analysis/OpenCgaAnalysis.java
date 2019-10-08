@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.oskar.analysis.OskarAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract class OpenCgaAnalysis<T> {
+public abstract class OpenCgaAnalysis extends OskarAnalysis {
 
     protected CatalogManager catalogManager;
     protected Configuration configuration;
@@ -64,7 +65,7 @@ public abstract class OpenCgaAnalysis<T> {
 //        init();
     }
 
-    public abstract AnalysisResult<T> execute() throws Exception;
+//    public abstract AnalysisResult<T> execute() throws Exception;
 
     void init() {
         logger = LoggerFactory.getLogger(this.getClass().toString());
