@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.search;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantScore;
 
 import static org.junit.Assert.*;
 
@@ -27,6 +28,8 @@ public class VariantSearchToVariantConverterTest {
                 .setQuality(200.0)
                 .addAttribute("k1", "v1")
                 .build();
+        expectedVariant.getStudies().get(0).getScores().add(new VariantScore("gwas1", "A", null, 3.4f, 0.002f));
+        expectedVariant.getStudies().get(0).getScores().add(new VariantScore("gwas2", "A", "B", 1.23f, 0.1f));
 
         Variant aux = Variant.newBuilder("chr1:1000:A:T")
                 .setStudyId("2")
