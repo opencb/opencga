@@ -14,7 +14,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.phoenix.mapreduce.PhoenixOutputFormat;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -184,7 +183,6 @@ public class VariantMapReduceUtil {
 
         LOGGER.info(sqlQuery);
         job.setMapperClass(variantMapperClass);
-        job.setOutputFormatClass(PhoenixOutputFormat.class);
 
         job.setInputFormatClass(PhoenixVariantTableInputFormat.class);
     }

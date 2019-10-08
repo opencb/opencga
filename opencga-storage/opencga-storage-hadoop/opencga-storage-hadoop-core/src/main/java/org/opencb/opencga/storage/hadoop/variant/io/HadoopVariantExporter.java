@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.io;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -11,7 +10,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
@@ -49,14 +50,16 @@ public class HadoopVariantExporter extends VariantExporter {
     public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile, Query query,
                        QueryOptions queryOptions)
             throws IOException, StorageEngineException {
-        if (outputFileUri == null
-                || variantsFile != null
-                || StringUtils.isEmpty(outputFileUri.getScheme()) || outputFileUri.getScheme().equals("file")) {
+        VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
+        IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
+        if ((outputFileUri == null)
+                || (variantsFile != null)
+                || queryOptions.getBoolean("skipMapReduce", false)
+                || (!(ioConnector instanceof HDFSIOConnector) && !(ioConnector instanceof LocalIOConnector))) {
             super.export(outputFileUri, outputFormat, variantsFile, query, queryOptions);
-        } else if (ioConnectorProvider.get(outputFileUri) instanceof HDFSIOConnector) {
-            VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
-            FileSystem fileSystem = FileSystem.get(dbAdaptor.getConfiguration());
+        } else {
             Path outputPath = new Path(outputFileUri);
+            FileSystem fileSystem = outputPath.getFileSystem(dbAdaptor.getConfiguration());
             if (fileSystem.exists(outputPath)) {
                 throw new IOException("Output directory " + outputFileUri + " already exists!");
             }
@@ -80,8 +83,6 @@ public class HadoopVariantExporter extends VariantExporter {
 
             logger.info("Output file : " + outputPath.toString());
             logger.info("Output metadata file : " + metadataPath.toString());
-        } else {
-            throw new IllegalArgumentException("Unknown output scheme '" + outputFileUri.getScheme() + "' for file " + outputFileUri);
         }
 
     }

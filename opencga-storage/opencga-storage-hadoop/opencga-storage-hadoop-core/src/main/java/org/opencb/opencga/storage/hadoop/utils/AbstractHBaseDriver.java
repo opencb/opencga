@@ -15,6 +15,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,19 +183,28 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected boolean isLocal(Path path) {
-        String scheme = path.toUri().getScheme();
-        return "file".equals(scheme) || StringUtils.isEmpty(scheme) && getConf().get(FileSystem.FS_DEFAULT_NAME_KEY).startsWith("file:");
+        return HDFSIOConnector.isLocal(path.toUri(), getConf());
     }
 
     protected Path getTempOutdir(String prefix) {
         return new Path(getConf().get("hadoop.tmp.dir"), prefix + TimeUtils.getTime());
     }
 
+    protected Path getLocalOutput(Path outdir) throws IOException {
+        return getLocalOutput(outdir, null);
+    }
+
     protected Path getLocalOutput(Path outdir, Supplier<String> nameGenerator) throws IOException {
+        if (!isLocal(outdir)) {
+            throw new IllegalArgumentException("Outdir " + outdir + " is not in the local filesystem");
+        }
         Path localOutput = outdir;
         FileSystem localFs = localOutput.getFileSystem(getConf());
         if (localFs.exists(localOutput)) {
             if (localFs.isDirectory(localOutput)) {
+                if (nameGenerator == null) {
+                    throw new IllegalArgumentException("Local output '" + localOutput + "' is a directory");
+                }
                 localOutput = new Path(localOutput, nameGenerator.get());
             } else {
                 throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
@@ -209,24 +219,42 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     /**
      * Concatenate all generated files from a MapReduce job into one single local file.
+     * TODO: Allow copy output to any IOConnector
      * @param mrOutdir      MapReduce output directory
      * @param localOutput   Local file
      * @throws IOException  on IOException
+     * @return              List of copied files from HDFS
      */
-    protected void concatMrOutputToLocal(Path mrOutdir, Path localOutput) throws IOException {
+    protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput) throws IOException {
         FileSystem fileSystem = mrOutdir.getFileSystem(getConf());
         RemoteIterator<LocatedFileStatus> it = fileSystem.listFiles(mrOutdir, false);
-        try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
-            while (it.hasNext()) {
-                Path path = it.next().getPath();
-                if (!path.getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)
-                        && !path.getName().equals(FileOutputCommitter.PENDING_DIR_NAME)) {
+        List<Path> paths = new ArrayList<>();
+        while (it.hasNext()) {
+            LocatedFileStatus status = it.next();
+            Path path = status.getPath();
+            if (status.isFile()
+                    && !path.getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)
+                    && !path.getName().equals(FileOutputCommitter.PENDING_DIR_NAME)
+                    && status.getLen() > 0) {
+                paths.add(path);
+            }
+        }
+        if (paths.size() == 0) {
+            LOGGER.warn("The MapReduce job didn't produce any output. This may not be expected.");
+        } else if (paths.size() == 1) {
+            LOGGER.info("Copy to local file " + paths.get(0) + " to " + localOutput);
+            fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
+        } else {
+            LOGGER.info("Concat and copy to local " + paths + " files from " + mrOutdir + " to " + localOutput);
+            try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
+                for (Path path : paths) {
                     try (FSDataInputStream is = fileSystem.open(path)) {
                         IOUtils.copyBytes(is, os, getConf(), false);
                     }
                 }
             }
         }
+        return paths;
     }
 
     public static String[] buildArgs(String table, ObjectMap options) {

@@ -147,7 +147,9 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         }
     }
 
-    protected abstract Class<?> getMapperClass();
+    protected Class<?> getMapperClass() {
+        return null;
+    }
 
     @Override
     protected final void setupJob(Job job, String table) throws IOException {

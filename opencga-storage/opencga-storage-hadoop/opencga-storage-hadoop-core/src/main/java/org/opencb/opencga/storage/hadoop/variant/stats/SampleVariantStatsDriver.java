@@ -240,10 +240,12 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         if (succeed) {
             if (localOutput != null) {
                 concatMrOutputToLocal(outdir, localOutput);
-                FileSystem fileSystem = outdir.getFileSystem(getConf());
-                fileSystem.delete(outdir, true);
-                fileSystem.cancelDeleteOnExit(outdir);
             }
+        }
+        if (localOutput != null) {
+            FileSystem fileSystem = outdir.getFileSystem(getConf());
+            fileSystem.delete(outdir, true);
+            fileSystem.cancelDeleteOnExit(outdir);
         }
     }
 
