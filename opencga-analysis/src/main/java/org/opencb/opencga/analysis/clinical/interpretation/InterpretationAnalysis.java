@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis<Interpretation> {
+public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis {
 
     public InterpretationAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
         super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
@@ -48,8 +48,7 @@ public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis<Int
 //        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
 //    }
 
-    @Override
-    public abstract InterpretationResult execute() throws Exception;
+
 
     protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
                                                          ReportedVariantCreator creator) throws Exception {
@@ -60,7 +59,7 @@ public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis<Int
 //                    excludeIds, variantStorageManager, token);
             SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleNames.get(0), clinicalAnalysisId,
                     studyId, null, opencgaHome, sessionId);
-            List<Variant> variants = secondaryFindingsAnalysis.execute().getResult();
+            List<Variant> variants = secondaryFindingsAnalysis.compute().getResult();
             if (CollectionUtils.isNotEmpty(variants)) {
                 secondaryFindings = creator.createSecondaryFindings(variants);
             }

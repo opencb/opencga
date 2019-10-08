@@ -18,8 +18,10 @@ package org.opencb.opencga.analysis.variant.gwas;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 import org.opencb.oskar.analysis.variant.gwas.Gwas;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 import org.opencb.oskar.core.annotations.Analysis;
@@ -35,10 +37,10 @@ import java.util.List;
 @Analysis(id = "GWAS", data = Analysis.AnalysisData.CLINICAL)
 public class GwasAnalysis extends OpenCgaAnalysis {
 
-    private List<String> sampleList1;
-    private List<String> sampleList2;
+    private Gwas gwas;
+    private Query query1;
+    private Query query2;
 
-    private GwasConfiguration gwasConfiguration;
     private String token;
 
     public GwasAnalysis(String study, String opencgaHome, String sessionId) {
@@ -47,17 +49,19 @@ public class GwasAnalysis extends OpenCgaAnalysis {
 
     public GwasAnalysis(String study, List<String> list1, List<String> list2, ObjectMap executorParams, GwasConfiguration gwasConfiguration, String token) {
         super(study, "", token);
-        this.gwasConfiguration = gwasConfiguration;
+        gwas = new Gwas(executorParams, outDir, gwasConfiguration).setSampleList1(list1).setSampleList2(list2);
     }
 
     public GwasAnalysis(String study, String cohort1, String cohort2, ObjectMap executorParams, GwasConfiguration gwasConfiguration, String token) {
         super(study, "", token);
-        this.gwasConfiguration = gwasConfiguration;
+        gwas = new Gwas(executorParams, outDir, gwasConfiguration).setCohort1(cohort1).setCohort2(cohort2);
     }
 
-    public GwasAnalysis(String study, Query sample1, Query sample2, ObjectMap executorParams, GwasConfiguration gwasConfiguration, String token) {
+    public GwasAnalysis(String study, Query query1, Query query2, ObjectMap executorParams, GwasConfiguration gwasConfiguration, String token) {
         super(study, "", token);
-        this.gwasConfiguration = gwasConfiguration;
+        this.query1 = query1;
+        this.query2 = query2;
+        gwas = new Gwas(executorParams, outDir, gwasConfiguration);
     }
 
     protected void checkToken(String token) {
@@ -65,20 +69,27 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    public AnalysisResult execute() throws Exception {
+    protected void exec() throws AnalysisException {
         checkToken(token);
 
-        ObjectMap executorParams = new ObjectMap("ID", "MongoIter");
-        Path outDir = null;
-        Gwas gwas = new Gwas(sampleList1, sampleList2, executorParams, outDir, gwasConfiguration);
+        List<String> list1 = null;
+        if (query1 != null) {
+            // Get list1 from query1
+            list1 = new ArrayList<>();
+        }
+        List<String> list2 = null;
+        if (query2 != null) {
+            // Get list2 from query2
+            list2 = new ArrayList<>();
+        }
+
+        if (CollectionUtils.isNotEmpty(list1) || CollectionUtils.isNotEmpty(list2)) {
+            gwas.setSampleList1(list1).setSampleList2(list2);
+        }
+
+        //ObjectMap executorParams = new ObjectMap("ID", "MongoIter");
         gwas.execute();
-        return null;
     }
-
-
-
-
-
 
 
     /**

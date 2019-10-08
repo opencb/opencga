@@ -20,12 +20,13 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<String, List<Variant>>> {
+public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis {
 
     private Query query;
 
@@ -52,7 +53,10 @@ public class CompoundHeterozygousAnalysis extends OpenCgaClinicalAnalysis<Map<St
     }
 
     @Override
-    public AnalysisResult<Map<String, List<Variant>>> execute() throws Exception {
+    protected void exec() throws AnalysisException {
+    }
+
+    public AnalysisResult<Map<String, List<Variant>>> compute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
         // Get and check clinical analysis and proband
