@@ -476,7 +476,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("intended only for");
-        fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
+        fileManager.update(studyFqn, Collections.singletonList("data/"), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
@@ -499,7 +499,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
 
-        DataResult<File> update = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
+        DataResult<File> update = fileManager.update(studyFqn, Collections.singletonList("data/"), updateParams, QueryOptions.empty(), sessionIdUser).get(0);
         assertEquals(1, update.first().getAnnotationSets().size());
     }
 
@@ -523,7 +523,7 @@ public class FileManagerTest extends AbstractManagerTest {
         AnnotationSet annotationSet1 = new AnnotationSet("annotation2", vs1.getId(), annotations);
 
         FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet1));
-        DataResult<File> update = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
+        DataResult<File> update = fileManager.update(studyFqn, Collections.singletonList("data/"), updateParams, QueryOptions.empty(), sessionIdUser).get(0);
         assertEquals(2, update.first().getAnnotationSets().size());
     }
 
@@ -531,7 +531,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testUpdateSamples() throws CatalogException {
         // Update the same sample twice to the file
         FileUpdateParams updateParams = new FileUpdateParams().setSamples(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
-        DataResult<File> file = fileManager.update(studyFqn, "test_1K.txt.gz", updateParams, null, sessionIdUser);
+        DataResult<File> file = fileManager.update(studyFqn, Collections.singletonList("test_1K.txt.gz"), updateParams, null, sessionIdUser).get(0);
         assertEquals(2, file.first().getSamples().size());
         assertTrue(file.first().getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
     }
@@ -1059,7 +1059,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 sessionIdUser).first();
 
         // Associate the two samples to the file
-        fileManager.update(studyFqn, "data/test/", new FileUpdateParams().setSamples(Arrays.asList(sample1.getId(), sample2.getId())),
+        fileManager.update(studyFqn, Collections.singletonList("data/test/"), new FileUpdateParams().setSamples(Arrays.asList(sample1.getId(), sample2.getId())),
                 QueryOptions.empty(), sessionIdUser);
 
         // Fetch the file
@@ -1074,7 +1074,7 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         // Update the version of one of the samples
-        catalogManager.getSampleManager().update(studyFqn, sample1.getId(), new SampleUpdateParams(),
+        catalogManager.getSampleManager().update(studyFqn, Collections.singletonList(sample1.getId()), new SampleUpdateParams(),
                 new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
 
         // Fetch the file again to see if we get the latest version as expected

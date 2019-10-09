@@ -70,8 +70,9 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         File file = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         for (int i = 0; i < coh.length; i++) {
-            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "", file.getSamples().subList(file.getSamples()
-                    .size() / coh.length * i, file.getSamples().size() / coh.length * (i + 1)), null, null, sessionId).first();
+            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "",
+                    file.getSamples().subList(file.getSamples().size() / coh.length * i, file.getSamples().size() / coh.length * (i + 1)),
+                    null, null, sessionId).first();
             coh[i] = cohort.getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
@@ -244,14 +245,16 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         cohorts.put("coh0", catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setDescription("NewDescription"), new QueryOptions(), sessionId);
+        catalogManager.getCohortManager().update(studyId, Collections.singletonList(coh[0]),
+                new CohortUpdateParams().setDescription("NewDescription"), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());
 
         List<String> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
                 .map(Sample::getId)
                 .skip(10).limit(100)
                 .collect(Collectors.toList());
-        catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setSamples(newCohort), new QueryOptions(), sessionId);
+        catalogManager.getCohortManager().update(studyId, Collections.singletonList(coh[0]), new CohortUpdateParams().setSamples(newCohort),
+                new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());
 
         calculateStats(coh[0]);

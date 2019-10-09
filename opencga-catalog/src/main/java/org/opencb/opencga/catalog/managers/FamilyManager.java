@@ -367,6 +367,72 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
+    public List<DataResult> delete(String studyStr, List<String> familyIds, ObjectMap params, String token) throws CatalogException {
+        List<DataResult> resultList = new ArrayList<>();
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("familyIds", familyIds)
+                .append("params", params)
+                .append("token", token);
+
+        boolean checkPermissions;
+        try {
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        } catch (CatalogException e) {
+            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        for (String id : familyIds) {
+            String familyId = id;
+            String familyUuid = "";
+
+            try {
+                DataResult<Family> result = internalGet(study.getUid(), id, INCLUDE_FAMILY_IDS, userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("Family '" + id + "' not found");
+                }
+
+                Family family = result.first();
+                // We set the proper values for the audit
+                familyId = family.getId();
+                familyUuid = family.getUuid();
+
+                if (checkPermissions) {
+                    authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
+                            FamilyAclEntry.FamilyPermissions.DELETE);
+                }
+
+                // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
+
+                // Delete the family
+                resultList.add(familyDBAdaptor.delete(family));
+
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
+                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+
+                logger.error("Cannot delete family {}: {}", familyId, e.getMessage(), e);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, familyId, familyUuid,
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return resultList;
+    }
+
+    @Override
     public DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         DataResult result = DataResult.empty();
@@ -426,7 +492,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
                 result.getEvents().add(event);
 
-                logger.debug(errorMsg, e);
+                logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
@@ -477,7 +543,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, familyStr, updateParams, options, token);
+        return update(studyStr, Collections.singletonList(familyStr), updateParams, options, token).get(0);
     }
 
     public DataResult<Family> addAnnotationSet(String studyStr, String familyStr, AnnotationSet annotationSet, QueryOptions options,
@@ -525,7 +591,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, familyStr, updateParams, options, token);
+        return update(studyStr, Collections.singletonList(familyStr), updateParams, options, token).get(0);
     }
 
     public DataResult<Family> removeAnnotations(String studyStr, String familyStr, String annotationSetId,
@@ -540,149 +606,221 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    /**
-     * Update an Family from catalog.
-     *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param familyId   Family id in string format. Could be either the id or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
-     * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
-     * @return A DataResult with the object updated.
-     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
-     *                          exist or is not allowed to be updated.
-     */
-    public DataResult<Family> update(String studyStr, String familyId, FamilyUpdateParams updateParams, QueryOptions options, String token)
-            throws CatalogException {
+    public DataResult<Family> update(String studyStr, Query query, FamilyUpdateParams updateParams, QueryOptions options,
+                                           String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("familyId", familyId)
+                .append("query", query)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
                 .append("options", options)
                 .append("token", token);
 
-        Family storedFamily;
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+
+        DBIterator<Family> iterator;
         try {
-            storedFamily = internalGet(study.getUid(), familyId, QueryOptions.empty(), userId).first();
+            fixQueryObject(study, finalQuery, token);
+
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+
+            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            iterator = familyDBAdaptor.iterator(finalQuery, INCLUDE_FAMILY_IDS, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.FAMILY, familyId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
-        try {
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
+        DataResult<Family> result = DataResult.empty();
+        while (iterator.hasNext()) {
+            Family family = iterator.next();
+            try {
+                DataResult<Family> queryResult = update(study, family, updateParams, options, userId);
+                result.append(queryResult);
 
-            ObjectMap parameters = new ObjectMap();
-            if (updateParams != null) {
-                parameters = updateParams.getUpdateMap();
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
+                result.getEvents().add(event);
+
+                logger.error("Cannot update family {}: {}", family.getId(), e.getMessage(), e);
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
-
-            if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-                ParamUtils.checkUpdateParametersMap(parameters);
-            }
-
-            if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
-                Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-                if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
-                        && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
-                    logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                    actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
-                    options.put(Constants.ACTIONS, actionMap);
-                }
-            }
-
-            // Check permissions...
-            // Only check write annotation permissions if the user wants to update the annotation sets
-            if (updateParams != null && updateParams.getAnnotationSets() != null) {
-                authorizationManager.checkFamilyPermission(study.getUid(), storedFamily.getUid(), userId,
-                        FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
-            }
-            // Only check update permissions if the user wants to update anything apart from the annotation sets
-            if ((parameters.size() == 1 && !parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                    || parameters.size() > 1) {
-                authorizationManager.checkFamilyPermission(study.getUid(), storedFamily.getUid(), userId,
-                        FamilyAclEntry.FamilyPermissions.UPDATE);
-            }
-
-            if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-                ParamUtils.checkAlias(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
-            }
-
-            if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getPhenotypes())
-                    || ListUtils.isNotEmpty(updateParams.getMembers()) || ListUtils.isNotEmpty(updateParams.getDisorders()))) {
-                Family family = new Family();
-                if (ListUtils.isNotEmpty(updateParams.getMembers())) {
-                    // We obtain the members from catalog
-                    autoCompleteFamilyMembers(study, family, updateParams.getMembers(), userId);
-                } else {
-                    // We use the list of members from the stored family
-                    family.setMembers(storedFamily.getMembers());
-                }
-
-                if (ListUtils.isEmpty(updateParams.getPhenotypes())) {
-                    family.setPhenotypes(storedFamily.getPhenotypes());
-                } else {
-                    family.setPhenotypes(updateParams.getPhenotypes());
-                }
-                if (ListUtils.isEmpty(updateParams.getDisorders())) {
-                    family.setDisorders(storedFamily.getDisorders());
-                } else {
-                    family.setDisorders(updateParams.getDisorders());
-                }
-
-                validateFamily(family);
-                validateMultiples(family);
-                validatePhenotypes(family);
-                validateDisorders(family);
-
-                ObjectMap tmpParams;
-                try {
-                    ObjectMapper objectMapper = getDefaultObjectMapper();
-                    tmpParams = new ObjectMap(objectMapper.writeValueAsString(family));
-                } catch (JsonProcessingException e) {
-                    logger.error("{}", e.getMessage(), e);
-                    throw new CatalogException(e);
-                }
-
-                if (parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
-                    parameters.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
-                }
-                if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())) {
-                    parameters.put(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
-                            tmpParams.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
-                }
-                if (parameters.containsKey(FamilyDBAdaptor.QueryParams.DISORDERS.key())) {
-                    parameters.put(FamilyDBAdaptor.QueryParams.DISORDERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.DISORDERS.key()));
-                }
-            }
-
-            checkUpdateAnnotations(study, storedFamily, parameters, options, VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor,
-                    userId);
-
-            if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-                // We do need to get the current release to properly create a new version
-                options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
-            }
-
-            DataResult result = familyDBAdaptor.update(storedFamily.getUid(), parameters, study.getVariableSets(), options);
-
-            auditManager.auditUpdate(userId, AuditRecord.Resource.FAMILY, storedFamily.getId(), storedFamily.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            DataResult<Family> queryResult = familyDBAdaptor.get(storedFamily.getUid(),
-                    new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setTime(result.getTime() + queryResult.getTime());
-
-            return queryResult;
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.FAMILY, storedFamily.getId(), storedFamily.getUuid(), study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
         }
+
+        return result;
+    }
+
+    /**
+     * Update families from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param familyIds  List of family ids. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A list of DataResults with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public List<DataResult<Family>> update(String studyStr, List<String> familyIds, FamilyUpdateParams updateParams, QueryOptions options,
+                                           String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("familyIds", familyIds)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        List<DataResult<Family>> resultList = new ArrayList<>();
+        for (String id : familyIds) {
+            String familyId = id;
+            String familyUuid = "";
+
+            try {
+                DataResult<Family> result = internalGet(study.getUid(), familyId, QueryOptions.empty(), userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("Family '" + id + "' not found");
+                }
+                Family family = result.first();
+
+                // We set the proper values for the audit
+                familyId = family.getId();
+                familyUuid = family.getUuid();
+
+                DataResult<Family> updateResult = update(study, family, updateParams, options, userId);
+                DataResult<Family> queryResult = familyDBAdaptor.get(family.getUid(),
+                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
+                queryResult.setTime(updateResult.getTime() + queryResult.getTime());
+
+                resultList.add(queryResult);
+
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+
+                logger.error("Cannot update family {}: {}", familyId, e.getMessage());
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, familyId, familyUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return resultList;
+    }
+
+    private DataResult<Family> update(Study study, Family family, FamilyUpdateParams updateParams, QueryOptions options, String userId)
+            throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            parameters = updateParams.getUpdateMap();
+        }
+
+        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
+            ParamUtils.checkUpdateParametersMap(parameters);
+        }
+
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
+                    && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
+                logger.warn("Assuming the user wants to add the list of annotation sets provided");
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                options.put(Constants.ACTIONS, actionMap);
+            }
+        }
+
+        // Check permissions...
+        // Only check write annotation permissions if the user wants to update the annotation sets
+        if (updateParams != null && updateParams.getAnnotationSets() != null) {
+            authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
+                    FamilyAclEntry.FamilyPermissions.WRITE_ANNOTATIONS);
+        }
+        // Only check update permissions if the user wants to update anything apart from the annotation sets
+        if ((parameters.size() == 1 && !parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                || parameters.size() > 1) {
+            authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
+                    FamilyAclEntry.FamilyPermissions.UPDATE);
+        }
+
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
+            ParamUtils.checkAlias(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
+        }
+
+        if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getPhenotypes())
+                || ListUtils.isNotEmpty(updateParams.getMembers()) || ListUtils.isNotEmpty(updateParams.getDisorders()))) {
+            Family tmpFamily = new Family();
+            if (ListUtils.isNotEmpty(updateParams.getMembers())) {
+                // We obtain the members from catalog
+                autoCompleteFamilyMembers(study, tmpFamily, updateParams.getMembers(), userId);
+            } else {
+                // We use the list of members from the stored family
+                tmpFamily.setMembers(family.getMembers());
+            }
+
+            if (ListUtils.isEmpty(updateParams.getPhenotypes())) {
+                tmpFamily.setPhenotypes(family.getPhenotypes());
+            } else {
+                tmpFamily.setPhenotypes(updateParams.getPhenotypes());
+            }
+            if (ListUtils.isEmpty(updateParams.getDisorders())) {
+                tmpFamily.setDisorders(family.getDisorders());
+            } else {
+                tmpFamily.setDisorders(updateParams.getDisorders());
+            }
+
+            validateFamily(tmpFamily);
+            validateMultiples(tmpFamily);
+            validatePhenotypes(tmpFamily);
+            validateDisorders(tmpFamily);
+
+            ObjectMap tmpParams;
+            try {
+                ObjectMapper objectMapper = getDefaultObjectMapper();
+                tmpParams = new ObjectMap(objectMapper.writeValueAsString(tmpFamily));
+            } catch (JsonProcessingException e) {
+                logger.error("{}", e.getMessage(), e);
+                throw new CatalogException(e);
+            }
+
+            if (parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
+                parameters.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+            }
+            if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())) {
+                parameters.put(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
+                        tmpParams.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
+            }
+            if (parameters.containsKey(FamilyDBAdaptor.QueryParams.DISORDERS.key())) {
+                parameters.put(FamilyDBAdaptor.QueryParams.DISORDERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.DISORDERS.key()));
+            }
+        }
+
+        checkUpdateAnnotations(study, family, parameters, options, VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor,
+                userId);
+
+        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
+            // We do need to get the current release to properly create a new version
+            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
+        }
+
+        return familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,

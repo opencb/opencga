@@ -115,7 +115,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     @Override
     InternalGetDataResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, @Nullable Query query,
-                                                         QueryOptions options, String user, boolean silent) throws CatalogException {
+                                                        QueryOptions options, String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing clinical analysis entries.");
         }
@@ -179,7 +179,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     @Override
     public DataResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options,
-                                                String token) throws CatalogException {
+                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -530,134 +530,202 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return finalMember;
     }
 
-    /**
-     * Update a Clinical Analysis from catalog.
-     *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param clinicalId   Clinical id in string format. Could be either the id or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
-     * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
-     * @return A DataResult with the object updated.
-     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
-     *                          exist or is not allowed to be updated.
-     */
-    public DataResult<ClinicalAnalysis> update(String studyStr, String clinicalId, ClinicalUpdateParams updateParams, QueryOptions options,
-                                                String token) throws CatalogException {
+    public DataResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalUpdateParams updateParams, QueryOptions options,
+                                                     String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("clinicalId", clinicalId)
+                .append("query", query)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
                 .append("options", options)
                 .append("token", token);
 
-        ClinicalAnalysis clinicalAnalysis;
+        DBIterator<ClinicalAnalysis> iterator;
         try {
-            clinicalAnalysis = internalGet(study.getUid(), clinicalId, QueryOptions.empty(), userId).first();
+            fixQueryObject(study, query, userId);
+            query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            iterator = clinicalDBAdaptor.iterator(query, INCLUDE_CLINICAL_IDS, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
 
-        try {
-            authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+        DataResult<ClinicalAnalysis> result = DataResult.empty();
+        while (iterator.hasNext()) {
+            ClinicalAnalysis clinicalAnalysis = iterator.next();
+            try {
+                DataResult<ClinicalAnalysis> queryResult = update(study, clinicalAnalysis, updateParams, userId, token);
+                result.append(queryResult);
 
-            ObjectMap parameters = new ObjectMap();
-            if (updateParams != null) {
-                parameters = updateParams.getUpdateMap();
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(),
+                        clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage());
+                result.getEvents().add(event);
+
+                logger.error("Could not update clinical analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(),
+                        clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
-            ParamUtils.checkUpdateParametersMap(parameters);
-
-            if (StringUtils.isNotEmpty(updateParams.getId())) {
-                ParamUtils.checkAlias(updateParams.getId(), "id");
-            }
-            if (StringUtils.isNotEmpty(updateParams.getDueDate()) && TimeUtils.toDate(updateParams.getDueDate()) == null) {
-                throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
-            }
-            if (updateParams.getAnalyst() != null && StringUtils.isNotEmpty(updateParams.getAnalyst().getAssignee())) {
-                // We obtain the users with access to the study
-                Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(studyStr, "members", token).first()
-                        .getUserIds());
-                if (!users.contains(updateParams.getAnalyst().getAssignee())) {
-                    throw new CatalogException("Cannot assign clinical analysis to " + updateParams.getAnalyst().getAssignee()
-                            + ". User not found or with no access to the study.");
-                }
-
-                Map<String, Object> map = parameters.getMap(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST.key());
-                map.put("assignedBy", userId);
-            }
-            if (updateParams.getFamily() != null && StringUtils.isNotEmpty(updateParams.getFamily().getId())) {
-                Family family = updateParams.getFamily().toUncheckedFamily();
-                family = getFullValidatedFamily(family, study, token);
-                clinicalAnalysis.setFamily(family);
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), family);
-            }
-            if (updateParams.getProband() != null && StringUtils.isNotEmpty(updateParams.getProband().getId())) {
-                Individual proband = updateParams.getProband().toUncheckedIndividual();
-                proband = getFullValidatedMember(proband, study, token);
-                clinicalAnalysis.setProband(proband);
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
-            }
-            if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
-                Map<String, List<File>> files = new HashMap<>();
-                for (Map.Entry<String, List<String>> entry : updateParams.getFiles().entrySet()) {
-                    List<File> fileList = entry.getValue().stream().map(fileId -> new File().setId(fileId)).collect(Collectors.toList());
-                    files.put(entry.getKey(), fileList);
-                }
-                clinicalAnalysis.setFiles(files);
-            }
-
-            validateClinicalAnalysisFields(clinicalAnalysis, study, token);
-            if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
-            }
-
-            if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key())
-                    && (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())
-                    || parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()))) {
-                // We need to validate the role to proband
-                Map<String, String> map = parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key(), Map.class);
-                for (String memberId : map.keySet()) {
-                    clinicalAnalysis.getRoleToProband().put(memberId, ClinicalAnalysis.FamiliarRelationship.valueOf(map.get(memberId)));
-                }
-                validateRoleToProband(clinicalAnalysis);
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key(), clinicalAnalysis.getRoleToProband());
-
-                if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
-                    if (sortMembersFromFamily(clinicalAnalysis)) {
-                        parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), clinicalAnalysis.getFamily());
-                    }
-                }
-            }
-
-            if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
-                Map<String, Object> status = (Map<String, Object>) parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key());
-                if (!(status instanceof Map) || StringUtils.isEmpty(String.valueOf(status.get("name")))
-                        || !ClinicalAnalysis.ClinicalStatus.isValid(String.valueOf(status.get("name")))) {
-                    throw new CatalogException("Missing or invalid status");
-                }
-            }
-
-            DataResult result = clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, QueryOptions.empty());
-
-            DataResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
-                    QueryOptions.empty());
-            queryResult.setTime(queryResult.getTime() + result.getTime());
-
-            auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return queryResult;
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
         }
+
+        return result;
+    }
+
+
+    /**
+     * Update a Clinical Analysis from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param clinicalIds  List of clinical analysis ids. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A list of DataResults with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public List<DataResult<ClinicalAnalysis>> update(String studyStr, List<String> clinicalIds, ClinicalUpdateParams updateParams,
+                                                     QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("clinicalIds", clinicalIds)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        List<DataResult<ClinicalAnalysis>> resultList = new ArrayList<>();
+
+        for (String id : clinicalIds) {
+            String clinicalAnalysisId = id;
+            String clinicalAnalysisUuid = "";
+            try {
+                DataResult<ClinicalAnalysis> result = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("Clinical analysis '" + id + "' not found");
+                }
+                ClinicalAnalysis clinicalAnalysis = result.first();
+
+                // We set the proper values for the audit
+                clinicalAnalysisId = clinicalAnalysis.getId();
+                clinicalAnalysisUuid = clinicalAnalysis.getUuid();
+
+                DataResult<ClinicalAnalysis> updateResult = update(study, clinicalAnalysis, updateParams, userId, token);
+                DataResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
+                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
+                queryResult.setTime(queryResult.getTime() + updateResult.getTime());
+                resultList.add(queryResult);
+
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(),
+                        clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+
+                logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage());
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalAnalysisId, clinicalAnalysisUuid,
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return resultList;
+    }
+
+    private DataResult<ClinicalAnalysis> update(Study study, ClinicalAnalysis clinicalAnalysis, ClinicalUpdateParams updateParams,
+                                                String userId, String token) throws CatalogException {
+        authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            parameters = updateParams.getUpdateMap();
+        }
+        ParamUtils.checkUpdateParametersMap(parameters);
+
+        if (StringUtils.isNotEmpty(updateParams.getId())) {
+            ParamUtils.checkAlias(updateParams.getId(), "id");
+        }
+        if (StringUtils.isNotEmpty(updateParams.getDueDate()) && TimeUtils.toDate(updateParams.getDueDate()) == null) {
+            throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
+        }
+        if (updateParams.getAnalyst() != null && StringUtils.isNotEmpty(updateParams.getAnalyst().getAssignee())) {
+            // We obtain the users with access to the study
+            Set<String> users = new HashSet<>(catalogManager.getStudyManager().getGroup(study.getFqn(), "members", token).first()
+                    .getUserIds());
+            if (!users.contains(updateParams.getAnalyst().getAssignee())) {
+                throw new CatalogException("Cannot assign clinical analysis to " + updateParams.getAnalyst().getAssignee()
+                        + ". User not found or with no access to the study.");
+            }
+
+            Map<String, Object> map = parameters.getMap(ClinicalAnalysisDBAdaptor.QueryParams.ANALYST.key());
+            map.put("assignedBy", userId);
+        }
+        if (updateParams.getFamily() != null && StringUtils.isNotEmpty(updateParams.getFamily().getId())) {
+            Family family = updateParams.getFamily().toUncheckedFamily();
+            family = getFullValidatedFamily(family, study, token);
+            clinicalAnalysis.setFamily(family);
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), family);
+        }
+        if (updateParams.getProband() != null && StringUtils.isNotEmpty(updateParams.getProband().getId())) {
+            Individual proband = updateParams.getProband().toUncheckedIndividual();
+            proband = getFullValidatedMember(proband, study, token);
+            clinicalAnalysis.setProband(proband);
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
+        }
+        if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
+            Map<String, List<File>> files = new HashMap<>();
+            for (Map.Entry<String, List<String>> entry : updateParams.getFiles().entrySet()) {
+                List<File> fileList = entry.getValue().stream().map(fileId -> new File().setId(fileId)).collect(Collectors.toList());
+                files.put(entry.getKey(), fileList);
+            }
+            clinicalAnalysis.setFiles(files);
+        }
+
+        validateClinicalAnalysisFields(clinicalAnalysis, study, token);
+        if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
+        }
+
+        if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key())
+                && (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())
+                || parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key()))) {
+            // We need to validate the role to proband
+            Map<String, String> map = parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key(), Map.class);
+            for (String memberId : map.keySet()) {
+                clinicalAnalysis.getRoleToProband().put(memberId, ClinicalAnalysis.FamiliarRelationship.valueOf(map.get(memberId)));
+            }
+            validateRoleToProband(clinicalAnalysis);
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.ROLE_TO_PROBAND.key(), clinicalAnalysis.getRoleToProband());
+
+            if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {
+                if (sortMembersFromFamily(clinicalAnalysis)) {
+                    parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), clinicalAnalysis.getFamily());
+                }
+            }
+        }
+
+        if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
+            Map<String, Object> status = (Map<String, Object>) parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key());
+            if (!(status instanceof Map) || StringUtils.isEmpty(String.valueOf(status.get("name")))
+                    || !ClinicalAnalysis.ClinicalStatus.isValid(String.valueOf(status.get("name")))) {
+                throw new CatalogException("Missing or invalid status");
+            }
+        }
+
+        return clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, QueryOptions.empty());
     }
 
     /**
@@ -777,6 +845,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
+    public List<DataResult> delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException {
+        return null;
+    }
+
+    @Override
     public DataResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
         return null;
     }
@@ -811,7 +884,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     // **************************   ACLs  ******************************** //
     public List<DataResult<ClinicalAnalysisAclEntry>> getAcls(String studyStr, List<String> clinicalList, String member, boolean silent,
-                                                               String sessionId) throws CatalogException {
+                                                              String sessionId) throws CatalogException {
         List<DataResult<ClinicalAnalysisAclEntry>> clinicalAclList = new ArrayList<>(clinicalList.size());
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
@@ -857,7 +930,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     public List<DataResult<ClinicalAnalysisAclEntry>> updateAcl(String studyStr, List<String> clinicalList, String memberIds,
-                                                                 AclParams clinicalAclParams, String sessionId) throws CatalogException {
+                                                                AclParams clinicalAclParams, String sessionId) throws CatalogException {
         if (clinicalList == null || clinicalList.isEmpty()) {
             throw new CatalogException("Update ACL: Missing 'clinicalAnalysis' parameter");
         }
@@ -891,8 +964,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         switch (clinicalAclParams.getAction()) {
             case SET:
                 return authorizationManager.setAcls(study.getUid(), queryResult.getResults().stream()
-                                .map(ClinicalAnalysis::getUid)
-                                .collect(Collectors.toList()), members, permissions, Entity.CLINICAL_ANALYSIS);
+                        .map(ClinicalAnalysis::getUid)
+                        .collect(Collectors.toList()), members, permissions, Entity.CLINICAL_ANALYSIS);
             case ADD:
                 return authorizationManager.addAcls(study.getUid(), queryResult.getResults().stream()
                         .map(ClinicalAnalysis::getUid)

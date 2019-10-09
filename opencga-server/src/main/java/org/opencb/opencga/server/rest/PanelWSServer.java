@@ -49,12 +49,12 @@ public class PanelWSServer extends OpenCGAWSServer {
         try {
             if (StringUtils.isNotEmpty(panelIds)) {
                 if ("ALL_GLOBAL_PANELS".equals(panelIds.toUpperCase())) {
-                    return createOkResponse(panelManager.importAllGlobalPanels(studyStr, queryOptions, sessionId));
+                    return createOkResponse(panelManager.importAllGlobalPanels(studyStr, queryOptions, token));
                 } else {
-                    return createOkResponse(panelManager.importGlobalPanels(studyStr, getIdList(panelIds), queryOptions, sessionId));
+                    return createOkResponse(panelManager.importGlobalPanels(studyStr, getIdList(panelIds), queryOptions, token));
                 }
             } else {
-                return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, sessionId));
+                return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, token));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -62,17 +62,47 @@ public class PanelWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{panel}/update")
+    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update a panel")
+    @ApiOperation(value = "Update panel attributes")
+    public Response updateByQuery(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Panel id") @QueryParam("id") String id,
+            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
+            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+            @ApiParam(value = "Panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Release") @QueryParam("release") String release,
+
+            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
+                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
+        try {
+            query.remove("study");
+            return createOkResponse(panelManager.update(studyStr, query, panelParams, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{panels}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update panel attributes")
     public Response updatePanel(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
-            @ApiParam(value = "Panel id") @PathParam("panel") String panelId,
+            @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
-            return createOkResponse(panelManager.update(studyStr, panelId, panelParams, queryOptions, sessionId));
+            return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -108,7 +138,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             }
 
             List<String> idList = getIdList(panelStr);
-            List<DataResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, sessionId);
+            List<DataResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, token);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -163,11 +193,24 @@ public class PanelWSServer extends OpenCGAWSServer {
 
             DataResult<Panel> queryResult;
             if (count) {
-                queryResult = panelManager.count(studyStr, query, sessionId);
+                queryResult = panelManager.count(studyStr, query, token);
             } else {
-                queryResult = panelManager.search(studyStr, query, queryOptions, sessionId);
+                queryResult = panelManager.search(studyStr, query, queryOptions, token);
             }
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("/{panels}/delete")
+    @ApiOperation(value = "Delete existing panels")
+    public Response deleteList(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels) {
+        try {
+            return createOkResponse(panelManager.delete(studyStr, getIdList(panels), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -192,7 +235,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release") @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(panelManager.delete(studyStr, query, queryOptions, sessionId));
+            return createOkResponse(panelManager.delete(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -227,7 +270,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             query.remove("study");
             query.remove("fields");
 
-            DataResult result = panelManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = panelManager.groupBy(studyStr, query, fields, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -247,7 +290,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
-            return createOkResponse(panelManager.getAcls(studyStr, idList, member,silent, sessionId));
+            return createOkResponse(panelManager.getAcls(studyStr, idList, member,silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -268,7 +311,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             params = ObjectUtils.defaultIfNull(params, new PanelAcl());
             AclParams panelAclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.panel, false);
-            return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, sessionId));
+            return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

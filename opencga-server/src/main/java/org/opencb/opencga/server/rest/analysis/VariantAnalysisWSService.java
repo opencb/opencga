@@ -201,7 +201,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, sessionId);
+            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, token);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -350,15 +350,15 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Query query = getVariantQuery(queryOptions);
 
             if (count) {
-                queryResult = variantManager.count(query, sessionId);
+                queryResult = variantManager.count(query, token);
             } else if (histogram) {
-                queryResult = variantManager.getFrequency(query, interval, sessionId);
+                queryResult = variantManager.getFrequency(query, interval, token);
             } else if (StringUtils.isNotEmpty(groupBy)) {
-                queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
+                queryResult = variantManager.groupBy(groupBy, query, queryOptions, token);
             } else if (StringUtils.isNotEmpty(rank)) {
-                queryResult = variantManager.rank(query, rank,  limit, true, sessionId);
+                queryResult = variantManager.rank(query, rank,  limit, true, token);
             } else {
-                queryResult = variantManager.get(query, queryOptions, sessionId);
+                queryResult = variantManager.get(query, queryOptions, token);
 //                System.out.println("queryResult = " + jsonObjectMapper.writeValueAsString(queryResult));
 
 //                VariantQueryResult variantQueryResult = variantManager.get(query, queryOptions, sessionId);
@@ -495,13 +495,13 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             logger.info("queryOptions " + queryOptions.toJson());
 
             if (count) {
-                queryResult = variantManager.count(query, sessionId);
+                queryResult = variantManager.count(query, token);
             } else if (params.histogram) {
-                queryResult = variantManager.getFrequency(query, params.interval, sessionId);
+                queryResult = variantManager.getFrequency(query, params.interval, token);
             } else if (StringUtils.isNotEmpty(params.groupBy)) {
-                queryResult = variantManager.groupBy(params.groupBy, query, queryOptions, sessionId);
+                queryResult = variantManager.groupBy(params.groupBy, query, queryOptions, token);
             } else {
-                queryResult = variantManager.get(query, queryOptions, sessionId);
+                queryResult = variantManager.get(query, queryOptions, token);
             }
             queryResults.add(queryResult);
 
@@ -530,7 +530,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Query query = getVariantQuery(queryOptions);
             logger.debug("query = {}, queryOptions = {}" + query.toJson(), queryOptions.toJson());
 
-            DataResult<VariantAnnotation> result = variantManager.getAnnotation(annotationId, query, queryOptions, sessionId);
+            DataResult<VariantAnnotation> result = variantManager.getAnnotation(annotationId, query, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -544,7 +544,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                           @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam("project") String project) {
         try {
             DataResult<ProjectMetadata.VariantAnnotationMetadata> result =
-                    variantManager.getAnnotationMetadata(annotationId, project, sessionId);
+                    variantManager.getAnnotationMetadata(annotationId, project, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -568,7 +568,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             }
 
             return createOkResponse(catalogManager.getFamilyManager().calculateFamilyGenotypes(studyStr, clinicalAnalysis, family, moi,
-                    disorder, penetrance, sessionId));
+                    disorder, penetrance, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -595,7 +595,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Samples must be present in ALL variants or in ANY variant.") @QueryParam("all") @DefaultValue("false") boolean all
     ) {
         try {
-            VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
+            VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(token));
             List<String> genotypes = Arrays.asList(genotypesStr.split(","));
 
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -614,7 +614,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             if (StringUtils.isNotEmpty(sampleAnnotation)) {
                 Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
                 QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
-                List<String> samplesList = catalogManager.getSampleManager().search(studyStr, sampleQuery, options, sessionId)
+                List<String> samplesList = catalogManager.getSampleManager().search(studyStr, sampleQuery, options, token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -641,7 +641,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                 sampleNames = samplesInAnyVariants.keySet();
             }
             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), String.join(",", sampleNames));
-            DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyStr, sampleQuery, queryOptions, sessionId);
+            DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyStr, sampleQuery, queryOptions, token);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -665,7 +665,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     ) {
         try {
             queryOptions.putAll(query);
-            DataResult<VariantSampleData> sampleData = variantManager.getSampleData(variant, studyStr, queryOptions, sessionId);
+            DataResult<VariantSampleData> sampleData = variantManager.getSampleData(variant, studyStr, queryOptions, token);
             return createOkResponse(sampleData);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -698,7 +698,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             params.put("input", file);
 
             DataResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, "", "", "opencga-analysis", "variant validate",
-                    null, params, sessionId);
+                    null, params, token);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -799,7 +799,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             queryOptions.put(QueryOptions.FACET, fields);
             Query query = getVariantQuery(queryOptions);
 
-            FacetQueryResult queryResult = variantManager.facet(query, queryOptions, sessionId);
+            FacetQueryResult queryResult = variantManager.facet(query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -825,7 +825,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         try {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
-            return createOkResponse(variantManager.getMetadata(query, queryOptions, sessionId));
+            return createOkResponse(variantManager.getMetadata(query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -57,7 +57,7 @@ public class ToolAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Json containing the execution parameters", required = true) ExecuteParams params) {
         try {
             DataResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, params.jobName, params.description,
-                    params.toolId, params.execution, params.outDir, params.toolParams, sessionId);
+                    params.toolId, params.execution, params.outDir, params.toolParams, token);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);

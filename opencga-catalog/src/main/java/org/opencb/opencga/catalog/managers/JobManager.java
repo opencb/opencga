@@ -24,10 +24,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -372,9 +369,8 @@ public class JobManager extends ResourceManager<Job> {
                 .append("options", options)
                 .append("token", token);
         try {
-            query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-
             fixQueryObject(study, query, userId);
+            query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             DataResult<Job> jobDataResult = jobDBAdaptor.get(query, options, userId);
             auditManager.auditSearch(userId, AuditRecord.Resource.JOB, study.getId(), study.getUuid(), auditParams,
@@ -433,6 +429,70 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
+    public List<DataResult> delete(String studyStr, List<String> jobIds, ObjectMap params, String token) throws CatalogException {
+        List<DataResult> resultList = new ArrayList<>();
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("jobIds", jobIds)
+                .append("params", params)
+                .append("token", token);
+
+        boolean checkPermissions;
+        try {
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        } catch (CatalogException e) {
+            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        for (String id : jobIds) {
+            String jobId = id;
+            String jobUuid = "";
+
+            try {
+                DataResult<Job> result = internalGet(study.getUid(), id, INCLUDE_JOB_IDS, userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("Job '" + id + "' not found");
+                }
+
+                Job job = result.first();
+                // We set the proper values for the audit
+                jobId = job.getId();
+                jobUuid = job.getUuid();
+
+                if (checkPermissions) {
+                    authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.DELETE);
+                }
+
+                // Check if the job can be deleted
+                checkJobCanBeDeleted(job);
+
+                resultList.add(jobDBAdaptor.delete(job));
+
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
+                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+
+                logger.error("Cannot delete job {}: {}", jobId, e.getMessage(), e);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, jobId, jobUuid,
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return resultList;
+    }
+
+    @Override
     public DataResult delete(String studyId, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         DataResult result = DataResult.empty();
@@ -488,11 +548,9 @@ public class JobManager extends ResourceManager<Job> {
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
 
-                logger.debug(errorMsg);
+                logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-
-                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
@@ -516,50 +574,122 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public DataResult<Job> update(String studyId, String jobId, ObjectMap parameters, QueryOptions options, String token)
+    public DataResult<Job> update(String studyId, Query query, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
-                .append("jobId", jobId)
+                .append("query", query)
                 .append("parameters", parameters)
                 .append("options", options)
                 .append("token", token);
 
-        Job job;
+        ParamUtils.checkObj(parameters, "parameters");
+
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+
+        DBIterator<Job> iterator;
         try {
-            job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
+            fixQueryObject(study, finalQuery, token);
+            finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            iterator = jobDBAdaptor.iterator(finalQuery, INCLUDE_JOB_IDS, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.JOB, jobId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        try {
-            ParamUtils.checkObj(parameters, "parameters");
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
-
-            DataResult result = jobDBAdaptor.update(job.getUid(), parameters, options);
-            auditManager.auditUpdate(userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            DataResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setTime(queryResult.getTime() + result.getTime());
-
-            return queryResult;
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+
+        DataResult<Job> result = DataResult.empty();
+        while (iterator.hasNext()) {
+            Job job = iterator.next();
+            try {
+                options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+
+                DataResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
+                result.append(updateResult);
+
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
+                result.getEvents().add(event);
+
+                logger.error("Cannot update job {}: {}", job.getId(), e.getMessage());
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return result;
     }
 
+    public List<DataResult<Job>> update(String studyId, List<String> jobIds, ObjectMap parameters, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyId)
+                .append("jobIds", jobIds)
+                .append("parameters", parameters)
+                .append("options", options)
+                .append("token", token);
+
+        ParamUtils.checkObj(parameters, "parameters");
+
+        List<DataResult<Job>> resultList = new ArrayList<>();
+        for (String id : jobIds) {
+            String jobId = id;
+            String jobUuid = "";
+
+            try {
+                DataResult<Job> result = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("Job '" + id + "' not found");
+                }
+                Job job = result.first();
+
+                // We set the proper values for the audit
+                jobId = job.getId();
+                jobUuid = job.getUuid();
+
+                options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+
+                DataResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
+                DataResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
+                queryResult.setTime(queryResult.getTime() + updateResult.getTime());
+
+                resultList.add(queryResult);
+
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+
+                logger.error("Cannot update job {}: {}", jobId, e.getMessage());
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, jobId, jobUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return resultList;
+    }
+
+    @Deprecated
     public DataResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
-        return update(null, String.valueOf(jobId), parameters, options, token);
+        throw new UnsupportedOperationException("Deprecated code. Managers no longer accept uid values");
     }
 
     public void setStatus(String studyId, String jobId, String status, String message, String token) throws CatalogException {

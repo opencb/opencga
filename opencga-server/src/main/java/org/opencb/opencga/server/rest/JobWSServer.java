@@ -136,7 +136,7 @@ public class JobWSServer extends OpenCGAWSServer {
                     parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
                     inputJob.resourceManagerAttributes);
 
-            DataResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, sessionId);
+            DataResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -175,7 +175,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             List<String> idList = getIdList(jobIds);
             return createOkResponse(catalogManager.getJobManager().get(studyStr, idList, new Query("deleted", deleted), queryOptions,
-                    silent, sessionId));
+                    silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -227,9 +227,9 @@ public class JobWSServer extends OpenCGAWSServer {
             }
             DataResult<Job> result;
             if (count) {
-                result = catalogManager.getJobManager().count(studyStr, query, sessionId);
+                result = catalogManager.getJobManager().count(studyStr, query, token);
             } else {
-                result = catalogManager.getJobManager().search(studyStr, query, queryOptions, sessionId);
+                result = catalogManager.getJobManager().search(studyStr, query, queryOptions, token);
             }
             return createOkResponse(result);
         } catch (Exception e) {
@@ -245,12 +245,25 @@ public class JobWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobId) {
         try {
-            return createOkResponse(catalogManager.getJobManager().visit(studyStr, jobId, sessionId));
+            return createOkResponse(catalogManager.getJobManager().visit(studyStr, jobId, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }
 
+    @DELETE
+    @Path("/{jobs}/delete")
+    @ApiOperation(value = "Delete existing jobs")
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of job ids") @PathParam("jobs") String jobs) {
+        try {
+            return createOkResponse(jobManager.delete(studyStr, getIdList(jobs), queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @DELETE
     @Path("/delete")
@@ -269,9 +282,8 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, sessionId));
+            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, token));
         } catch (Exception e) {
-
             return createErrorResponse(e);
         }
     }
@@ -305,7 +317,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 throw new CatalogException("Empty fields parameter.");
             }
             DataResult result = catalogManager.getJobManager().groupBy(studyStr, query, Arrays.asList(fields.split(",")), queryOptions,
-                    sessionId);
+                    token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -322,7 +334,7 @@ public class JobWSServer extends OpenCGAWSServer {
                                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIdsStr);
-            return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));
+            return createOkResponse(jobManager.getAcls(null, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -340,7 +352,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             AclParams aclParams = getAclParams(params.add, params.remove, params.set);
             List<String> idList = getIdList(jobIdStr);
-            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, sessionId));
+            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -360,7 +372,7 @@ public class JobWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(params, new JobAcl());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.job, false);
-            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, sessionId));
+            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

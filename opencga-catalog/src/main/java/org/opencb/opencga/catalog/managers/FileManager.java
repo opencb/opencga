@@ -469,8 +469,8 @@ public class FileManager extends AnnotationSetManager<File> {
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
                 VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
-                update(studyStr, vcf.getPath(), new FileUpdateParams().setStats(new ObjectMap(VARIANT_FILE_STATS, stats)),
-                        new QueryOptions(), sessionId);
+                update(studyStr, Collections.singletonList(vcf.getPath()),
+                        new FileUpdateParams().setStats(new ObjectMap(VARIANT_FILE_STATS, stats)), new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
             }
@@ -1114,6 +1114,7 @@ public class FileManager extends AnnotationSetManager<File> {
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+            AnnotationUtils.fixQueryOptionAnnotation(options);
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -1182,6 +1183,78 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
+    public List<DataResult> delete(String studyStr, List<String> fileIds, ObjectMap params, String token) throws CatalogException {
+        List<DataResult> resultList = new ArrayList<>();
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("fileIds", fileIds)
+                .append("params", params)
+                .append("token", token);
+
+        boolean checkPermissions;
+        try {
+            // If the user is the owner or the admin, we won't check if he has permissions for every single entry
+            checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        } catch (CatalogException e) {
+            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        // We need to avoid processing subfolders or subfiles of an already processed folder independently
+        Set<String> processedPaths = new HashSet<>();
+        boolean physicalDelete = params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false);
+
+        for (String id : fileIds) {
+            String fileId = id;
+            String fileUuid = "";
+
+            try {
+                DataResult<File> result = internalGet(study.getUid(), id, INCLUDE_FILE_IDS, userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("File '" + id + "' not found");
+                }
+                File file = result.first();
+                // We set the proper values for the audit
+                fileId = file.getId();
+                fileUuid = file.getUuid();
+
+                if (subpathInPath(file.getPath(), processedPaths)) {
+                    // We skip this folder because it is a subfolder or subfile within an already processed folder
+                    continue;
+                }
+
+                DataResult updateResult = delete(study, file, params, checkPermissions, physicalDelete, userId);
+                resultList.add(updateResult);
+
+                // We store the processed path as is
+                if (file.getType() == File.Type.DIRECTORY) {
+                    processedPaths.add(file.getPath());
+                }
+
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
+                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+
+                logger.error("Could not delete file {}: {}", fileId, e.getMessage(), e);
+                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, fileId, fileUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return resultList;
+    }
+
+    @Override
     public DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
@@ -1206,7 +1279,6 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // We try to get an iterator containing all the files to be deleted
         DBIterator<File> fileIterator;
-
         try {
             // Fix query if it contains any annotation
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
@@ -1238,49 +1310,8 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             try {
-                if (checkPermissions) {
-                    authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
-                }
-
-                // Check if the file or the folder plus any nested files/folders can be deleted
-                List<File> fileList = checkCanDeleteFile(studyStr, file, physicalDelete, userId);
-
-                // Remove job references
-//                try {
-//                    removeJobReferences(study.getUid(), fileList);
-//                } catch (CatalogException e) {
-//                    logger.error("Could not remove job references: {}", e.getMessage(), e);
-//                    throw new CatalogException("Could not remove job references: " + e.getMessage(), e);
-//                }
-
-
-                // Remove the index references in case it is a transformed file or folder
-//                try {
-//                    updateIndexStatusAfterDeletionOfTransformedFile(study.getUid(), file);
-//                } catch (CatalogException e) {
-//                    logger.error("Could not remove relation references: {}", e.getMessage(), e);
-//                    throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
-//                }
-
-                if (file.isExternal()) {
-                    // unlink
-                    DataResult result = unlink(study.getUid(), file);
-                    dataResult.setNumUpdated(dataResult.getNumUpdated() + result.getNumUpdated());
-                    dataResult.setNumMatches(dataResult.getNumMatches() + result.getNumMatches());
-                } else {
-                    // local
-                    if (physicalDelete) {
-                        // physicalDelete
-                        DataResult result = physicalDelete(study.getUid(), file, params.getBoolean(FORCE_DELETE, false));
-                        dataResult.setNumUpdated(dataResult.getNumUpdated() + result.getNumUpdated());
-                        dataResult.setNumMatches(dataResult.getNumMatches() + result.getNumMatches());
-                    } else {
-                        // sendToTrash
-                        DataResult result = sendToTrash(study.getUid(), file);
-                        dataResult.setNumUpdated(dataResult.getNumUpdated() + result.getNumUpdated());
-                        dataResult.setNumMatches(dataResult.getNumMatches() + result.getNumMatches());
-                    }
-                }
+                DataResult result = delete(study, file, params, checkPermissions, physicalDelete, userId);
+                dataResult.append(result);
 
                 // We store the processed path as is
                 if (file.getType() == File.Type.DIRECTORY) {
@@ -1302,7 +1333,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-//                throw new CatalogException(errorMsg, e.getCause());
             }
         }
 
@@ -1310,6 +1340,45 @@ public class FileManager extends AnnotationSetManager<File> {
         dataResult.setNumMatches(dataResult.getNumMatches() + numMatches);
 
         return dataResult;
+    }
+
+    private DataResult delete(Study study, File file, ObjectMap params, boolean checkPermissions, boolean physicalDelete, String userId)
+            throws CatalogException {
+        if (checkPermissions) {
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
+        }
+
+        // Check if the file or the folder plus any nested files/folders can be deleted
+        List<File> fileList = checkCanDeleteFile(study.getFqn(), file, physicalDelete, userId);
+
+        // Remove job references
+//                try {
+//                    removeJobReferences(study.getUid(), fileList);
+//                } catch (CatalogException e) {
+//                    logger.error("Could not remove job references: {}", e.getMessage(), e);
+//                    throw new CatalogException("Could not remove job references: " + e.getMessage(), e);
+//                }
+
+
+        // Remove the index references in case it is a transformed file or folder
+//                try {
+//                    updateIndexStatusAfterDeletionOfTransformedFile(study.getUid(), file);
+//                } catch (CatalogException e) {
+//                    logger.error("Could not remove relation references: {}", e.getMessage(), e);
+//                    throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
+//                }
+
+        if (file.isExternal()) {
+            // unlink
+            return unlink(study.getUid(), file);
+        } else {
+            // local
+            if (physicalDelete) {
+                return physicalDelete(study.getUid(), file, params.getBoolean(FORCE_DELETE, false));
+            } else {
+                return sendToTrash(study.getUid(), file);
+            }
+        }
     }
 
     public DataResult<File> unlink(@Nullable String studyId, String fileId, String token) throws CatalogException {
@@ -1643,7 +1712,7 @@ public class FileManager extends AnnotationSetManager<File> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, fileStr, updateParams, options, token);
+        return update(studyStr, Collections.singletonList(fileStr), updateParams, options, token).get(0);
     }
 
     public DataResult<File> removeAnnotations(String studyStr, String fileStr, String annotationSetId,
@@ -1658,107 +1727,183 @@ public class FileManager extends AnnotationSetManager<File> {
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
 
-    /**
-     * Update a File from catalog.
-     *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param fileId   File id in string format. Could be either the id, path or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
-     * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
-     * @return A DataResult with the object updated.
-     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
-     *                          exist or is not allowed to be updated.
-     */
-    public DataResult<File> update(String studyStr, String fileId, FileUpdateParams updateParams, QueryOptions options, String token)
+    public DataResult<File> update(String studyStr, Query query, FileUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("fileId", fileId)
+                .append("query", query)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
                 .append("options", options)
                 .append("token", token);
 
-        File file;
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+
+        DBIterator<File> iterator;
         try {
-            file = internalGet(study.getUid(), fileId, QueryOptions.empty(), userId).first();
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
+            fixQueryObject(study, finalQuery, userId);
+            finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            iterator = fileDBAdaptor.iterator(finalQuery, EXCLUDE_FILE_ATTRIBUTES, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, fileId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        try {
-            ObjectMap parameters = new ObjectMap();
-            if (updateParams != null) {
-                parameters = updateParams.getUpdateMap();
-            }
-            ParamUtils.checkUpdateParametersMap(parameters);
-
-            options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-            if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
-                Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-                if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
-                        && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
-                    logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                    actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
-                    options.put(Constants.ACTIONS, actionMap);
-                }
-            }
-
-            // Check permissions...
-            // Only check write annotation permissions if the user wants to update the annotation sets
-            if (updateParams != null && updateParams.getAnnotationSets() != null) {
-                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId,
-                        FileAclEntry.FilePermissions.WRITE_ANNOTATIONS);
-            }
-            // Only check update permissions if the user wants to update anything apart from the annotation sets
-            if ((parameters.size() == 1 && !parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                    || parameters.size() > 1) {
-                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-            }
-
-            if (isRootFolder(file)) {
-                throw new CatalogException("Cannot modify root folder");
-            }
-
-            // We obtain the numeric ids of the samples given
-            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
-                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), updateParams.getSamples(),
-                        SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
-
-                parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
-            }
-
-            //Name must be changed with "rename".
-            if (updateParams != null && StringUtils.isNotEmpty(updateParams.getName())) {
-                logger.info("Rename file using update method!");
-                rename(studyStr, file.getPath(), updateParams.getName(), token);
-                parameters.remove(FileDBAdaptor.QueryParams.NAME.key());
-            }
-
-            checkUpdateAnnotations(study, file, parameters, options, VariableSet.AnnotableDataModels.FILE, fileDBAdaptor, userId);
-
-            String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
-            DataResult writeResult = fileDBAdaptor.update(file.getUid(), parameters, study.getVariableSets(), options);
-
-            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            DataResult<File> queryResult = fileDBAdaptor.get(file.getUid(), options);
-            queryResult.setTime(writeResult.getTime() + queryResult.getTime());
-
-            userDBAdaptor.updateUserLastModified(ownerId);
-            return queryResult;
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+
+        DataResult<File> result = DataResult.empty();
+        while (iterator.hasNext()) {
+            File file = iterator.next();
+            try {
+                DataResult<File> updateResult = update(study, file, updateParams, options, userId, token);
+                result.append(updateResult);
+
+                auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                        auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, file.getId(), e.getMessage());
+                result.getEvents().add(event);
+
+                logger.error("Cannot update file {}: {}", file.getId(), e.getMessage());
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
+        userDBAdaptor.updateUserLastModified(ownerId);
+
+        return result;
+    }
+
+    /**
+     * Update a File from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param fileIds   List of file ids. Could be either the id, path or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A list of DataResults with the object updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public List<DataResult<File>> update(String studyStr, List<String> fileIds, FileUpdateParams updateParams, QueryOptions options,
+                                         String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("fileIds", fileIds)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        List<DataResult<File>> resultList = new ArrayList<>();
+        for (String id : fileIds) {
+            String fileId = id;
+            String fileUuid = "";
+
+            try {
+                DataResult<File> result = internalGet(study.getUid(), fileId, EXCLUDE_FILE_ATTRIBUTES, userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("File '" + id + "' not found");
+                }
+                File file = result.first();
+
+                // We set the proper values for the audit
+                fileId = file.getId();
+                fileUuid = file.getUuid();
+
+                DataResult<File> updateResult = update(study, file, updateParams, options, userId, token);
+
+                auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                        auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+                DataResult<File> queryResult = fileDBAdaptor.get(file.getUid(),
+                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
+                queryResult.setTime(updateResult.getTime() + queryResult.getTime());
+
+                resultList.add(queryResult);
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+
+                logger.error("Cannot update file {}: {}", fileId, e.getMessage());
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FILE, fileId, fileUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
+        userDBAdaptor.updateUserLastModified(ownerId);
+
+        return resultList;
+    }
+
+    private DataResult<File> update(Study study, File file, FileUpdateParams updateParams, QueryOptions options, String userId,
+                                    String token) throws CatalogException {
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            parameters = updateParams.getUpdateMap();
+        }
+        ParamUtils.checkUpdateParametersMap(parameters);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
+                    && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
+                logger.warn("Assuming the user wants to add the list of annotation sets provided");
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                options.put(Constants.ACTIONS, actionMap);
+            }
+        }
+
+        // Check permissions...
+        // Only check write annotation permissions if the user wants to update the annotation sets
+        if (updateParams != null && updateParams.getAnnotationSets() != null) {
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId,
+                    FileAclEntry.FilePermissions.WRITE_ANNOTATIONS);
+        }
+        // Only check update permissions if the user wants to update anything apart from the annotation sets
+        if ((parameters.size() == 1 && !parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                || parameters.size() > 1) {
+            authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+        }
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Cannot modify root folder");
+        }
+
+        // We obtain the numeric ids of the samples given
+        if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
+            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), updateParams.getSamples(),
+                    SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
+
+            parameters.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
+        }
+
+        //Name must be changed with "rename".
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getName())) {
+            logger.info("Rename file using update method!");
+            rename(study.getFqn(), file.getPath(), updateParams.getName(), token);
+            parameters.remove(FileDBAdaptor.QueryParams.NAME.key());
+        }
+
+        checkUpdateAnnotations(study, file, parameters, options, VariableSet.AnnotableDataModels.FILE, fileDBAdaptor, userId);
+
+        return fileDBAdaptor.update(file.getUid(), parameters, study.getVariableSets(), options);
     }
 
     @Deprecated

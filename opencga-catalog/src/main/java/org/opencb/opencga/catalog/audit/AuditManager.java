@@ -80,6 +80,12 @@ public class AuditManager {
         audit(operationUuid, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
+    public void auditUpdate(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                            String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(operationId, userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                new ObjectMap());
+    }
+
     public void auditUpdate(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
                             String studyUuid, ObjectMap params, AuditRecord.Status status) {
         audit(userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());

@@ -43,6 +43,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -175,8 +176,8 @@ public class IndividualWSServerTest {
 
         // We update to make the individual in1 be the child of in2
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setFather("in2");
-        OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1", individualUpdateParams,
-                QueryOptions.empty(), sessionId);
+        OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), Collections.singletonList("in1"),
+                individualUpdateParams, QueryOptions.empty(), sessionId);
         // and query again. We look for an individual with father "in2"
         json = webTarget.path("individuals").path("search")
                 .queryParam("study", studyId)

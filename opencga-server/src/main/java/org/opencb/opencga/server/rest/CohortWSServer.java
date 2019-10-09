@@ -70,14 +70,14 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
 
             if (ListUtils.isNotEmpty(sampleIdList)) {
-                List<DataResult<Sample>> queryResults = catalogManager.getSampleManager().get(studyStr, sampleIdList, null, sessionId);
+                List<DataResult<Sample>> queryResults = catalogManager.getSampleManager().get(studyStr, sampleIdList, null, token);
                 List<Sample> sampleList = queryResults.stream().map(DataResult::first).collect(Collectors.toList());
                 Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null)
                         .setName(cohortName);
-                DataResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, sessionId);
+                DataResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, token);
                 cohorts.add(cohortQueryResult);
             } else if (StringUtils.isNotEmpty(variableSetId)) {
-                VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyStr, variableSetId, null, sessionId).first();
+                VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyStr, variableSetId, null, token).first();
                 Variable variable = null;
                 for (Variable v : variableSet.getVariables()) {
                     if (v.getId().equals(variableName)) {
@@ -103,7 +103,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 //Create empty cohort
                 Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, Collections.emptyList(), annotationSetList, -1, null)
                         .setName(cohortName);
-                cohorts.add(catalogManager.getCohortManager().create(studyStr, cohort, null, sessionId));
+                cohorts.add(catalogManager.getCohortManager().create(studyStr, cohort, null, token));
             }
             return createOkResponse(cohorts);
         } catch (Exception e) {
@@ -177,7 +177,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             List<String> cohortList = getIdList(cohortsStr);
             List<DataResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted),
-                    queryOptions, silent, sessionId);
+                    queryOptions, silent, token);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -219,9 +219,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             DataResult<Cohort> queryResult;
             if (count) {
-                queryResult = catalogManager.getCohortManager().count(studyStr, query, sessionId);
+                queryResult = catalogManager.getCohortManager().count(studyStr, query, token);
             } else {
-                queryResult = catalogManager.getCohortManager().search(studyStr, query, queryOptions, sessionId);
+                queryResult = catalogManager.getCohortManager().search(studyStr, query, queryOptions, token);
             }
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -248,7 +248,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr) {
         try {
-            return createOkResponse(cohortManager.getSamples(studyStr, cohortStr, sessionId));
+            return createOkResponse(cohortManager.getSamples(studyStr, cohortStr, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -258,23 +258,57 @@ public class CohortWSServer extends OpenCGAWSServer {
                                              List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
             throws CatalogException {
         //TODO CHANGE THIS for can insert the name also id(number)
-        DataResult<Sample> queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, sessionId);
+        DataResult<Sample> queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, token);
         //TODO FOR THIS. Its possible change the param query to a String
         Cohort cohort = new Cohort(cohortName, type, "", cohortDescription, queryResult.getResults(), annotationSetList, -1, null)
                 .setName(cohortName);
-        return catalogManager.getCohortManager().create(studyStr, cohort, null, sessionId);
+        return catalogManager.getCohortManager().create(studyStr, cohort, null, token);
     }
 
     @POST
-    @Path("/{cohort}/update")
+    @Path("/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some cohort attributes")
+    public Response updateQuery(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Cohort id") @QueryParam("id") String id,
+            @ApiParam(value = "Cohort name") @QueryParam("name") String name,
+            @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
+            @ApiParam(value = "Status") @QueryParam("status") String status,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
+            @ApiParam(value = "Release value") @QueryParam("release") String release,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "params") CohortUpdateParams params) {
+        try {
+            query.remove("study");
+
+            Map<String, Object> actionMap = new HashMap<>();
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+
+            actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
+            return createOkResponse(catalogManager.getCohortManager().update(studyStr, query, params, false, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{cohorts}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some cohort attributes", position = 4)
     public Response updateByPost(
-            @ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
+            @ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts") String cohorts,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
+                @QueryParam("study") String studyStr,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "params") CohortUpdateParams params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
@@ -286,8 +320,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortStr, params, queryOptions,
-                    sessionId));
+            List<String> cohortIds = getIdList(cohorts);
+
+            return createOkResponse(catalogManager.getCohortManager().update(studyStr, cohortIds, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -314,7 +349,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
             return createOkResponse(catalogManager.getCohortManager().updateAnnotations(studyStr, cohortStr, annotationSetId,
-                    updateParams, action, queryOptions, sessionId));
+                    updateParams, action, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -322,10 +357,10 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/delete")
-    @ApiOperation(value = "Delete existing cohorts")
-    public Response delete(
+    @ApiOperation(value = "Delete cohorts")
+    public Response deleteQuery(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-            @QueryParam("study") String studyStr,
+                @QueryParam("study") String studyStr,
             @ApiParam(value = "Cohort id") @QueryParam("id") String id,
             @ApiParam(value = "Cohort name") @QueryParam("name") String name,
             @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
@@ -335,7 +370,22 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(cohortManager.delete(studyStr, query, queryOptions, sessionId));
+            return createOkResponse(cohortManager.delete(studyStr, query, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("{cohorts}/delete")
+    @ApiOperation(value = "Delete cohorts")
+    public Response deleteList(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of cohort ids") @PathParam("cohorts") String cohorts) {
+        try {
+            List<String> cohortIds = getIdList(cohorts);
+            return createOkResponse(cohortManager.delete(studyStr, cohortIds, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -351,7 +401,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            Cohort cohort = cohortManager.get(studyStr, cohortStr, CohortManager.INCLUDE_COHORT_IDS, sessionId).first();
+            Cohort cohort = cohortManager.get(studyStr, cohortStr, CohortManager.INCLUDE_COHORT_IDS, token).first();
 
             Query query = new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid());
 
@@ -377,7 +427,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
             DataResult<Cohort> search = cohortManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
-                    sessionId);
+                    token);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
@@ -402,7 +452,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<DataResult<Cohort>> queryResults = cohortManager.get(studyStr, getIdList(cohortsStr), null, sessionId);
+            List<DataResult<Cohort>> queryResults = cohortManager.get(studyStr, getIdList(cohortsStr), null, token);
 
             Query query = new Query(CohortDBAdaptor.QueryParams.UID.key(),
                     queryResults.stream().map(DataResult::first).map(Cohort::getUid).collect(Collectors.toList()));
@@ -413,7 +463,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            DataResult<Cohort> search = cohortManager.search(studyStr, query, queryOptions, sessionId);
+            DataResult<Cohort> search = cohortManager.search(studyStr, query, queryOptions, token);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
@@ -456,10 +506,11 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
 
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            cohortManager.update(studyStr, cohortStr, new CohortUpdateParams().setAnnotationSets(Collections.singletonList(
-                    new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), sessionId);
+            cohortManager.update(studyStr, Collections.singletonList(cohortStr),
+                    new CohortUpdateParams().setAnnotationSets(Collections.singletonList(
+                            new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), token);
             DataResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortStr, new QueryOptions(QueryOptions.INCLUDE,
-                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
+                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), token);
             List<AnnotationSet> annotationSets = cohortQueryResult.first().getAnnotationSets();
             DataResult<AnnotationSet> queryResult = new DataResult<>(cohortQueryResult.getTime(), Collections.emptyList(),
                     annotationSets.size(), annotationSets, annotationSets.size());
@@ -501,7 +552,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            DataResult result = cohortManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = cohortManager.groupBy(studyStr, query, fields, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -521,7 +572,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(cohortIdsStr);
-            return createOkResponse(cohortManager.getAcls(studyStr, idList, member, silent, sessionId));
+            return createOkResponse(cohortManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -541,7 +592,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             AclParams aclParams = getAclParams(params.add, params.remove, params.set);
             List<String> idList = getIdList(cohortIdStr);
-            return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
+            return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -563,7 +614,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(params, new CohortAcl());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.cohort, false);
-            return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, sessionId));
+            return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -594,7 +645,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
+            FacetQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -626,7 +677,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
+            FacetQueryResult queryResult = catalogManager.getCohortManager().facet(studyStr, query, queryOptions, defaultStats, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

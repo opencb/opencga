@@ -220,11 +220,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new ClinicalUpdateParams.ProbandParam()
                         .setId("child1")
                         .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))));
-        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
-                QueryOptions.empty(), sessionIdUser);
+        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY,
+                Collections.singletonList("analysis"), updateParams, QueryOptions.empty(), sessionIdUser).get(0);
 
         assertEquals(1, updateResult.getNumResults());
-        assertEquals(0, updateResult.first().getInterpretations().size());
 
         assertEquals(catalogManager.getIndividualManager().get(STUDY, "child1", IndividualManager.INCLUDE_INDIVIDUAL_IDS, sessionIdUser)
                 .first().getUid(), updateResult.first().getProband().getUid());
@@ -246,11 +245,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         .setMembers(Collections.singletonList(new ClinicalUpdateParams.ProbandParam()
                                 .setId("child1")
                                 .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))));
-        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
-                QueryOptions.empty(), sessionIdUser);
+        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY,
+                Collections.singletonList("analysis"), updateParams, QueryOptions.empty(), sessionIdUser).get(0);
 
         assertEquals(1, updateResult.getNumResults());
-        assertEquals(0, updateResult.first().getInterpretations().size());
 
         assertEquals(catalogManager.getFamilyManager().get(STUDY, "family", FamilyManager.INCLUDE_FAMILY_IDS, sessionIdUser)
                 .first().getUid(), updateResult.first().getFamily().getUid());

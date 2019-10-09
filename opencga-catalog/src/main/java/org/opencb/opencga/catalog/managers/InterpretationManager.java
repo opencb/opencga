@@ -1,10 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -263,74 +260,146 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
     }
 
+    public DataResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams, QueryOptions options,
+                                             String token) throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("query", query)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+
+        DBIterator<Interpretation> iterator;
+        try {
+            finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            iterator = interpretationDBAdaptor.iterator(finalQuery, INCLUDE_INTERPRETATION_IDS, userId);
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        DataResult<Interpretation> result = DataResult.empty();
+        while (iterator.hasNext()) {
+            Interpretation interpretation = iterator.next();
+            try {
+                DataResult writeResult = update(study, interpretation, updateParams, options, userId);
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+                result.append(writeResult);
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
+                result.getEvents().add(event);
+
+                logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return result;
+    }
+
     /**
-     * Update na Interpretation from catalog.
+     * Update interpretations from catalog.
      *
      * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param interpretationId   Interpretation id in string format. Could be either the id or uuid.
+     * @param interpretationIds List of interpretation ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A DataResult with the object updated.
+     * @return A list of DataResults with the object updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public DataResult<Interpretation> update(String studyStr, String interpretationId, InterpretationUpdateParams updateParams,
+    public List<DataResult<Interpretation>> update(String studyStr, List<String> interpretationIds, InterpretationUpdateParams updateParams,
                                               QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("interpretationId", interpretationId)
+                .append("interpretationIds", interpretationIds)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
                 .append("options", options)
                 .append("token", token);
 
-        Interpretation interpretation;
-        try {
-            interpretation = internalGet(study.getUid(), interpretationId, QueryOptions.empty(), userId).first();
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretationId, "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
+        List<DataResult<Interpretation>> resultList = new ArrayList<>();
+        for (String id : interpretationIds) {
+            String interpretationId = id;
+            String interpretationUuid = "";
+
+            try {
+                DataResult<Interpretation> result = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_IDS, userId);
+                if (result.getNumResults() == 0) {
+                    throw new CatalogException("Interpretation '" + id + "' not found");
+                }
+                Interpretation interpretation = result.first();
+
+                // We set the proper values for the audit
+                interpretationId = interpretation.getId();
+                interpretationUuid = interpretation.getUuid();
+
+                DataResult writeResult = update(study, interpretation, updateParams, options, userId);
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+                        interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+                DataResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
+                queryResult.setTime(queryResult.getTime() + writeResult.getTime());
+
+                resultList.add(queryResult);
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
+                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+
+                logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretationId, interpretationUuid,
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
         }
 
-        try {
-            // Check if user has permissions to write clinical analysis
-            ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
-                    interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
-            authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+        return resultList;
+    }
 
-            ObjectMap parameters = updateParams.getUpdateMap();
+    private DataResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams, QueryOptions options,
+                              String userId) throws CatalogException {
+        // Check if user has permissions to write clinical analysis
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
+                interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
+        authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-            if (ListUtils.isNotEmpty(interpretation.getPrimaryFindings()) && (parameters.size() > 1
-                    || !parameters.containsKey(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key()))) {
-                throw new CatalogException("Interpretation already has reported variants. Only array of reported variants can be updated.");
-            }
+        ObjectMap parameters = updateParams.getUpdateMap();
 
-            if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
-                ParamUtils.checkAlias(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
-                        InterpretationDBAdaptor.QueryParams.ID.key());
-            }
-
-            DataResult writeResult = interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
-            auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), interpretation.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            DataResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
-                    new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setTime(queryResult.getTime() + writeResult.getTime());
-
-            return queryResult;
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), interpretation.getUuid(),
-                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
+        if (ListUtils.isNotEmpty(interpretation.getPrimaryFindings()) && (parameters.size() > 1
+                || !parameters.containsKey(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key()))) {
+            throw new CatalogException("Interpretation already has reported variants. Only array of reported variants can be updated.");
         }
+
+        if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
+            ParamUtils.checkAlias(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
+                    InterpretationDBAdaptor.QueryParams.ID.key());
+        }
+
+        return interpretationDBAdaptor.update(interpretation.getUid(), parameters, options);
     }
 
     @Override
@@ -368,13 +437,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         queryResult.setResults(results);
-        queryResult.setNumTotalResults(results.size());
+        queryResult.setNumMatches(results.size());
         queryResult.setNumResults(results.size());
         return queryResult;
     }
 
     @Override
     public DataResult<Interpretation> count(String studyId, Query query, String token) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public List<DataResult> delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException {
         return null;
     }
 

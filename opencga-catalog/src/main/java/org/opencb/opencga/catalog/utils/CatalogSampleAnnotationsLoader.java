@@ -141,7 +141,8 @@ public class CatalogSampleAnnotationsLoader {
         for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
-            catalogManager.getSampleManager().update(study.getFqn(), entry.getValue().getId(), new SampleUpdateParams()
+            catalogManager.getSampleManager().update(study.getFqn(), Collections.singletonList(entry.getValue().getId()),
+                    new SampleUpdateParams()
                             .setAnnotationSets(Collections.singletonList(
                                     new AnnotationSet("pedigreeAnnotation", variableSet.getId(), annotations)
                             )), options, sessionId);

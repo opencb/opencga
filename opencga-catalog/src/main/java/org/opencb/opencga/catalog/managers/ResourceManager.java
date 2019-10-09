@@ -66,7 +66,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param entryStr  Entry id to be fetched.
      * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param token sessionId
+     * @param token token
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
@@ -82,7 +82,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param studyStr  Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param entryList Comma separated list of entries to be fetched.
      * @param options   QueryOptions object, like "include", "exclude", "limit" and "skip".
-     * @param token sessionId
+     * @param token token
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
@@ -159,11 +159,11 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param studyStr  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query     Query object.
      * @param options   QueryOptions object.
-     * @param sessionId Session id of the user logged in.
+     * @param token Session id of the user logged in.
      * @return An iterator.
      * @throws CatalogException if there is any internal error.
      */
-    public abstract DBIterator<R> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
+    public abstract DBIterator<R> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Search of entries in catalog.
@@ -188,17 +188,19 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      */
     public abstract DataResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
+    public abstract List<DataResult> delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException;
+
     /**
      * Delete all entries matching the query.
      *
      * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query Query object.
      * @param params Map containing additional parameters to be considered for the deletion.
-     * @param sessionId Session id of the user logged in.
+     * @param token Session id of the user logged in.
      * @throws CatalogException if the study or the user do not exist.
      * @return A DataResult object containing the number of matching elements, deleted and elements that could not be deleted.
      */
-    public abstract DataResult delete(String studyStr, Query query, ObjectMap params, String sessionId) throws CatalogException;
+    public abstract DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -208,11 +210,11 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param field      A field or a comma separated list of fields by which the results will be grouped in.
      * @param numResults Maximum number of results to be reported.
      * @param asc        Order in which the results will be reported.
-     * @param sessionId  Session id of the user logged in.
+     * @param token  Session id of the user logged in.
      * @return A DataResult object containing each of the fields in field and the count of them matching the query.
      * @throws CatalogException CatalogException
      */
-    public abstract DataResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String sessionId)
+    public abstract DataResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String token)
             throws CatalogException;
 
     /**
@@ -222,16 +224,16 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param query     Query object.
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
      * @param options   QueryOptions object.
-     * @param sessionId Session id of the user logged in.
+     * @param token Session id of the user logged in.
      * @return A DataResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public DataResult groupBy(@Nullable String studyStr, Query query, String fields, QueryOptions options, String sessionId)
+    public DataResult groupBy(@Nullable String studyStr, Query query, String fields, QueryOptions options, String token)
             throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
         }
-        return groupBy(studyStr, query, Arrays.asList(fields.split(",")), options, sessionId);
+        return groupBy(studyStr, query, Arrays.asList(fields.split(",")), options, token);
     }
 
     /**
@@ -241,11 +243,11 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param query     Query object.
      * @param options   QueryOptions object.
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
-     * @param sessionId Session id of the user logged in.
+     * @param token Session id of the user logged in.
      * @return A DataResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public abstract DataResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public abstract DataResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException;
 
 }

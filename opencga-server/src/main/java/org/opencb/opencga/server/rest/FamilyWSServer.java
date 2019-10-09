@@ -90,7 +90,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            List<DataResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, sessionId);
+            List<DataResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, token);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -153,9 +153,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             DataResult<Family> queryResult;
             if (count) {
-                queryResult = familyManager.count(studyStr, query, sessionId);
+                queryResult = familyManager.count(studyStr, query, token);
             } else {
-                queryResult = familyManager.search(studyStr, query, queryOptions, sessionId);
+                queryResult = familyManager.search(studyStr, query, queryOptions, token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -175,7 +175,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
         try {
             family = ObjectUtils.defaultIfNull(family, new FamilyPOST());
             DataResult<Family> queryResult = familyManager.create(studyStr,
-                    family.toFamily(studyStr, catalogManager.getStudyManager(), sessionId), getIdList(members), queryOptions, sessionId);
+                    family.toFamily(studyStr, catalogManager.getStudyManager(), token), getIdList(members), queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -183,18 +183,54 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{family}/update")
+    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some family attributes", position = 6,
-            notes = "The entire family is returned after the modification. Using include/exclude query parameters is encouraged to "
-                    + "avoid slowdowns when sending unnecessary information where possible")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
-    })
+    @ApiOperation(value = "Update some family attributes")
+    public Response updateByQuery(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "Family id") @QueryParam("id") String id,
+            @ApiParam(value = "Family name") @QueryParam("name") String name,
+            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @QueryParam("release") String release,
+            @ApiParam(value = "Create a new version of family", defaultValue = "false")
+            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
+                    defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
+            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "params") FamilyUpdateParams parameters) {
+        try {
+            query.remove("study");
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+
+            queryOptions.put(Constants.REFRESH, refresh);
+            queryOptions.remove("updateIndividualVersion");
+            query.remove("updateIndividualVersion");
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
+            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, query, parameters, queryOptions, token);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @POST
+    @Path("/{families}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some family attributes")
     public Response updateByPost(
-            @ApiParam(value = "familyId", required = true) @PathParam("family") String familyStr,
+            @ApiParam(value = "Comma separated list of family ids", required = true) @PathParam("families") String familyStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Create a new version of family", defaultValue = "false")
@@ -217,8 +253,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
             actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyStr, parameters, queryOptions,
-                    sessionId);
+            List<String> familyIds = getIdList(familyStr);
+
+            List<DataResult<Family>> queryResult = catalogManager.getFamilyManager().update(studyStr, familyIds, parameters, queryOptions,
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -252,7 +290,22 @@ public class FamilyWSServer extends OpenCGAWSServer {
             queryOptions.put(Constants.REFRESH, refresh);
 
             return createOkResponse(catalogManager.getFamilyManager().updateAnnotations(studyStr, familyStr, annotationSetId,
-                    updateParams, action, queryOptions, sessionId));
+                    updateParams, action, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @DELETE
+    @Path("{families}/delete")
+    @ApiOperation(value = "Delete existing families")
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of family ids") @PathParam("families") String families) {
+        try {
+            List<String> familyIds = getIdList(families);
+            return createOkResponse(familyManager.delete(studyStr, familyIds, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -273,7 +326,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(familyManager.delete(studyStr, query, queryOptions, sessionId));
+            return createOkResponse(familyManager.delete(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -308,7 +361,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("study");
             query.remove("fields");
 
-            DataResult result = familyManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = familyManager.groupBy(studyStr, query, fields, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -325,7 +378,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            Family family = familyManager.get(studyStr, familyStr, FamilyManager.INCLUDE_FAMILY_IDS, sessionId).first();
+            Family family = familyManager.get(studyStr, familyStr, FamilyManager.INCLUDE_FAMILY_IDS, token).first();
             Query query = new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid());
 
             if (StringUtils.isEmpty(annotation)) {
@@ -350,7 +403,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
             DataResult<Family> search = familyManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
-                    sessionId);
+                    token);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
@@ -375,7 +428,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<DataResult<Family>> queryResults = familyManager.get(studyStr, getIdList(familiesStr), null, sessionId);
+            List<DataResult<Family>> queryResults = familyManager.get(studyStr, getIdList(familiesStr), null, token);
 
             Query query = new Query(FamilyDBAdaptor.QueryParams.UID.key(),
                     queryResults.stream().map(DataResult::first).map(Family::getUid).collect(Collectors.toList()));
@@ -386,7 +439,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            DataResult<Family> search = familyManager.search(studyStr, query, queryOptions, sessionId);
+            DataResult<Family> search = familyManager.search(studyStr, query, queryOptions, token);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
@@ -417,10 +470,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
             }
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
 
-            familyManager.update(studyStr, familyStr, new FamilyUpdateParams().setAnnotationSets(Collections.singletonList(
-                    new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), sessionId);
+            familyManager.update(studyStr, Collections.singletonList(familyStr),
+                    new FamilyUpdateParams().setAnnotationSets(Collections.singletonList(
+                            new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), token);
             DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, new QueryOptions(QueryOptions.INCLUDE,
-                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
+                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), token);
             List<AnnotationSet> annotationSets = familyQueryResult.first().getAnnotationSets();
             DataResult<AnnotationSet> queryResult = new DataResult<>(familyQueryResult.getTime(), Collections.emptyList(),
                     annotationSets.size(), annotationSets, annotationSets.size());
@@ -443,7 +497,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(familyIdsStr);
-            return createOkResponse(familyManager.getAcls(studyStr, idList, member, silent, sessionId));
+            return createOkResponse(familyManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -465,7 +519,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             params = ObjectUtils.defaultIfNull(params, new FamilyAcl());
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.family, false);
-            return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, sessionId));
+            return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -498,7 +552,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
+            FacetQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, defaultStats, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -532,7 +586,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, defaultStats, sessionId);
+            FacetQueryResult queryResult = catalogManager.getFamilyManager().facet(studyStr, query, queryOptions, defaultStats, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

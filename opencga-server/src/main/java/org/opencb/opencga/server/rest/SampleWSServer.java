@@ -88,7 +88,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            List<DataResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, sessionId);
+            List<DataResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, token);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -124,7 +124,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 sample.setIndividualId(individual);
             }
 
-            return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, sessionId));
+            return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -147,9 +147,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                 fileIdStr = fileStr;
             }
 
-            File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileIdStr, null, sessionId).first();
+            File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileIdStr, null, token).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
-            DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, sessionId);
+            DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, token);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -233,9 +233,9 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             DataResult<Sample> queryResult;
             if (count) {
-                queryResult = sampleManager.count(studyStr, query, sessionId);
+                queryResult = sampleManager.count(studyStr, query, token);
             } else {
-                queryResult = sampleManager.search(studyStr, query, queryOptions, sessionId);
+                queryResult = sampleManager.search(studyStr, query, queryOptions, token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -244,18 +244,52 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{sample}/update")
+    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some sample attributes", position = 6,
-            notes = "The entire sample is returned after the modification. Using include/exclude query parameters is encouraged to "
-                    + "avoid slowdowns when sending unnecessary information where possible")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query")
-    })
+    @ApiOperation(value = "Update some sample attributes")
     public Response updateByPost(
-            @ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "Sample id") @QueryParam("id") String id,
+            @ApiParam(value = "Sample name") @QueryParam("name") String name,
+            @ApiParam(value = "Sample source") @QueryParam("source") String source,
+            @ApiParam(value = "Sample type") @QueryParam("type") String type,
+            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
+            @ApiParam(value = "Individual id or name") @QueryParam("individual") String individual,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
+            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
+            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
+            @QueryParam("release") String release,
+
+            @ApiParam(value = "Create a new version of sample", defaultValue = "false")
+            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
+            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "params") SampleUpdateParams parameters) {
+        try {
+            query.remove("study");
+            if (annotationSetsAction == null) {
+                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+            }
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+            return createOkResponse(sampleManager.update(studyStr, query, parameters, options, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{samples}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some sample attributes")
+    public Response updateByPost(
+            @ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("samples") String sampleStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
@@ -271,7 +305,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(sampleManager.update(studyStr, sampleStr, parameters, options, sessionId));
+            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, options, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -300,15 +334,43 @@ public class SampleWSServer extends OpenCGAWSServer {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
             return createOkResponse(catalogManager.getSampleManager().updateAnnotations(studyStr, sampleStr, annotationSetId,
-                    updateParams, action, queryOptions, sessionId));
+                    updateParams, action, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @DELETE
+    @Path("{samples}/delete")
+    @ApiOperation(value = "Delete samples")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
+                    + "individuals or cohorts.", dataType = "boolean", defaultValue = "false", paramType = "query"),
+            @ApiImplicitParam(name = Constants.EMPTY_FILES_ACTION, value = "Action to be performed over files that were associated only to"
+                    + " the sample to be deleted. Possible actions are NONE, TRASH, DELETE.", dataType = "string",
+                    defaultValue = "NONE", paramType = "query"),
+            @ApiImplicitParam(name = Constants.DELETE_EMPTY_COHORTS, value = "Boolean indicating if the cohorts associated only to the "
+                    + "sample to be deleted should be also deleted.", dataType = "boolean", defaultValue = "false",
+                    paramType = "query")
+    })
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of sample ids") @PathParam("samples") String samples) {
+        try {
+            queryOptions.put(Constants.EMPTY_FILES_ACTION, query.getString(Constants.EMPTY_FILES_ACTION, "NONE"));
+            queryOptions.put(Constants.DELETE_EMPTY_COHORTS, query.getBoolean(Constants.DELETE_EMPTY_COHORTS, false));
+
+            return createOkResponse(sampleManager.delete(studyStr, getIdList(samples), queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @DELETE
     @Path("/delete")
-    @ApiOperation(value = "Delete existing samples")
+    @ApiOperation(value = "Delete samples")
     @ApiImplicitParams({
             @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
                     + "individuals or cohorts.", dataType = "boolean", defaultValue = "false", paramType = "query"),
@@ -343,7 +405,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove(Constants.EMPTY_FILES_ACTION);
             query.remove(Constants.DELETE_EMPTY_COHORTS);
 
-            return createOkResponse(sampleManager.delete(studyStr, query, queryOptions, sessionId));
+            return createOkResponse(sampleManager.delete(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -394,7 +456,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 }
                 query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
-            DataResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            DataResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -411,7 +473,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Annotation, e.g: key1=value(,key2=value)") @QueryParam("annotation") String annotation,
             @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
-            Sample sample = sampleManager.get(studyStr, sampleStr, SampleManager.INCLUDE_SAMPLE_IDS, sessionId).first();
+            Sample sample = sampleManager.get(studyStr, sampleStr, SampleManager.INCLUDE_SAMPLE_IDS, token).first();
             Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid());
 
             if (StringUtils.isEmpty(annotation)) {
@@ -436,7 +498,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.putIfNotEmpty(Constants.ANNOTATION, annotation);
 
             DataResult<Sample> search = sampleManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
-                    sessionId);
+                    token);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
@@ -460,7 +522,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
             @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<DataResult<Sample>> queryResults = sampleManager.get(studyStr, getIdList(samplesStr), null, sessionId);
+            List<DataResult<Sample>> queryResults = sampleManager.get(studyStr, getIdList(samplesStr), null, token);
 
             Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
                     queryResults.stream().map(DataResult::first).map(Sample::getUid).collect(Collectors.toList()));
@@ -471,7 +533,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
             }
 
-            DataResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, sessionId);
+            DataResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, token);
             if (search.getNumResults() == 1) {
                 return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
                         search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
@@ -501,11 +563,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            sampleManager.update(studyStr, sampleStr, new SampleUpdateParams()
+            sampleManager.update(studyStr, Collections.singletonList(sampleStr), new SampleUpdateParams()
                     .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, variableSet, params.annotations))),
-                    QueryOptions.empty(), sessionId);
+                    QueryOptions.empty(), token);
             DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,
-                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), sessionId);
+                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), token);
             List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
             DataResult<AnnotationSet> queryResult = new DataResult<>(sampleQueryResult.getTime(), Collections.emptyList(),
                     annotationSets.size(), annotationSets, annotationSets.size());
@@ -528,7 +590,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
-            return createOkResponse(sampleManager.getAcls(studyStr, idList, member, silent, sessionId));
+            return createOkResponse(sampleManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -548,7 +610,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             Sample.SampleAclParams sampleAclParams = getAclParams(params.add, params.remove, params.set);
             List<String> idList = StringUtils.isEmpty(sampleIdStr) ? Collections.emptyList() : getIdList(sampleIdStr);
-            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, sessionId));
+            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -613,7 +675,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
                     params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
             List<String> idList = StringUtils.isEmpty(params.sample) ? Collections.emptyList() : getIdList(params.sample, false);
-            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, sessionId));
+            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -648,7 +710,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.FACET, facet);
 
             FacetQueryResult queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
-                    sessionId);
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -684,7 +746,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             queryOptions.put(QueryOptions.FACET, facet);
 
             FacetQueryResult queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
-                    sessionId);
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

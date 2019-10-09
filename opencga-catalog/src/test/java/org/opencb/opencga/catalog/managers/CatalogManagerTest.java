@@ -878,7 +878,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         Map<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "LINUS");
-        catalogManager.getSampleManager().update(studyFqn, sampleId1, new SampleUpdateParams()
+        catalogManager.getSampleManager().update(studyFqn, Collections.singletonList(sampleId1), new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotationId", vs1.getId(), annotations))),
                 QueryOptions.empty(), sessionIdUser);
 
@@ -1050,10 +1050,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
         QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 ParamUtils.UpdateAction.SET.name()));
 
-        Cohort myModifiedCohort = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(), new CohortUpdateParams()
+        Cohort myModifiedCohort = catalogManager.getCohortManager().update(studyFqn, Collections.singletonList(myCohort.getId()),
+                new CohortUpdateParams()
                         .setId("myModifiedCohort")
                         .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId4.getId(), sampleId5.getId())),
-                options, sessionIdUser).first();
+                options, sessionIdUser).get(0).first();
         assertEquals("myModifiedCohort", myModifiedCohort.getId());
         assertEquals(4, myModifiedCohort.getSamples().size());
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId1.getUid()));
@@ -1144,17 +1145,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .setAffectationStatus(IndividualProperty.AffectationStatus.UNKNOWN), new QueryOptions(), sessionIdUser)
                 .first().getId();
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId1, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(studyFqn, Collections.singletonList(individualId1), new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true)))),
                 QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId2, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(studyFqn, Collections.singletonList(individualId2), new IndividualUpdateParams()
                 .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_2").append("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true)))),
                 QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getIndividualManager().update(studyFqn, individualId3, new IndividualUpdateParams()
+        catalogManager.getIndividualManager().update(studyFqn, Collections.singletonList(individualId3), new IndividualUpdateParams()
                 .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_3").append("AGE", 25).append("PHEN", "CASE").append("ALIVE", true)))),
                 QueryOptions.empty(), sessionIdUser);
@@ -1183,27 +1184,27 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("Test", individualDataResult.first().getId());
         assertEquals("19870214", individualDataResult.first().getDateOfBirth());
 
-        DataResult<Individual> update = individualManager.update(studyFqn, individualDataResult.first().getId(),
-                new IndividualUpdateParams().setDateOfBirth(""), QueryOptions.empty(), sessionIdUser);
+        DataResult<Individual> update = individualManager.update(studyFqn, Collections.singletonList(individualDataResult.first().getId()),
+                new IndividualUpdateParams().setDateOfBirth(""), QueryOptions.empty(), sessionIdUser).get(0);
         assertEquals("", update.first().getDateOfBirth());
 
-        update = individualManager.update(studyFqn, individualDataResult.first().getId(),
-                new IndividualUpdateParams().setDateOfBirth("19870214"), QueryOptions.empty(), sessionIdUser);
+        update = individualManager.update(studyFqn, Collections.singletonList(individualDataResult.first().getId()),
+                new IndividualUpdateParams().setDateOfBirth("19870214"), QueryOptions.empty(), sessionIdUser).get(0);
         assertEquals("19870214", update.first().getDateOfBirth());
 
-        update = individualManager.update(studyFqn, String.valueOf(individualDataResult.first().getId()),
-                new IndividualUpdateParams().setAttributes(Collections.singletonMap("key", "value")), QueryOptions.empty(), sessionIdUser);
+        update = individualManager.update(studyFqn, Collections.singletonList(individualDataResult.first().getId()),
+                new IndividualUpdateParams().setAttributes(Collections.singletonMap("key", "value")), QueryOptions.empty(), sessionIdUser).get(0);
         assertEquals("value", update.first().getAttributes().get("key"));
 
-        update = individualManager.update(studyFqn, String.valueOf(individualDataResult.first().getId()),
-                new IndividualUpdateParams().setAttributes(Collections.singletonMap("key2", "value2")), QueryOptions.empty(), sessionIdUser);
+        update = individualManager.update(studyFqn, Collections.singletonList(individualDataResult.first().getId()),
+                new IndividualUpdateParams().setAttributes(Collections.singletonMap("key2", "value2")), QueryOptions.empty(), sessionIdUser).get(0);
         assertEquals("value", update.first().getAttributes().get("key")); // Keep "key"
         assertEquals("value2", update.first().getAttributes().get("key2")); // add new "key2"
 
         // Wrong date of birth format
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Invalid date of birth format");
-        individualManager.update(studyFqn, individualDataResult.first().getId(),
+        individualManager.update(studyFqn, Collections.singletonList(individualDataResult.first().getId()),
                 new IndividualUpdateParams().setDateOfBirth("198421"), QueryOptions.empty(), sessionIdUser);
     }
 
@@ -1214,8 +1215,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
         individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), sessionIdUser);
 
-        DataResult<Individual> individualDataResult = individualManager.update(studyFqn, "child",
-                new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), sessionIdUser);
+        DataResult<Individual> individualDataResult = individualManager.update(studyFqn, Collections.singletonList("child"),
+                new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), sessionIdUser).get(0);
 
         assertEquals("mother", individualDataResult.first().getMother().getId());
         assertEquals(1, individualDataResult.first().getMother().getVersion());

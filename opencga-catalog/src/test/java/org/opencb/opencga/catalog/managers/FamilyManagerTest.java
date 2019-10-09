@@ -27,8 +27,8 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -300,7 +300,7 @@ public class FamilyManagerTest extends GenericTest {
         List<Disorder> disorderList = Arrays.asList(new Disorder().setId("disorder"));
         IndividualUpdateParams params = new IndividualUpdateParams().setDisorders(disorderList);
 
-        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, Collections.singletonList("child1"), params, new QueryOptions(), sessionIdUser);
         DataResult<Individual> child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
 
@@ -309,7 +309,7 @@ public class FamilyManagerTest extends GenericTest {
 
         disorderList = Collections.emptyList();
         params.setDisorders(disorderList);
-        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, Collections.singletonList("child1"), params, new QueryOptions(), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(0, child1.first().getDisorders().size());
 
@@ -320,7 +320,8 @@ public class FamilyManagerTest extends GenericTest {
         disorderList = Arrays.asList(new Disorder().setId("disorder"));
         params.setDisorders(disorderList);
 
-        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, Collections.singletonList("child1"), params,
+                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
         assertEquals(2, child1.first().getVersion());
@@ -595,7 +596,7 @@ public class FamilyManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");
-        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        familyManager.update(STUDY, Collections.singletonList(originalFamily.first().getId()), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
@@ -608,12 +609,12 @@ public class FamilyManagerTest extends GenericTest {
 
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3));
 
-        DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), updateParams, QueryOptions.empty(),
-                sessionIdUser);
-        assertEquals(3, updatedFamily.first().getPhenotypes().size());
+        List<DataResult<Family>> updatedFamily = familyManager.update(STUDY, Collections.singletonList(originalFamily.first().getId()),
+                updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(3, updatedFamily.get(0).first().getPhenotypes().size());
 
         // Only one id should be the same as in originalFamilyIds (father id)
-        for (Phenotype phenotype : updatedFamily.first().getPhenotypes()) {
+        for (Phenotype phenotype : updatedFamily.get(0).first().getPhenotypes()) {
             assertEquals("New name", phenotype.getName());
             assertEquals("New source", phenotype.getSource());
         }
@@ -629,7 +630,7 @@ public class FamilyManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in any member of the family");
-        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        familyManager.update(STUDY, Collections.singletonList(originalFamily.first().getId()), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
 }

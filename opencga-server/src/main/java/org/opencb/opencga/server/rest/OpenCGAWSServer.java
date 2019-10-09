@@ -85,7 +85,7 @@ public class OpenCGAWSServer {
     protected long skip;
     protected boolean count;
     protected boolean lazy;
-    protected String sessionId;
+    protected String token;
 
     @DefaultValue("")
     @QueryParam("sid")
@@ -643,11 +643,11 @@ public class OpenCGAWSServer {
             if (!token.startsWith("Bearer ")) {
                 throw new CatalogAuthenticationException("Authorization header must start with Bearer JWToken");
             }
-            this.sessionId = token.substring("Bearer".length()).trim();
+            this.token = token.substring("Bearer".length()).trim();
         }
 
-        if (StringUtils.isEmpty(this.sessionId)) {
-            this.sessionId = this.params.getString("sid");
+        if (StringUtils.isEmpty(this.token)) {
+            this.token = this.params.getString("sid");
         }
     }
 
