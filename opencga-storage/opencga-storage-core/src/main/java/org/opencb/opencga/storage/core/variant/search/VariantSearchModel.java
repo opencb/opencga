@@ -58,6 +58,8 @@ import java.util.Map;
  <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
  <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
  <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
+ <dynamicField name="pValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="gt_*" type="string" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="dp_*" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -144,6 +146,12 @@ public class VariantSearchModel {
     @Field("stats_*")
     private Map<String, Float> stats;
 
+    @Field("score_*")
+    private Map<String, Float> score;
+
+    @Field("pValue_*")
+    private Map<String, Float> pValue;
+
     @Field("popFreq_*")
     private Map<String, Float> popFreq;
 
@@ -186,6 +194,8 @@ public class VariantSearchModel {
         this.traits = new ArrayList<>();
         this.other = new ArrayList<>();
         this.stats = new HashMap<>();
+        this.score = new HashMap<>();
+        this.pValue = new HashMap<>();
         this.popFreq = new HashMap<>();
         this.gt = new HashMap<>();
         this.dp = new HashMap<>();
@@ -223,6 +233,8 @@ public class VariantSearchModel {
         sb.append(", traits=").append(traits);
         sb.append(", other=").append(other);
         sb.append(", stats=").append(stats);
+        sb.append(", score=").append(score);
+        sb.append(", pValue=").append(pValue);
         sb.append(", popFreq=").append(popFreq);
         sb.append(", gt=").append(gt);
         sb.append(", dp=").append(dp);
@@ -459,6 +471,24 @@ public class VariantSearchModel {
         return this;
     }
 
+    public Map<String, Float> getScore() {
+        return score;
+    }
+
+    public VariantSearchModel setScore(Map<String, Float> score) {
+        this.score = score;
+        return this;
+    }
+
+    public Map<String, Float> getPValue() {
+        return pValue;
+    }
+
+    public VariantSearchModel setPValue(Map<String, Float> pValue) {
+        this.pValue = pValue;
+        return this;
+    }
+
     public Map<String, Float> getPopFreq() {
         return popFreq;
     }
@@ -521,5 +551,4 @@ public class VariantSearchModel {
         this.fileInfo = fileInfo;
         return this;
     }
-
 }
