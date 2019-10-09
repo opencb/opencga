@@ -49,7 +49,9 @@ public class VariantSearchToVariantConverterTest {
 
         Variant actualVariant = converter.convertToDataModelType(variantSearchModel);
 
+        System.out.println();
         System.out.println(expectedVariant.toJson());
+        System.out.println();
         System.out.println(actualVariant.toJson());
 
         assertEquals(expectedVariant.getStudies(), actualVariant.getStudies());

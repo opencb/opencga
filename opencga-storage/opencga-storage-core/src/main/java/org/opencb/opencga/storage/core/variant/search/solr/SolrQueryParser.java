@@ -294,7 +294,17 @@ public class SolrQueryParser {
             if (split.length != 3) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + query.getString(key));
             }
-            String name = "score" + FIELD_SEPARATOR + split[0].replace(Character.toString(STUDY_RESOURCE_SEPARATOR), FIELD_SEPARATOR);
+            String name;
+            if (split[0].contains(STUDY_POP_FREQ_SEPARATOR)) {
+                name = "score" + FIELD_SEPARATOR + split[0].replace(Character.toString(STUDY_RESOURCE_SEPARATOR), FIELD_SEPARATOR);
+            } else {
+                // Missing study in variant score param
+                if (StringUtils.isEmpty(defaultStudyName)) {
+                    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing study in Solr variant score query: "
+                            + query.getString(key));
+                }
+                name = "score" + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + split[0];
+            }
             String value = split[1] + split[2];
             filterList.add(parseNumericValue(name, value));
         }

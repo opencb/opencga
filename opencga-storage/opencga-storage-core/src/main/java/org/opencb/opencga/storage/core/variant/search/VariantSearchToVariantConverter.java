@@ -181,26 +181,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
         }
 
-        // process annotation
+        // Process annotation (for performance purposes, variant scores are processed too)
         variant.setAnnotation(getVariantAnnotation(variantSearchModel, variant));
 
-        // Variant score
-        processVariantScores(variantSearchModel);
-
-        return variant;
-    }
-
-    private void processVariantScores(VariantSearchModel variantSearchModel) {
-        // Get score
-        if (MapUtils.isNotEmpty(variantSearchModel.getScore())) {
-            setVariantScores(variantSearchModel.getScore().keySet(), variantSearchModel, false);
-        }
-
-        // Get p-value
-        if (MapUtils.isNotEmpty(variantSearchModel.getPValue())) {
-            setVariantScores(variantSearchModel.getPValue().keySet(), variantSearchModel, true);
-        }
-
+        // Set variant scores from score study map
         if (MapUtils.isNotEmpty(scoreStudyMap)) {
             for (Map.Entry<String, VariantScore> entry : scoreStudyMap.entrySet()) {
                 String studyId = entry.getKey().split(FIELD_SEP)[0];
@@ -210,28 +194,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 studyEntryMap.get(studyId).getScores().add(entry.getValue());
             }
         }
-    }
 
-    private void setVariantScores(Set<String> keys, VariantSearchModel variantSearchModel, boolean isPValue) {
-        for (String key: keys) {
-            // key consists of 'score/pValue' + "__" + studyId + "__" + scoreId
-            String[] scoreFields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
-            String studyId = scoreFields[1];
-            if (studyEntryMap.containsKey(studyId)) {
-                String scoreId = scoreFields[2];
-                String scoreStudyId = studyId + FIELD_SEP + scoreId;
-                if (!scoreStudyMap.containsKey(scoreStudyId)) {
-                    VariantScore variantScore = new VariantScore();
-                    variantScore.setId(scoreId);
-                    scoreStudyMap.put(scoreStudyId, variantScore);
-                }
-                if (isPValue) {
-                    scoreStudyMap.get(scoreStudyId).setPValue(variantSearchModel.getPValue().get(key));
-                } else {
-                    scoreStudyMap.get(scoreStudyId).setScore(variantSearchModel.getScore().get(key));
-                }
-            }
-        }
+        return variant;
     }
 
     public VariantAnnotation getVariantAnnotation(VariantSearchModel variantSearchModel, Variant variant) {
@@ -623,7 +587,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     }
 
     private void updateScoreStudyMap(String[] fields) {
-        // Fields content: SC -- studyId -- scoreId -- cohort1 [-- cohort2]
+        // Fields content: SC -- studyId -- scoreId -- score -- p-value -- cohort1 -- cohort2
         if (studyEntryMap.containsKey(fields[1])) {
             String scoreStudyKey = fields[1] + FIELD_SEP + fields[2];
             if (!scoreStudyMap.containsKey(scoreStudyKey)) {
@@ -631,9 +595,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 variantScore.setId(fields[2]);
                 scoreStudyMap.put(scoreStudyKey, variantScore);
             }
-            scoreStudyMap.get(scoreStudyKey).setCohort1(fields[3]);
-            if (fields.length > 4) {
-                scoreStudyMap.get(scoreStudyKey).setCohort2(fields[4]);
+            scoreStudyMap.get(scoreStudyKey).setScore(Float.parseFloat(fields[3]));
+            scoreStudyMap.get(scoreStudyKey).setPValue(Float.parseFloat(fields[4]));
+            scoreStudyMap.get(scoreStudyKey).setCohort1(fields[5]);
+            if (fields.length > 6) {
+                scoreStudyMap.get(scoreStudyKey).setCohort2(fields[6]);
             }
         }
     }
@@ -1114,21 +1080,22 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
             }
 
-            // VariantScore: score and p-value are stored in two different maps:
+            // VariantScore: score and p-value are stored and indexed in two different maps:
             //   - score__STUDY_ID__SCORE_ID
             //   - pValue__STUDY_ID__SCORE_ID
-            // and the cohort1 and cohort2 into the Other list
+            // and the score, pValue, cohort1 and cohort2 into the Other list (not indexed)
             if (CollectionUtils.isNotEmpty(studyEntry.getScores())) {
                 for (VariantScore score : studyEntry.getScores()) {
                     String suffix = FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + score.getId();
-                    // score
+                    // score (indexed)
                     variantSearchModel.getScore().put("score" + suffix, score.getScore());
 
-                    // pValue
+                    // pValue (indexed)
                     variantSearchModel.getPValue().put("pValue" + suffix, score.getPValue());
 
-                    // and save cohort1 and cohort2 into the Other list
-                    other.add("SC" + FIELD_SEP + studyId + FIELD_SEP + score.getId() + FIELD_SEP + score.getCohort1()
+                    // and save score, pValue, cohort1 and cohort2 into the Other list (not indexed)
+                    other.add("SC" + FIELD_SEP + studyId + FIELD_SEP + score.getId() + FIELD_SEP + score.getScore() + FIELD_SEP
+                            + score.getPValue() + FIELD_SEP + score.getCohort1()
                             + (StringUtils.isNotEmpty(score.getCohort2()) ? (FIELD_SEP + score.getCohort2()) : ""));
                 }
             }
