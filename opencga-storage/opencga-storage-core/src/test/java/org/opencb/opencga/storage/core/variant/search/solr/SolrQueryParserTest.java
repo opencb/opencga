@@ -39,7 +39,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class SolrQueryParserTest {
 
     private String studyName = "platinum";
-    private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
+    private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,score_*,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
             + "popFreq_*,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,polyphen,siftDesc,"
             + "phastCons,phylop,id,chromosome,start,end,type";
 //    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*__format,sampleFormat__*";
@@ -84,7 +84,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=soAcc:\"1583\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(soAcc:\"1583\")", solrQuery.toString());
     }
 
     @Test
@@ -96,7 +96,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=soAcc:\"1792\"+OR+soAcc:\"1619\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(soAcc:\"1792\"+OR+soAcc:\"1619\")", solrQuery.toString());
     }
 
     @Test
@@ -145,7 +145,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=biotypes:\"protein_coding\"", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(biotypes:\"protein_coding\")", solrQuery.toString());
     }
 
     @Test
@@ -210,7 +210,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=biotypes:\"protein_coding\"&fq=phylop:{-100.0+TO+-1.0}", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(biotypes:\"protein_coding\")&fq=phylop:{-100.0+TO+-1.0}", solrQuery.toString());
     }
 
     @Test
@@ -681,6 +681,45 @@ public class SolrQueryParserTest {
 
         String fl = ",sampleFormat__platinum__sampleName,sampleFormat__platinum__format,sampleFormat__platinum__NA12877,sampleFormat__platinum__NA12878";
         assertEquals(flBase + fl + "&q=*:*&fq=((gt__" + studyName + "__NA12878:\"1/1\")+OR+(gt__" + studyName + "__NA12877:\"1/0\"))", solrQuery.toString());
+    }
+
+    @Test
+    public void parseVariantScore1() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        //query.put(STUDIES.key(), study);
+        query.put(SCORE.key(), studyName + ":score1<0.01");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score1:{-100.0+TO+0.01}", solrQuery.toString());
+    }
+
+    @Test
+    public void parseVariantScore2() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        //query.put(STUDIES.key(), study);
+        query.put(SCORE.key(), studyName + ":score2>=3.2");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]", solrQuery.toString());
+    }
+
+    @Test
+    public void parseVariantScoreWithoutStudy() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        //query.put(STUDIES.key(), study);
+        query.put(SCORE.key(), "score2>=3.2");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]", solrQuery.toString());
     }
 
     private void display(Query query, QueryOptions queryOptions, SolrQuery solrQuery) {
