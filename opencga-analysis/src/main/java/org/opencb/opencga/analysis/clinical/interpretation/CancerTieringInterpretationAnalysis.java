@@ -83,7 +83,10 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     }
 
     @Override
-    public InterpretationResult execute() throws Exception {
+    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    }
+
+    public InterpretationResult compute() throws Exception {
         // Get clinical analysis
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
 

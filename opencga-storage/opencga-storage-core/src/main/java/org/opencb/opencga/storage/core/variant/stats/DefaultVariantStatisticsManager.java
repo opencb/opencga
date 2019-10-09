@@ -395,13 +395,9 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                     dataReader,
                     () -> {
                         VariantStatsDBWriter dbWriter = newVariantStatisticsDBWriter(dbAdaptor, studyMetadata, options);
-                        dbWriter.pre();
                         dbWriter.setProgressLogger(progressLogger);
                         writers.add(dbWriter);
-                        return (batch -> {
-                            dbWriter.write(batch);
-                            return Collections.emptyList();
-                        });
+                        return dbWriter.asTask();
                     },
                     null,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
@@ -430,11 +426,13 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
             throw new StorageEngineException("Error loading stats", e);
         }
 
-        Long writes = writers.stream().map(VariantStatsDBWriter::getNumWrites).reduce((a, b) -> a + b).orElse(0L);
-        Long variantStats = writers.stream().map(VariantStatsDBWriter::getVariantStats).reduce((a, b) -> a + b).orElse(0L);
+        long writes = writers.stream().mapToLong(VariantStatsDBWriter::getNumWrites).sum();
+        long variantStats = writers.stream().mapToLong(VariantStatsDBWriter::getVariantStats).sum();
         if (writes < variantStats) {
             logger.warn("provided statistics of {} variants, but only {} were updated", variantStats, writes);
             logger.info("note: maybe those variants didn't had the proper study? maybe the new and the old stats were the same?");
+        } else {
+            logger.info("Updated {} variant stats", variantStats);
         }
 
     }

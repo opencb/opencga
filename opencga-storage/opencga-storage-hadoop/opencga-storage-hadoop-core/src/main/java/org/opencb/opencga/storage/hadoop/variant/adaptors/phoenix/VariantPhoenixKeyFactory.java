@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.avro.*;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Comparator;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
@@ -44,6 +45,10 @@ public class VariantPhoenixKeyFactory {
 
     protected static final String SV_ALTERNATE_SEPARATOR = "|";
     protected static final String SV_ALTERNATE_SEPARATOR_SPLIT = "\\" + SV_ALTERNATE_SEPARATOR;
+
+    public static final Comparator<String> HBASE_KEY_CHROMOSOME_COMPARATOR = (c1, c2) -> Bytes.compareTo(
+            VariantPhoenixKeyFactory.generateSimpleVariantRowKey(c1, 1, "N", "N"),
+            VariantPhoenixKeyFactory.generateSimpleVariantRowKey(c2, 1, "N", "N"));
 
     public static byte[] generateVariantRowKey(String chrom, int position) {
         return generateSimpleVariantRowKey(chrom, position, "", "");

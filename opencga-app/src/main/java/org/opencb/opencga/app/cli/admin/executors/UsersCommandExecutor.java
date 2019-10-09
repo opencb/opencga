@@ -115,10 +115,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             }
 
             if ("user".equalsIgnoreCase(executor.resourceType) || "application".equalsIgnoreCase(executor.resourceType)) {
-                catalogManager.getUserManager().importRemoteEntities(executor.authOrigin, Arrays.asList(executor.user.split(",")),
+                catalogManager.getUserManager().importRemoteEntities(executor.authOrigin, Arrays.asList(executor.id.split(",")),
                         executor.resourceType.equalsIgnoreCase("application"), executor.studyGroup, executor.study, token);
             } else if ("group".equalsIgnoreCase(executor.resourceType)) {
-                catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.group, executor.studyGroup,
+                catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.id, executor.studyGroup,
                         executor.study, false, token);
             } else {
                 logger.error("Unknown resource type. Please use one of 'user', 'group' or 'application'");

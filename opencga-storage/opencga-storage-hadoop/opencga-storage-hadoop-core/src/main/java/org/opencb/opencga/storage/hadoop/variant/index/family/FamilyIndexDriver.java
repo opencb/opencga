@@ -11,7 +11,6 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.feature.Genotype;
@@ -25,10 +24,13 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -242,13 +244,13 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
             Map<Integer, String> gtMap = new HashMap<>();
             for (Cell cell : value.rawCells()) {
                 Integer sampleId = VariantPhoenixHelper
-                        .extractSampleId(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                        .extractSampleIdOrNull(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
                 if (sampleId != null) {
                     ImmutableBytesWritable ptr = new ImmutableBytesWritable(
                             cell.getValueArray(),
                             cell.getValueOffset(),
                             cell.getValueLength());
-                    PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
+                    PhoenixHelper.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
                     String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
                     gtMap.put(sampleId, gt);
                 }

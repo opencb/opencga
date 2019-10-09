@@ -1,14 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PInteger;
-import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
@@ -19,12 +12,12 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.feature.Genotype.HOM_REF;
@@ -34,7 +27,7 @@ import static org.opencb.biodata.models.feature.Genotype.HOM_REF;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implements Task<Result, VariantStats> {
+public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implements Task<VariantRow, VariantStats> {
 
     private final List<Integer> sampleIds;
     private final StudyMetadata sm;
@@ -52,12 +45,16 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
     }
 
     @Override
-    public List<VariantStats> apply(List<Result> list) throws Exception {
+    public List<VariantStats> apply(List<VariantRow> list) throws Exception {
         return list.stream().map(this::apply).collect(Collectors.toCollection(() -> new ArrayList<>(list.size())));
     }
 
     public VariantStats apply(Result result) {
-        Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+        return apply(new VariantRow(result));
+    }
+
+    public VariantStats apply(VariantRow result) {
+        Variant variant = result.getVariant();
 
         Map<Genotype, Integer> gtCount = convert(result, variant, null);
 
@@ -65,6 +62,10 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
     }
 
     protected Map<Genotype, Integer> convert(Result result, Variant variant, Map<Genotype, Integer> gtCount) {
+        return convert(new VariantRow(result), variant, gtCount);
+    }
+
+    protected Map<Genotype, Integer> convert(VariantRow result, Variant variant, Map<Genotype, Integer> gtCount) {
         Map<Genotype, Integer> newGtCount = converter.apply(variant, result);
 
         if (gtCount != null) {
@@ -108,72 +109,44 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             super.setUnknownGenotype(unknownGenotype);
         }
 
-        public Map<Genotype, Integer> apply(Variant variant, Result result) {
+        public Map<Genotype, Integer> apply(Variant variant, VariantRow result) {
             Set<Integer> processedSamples = new HashSet<>();
             Set<Integer> filesInThisVariant = new HashSet<>();
-            int fillMissingColumnValue = -1;
+            AtomicInteger fillMissingColumnValue = new AtomicInteger(-1);
             Map<Integer, String> sampleToGT = new HashMap<>();
             Map<String, List<Integer>> alternateFileMap = new HashMap<>();
-            for (Cell cell : result.rawCells()) {
-                byte[] qualifier = CellUtil.cloneQualifier(cell);
-                if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
-//                    byte[] value = CellUtil.cloneValue(cell);
-                    String columnName = Bytes.toString(qualifier);
-                    String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
-                    //                Integer studyId = getStudyId(split);
-                    Integer sampleId = getSampleId(split);
-                    // Exclude other samples
-                    if (sampleIdsSet.contains(sampleId)) {
-                        processedSamples.add(sampleId);
 
-                        ImmutableBytesWritable ptr = new ImmutableBytesWritable(
-                                cell.getValueArray(),
-                                cell.getValueOffset(),
-                                cell.getValueLength());
-                        PArrayDataType.positionAtArrayElement(ptr, 0, PVarchar.INSTANCE, null);
-                        String gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+            result.walker()
+                    .onSample(sample -> {
+                        int sampleId = sample.getSampleId();
+                        // Exclude other samples
+                        if (sampleIdsSet.contains(sampleId)) {
+                            processedSamples.add(sampleId);
 
-//                        Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
-//                        List<String> sampleData = toModifiableList(array, 0, 1);
-//                        String gt = sampleData.get(0);
-                        if (gt.isEmpty()) {
-                            // This is a really weird situation, most likely due to errors in the input files
-                            logger.error("Empty genotype at sample " + sampleId + " in variant " + variant);
-                        } else {
-                            sampleToGT.put(sampleId, gt);
+                            String gt = sample.getGT();
+                            if (gt.isEmpty()) {
+                                // This is a really weird situation, most likely due to errors in the input files
+                                logger.error("Empty genotype at sample " + sampleId + " in variant " + variant);
+                            } else {
+                                sampleToGT.put(sampleId, gt);
+                            }
                         }
-                    }
-                } else if (endsWith(qualifier, VariantPhoenixHelper.FILE_SUFIX_BYTES)) {
-                    String columnName = Bytes.toString(qualifier);
-                    String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
-//                    Integer studyId = getStudyId(split);
-                    Integer fileId = Integer.valueOf(getFileId(split));
-                    if (fileIds.contains(fileId)) {
-                        filesInThisVariant.add(fileId);
+                    })
+                    .onFile(file -> {
+                        int fileId = file.getFileId();
 
-                        ImmutableBytesWritable ptr = new ImmutableBytesWritable(
-                                cell.getValueArray(),
-                                cell.getValueOffset(),
-                                cell.getValueLength());
-                        PArrayDataType.positionAtArrayElement(ptr, FILE_SEC_ALTS_IDX, PVarchar.INSTANCE, null);
-                        String secAlt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
+                        if (fileIds.contains(fileId)) {
+                            filesInThisVariant.add(fileId);
 
-//                        byte[] value = CellUtil.cloneValue(cell);
-//                        Array array = (Array) PVarcharArray.INSTANCE.toObject(value);
-//                        List<String> fileData = toModifiableList(array, FILE_SEC_ALTS_IDX, FILE_SEC_ALTS_IDX + 1);
-//                        String secAlt = fileData.get(0);
+                            String secAlt = file.getString(FILE_SEC_ALTS_IDX);
 
-                        if (StringUtils.isNotEmpty(secAlt)) {
-                            alternateFileMap.computeIfAbsent(secAlt, (key) -> new ArrayList<>()).add(fileId);
+                            if (StringUtils.isNotEmpty(secAlt)) {
+                                alternateFileMap.computeIfAbsent(secAlt, (key) -> new ArrayList<>()).add(fileId);
+                            }
                         }
-                    }
-                } else if (endsWith(qualifier, VariantPhoenixHelper.FILL_MISSING_SUFIX_BYTES)) {
-                    fillMissingColumnValue = (Integer) PInteger.INSTANCE.toObject(
-                            cell.getValueArray(),
-                            cell.getValueOffset(),
-                            cell.getValueLength());
-                }
-            }
+                    })
+                    .onFillMissing((studyId, value) -> fillMissingColumnValue.set(value))
+                    .walk();
 
             // If there are multiple different alternates, rearrange genotype
             if (alternateFileMap.size() > 1) {
@@ -191,14 +164,14 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                 if (defaultGenotype.equals(HOM_REF)) {
                     // All missing samples are reference.
                     addGt(gtStrCount, HOM_REF, sampleIds.size() - processedSamples.size());
-                } else if (fillMissingColumnValue == -1 && filesInThisVariant.isEmpty()) {
+                } else if (fillMissingColumnValue.get() == -1 && filesInThisVariant.isEmpty()) {
                     // All missing samples are unknown.
                     addGt(gtStrCount, defaultGenotype, sampleIds.size() - processedSamples.size());
                 } else {
                     // Some samples are missing, some other are reference.
 
                     // Same order as "sampleIds"
-                    List<Boolean> missingUpdatedList = getMissingUpdatedSamples(sm, fillMissingColumnValue);
+                    List<Boolean> missingUpdatedList = getMissingUpdatedSamples(sm, fillMissingColumnValue.get());
                     List<Boolean> sampleWithVariant = getSampleWithVariant(sm, filesInThisVariant);
                     int i = 0;
                     int reference = 0;

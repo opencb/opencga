@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.transform;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.avro.AvroDataReader;
@@ -33,6 +34,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.io.VariantReaderUtils.MALFORMED_FILE;
@@ -195,6 +197,25 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         }
 
         assertEquals(999, countLinesFromAvro(outputFile));
+    }
+
+    @Test
+    public void transformGvcf() throws Exception {
+        URI outputUri = newOutputUri();
+
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
+        variantStorageManager.getOptions().put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+
+        URI platinumFile = getPlatinumFile(0);
+
+        StoragePipelineResult result = variantStorageManager.index(Collections.singletonList(platinumFile), outputUri, true, true, false).get(0);
+        List<Variant> list = variantStorageManager.getVariantReaderUtils().getVariantReader(result.getTransformResult(), null)
+                .stream()
+                .filter(v -> v.getReference().equals("N"))
+                .collect(Collectors.toList());
+        assertEquals(2, list.size());
+        assertEquals("1:1-10000:N:.", list.get(0).toString());
+        assertEquals("1:31001-54321:N:.", list.get(1).toString());
     }
 
     public int countLines(File outputFile) throws IOException {

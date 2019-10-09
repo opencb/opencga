@@ -54,14 +54,17 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
@@ -124,6 +127,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case "stats":
                 stats();
+                break;
+            case SCORE_INDEX_COMMAND:
+                scoreLoad();
                 break;
             case SAMPLE_INDEX_COMMAND:
                 sampleIndex();
@@ -215,7 +221,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     }
 
     private void query() throws Exception {
-
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
@@ -342,8 +347,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
     }
 
-    private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
-            StorageEngineException, InstantiationException, IllegalAccessException, URISyntaxException {
+    private void stats() throws CatalogException, IOException, StorageEngineException, URISyntaxException {
         VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -370,6 +374,59 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         }
 
         variantManager.stats(cliOptions.study, cohorts, cliOptions.outdir, options, sessionId);
+    }
+
+    private void scoreLoad() throws CatalogException, URISyntaxException, StorageEngineException {
+        VariantCommandOptions.VariantScoreIndexCommandOptions cliOptions = variantCommandOptions.variantScoreIndexCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions()
+                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+        options.putAll(cliOptions.commonOptions.params);
+
+        URI inputUri = UriUtils.createUri(cliOptions.input, true);
+
+        VariantScoreFormatDescriptor descriptor = new VariantScoreFormatDescriptor();
+        for (String column : cliOptions.columns.split(",")) {
+            String[] split = column.split("=");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Malformed value '" + column + "'. Please, use COLUMN=INDEX");
+            }
+            int columnIdx = Integer.parseInt(split[1]);
+            switch (split[0].toUpperCase()) {
+                case "SCORE":
+                    descriptor.setScoreColumnIdx(columnIdx);
+                    break;
+                case "PVALUE":
+                    descriptor.setPvalueColumnIdx(columnIdx);
+                    break;
+                case "VAR":
+                    descriptor.setVariantColumnIdx(columnIdx);
+                    break;
+                case "CHR":
+                case "CHROM":
+                    descriptor.setChrColumnIdx(columnIdx);
+                    break;
+                case "POS":
+                    descriptor.setPosColumnIdx(columnIdx);
+                    break;
+                case "REF":
+                    descriptor.setRefColumnIdx(columnIdx);
+                    break;
+                case "ALT":
+                    descriptor.setAltColumnIdx(columnIdx);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown column " + split[0].toUpperCase() + ". "
+                            + "Known columns are: ['SCORE','PVALUE','VAR','CHROM','POS','REF','ALT']");
+            }
+        }
+        descriptor.checkValid();
+
+
+        variantManager.loadVariantScore(cliOptions.study, inputUri, cliOptions.scoreName,
+                cliOptions.cohort1, cliOptions.cohort2, descriptor, options, sessionId);
     }
 
     private void sampleIndex()

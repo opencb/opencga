@@ -60,6 +60,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.IOException;
@@ -319,6 +320,30 @@ public class VariantStorageManager extends StorageManager {
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
+    }
+
+    public void loadVariantScore(String study, URI scoreFile, String scoreName, String cohort1, String cohort2,
+                                 VariantScoreFormatDescriptor descriptor, ObjectMap options, String sessionId)
+            throws CatalogException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String studyFqn = catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+
+        DataStore dataStore = getDataStore(studyFqn, sessionId);
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
+
+        Cohort cohort1Obj = catalogManager.getCohortManager().get(study, cohort1, new QueryOptions(), sessionId).first();
+        List<String> cohort1Samples = cohort1Obj.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        engine.getMetadataManager().registerCohort(studyFqn, cohort1Obj.getId(), cohort1Samples);
+        cohort1 = cohort1Obj.getId();
+
+        if (StringUtils.isNotEmpty(cohort2)) {
+            Cohort cohort2Obj = catalogManager.getCohortManager().get(study, cohort2, new QueryOptions(), sessionId).first();
+            List<String> cohort2Samples = cohort2Obj.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            engine.getMetadataManager().registerCohort(studyFqn, cohort2Obj.getId(), cohort2Samples);
+            cohort2 = cohort2Obj.getId();
+        }
+
+        engine.loadVariantScore(scoreFile, study, scoreName, cohort1, cohort2, descriptor, options);
     }
 
     public void sampleIndex(String studyStr, List<String> samples, ObjectMap config, String sessionId)

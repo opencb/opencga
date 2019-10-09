@@ -77,8 +77,12 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     private boolean includeIndexStatus;
 
     public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper, long ts) {
-        super(genomeHelper.getColumnFamily());
-        columnFamily = genomeHelper.getColumnFamily();
+        this(genomeHelper.getColumnFamily(), ts);
+    }
+
+    public HBaseToVariantAnnotationConverter(byte[] columnFamily, long ts) {
+        super(columnFamily);
+        this.columnFamily = columnFamily;
         this.ts = ts;
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
@@ -181,7 +185,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         }
 
         String annotationId = this.defaultAnnotationId;
-        if (defaultAnnotationId == null) {
+        if (defaultAnnotationId == null && annotationIds != null) {
             // Read the annotation Id from ANNOTATION_ID column
             byte[] annotationIdBytes = result.getFamilyMap(columnFamily).get(VariantPhoenixHelper.VariantColumn.ANNOTATION_ID.bytes());
             if (annotationIdBytes != null && annotationIdBytes.length > 0) {
@@ -284,7 +288,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         }
 
         String annotationId = this.defaultAnnotationId;
-        if (defaultAnnotationId == null) {
+        if (defaultAnnotationId == null && annotationIds != null) {
             try {
                 Integer annotationIdColumnIdx = findColumn(resultSet, VariantColumn.ANNOTATION_ID.column());
                 if (annotationIdColumnIdx != null) {

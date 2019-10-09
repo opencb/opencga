@@ -61,6 +61,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
@@ -914,8 +915,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public abstract void removeStudy(String study) throws StorageEngineException;
 
+    public abstract void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
+                                          VariantScoreFormatDescriptor descriptor, ObjectMap options)
+            throws StorageEngineException;
+
     @Override
-    public void testConnection() throws StorageEngineException {}
+    public abstract void testConnection() throws StorageEngineException;
 
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {

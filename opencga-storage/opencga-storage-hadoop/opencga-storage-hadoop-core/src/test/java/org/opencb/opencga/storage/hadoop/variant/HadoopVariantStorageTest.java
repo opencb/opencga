@@ -241,6 +241,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
                 // Zookeeper always with the same clientPort.
 //                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
+                // Zookeeper increase max client connexions
+                conf.setInt(HConstants.ZOOKEEPER_MAX_CLIENT_CNXNS, 1000);
 
                 // Do not put up web UI
                 conf.setInt("hbase.regionserver.info.port", -1);
@@ -349,9 +351,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 .putAll(getOtherStorageConfigurationOptions());
 
         manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
-        manager.mrExecutor = new TestMRExecutor(conf);
+        manager.mrExecutor = getMrExecutor();
         manager.conf = conf;
         return manager;
+    }
+
+    default TestMRExecutor getMrExecutor() {
+        return new TestMRExecutor(configuration.get());
     }
 
     static StorageConfiguration getStorageConfiguration(Configuration conf) throws IOException {
@@ -489,10 +495,14 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
                 Object o = method.invoke(clazz.newInstance(), args, conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());
+                if (((Number) o).intValue() != 0) {
+                    throw new RuntimeException("Exit code = " + o);
+                }
                 return ((Number) o).intValue();
             } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
+//                e.printStackTrace();
+//                return -1;
+                throw new RuntimeException(e);
             }
         }
 
@@ -509,11 +519,15 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
                 Object o = method.invoke(clazz.newInstance(), Commandline.translateCommandline(args), conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());
+                if (((Number) o).intValue() != 0) {
+                    throw new RuntimeException("Exit code = " + o);
+                }
                 return ((Number) o).intValue();
 
             } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
+//                e.printStackTrace();
+//                return -1;
+                throw new RuntimeException(e);
             }
 //            return 0;
         }

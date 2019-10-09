@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -20,6 +21,8 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
     private Integer father;
     private Integer mother;
+
+    private SampleVariantStats stats;
 
     public SampleMetadata() {
         files = new HashSet<>();
@@ -93,6 +96,15 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return this;
     }
 
+    public SampleVariantStats getStats() {
+        return stats;
+    }
+
+    public SampleMetadata setStats(SampleVariantStats stats) {
+        this.stats = stats;
+        return this;
+    }
+
     public TaskMetadata.Status getIndexStatus() {
         return getStatus("index");
     }
@@ -141,6 +153,7 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
                 .append("name", getName())
                 .append("status", getStatus())
                 .append("files", files)
+                .append("stats", stats)
 //                .append("cohorts", cohorts)
                 .toString();
     }

@@ -14,7 +14,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -42,15 +41,11 @@ import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableN
 public class SampleIndexTableRecordReader extends TableRecordReader {
 
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
-    private final StudyMetadata studyMetadata;
-    private final Map<String, List<String>> samples;
-    private final VariantQueryUtils.QueryOperation operation;
     private final HBaseManager hBaseManager;
     private final VariantStorageMetadataManager metadataManager;
 
     private Table table;
     private Scan scan;
-    private List<Region> regions;
     private VariantDBIterator iterator;
     private final List<Result> results = new ArrayList<>();
     private ListIterator<Result> resultsIterator;
@@ -59,6 +54,8 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
     private Result currentValue;
 
     private Logger logger = LoggerFactory.getLogger(SampleIndexTableRecordReader.class);
+    private TreeSet<String> allChromosomes;
+    private final SampleIndexQuery sampleIndexQuery;
 
     public SampleIndexTableRecordReader(Configuration conf) {
         GenomeHelper helper = new GenomeHelper(conf);
@@ -74,11 +71,18 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         sampleIndexDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, metadataManager);
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
-        studyMetadata = metadataManager.getStudyMetadata(sampleIndexQuery.getStudy());
-        operation = sampleIndexQuery.getQueryOperation();
-        samples = sampleIndexQuery.getSamplesMap();
+        sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(sampleIndexQuery.getStudy());
 
+        allChromosomes = new TreeSet<>(VariantPhoenixKeyFactory.HBASE_KEY_CHROMOSOME_COMPARATOR);
+        for (String contig : studyMetadata.getVariantHeaderLines("contig").keySet()) {
+            allChromosomes.add(Region.normalizeChromosome(contig));
+        }
+        if (allChromosomes.isEmpty()) {
+            // Contigs not found!
+            allChromosomes = new TreeSet<>(Arrays.asList("1", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                    "2", "20", "21", "22", "3", "4", "5", "6", "7", "8", "9", "M", "MT", "X", "Y"));
+        }
     }
 
     /**
@@ -173,23 +177,14 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
      */
     @Override
     public void initialize(InputSplit inputsplit, TaskAttemptContext context) throws IOException, InterruptedException {
-
-        List<String> allChromosomes = new ArrayList<>(studyMetadata.getVariantHeaderLines("contig").keySet());
-        if (allChromosomes.isEmpty()) {
-            // Contigs not found!
-            allChromosomes = Arrays.asList("1", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-                    "2", "20", "21", "22", "3", "4", "5", "6", "7", "8", "9", "M", "MT", "X", "Y");
-        }
-        allChromosomes.replaceAll(Region::normalizeChromosome);
-        allChromosomes.sort(String::compareTo);
-
         byte[] firstRow = scan.getStartRow();
         byte[] lastRow = scan.getStopRow();
 
         String startChr;
         Integer start;
         if (firstRow == null || firstRow.length == 0) {
-            startChr = allChromosomes.get(0);
+//            startChr = allChromosomes.first();
+            startChr = null;
             start = 0;
         } else {
             Variant startVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(firstRow);
@@ -199,7 +194,8 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         String stopChr;
         Integer end;
         if (lastRow == null || lastRow.length == 0) {
-            stopChr = allChromosomes.get(allChromosomes.size() - 1);
+//            stopChr = allChromosomes.last();
+            stopChr = null;
             end = Integer.MAX_VALUE;
         } else {
             Variant stopVariant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(lastRow);
@@ -207,19 +203,29 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
             end = stopVariant.getStart();
         }
 
-        regions = new ArrayList<>();
-        if (stopChr.equals(startChr)) {
+        List<Region> regions = new ArrayList<>();
+        if (stopChr != null && startChr != null && stopChr.equals(startChr)) {
             regions.add(new Region(startChr, start, end));
         } else {
-            for (int i = allChromosomes.indexOf(startChr); i <= allChromosomes.indexOf(stopChr); i++) {
-                String chromosome = allChromosomes.get(i);
+            SortedSet<String> subSet;
+            if (startChr == null) {
+                subSet = allChromosomes.headSet(stopChr, true);
+            } else if (stopChr == null) {
+                subSet = allChromosomes.tailSet(startChr, true);
+            } else {
+                subSet = allChromosomes.subSet(startChr, true, stopChr, true);
+            }
+            for (String chromosome : subSet) {
                 regions.add(new Region(chromosome, chromosome.equals(startChr) ? start : 0,
                         chromosome.equals(stopChr) ? end : Integer.MAX_VALUE));
             }
         }
-        // TODO: Use correct filter mask
-        SampleIndexQuery query = new SampleIndexQuery(regions, studyMetadata.getName(), samples, operation);
-        iterator = sampleIndexDBAdaptor.iterator(query);
+        if (regions.isEmpty()) {
+            iterator = VariantDBIterator.emptyIterator();
+        } else {
+            SampleIndexQuery query = new SampleIndexQuery(regions, sampleIndexQuery);
+            iterator = sampleIndexDBAdaptor.iterator(query);
+        }
         loadMoreResults();
     }
 

@@ -32,7 +32,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_SAMPLE;
 
-public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
+public class DeNovoAnalysis extends OpenCgaClinicalAnalysis {
 
     private Query query;
 
@@ -64,7 +64,10 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis<List<Variant>> {
     }
 
     @Override
-    public AnalysisResult<List<Variant>> execute() throws Exception {
+    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    }
+
+    public AnalysisResult<List<Variant>> compute() throws Exception {
         logger.debug("Executing de Novo analysis");
 
         StopWatch watcher = StopWatch.createStarted();

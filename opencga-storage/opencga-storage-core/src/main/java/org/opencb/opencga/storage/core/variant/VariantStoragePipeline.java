@@ -29,17 +29,20 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.io.avro.AvroEncoder;
 import org.opencb.commons.io.avro.AvroFileWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipeline;
@@ -56,8 +59,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
-import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
-import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +70,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -136,6 +136,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     public URI preTransform(URI input) throws StorageEngineException, IOException, FileFormatException {
         String fileName = VariantReaderUtils.getFileName(input);
         String study = options.getString(Options.STUDY.key());
+
+        if (VariantReaderUtils.isGvcf(fileName)) {
+            logger.info("Detected gVCF input file.");
+            options.put(Options.GVCF.key(), true);
+        }
 
         boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),
                 Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue());
@@ -206,11 +211,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // Read VariantFileMetadata
         final VariantFileMetadata metadata = variantReaderUtils.readVariantFileMetadata(input, metadataTemplate, stdin);
 
-
-        VariantFileHeader variantMetadata = metadata.getHeader();
         String fileName = UriUtils.fileName(input);
         String studyId = String.valueOf(getStudyId());
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
+        // Do not run parallelParse when generating reference blocks, as the task is stateful
+        boolean parallelParse = !generateReferenceBlocks;
 
         int batchSize = options.getInt(Options.TRANSFORM_BATCH_SIZE.key(), Options.TRANSFORM_BATCH_SIZE.defaultValue());
 
@@ -226,7 +231,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         } else if (!compression.isEmpty()) {
             throw new IllegalArgumentException("Unknown compression method " + compression);
         }
-
 
         URI outputMalformedVariants = output.resolve(fileName + '.' + VariantReaderUtils.MALFORMED_FILE + ".txt");
         URI outputVariantsFile = output.resolve(fileName + '.' + VariantReaderUtils.VARIANTS_FILE + '.' + format + extension);
@@ -255,18 +259,34 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
         StopWatch stopWatch;
+
+
+        //Reader
+        long fileSize;
+        StringDataReader stringReader;
+        try {
+            stringReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioConnectorProvider);
+            fileSize = stdin ? -1 : ioConnectorProvider.size(input);
+        } catch (IOException e) {
+            throw StorageEngineException.ioException(e);
+        }
+        ProgressLogger progressLogger = new ProgressLogger("Transforming file:", fileSize, 200);
+        stringReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
+
+        VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
+
+        logger.info("Using HTSJDK to read variants.");
+        Pair<VCFHeader, VCFHeaderVersion> header = variantReaderUtils.readHtsHeader(input, stdin);
+        Supplier<Task<String, Variant>> task = () ->
+                new VariantTransformTask(header.getKey(), header.getValue(), studyId, metadata, statsCalculator, generateReferenceBlocks)
+                .setFailOnError(failOnError)
+                .addMalformedErrorHandler(malformedHandler)
+                .setIncludeSrc(false);
+
+        ParallelTaskRunner ptr;
         if ("avro".equals(format)) {
-            //Reader
-            long fileSize;
-            StringDataReader dataReader;
-            try {
-                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioConnectorProvider);
-                fileSize = stdin ? -1 : ioConnectorProvider.size(input);
-            } catch (IOException e) {
-                throw StorageEngineException.ioException(e);
-            }
-            ProgressLogger progressLogger = new ProgressLogger("Transforming file:", fileSize, 200);
-            dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
+            Supplier<Task<Variant, ByteBuffer>> encoder = () -> Task.forEach(Variant::getImpl)
+                    .then(new AvroEncoder<>(VariantAvro.getClassSchema(), true));
 
             //Writer
             DataWriter<ByteBuffer> dataWriter;
@@ -280,62 +300,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             } catch (IOException e) {
                 throw StorageEngineException.ioException(e);
             }
-            Supplier<VariantTransformTask<ByteBuffer>> taskSupplier;
 
-            if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
-                logger.info("Using HTSJDK to read variants.");
-                Pair<VCFHeader, VCFHeaderVersion> header = variantReaderUtils.readHtsHeader(input, stdin);
-                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
-                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), studyId, metadata,
-                        statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError)
-                        .addMalformedErrorHandler(malformedHandler)
-                        .configureNormalizer(variantMetadata);
-            } else {
-                // TODO Create a utility to determine which extensions are variants files
-                final VariantVcfFactory factory = createVariantVcfFactory(fileName);
-                logger.info("Using Biodata to read variants.");
-                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, studyId, metadata, statsCalculator,
-                        includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError)
-                        .addMalformedErrorHandler(malformedHandler)
-                        .configureNormalizer(variantMetadata);
-            }
-
-            logger.info("Generating output file {}", outputVariantsFile);
-
-            ParallelTaskRunner<String, ByteBuffer> ptr;
-            try {
-                ptr = new ParallelTaskRunner<>(
-                        dataReader,
-                        taskSupplier,
-                        dataWriter,
-                        config
-                );
-            } catch (Exception e) {
-                throw new StorageEngineException("Error while creating ParallelTaskRunner", e);
-            }
-            logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
-            stopWatch = StopWatch.createStarted();
-            try {
-                ptr.run();
-            } catch (ExecutionException e) {
-                throw new StorageEngineException("Error while executing TransformVariants in ParallelTaskRunner", e);
-            }
-            stopWatch.stop();
+            ptr = buildTransformPtr(parallelParse, stringReader, task, encoder, dataWriter, config);
         } else if ("json".equals(format)) {
-            //Reader
-            long fileSize;
-            StringDataReader dataReader;
-            try {
-                dataReader = stdin ? new StringDataReader(System.in) : new StringDataReader(input, ioConnectorProvider);
-                fileSize = stdin ? -1 : ioConnectorProvider.size(input);
-            } catch (IOException e) {
-                throw StorageEngineException.ioException(e);
-            }
-            ProgressLogger progressLogger = new ProgressLogger("Transforming file:", fileSize, 200);
-            dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
+            Supplier<Task<Variant, String>> encoder = () -> Task.forEach(Variant::toJson);
 
             //Writers
             StringDataWriter dataWriter;
@@ -350,57 +318,21 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 }
             }
 
-            ParallelTaskRunner<String, String> ptr;
-
-            Supplier<VariantTransformTask<String>> taskSupplier;
-            if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
-                logger.info("Using HTSJDK to read variants.");
-                Pair<VCFHeader, VCFHeaderVersion> header = variantReaderUtils.readHtsHeader(input, stdin);
-                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
-                taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), studyId, metadata,
-                        statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError)
-                        .addMalformedErrorHandler(malformedHandler)
-                        .configureNormalizer(variantMetadata);
-            } else {
-                // TODO Create a utility to determine which extensions are variants files
-                final VariantVcfFactory factory = createVariantVcfFactory(fileName);
-                logger.info("Using Biodata to read variants.");
-                VariantSetStatsCalculator statsCalculator = new VariantSetStatsCalculator(studyId, metadata);
-                taskSupplier = () -> new VariantJsonTransformTask(factory, studyId, metadata, statsCalculator,
-                        includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError)
-                        .addMalformedErrorHandler(malformedHandler)
-                        .configureNormalizer(variantMetadata);
-            }
-
-            logger.info("Generating output file {}", outputVariantsFile);
-
-            try {
-                ptr = new ParallelTaskRunner<>(
-                        dataReader,
-                        taskSupplier,
-                        dataWriter,
-                        config
-                );
-            } catch (Exception e) {
-                throw new StorageEngineException("Error while creating ParallelTaskRunner", e);
-            }
-
-            logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
-            stopWatch = StopWatch.createStarted();
-            try {
-                ptr.run();
-            } catch (ExecutionException e) {
-                throw new StorageEngineException("Error while executing TransformVariants in ParallelTaskRunner", e);
-            }
-            stopWatch.stop();
+            ptr = buildTransformPtr(parallelParse, stringReader, task, encoder, dataWriter, config);
         } else if ("proto".equals(format)) {
-            stopWatch = transformProto(input, fileName, output, metadata, outputVariantsFile, outputMetaFile,
-                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
+            ptr = transformProto(metadata, outputVariantsFile, stringReader, task);
         } else {
             throw new IllegalArgumentException("Unknown format " + format);
         }
+
+        stopWatch = StopWatch.createStarted();
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            throw new StorageEngineException("Error while executing TransformVariants in ParallelTaskRunner", e);
+        }
+        stopWatch.stop();
+
         logger.info("Variants transformed in " + TimeUtils.durationToString(stopWatch));
 
         try (OutputStream outputMetadataStream = ioConnectorProvider.newOutputStream(outputMetaFile)) {
@@ -421,6 +353,31 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return outputVariantsFile;
     }
 
+    protected <W> ParallelTaskRunner<?, W> buildTransformPtr(boolean parallelParse,
+                                                     DataReader<String> stringReader,
+                                                     Supplier<Task<String, Variant>> task,
+                                                     Supplier<Task<Variant, W>> encoder,
+                                                     DataWriter<W> dataWriter,
+                                                     ParallelTaskRunner.Config config) {
+
+        logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", config.getNumTasks());
+        if (parallelParse) {
+            return new ParallelTaskRunner<String, W>(
+                    stringReader,
+                    () -> task.get().then(encoder.get()),
+                    dataWriter,
+                    config
+            );
+        } else {
+            return new ParallelTaskRunner<Variant, W>(
+                    stringReader.then(task.get()),
+                    encoder,
+                    dataWriter,
+                    config
+            );
+        }
+    }
+
     protected VariantVcfFactory createVariantVcfFactory(String fileName) throws StorageEngineException {
         VariantVcfFactory factory;
         if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
@@ -431,11 +388,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return factory;
     }
 
-    protected StopWatch transformProto(
-            URI input, String fileName, URI output, VariantFileMetadata metadata, URI outputVariantsFile,
-            URI outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
-            int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler,
-            boolean failOnError)
+    protected ParallelTaskRunner transformProto(
+            VariantFileMetadata metadata, URI outputVariantsFile,
+            DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
             throws StorageEngineException {
         throw new NotImplementedException("Please request feature");
     }

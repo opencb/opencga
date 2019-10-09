@@ -54,6 +54,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
     @Override
     public void execute() throws Exception {
 
+
+
         logger.debug("Executing users command line");
 //        openCGAClient = new OpenCGAClient(clientConfiguration);
 

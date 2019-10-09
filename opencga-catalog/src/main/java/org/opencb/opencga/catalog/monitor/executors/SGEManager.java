@@ -21,7 +21,6 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.SingleProcess;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.SgeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;

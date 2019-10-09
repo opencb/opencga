@@ -53,7 +53,7 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 
         CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalTest.clinicalAnalysis.getId(), clinicalTest.studyFqn, null,
                 options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
-        InterpretationResult execute = customAnalysis.execute();
+        InterpretationResult execute = customAnalysis.compute();
         ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
         ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");
     }
@@ -79,7 +79,7 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 
         CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(null, clinicalTest.studyFqn, query,
                 options, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
-        InterpretationResult execute = customAnalysis.execute();
+        InterpretationResult execute = customAnalysis.compute();
         ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
         ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");
     }

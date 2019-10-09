@@ -18,12 +18,40 @@ pipeline {
                        sh 'cd opencga-app/app/scripts/azure/arm/scripts && docker build .'
                    }
                }
-        stage ('Build With Hadoop Profile') {
+
+
+        stage ('Build opencga-storage-hadoop-deps') {
             options {
                 timeout(time: 30, unit: 'MINUTES')
             }
             steps {
-                sh 'mvn clean install -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Popencga-storage-hadoop-deps -Phdp-2.6.5 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
+                sh 'mvn clean install -DskipTests -f opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-deps -Dcheckstyle.skip'
+            }
+        }
+
+        stage ('Build With Hadoop Profile against hdp2.5') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Phdp2.5 -Dcheckstyle.skip'
+            }
+        }
+
+        stage ('Build With Hadoop Profile against hdp3.1') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Phdp3.1 -Dcheckstyle.skip'
+            }
+        }
+        stage ('Build With Hadoop Profile against hdp2.6') {
+            options {
+                timeout(time: 30, unit: 'MINUTES')
+            }
+            steps {
+                sh 'mvn clean install -DskipTests -Dstorage-mongodb -Dstorage-hadoop -Phdp2.6 -DOPENCGA.STORAGE.DEFAULT_ENGINE=hadoop -Dopencga.war.name=opencga -Dcheckstyle.skip'
             }
         }
 

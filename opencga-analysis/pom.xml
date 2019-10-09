@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.4.2-dev</version>
+        <version>2.0.0-dev</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -36,6 +36,10 @@
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.oskar</groupId>
+            <artifactId>oskar-analysis</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-analysis</artifactId>
         </dependency>
@@ -44,11 +48,11 @@
             <artifactId>bionetdb-core</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>0.9.10</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.reflections</groupId>-->
+<!--            <artifactId>reflections</artifactId>-->
+<!--            <version>0.9.11</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
@@ -79,6 +83,12 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+            <version>${java-common-libs.version}</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 

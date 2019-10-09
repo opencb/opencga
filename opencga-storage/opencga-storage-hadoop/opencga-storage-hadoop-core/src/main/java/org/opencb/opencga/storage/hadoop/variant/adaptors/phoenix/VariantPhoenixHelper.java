@@ -83,6 +83,8 @@ public class VariantPhoenixHelper {
 
     public static final String FILL_MISSING_SUFIX = "_FM";
     public static final byte[] FILL_MISSING_SUFIX_BYTES = Bytes.toBytes(FILL_MISSING_SUFIX);
+    public static final String VARIANT_SCORE_SUFIX = "_VS";
+    public static final byte[] VARIANT_SCORE_SUFIX_BYTES = Bytes.toBytes(VARIANT_SCORE_SUFIX);
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
@@ -616,6 +618,10 @@ public class VariantPhoenixHelper {
         return Column.build(String.valueOf(studyId) + STUDY_SUFIX, PUnsignedInt.INSTANCE);
     }
 
+    public static int extractStudyId(String columnKey) {
+        return extractStudyId(columnKey, true);
+    }
+
     public static Integer extractStudyId(String columnKey, boolean failOnMissing) {
         int endIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
         if (endIndex > 0) {
@@ -633,12 +639,16 @@ public class VariantPhoenixHelper {
         }
     }
 
-    public static Integer extractSampleId(byte[] columnValue, int offset, int length) {
+    public static Integer extractSampleIdOrNull(byte[] columnValue, int offset, int length) {
         if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, SAMPLE_DATA_SUFIX_BYTES)) {
             return extractId(Bytes.toString(columnValue, offset, length), false, "sample");
         } else {
             return null;
         }
+    }
+
+    public static int extractSampleId(String columnKey) {
+        return extractSampleId(columnKey, true);
     }
 
     public static Integer extractSampleId(String columnKey, boolean failOnMissing) {
@@ -651,6 +661,10 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public static int extractFileId(String columnKey) {
+        return extractFileId(columnKey, true);
+    }
+
     public static Integer extractFileId(String columnKey, boolean failOnMissing) {
         if (columnKey.endsWith(FILE_SUFIX)) {
             return extractId(columnKey, failOnMissing, "file");
@@ -661,9 +675,53 @@ public class VariantPhoenixHelper {
         }
     }
 
-    public static Integer extractFileId(byte[] columnValue, int offset, int length) {
+    public static Integer extractFileIdOrNull(byte[] columnValue, int offset, int length) {
         if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, FILE_SUFIX_BYTES)) {
             return extractId(Bytes.toString(columnValue, offset, length), false, "file");
+        } else {
+            return null;
+        }
+    }
+
+    public static int extractCohortStatsId(String columnKey) {
+        return extractCohortStatsId(columnKey, true);
+    }
+
+    public static Integer extractCohortStatsId(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(COHORT_STATS_PROTOBUF_SUFFIX)) {
+            return extractId(columnKey, failOnMissing, "cohortStats");
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a file column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    public static Integer extractCohortStatsIdOrNull(byte[] columnValue, int offset, int length) {
+        if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, COHORT_STATS_PROTOBUF_SUFFIX_BYTES)) {
+            return extractId(Bytes.toString(columnValue, offset, length), false, "cohortStats");
+        } else {
+            return null;
+        }
+    }
+
+    public static int extractScoreId(String columnKey) {
+        return extractScoreId(columnKey, true);
+    }
+
+    public static Integer extractScoreId(String columnKey, boolean failOnMissing) {
+        if (columnKey.endsWith(VARIANT_SCORE_SUFIX)) {
+            return extractId(columnKey, failOnMissing, "score");
+        } else if (failOnMissing) {
+            throw new IllegalArgumentException("Not a file column: " + columnKey);
+        } else {
+            return null;
+        }
+    }
+
+    public static Integer extractScoreIdOrNull(byte[] columnValue, int offset, int length) {
+        if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, VARIANT_SCORE_SUFIX_BYTES)) {
+            return extractId(Bytes.toString(columnValue, offset, length), false, "score");
         } else {
             return null;
         }
@@ -761,5 +819,10 @@ public class VariantPhoenixHelper {
             throw new IllegalArgumentException("Wrong annotation snapshot column id. Must be greater than 0. Found: " + id);
         }
         return "A_" + id;
+    }
+
+    public static Column getVariantScoreColumn(int studyID, int scoreId) {
+        String columnName = buildStudyColumnsPrefix(studyID, new StringBuilder()).append(scoreId).append(VARIANT_SCORE_SUFIX).toString();
+        return Column.build(columnName, PFloatArray.INSTANCE, false);
     }
 }

@@ -11,16 +11,13 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 06/10/17.
@@ -30,31 +27,27 @@ import java.util.List;
 public class HBaseToStudyEntryConverterTest {
 
     private HBaseToStudyEntryConverter converter;
-    private StudyConfiguration sc;
-    private VariantStorageMetadataManager scm;
+    private StudyMetadata sm;
+    private VariantStorageMetadataManager mm;
 
     @Before
     public void setUp() throws Exception {
-        scm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
-        sc = new StudyConfiguration(1, "S1");
-        sc.getIndexedFiles().add(1);
-        sc.getIndexedFiles().add(2);
-        sc.getSamplesInFiles().put(1, new LinkedHashSet<>(listOf(1, 2, 3)));
-        sc.getSamplesInFiles().put(2, new LinkedHashSet<>(listOf(4, 5, 6)));
-        sc.getSampleIds().put("S1", 1);
-        sc.getSampleIds().put("S2", 2);
-        sc.getSampleIds().put("S3", 3);
-        sc.getSampleIds().put("S4", 4);
-        sc.getSampleIds().put("S5", 5);
-        sc.getSampleIds().put("S6", 6);
-        sc.getSampleIds().put("S7", 7);
-        sc.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        sm = mm.createStudy("S1");
 
-        scm.updateStudyConfiguration(sc, null);
+        mm.registerFile(sm.getId(), "f1", Arrays.asList("S1", "S2", "S3"));
+        mm.registerFile(sm.getId(), "f2", Arrays.asList("S4", "S5", "S6"));
+        mm.registerFile(sm.getId(), "f3", Arrays.asList("S7", "S8", "S9"));
+        mm.addIndexedFiles(sm.getId(), Arrays.asList(1, 2));
+
+        mm.updateStudyMetadata(sm.getId(), s -> {
+            s.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+            return s;
+        });
 
         final GenomeHelper genomeHelper = new GenomeHelper(new Configuration());
-        converter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, null);
-
+        converter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), mm, null);
     }
 
     @Test
@@ -76,8 +69,10 @@ public class HBaseToStudyEntryConverterTest {
 
     @Test
     public void testConvertExtendedFormat() throws Exception {
-        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
-        scm.updateStudyConfiguration(sc, null);
+        mm.updateStudyMetadata(sm.getId(), s -> {
+            s.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+            return s;
+        });
 
         List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
         fixedValues.add(Pair.of(1, listOf("0/0", "1,2", "10")));
@@ -127,9 +122,11 @@ public class HBaseToStudyEntryConverterTest {
 
     @Test
     public void testConvertFileEntryData() throws Exception {
-        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
-        sc.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
-        scm.updateStudyConfiguration(sc, null);
+        mm.updateStudyMetadata(sm.getId(), s -> {
+            s.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+            s.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
+            return s;
+        });
 
         List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
         List<Pair<String, PhoenixArray>> otherValues = new ArrayList<>();

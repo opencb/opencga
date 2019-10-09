@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -59,6 +60,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.query.DBAdaptorVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
@@ -89,6 +91,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
+import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -120,7 +123,7 @@ import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 /**
  * Created by mh719 on 16/06/15.
  */
-public class HadoopVariantStorageEngine extends VariantStorageEngine {
+public class HadoopVariantStorageEngine extends VariantStorageEngine implements Configurable {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
@@ -240,11 +243,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     protected IOConnectorProvider createIOConnectorProvider(StorageConfiguration configuration) {
         IOConnectorProvider ioConnectorProvider = super.createIOConnectorProvider(configuration);
-        try {
-            ioConnectorProvider.add(new HDFSIOConnector(getHadoopConfiguration()));
-        } catch (StorageEngineException e) {
-            throw new RuntimeException(e);
-        }
+        ioConnectorProvider.add(new HDFSIOConnector(getHadoopConfiguration()));
         return ioConnectorProvider;
     }
 
@@ -842,6 +841,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         removeFiles(studyName, getMetadataManager().getIndexedFiles(studyId).stream().map(Object::toString).collect(Collectors.toList()));
     }
 
+    @Override
+    public void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
+                                 VariantScoreFormatDescriptor descriptor, ObjectMap options)
+            throws StorageEngineException {
+        new HadoopVariantScoreLoader(getDBAdaptor(), ioConnectorProvider)
+                .loadVariantScore(scoreFile, study, scoreName, cohort1, cohort2, descriptor, options);
+    }
+
     private HBaseCredentials getDbCredentials() throws StorageEngineException {
         String table = getVariantTableName();
         return buildCredentials(table);
@@ -926,6 +933,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         if (sampleIndexDBAdaptor.get() != null) {
 //            sampleIndexDBAdaptor.get().close();
             sampleIndexDBAdaptor.set(null);
+        }
+        if (tableNameGenerator != null) {
+            tableNameGenerator = null;
         }
     }
 
@@ -1013,18 +1023,28 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
         return executors;
     }
 
-    private Configuration getHadoopConfiguration() throws StorageEngineException {
+    @Override
+    public void setConf(Configuration conf) {
+        this.conf = conf;
+    }
+
+    @Override
+    public Configuration getConf() {
+        return getHadoopConfiguration();
+    }
+
+    private Configuration getHadoopConfiguration() {
         return getHadoopConfiguration(getOptions());
     }
 
-    private Configuration getHadoopConfiguration(ObjectMap options) throws StorageEngineException {
+    private Configuration getHadoopConfiguration(ObjectMap options) {
         Configuration conf = this.conf == null ? HBaseConfiguration.create() : this.conf;
         // This is the only key needed to connect to HDFS:
         //   CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY = fs.defaultFS
         //
 
         if (conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY) == null) {
-            throw new StorageEngineException("Missing configuration parameter \""
+            throw new IllegalArgumentException("Missing configuration parameter \""
                     + CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY + "\"");
         }
 
@@ -1065,10 +1085,19 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void testConnection() throws StorageEngineException {
         try {
-            HBaseAdmin.checkHBaseAvailable(getHadoopConfiguration());
+            Configuration conf = getHadoopConfiguration();
+            try {
+                // HBase 2.x
+//                HBaseAdmin.available(conf);
+                HBaseAdmin.class.getMethod("available", Configuration.class).invoke(null, conf);
+            } catch (NoSuchMethodException e) {
+                // HBase 1.x
+//                HBaseAdmin.checkHBaseAvailable(conf);
+                HBaseAdmin.class.getMethod("checkHBaseAvailable", Configuration.class).invoke(null, conf);
+            }
         } catch (Exception e) {
-            logger.error("Connection to database '{}' failed", dbName);
-            throw new StorageEngineException("HBase Database connection test failed");
+            logger.error("Connection to database '" + dbName + "' failed", e);
+            throw new StorageEngineException("HBase Database connection test failed", e);
         }
     }
 

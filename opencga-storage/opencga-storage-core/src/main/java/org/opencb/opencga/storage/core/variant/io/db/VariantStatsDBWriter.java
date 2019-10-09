@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.core.variant.io.db;
 
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -58,10 +57,8 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
 
     @Override
     public boolean write(List<VariantStatsWrapper> batch) {
-        DataResult writeResult = dbAdaptor.updateStats(batch, studyMetadata.getName(), timestamp, options);
-
+        numWrites.addAndGet(writeStats(batch));
         numStats.addAndGet(batch.size());
-        numWrites.addAndGet(writeResult.getNumUpdated());
 
         if (progressLogger != null) {
             progressLogger.increment(batch.size(), () -> ", up to position "
@@ -70,6 +67,10 @@ public class VariantStatsDBWriter implements DataWriter<VariantStatsWrapper> {
         }
 
         return true;
+    }
+
+    protected int writeStats(List<VariantStatsWrapper> batch) {
+        return dbAdaptor.updateStats(batch, studyMetadata.getName(), timestamp, options).getNumResults();
     }
 
     public VariantStatsDBWriter setProgressLogger(ProgressLogger progressLogger) {

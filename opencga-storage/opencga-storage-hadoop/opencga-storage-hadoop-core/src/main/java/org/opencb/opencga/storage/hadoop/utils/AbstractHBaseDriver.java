@@ -5,13 +5,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Created on 24/04/18.
@@ -27,6 +33,7 @@ import java.util.List;
  */
 public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
+    public static final String COUNTER_GROUP_NAME = VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
     public static final String COLUMNS_TO_COUNT = "columns_to_count";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
     protected String table;
@@ -59,6 +66,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
 
     protected String getUsage() {
         return "Usage: " + getClass().getSimpleName() + " [generic options] <table> (<key> <value>)*";
+    }
+
+    protected String getParam(String key) {
+        return getParam(key, null);
+    }
+
+    protected String getParam(String key, String defaultValue) {
+        return getConf().get(key, getConf().get("--" + key, defaultValue));
     }
 
     protected int getFixedSizeArgs() {
@@ -167,6 +182,81 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         }
     }
 
+    protected boolean isLocal(Path path) {
+        return HDFSIOConnector.isLocal(path.toUri(), getConf());
+    }
+
+    protected Path getTempOutdir(String prefix) {
+        return new Path(getConf().get("hadoop.tmp.dir"), prefix + TimeUtils.getTime());
+    }
+
+    protected Path getLocalOutput(Path outdir) throws IOException {
+        return getLocalOutput(outdir, null);
+    }
+
+    protected Path getLocalOutput(Path outdir, Supplier<String> nameGenerator) throws IOException {
+        if (!isLocal(outdir)) {
+            throw new IllegalArgumentException("Outdir " + outdir + " is not in the local filesystem");
+        }
+        Path localOutput = outdir;
+        FileSystem localFs = localOutput.getFileSystem(getConf());
+        if (localFs.exists(localOutput)) {
+            if (localFs.isDirectory(localOutput)) {
+                if (nameGenerator == null) {
+                    throw new IllegalArgumentException("Local output '" + localOutput + "' is a directory");
+                }
+                localOutput = new Path(localOutput, nameGenerator.get());
+            } else {
+                throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
+            }
+        } else {
+            if (!localFs.exists(localOutput.getParent())) {
+                throw new IOException("No such file or directory");
+            }
+        }
+        return localOutput;
+    }
+
+    /**
+     * Concatenate all generated files from a MapReduce job into one single local file.
+     * TODO: Allow copy output to any IOConnector
+     * @param mrOutdir      MapReduce output directory
+     * @param localOutput   Local file
+     * @throws IOException  on IOException
+     * @return              List of copied files from HDFS
+     */
+    protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput) throws IOException {
+        FileSystem fileSystem = mrOutdir.getFileSystem(getConf());
+        RemoteIterator<LocatedFileStatus> it = fileSystem.listFiles(mrOutdir, false);
+        List<Path> paths = new ArrayList<>();
+        while (it.hasNext()) {
+            LocatedFileStatus status = it.next();
+            Path path = status.getPath();
+            if (status.isFile()
+                    && !path.getName().equals(FileOutputCommitter.SUCCEEDED_FILE_NAME)
+                    && !path.getName().equals(FileOutputCommitter.PENDING_DIR_NAME)
+                    && status.getLen() > 0) {
+                paths.add(path);
+            }
+        }
+        if (paths.size() == 0) {
+            LOGGER.warn("The MapReduce job didn't produce any output. This may not be expected.");
+        } else if (paths.size() == 1) {
+            LOGGER.info("Copy to local file " + paths.get(0) + " to " + localOutput);
+            fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
+        } else {
+            LOGGER.info("Concat and copy to local " + paths + " files from " + mrOutdir + " to " + localOutput);
+            try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
+                for (Path path : paths) {
+                    try (FSDataInputStream is = fileSystem.open(path)) {
+                        IOUtils.copyBytes(is, os, getConf(), false);
+                    }
+                }
+            }
+        }
+        return paths;
+    }
+
     public static String[] buildArgs(String table, ObjectMap options) {
         List<String> args = new ArrayList<>(1 + options.size() * 2);
 
@@ -181,4 +271,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return args.toArray(new String[args.size()]);
     }
 
+    protected static void main(String[] args, Class<? extends Tool> aClass) {
+        try {
+            Tool tool = aClass.newInstance();
+            int code = ToolRunner.run(tool, args);
+            System.exit(code);
+        } catch (Exception e) {
+            LoggerFactory.getLogger(aClass).error("Error executing " + aClass, e);
+            System.exit(1);
+        }
+    }
 }

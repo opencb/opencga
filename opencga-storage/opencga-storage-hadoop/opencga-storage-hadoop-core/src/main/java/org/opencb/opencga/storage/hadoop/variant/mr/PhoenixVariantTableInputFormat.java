@@ -24,7 +24,7 @@ import java.sql.SQLException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class PhoenixVariantTableInputFormat
-        extends AbstractVariantsTableInputFormat<NullWritable, PhoenixVariantTableInputFormat.VariantDBWritable> {
+        extends TransformInputFormat<NullWritable, PhoenixVariantTableInputFormat.VariantDBWritable, Variant> {
 
     @Override
     protected void init(Configuration configuration) throws IOException {

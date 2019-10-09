@@ -7,6 +7,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.util.Collections;
@@ -36,7 +37,7 @@ public class SampleIndexDBAdaptorTest {
 
         SampleIndexQuery query = new SampleIndexQuery(Collections.emptyList(), "ST",
                 Collections.singletonMap(sampleName, Collections.singletonList("0/1")), VariantQueryUtils.QueryOperation.AND);
-        new SampleIndexDBAdaptor(new GenomeHelper(new Configuration()), null, null, metadataManager).parse(query.forSample(sampleName), null, false);
+        new SampleIndexDBAdaptor(new GenomeHelper(new Configuration()), new HBaseManager(new Configuration()), null, metadataManager).parse(query.forSample(sampleName), null, false);
     }
 
 

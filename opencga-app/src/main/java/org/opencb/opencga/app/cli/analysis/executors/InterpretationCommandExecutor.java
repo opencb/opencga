@@ -142,7 +142,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
                 teamAnalysisOptions, opencgaHome, token);
 
-        InterpretationResult interpretationResult = teamAnalysis.execute();
+        InterpretationResult interpretationResult = teamAnalysis.compute();
 
         // Store team analysis in DB
         catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, new Interpretation(interpretationResult.getResult()),
@@ -211,7 +211,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList,
                 options.penetrance, tieringAnalysisOptions, opencgaHome, token);
 
-        InterpretationResult interpretationResult = tieringAnalysis.execute();
+        InterpretationResult interpretationResult = tieringAnalysis.compute();
 
         // Store tiering analysis in DB
         if (options.commonOptions.params.getOrDefault("skipSave", "false").equals("true")) {

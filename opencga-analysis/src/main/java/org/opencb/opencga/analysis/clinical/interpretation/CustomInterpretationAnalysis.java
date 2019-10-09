@@ -63,7 +63,10 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
     }
 
     @Override
-    public InterpretationResult execute() throws Exception {
+    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    }
+
+    public InterpretationResult compute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
 
         ClinicalAnalysis clinicalAnalysis = null;
@@ -193,7 +196,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
                 StopWatch watcher2 = StopWatch.createStarted();
                 moi = ClinicalProperty.ModeOfInheritance.DE_NOVO;
                 DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
-                variants = deNovoAnalysis.execute().getResult();
+                variants = deNovoAnalysis.compute().getResult();
                 dbTime = Math.toIntExact(watcher2.getTime());
             } else {
                 moi = ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
@@ -254,7 +257,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
             StopWatch watcher2 = StopWatch.createStarted();
             CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query, options,
                     opencgaHome, sessionId);
-            primaryFindings = getCompoundHeterozygousReportedVariants(compoundAnalysis.execute().getResult(), creator);
+            primaryFindings = getCompoundHeterozygousReportedVariants(compoundAnalysis.compute().getResult(), creator);
             dbTime = Math.toIntExact(watcher2.getTime());
         } else {
             // Other mode of inheritance

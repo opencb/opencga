@@ -155,8 +155,8 @@ public class DocumentToVariantStatsConverter {
             stats.setRefAlleleCount(alleleCounts[0]);
             stats.setAltAlleleCount(alleleCounts[1]);
             if (alleleNumber == 0) {
-                stats.setRefAlleleFreq(0F);
-                stats.setAltAlleleFreq(0F);
+                stats.setRefAlleleFreq(-1F);
+                stats.setAltAlleleFreq(-1F);
             } else {
                 stats.setRefAlleleFreq(alleleCounts[0] / ((float) alleleNumber));
                 stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));

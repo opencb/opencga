@@ -51,8 +51,12 @@ public interface BatchExecutor {
 
     boolean isExecutorAlive();
 
-    // We do it this way to avoid writing the session id in the command line (avoid display/monitor/logs) attribute of Job
-
+    /**
+     * We do it this way to avoid writing the session id in the command line (avoid display/monitor/logs) attribute of Job.
+     * @param job Job to generate CLI from
+     * @param token A valid session token
+     * @return The command line
+     */
     default String getCommandLine(Job job, String token) {
         return job.getCommandLine() + " --session-id " + token;
     }

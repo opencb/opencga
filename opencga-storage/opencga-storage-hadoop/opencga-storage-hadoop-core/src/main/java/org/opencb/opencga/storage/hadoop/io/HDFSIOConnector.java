@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.io;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
@@ -33,6 +34,11 @@ public class HDFSIOConnector extends Configured implements IOConnector {
         super(conf);
     }
 
+    public static boolean isLocal(URI uri, Configuration conf) {
+        String scheme = uri.getScheme();
+        return "file".equals(scheme) || StringUtils.isEmpty(scheme) && conf.get(FileSystem.FS_DEFAULT_NAME_KEY).startsWith("file:");
+    }
+
     private FileSystem getFileSystem(URI uri) throws IOException {
         return FileSystem.get(uri, getConf());
     }
@@ -40,7 +46,7 @@ public class HDFSIOConnector extends Configured implements IOConnector {
     @Override
     public boolean isValid(URI uri) {
         try {
-            return getFileSystem(uri) != null;
+            return getFileSystem(uri) != null && !isLocal(uri, getConf());
         } catch (IOException e) {
             return false;
         }

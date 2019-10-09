@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -258,6 +259,15 @@ public class VariantSqlQueryParser {
                         }
                     }
                 });
+            }
+            if (returnedFields.contains(VariantField.STUDIES_SCORES)) {
+                for (StudyMetadata studyMetadata : queryFields.getStudyMetadatas().values()) {
+                    for (VariantScoreMetadata variantScore : studyMetadata.getVariantScores()) {
+                        sb.append(",\"");
+                        sb.append(VariantPhoenixHelper.getVariantScoreColumn(variantScore.getStudyId(), variantScore.getId()));
+                        sb.append('"');
+                    }
+                }
             }
             if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
@@ -1008,6 +1018,23 @@ public class VariantSqlQueryParser {
                 }
             }
             filters.add(appendFilters(gtFilters, genotypeQueryOperation));
+        }
+
+        if (isValidParam(query, SCORE)) {
+            addQueryFilter(query, SCORE, (kov, v) -> {
+                String key = kov[0];
+                String[] studyResource = splitStudyResource(key);
+                int studyId;
+                int scoreId;
+                if (studyResource.length == 1) {
+                    studyId = defaultStudyMetadata.getId();
+                    scoreId = metadataManager.getVariantScoreMetadata(defaultStudyMetadata, studyResource[0]).getId();
+                } else {
+                    studyId = metadataManager.getStudyId(studyResource[0]);
+                    scoreId = metadataManager.getVariantScoreMetadata(studyId, studyResource[1]).getId();
+                }
+                return VariantPhoenixHelper.getVariantScoreColumn(studyId, scoreId);
+            }, null, filters, null, 1);
         }
 
         if (isValidParam(query, RELEASE)) {

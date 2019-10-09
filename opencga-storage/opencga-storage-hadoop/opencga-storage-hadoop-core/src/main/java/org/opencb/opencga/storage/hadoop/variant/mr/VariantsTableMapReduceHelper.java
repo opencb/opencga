@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -41,7 +41,7 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
     private final Logger logger = LoggerFactory.getLogger(VariantsTableMapReduceHelper.class);
 
-    private final Mapper.Context context;
+    private final TaskInputOutputContext context;
     private final VariantTableHelper helper;
     private StudyMetadata studyMetadata; // Lazy initialisation
     private final HBaseToVariantConverter<Result> hbaseToVariantConverter;
@@ -53,7 +53,7 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
     private final VariantStorageMetadataManager metadataManager;
 
 
-    public VariantsTableMapReduceHelper(Mapper.Context context) throws IOException {
+    public VariantsTableMapReduceHelper(TaskInputOutputContext context) throws IOException {
         this.context = context;
 
         Thread.currentThread().setName(context.getTaskAttemptID().toString());
