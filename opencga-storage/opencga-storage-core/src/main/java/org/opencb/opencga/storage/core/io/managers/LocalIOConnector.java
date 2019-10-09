@@ -20,7 +20,7 @@ public class LocalIOConnector implements IOConnector {
 
     @Override
     public boolean isValid(URI uri) {
-        return uri != null && StringUtils.isEmpty(uri.getScheme()) || uri.getScheme().equals("file");
+        return uri != null && (StringUtils.isEmpty(uri.getScheme()) || uri.getScheme().equals("file"));
     }
 
     @Override

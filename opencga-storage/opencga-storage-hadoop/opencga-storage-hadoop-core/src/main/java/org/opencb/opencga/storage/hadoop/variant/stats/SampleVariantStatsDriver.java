@@ -9,7 +9,6 @@ import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -243,9 +242,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             }
         }
         if (localOutput != null) {
-            FileSystem fileSystem = outdir.getFileSystem(getConf());
-            fileSystem.delete(outdir, true);
-            fileSystem.cancelDeleteOnExit(outdir);
+            deleteTemporaryFile(outdir);
         }
     }
 

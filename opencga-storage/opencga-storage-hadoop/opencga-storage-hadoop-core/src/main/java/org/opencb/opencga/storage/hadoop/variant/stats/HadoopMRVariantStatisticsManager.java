@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -7,7 +8,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.slf4j.Logger;
@@ -47,8 +47,11 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
         StudyMetadata sm = metadataManager.getStudyMetadata(study);
 
         if (isAggregated(sm, options)) {
-            throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
-                    + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
+            Aggregation aggregation = getAggregation(sm, options);
+            VariantStatsMapper.setAggregation(options, aggregation);
+            VariantStatsMapper.setAggregationMappingProperties(options, VariantStatisticsManager.getAggregationMappingProperties(options));
+//            throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
+//                    + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
         }
         boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(), false);
         boolean overwriteStats = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
@@ -59,10 +62,8 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
 
         preCalculateStats(metadataManager, sm, cohorts, overwriteStats, updateStats, options);
 
-        List<Integer> cohortIds = metadataManager.getCohortIds(sm.getId(), cohorts);
-
-        options.put(VariantStatsMapper.COHORTS, cohortIds);
-        VariantStatsMapper.setAggregationMappingProperties(options, VariantStatisticsManager.getAggregationMappingProperties(options));
+        options.put(VariantStatsDriver.COHORTS, cohorts);
+        options.remove(VariantStatsDriver.OUTPUT);
 
         boolean error = false;
         try {

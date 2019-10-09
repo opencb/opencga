@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -228,9 +227,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
             }
         }
         if (localOutput != null) {
-            FileSystem fileSystem = outdir.getFileSystem(getConf());
-            fileSystem.delete(outdir, true);
-            fileSystem.cancelDeleteOnExit(outdir);
+            deleteTemporaryFile(outdir);
         }
     }
 

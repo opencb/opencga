@@ -5,8 +5,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantAlternateRearranger;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -87,7 +89,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                                               boolean statsMultiAllelic, String unknownGenotype) {
             super(columnFamily, metadataManager, null);
             sampleIdsSet = new HashSet<>(sampleIds);
-            if (excludeFiles(statsMultiAllelic, unknownGenotype)) {
+            if (excludeFiles(statsMultiAllelic, unknownGenotype, Aggregation.NONE)) {
                 fileIds = Collections.emptySet();
                 samplesInFile = Collections.emptyMap();
             } else {
@@ -250,8 +252,8 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         }
     }
 
-    protected static boolean excludeFiles(boolean statsMultiAllelic, String unknownGenotype) {
-        return !statsMultiAllelic && unknownGenotype.equals(HOM_REF);
+    protected static boolean excludeFiles(boolean statsMultiAllelic, String unknownGenotype, Aggregation aggregation) {
+        return !statsMultiAllelic && unknownGenotype.equals(HOM_REF) && !AggregationUtils.isAggregated(aggregation);
     }
 
 }

@@ -1,33 +1,41 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.NavigableSet;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter.endsWith;
+import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsCalculator.excludeFiles;
 
 /**
@@ -36,14 +44,22 @@ import static org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsC
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantStatsDriver extends AbstractVariantsTableDriver {
-    public static final String STATS_INPUT = "stats.input";
-    public static final String STATS_INPUT_DEFAULT = "native";
     private static final String STATS_OPERATION_NAME = "stats";
     public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
+    public static final String OUTPUT = "output";
+    public static final String COHORTS = "cohorts";
     public static final boolean STATS_PARTIAL_RESULTS_DEFAULT = true;
 
     private Collection<Integer> cohorts;
-    private static final Logger LOG = LoggerFactory.getLogger(VariantStatsDriver.class);
+    private static Logger logger = LoggerFactory.getLogger(VariantStatsDriver.class);
+    private Path outdir;
+    private Path localOutput;
+    private Aggregation aggregation;
+    private boolean updateStats;
+    private boolean overwrite;
+    private boolean statsMultiAllelic;
+    private String statsDefaultGenotype;
+    private boolean excludeFiles;
 
     public VariantStatsDriver() {
     }
@@ -53,14 +69,60 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
     }
 
     @Override
-    protected void parseAndValidateParameters() throws IOException {
-        super.parseAndValidateParameters();
-        cohorts = VariantStatsMapper.getCohorts(getConf());
+    protected Map<String, String> getParams() {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>*");
+        params.put("--" + COHORTS, "<cohorts>*");
+        params.put("--" + OUTPUT, "<output>");
+        return params;
     }
 
     @Override
-    protected Class<VariantStatsFromResultMapper> getMapperClass() {
-        return VariantStatsFromResultMapper.class;
+    protected void parseAndValidateParameters() throws IOException {
+        super.parseAndValidateParameters();
+        String[] split = getParam(COHORTS, "").split(",");
+        cohorts = new ArrayList<>(split.length);
+        List<String> cohortNames = new ArrayList<>(split.length);
+        for (String cohort : split) {
+            CohortMetadata cohortMetadata = getMetadataManager().getCohortMetadata(getStudyId(), cohort);
+            cohorts.add(cohortMetadata.getId());
+            cohortNames.add(cohortMetadata.getName());
+        }
+
+        aggregation = VariantStatsMapper.getAggregation(getConf());
+        updateStats = getConf().getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(),
+                VariantStorageEngine.Options.UPDATE_STATS.defaultValue());
+        overwrite = getConf().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(),
+                VariantStorageEngine.Options.OVERWRITE_STATS.defaultValue());
+        statsMultiAllelic = getConf().getBoolean(VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
+                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
+        statsDefaultGenotype = getConf().get(VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
+        excludeFiles = excludeFiles(statsMultiAllelic, statsDefaultGenotype, aggregation);
+
+        logger.info(" * Aggregation: " + aggregation);
+        logger.info(" * " + VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key() + ": " + statsMultiAllelic);
+        logger.info(" * " + VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key() + ": " + statsDefaultGenotype);
+
+
+        String outdirStr = getParam(OUTPUT);
+        if (StringUtils.isNotEmpty(outdirStr)) {
+            outdir = new Path(outdirStr);
+
+            if (isLocal(outdir)) {
+                localOutput = getLocalOutput(outdir, () -> "variant_stats."
+                        + (cohorts.size() < 10 ? "." + String.join("_", cohortNames) : "")
+                        + TimeUtils.getTime() + ".json");
+                outdir = getTempOutdir("opencga_sample_variant_stats_");
+                outdir.getFileSystem(getConf()).deleteOnExit(outdir);
+            }
+            if (localOutput != null) {
+                logger.info(" * Outdir file: " + localOutput.toUri());
+                logger.info(" * Temporary outdir file: " + outdir.toUri());
+            } else {
+                logger.info(" * Outdir file: " + outdir.toUri());
+            }
+        }
     }
 
     @Override
@@ -77,30 +139,54 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
         ObjectMap options = new ObjectMap();
         getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
 
-        boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(),
-                VariantStorageEngine.Options.UPDATE_STATS.defaultValue());
-        boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(),
-                VariantStorageEngine.Options.OVERWRITE_STATS.defaultValue());
-        boolean statsMultiAllelic = getConf().getBoolean(VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
-        String statsDefaultGenotype = getConf().get(VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
         Query query = VariantStatisticsManager.buildInputQuery(getMetadataManager(), readStudyMetadata(),
                 cohorts, overwrite, updateStats, options);
         QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
 
-        boolean excludeFiles = excludeFiles(statsMultiAllelic, statsDefaultGenotype);
         if (excludeFiles) {
             // Do not include files when not calculating multi-allelic frequencies.
             query.put(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
         }
-        // Allow partial results if files are not required
-        boolean allowPartialResults = excludeFiles && getConf().getBoolean(STATS_PARTIAL_RESULTS, STATS_PARTIAL_RESULTS_DEFAULT);
 
+        if (outdir != null) {
+            // Do not index stats.
+            // Allow any input query.
+            // Write stats to file.
+            // Use "VariantRow" as input
+            Query queryFromParams = getQueryFromConfig(getConf());
+            queryFromParams.putAll(query);
+            queryFromParams.remove(VariantQueryParam.COHORT.key());
+            logger.info("Query : " + query.toJson());
 
-        LOG.info("Query : " + query.toJson());
+            queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_STATS);
 
-        if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("native")) {
+            // input
+            VariantMapReduceUtil.initVariantRowMapperJob(job, VariantStatsFromVariantRowTsvMapper.class,
+                    variantTableName, getMetadataManager(), queryFromParams, queryOptions, true);
+            VariantMapReduceUtil.setNoneTimestamp(job);
+
+            job.setOutputFormatClass(TextOutputFormat.class);
+            TextOutputFormat.setCompressOutput(job, false);
+            TextOutputFormat.setOutputPath(job, outdir);
+
+        } else if (AggregationUtils.isAggregated(aggregation)) {
+            // For aggregated variants use plain VariantStatsMapper
+            // Use "Variant" as input
+            // Write results in HBase
+            logger.info("Query : " + query.toJson());
+            // input
+            VariantMapReduceUtil.initVariantMapperJob(
+                    job, VariantStatsMapper.class, variantTableName, getMetadataManager(), query, queryOptions, true);
+            VariantMapReduceUtil.setNoneTimestamp(job);
+
+            // output
+            VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);
+        } else {
+            // For general stats, use native implementation VariantStatsFromResultMapper
+            // Allow partial results by default
+            // Write results in HBase
+
+            logger.info("Query : " + query.toJson());
             // Some of the filters in query are not supported by VariantHBaseQueryParser
             Scan scan = new VariantHBaseQueryParser(getHelper(), getMetadataManager()).parseQuery(query, queryOptions);
             if (excludeFiles) {
@@ -108,11 +194,12 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
                 NavigableSet<byte[]> columns = scan.getFamilyMap().get(getHelper().getColumnFamily());
                 columns.removeIf(column -> endsWith(column, VariantPhoenixHelper.FILE_SUFIX_BYTES));
             }
-            scan.setCacheBlocks(false);
-            int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
-            LOG.info("Scan set Caching to " + caching);
-            scan.setCaching(caching);
-            LOG.info(scan.toString());
+            VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
+            logger.info(scan.toString());
+
+            // Allow partial results if files are not required
+            boolean allowPartialResults = excludeFiles && getConf().getBoolean(STATS_PARTIAL_RESULTS, STATS_PARTIAL_RESULTS_DEFAULT);
+            logger.info(" * Allow partial results : " + allowPartialResults);
 
             // input + output
             if (allowPartialResults) {
@@ -122,28 +209,6 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
                 VariantMapReduceUtil.initTableMapperJob(
                         job, variantTableName, variantTableName, scan, VariantStatsFromResultMapper.class);
             }
-        } else if (getConf().get(STATS_INPUT, STATS_INPUT_DEFAULT).equalsIgnoreCase("phoenix")) {
-            // Sql
-            String sql = new VariantSqlQueryParser(getHelper(), getVariantsTable(), getMetadataManager())
-                    .parse(query, queryOptions).getSql();
-
-            LOG.info(sql);
-
-            // input
-            VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTableName, sql, VariantStatsMapper.class);
-            // output
-            VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);
-        } else {
-            // scan
-            // TODO: Improve filter!
-            // Some of the filters in query are not supported by VariantHBaseQueryParser
-            Scan scan = new VariantHBaseQueryParser(getHelper(), getMetadataManager()).parseQuery(query, queryOptions);
-
-            LOG.info(scan.toString());
-            // input
-            VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTableName, scan, VariantStatsMapper.class);
-            // output
-            VariantMapReduceUtil.setOutputHBaseTable(job, variantTableName);
         }
         VariantMapReduceUtil.configureVariantConverter(job.getConfiguration(), false, true, true,
                 options.getString(STATS_DEFAULT_GENOTYPE.key(), STATS_DEFAULT_GENOTYPE.defaultValue()));
@@ -157,16 +222,25 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
     }
 
     @Override
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+        super.postExecution(succeed);
+        if (succeed) {
+            if (localOutput != null) {
+                concatMrOutputToLocal(outdir, localOutput);
+            }
+        }
+        if (localOutput != null) {
+            deleteTemporaryFile(outdir);
+        }
+    }
+
+    @Override
     protected String getJobOperationName() {
         return STATS_OPERATION_NAME;
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            System.exit(new VariantStatsDriver().privateMain(args));
-        } catch (Exception e) {
-            LOG.error("Error executing " + VariantStatsDriver.class, e);
-            System.exit(1);
-        }
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        main(args, (Class<? extends Tool>) MethodHandles.lookup().lookupClass());
     }
 }

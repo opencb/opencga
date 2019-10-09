@@ -17,15 +17,23 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.net.URI;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -54,5 +62,29 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
         return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true)
                 .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(HadoopVariantStorageEngine.STATS_LOCAL, false);
+    }
+
+    @Test
+    public void testStatsToFile() throws Exception {
+
+        String cohortName = "MyCohort";
+        metadataManager.registerCohort(studyMetadata.getName(), cohortName, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
+
+        VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) this.dbAdaptor;
+        ObjectMap options = new ObjectMap();
+        options.put(VariantStatsDriver.COHORTS, cohortName);
+        URI outputFile = newOutputUri().resolve(cohortName + ".tsv");
+        options.put(VariantStatsDriver.OUTPUT, outputFile);
+
+        getMrExecutor().run(VariantStatsDriver.class, VariantStatsDriver.buildArgs(
+                dbAdaptor.getArchiveTableName(studyMetadata.getId()),
+                dbAdaptor.getVariantTable(), studyMetadata.getId(), null, options), options);
+
+        try(BufferedReader is = new BufferedReader(new FileReader(outputFile.getPath()))) {
+            long count = is.lines().count();
+            int headerSize = 1;
+            Assert.assertEquals(dbAdaptor.count(new Query()).first() + headerSize, count);
+        }
+
     }
 }

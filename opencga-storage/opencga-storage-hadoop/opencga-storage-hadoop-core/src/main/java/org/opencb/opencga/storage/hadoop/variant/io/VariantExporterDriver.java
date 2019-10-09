@@ -6,7 +6,6 @@ import org.apache.avro.mapred.AvroValue;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.io.NullWritable;
@@ -223,9 +222,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             }
         }
         if (localOutput != null) {
-            FileSystem fileSystem = outdir.getFileSystem(getConf());
-            fileSystem.delete(outdir, true);
-            fileSystem.cancelDeleteOnExit(outdir);
+            deleteTemporaryFile(outdir);
         }
     }
 
