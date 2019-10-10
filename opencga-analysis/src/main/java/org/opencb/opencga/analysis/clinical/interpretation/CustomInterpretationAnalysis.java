@@ -20,14 +20,12 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -46,11 +44,10 @@ import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,6 +57,9 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     private final static String CUSTOM_ANALYSIS_NAME = "Custom";
 
+    private ObjectMap executorParams;
+    private Path outDir;
+
     public CustomInterpretationAnalysis(String clinicalAnalysisId, String studyStr, Query query, ObjectMap options, String opencgaHome,
                                         String sessionId) {
         super(clinicalAnalysisId, studyStr,null, options, opencgaHome, sessionId);
@@ -68,7 +68,45 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
     @Override
     protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+        // Get executor
+        CustomInterpretationAnalysisExecutor executor = new CustomInterpretationAnalysisExecutor();
+
+        // Set executor parameters
+        executor.setup(executorParams, outDir);
+//        throw new org.opencb.oskar.analysis.exceptions.AnalysisException("Invalid input parameters for custom interpretation analysis");
+
+        this.arm.startStep("custom-interpretation");
+        executor.exec();
+        this.arm.endStep(100.0F);
+
+
+//        gwasExecutor.setup(this.executorParams, this.outDir, this.configuration);
+//        if (!CollectionUtils.isNotEmpty(this.sampleList1) && !CollectionUtils.isNotEmpty(this.sampleList2)) {
+//            if (!StringUtils.isNotEmpty(this.phenotype1) && !StringUtils.isNotEmpty(this.phenotype2)) {
+//                if (!StringUtils.isNotEmpty(this.cohort1) && !StringUtils.isNotEmpty(this.cohort2)) {
+//                    throw new AnalysisException("Invalid input parameters for GWAS analysis");
+//                }
+//
+//                gwasExecutor.setCohort1(this.cohort1);
+//                gwasExecutor.setCohort2(this.cohort2);
+//            } else {
+//                gwasExecutor.setPhenotype1(this.phenotype1);
+//                gwasExecutor.setPhenotype2(this.phenotype2);
+//            }
+//        } else {
+//            gwasExecutor.setSampleList1(this.sampleList1);
+//            gwasExecutor.setSampleList2(this.sampleList2);
+//        }
+//
+//        this.arm.startStep("gwas");
+//        gwasExecutor.exec();
+//        this.arm.endStep(70.0F);
+//        this.arm.startStep("manhattan-plot");
+//        this.createManhattanPlot();
+//        this.arm.endStep(100.0F);
     }
+
+
 
     public InterpretationResult compute() throws Exception {
         StopWatch watcher = StopWatch.createStarted();
@@ -150,24 +188,10 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
         }
 
         // Get and check panels
-        List<DiseasePanel> diseasePanels = new ArrayList<>();
+        List<DiseasePanel> diseasePanels = null;
         if (query.get(VariantCatalogQueryUtils.PANEL.key()) != null) {
-            List<String> diseasePanelIds = Arrays.asList(query.getString(VariantCatalogQueryUtils.PANEL.key()).split(","));
-            List<QueryResult<Panel>> queryResults = catalogManager.getPanelManager()
-                    .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
-
-            if (queryResults.size() != diseasePanelIds.size()) {
-                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
-                        "disease panels queried");
-            }
-
-            for (QueryResult<Panel> queryResult : queryResults) {
-                if (queryResult.getNumResults() != 1) {
-                    throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
-                            "disease panels queried");
-                }
-                diseasePanels.add(queryResult.first());
-            }
+            diseasePanels = ClinicalUtils.getDiseasePanels(studyId, Arrays.asList(query.getString(VariantCatalogQueryUtils.PANEL.key())
+                    .split(",")), catalogManager, sessionId);
         }
 
         QueryOptions queryOptions = new QueryOptions(options);
@@ -177,16 +201,9 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
         boolean skipDiagnosticVariants = options.getBoolean(SKIP_DIAGNOSTIC_VARIANTS_PARAM, false);
         boolean skipUntieredVariants = options.getBoolean(SKIP_UNTIERED_VARIANTS_PARAM, false);
 
-
         // Diagnostic variants ?
         if (!skipDiagnosticVariants) {
-            List<DiseasePanel.VariantPanel> diagnosticVariants = new ArrayList<>();
-            for (DiseasePanel diseasePanel : diseasePanels) {
-                if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getVariants())) {
-                    diagnosticVariants.addAll(diseasePanel.getVariants());
-                }
-            }
-
+            List<DiseasePanel.VariantPanel> diagnosticVariants = ClinicalUtils.getDiagnosticVariants(diseasePanels);
             query.put(VariantQueryParam.ID.key(), StringUtils.join(diagnosticVariants.stream()
                     .map(DiseasePanel.VariantPanel::getId).collect(Collectors.toList()), ","));
         }
@@ -219,7 +236,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
             dbTime = variantQueryResult.getDbTime();
             numTotalResult = variantQueryResult.getNumTotalResults();
 
-        if (CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
+            if (CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
                 variants.addAll(variantQueryResult.getResult());
             }
 

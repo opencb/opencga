@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -13,14 +14,17 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -109,4 +113,34 @@ public class ClinicalUtils {
         }
     }
 
+    public static List<DiseasePanel> getDiseasePanels(String studyId, List<String> diseasePanelIds, CatalogManager catalogManager, String sessionId)
+            throws AnalysisException, CatalogException {
+        List<DiseasePanel> diseasePanels = new ArrayList<>();
+        List<QueryResult<Panel>> queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
+
+        if (queryResults.size() != diseasePanelIds.size()) {
+            throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
+                    "disease panels queried");
+        }
+
+        for (QueryResult<Panel> queryResult : queryResults) {
+            if (queryResult.getNumResults() != 1) {
+                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
+                        "disease panels queried");
+            }
+            diseasePanels.add(queryResult.first());
+        }
+
+        return diseasePanels;
+    }
+
+    public static List<DiseasePanel.VariantPanel> getDiagnosticVariants(List<DiseasePanel> diseasePanels) {
+        List<DiseasePanel.VariantPanel> diagnosticVariants = new ArrayList<>();
+        for (DiseasePanel diseasePanel : diseasePanels) {
+            if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getVariants())) {
+                diagnosticVariants.addAll(diseasePanel.getVariants());
+            }
+        }
+        return diagnosticVariants;
+    }
 }
