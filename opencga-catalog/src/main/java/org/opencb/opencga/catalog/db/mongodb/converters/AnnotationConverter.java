@@ -99,6 +99,9 @@ public class AnnotationConverter {
                                 queue.add(new VariableLevel(tmpVariable, keys, arrayLevel));
                             }
                         }
+                    } else { // It is a free map
+                        document = createAnnotationDocument(variableLevel, annotations);
+                        addDocumentIfNotEmpty(variableSet, annotationSetName, variableLevel, document, documentList);
                     }
                     break;
                 default:

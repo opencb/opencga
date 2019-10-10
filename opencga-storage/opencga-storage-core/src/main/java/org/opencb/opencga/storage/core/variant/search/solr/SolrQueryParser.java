@@ -287,26 +287,11 @@ public class SolrQueryParser {
 
         // Variant score
         // In the model: "score__1kg_phase3__gwas1>3.12"
+        //               "pvalue__1kg_phase3__gwas1<=0.002"
         // where "1kg_phase3" is the study ID, and "gwas1" is the score ID
         key = SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            String[] split = splitOperator(query.getString(key));
-            if (split.length != 3) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + query.getString(key));
-            }
-            String name;
-            if (split[0].contains(STUDY_POP_FREQ_SEPARATOR)) {
-                name = "score" + FIELD_SEPARATOR + split[0].replace(Character.toString(STUDY_RESOURCE_SEPARATOR), FIELD_SEPARATOR);
-            } else {
-                // Missing study in variant score param
-                if (StringUtils.isEmpty(defaultStudyName)) {
-                    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing study in Solr variant score query: "
-                            + query.getString(key));
-                }
-                name = "score" + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + split[0];
-            }
-            String value = split[1] + split[2];
-            filterList.add(parseNumericValue(name, value));
+            filterList.addAll(parseVariantScores(query.getString(key), defaultStudyName));
         }
 
         // GO
@@ -390,6 +375,129 @@ public class SolrQueryParser {
         logger.debug("query     : " + printQuery(query));
         logger.debug("solrQuery : " + solrQuery);
         return solrQuery;
+    }
+
+    private List<String> parseVariantScores(String queryValue, String defaultStudyName) {
+        List<String> filters = new ArrayList<>();
+
+        String[] scores = queryValue.split("[,;]");
+        QueryOperation queryOp = parseOrAndFilter(SCORE, queryValue);
+
+        if (queryOp == QueryOperation.OR) {
+            // OR
+            StringBuilder filter = new StringBuilder();
+            for (int i = 0; i < scores.length; i++) {
+                filter.append(parseVariantScore(scores[i], defaultStudyName));
+//                sb.append("fileInfo").append(FIELD_SEPARATOR)
+//                        .append(studies[0]).append(FIELD_SEPARATOR).append(files[i]).append(": [* TO *]");
+                if (i < scores.length - 1) {
+                    filter.append(" OR ");
+                }
+            }
+            filters.add(filter.toString());
+        } else {
+            // AND
+            for (String score : scores) {
+                filters.add(parseVariantScore(score, defaultStudyName));
+//                filterList.add("fileInfo" + FIELD_SEPARATOR
+//                        + studies[0] + FIELD_SEPARATOR + file + ": [* TO *]");
+            }
+        }
+//        }
+//        if (files == null) {
+//            List<String> includeFiles = getIncludeFilesList(query);
+//            if (includeFiles != null) {
+//                files = includeFiles.toArray(new String[0]);
+//            }
+//        }
+//
+//        // QUAL
+//        key = QUAL.key();
+//        if (StringUtils.isNotEmpty(query.getString(key))) {
+//            if (files == null) {
+//                throw VariantQueryException.malformedParam(FILE, "", "Missing file parameter when "
+//                        + " filtering with QUAL.");
+//            }
+//            String qual = query.getString(key);
+//            if (fileQueryOp == QueryOperation.OR) {
+//                StringBuilder sb = new StringBuilder();
+//                for (int i = 0; i < files.length; i++) {
+//                    sb.append(parseNumericValue("qual" + FIELD_SEPARATOR + studies[0]
+//                            + FIELD_SEPARATOR + files[i], qual));
+//                    if (i < files.length - 1) {
+//                        sb.append(" OR ");
+//                    }
+//                }
+//                filterList.add(sb.toString());
+//            } else {
+//                for (String file: files) {
+//                    filterList.add(parseNumericValue("qual" + FIELD_SEPARATOR + studies[0]
+//                            + FIELD_SEPARATOR + file, qual));
+//                }
+//            }
+//        }
+//
+//
+//
+//        String filter = "";
+//        String[] split = splitOperator(queryValue);
+//        if (split.length != 3) {
+//            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + query.getString(key));
+//        }
+//        String name;
+//        if (split[0].contains(STUDY_POP_FREQ_SEPARATOR)) {
+//            name = "score" + FIELD_SEPARATOR + split[0].replace(Character.toString(STUDY_RESOURCE_SEPARATOR), FIELD_SEPARATOR);
+//        } else {
+//            // Missing study in variant score param
+//            if (StringUtils.isEmpty(defaultStudyName)) {
+//                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing study in Solr variant score query: "
+//                        + query.getString(key));
+//            }
+//            name = "score" + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + split[0];
+//        }
+//        String value = split[1] + split[2];
+//        filter = parseNumericValue(name, value);
+        return filters;
+    }
+
+    private String parseVariantScore(String score, String defaultStudyName) {
+        String[] split = splitOperator(score);
+        if (split.length != 3) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
+        }
+        String name = null;
+        String[] fields = split[0].split(STUDY_POP_FREQ_SEPARATOR);
+        switch (fields.length) {
+            case 1:
+                checkMissingStudy(defaultStudyName, "variant score", score);
+                name = "score" + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + split[0];
+                break;
+            case 2:
+                if ("score".equals(fields[1]) || "pvalue".equals(fields[1])) {
+                    checkMissingStudy(defaultStudyName, "variant score", score);
+                    name = fields[1] + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + fields[0];
+                } else {
+                    name = "score" + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
+                }
+                break;
+            case 3:
+                if ("score".equals(fields[2]) || "pvalue".equals(fields[2])) {
+                    name = fields[2] + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
+                } else {
+                    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
+                }
+                break;
+            default:
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
+        }
+        return parseNumericValue(name, split[1] + split[2]);
+    }
+
+    private void checkMissingStudy(String studyId, String msg, String value) {
+        // Missing study
+        if (StringUtils.isEmpty(studyId)) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing study in Solr " + msg + " query: " + value);
+        }
     }
 
     private String parseGenomicFilter(Query query) {
