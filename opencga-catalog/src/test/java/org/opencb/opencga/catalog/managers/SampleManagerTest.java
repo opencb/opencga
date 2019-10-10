@@ -193,6 +193,8 @@ public class SampleManagerTest extends AbstractManagerTest {
                 null, Collections.emptyMap()));
         variables.add(new Variable("HEIGHT", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), 0, "",
                 "", null, Collections.emptyMap()));
+        variables.add(new Variable("MAP", "", Variable.VariableType.OBJECT, new HashMap<>(), false, false, Collections.emptyList(), 0, "", "", null,
+                Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionIdUser).first();
 
@@ -200,6 +202,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         annotations.put("NAME", "Joe");
         annotations.put("AGE", 25);
         annotations.put("HEIGHT", 180);
+        annotations.put("MAP", new ObjectMap("unknownKey1", "value1").append("unknownKey2", 42));
 
         catalogManager.getSampleManager().update(studyFqn, s_1, new ObjectMap()
                         .append(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
@@ -218,10 +221,13 @@ public class SampleManagerTest extends AbstractManagerTest {
 //                studyFqn, "annotation1", sessionIdUser);
 //        assertEquals(1, annotationSetQueryResult.getNumResults());
         Map<String, Object> map = sampleQueryResult.first().getAnnotationSets().get(0).getAnnotations();
-        assertEquals(3, map.size());
+        assertEquals(4, map.size());
         assertEquals("Joe", map.get("NAME"));
         assertEquals(25, map.get("AGE"));
         assertEquals(180.0, map.get("HEIGHT"));
+        assertEquals(2, ((Map) map.get("MAP")).size());
+        assertEquals("value1", ((Map) map.get("MAP")).get("unknownKey1"));
+        assertEquals(42, ((Map) map.get("MAP")).get("unknownKey2"));
     }
 
     @Test
