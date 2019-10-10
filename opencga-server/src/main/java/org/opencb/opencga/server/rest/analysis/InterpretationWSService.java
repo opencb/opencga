@@ -11,7 +11,6 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.clinical.SecondaryFindingsAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -21,15 +20,16 @@ import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -48,7 +48,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
-//    private final ClinicalInterpretationManager clinicalInterpretationManager;
+    private final ClinicalInterpretationManager clinicalInterpretationManager;
 
     protected static AtomicBoolean externalFilesLoaded;
     private static Map<String, Map<String, List<String>>> actionableVariantsByAssembly = null;
@@ -58,7 +58,9 @@ public class InterpretationWSService extends AnalysisWSService {
                                    @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
-//        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
+        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
+                Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"),
+                Paths.get(opencgaHome + "/analysis/resources/"));
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
@@ -67,7 +69,9 @@ public class InterpretationWSService extends AnalysisWSService {
                                    @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
 
-//        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory);
+        clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
+                Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"),
+                Paths.get(opencgaHome + "/analysis/resources/"));
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
@@ -995,9 +999,7 @@ public class InterpretationWSService extends AnalysisWSService {
                 sampleNames.addAll(Arrays.asList(sampleId.split("/")));
             }
 
-            SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleId, clinicalAnalysisId, studyId,
-                    null, opencgaHome, sessionId);
-            List<Variant> variants = secondaryFindingsAnalysis.compute().getResult();
+            List<Variant> variants = clinicalInterpretationManager.getSecondaryFindings(sampleId, clinicalAnalysisId, studyId, sessionId);
 
             return createAnalysisOkResponse(variants);
         } catch (Exception e) {

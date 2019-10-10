@@ -44,6 +44,7 @@ public class DeNovoAnalysisTest extends VariantStorageBaseTest implements MongoD
 
     @Test
     public void denovoTest() throws Exception {
+/*
         DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalTest.clinicalAnalysis.getId(), clinicalTest.studyFqn, null,
                 null, catalogManagerResource.getOpencgaHome().toString(), clinicalTest.token);
         AnalysisResult<List<Variant>> execute = deNovoAnalysis.compute();
@@ -51,6 +52,6 @@ public class DeNovoAnalysisTest extends VariantStorageBaseTest implements MongoD
             System.out.println("variant = " + variant);
         }
         System.out.println("Num. variants = " + execute.getResult().size());
-
+*/
     }
 }

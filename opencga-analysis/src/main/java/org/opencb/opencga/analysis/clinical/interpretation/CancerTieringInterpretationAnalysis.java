@@ -43,6 +43,7 @@ import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
@@ -88,7 +89,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
 
     public InterpretationResult compute() throws Exception {
         // Get clinical analysis
-        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
+        ClinicalAnalysis clinicalAnalysis = ClinicalUtils.getClinicalAnalysis(studyId, clinicalAnalysisId, catalogManager, sessionId);
 
         // Sanity check
         if (clinicalAnalysis == null) {
@@ -138,7 +139,8 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         // Reported low coverage
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
         if (options.getBoolean("lowRegionCoverage", false)) {
-            reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
+            reportedLowCoverages = clinicalInterpretationManager.getReportedLowCoverage(clinicalAnalysis, diseasePanels, studyId,
+                    sessionId);
         }
 
         // Create Interpretation
@@ -226,7 +228,8 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
 
         if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResult())) {
-            Map<String, ClinicalProperty.RoleInCancer> roleInCancer = roleInCancerManager.getRoleInCancer();
+            Map<String, ClinicalProperty.RoleInCancer> roleInCancer = clinicalInterpretationManager.getRoleInCancerManager()
+                    .getRoleInCancer();
             for (Variant variant : variantVariantQueryResult.getResult()) {
                 if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
                     List<ReportedEvent> reportedEvents = new ArrayList<>();

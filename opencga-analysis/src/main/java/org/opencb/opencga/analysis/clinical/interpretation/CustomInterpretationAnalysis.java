@@ -31,9 +31,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
-import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
 import org.opencb.opencga.analysis.clinical.OpenCgaClinicalAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -41,9 +38,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -69,15 +66,15 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
     @Override
     protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
         // Get executor
-        CustomInterpretationAnalysisExecutor executor = new CustomInterpretationAnalysisExecutor();
-
-        // Set executor parameters
-        executor.setup(executorParams, outDir);
-//        throw new org.opencb.oskar.analysis.exceptions.AnalysisException("Invalid input parameters for custom interpretation analysis");
-
-        this.arm.startStep("custom-interpretation");
-        executor.exec();
-        this.arm.endStep(100.0F);
+//        CustomInterpretationAnalysisExecutor executor = new CustomInterpretationAnalysisExecutor();
+//
+//        // Set executor parameters
+//        executor.setup(executorParams, outDir);
+////        throw new org.opencb.oskar.analysis.exceptions.AnalysisException("Invalid input parameters for custom interpretation analysis");
+//
+//        this.arm.startStep("custom-interpretation");
+//        executor.exec();
+//        this.arm.endStep(100.0F);
 
 
 //        gwasExecutor.setup(this.executorParams, this.outDir, this.configuration);
@@ -195,7 +192,6 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
         }
 
         QueryOptions queryOptions = new QueryOptions(options);
-//        queryOptions.add(QueryOptions.LIMIT, 20);
 
         List<Variant> variants = new ArrayList<>();
         boolean skipDiagnosticVariants = options.getBoolean(SKIP_DIAGNOSTIC_VARIANTS_PARAM, false);
@@ -216,8 +212,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
             if (segregation.equalsIgnoreCase(ClinicalProperty.ModeOfInheritance.DE_NOVO.toString())) {
                 StopWatch watcher2 = StopWatch.createStarted();
                 moi = ClinicalProperty.ModeOfInheritance.DE_NOVO;
-                DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
-                variants = deNovoAnalysis.compute().getResult();
+                variants = clinicalInterpretationManager.getDeNovoVariants(clinicalAnalysisId, studyId, query, sessionId);
                 dbTime = Math.toIntExact(watcher2.getTime());
             } else {
                 moi = ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
@@ -269,16 +264,16 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
         List<ReportedVariant> primaryFindings;
         DefaultReportedVariantCreator creator;
         String assembly = ClinicalUtils.getAssembly(catalogManager, studyId, sessionId);
-        creator = new DefaultReportedVariantCreator(roleInCancerManager.getRoleInCancer(),
-                actionableVariantManager.getActionableVariants(assembly), disorder, moi, ClinicalProperty.Penetrance.COMPLETE,
-                diseasePanels, biotypes, soNames, !skipUntieredVariants);
+        creator = new DefaultReportedVariantCreator(clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
+                clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly), disorder, moi,
+                ClinicalProperty.Penetrance.COMPLETE, diseasePanels, biotypes, soNames, !skipUntieredVariants);
 
         if (moi == ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS) {
             // Add compound heterozyous variants
             StopWatch watcher2 = StopWatch.createStarted();
-            CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query, options,
-                    opencgaHome, sessionId);
-            primaryFindings = getCompoundHeterozygousReportedVariants(compoundAnalysis.compute().getResult(), creator);
+            Map<String, List<Variant>> chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysisId,
+                    studyId, query, sessionId);
+            primaryFindings = getCompoundHeterozygousReportedVariants(chVariants, creator);
             dbTime = Math.toIntExact(watcher2.getTime());
         } else {
             // Other mode of inheritance
@@ -367,7 +362,8 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
                 Iterator<String> iterator = genes.iterator();
                 while (iterator.hasNext()) {
                     String geneName = iterator.next();
-                    List<ReportedLowCoverage> lowCoverages = getReportedLowCoverages(geneName, bamFileId, maxCoverage);
+                    List<ReportedLowCoverage> lowCoverages = clinicalInterpretationManager.getReportedLowCoverages(geneName, bamFileId,
+                            maxCoverage, studyId, sessionId);
                     if (ListUtils.isNotEmpty(lowCoverages)) {
                         reportedLowCoverages.addAll(lowCoverages);
                     }

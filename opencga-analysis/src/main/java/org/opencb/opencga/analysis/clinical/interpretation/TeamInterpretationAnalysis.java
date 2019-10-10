@@ -24,16 +24,15 @@ import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.commons.Software;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
-import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.oskar.analysis.exceptions.AnalysisException;
@@ -44,9 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.*;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance;
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.DE_NOVO;
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.Penetrance;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.VariantPanel;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
@@ -71,19 +71,21 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         List<ReportedVariant> primaryFindings;
 
         // Get and check clinical analysis and proband
-        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
-        Individual proband = getProband(clinicalAnalysis);
+        ClinicalAnalysis clinicalAnalysis = ClinicalUtils.getClinicalAnalysis(studyId, clinicalAnalysisId, catalogManager, sessionId);
+        Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
         // Disease panels management
         List<DiseasePanel> biodataDiseasePanels = null;
-        List<DiseasePanel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
+        List<DiseasePanel> diseasePanels = ClinicalUtils.getDiseasePanelsFromIds(diseasePanelIds, studyId, catalogManager, sessionId);
 
         // Get sample names and update proband information (to be able to navigate to the parents and their samples easily)
-        List<String> sampleList = getSampleNames(clinicalAnalysis, proband);
+        List<String> sampleList = ClinicalUtils.getSampleNames(clinicalAnalysis, proband);
 
         // Reported variant creator
-        TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels, roleInCancerManager.getRoleInCancer(),
-                actionableVariantManager.getActionableVariants(ClinicalUtils.getAssembly(catalogManager, studyId, sessionId)),
+        TeamReportedVariantCreator creator = new TeamReportedVariantCreator(biodataDiseasePanels,
+                clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
+                clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(
+                        ClinicalUtils.getAssembly(catalogManager, studyId, sessionId)),
                 clinicalAnalysis.getDisorder(), null, Penetrance.COMPLETE);
 
         // Step 1 - diagnostic variants
@@ -158,7 +160,8 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         // Reported low coverages management
         List<ReportedLowCoverage> reportedLowCoverages = null;
         if (options.getBoolean(INCLUDE_LOW_COVERAGE_PARAM, false)) {
-            reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
+            reportedLowCoverages = clinicalInterpretationManager.getReportedLowCoverage(clinicalAnalysis, diseasePanels, studyId,
+                    sessionId);
         }
 
 
@@ -192,12 +195,12 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         List<ReportedVariant> reportedVariants;
         if (moi != null && (moi == DE_NOVO || moi == COMPOUND_HETEROZYGOUS)) {
             if (moi == DE_NOVO) {
-                DeNovoAnalysis deNovoAnalysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
-                reportedVariants = creator.create(deNovoAnalysis.compute().getResult());
+                List<Variant> deNovoVariants = clinicalInterpretationManager.getDeNovoVariants(clinicalAnalysisId, studyId, query, sessionId);
+                reportedVariants = creator.create(deNovoVariants);
             } else {
-                CompoundHeterozygousAnalysis compoundAnalysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query,
-                        options, opencgaHome, sessionId);
-                reportedVariants = getCompoundHeterozygousReportedVariants(compoundAnalysis.compute().getResult(), creator);
+                Map<String, List<Variant>> chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysisId,
+                        studyId, query, sessionId);
+                reportedVariants = getCompoundHeterozygousReportedVariants(chVariants, creator);
             }
         } else {
             reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResult());

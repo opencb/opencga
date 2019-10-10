@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
@@ -25,7 +23,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.util.List;
-import java.util.Map;
 
 public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
 

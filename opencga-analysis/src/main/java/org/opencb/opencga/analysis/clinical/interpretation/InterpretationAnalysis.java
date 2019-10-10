@@ -18,8 +18,6 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
@@ -27,7 +25,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.OpenCgaClinicalAnalysis;
-import org.opencb.opencga.analysis.clinical.SecondaryFindingsAnalysis;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.ClinicalConsent;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -43,23 +40,13 @@ public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis {
         super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
     }
 
-//    @Deprecated
-//    public InterpretationAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer, Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr, String token) {
-//        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
-//    }
-
-
-
     protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
                                                          ReportedVariantCreator creator) throws Exception {
         List<ReportedVariant> secondaryFindings = null;
         if (clinicalAnalysis.getConsent() != null
                 && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-//            List<Variant> findings = ClinicalUtils.secondaryFindings(studyId, sampleNames, actionableVariants.keySet(),
-//                    excludeIds, variantStorageManager, token);
-            SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleNames.get(0), clinicalAnalysisId,
-                    studyId, null, opencgaHome, sessionId);
-            List<Variant> variants = secondaryFindingsAnalysis.compute().getResult();
+            List<Variant> variants = clinicalInterpretationManager.getSecondaryFindings(sampleNames.get(0), clinicalAnalysisId, studyId,
+                    sessionId);
             if (CollectionUtils.isNotEmpty(variants)) {
                 secondaryFindings = creator.createSecondaryFindings(variants);
             }

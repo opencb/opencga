@@ -18,10 +18,8 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Disorder;
@@ -34,11 +32,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.AnalysisResult;
-import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
-import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,6 +41,7 @@ import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
@@ -118,11 +112,11 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         String assembly = projectQueryResult.first().getOrganism().getAssembly();
 
         // Get and check clinical analysis and proband
-        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
-        Individual proband = getProband(clinicalAnalysis);
+        ClinicalAnalysis clinicalAnalysis = ClinicalUtils.getClinicalAnalysis(studyId, clinicalAnalysisId, catalogManager, sessionId);
+        Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
         // Get disease panels from IDs
-        List<DiseasePanel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
+        List<DiseasePanel> diseasePanels = ClinicalUtils.getDiseasePanelsFromIds(diseasePanelIds, studyId, catalogManager, sessionId);
 
         // Get pedigree
         Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
@@ -132,7 +126,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
 
         // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
         // samples easily)
-        Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);
+        Map<String, String> sampleMap = ClinicalUtils.getSampleMap(clinicalAnalysis, proband);
 
         Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap = new HashMap<>();
         Map<String, List<Variant>> chVariantMap = new HashMap<>();
@@ -195,9 +189,10 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
 
         // Primary findings,
         List<ReportedVariant> primaryFindings;
-        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(diseasePanels, roleInCancerManager.getRoleInCancer(),
-                actionableVariantManager.getActionableVariants(assembly), clinicalAnalysis.getDisorder(), null, penetrance,
-                assembly);
+        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(diseasePanels,
+                clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
+                clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly), clinicalAnalysis.getDisorder(),
+                null, penetrance, assembly);
         try {
             primaryFindings = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException e) {
@@ -217,7 +212,8 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         // Reported low coverage
         List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
         if (options.getBoolean("lowRegionCoverage", false)) {
-            reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
+            reportedLowCoverages = clinicalInterpretationManager.getReportedLowCoverage(clinicalAnalysis, diseasePanels, studyId,
+                    sessionId);
         }
 
         // Create Interpretation
@@ -256,13 +252,10 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
 
     private Boolean compoundHeterozygous(Map<String, List<Variant>> resultMap) {
         Query query = new Query(recessiveQuery);
-        CompoundHeterozygousAnalysis analysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome,
-                sessionId);
         try {
-            AnalysisResult<Map<String, List<Variant>>> execute = analysis.compute();
-            if (MapUtils.isNotEmpty(execute.getResult())) {
-                resultMap.putAll(execute.getResult());
-            }
+            Map<String, List<Variant>> chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysisId,
+                    studyId, query, sessionId);
+            resultMap.putAll(chVariants);
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
             return false;
@@ -273,12 +266,9 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
 
     private Boolean deNovo(Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
         Query query = new Query(dominantQuery);
-        DeNovoAnalysis analysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
         try {
-            AnalysisResult<List<Variant>> execute = analysis.compute();
-            if (ListUtils.isNotEmpty(execute.getResult())) {
-                resultMap.put(DE_NOVO, execute.getResult());
-            }
+            List<Variant> deNovoVariants = clinicalInterpretationManager.getDeNovoVariants(clinicalAnalysisId, studyId, query, sessionId);
+            resultMap.put(DE_NOVO, deNovoVariants);
         } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
             return false;
