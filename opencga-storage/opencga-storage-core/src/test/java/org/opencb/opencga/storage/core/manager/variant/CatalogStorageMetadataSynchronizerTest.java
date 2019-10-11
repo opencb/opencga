@@ -144,7 +144,7 @@ public class CatalogStorageMetadataSynchronizerTest {
             indexedFiles.add(file.getName());
             List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-            catalogManager.getCohortManager().update(studyId, Collections.singletonList(cohortId),
+            catalogManager.getCohortManager().update(studyId, cohortId,
                     new CohortUpdateParams().setSamples(samples), true, null, sessionId);
         }
         return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();

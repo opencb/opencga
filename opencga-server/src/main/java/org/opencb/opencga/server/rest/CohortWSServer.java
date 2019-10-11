@@ -506,7 +506,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
 
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            cohortManager.update(studyStr, Collections.singletonList(cohortStr),
+            cohortManager.update(studyStr, cohortStr,
                     new CohortUpdateParams().setAnnotationSets(Collections.singletonList(
                             new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), token);
             DataResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortStr, new QueryOptions(QueryOptions.INCLUDE,

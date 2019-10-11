@@ -104,7 +104,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     @Override
     InternalGetDataResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                                       String user, boolean silent) throws CatalogException {
+                                                      String user, boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing interpretation entries.");
         }
@@ -168,7 +168,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     public DataResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,
-                                  ObjectMap analysisOptions, String token) throws CatalogException {
+                                 ObjectMap analysisOptions, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -203,7 +203,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     public DataResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
-                                              QueryOptions options, String token) throws CatalogException {
+                                             QueryOptions options, String token) throws CatalogException {
         // We check if the user can create interpretations in the clinical analysis
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
@@ -312,6 +312,53 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return result;
     }
 
+    public DataResult<Interpretation> update(String studyStr, String interpretationId, InterpretationUpdateParams updateParams,
+                                             QueryOptions options, String token) throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("interpretationId", interpretationId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        DataResult<Interpretation> result = DataResult.empty();
+        String interpretationUuid = "";
+        try {
+            DataResult<Interpretation> tmpResult = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_IDS, userId);
+            if (tmpResult.getNumResults() == 0) {
+                throw new CatalogException("Interpretation '" + interpretationId + "' not found");
+            }
+            Interpretation interpretation = tmpResult.first();
+
+            // We set the proper values for the audit
+            interpretationId = interpretation.getId();
+            interpretationUuid = interpretation.getUuid();
+
+            DataResult writeResult = update(study, interpretation, updateParams, options, userId);
+            result.append(writeResult);
+
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+                    interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, interpretationId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretationId, interpretationUuid,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        }
+
+        return result;
+    }
+
     /**
      * Update interpretations from catalog.
      *
@@ -320,12 +367,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A list of DataResults with the object updated.
+     * @return A DataResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public List<DataResult<Interpretation>> update(String studyStr, List<String> interpretationIds, InterpretationUpdateParams updateParams,
-                                              QueryOptions options, String token) throws CatalogException {
+    public DataResult<Interpretation> update(String studyStr, List<String> interpretationIds, InterpretationUpdateParams updateParams,
+                                             QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
@@ -340,35 +387,31 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("options", options)
                 .append("token", token);
 
-        List<DataResult<Interpretation>> resultList = new ArrayList<>();
+        DataResult<Interpretation> result = DataResult.empty();
         for (String id : interpretationIds) {
             String interpretationId = id;
             String interpretationUuid = "";
 
             try {
-                DataResult<Interpretation> result = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_IDS, userId);
-                if (result.getNumResults() == 0) {
-                    throw new CatalogException("Interpretation '" + id + "' not found");
+                DataResult<Interpretation> tmpResult = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_IDS, userId);
+                if (tmpResult.getNumResults() == 0) {
+                    throw new CatalogException("Interpretation '" + interpretationId + "' not found");
                 }
-                Interpretation interpretation = result.first();
+                Interpretation interpretation = tmpResult.first();
 
                 // We set the proper values for the audit
                 interpretationId = interpretation.getId();
                 interpretationUuid = interpretation.getUuid();
 
                 DataResult writeResult = update(study, interpretation, updateParams, options, userId);
+                result.append(writeResult);
+
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-                DataResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
-                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
-                queryResult.setTime(queryResult.getTime() + writeResult.getTime());
-
-                resultList.add(queryResult);
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -376,7 +419,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     private DataResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams, QueryOptions options,

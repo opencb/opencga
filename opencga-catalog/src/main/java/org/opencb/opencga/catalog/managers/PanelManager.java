@@ -662,6 +662,50 @@ public class PanelManager extends ResourceManager<Panel> {
         return result;
     }
 
+    public DataResult<Panel> update(String studyStr, String panelId, PanelUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("panelId", panelId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        DataResult<Panel> result = DataResult.empty();
+        String panelUuid = "";
+        try {
+            DataResult<Panel> internalResult = internalGet(study.getUid(), panelId, QueryOptions.empty(), userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Panel '" + panelId + "' not found");
+            }
+            Panel panel = internalResult.first();
+
+            // We set the proper values for the audit
+            panelId = panel.getId();
+            panelUuid = panel.getUuid();
+
+            DataResult updateResult = update(study, panel, updateParams, options, userId);
+            result.append(updateResult);
+
+            auditManager.auditUpdate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, panelId, panelUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        }
+
+        return result;
+    }
+
     /**
      * Update Panel from catalog.
      *
@@ -670,12 +714,12 @@ public class PanelManager extends ResourceManager<Panel> {
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A list of DataResults with the object updated.
+     * @return A DataResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public List<DataResult<Panel>> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, QueryOptions options,
-                                          String token) throws CatalogException {
+    public DataResult<Panel> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, QueryOptions options,
+                                    String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -688,33 +732,30 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("options", options)
                 .append("token", token);
 
-        List<DataResult<Panel>> resultList = new ArrayList<>();
+        DataResult<Panel> result = DataResult.empty();
         for (String id : panelIds) {
             String panelId = id;
             String panelUuid = "";
 
             try {
-                DataResult<Panel> result = internalGet(study.getUid(), panelId, QueryOptions.empty(), userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Panel> internalResult = internalGet(study.getUid(), panelId, QueryOptions.empty(), userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Panel '" + id + "' not found");
                 }
-                Panel panel = result.first();
+                Panel panel = internalResult.first();
 
                 // We set the proper values for the audit
                 panelId = panel.getId();
                 panelUuid = panel.getUuid();
 
                 DataResult updateResult = update(study, panel, updateParams, options, userId);
-                DataResult<Panel> queryResult = panelDBAdaptor.get(panel.getUid(),
-                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
-                queryResult.setTime(updateResult.getTime() + queryResult.getTime());
-                resultList.add(queryResult);
+                result.append(updateResult);
 
                 auditManager.auditUpdate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
                         auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, panelId, panelUuid, study.getId(),
@@ -722,7 +763,7 @@ public class PanelManager extends ResourceManager<Panel> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     private DataResult update(Study study, Panel panel, PanelUpdateParams updateParams, QueryOptions options, String userId)

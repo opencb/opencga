@@ -64,14 +64,14 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)),
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId);
 
-        catalogManager.getSampleManager().update(studyId, Collections.singletonList("NA19600"), new SampleUpdateParams()
+        catalogManager.getSampleManager().update(studyId, "NA19600", new SampleUpdateParams()
                 .setAnnotationSets(Collections.singletonList(new AnnotationSet("as1", "vs1",
                                 new ObjectMap("name", "NA19600").append("age", 30)))), QueryOptions.empty(), sessionId);
-        catalogManager.getSampleManager().update(studyId, Collections.singletonList("NA19660"), new SampleUpdateParams()
+        catalogManager.getSampleManager().update(studyId, "NA19660", new SampleUpdateParams()
                 .setAnnotationSets(Collections.singletonList(new AnnotationSet("as1", "vs1",
                                 new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown")))),
                 QueryOptions.empty(), sessionId);
-        catalogManager.getSampleManager().update(studyId, Collections.singletonList("NA19660"), new SampleUpdateParams()
+        catalogManager.getSampleManager().update(studyId, "NA19660", new SampleUpdateParams()
                 .setAnnotationSets(Collections.singletonList(new AnnotationSet("as2", "vs1",
                                 new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf")))),
                 QueryOptions.empty(), sessionId);

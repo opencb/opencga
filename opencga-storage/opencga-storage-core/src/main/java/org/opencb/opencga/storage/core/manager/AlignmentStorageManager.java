@@ -50,7 +50,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -111,7 +110,7 @@ public class AlignmentStorageManager extends StorageManager {
             ObjectWriter objectWriter = new ObjectMapper().typedWriter(AlignmentGlobalStats.class);
             ObjectMap globalStats = new ObjectMap(GLOBAL_STATS, objectWriter.writeValueAsString(stats.first()));
             FileUpdateParams fileUpdateParams = new FileUpdateParams().setStats(globalStats);
-            catalogManager.getFileManager().update(studyIdStr, Collections.singletonList(fileInfo.getPath()), fileUpdateParams,
+            catalogManager.getFileManager().update(studyIdStr, fileInfo.getPath(), fileUpdateParams,
                     new QueryOptions(), sessionId);
 
             // Remove the stats file

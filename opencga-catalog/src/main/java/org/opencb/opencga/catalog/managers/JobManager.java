@@ -112,7 +112,7 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     InternalGetDataResult<Job> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options, String user,
-                                            boolean silent) throws CatalogException {
+                                           boolean silent) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing job entries.");
         }
@@ -217,10 +217,10 @@ public class JobManager extends ResourceManager<Job> {
 
     @Deprecated
     public DataResult<Job> create(long studyId, String name, String toolName, String description, String executor,
-                                   Map<String, String> params, String commandLine, URI tmpOutDirUri, long outDirId,
-                                   List<File> inputFiles, List<File> outputFiles, Map<String, Object> attributes,
-                                   Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
-                                   long endTime, QueryOptions options, String sessionId) throws CatalogException {
+                                  Map<String, String> params, String commandLine, URI tmpOutDirUri, long outDirId,
+                                  List<File> inputFiles, List<File> outputFiles, Map<String, Object> attributes,
+                                  Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
+                                  long endTime, QueryOptions options, String sessionId) throws CatalogException {
         Job job = new Job(-1, null, name, "", toolName, null, "", description, startTime, endTime, executor, "", commandLine, false, status,
                 -1, new File().setUid(outDirId), inputFiles, outputFiles, Collections.emptyList(), params, -1, attributes,
                 resourceManagerAttributes);
@@ -228,7 +228,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public DataResult<Job> create(String studyStr, String jobName, String description, String toolId, String execution, String outDir,
-                                   Map<String, String> params, String sessionId) throws CatalogException {
+                                  Map<String, String> params, String sessionId) throws CatalogException {
         ParamUtils.checkObj(toolId, "toolId");
         if (StringUtils.isEmpty(jobName)) {
             jobName = toolId + "_" + TimeUtils.getTime();
@@ -630,7 +630,57 @@ public class JobManager extends ResourceManager<Job> {
         return result;
     }
 
-    public List<DataResult<Job>> update(String studyId, List<String> jobIds, ObjectMap parameters, QueryOptions options, String token)
+    public DataResult<Job> update(String studyId, String jobId, ObjectMap parameters, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyId)
+                .append("jobId", jobId)
+                .append("parameters", parameters)
+                .append("options", options)
+                .append("token", token);
+
+        ParamUtils.checkObj(parameters, "parameters");
+
+        DataResult<Job> result = DataResult.empty();
+        String jobUuid = "";
+        try {
+            DataResult<Job> internalResult = internalGet(study.getUid(), jobId, QueryOptions.empty(), userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Job '" + jobId + "' not found");
+            }
+            Job job = internalResult.first();
+
+            // We set the proper values for the audit
+            jobId = job.getId();
+            jobUuid = job.getUuid();
+
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+
+            DataResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
+            result.append(updateResult);
+
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Cannot update job {}: {}", jobId, e.getMessage());
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, jobId, jobUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        }
+
+        return result;
+    }
+
+    public DataResult<Job> update(String studyId, List<String> jobIds, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
@@ -646,17 +696,17 @@ public class JobManager extends ResourceManager<Job> {
 
         ParamUtils.checkObj(parameters, "parameters");
 
-        List<DataResult<Job>> resultList = new ArrayList<>();
+        DataResult<Job> result = DataResult.empty();
         for (String id : jobIds) {
             String jobId = id;
             String jobUuid = "";
 
             try {
-                DataResult<Job> result = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Job> internalResult = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Job '" + id + "' not found");
                 }
-                Job job = result.first();
+                Job job = internalResult.first();
 
                 // We set the proper values for the audit
                 jobId = job.getId();
@@ -667,16 +717,13 @@ public class JobManager extends ResourceManager<Job> {
                 authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
 
                 DataResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
-                DataResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-                queryResult.setTime(queryResult.getTime() + updateResult.getTime());
-
-                resultList.add(queryResult);
+                result.append(updateResult);
 
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
-                Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
+                result.getEvents().add(event);
 
                 logger.error("Cannot update job {}: {}", jobId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -684,7 +731,7 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Deprecated
@@ -777,8 +824,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public DataResult<Job> queue(String studyId, String jobName, String toolId, String description, String execution, Job.Type type,
-                                  Map<String, String> params, List<File> input, List<File> output, File outDir,
-                                  Map<String, Object> attributes, String token)
+                                 Map<String, String> params, List<File> input, List<File> output, File outDir,
+                                 Map<String, Object> attributes, String token)
             throws CatalogException {
         Job job = new Job(jobName, toolId, execution, type, description, params, attributes)
                 .setInput(input)
@@ -860,7 +907,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public List<DataResult<JobAclEntry>> updateAcl(String studyId, List<String> jobStrList, String memberList, AclParams aclParams,
-                                                    String token) throws CatalogException {
+                                                   String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 

@@ -308,7 +308,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             }
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
 
-            individualManager.update(studyStr, Collections.singletonList(individualStr), new IndividualUpdateParams()
+            individualManager.update(studyStr, individualStr, new IndividualUpdateParams()
                             .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, variableSet, params.annotations))),
                     QueryOptions.empty(), token);
             DataResult<Individual> sampleQueryResult = individualManager.get(studyStr, individualStr,
@@ -422,7 +422,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             List<String> individualIds = getIdList(individualStr);
 
-            List<DataResult<Individual>> queryResult = catalogManager.getIndividualManager().update(studyStr, individualIds, updateParams,
+            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualIds, updateParams,
                     queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

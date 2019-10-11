@@ -598,7 +598,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, Collections.singletonList(individualStr), individualUpdateParams, options, token).get(0);
+        return update(studyStr, individualStr, individualUpdateParams, options, token);
     }
 
     public DataResult<Individual> addAnnotationSet(String studyStr, String individualStr, AnnotationSet annotationSet,
@@ -646,7 +646,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, Collections.singletonList(individualStr), individualUpdateParams, options, token).get(0);
+        return update(studyStr, individualStr, individualUpdateParams, options, token);
     }
 
     public DataResult<Individual> removeAnnotations(String studyStr, String individualStr, String annotationSetId,
@@ -662,7 +662,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public DataResult<Individual> update(String studyStr, Query query, IndividualUpdateParams updateParams, QueryOptions options,
-                                               String token) throws CatalogException {
+                                         String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -715,6 +715,51 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return result;
     }
 
+    public DataResult<Individual> update(String studyStr, String individualId, IndividualUpdateParams updateParams, QueryOptions options,
+                                         String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("individualId", individualId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        DataResult<Individual> result = DataResult.empty();
+        String individualUuid = "";
+
+        try {
+            DataResult<Individual> internalResult = internalGet(study.getUid(), individualId, QueryOptions.empty(), userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Individual '" + individualId + "' not found");
+            }
+            Individual individual = internalResult.first();
+
+            // We set the proper values for the audit
+            individualId = individual.getId();
+            individualUuid = individual.getUuid();
+
+            DataResult updateResult = update(study, individual, updateParams, options, userId);
+            result.append(updateResult);
+
+            auditManager.auditUpdate(userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, individualId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Cannot update individual {}: {}", individualId, e.getMessage());
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        }
+
+        return result;
+    }
+
     /**
      * Update an Individual from catalog.
      *
@@ -723,12 +768,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A list of DataResults with the object updated.
+     * @return A DataResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public List<DataResult<Individual>> update(String studyStr, List<String> individualIds, IndividualUpdateParams updateParams,
-                                               QueryOptions options, String token) throws CatalogException {
+    public DataResult<Individual> update(String studyStr, List<String> individualIds, IndividualUpdateParams updateParams,
+                                         QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -741,34 +786,30 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("options", options)
                 .append("token", token);
 
-        List<DataResult<Individual>> resultList = new ArrayList<>();
+        DataResult<Individual> result = DataResult.empty();
         for (String id : individualIds) {
             String individualId = id;
             String individualUuid = "";
 
             try {
-                DataResult<Individual> result = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Individual> internalResult = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Individual '" + id + "' not found");
                 }
-                Individual individual = result.first();
+                Individual individual = internalResult.first();
 
                 // We set the proper values for the audit
                 individualId = individual.getId();
                 individualUuid = individual.getUuid();
 
                 DataResult updateResult = update(study, individual, updateParams, options, userId);
-                DataResult<Individual> queryResult = individualDBAdaptor.get(individual.getUid(),
-                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
-                queryResult.setTime(updateResult.getTime() + queryResult.getTime());
-
-                resultList.add(queryResult);
+                result.append(updateResult);
 
                 auditManager.auditUpdate(userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Cannot update individual {}: {}", individualId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
@@ -776,7 +817,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     private DataResult update(Study study, Individual individual, IndividualUpdateParams updateParams, QueryOptions options, String userId)

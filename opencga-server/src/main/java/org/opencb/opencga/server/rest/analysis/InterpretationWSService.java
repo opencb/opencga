@@ -469,8 +469,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
         try {
-            return createOkResponse(catalogInterpretationManager.update(studyStr, Collections.singletonList(interpretationId), params,
-                    queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -495,7 +494,7 @@ public class InterpretationWSService extends AnalysisWSService {
             actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, Collections.singletonList(interpretationId), updateParams, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -519,7 +518,7 @@ public class InterpretationWSService extends AnalysisWSService {
             actionMap.put(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, Collections.singletonList(interpretationId), updateParams, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

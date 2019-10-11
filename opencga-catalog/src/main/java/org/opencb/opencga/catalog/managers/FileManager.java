@@ -469,7 +469,7 @@ public class FileManager extends AnnotationSetManager<File> {
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
                 VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
-                update(studyStr, Collections.singletonList(vcf.getPath()),
+                update(studyStr, vcf.getPath(),
                         new FileUpdateParams().setStats(new ObjectMap(VARIANT_FILE_STATS, stats)), new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
@@ -1712,7 +1712,7 @@ public class FileManager extends AnnotationSetManager<File> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, Collections.singletonList(fileStr), updateParams, options, token).get(0);
+        return update(studyStr, fileStr, updateParams, options, token);
     }
 
     public DataResult<File> removeAnnotations(String studyStr, String fileStr, String annotationSetId,
@@ -1782,6 +1782,53 @@ public class FileManager extends AnnotationSetManager<File> {
         return result;
     }
 
+    public DataResult<File> update(String studyStr, String fileId, FileUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("fileId", fileId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        DataResult<File> result = DataResult.empty();
+        String fileUuid = "";
+        try {
+            DataResult<File> internalResult = internalGet(study.getUid(), fileId, EXCLUDE_FILE_ATTRIBUTES, userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("File '" + fileId + "' not found");
+            }
+            File file = internalResult.first();
+
+            // We set the proper values for the audit
+            fileId = file.getId();
+            fileUuid = file.getUuid();
+
+            DataResult<File> updateResult = update(study, file, updateParams, options, userId, token);
+            result.append(updateResult);
+
+            auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Cannot update file {}: {}", fileId, e.getMessage());
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FILE, fileId, fileUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        }
+
+        String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
+        userDBAdaptor.updateUserLastModified(ownerId);
+
+        return result;
+    }
+
     /**
      * Update a File from catalog.
      *
@@ -1790,12 +1837,12 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A list of DataResults with the object updated.
+     * @return A DataResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public List<DataResult<File>> update(String studyStr, List<String> fileIds, FileUpdateParams updateParams, QueryOptions options,
-                                         String token) throws CatalogException {
+    public DataResult<File> update(String studyStr, List<String> fileIds, FileUpdateParams updateParams, QueryOptions options,
+                                   String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -1808,35 +1855,30 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("options", options)
                 .append("token", token);
 
-        List<DataResult<File>> resultList = new ArrayList<>();
+        DataResult<File> result = DataResult.empty();
         for (String id : fileIds) {
             String fileId = id;
             String fileUuid = "";
 
             try {
-                DataResult<File> result = internalGet(study.getUid(), fileId, EXCLUDE_FILE_ATTRIBUTES, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<File> internalResult = internalGet(study.getUid(), fileId, EXCLUDE_FILE_ATTRIBUTES, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("File '" + id + "' not found");
                 }
-                File file = result.first();
+                File file = internalResult.first();
 
                 // We set the proper values for the audit
                 fileId = file.getId();
                 fileUuid = file.getUuid();
 
                 DataResult<File> updateResult = update(study, file, updateParams, options, userId, token);
+                result.append(updateResult);
 
                 auditManager.auditUpdate(userId, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
                         auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-                DataResult<File> queryResult = fileDBAdaptor.get(file.getUid(),
-                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
-                queryResult.setTime(updateResult.getTime() + queryResult.getTime());
-
-                resultList.add(queryResult);
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Cannot update file {}: {}", fileId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FILE, fileId, fileUuid, study.getId(),
@@ -1847,7 +1889,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         userDBAdaptor.updateUserLastModified(ownerId);
 
-        return resultList;
+        return result;
     }
 
     private DataResult<File> update(Study study, File file, FileUpdateParams updateParams, QueryOptions options, String userId,

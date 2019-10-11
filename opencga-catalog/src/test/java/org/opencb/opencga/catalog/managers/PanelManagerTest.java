@@ -173,8 +173,7 @@ public class PanelManagerTest extends GenericTest {
                 .setVariants(Collections.singletonList(variantPanel))
                 .setGenes(Collections.singletonList(genePanel));
 
-        Panel panelUpdated = panelManager.update(studyFqn, Collections.singletonList(diseasePanelDataResult.getId()), updateParams, null,
-                sessionIdUser).get(0).first();
+        Panel panelUpdated = panelManager.update(studyFqn, diseasePanelDataResult.getId(), updateParams, null, sessionIdUser).first();
 
         assertEquals("author", panelUpdated.getSource().getAuthor());
         assertEquals(1, panelUpdated.getRegions().size());

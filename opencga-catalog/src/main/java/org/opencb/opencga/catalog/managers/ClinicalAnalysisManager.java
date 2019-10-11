@@ -531,7 +531,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     public DataResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalUpdateParams updateParams, QueryOptions options,
-                                                     String token) throws CatalogException {
+                                               String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -579,6 +579,50 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return result;
     }
 
+    public DataResult<ClinicalAnalysis> update(String studyStr, String clinicalId, ClinicalUpdateParams updateParams,
+                                               QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("clinicalId", clinicalId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        DataResult<ClinicalAnalysis> result = DataResult.empty();
+        String clinicalUuid = "";
+        try {
+            DataResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), clinicalId, QueryOptions.empty(), userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Clinical analysis '" + clinicalId + "' not found");
+            }
+            ClinicalAnalysis clinicalAnalysis = internalResult.first();
+
+            // We set the proper values for the audit
+            clinicalId = clinicalAnalysis.getId();
+            clinicalUuid = clinicalAnalysis.getUuid();
+
+            DataResult<ClinicalAnalysis> updateResult = update(study, clinicalAnalysis, updateParams, userId, token);
+            result.append(updateResult);
+
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(),
+                    clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, clinicalId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Could not update clinical analysis {}: {}", clinicalId, e.getMessage());
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalId, clinicalUuid,
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        }
+
+        return result;
+    }
 
     /**
      * Update a Clinical Analysis from catalog.
@@ -588,12 +632,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A list of DataResults with the object updated.
+     * @return A DataResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public List<DataResult<ClinicalAnalysis>> update(String studyStr, List<String> clinicalIds, ClinicalUpdateParams updateParams,
-                                                     QueryOptions options, String token) throws CatalogException {
+    public DataResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalUpdateParams updateParams,
+                                               QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -606,34 +650,31 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("options", options)
                 .append("token", token);
 
-        List<DataResult<ClinicalAnalysis>> resultList = new ArrayList<>();
+        DataResult<ClinicalAnalysis> result = DataResult.empty();
 
         for (String id : clinicalIds) {
             String clinicalAnalysisId = id;
             String clinicalAnalysisUuid = "";
             try {
-                DataResult<ClinicalAnalysis> result = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
-                if (result.getNumResults() == 0) {
+                DataResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id, QueryOptions.empty(), userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Clinical analysis '" + id + "' not found");
                 }
-                ClinicalAnalysis clinicalAnalysis = result.first();
+                ClinicalAnalysis clinicalAnalysis = internalResult.first();
 
                 // We set the proper values for the audit
                 clinicalAnalysisId = clinicalAnalysis.getId();
                 clinicalAnalysisUuid = clinicalAnalysis.getUuid();
 
                 DataResult<ClinicalAnalysis> updateResult = update(study, clinicalAnalysis, updateParams, userId, token);
-                DataResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
-                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
-                queryResult.setTime(queryResult.getTime() + updateResult.getTime());
-                resultList.add(queryResult);
+                result.append(updateResult);
 
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalAnalysisId, clinicalAnalysisUuid,
@@ -641,7 +682,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     private DataResult<ClinicalAnalysis> update(Study study, ClinicalAnalysis clinicalAnalysis, ClinicalUpdateParams updateParams,

@@ -199,7 +199,7 @@ public class NewVariantMetadataMigration {
                     alreadyMigratedFile++;
                 } else {
                     migratedFiles++;
-                    catalogManager.getFileManager().update(null, Collections.singletonList(file.getId()), parameters, null, sessionId);
+                    catalogManager.getFileManager().update(null, file.getId(), parameters, null, sessionId);
                 }
             }
         }

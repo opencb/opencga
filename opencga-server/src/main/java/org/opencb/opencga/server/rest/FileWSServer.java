@@ -889,7 +889,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             List<String> fileIds = getIdList(fileIdStr);
 
-            List<DataResult<File>> queryResult = fileManager.update(studyStr, fileIds, updateParams, queryOptions, token);
+            DataResult<File> queryResult = fileManager.update(studyStr, fileIds, updateParams, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -163,7 +163,7 @@ public class CatalogStorageMetadataSynchronizer {
                     }
                     catalogManager.getCohortManager().setStatus(study.getName(), defaultCohortName, status, null, sessionId);
                 }
-                catalogManager.getCohortManager().update(study.getName(), Collections.singletonList(defaultCohortName),
+                catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
                         new CohortUpdateParams().setSamples(new ArrayList<>(cohortFromStorage)),
                         true, null, sessionId);
                 modified = true;

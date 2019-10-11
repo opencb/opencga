@@ -255,8 +255,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             List<String> familyIds = getIdList(familyStr);
 
-            List<DataResult<Family>> queryResult = catalogManager.getFamilyManager().update(studyStr, familyIds, parameters, queryOptions,
-                    token);
+            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyIds, parameters, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -470,7 +469,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             }
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
 
-            familyManager.update(studyStr, Collections.singletonList(familyStr),
+            familyManager.update(studyStr, familyStr,
                     new FamilyUpdateParams().setAnnotationSets(Collections.singletonList(
                             new AnnotationSet(annotationSetId, variableSet, params.annotations))), QueryOptions.empty(), token);
             DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyStr, new QueryOptions(QueryOptions.INCLUDE,

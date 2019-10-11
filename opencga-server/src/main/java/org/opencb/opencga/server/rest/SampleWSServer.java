@@ -563,7 +563,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             }
 
             String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            sampleManager.update(studyStr, Collections.singletonList(sampleStr), new SampleUpdateParams()
+            sampleManager.update(studyStr, sampleStr, new SampleUpdateParams()
                     .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, variableSet, params.annotations))),
                     QueryOptions.empty(), token);
             DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,

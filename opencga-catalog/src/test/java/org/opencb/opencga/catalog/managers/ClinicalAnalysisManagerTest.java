@@ -220,8 +220,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new ClinicalUpdateParams.ProbandParam()
                         .setId("child1")
                         .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))));
-        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY,
-                Collections.singletonList("analysis"), updateParams, QueryOptions.empty(), sessionIdUser).get(0);
+        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
+                QueryOptions.empty(), sessionIdUser);
 
         assertEquals(1, updateResult.getNumResults());
 
@@ -245,8 +245,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         .setMembers(Collections.singletonList(new ClinicalUpdateParams.ProbandParam()
                                 .setId("child1")
                                 .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))));
-        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY,
-                Collections.singletonList("analysis"), updateParams, QueryOptions.empty(), sessionIdUser).get(0);
+        DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
+                QueryOptions.empty(), sessionIdUser);
 
         assertEquals(1, updateResult.getNumResults());
 

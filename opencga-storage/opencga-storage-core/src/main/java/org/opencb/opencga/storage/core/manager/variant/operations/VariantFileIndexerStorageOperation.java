@@ -488,8 +488,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             Map<String, Object> attributes = indexedFile.getAttributes();
             attributes.put("storagePipelineResult", storagePipelineResult);
             FileUpdateParams updateParams = new FileUpdateParams().setAttributes(attributes);
-            fileManager.update(study.getFqn(), Collections.singletonList(indexedFile.getPath()), updateParams, new QueryOptions(),
-                    sessionId);
+            fileManager.update(study.getFqn(), indexedFile.getPath(), updateParams, new QueryOptions(), sessionId);
 
             // Update index status
             fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
@@ -539,7 +538,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
             }
             FileUpdateParams updateParams = new FileUpdateParams().setStats(new ObjectMap(VARIANT_FILE_STATS, stats));
-            fileManager.update(studyFqn, Collections.singletonList(inputFile.getPath()), updateParams, new QueryOptions(), sessionId);
+            fileManager.update(studyFqn, inputFile.getPath(), updateParams, new QueryOptions(), sessionId);
         }
 //        long studyId = catalogManager.getStudyIdByJobId(job.getId());
 //        Query query = new Query()

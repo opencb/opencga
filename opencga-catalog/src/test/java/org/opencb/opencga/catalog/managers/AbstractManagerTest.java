@@ -95,7 +95,7 @@ public class AbstractManagerTest extends GenericTest {
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
-        catalogManager.getFileManager().update(studyFqn, Collections.singletonList(testFolder.getPath()),
+        catalogManager.getFileManager().update(studyFqn, testFolder.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
         DataResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
@@ -107,7 +107,7 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "fileTest1k");
         attributes.put("numValue", "10");
         attributes.put("boolean", false);
-        catalogManager.getFileManager().update(studyFqn, Collections.singletonList(fileTest1k.getPath()),
+        catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
         DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
@@ -120,7 +120,7 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "fileTest05k");
         attributes.put("numValue", 5);
         attributes.put("boolean", true);
-        catalogManager.getFileManager().update(studyFqn, Collections.singletonList(fileTest05k.getPath()),
+        catalogManager.getFileManager().update(studyFqn, fileTest05k.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
         DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
@@ -133,7 +133,7 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
-        catalogManager.getFileManager().update(studyFqn, Collections.singletonList(test01k.getPath()),
+        catalogManager.getFileManager().update(studyFqn, test01k.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
         List<Variable> variables = new ArrayList<>();
@@ -198,7 +198,7 @@ public class AbstractManagerTest extends GenericTest {
         sample.setAnnotationSets(Collections.emptyList());
         s_9 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), sessionIdUser).first().getId();
 
-        catalogManager.getFileManager().update(studyFqn, Collections.singletonList(test01k.getPath()), new FileUpdateParams()
+        catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
                         .setSamples(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), sessionIdUser);
     }
 

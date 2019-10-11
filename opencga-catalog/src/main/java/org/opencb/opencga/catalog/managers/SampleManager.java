@@ -494,7 +494,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, Collections.singletonList(sampleStr), sampleUpdateParams, options, token).get(0);
+        return update(studyStr, sampleStr, sampleUpdateParams, options, token);
     }
 
     public DataResult<Sample> addAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
@@ -542,7 +542,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, action));
 
-        return update(studyStr, Collections.singletonList(sampleStr), sampleUpdateParams, options, token).get(0);
+        return update(studyStr, sampleStr, sampleUpdateParams, options, token);
     }
 
     public DataResult<Sample> removeAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
@@ -678,10 +678,54 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 result.getEvents().add(event);
 
                 logger.error("Could not update sample {}: {}", sample.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.COHORT, sample.getId(), sample.getUuid(), study.getId(),
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        return result;
+    }
+
+    public DataResult<Sample> update(String studyStr, String sampleId, SampleUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("sampleId", sampleId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        DataResult<Sample> result = DataResult.empty();
+        String sampleUuid = "";
+        try {
+            DataResult<Sample> internalResult = internalGet(study.getUid(), sampleId, INCLUDE_SAMPLE_IDS, userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Sample '" + sampleId + "' not found");
+            }
+            Sample sample = internalResult.first();
+
+            // We set the proper values for the audit
+            sampleId = sample.getId();
+            sampleUuid = sample.getUuid();
+
+            DataResult updateResult = update(study, sample, updateParams, options, userId);
+            result.append(updateResult);
+
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
+            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+        }
+
         return result;
     }
 
@@ -693,12 +737,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
-     * @return A list of DataResults with the object updated.
+     * @return A DataResult with the objects updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public List<DataResult<Sample>> update(String studyStr, List<String> sampleIds, SampleUpdateParams updateParams, QueryOptions options,
-                                           String token) throws CatalogException {
+    public DataResult<Sample> update(String studyStr, List<String> sampleIds, SampleUpdateParams updateParams, QueryOptions options,
+                                     String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -711,41 +755,37 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("options", options)
                 .append("token", token);
 
-        List<DataResult<Sample>> resultList = new ArrayList<>();
-
+        DataResult<Sample> result = DataResult.empty();
         for (String id : sampleIds) {
             String sampleId = id;
             String sampleUuid = "";
 
             try {
-                DataResult<Sample> result = internalGet(study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Sample> internalResult = internalGet(study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Sample '" + id + "' not found");
                 }
-                Sample sample = result.first();
+                Sample sample = internalResult.first();
 
                 // We set the proper values for the audit
                 sampleId = sample.getId();
                 sampleUuid = sample.getUuid();
 
                 DataResult updateResult = update(study, sample, updateParams, options, userId);
-                DataResult<Sample> queryResult = sampleDBAdaptor.get(sample.getUid(),
-                        new QueryOptions(QueryOptions.INCLUDE, updateParams.getUpdateMap().keySet()));
-                queryResult.setTime(queryResult.getTime() + updateResult.getTime());
-                resultList.add(queryResult);
+                result.append(updateResult);
 
                 auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.COHORT, sampleId, sampleUuid, study.getId(),
+                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        return resultList;
+        return result;
     }
 
     private DataResult update(Study study, Sample sample, SampleUpdateParams updateParams, QueryOptions options, String userId)
