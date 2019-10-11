@@ -910,7 +910,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> panelIds, ObjectMap params, String token) throws CatalogException {
+    public DataResult delete(String studyStr, List<String> panelIds, ObjectMap params, String token) throws CatalogException {
         if (panelIds == null || ListUtils.isEmpty(panelIds)) {
             throw new CatalogException("Missing list of panel ids");
         }
@@ -936,19 +936,18 @@ public class PanelManager extends ResourceManager<Panel> {
             throw e;
         }
 
-        List<DataResult> resultList = new ArrayList<>();
-
+        DataResult<Panel> result = DataResult.empty();
         for (String id : panelIds) {
 
             String panelId = id;
             String panelUuid = "";
             try {
-                DataResult<Panel> result = internalGet(study.getUid(), id, INCLUDE_PANEL_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Panel> internalResult = internalGet(study.getUid(), id, INCLUDE_PANEL_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Panel '" + id + "' not found");
                 }
 
-                Panel panel = result.first();
+                Panel panel = internalResult.first();
                 // We set the proper values for the audit
                 panelId = panel.getId();
                 panelUuid = panel.getUuid();
@@ -962,13 +961,13 @@ public class PanelManager extends ResourceManager<Panel> {
                 // TODO: Check if the panel is used in an interpretation. At this point, it can be deleted no matter what.
 
                 // Delete the panel
-                resultList.add(panelDBAdaptor.delete(panel));
+                result.append(panelDBAdaptor.delete(panel));
 
                 auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Cannot delete panel {}: {}", panelId, e.getMessage());
                 auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, panelId, panelUuid, study.getId(),
@@ -976,7 +975,7 @@ public class PanelManager extends ResourceManager<Panel> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Override

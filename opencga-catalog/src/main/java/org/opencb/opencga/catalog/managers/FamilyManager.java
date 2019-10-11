@@ -367,9 +367,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> familyIds, ObjectMap params, String token) throws CatalogException {
-        List<DataResult> resultList = new ArrayList<>();
-
+    public DataResult delete(String studyStr, List<String> familyIds, ObjectMap params, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
@@ -392,17 +390,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw e;
         }
 
+        DataResult result = DataResult.empty();
         for (String id : familyIds) {
             String familyId = id;
             String familyUuid = "";
 
             try {
-                DataResult<Family> result = internalGet(study.getUid(), id, INCLUDE_FAMILY_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Family> internalResult = internalGet(study.getUid(), id, INCLUDE_FAMILY_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Family '" + id + "' not found");
                 }
 
-                Family family = result.first();
+                Family family = internalResult.first();
                 // We set the proper values for the audit
                 familyId = family.getId();
                 familyUuid = family.getUuid();
@@ -415,13 +414,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
 
                 // Delete the family
-                resultList.add(familyDBAdaptor.delete(family));
+                result.append(familyDBAdaptor.delete(family));
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
-                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+                result.getEvents().add(event);
 
                 logger.error("Cannot delete family {}: {}", familyId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, familyId, familyUuid,
@@ -429,7 +428,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Override

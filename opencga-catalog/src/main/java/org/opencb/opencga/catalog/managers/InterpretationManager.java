@@ -491,7 +491,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException {
+    public DataResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException {
         return null;
     }
 

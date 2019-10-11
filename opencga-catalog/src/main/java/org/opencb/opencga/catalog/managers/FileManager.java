@@ -1183,9 +1183,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> fileIds, ObjectMap params, String token) throws CatalogException {
-        List<DataResult> resultList = new ArrayList<>();
-
+    public DataResult delete(String studyStr, List<String> fileIds, ObjectMap params, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
@@ -1212,16 +1210,17 @@ public class FileManager extends AnnotationSetManager<File> {
         Set<String> processedPaths = new HashSet<>();
         boolean physicalDelete = params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false);
 
+        DataResult<File> result = DataResult.empty();
         for (String id : fileIds) {
             String fileId = id;
             String fileUuid = "";
 
             try {
-                DataResult<File> result = internalGet(study.getUid(), id, INCLUDE_FILE_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<File> internalResult = internalGet(study.getUid(), id, INCLUDE_FILE_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("File '" + id + "' not found");
                 }
-                File file = result.first();
+                File file = internalResult.first();
                 // We set the proper values for the audit
                 fileId = file.getId();
                 fileUuid = file.getUuid();
@@ -1232,7 +1231,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
 
                 DataResult updateResult = delete(study, file, params, checkPermissions, physicalDelete, userId);
-                resultList.add(updateResult);
+                result.append(updateResult);
 
                 // We store the processed path as is
                 if (file.getType() == File.Type.DIRECTORY) {
@@ -1243,7 +1242,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
-                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+                result.getEvents().add(event);
 
                 logger.error("Could not delete file {}: {}", fileId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, fileId, fileUuid, study.getId(),
@@ -1251,7 +1250,7 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Override

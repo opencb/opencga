@@ -380,7 +380,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> cohortIds, ObjectMap params, String token) throws CatalogException {
+    public DataResult delete(String studyStr, List<String> cohortIds, ObjectMap params, String token) throws CatalogException {
         if (cohortIds == null || ListUtils.isEmpty(cohortIds)) {
             throw new CatalogException("Missing list of cohort ids");
         }
@@ -407,35 +407,34 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             throw e;
         }
 
-        List<DataResult> resultList = new ArrayList<>();
-
+        DataResult result = DataResult.empty();
         for (String id : cohortIds) {
 
             String cohortId = id;
             String cohortUuid = "";
             try {
-                DataResult<Cohort> result = internalGet(study.getUid(), id, INCLUDE_COHORT_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Cohort> internalResult = internalGet(study.getUid(), id, INCLUDE_COHORT_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Cohort '" + id + "' not found");
                 }
 
                 // We set the proper values for the audit
-                cohortId = result.first().getId();
-                cohortUuid = result.first().getUuid();
+                cohortId = internalResult.first().getId();
+                cohortUuid = internalResult.first().getUuid();
 
                 if (checkPermissions) {
-                    authorizationManager.checkCohortPermission(study.getUid(), result.first().getUid(), userId,
+                    authorizationManager.checkCohortPermission(study.getUid(), internalResult.first().getUid(), userId,
                             CohortAclEntry.CohortPermissions.DELETE);
                 }
-                DataResult deleteResult = cohortDBAdaptor.delete(result.first());
-                resultList.add(deleteResult);
+                DataResult deleteResult = cohortDBAdaptor.delete(internalResult.first());
+                result.append(deleteResult);
 
-                auditManager.auditDelete(operationId, userId, AuditRecord.Resource.COHORT, result.first().getId(),
-                        result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
+                auditManager.auditDelete(operationId, userId, AuditRecord.Resource.COHORT, internalResult.first().getId(),
+                        internalResult.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
-                resultList.add(new DataResult(-1, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                result.getEvents().add(event);
 
                 logger.error("Cannot delete cohort {}: {}", cohortId, e.getMessage());
                 auditManager.auditDelete(operationId, userId, AuditRecord.Resource.COHORT, cohortId, cohortUuid, study.getId(),
@@ -443,7 +442,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Override

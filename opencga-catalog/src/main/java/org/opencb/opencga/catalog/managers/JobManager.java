@@ -429,9 +429,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> jobIds, ObjectMap params, String token) throws CatalogException {
-        List<DataResult> resultList = new ArrayList<>();
-
+    public DataResult delete(String studyStr, List<String> jobIds, ObjectMap params, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -453,17 +451,18 @@ public class JobManager extends ResourceManager<Job> {
             throw e;
         }
 
+        DataResult<Job> result = DataResult.empty();
         for (String id : jobIds) {
             String jobId = id;
             String jobUuid = "";
 
             try {
-                DataResult<Job> result = internalGet(study.getUid(), id, INCLUDE_JOB_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Job> internalResult = internalGet(study.getUid(), id, INCLUDE_JOB_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Job '" + id + "' not found");
                 }
 
-                Job job = result.first();
+                Job job = internalResult.first();
                 // We set the proper values for the audit
                 jobId = job.getId();
                 jobUuid = job.getUuid();
@@ -475,13 +474,13 @@ public class JobManager extends ResourceManager<Job> {
                 // Check if the job can be deleted
                 checkJobCanBeDeleted(job);
 
-                resultList.add(jobDBAdaptor.delete(job));
+                result.append(jobDBAdaptor.delete(job));
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
-                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+                result.getEvents().add(event);
 
                 logger.error("Cannot delete job {}: {}", jobId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, jobId, jobUuid,
@@ -489,7 +488,7 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Override

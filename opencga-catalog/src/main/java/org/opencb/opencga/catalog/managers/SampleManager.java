@@ -336,7 +336,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> sampleIds, ObjectMap params, String token) throws CatalogException {
+    public DataResult delete(String studyStr, List<String> sampleIds, ObjectMap params, String token) throws CatalogException {
         if (sampleIds == null || ListUtils.isEmpty(sampleIds)) {
             throw new CatalogException("Missing list of sample ids");
         }
@@ -363,16 +363,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
-        List<DataResult> resultList = new ArrayList<>();
+        DataResult result = DataResult.empty();
         for (String id : sampleIds) {
             String sampleId = id;
             String sampleUuid = "";
             try {
-                DataResult<Sample> result = internalGet(study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Sample> internalResult = internalGet(study.getUid(), id, INCLUDE_SAMPLE_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Sample '" + id + "' not found");
                 }
-                Sample sample = result.first();
+                Sample sample = internalResult.first();
 
                 // We set the proper values for the audit
                 sampleId = sample.getId();
@@ -386,7 +386,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Check if the sample can be deleted
                 checkSampleCanBeDeleted(study.getUid(), sample, params.getBoolean(Constants.FORCE, false));
 
-                resultList.add(sampleDBAdaptor.delete(sample));
+                result.append(sampleDBAdaptor.delete(sample));
 
                 auditManager.auditDelete(operationId, userId, AuditRecord.Resource.SAMPLE, sample.getId(), sample.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -394,7 +394,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 String errorMsg = "Cannot delete sample " + sampleId + ": " + e.getMessage();
 
                 Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
-                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+                result.getEvents().add(event);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, AuditRecord.Resource.SAMPLE, sampleId, sampleUuid,
@@ -402,7 +402,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Override

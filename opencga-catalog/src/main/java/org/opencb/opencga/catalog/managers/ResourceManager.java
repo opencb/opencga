@@ -188,7 +188,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      */
     public abstract DataResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
-    public abstract List<DataResult> delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException;
+    public abstract DataResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException;
 
     /**
      * Delete all entries matching the query.

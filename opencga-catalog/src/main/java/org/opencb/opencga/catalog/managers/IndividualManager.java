@@ -434,9 +434,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public List<DataResult> delete(String studyStr, List<String> individualIds, ObjectMap params, String token) throws CatalogException {
-        List<DataResult> resultList = new ArrayList<>();
-
+    public DataResult delete(String studyStr, List<String> individualIds, ObjectMap params, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
@@ -459,17 +457,18 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw e;
         }
 
+        DataResult result = DataResult.empty();
         for (String id : individualIds) {
             String individualId = id;
             String individualUuid = "";
 
             try {
-                DataResult<Individual> result = internalGet(study.getUid(), id, INCLUDE_INDIVIDUAL_IDS, userId);
-                if (result.getNumResults() == 0) {
+                DataResult<Individual> internalResult = internalGet(study.getUid(), id, INCLUDE_INDIVIDUAL_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Individual '" + id + "' not found");
                 }
 
-                Individual individual = result.first();
+                Individual individual = internalResult.first();
                 // We set the proper values for the audit
                 individualId = individual.getId();
                 individualUuid = individual.getUuid();
@@ -477,7 +476,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 DataResult deleteResult = delete(study, individual, params, userId, checkPermissions);
 
                 // Add the results to the current write result
-                resultList.add(deleteResult);
+                result.append(deleteResult);
 
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -485,7 +484,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 String errorMsg = "Cannot delete individual " + individualId + ": " + e.getMessage();
 
                 Event event = new Event(Event.Type.ERROR, individualId, e.getMessage());
-                resultList.add(DataResult.empty().setEvents(Collections.singletonList(event)));
+                result.getEvents().add(event);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.INDIVIDUAL, individualId, individualUuid,
@@ -493,7 +492,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             }
         }
 
-        return resultList;
+        return result;
     }
 
     @Override
