@@ -140,8 +140,7 @@ public class FileWSServer extends OpenCGAWSServer {
             query.remove("files");
 
             List<String> idList = getIdList(fileStr);
-            List<DataResult<File>> fileQueryResult = fileManager.get(studyStr, idList, new Query("deleted", deleted), queryOptions, silent,
-                    token);
+            DataResult<File> fileQueryResult = fileManager.get(studyStr, idList, new Query("deleted", deleted), queryOptions, silent, token);
             return createOkResponse(fileQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -682,101 +681,6 @@ public class FileWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{file}/variants")
-    @ApiOperation(value = "Fetch variants from a VCF/gVCF file [DEPRECATED]", position = 15,
-            notes = "Moved to analysis/variants/query", hidden = true, response = QueryResponse.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
-    })
-    public Response getVariants(@ApiParam(value = "", required = true) @PathParam("file") String fileIdCsv,
-                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
-                                @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
-                                @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
-                                @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
-                                @ApiParam(value = "List of genes") @QueryParam("gene") String gene,
-                                @ApiParam(value = "Variant type: [SNV, MNV, INDEL, SV, CNV]") @QueryParam("type") String type,
-                                @ApiParam(value = "Reference allele") @QueryParam("reference") String reference,
-                                @ApiParam(value = "Main alternate allele") @QueryParam("alternate") String alternate,
-//                                @ApiParam(value = "") @QueryParam("studies") String studies,
-                                @ApiParam(value = "List of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
-                                @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
-                                @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
-                                @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
-                                @ApiParam(value = VariantQueryParam.FILTER_DESCR) @QueryParam("filter") String filter,
-                                @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("maf") String maf,
-                                @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
-                                @ApiParam(value = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
-                                @ApiParam(value = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
-                                @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
-                                @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
-                                @ApiParam(value = VariantQueryParam.SAMPLE_DESCR) @QueryParam("samples") String samples,
-                                @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578") @QueryParam("annot-ct") String annot_ct,
-                                @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
-                                @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
-                                @ApiParam(value = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign") @QueryParam("polyphen") String polyphen,
-                                @ApiParam(value = "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant") @QueryParam("sift") String sift,
-//                                @ApiParam(value = "") @QueryParam("protein_substitution") String protein_substitution,
-                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1") @QueryParam("conservation") String conservation,
-                                @ApiParam(value = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("annot-population-maf") String annotPopulationMaf,
-                                @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,
-                                @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("reference_frequency") String reference_frequency,
-                                @ApiParam(value = "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno") @QueryParam("annot-transcription-flags") String transcriptionFlags,
-                                @ApiParam(value = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"") @QueryParam("annot-gene-trait-id") String geneTraitId,
-                                @ApiParam(value = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"") @QueryParam("annot-gene-trait-name") String geneTraitName,
-                                @ApiParam(value = "List of HPO terms. e.g. \"HP:0000545\"") @QueryParam("annot-hpo") String hpo,
-                                @ApiParam(value = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"") @QueryParam("annot-go") String go,
-                                @ApiParam(value = "List of tissues of interest. e.g. \"tongue\"") @QueryParam("annot-expression") String expression,
-                                @ApiParam(value = "List of protein variant annotation keywords") @QueryParam("annot-protein-keywords") String proteinKeyword,
-                                @ApiParam(value = "List of drug names") @QueryParam("annot-drug") String drug,
-                                @ApiParam(value = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3") @QueryParam("annot-functional-score") String functional,
-
-                                @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
-//                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
-//                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
-                                @ApiParam(value = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
-                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
-                                @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
-                                @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                                @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                                @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
-                                @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
-
-
-        List<DataResult> queryResults = new LinkedList<>();
-        try {
-            List<DataResult<File>> fileQueryResults = fileManager.get(studyStr, getIdList(fileIdCsv), null, token);
-
-            for (DataResult<File> fileQueryResult : fileQueryResults ) {
-                DataResult queryResult;
-                // Get all query options
-                QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-                Query query = VariantStorageManager.getVariantQuery(queryOptions);
-                query.put(VariantQueryParam.FILE.key(), fileQueryResult.first().getUid());
-                if (count) {
-                    queryResult = variantManager.count(query, token);
-                } else if (histogram) {
-                    queryResult = variantManager.getFrequency(query, interval, token);
-                } else if (StringUtils.isNotEmpty(groupBy)) {
-                    queryResult = variantManager.groupBy(groupBy, query, queryOptions, token);
-                } else {
-                    queryResult = variantManager.get(query, queryOptions, token);
-                }
-                queryResults.add(queryResult);
-            }
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-        return createOkResponse(queryResults);
     }
 
     private ObjectMap getResumeFileJSON(java.nio.file.Path folderPath) throws IOException {

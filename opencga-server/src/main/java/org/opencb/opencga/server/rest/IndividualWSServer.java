@@ -115,8 +115,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             query.remove("individuals");
 
             List<String> individualList = getIdList(individualStr);
-            List<DataResult<Individual>> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions,
-                    silent, token);
+            DataResult<Individual> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions, silent, token);
             return createOkResponse(individualQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -266,10 +265,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
             @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<DataResult<Individual>> queryResults = individualManager.get(studyStr, getIdList(individualsStr), null, token);
+            DataResult<Individual> queryResult = individualManager.get(studyStr, getIdList(individualsStr), null, token);
 
             Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(),
-                    queryResults.stream().map(DataResult::first).map(Individual::getUid).collect(Collectors.toList()));
+                    queryResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

@@ -283,28 +283,28 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    public List<DataResult<Project>> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
+    public DataResult<Project> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
             throws CatalogException {
-        List<DataResult<Project>> results = new ArrayList<>(projectList.size());
+        DataResult<Project> result = DataResult.empty();
 
         for (int i = 0; i < projectList.size(); i++) {
             String project = projectList.get(i);
             try {
                 DataResult<Project> projectResult = get(project, options, sessionId);
-                results.add(projectResult);
+                result.append(projectResult);
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, projectList.get(i), e.getMessage());
                 String warning = "Missing " + projectList.get(i) + ": " + e.getMessage();
                 if (silent) {
                     logger.error(warning, e);
-                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                    result.getEvents().add(event);
                 } else {
                     logger.error(warning);
                     throw e;
                 }
             }
         }
-        return results;
+        return result;
     }
 
     /**

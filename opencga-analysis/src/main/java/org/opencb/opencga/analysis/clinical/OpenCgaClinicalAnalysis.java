@@ -299,25 +299,18 @@ public abstract class OpenCgaClinicalAnalysis<T> extends OpenCgaAnalysis<T> {
     protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
-            List<DataResult<Panel>> queryResults;
+            DataResult<Panel> queryResult;
             try {
-                queryResults = catalogManager.getPanelManager()
+                queryResult = catalogManager.getPanelManager()
                         .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
             } catch (CatalogException e) {
                 throw new AnalysisException(e.getMessage(), e);
             }
 
-            if (queryResults.size() != diseasePanelIds.size()) {
+            if (queryResult.getNumResults() != diseasePanelIds.size()) {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
             }
-
-            for (DataResult<Panel> queryResult : queryResults) {
-                if (queryResult.getNumResults() != 1) {
-                    throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels " +
-                            "queried");
-                }
-                diseasePanels.add(queryResult.first());
-            }
+            diseasePanels.addAll(queryResult.getResults());
         } else {
             throw new AnalysisException("Missing disease panels");
         }

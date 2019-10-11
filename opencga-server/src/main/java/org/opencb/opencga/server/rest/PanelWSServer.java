@@ -138,7 +138,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             }
 
             List<String> idList = getIdList(panelStr);
-            List<DataResult<Panel>> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, token);
+            DataResult<Panel> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, token);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

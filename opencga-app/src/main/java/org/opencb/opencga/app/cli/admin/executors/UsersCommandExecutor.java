@@ -32,7 +32,6 @@ import org.opencb.opencga.core.models.User;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -174,10 +173,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
-            List<DataResult<User>> deletedUsers = catalogManager.getUserManager()
+            DataResult<User> deletedUsers = catalogManager.getUserManager()
                     .delete(usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
-            for (DataResult<User> deletedUser : deletedUsers) {
-                User user = deletedUser.first();
+            for (User user : deletedUsers.getResults()) {
                 if (user != null) {
                     System.out.println("The user has been successfully deleted from the database: " + user.toString());
                 }

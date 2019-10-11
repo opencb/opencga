@@ -326,7 +326,7 @@ public class JobManager extends ResourceManager<Job> {
         return get(null, String.valueOf(jobId), options, sessionId);
     }
 
-    public List<DataResult<Job>> get(List<String> jobIds, QueryOptions options, boolean silent, String sessionId) throws CatalogException {
+    public DataResult<Job> get(List<String> jobIds, QueryOptions options, boolean silent, String sessionId) throws CatalogException {
         return get(null, jobIds, options, silent, sessionId);
     }
 

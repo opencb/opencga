@@ -744,10 +744,10 @@ public class FileManagerTest extends AbstractManagerTest {
         DataResult<File> result;
 
         // Look for a file and folder
-        List<DataResult<File>> queryResults = fileManager.get(studyFqn, Arrays.asList("data/", "data/test/folder/test_1K.txt.gz"),
+        DataResult<File> queryResults = fileManager.get(studyFqn, Arrays.asList("data/", "data/test/folder/test_1K.txt.gz"),
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.NAME.key())), sessionIdUser);
-        assertEquals(2, queryResults.size());
-        assertTrue("Name not included", queryResults.stream().map(DataResult::first).map(File::getName)
+        assertEquals(2, queryResults.getNumResults());
+        assertTrue("Name not included", queryResults.getResults().stream().map(File::getName)
                 .filter(org.apache.commons.lang3.StringUtils::isNotEmpty)
                 .collect(Collectors.toList()).size() == 2);
 
@@ -950,12 +950,12 @@ public class FileManagerTest extends AbstractManagerTest {
         QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2);
         result = fileManager.search(studyFqn, new Query(), options, sessionIdUser);
         assertEquals(2, result.getNumResults());
-        assertEquals(7, result.getNumTotalResults());
+        assertEquals(7, result.getNumMatches());
 
         options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.SKIP_COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, sessionIdUser);
         assertEquals(2, result.getNumResults());
-        assertEquals(2, result.getNumTotalResults());
+        assertEquals(2, result.getNumMatches());
 
     }
 

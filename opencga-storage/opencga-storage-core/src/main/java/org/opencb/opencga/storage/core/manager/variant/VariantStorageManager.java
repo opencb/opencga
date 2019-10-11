@@ -723,13 +723,13 @@ public class VariantStorageManager extends StorageManager {
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
                 String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
-                    List<DataResult<Sample>> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
+                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId);
-                    if (samplesQueryResult.size() != entry.getValue().size()) {
+                    if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");
                     }
-                    samplesMap.put(studyId, samplesQueryResult.stream().map(DataResult::first).collect(Collectors.toList()));
+                    samplesMap.put(studyId, samplesQueryResult.getResults());
                 } else {
                     samplesMap.put(studyId, Collections.emptyList());
                 }
@@ -741,7 +741,7 @@ public class VariantStorageManager extends StorageManager {
                     .map(mm::getStudyName)
                     .collect(Collectors.toList());
             List<Study> studies = catalogManager.getStudyManager().get(includeStudies,
-                    new QueryOptions(INCLUDE, FQN.key()), false, sessionId).stream().map(DataResult::first).collect(Collectors.toList());
+                    new QueryOptions(INCLUDE, FQN.key()), false, sessionId).getResults();
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 for (String returnedStudy : includeStudies) {
                     samplesMap.put(returnedStudy, Collections.emptyList());

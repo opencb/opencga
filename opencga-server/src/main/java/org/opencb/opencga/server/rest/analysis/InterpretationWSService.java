@@ -205,7 +205,7 @@ public class InterpretationWSService extends AnalysisWSService {
             query.remove("clinicalAnalyses");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
-            List<DataResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, silent, token);
+            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, silent, token);
             return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);

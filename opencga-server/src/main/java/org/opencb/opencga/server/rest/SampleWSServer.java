@@ -88,7 +88,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            List<DataResult<Sample>> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, token);
+            DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, token);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -522,10 +522,10 @@ public class SampleWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
             @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<DataResult<Sample>> queryResults = sampleManager.get(studyStr, getIdList(samplesStr), null, token);
+            DataResult<Sample> queryResult = sampleManager.get(studyStr, getIdList(samplesStr), null, token);
 
             Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
-                    queryResults.stream().map(DataResult::first).map(Sample::getUid).collect(Collectors.toList()));
+                    queryResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

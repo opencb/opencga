@@ -431,26 +431,26 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public List<DataResult<Study>> get(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId)
+    public DataResult<Study> get(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId)
             throws CatalogException {
-        List<DataResult<Study>> results = new ArrayList<>(studyList.size());
+        DataResult<Study> result = DataResult.empty();
         for (String study : studyList) {
             try {
                 DataResult<Study> studyObj = get(study, queryOptions, sessionId);
-                results.add(studyObj);
+                result.append(studyObj);
             } catch (CatalogException e) {
                 String warning = "Missing " + study + ": " + e.getMessage();
                 Event event = new Event(Event.Type.ERROR, study, e.getMessage());
                 if (silent) {
                     logger.error(warning, e);
-                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                    result.getEvents().add(event);
                 } else {
                     logger.error(warning);
                     throw e;
                 }
             }
         }
-        return results;
+        return result;
     }
 
     /**
@@ -488,26 +488,26 @@ public class StudyManager extends AbstractManager {
         return get(query, options, sessionId);
     }
 
-    public List<DataResult<Study>> get(List<String> projectList, Query query, QueryOptions options, boolean silent, String sessionId)
+    public DataResult<Study> get(List<String> projectList, Query query, QueryOptions options, boolean silent, String sessionId)
             throws CatalogException {
-        List<DataResult<Study>> results = new ArrayList<>(projectList.size());
+        DataResult<Study> result = DataResult.empty();
         for (String project : projectList) {
             try {
                 DataResult<Study> studyObj = get(project, query, options, sessionId);
-                results.add(studyObj);
+                result.append(studyObj);
             } catch (CatalogException e) {
                 String warning = "Missing studies from project " + project + ": " + e.getMessage();
                 Event event = new Event(Event.Type.ERROR, project, e.getMessage());
                 if (silent) {
                     logger.error(warning, e);
-                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                    result.getEvents().add(event);
                 } else {
                     logger.error(warning);
                     throw e;
                 }
             }
         }
-        return results;
+        return result;
     }
 
 

@@ -270,8 +270,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         // Silent query, so it does not fail for missing cohorts
         Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames),
                 new QueryOptions(QueryOptions.INCLUDE, "name,id"), true, sessionId)
+                .getResults()
                 .stream()
-                .map(DataResult::first)
                 .filter(Objects::nonNull)
                 .map(Cohort::getId)
                 .collect(Collectors.toSet());

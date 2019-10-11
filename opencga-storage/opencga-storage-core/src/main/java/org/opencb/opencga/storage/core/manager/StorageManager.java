@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation.getDataStore;
 
@@ -105,8 +104,8 @@ public abstract class StorageManager {
         if (fileIdStrs.isEmpty()) {
             files = Collections.emptyList();
         } else {
-            List<DataResult<File>> queryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStrs, null, sessionId);
-            files = queryResult.stream().map(DataResult::first).collect(Collectors.toList());
+            DataResult<File> queryResult = catalogManager.getFileManager().get(studyIdStr, fileIdStrs, null, sessionId);
+            files = queryResult.getResults();
         }
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
         for (File file : files) {

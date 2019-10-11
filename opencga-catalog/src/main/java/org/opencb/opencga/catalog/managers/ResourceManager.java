@@ -86,16 +86,16 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public List<DataResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
+    public DataResult<R> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
         return get(studyStr, entryList, new Query(), options, false, token);
     }
 
-    public List<DataResult<R>> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
+    public DataResult<R> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
             throws CatalogException {
         return get(studyStr, entryList, new Query(), options, silent, token);
     }
 
-    public List<DataResult<R>> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
+    public DataResult<R> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
@@ -113,7 +113,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
         try {
-            List<DataResult<R>> resultList = new ArrayList<>(entryList.size());
+            DataResult<R> result = DataResult.empty();
 
             InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
 
@@ -129,21 +129,22 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 if (versionedResults.get(i).isEmpty()) {
                     Event event = new Event(Event.Type.ERROR, entryId, missingMap.get(entryId).getErrorMsg());
                     // Missing
-                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    result.getEvents().add(event);
+//                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.singletonList(event), 0,
+//                            Collections.emptyList(), 0));
                 } else {
                     int size = versionedResults.get(i).size();
-                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.emptyList(), size, versionedResults.get(i),
-                            size));
+                    result.append(new DataResult<>(0, Collections.emptyList(), size, versionedResults.get(i), size));
+//                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.emptyList(), size, versionedResults.get(i),
+//                            size));
+
+                    R entry = versionedResults.get(i).get(0);
+                    auditManager.auditInfo(operationUuid, userId, getEntity(), entry.getId(), entry.getUuid(),
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 }
             }
 
-            for (DataResult<R> queryResult : resultList) {
-                auditManager.auditInfo(operationUuid, userId, getEntity(), queryResult.first().getId(), queryResult.first().getUuid(),
-                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            }
-
-            return resultList;
+            return result;
         } catch (CatalogException e) {
             for (String entryId : entryList) {
                 auditManager.auditInfo(operationUuid, userId, getEntity(), entryId, "", study.getId(), study.getUuid(), auditParams,

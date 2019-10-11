@@ -607,7 +607,7 @@ public class UserManager extends AbstractManager {
      * @return A list with the deleted objects
      * @throws CatalogException CatalogException.
      */
-    public List<DataResult<User>> delete(String userIdList, QueryOptions options, String token) throws CatalogException {
+    public DataResult<User> delete(String userIdList, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(userIdList, "userIdList");
         ParamUtils.checkParameter(token, "token");
 
@@ -620,7 +620,7 @@ public class UserManager extends AbstractManager {
                 .append("token", token);
 
         List<String> userIds = Arrays.asList(userIdList.split(","));
-        List<DataResult<User>> deletedUsers = new ArrayList<>(userIds.size());
+        DataResult<User> deletedUsers = DataResult.empty();
         for (String userId : userIds) {
             if ("admin".equals(tokenUser) || userId.equals(tokenUser)) {
                 try {
@@ -635,7 +635,7 @@ public class UserManager extends AbstractManager {
                     DataResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
                     deletedUser.setTime(deletedUser.getTime() + result.getTime());
 
-                    deletedUsers.add(deletedUser);
+                    deletedUsers.append(deletedUser);
                 } catch (CatalogException e) {
                     auditManager.auditDelete(operationUuid, tokenUser, AuditRecord.Resource.USER, userId, "", "", "", auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -655,7 +655,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException CatalogException
      * @throws IOException      IOException.
      */
-    public List<DataResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+    public DataResult<User> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
         DataResult<User> userDataResult = userDBAdaptor.get(query, queryOptions);
         List<String> userIds = userDataResult.getResults().stream().map(User::getId).collect(Collectors.toList());
@@ -663,7 +663,7 @@ public class UserManager extends AbstractManager {
         return delete(userIdStr, options, sessionId);
     }
 
-    public List<DataResult<User>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+    public DataResult<User> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 

@@ -90,7 +90,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            List<DataResult<Family>> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, token);
+            DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, token);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -427,10 +427,10 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
                 @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<DataResult<Family>> queryResults = familyManager.get(studyStr, getIdList(familiesStr), null, token);
+            DataResult<Family> queryResult = familyManager.get(studyStr, getIdList(familiesStr), null, token);
 
             Query query = new Query(FamilyDBAdaptor.QueryParams.UID.key(),
-                    queryResults.stream().map(DataResult::first).map(Family::getUid).collect(Collectors.toList()));
+                    queryResult.getResults().stream().map(Family::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {

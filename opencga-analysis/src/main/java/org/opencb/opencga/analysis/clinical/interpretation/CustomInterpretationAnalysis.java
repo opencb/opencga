@@ -146,21 +146,14 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (query.get(VariantCatalogQueryUtils.PANEL.key()) != null) {
             List<String> diseasePanelIds = Arrays.asList(query.getString(VariantCatalogQueryUtils.PANEL.key()).split(","));
-            List<DataResult<Panel>> queryResults = catalogManager.getPanelManager()
-                    .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
+            DataResult<Panel> queryResult = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
 
-            if (queryResults.size() != diseasePanelIds.size()) {
+            if (queryResult.getNumResults() != diseasePanelIds.size()) {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
                         "disease panels queried");
             }
 
-            for (DataResult<Panel> queryResult : queryResults) {
-                if (queryResult.getNumResults() != 1) {
-                    throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
-                            "disease panels queried");
-                }
-                diseasePanels.add(queryResult.first());
-            }
+            diseasePanels.addAll(queryResult.getResults());
         }
 
         QueryOptions queryOptions = new QueryOptions(options);

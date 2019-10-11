@@ -70,8 +70,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
 
             if (ListUtils.isNotEmpty(sampleIdList)) {
-                List<DataResult<Sample>> queryResults = catalogManager.getSampleManager().get(studyStr, sampleIdList, null, token);
-                List<Sample> sampleList = queryResults.stream().map(DataResult::first).collect(Collectors.toList());
+                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, sampleIdList, null, token);
+                List<Sample> sampleList = queryResult.getResults();
                 Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, sampleList, annotationSetList, -1, null)
                         .setName(cohortName);
                 DataResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, token);
@@ -176,7 +176,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             query.remove("study");
 
             List<String> cohortList = getIdList(cohortsStr);
-            List<DataResult<Cohort>> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted),
+            DataResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted),
                     queryOptions, silent, token);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
@@ -452,10 +452,10 @@ public class CohortWSServer extends OpenCGAWSServer {
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) throws WebServiceException {
         try {
-            List<DataResult<Cohort>> queryResults = cohortManager.get(studyStr, getIdList(cohortsStr), null, token);
+            DataResult<Cohort> queryResult = cohortManager.get(studyStr, getIdList(cohortsStr), null, token);
 
             Query query = new Query(CohortDBAdaptor.QueryParams.UID.key(),
-                    queryResults.stream().map(DataResult::first).map(Cohort::getUid).collect(Collectors.toList()));
+                    queryResult.getResults().stream().map(Cohort::getUid).collect(Collectors.toList()));
             QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
 
             if (StringUtils.isNotEmpty(annotationsetName)) {
