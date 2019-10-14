@@ -921,8 +921,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<CohortAclEntry>> getAcls(String studyId, List<String> cohortList, String member, boolean silent, String token)
-            throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAcls(String studyId, List<String> cohortList, String member, boolean silent,
+                                                        String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -934,7 +934,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("silent", silent)
                 .append("token", token);
         try {
-            List<DataResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortList.size());
+            DataResult<Map<String, List<String>>> cohortAclList = DataResult.empty();
 
             InternalGetDataResult<Cohort> cohortDataResult = internalGet(study.getUid(), cohortList, INCLUDE_COHORT_IDS, user, silent);
 
@@ -948,13 +948,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 if (!missingMap.containsKey(cohortId)) {
                     Cohort cohort = cohortDataResult.getResults().get(counter);
                     try {
-                        DataResult<CohortAclEntry> allCohortAcls;
+                        DataResult<Map<String, List<String>>> allCohortAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allCohortAcls = authorizationManager.getCohortAcl(study.getUid(), cohort.getUid(), user, member);
                         } else {
                             allCohortAcls = authorizationManager.getAllCohortAcls(study.getUid(), cohort.getUid(), user);
                         }
-                        cohortAclList.add(allCohortAcls);
+                        cohortAclList.append(allCohortAcls);
 
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.COHORT, cohort.getId(),
                                 cohort.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -968,15 +968,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg());
-                            cohortAclList.add(new DataResult<>(cohortDataResult.getTime(), Collections.singletonList(event), 0,
-                                    Collections.emptyList(), 0));
+                            cohortAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, cohortId, missingMap.get(cohortId).getErrorMsg());
-                    cohortAclList.add(new DataResult<>(cohortDataResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    cohortAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.COHORT, cohortId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -994,8 +994,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
     }
 
-    public List<DataResult<CohortAclEntry>> updateAcl(String studyId, List<String> cohortStrList, String memberList, AclParams aclParams,
-                                                      String token) throws CatalogException {
+    public DataResult<Map<String, List<String>>> updateAcl(String studyId, List<String> cohortStrList, String memberList,
+                                                           AclParams aclParams, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId, StudyManager.INCLUDE_STUDY_UID);
 
@@ -1038,7 +1038,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
             List<Long> cohortUids = cohortList.stream().map(Cohort::getUid).collect(Collectors.toList());
 
-            List<DataResult<CohortAclEntry>> queryResultList;
+            DataResult<Map<String, List<String>>> queryResultList;
             switch (aclParams.getAction()) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), cohortUids, members, permissions, Entity.COHORT);

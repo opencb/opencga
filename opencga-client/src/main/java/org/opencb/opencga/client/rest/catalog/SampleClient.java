@@ -17,21 +17,20 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 24/05/16.
  */
-public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
+public class SampleClient extends AnnotationClient<Sample> {
 
     private static final String SAMPLES_URL = "samples";
 
@@ -40,7 +39,6 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
 
         this.category = SAMPLES_URL;
         this.clazz = Sample.class;
-        this.aclClass = SampleAclEntry.class;
     }
 
     public DataResponse<Sample> create(String studyId, String sampleId, ObjectMap bodyParams) throws IOException {

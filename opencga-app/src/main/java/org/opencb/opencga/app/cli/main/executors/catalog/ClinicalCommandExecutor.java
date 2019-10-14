@@ -11,14 +11,13 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 
 import java.io.IOException;
 
 public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
     private ClinicalCommandOptions clinicalCommandOptions;
-    private AclCommandExecutor<ClinicalAnalysis, ClinicalAnalysisAclEntry> aclCommandExecutor;
+    private AclCommandExecutor<ClinicalAnalysis> aclCommandExecutor;
 
     public ClinicalCommandExecutor(ClinicalCommandOptions clinicalCommandOptions) {
         super(clinicalCommandOptions.commonCommandOptions);
@@ -121,7 +120,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().get(commandOptions.clinical, params);
     }
 
-    private DataResponse<ClinicalAnalysisAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = clinicalCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

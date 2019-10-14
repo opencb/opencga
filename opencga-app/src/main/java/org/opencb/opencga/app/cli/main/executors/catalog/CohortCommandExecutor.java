@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 
 import java.io.IOException;
 
@@ -41,8 +40,8 @@ import java.io.IOException;
 public class CohortCommandExecutor extends OpencgaCommandExecutor {
 
     private CohortCommandOptions cohortsCommandOptions;
-    private AclCommandExecutor<Cohort, CohortAclEntry> aclCommandExecutor;
-    private AnnotationCommandExecutor<Cohort, CohortAclEntry> annotationCommandExecutor;
+    private AclCommandExecutor<Cohort> aclCommandExecutor;
+    private AnnotationCommandExecutor<Cohort> annotationCommandExecutor;
 
     public CohortCommandExecutor(CohortCommandOptions cohortsCommandOptions) {
         super(cohortsCommandOptions.commonCommandOptions);
@@ -243,7 +242,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().stats(commandOptions.study, query, options);
     }
 
-    private DataResponse<CohortAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = cohortsCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

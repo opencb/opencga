@@ -29,11 +29,11 @@ import java.io.IOException;
 /**
  * Created by pfurio on 28/07/16.
  */
-public class AnnotationCommandExecutor<T,U> {
+public class AnnotationCommandExecutor<T> {
 
     @Deprecated
     public DataResponse<AnnotationSet> createAnnotationSet(
-            AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions, AnnotationClient<T,U> client)
+            AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions, AnnotationClient<T> client)
             throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
@@ -45,7 +45,7 @@ public class AnnotationCommandExecutor<T,U> {
 
     @Deprecated
     public DataResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
-                                     AnnotationClient<T,U> client) throws IOException {
+                                     AnnotationClient<T> client) throws IOException {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", infoCommandOptions.study);
@@ -55,7 +55,7 @@ public class AnnotationCommandExecutor<T,U> {
 
     @Deprecated
     public DataResponse<AnnotationSet> searchAnnotationSets(
-            AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T,U> client)
+            AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T> client)
             throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("variableSet", searchCommandOptions.variableSetId);
@@ -66,7 +66,7 @@ public class AnnotationCommandExecutor<T,U> {
 
     @Deprecated
     public DataResponse<AnnotationSet> deleteAnnotationSet(
-            AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions, AnnotationClient<T,U> client)
+            AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions, AnnotationClient<T> client)
             throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("annotations", deleteCommandOptions.annotations);
@@ -75,7 +75,7 @@ public class AnnotationCommandExecutor<T,U> {
     }
 
     public DataResponse<AnnotationSet> updateAnnotationSet(
-            AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions updateCommandOptions, AnnotationClient<T,U> client)
+            AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions updateCommandOptions, AnnotationClient<T> client)
             throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();

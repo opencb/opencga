@@ -1424,7 +1424,7 @@ public class StudyManager extends AbstractManager {
 
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<StudyAclEntry>> getAcls(List<String> studyIdList, String member, boolean silent, String token)
+    public DataResult<Map<String, List<String>>> getAcls(List<String> studyIdList, String member, boolean silent, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studyList = resolveIds(studyIdList, userId);
@@ -1436,19 +1436,19 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
-        List<DataResult<StudyAclEntry>> studyAclList = new ArrayList<>(studyList.size());
+        DataResult<Map<String, List<String>>> studyAclList = DataResult.empty();
 
         for (int i = 0; i < studyList.size(); i++) {
             Study study = studyList.get(i);
             long studyId = study.getUid();
             try {
-                DataResult<StudyAclEntry> allStudyAcls;
+                DataResult<Map<String, List<String>>> allStudyAcls;
                 if (StringUtils.isNotEmpty(member)) {
                     allStudyAcls = authorizationManager.getStudyAcl(userId, studyId, member);
                 } else {
                     allStudyAcls = authorizationManager.getAllStudyAcls(userId, studyId);
                 }
-                studyAclList.add(allStudyAcls);
+                studyAclList.append(allStudyAcls);
 
                 auditManager.audit(operationUuid, userId, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -1459,7 +1459,8 @@ public class StudyManager extends AbstractManager {
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 if (silent) {
                     Event event = new Event(Event.Type.ERROR, study.getFqn(), e.getMessage());
-                    studyAclList.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
+                    studyAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
                 } else {
                     throw e;
                 }
@@ -1468,7 +1469,7 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
-    public List<DataResult<StudyAclEntry>> updateAcl(List<String> studyIdList, String memberIds, Study.StudyAclParams aclParams,
+    public DataResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, Study.StudyAclParams aclParams,
                                                       String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studies = resolveIds(studyIdList, userId);
@@ -1540,7 +1541,7 @@ public class StudyManager extends AbstractManager {
                 checkMembers(study.getUid(), members);
             }
 
-            List<DataResult<StudyAclEntry>> aclResult;
+            DataResult<Map<String, List<String>>> aclResult;
             switch (aclParams.getAction()) {
                 case SET:
                     aclResult = authorizationManager.setStudyAcls(studies.
@@ -1564,10 +1565,10 @@ public class StudyManager extends AbstractManager {
                             members, permissions);
                     break;
                 case RESET:
-                    aclResult = new ArrayList<>(studies.size());
+                    aclResult = DataResult.empty();
                     for (Study study : studies) {
                         authorizationManager.resetPermissionsFromAllEntities(study.getUid(), members);
-                        aclResult.add(authorizationManager.getAllStudyAcls(userId, study.getUid()));
+                        aclResult.append(authorizationManager.getAllStudyAcls(userId, study.getUid()));
                     }
                     break;
                 default:

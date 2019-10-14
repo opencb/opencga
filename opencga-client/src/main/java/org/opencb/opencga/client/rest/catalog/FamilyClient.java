@@ -16,21 +16,20 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by pfurio on 15/05/17.
  */
-public class FamilyClient extends AnnotationClient<Family, FamilyAclEntry> {
+public class FamilyClient extends AnnotationClient<Family> {
 
     private static final String FAMILY_URL = "families";
 
@@ -39,7 +38,6 @@ public class FamilyClient extends AnnotationClient<Family, FamilyAclEntry> {
 
         this.category = FAMILY_URL;
         this.clazz = Family.class;
-        this.aclClass = FamilyAclEntry.class;
     }
 
     public DataResponse<Family> create(String studyId, ObjectMap bodyParams) throws IOException {

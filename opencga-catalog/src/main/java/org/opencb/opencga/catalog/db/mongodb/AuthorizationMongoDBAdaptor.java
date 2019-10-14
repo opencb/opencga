@@ -41,7 +41,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.models.PermissionRule;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.permissions.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -278,85 +277,26 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public <E extends AbstractAclEntry> DataResult<E> get(long resourceId, List<String> members, Entity entry) throws CatalogException {
-
+    public DataResult<Map<String, List<String>>> get(long resourceId, List<String> members, Entity entry) throws CatalogException {
         validateEntry(entry);
         long startTime = startQuery();
 
         EntryPermission entryPermission = internalGet(resourceId, members, entry);
-
         Map<String, List<String>> myMap = entryPermission.getPermissions().get(QueryParams.ACL.key());
-        List<E> retList;
-        switch (entry) {
-            case STUDY:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new StudyAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case COHORT:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new CohortAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case INDIVIDUAL:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new IndividualAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case JOB:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new JobAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case FILE:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new FileAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case SAMPLE:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new SampleAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case DISEASE_PANEL:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new PanelAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case FAMILY:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new FamilyAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            case CLINICAL_ANALYSIS:
-                retList = new ArrayList<>(myMap.size());
-                for (Map.Entry<String, List<String>> stringListEntry : myMap.entrySet()) {
-                    retList.add((E) new ClinicalAnalysisAclEntry(stringListEntry.getKey(), stringListEntry.getValue()));
-                }
-                break;
-            default:
-                throw new CatalogException("Unexpected parameter received. " + entry + " has been received.");
-        }
-
-        return endQuery(startTime, retList);
+        return endQuery(startTime, myMap.isEmpty() ? Collections.emptyList() : Collections.singletonList(myMap));
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<DataResult<E>> get(List<Long> resourceIds, List<String> members, Entity entry)
-            throws CatalogException {
-        List<DataResult<E>> retList = new ArrayList<>(resourceIds.size());
+    public DataResult<Map<String, List<String>>> get(List<Long> resourceIds, List<String> members, Entity entry) throws CatalogException {
+        DataResult<Map<String, List<String>>> result = DataResult.empty();
         for (Long resourceId : resourceIds) {
-            retList.add(get(resourceId, members, entry));
+            DataResult<Map<String, List<String>>> tmpResult = get(resourceId, members, entry);
+            result.append(tmpResult);
+            if (tmpResult.getNumResults() == 0) {
+                result.getResults().add(Collections.emptyMap());
+            }
         }
-        return retList;
+        return result;
     }
 
     @Override
@@ -606,7 +546,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     // TODO: Make this method transactional
     @Override
-    public <E extends AbstractAclEntry> DataResult setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException {
+    public DataResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Entity entity)
+            throws CatalogDBException {
         validateEntry(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
 
@@ -614,13 +555,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             // Get current permissions for resource and override with new ones set for members (already existing or not)
             Map<String, Map<String, List<String>>> currentPermissions = internalGet(resourceId, Collections.emptyList(), entity)
                     .getPermissions();
-            for (E acl : acls) {
-                List<String> permissions = (List<String>) acl.getPermissions().stream().map(a -> a.toString()).collect(Collectors.toList());
+            for (Map.Entry<String, List<String>> entry : acls.entrySet()) {
                 // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
-                permissions = new ArrayList<>(permissions);
+                List<String> permissions = new ArrayList<>(entry.getValue());
                 permissions.add("NONE");
-                currentPermissions.get(QueryParams.ACL.key()).put(acl.getMember(), permissions);
-                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(acl.getMember(), permissions);
+                currentPermissions.get(QueryParams.ACL.key()).put(entry.getKey(), permissions);
+                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(entry.getKey(), permissions);
             }
             List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
             List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));

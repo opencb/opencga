@@ -17,21 +17,20 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by swaathi on 10/05/16.
  */
-public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
+public class StudyClient extends CatalogClient<Study> {
 
     private static final String STUDY_URL = "studies";
 
@@ -39,7 +38,6 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         super(userId, sessionId, configuration);
         this.category = STUDY_URL;
         this.clazz = Study.class;
-        this.aclClass = StudyAclEntry.class;
     }
 
     public DataResponse<Study> create(String projectId, String studyId, ObjectMap params) throws IOException {

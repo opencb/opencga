@@ -22,9 +22,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.models.PermissionRule;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pfurio on 20/04/17.
@@ -34,27 +34,24 @@ public interface AuthorizationDBAdaptor {
     /**
      * Retrieve the list of Acls for the list of members in the resource given.
      *
-     * @param <E> AclEntry type.
      * @param resourceId id of the study, file, sample... where the Acl will be looked for.
      * @param members members for whom the Acls will be obtained.
      * @param entry Entity for which the ACLs will be retrieved.
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    <E extends AbstractAclEntry> DataResult<E> get(long resourceId, List<String> members, Entity entry) throws CatalogException;
+    DataResult<Map<String, List<String>>> get(long resourceId, List<String> members, Entity entry) throws CatalogException;
 
     /**
      * Retrieve the list of Acls for the list of members in the resources given.
      *
-     * @param <E> AclEntry type.
      * @param resourceIds ids of the study, file, sample... where the Acl will be looked for.
      * @param members members for whom the Acls will be obtained.
      * @param entry Entity for which the ACLs will be retrieved.
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    <E extends AbstractAclEntry> List<DataResult<E>> get(List<Long> resourceIds, List<String> members, Entity entry)
-            throws CatalogException;
+    DataResult<Map<String, List<String>>> get(List<Long> resourceIds, List<String> members, Entity entry) throws CatalogException;
 
     /**
      * Remove all the Acls defined for the member in the resource for the study.
@@ -99,7 +96,8 @@ public interface AuthorizationDBAdaptor {
 
     DataResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
 
-    <E extends AbstractAclEntry> DataResult setAcls(List<Long> resourceIds, List<E> acls, Entity entity) throws CatalogDBException;
+    DataResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Entity entity)
+            throws CatalogDBException;
 
     DataResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
 

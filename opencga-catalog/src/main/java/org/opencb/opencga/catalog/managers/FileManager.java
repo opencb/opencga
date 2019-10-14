@@ -748,10 +748,11 @@ public class FileManager extends AnnotationSetManager<File> {
         fileDBAdaptor.insert(studyId, file, study.getVariableSets(), options);
         DataResult<File> queryResult = getFile(studyId, file.getUuid(), options);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        DataResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
+        DataResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId, userId, false);
         // Propagate ACLs
         if (allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults(), Entity.FILE);
+            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
+                    Entity.FILE);
         }
 
         matchUpVariantFiles(study.getFqn(), queryResult.getResults(), sessionId);
@@ -2631,7 +2632,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<FileAclEntry>> getAcls(String studyId, List<String> fileList, String member, boolean silent, String token)
+    public DataResult<Map<String, List<String>>> getAcls(String studyId, List<String> fileList, String member, boolean silent, String token)
             throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -2644,7 +2645,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("silent", silent)
                 .append("token", token);
         try {
-            List<DataResult<FileAclEntry>> fileAclList = new ArrayList<>(fileList.size());
+            DataResult<Map<String, List<String>>> fileAclList = DataResult.empty();
             InternalGetDataResult<File> fileDataResult = internalGet(study.getUid(), fileList, INCLUDE_FILE_IDS, user, silent);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
@@ -2657,13 +2658,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 if (!missingMap.containsKey(fileId)) {
                     File file = fileDataResult.getResults().get(counter);
                     try {
-                        DataResult<FileAclEntry> allFileAcls;
+                        DataResult<Map<String, List<String>>> allFileAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allFileAcls = authorizationManager.getFileAcl(study.getUid(), file.getUid(), user, member);
                         } else {
                             allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), file.getUid(), user, true);
                         }
-                        fileAclList.add(allFileAcls);
+                        fileAclList.append(allFileAcls);
 
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FILE, file.getId(),
                                 file.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -2677,15 +2678,15 @@ public class FileManager extends AnnotationSetManager<File> {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg());
-                            fileAclList.add(new DataResult<>(fileDataResult.getTime(), Collections.singletonList(event), 0,
-                                    Collections.emptyList(), 0));
+                            fileAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, fileId, missingMap.get(fileId).getErrorMsg());
-                    fileAclList.add(new DataResult<>(fileDataResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    fileAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FILE, fileId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -2703,7 +2704,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public List<DataResult<FileAclEntry>> updateAcl(String studyId, List<String> fileStrList, String memberList,
+    public DataResult<Map<String, List<String>>> updateAcl(String studyId, List<String> fileStrList, String memberList,
                                                     File.FileAclParams aclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -2767,7 +2768,7 @@ public class FileManager extends AnnotationSetManager<File> {
             checkMembers(study.getUid(), members);
 //        studyManager.membersHavePermissionsInStudy(resourceIds.getStudyId(), members);
 
-            List<DataResult<FileAclEntry>> queryResultList;
+            DataResult<Map<String, List<String>>> queryResultList;
             switch (aclParams.getAction()) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), extendedFileList.stream().map(File::getUid)
@@ -3318,7 +3319,8 @@ public class FileManager extends AnnotationSetManager<File> {
         String parentPath = getParentPath(stringPath);
         long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        DataResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, checkPermissions);
+        DataResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId,
+                checkPermissions);
 
         URI completeURI = Paths.get(studyURI).resolve(path).toUri();
 
@@ -3333,7 +3335,7 @@ public class FileManager extends AnnotationSetManager<File> {
         DataResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
         // Propagate ACLs
         if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults(),
+            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
                     Entity.FILE);
         }
     }
@@ -3479,7 +3481,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 String parentPath = getParentPath(externalPathDestinyStr);
                 long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
                 // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                DataResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
+                DataResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId,
+                        userId, true);
 
                 File subfile = new File(externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, checksum, TimeUtils.getTime(), TimeUtils.getTime(),
@@ -3494,7 +3497,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 // Propagate ACLs
                 if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                     authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
-                            allFileAcls.getResults(), Entity.FILE);
+                            allFileAcls.getResults().get(0), Entity.FILE);
                 }
 
                 File file = this.fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
@@ -3548,7 +3551,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             String parentPath = getParentPath(destinyPath);
                             long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
                             // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                            DataResult<FileAclEntry> allFileAcls;
+                            DataResult<Map<String, List<String>>> allFileAcls;
                             try {
                                 allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
                             } catch (CatalogException e) {
@@ -3569,7 +3572,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
-                                        allFileAcls.getResults(), Entity.FILE);
+                                        allFileAcls.getResults().get(0), Entity.FILE);
                             }
                         }
 
@@ -3600,7 +3603,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             String parentPath = getParentPath(destinyPath);
                             long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
                             // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                            DataResult<FileAclEntry> allFileAcls;
+                            DataResult<Map<String, List<String>>> allFileAcls;
                             try {
                                 allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
                             } catch (CatalogException e) {
@@ -3621,7 +3624,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             // Propagate ACLs
                             if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
                                 authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
-                                        allFileAcls.getResults(), Entity.FILE);
+                                        allFileAcls.getResults().get(0), Entity.FILE);
                             }
 
                             File file = FileManager.this.fileMetadataReader.setMetadataInformation(queryResult.first(),

@@ -16,21 +16,20 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 24/05/16.
  */
-public class IndividualClient extends AnnotationClient<Individual, IndividualAclEntry> {
+public class IndividualClient extends AnnotationClient<Individual> {
 
     private static final String INDIVIDUALS_URL = "individuals";
 
@@ -39,7 +38,6 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
 
         this.category = INDIVIDUALS_URL;
         this.clazz = Individual.class;
-        this.aclClass = IndividualAclEntry.class;
     }
 
     public DataResponse<Individual> create(String studyId, ObjectMap bodyParams) throws IOException {

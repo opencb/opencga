@@ -17,10 +17,10 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
@@ -28,7 +28,6 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.acls.permissions.PanelAclEntry;
 
 import java.io.IOException;
 
@@ -38,7 +37,7 @@ import java.io.IOException;
 public class PanelCommandExecutor extends OpencgaCommandExecutor {
 
     private PanelCommandOptions panelsCommandOptions;
-    private AclCommandExecutor<Panel, PanelAclEntry> aclCommandExecutor;
+    private AclCommandExecutor<Panel> aclCommandExecutor;
 
     public PanelCommandExecutor(PanelCommandOptions panelsCommandOptions) {
         super(panelsCommandOptions.commonCommandOptions);
@@ -134,7 +133,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private DataResponse<PanelAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = panelsCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

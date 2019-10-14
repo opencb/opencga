@@ -1200,13 +1200,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         Sample sample = new Sample().setId("sample");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), sessionIdUser);
 
-        List<DataResult<SampleAclEntry>> queryResults = catalogManager.getSampleManager().updateAcl(studyFqn,
+        DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 Arrays.asList("sample"), "user2", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null, true),
                 sessionIdUser);
-        assertEquals(1, queryResults.size());
-        assertEquals(1, queryResults.get(0).getNumResults());
-        assertEquals(1, queryResults.get(0).first().getPermissions().size());
-        assertTrue(queryResults.get(0).first().getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
+        assertEquals(1, dataResult.getNumResults());
+        assertEquals(1, dataResult.first().size());
+        assertEquals(1, dataResult.first().get("user2").size());
+        assertTrue(dataResult.first().get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
     }
 
     // Two samples, one related to one individual and the other does not have any individual associated
@@ -1218,21 +1218,21 @@ public class SampleManagerTest extends AbstractManagerTest {
         Sample sample2 = new Sample().setId("sample2");
         catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), sessionIdUser);
 
-        List<DataResult<SampleAclEntry>> queryResults = catalogManager.getSampleManager().updateAcl(studyFqn,
+        DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 Arrays.asList("sample", "sample2"), "user2", new Sample.SampleAclParams("VIEW", AclParams.Action.SET, null, null, null,
                         true), sessionIdUser);
-        assertEquals(2, queryResults.size());
-        assertEquals(1, queryResults.get(0).getNumResults());
-        assertEquals(1, queryResults.get(0).first().getPermissions().size());
-        assertTrue(queryResults.get(0).first().getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
-        assertTrue(queryResults.get(1).first().getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
+        assertEquals(2, dataResult.getNumResults());
+        assertEquals(1, dataResult.first().size());
+        assertEquals(1, dataResult.first().get("user2").size());
+        assertTrue(dataResult.getResults().get(0).get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
+        assertTrue(dataResult.getResults().get(1).get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
 
-        List<DataResult<IndividualAclEntry>> individualAcl = catalogManager.getIndividualManager().getAcls(studyFqn,
+        DataResult<Map<String, List<String>>> individualAcl = catalogManager.getIndividualManager().getAcls(studyFqn,
                 Collections.singletonList("individual"), "user2", false, sessionIdUser);
-        assertEquals(1, individualAcl.size());
-        assertEquals(1, individualAcl.get(0).getNumResults());
-        assertEquals(1, individualAcl.get(0).first().getPermissions().size());
-        assertTrue(individualAcl.get(0).first().getPermissions().contains(IndividualAclEntry.IndividualPermissions.VIEW));
+        assertEquals(1, individualAcl.getNumResults());
+        assertEquals(1, individualAcl.first().size());
+        assertEquals(1, individualAcl.first().get("user2").size());
+        assertTrue(individualAcl.first().get("user2").contains(IndividualAclEntry.IndividualPermissions.VIEW.name()));
     }
 
 }

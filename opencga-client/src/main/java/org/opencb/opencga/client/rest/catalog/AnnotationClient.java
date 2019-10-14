@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * Created by pfurio on 28/07/16.
  */
-public abstract class AnnotationClient<T, U> extends CatalogClient<T, U> {
+public abstract class AnnotationClient<T> extends CatalogClient<T> {
 
     protected AnnotationClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);

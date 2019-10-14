@@ -927,8 +927,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<FamilyAclEntry>> getAcls(String studyId, List<String> familyList, String member, boolean silent, String token)
-            throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAcls(String studyId, List<String> familyList, String member, boolean silent,
+                                                         String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -941,7 +941,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("token", token);
 
         try {
-            List<DataResult<FamilyAclEntry>> familyAclList = new ArrayList<>(familyList.size());
+            DataResult<Map<String, List<String>>> familyAclList = DataResult.empty();
             InternalGetDataResult<Family> familyDataResult = internalGet(study.getUid(), familyList, INCLUDE_FAMILY_IDS, user, silent);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
@@ -954,13 +954,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 if (!missingMap.containsKey(familyId)) {
                     Family family = familyDataResult.getResults().get(counter);
                     try {
-                        DataResult<FamilyAclEntry> allFamilyAcls;
+                        DataResult<Map<String, List<String>>> allFamilyAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allFamilyAcls = authorizationManager.getFamilyAcl(study.getUid(), family.getUid(), user, member);
                         } else {
                             allFamilyAcls = authorizationManager.getAllFamilyAcls(study.getUid(), family.getUid(), user);
                         }
-                        familyAclList.add(allFamilyAcls);
+                        familyAclList.append(allFamilyAcls);
 
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, family.getId(),
                                 family.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -974,15 +974,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, familyId, missingMap.get(familyId).getErrorMsg());
-                            familyAclList.add(new DataResult<>(familyDataResult.getTime(), Collections.singletonList(event), 0,
-                                    Collections.emptyList(), 0));
+                            familyAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, familyId, missingMap.get(familyId).getErrorMsg());
-                    familyAclList.add(new DataResult<>(familyDataResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    familyAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, familyId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -1000,8 +1000,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public List<DataResult<FamilyAclEntry>> updateAcl(String studyId, List<String> familyStrList, String memberList, AclParams aclParams,
-                                                      String token) throws CatalogException {
+    public DataResult<Map<String, List<String>>> updateAcl(String studyId, List<String> familyStrList, String memberList,
+                                                           AclParams aclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1042,7 +1042,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
-            List<DataResult<FamilyAclEntry>> aclResults;
+            DataResult<Map<String, List<String>>> aclResults;
             switch (aclParams.getAction()) {
                 case SET:
                     aclResults = authorizationManager.setAcls(study.getUid(), familyList.stream().map(Family::getUid)

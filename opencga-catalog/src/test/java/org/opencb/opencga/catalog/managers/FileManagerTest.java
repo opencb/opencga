@@ -702,7 +702,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void getFileIdByString() throws CatalogException {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, sessionIdUser).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, sessionIdUser);
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
                 "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, null, null,
                 sessionIdUser2).first();
@@ -1497,14 +1497,13 @@ public class FileManagerTest extends AbstractManagerTest {
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, filePath.toString(),
                 "", new File.FileStatus(), 10, null, -1, null, null, true, "My content", null, sessionIdUser);
 
-        List<DataResult<FileAclEntry>> queryResults = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
+        DataResult<Map<String, List<String>>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
                 filePath.toString()), "user2", new File.FileAclParams("VIEW", AclParams.Action.SET, null), sessionIdUser);
 
-        assertEquals(3, queryResults.size());
-        for (DataResult<FileAclEntry> queryResult : queryResults) {
-            assertEquals("user2", queryResult.getResults().get(0).getMember());
-            assertEquals(1, queryResult.getResults().get(0).getPermissions().size());
-            assertEquals(FileAclEntry.FilePermissions.VIEW, queryResult.getResults().get(0).getPermissions().iterator().next());
+        assertEquals(3, dataResult.getNumResults());
+        for (Map<String, List<String>> result : dataResult.getResults()) {
+            assertEquals(1, result.get("user2").size());
+            assertEquals(FileAclEntry.FilePermissions.VIEW, result.get("user2").iterator().next());
         }
     }
 

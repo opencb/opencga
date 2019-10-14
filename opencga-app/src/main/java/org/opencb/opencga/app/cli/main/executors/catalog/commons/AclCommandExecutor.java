@@ -27,12 +27,12 @@ import java.io.IOException;
 /**
  * Created by pfurio on 27/07/16.
  */
-public class AclCommandExecutor<T,U> {
+public class AclCommandExecutor<T> {
 
     // We put .replace("/",":") because there are some pathParams such as in files where "/" cannot be sent in the url. Instead, we will
     // change it for :
 
-    public DataResponse<U> acls(AclCommandOptions.AclsCommandOptions aclCommandOptions, CatalogClient<T,U> client)
+    public DataResponse<ObjectMap> acls(AclCommandOptions.AclsCommandOptions aclCommandOptions, CatalogClient<T> client)
             throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);

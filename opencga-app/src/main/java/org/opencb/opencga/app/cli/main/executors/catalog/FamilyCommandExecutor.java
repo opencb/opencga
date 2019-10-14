@@ -17,10 +17,10 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,8 +43,8 @@ import java.util.Map;
 public class FamilyCommandExecutor extends OpencgaCommandExecutor {
 
     private FamilyCommandOptions familyCommandOptions;
-    private AclCommandExecutor<Family, FamilyAclEntry> aclCommandExecutor;
-    private AnnotationCommandExecutor<Family, FamilyAclEntry> annotationCommandExecutor;
+    private AclCommandExecutor<Family> aclCommandExecutor;
+    private AnnotationCommandExecutor<Family> annotationCommandExecutor;
 
     public FamilyCommandExecutor(FamilyCommandOptions familyCommandOptions) {
         super(familyCommandOptions.commonCommandOptions);
@@ -221,7 +220,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
 //                resolveStudy(familyCommandOptions.updateCommandOptions.study), params);
 //    }
 //
-    private DataResponse<FamilyAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = familyCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
 import java.util.*;
@@ -41,8 +40,8 @@ import java.util.*;
 public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
     private SampleCommandOptions samplesCommandOptions;
-    private AclCommandExecutor<Sample, SampleAclEntry> aclCommandExecutor;
-    private AnnotationCommandExecutor<Sample, SampleAclEntry> annotationCommandExecutor;
+    private AclCommandExecutor<Sample> aclCommandExecutor;
+    private AnnotationCommandExecutor<Sample> annotationCommandExecutor;
 
     public SampleCommandExecutor(SampleCommandOptions samplesCommandOptions) {
         super(samplesCommandOptions.commonCommandOptions);
@@ -275,7 +274,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private DataResponse<SampleAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         SampleCommandOptions.SampleAclCommandOptions.AclsUpdateCommandOptions commandOptions =
                 samplesCommandOptions.aclsUpdateCommandOptions;
 

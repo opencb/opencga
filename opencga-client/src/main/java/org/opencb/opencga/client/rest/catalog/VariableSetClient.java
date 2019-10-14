@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.VariableSet;
 
@@ -26,7 +26,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class VariableSetClient extends CatalogClient<VariableSet, VariableSet> {
+public class VariableSetClient extends CatalogClient<VariableSet> {
 
     private static final String VARIABLES_URL = "variableset";
 

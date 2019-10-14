@@ -18,10 +18,10 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
@@ -30,12 +30,9 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.VariableSet;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by imedina on 03/06/16.
@@ -44,7 +41,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private StudyCommandOptions studiesCommandOptions;
-    private AclCommandExecutor<Study, StudyAclEntry> aclCommandExecutor;
+    private AclCommandExecutor<Study> aclCommandExecutor;
 
     public StudyCommandExecutor(StudyCommandOptions studiesCommandOptions) {
         super(studiesCommandOptions.commonCommandOptions);
@@ -388,7 +385,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     }
 
     /************************************************* Acl commands *********************************************************/
-    private DataResponse<StudyAclEntry> getAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> getAcl() throws IOException, CatalogException {
         logger.debug("Get Acl");
         studiesCommandOptions.aclsCommandOptions.study =
                 getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
@@ -398,7 +395,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
     }
 
-    private DataResponse<StudyAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         StudyCommandOptions.AclsUpdateCommandOptions commandOptions = studiesCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap bodyParams = new ObjectMap();

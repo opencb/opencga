@@ -1016,7 +1016,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<IndividualAclEntry>> getAcls(String studyId, List<String> individualList, String member, boolean silent,
+    public DataResult<Map<String, List<String>>> getAcls(String studyId, List<String> individualList, String member, boolean silent,
                                                         String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -1029,7 +1029,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .append("silent", silent)
                 .append("token", token);
         try {
-            List<DataResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualList.size());
+            DataResult<Map<String, List<String>>> individualAclList = DataResult.empty();
             InternalGetDataResult<Individual> queryResult = internalGet(study.getUid(), individualList, INCLUDE_INDIVIDUAL_IDS, user,
                     silent);
 
@@ -1043,13 +1043,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 if (!missingMap.containsKey(individualId)) {
                     Individual individual = queryResult.getResults().get(counter);
                     try {
-                        DataResult<IndividualAclEntry> allIndividualAcls;
+                        DataResult<Map<String, List<String>>> allIndividualAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allIndividualAcls = authorizationManager.getIndividualAcl(study.getUid(), individual.getUid(), user, member);
                         } else {
                             allIndividualAcls = authorizationManager.getAllIndividualAcls(study.getUid(), individual.getUid(), user);
                         }
-                        individualAclList.add(allIndividualAcls);
+                        individualAclList.append(allIndividualAcls);
 
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.INDIVIDUAL,
                                 individual.getId(), individual.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -1062,15 +1062,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, individualId, missingMap.get(individualId).getErrorMsg());
-                            individualAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                                    Collections.emptyList(), 0));
+                            individualAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, individualId, missingMap.get(individualId).getErrorMsg());
-                    individualAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    individualAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.INDIVIDUAL, individualId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -1088,7 +1088,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    public List<DataResult<IndividualAclEntry>> updateAcl(String studyId, List<String> individualStrList, String memberList,
+    public DataResult<Map<String, List<String>>> updateAcl(String studyId, List<String> individualStrList, String memberList,
                                                           Individual.IndividualAclParams aclParams, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
@@ -1157,7 +1157,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 sampleUids = getSampleUidsFromIndividuals(study.getUid(), individualUids);
             }
 
-            List<DataResult<IndividualAclEntry>> queryResults;
+            DataResult<Map<String, List<String>>> queryResults;
             switch (aclParams.getAction()) {
                 case SET:
                     queryResults = authorizationManager.setAcls(study.getUid(), individualUids, sampleUids, members, permissions,

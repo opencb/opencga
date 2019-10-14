@@ -924,9 +924,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<ClinicalAnalysisAclEntry>> getAcls(String studyStr, List<String> clinicalList, String member, boolean silent,
+    public DataResult<Map<String, List<String>>> getAcls(String studyStr, List<String> clinicalList, String member, boolean silent,
                                                               String sessionId) throws CatalogException {
-        List<DataResult<ClinicalAnalysisAclEntry>> clinicalAclList = new ArrayList<>(clinicalList.size());
+        DataResult<Map<String, List<String>>> clinicalAclList = DataResult.empty();
         String user = userManager.getUserId(sessionId);
         Study study = studyManager.resolveId(studyStr, user);
 
@@ -942,7 +942,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         for (String clinicalAnalysis : clinicalList) {
             if (!missingMap.containsKey(clinicalAnalysis)) {
                 try {
-                    DataResult<ClinicalAnalysisAclEntry> allClinicalAcls;
+                    DataResult<Map<String, List<String>>> allClinicalAcls;
                     if (StringUtils.isNotEmpty(member)) {
                         allClinicalAcls = authorizationManager.getClinicalAnalysisAcl(study.getUid(),
                                 queryResult.getResults().get(counter).getUid(), user, member);
@@ -950,27 +950,27 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         allClinicalAcls = authorizationManager.getAllClinicalAnalysisAcls(study.getUid(),
                                 queryResult.getResults().get(counter).getUid(), user);
                     }
-                    clinicalAclList.add(allClinicalAcls);
+                    clinicalAclList.append(allClinicalAcls);
                 } catch (CatalogException e) {
                     if (!silent) {
                         throw e;
                     } else {
                         Event event = new Event(Event.Type.ERROR, clinicalAnalysis, missingMap.get(clinicalAnalysis).getErrorMsg());
-                        clinicalAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                                Collections.emptyList(), 0));
+                        clinicalAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                Collections.singletonList(new HashMap()), 0));
                     }
                 }
                 counter += 1;
             } else {
                 Event event = new Event(Event.Type.ERROR, clinicalAnalysis, missingMap.get(clinicalAnalysis).getErrorMsg());
-                clinicalAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                        Collections.emptyList(), 0));
+                clinicalAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                        Collections.singletonList(new HashMap()), 0));
             }
         }
         return clinicalAclList;
     }
 
-    public List<DataResult<ClinicalAnalysisAclEntry>> updateAcl(String studyStr, List<String> clinicalList, String memberIds,
+    public DataResult<Map<String, List<String>>> updateAcl(String studyStr, List<String> clinicalList, String memberIds,
                                                                 AclParams clinicalAclParams, String sessionId) throws CatalogException {
         if (clinicalList == null || clinicalList.isEmpty()) {
             throw new CatalogException("Update ACL: Missing 'clinicalAnalysis' parameter");

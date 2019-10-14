@@ -16,15 +16,14 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -32,7 +31,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
+public class CohortClient extends AnnotationClient<Cohort> {
 
     private static final String COHORT_URL = "cohorts";
 
@@ -41,7 +40,6 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
 
         this.category = COHORT_URL;
         this.clazz = Cohort.class;
-        this.aclClass = CohortAclEntry.class;
     }
 
     public DataResponse<Cohort> create(String studyId, @Nullable String variableSetId, @Nullable String variable, ObjectMap bodyParams)

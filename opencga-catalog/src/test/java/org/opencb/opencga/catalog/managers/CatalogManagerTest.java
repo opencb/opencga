@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
 import javax.naming.NamingException;
 import java.io.IOException;
@@ -248,10 +247,10 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "group_cancer_some_thing_else",
                 "test", sessionIdUser);
-        List<DataResult<StudyAclEntry>> permissions = catalogManager.getStudyManager().updateAcl(
+        DataResult<Map<String, List<String>>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
                 new Study.StudyAclParams("", AclParams.Action.SET, "view_only"), sessionIdUser);
-        assertEquals("@group_cancer_some_thing_else", permissions.get(0).first().getMember());
+        assertTrue(permissions.first().containsKey("@group_cancer_some_thing_else"));
 
         String token = catalogManager.getUserManager().login("test", "test");
         DataResult<Study> studyDataResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
@@ -605,16 +604,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
-        List<DataResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
+        DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, sessionIdUser);
-        assertEquals(sampleIds.size(), sampleAclResult.size());
-        for (DataResult<SampleAclEntry> sampleAclEntryDataResult : sampleAclResult) {
-            assertEquals(2, sampleAclEntryDataResult.getNumResults());
-            for (SampleAclEntry sampleAclEntry : sampleAclEntryDataResult.getResults()) {
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.UPDATE));
-                assertTrue(Arrays.asList("user2", "user3").contains(sampleAclEntry.getMember()));
-            }
+        assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
+        for (Map<String, List<String>> result : sampleAclResult.getResults()) {
+            assertEquals(2, result.size());
+            assertTrue(result.keySet().containsAll(Arrays.asList("user2", "user3")));
+            assertTrue(result.get("user2").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
+                    SampleAclEntry.SamplePermissions.UPDATE.name())));
+            assertTrue(result.get("user3").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
+                    SampleAclEntry.SamplePermissions.UPDATE.name())));
         }
 
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
@@ -625,7 +624,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // Get sample permissions for those members
         for (Sample sample : sampleDataResult.getResults()) {
             long sampleUid = sample.getUid();
-            DataResult<SampleAclEntry> sampleAcl =
+            DataResult<Map<String, List<String>>> sampleAcl =
                     catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sampleUid, "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
             sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sampleUid, "user", "user3");
@@ -652,16 +651,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams("VIEW,UPDATE", AclParams.Action.SET, null, null, null);
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
-        List<DataResult<SampleAclEntry>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
+        DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
                 sampleIds, "user2,user3", sampleAclParams, sessionIdUser);
-        assertEquals(sampleIds.size(), sampleAclResult.size());
-        for (DataResult<SampleAclEntry> sampleAclEntryDataResult : sampleAclResult) {
-            assertEquals(2, sampleAclEntryDataResult.getNumResults());
-            for (SampleAclEntry sampleAclEntry : sampleAclEntryDataResult.getResults()) {
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.UPDATE));
-                assertTrue(Arrays.asList("user2", "user3").contains(sampleAclEntry.getMember()));
-            }
+        assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
+        for (Map<String, List<String>> result : sampleAclResult.getResults()) {
+            assertEquals(2, result.size());
+            assertTrue(result.keySet().containsAll(Arrays.asList("user2", "user3")));
+            assertTrue(result.get("user2").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
+                    SampleAclEntry.SamplePermissions.UPDATE)));
+            assertTrue(result.get("user3").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
+                    SampleAclEntry.SamplePermissions.UPDATE)));
         }
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members",
@@ -670,7 +669,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String userId1 = catalogManager.getUserManager().getUserId(sessionIdUser);
         Study study3 = catalogManager.getStudyManager().resolveId(studyFqn, userId1);
 
-        DataResult<StudyAclEntry> studyAcl = catalogManager.getAuthorizationManager().getStudyAcl(userId1, study3.getUid(), "user2");
+        DataResult<Map<String, List<String>>> studyAcl = catalogManager.getAuthorizationManager()
+                .getStudyAcl(userId1, study3.getUid(), "user2");
         assertEquals(0, studyAcl.getNumResults());
         String userId = catalogManager.getUserManager().getUserId(sessionIdUser);
         Study study1 = catalogManager.getStudyManager().resolveId(studyFqn, userId);
@@ -684,7 +684,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         for (Sample sample : sampleDataResult.getResults()) {
-            DataResult<SampleAclEntry> sampleAcl =
+            DataResult<Map<String, List<String>>> sampleAcl =
                     catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sample.getUid(), "user", "user2");
             assertEquals(0, sampleAcl.getNumResults());
             sampleAcl = catalogManager.getAuthorizationManager().getSampleAcl(studyUid, sample.getUid(), "user", "user3");

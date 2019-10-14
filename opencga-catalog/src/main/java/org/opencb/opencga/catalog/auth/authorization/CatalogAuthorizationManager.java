@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -586,13 +587,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAllStudyAcls(String userId, long studyId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(studyId, null, Entity.STUDY);
     }
 
     @Override
-    public DataResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -615,13 +616,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<SampleAclEntry> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(sampleId, null, Entity.SAMPLE);
     }
 
     @Override
-    public DataResult<SampleAclEntry> getSampleAcl(long studyId, long sampleId, String userId, String member) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getSampleAcl(long studyId, long sampleId, String userId, String member)
+            throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -649,7 +651,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<FileAclEntry> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
+    public DataResult<Map<String, List<String>>> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
             throws CatalogException {
         if (checkPermission) {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -658,7 +660,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<FileAclEntry> getFileAcl(long studyId, long fileId, String userId, String member) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getFileAcl(long studyId, long fileId, String userId, String member)
+            throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -681,13 +684,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<IndividualAclEntry> getAllIndividualAcls(long studyId, long individualId, String userId) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAllIndividualAcls(long studyId, long individualId, String userId)
+            throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(individualId, null, Entity.INDIVIDUAL);
     }
 
     @Override
-    public DataResult<IndividualAclEntry> getIndividualAcl(long studyId, long individualId, String userId, String member)
+    public DataResult<Map<String, List<String>>> getIndividualAcl(long studyId, long individualId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -711,13 +715,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<CohortAclEntry> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(cohortId, null, Entity.COHORT);
     }
 
     @Override
-    public DataResult<CohortAclEntry> getCohortAcl(long studyId, long cohortId, String userId, String member) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getCohortAcl(long studyId, long cohortId, String userId, String member)
+            throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -740,13 +745,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<PanelAclEntry> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(panelId, null, Entity.DISEASE_PANEL);
     }
 
     @Override
-    public DataResult<PanelAclEntry> getPanelAcl(long studyId, long panelId, String userId, String member) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getPanelAcl(long studyId, long panelId, String userId, String member)
+            throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -758,13 +764,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<JobAclEntry> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(jobId, null, Entity.JOB);
     }
 
     @Override
-    public DataResult<JobAclEntry> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -787,13 +793,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<FamilyAclEntry> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(familyId, null, Entity.FAMILY);
     }
 
     @Override
-    public DataResult<FamilyAclEntry> getFamilyAcl(long studyId, long familyId, String userId, String member) throws CatalogException {
+    public DataResult<Map<String, List<String>>> getFamilyAcl(long studyId, long familyId, String userId, String member)
+            throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -805,14 +812,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<ClinicalAnalysisAclEntry> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+    public DataResult<Map<String, List<String>>> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(clinicalAnalysisId, null, Entity.CLINICAL_ANALYSIS);
     }
 
     @Override
-    public DataResult<ClinicalAnalysisAclEntry> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
+    public DataResult<Map<String, List<String>>> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -842,106 +849,92 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public List<DataResult<StudyAclEntry>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    public DataResult<Map<String, List<String>>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
         aclDBAdaptor.setToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
-    public List<DataResult<StudyAclEntry>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    public DataResult<Map<String, List<String>>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
         aclDBAdaptor.addToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
-    public List<DataResult<StudyAclEntry>> removeStudyAcls(List<Long> studyIds, List<String> members, @Nullable List<String> permissions)
-            throws CatalogException {
+    public DataResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members,
+                                                                 @Nullable List<String> permissions) throws CatalogException {
         aclDBAdaptor.removeFromMembers(studyIds, members, permissions, Entity.STUDY);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
-    private <E extends AbstractAclEntry> List<DataResult<E>> getAcls(List<Long> ids, List<String> members, Entity entity)
-            throws CatalogException {
+    private DataResult<Map<String, List<String>>> getAcls(List<Long> ids, List<String> members, Entity entity) throws CatalogException {
         return aclDBAdaptor.get(ids, members, entity);
     }
 
-    public <E extends AbstractAclEntry> List<DataResult<E>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
-                                                                     List<String> permissions, Entity entity, Entity entity2)
-            throws CatalogException {
+    public DataResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+                                                         List<String> permissions, Entity entity, Entity entity2) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
-            logger.warn("Missing identifiers to set acls");
-            return Collections.emptyList();
+            throw new CatalogException("Missing identifiers to set acls");
         }
 
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.setToMembers(studyId, ids, ids2, members, permissions, entity, entity2);
 
-        return getAclResultList(ids, members, entity, startTime);
+        return getAclResult(ids, members, entity, startTime);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<DataResult<E>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
-                                                                     List<String> permissions, Entity entity, Entity entity2)
-            throws CatalogException {
+    public DataResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+                                                         List<String> permissions, Entity entity, Entity entity2) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
-            logger.warn("Missing identifiers to add acls");
-            return Collections.emptyList();
+            throw new CatalogException("Missing identifiers to add acls");
         }
 
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.addToMembers(studyId, ids, ids2, members, permissions, entity, entity2);
-
-        return getAclResultList(ids, members, entity, startTime);
+        return getAclResult(ids, members, entity, startTime);
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<DataResult<E>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
-                                                                        @Nullable List<String> permissions, Entity entity, Entity entity2)
+    public DataResult<Map<String, List<String>>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
+                                                            @Nullable List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
-            logger.warn("Missing identifiers to remove acls");
-            return Collections.emptyList();
+            throw new CatalogException("Missing identifiers to remove acls");
         }
 
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.removeFromMembers(ids, ids2, members, permissions, entity, entity2);
-
-        return getAclResultList(ids, members, entity, startTime);
+        return getAclResult(ids, members, entity, startTime);
     }
 
-    <E extends AbstractAclEntry> List<DataResult<E>> getAclResultList(List<Long> ids, List<String> members, Entity entity, long startTime)
+    DataResult<Map<String, List<String>>> getAclResult(List<Long> ids, List<String> members, Entity entity, long startTime)
             throws CatalogException {
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
-        List<DataResult<E>> aclResultList = getAcls(ids, members, entity);
+        DataResult<Map<String, List<String>>> result = getAcls(ids, members, entity);
+        result.setTime(result.getTime() + dbTime);
 
-        for (DataResult<E> aclEntryDataResult : aclResultList) {
-            aclEntryDataResult.setTime(aclEntryDataResult.getTime() + dbTime);
-        }
-        return aclResultList;
+        return result;
     }
 
     @Override
-    public <E extends AbstractAclEntry> List<DataResult<E>> replicateAcls(long studyId, List<Long> ids, List<E> aclEntries,
-                                                                           Entity entity) throws CatalogException {
+    public DataResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
+                                                               Entity entity) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
-            logger.warn("Missing identifiers to set acls");
-            return Collections.emptyList();
+            throw new CatalogDBException("Missing identifiers to set acls");
         }
 
         long startTime = System.currentTimeMillis();
         aclDBAdaptor.setAcls(ids, aclEntries, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
-        List<DataResult<E>> aclResultList = getAcls(ids, null, entity);
+        DataResult result = getAcls(ids, null, entity);
+        result.setTime(result.getTime() + dbTime);
 
-        for (DataResult<E> aclEntryDataResult : aclResultList) {
-            aclEntryDataResult.setTime(aclEntryDataResult.getTime() + dbTime);
-        }
-
-        return aclResultList;
+        return result;
     }
 
     @Override

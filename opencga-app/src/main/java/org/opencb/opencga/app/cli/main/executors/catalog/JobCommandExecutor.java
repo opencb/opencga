@@ -18,10 +18,10 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,7 +41,7 @@ import java.util.List;
 public class JobCommandExecutor extends OpencgaCommandExecutor {
 
     private JobCommandOptions jobsCommandOptions;
-    private AclCommandExecutor<Job, JobAclEntry> aclCommandExecutor;
+    private AclCommandExecutor<Job> aclCommandExecutor;
 
     public JobCommandExecutor(JobCommandOptions jobsCommandOptions) {
         super(jobsCommandOptions.commonCommandOptions);
@@ -198,7 +197,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private DataResponse<JobAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = jobsCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

@@ -17,9 +17,9 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Project;
@@ -31,7 +31,7 @@ import java.io.UncheckedIOException;
 /**
  * Created by imedina on 04/05/16.
  */
-public class UserClient extends CatalogClient<User, User> {
+public class UserClient extends CatalogClient<User> {
 
     private static final String USERS_URL = "users";
 

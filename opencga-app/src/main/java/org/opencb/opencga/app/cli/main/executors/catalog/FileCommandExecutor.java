@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 
 import java.io.IOException;
 import java.net.URI;
@@ -44,8 +43,8 @@ import java.util.List;
 public class FileCommandExecutor extends OpencgaCommandExecutor {
 
     private FileCommandOptions filesCommandOptions;
-    private AclCommandExecutor<File, FileAclEntry> aclCommandExecutor;
-    private AnnotationCommandExecutor<File, FileAclEntry> annotationCommandExecutor;
+    private AclCommandExecutor<File> aclCommandExecutor;
+    private AnnotationCommandExecutor<File> annotationCommandExecutor;
 
     public FileCommandExecutor(FileCommandOptions filesCommandOptions) {
         super(filesCommandOptions.commonCommandOptions);
@@ -444,7 +443,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.groupByCommandOptions.fields, queryOptions);
     }
 
-    private DataResponse<FileAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         FileCommandOptions.FileAclCommandOptions.AclsUpdateCommandOptions commandOptions = filesCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

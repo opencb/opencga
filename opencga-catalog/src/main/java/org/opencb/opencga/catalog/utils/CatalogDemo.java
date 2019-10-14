@@ -112,10 +112,10 @@ public final class CatalogDemo {
                 sessionId);
         //        // @members will have the role "analyst"
         Study.StudyAclParams aclParams1 = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "@analyst", aclParams1, sessionId).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "@analyst", aclParams1, sessionId);
         //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "locked");
-        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "*", aclParams, sessionId).get(0);
+        catalogManager.getStudyManager().updateAcl(Arrays.asList(studyId), "*", aclParams, sessionId);
     }
 
 }

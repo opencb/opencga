@@ -915,8 +915,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<SampleAclEntry>> getAcls(String studyId, List<String> sampleList, String member, boolean silent, String token)
-            throws CatalogException {
+    public DataResult<Map<String, List<String>>> getAcls(String studyId, List<String> sampleList, String member, boolean silent,
+                                                         String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -929,7 +929,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("token", token);
 
         try {
-            List<DataResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleList.size());
+            DataResult<Map<String, List<String>>> sampleAclList = DataResult.empty();
 
             InternalGetDataResult<Sample> queryResult = internalGet(study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, user, silent);
 
@@ -943,13 +943,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 if (!missingMap.containsKey(sampleId)) {
                     Sample sample = queryResult.getResults().get(counter);
                     try {
-                        DataResult<SampleAclEntry> allSampleAcls;
+                        DataResult<Map<String, List<String>>> sampleAcls;
                         if (StringUtils.isNotEmpty(member)) {
-                            allSampleAcls = authorizationManager.getSampleAcl(study.getUid(), sample.getUid(), user, member);
+                            sampleAcls = authorizationManager.getSampleAcl(study.getUid(), sample.getUid(), user, member);
                         } else {
-                            allSampleAcls = authorizationManager.getAllSampleAcls(study.getUid(), sample.getUid(), user);
+                            sampleAcls = authorizationManager.getAllSampleAcls(study.getUid(), sample.getUid(), user);
                         }
-                        sampleAclList.add(allSampleAcls);
+                        sampleAclList.append(sampleAcls);
 
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),
                                 sample.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -963,15 +963,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg());
-                            sampleAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                                    Collections.emptyList(), 0));
+                            sampleAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg());
-                    sampleAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    sampleAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.SAMPLE, sampleId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -990,7 +990,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
-    public List<DataResult<SampleAclEntry>> updateAcl(String studyId, List<String> sampleStringList, String memberList,
+    public DataResult<Map<String, List<String>>> updateAcl(String studyId, List<String> sampleStringList, String memberList,
                                                       Sample.SampleAclParams sampleAclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -1092,7 +1092,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
-        List<DataResult<SampleAclEntry>> aclResultList = new ArrayList<>(sampleList.size());
+        DataResult<Map<String, List<String>>> aclResultList = DataResult.empty();
         int numProcessed = 0;
         do {
             List<Sample> batchSampleList = new ArrayList<>();
@@ -1111,7 +1111,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     individualUids = getIndividualsUidsFromSampleUids(study.getUid(), sampleUids);
                 }
 
-                List<DataResult<SampleAclEntry>> queryResults;
+                DataResult<Map<String, List<String>>> queryResults;
                 switch (sampleAclParams.getAction()) {
                     case SET:
                         queryResults = authorizationManager.setAcls(study.getUid(), sampleUids, individualUids, members, permissions,
@@ -1131,7 +1131,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     default:
                         throw new CatalogException("Unexpected error occurred. No valid action found.");
                 }
-                aclResultList.addAll(queryResults);
+                aclResultList.append(queryResults);
 
                 for (Sample sample : batchSampleList) {
                     auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.SAMPLE, sample.getId(),

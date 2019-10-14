@@ -24,14 +24,13 @@ import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by swaathi on 10/05/16.
  */
-public class FileClient extends AnnotationClient<File, FileAclEntry> {
+public class FileClient extends AnnotationClient<File> {
 
     private static final String FILES_URL = "files";
 
@@ -40,7 +39,6 @@ public class FileClient extends AnnotationClient<File, FileAclEntry> {
 
         this.category = FILES_URL;
         this.clazz = File.class;
-        this.aclClass = FileAclEntry.class;
     }
 
     public DataResponse<File> createFolder(String studyId, String path, ObjectMap params) throws IOException {

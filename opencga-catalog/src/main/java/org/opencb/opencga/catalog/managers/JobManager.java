@@ -835,7 +835,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<JobAclEntry>> getAcls(String studyId, List<String> jobList, String member, boolean silent, String token)
+    public DataResult<Map<String, List<String>>> getAcls(String studyId, List<String> jobList, String member, boolean silent, String token)
             throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -848,7 +848,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("silent", silent)
                 .append("token", token);
         try {
-            List<DataResult<JobAclEntry>> jobAclList = new ArrayList<>(jobList.size());
+            DataResult<Map<String, List<String>>> jobAclList = DataResult.empty();
             InternalGetDataResult<Job> queryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, silent);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
@@ -861,13 +861,13 @@ public class JobManager extends ResourceManager<Job> {
                 if (!missingMap.containsKey(jobId)) {
                     Job job = queryResult.getResults().get(counter);
                     try {
-                        DataResult<JobAclEntry> allJobAcls;
+                        DataResult<Map<String, List<String>>> allJobAcls;
                         if (StringUtils.isNotEmpty(member)) {
                             allJobAcls = authorizationManager.getJobAcl(study.getUid(), job.getUid(), user, member);
                         } else {
                             allJobAcls = authorizationManager.getAllJobAcls(study.getUid(), job.getUid(), user);
                         }
-                        jobAclList.add(allJobAcls);
+                        jobAclList.append(allJobAcls);
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.JOB, job.getId(),
                                 job.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
@@ -879,15 +879,15 @@ public class JobManager extends ResourceManager<Job> {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, jobId, missingMap.get(jobId).getErrorMsg());
-                            jobAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                                    Collections.emptyList(), 0));
+                            jobAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, jobId, missingMap.get(jobId).getErrorMsg());
-                    jobAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    jobAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.JOB, jobId, "", study.getId(),
                             study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -905,7 +905,7 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public List<DataResult<JobAclEntry>> updateAcl(String studyId, List<String> jobStrList, String memberList, AclParams aclParams,
+    public DataResult<Map<String, List<String>>> updateAcl(String studyId, List<String> jobStrList, String memberList, AclParams aclParams,
                                                    String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
@@ -947,7 +947,7 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
-            List<DataResult<JobAclEntry>> queryResultList;
+            DataResult<Map<String, List<String>>> queryResultList;
             switch (aclParams.getAction()) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), jobList.stream().map(Job::getUid)

@@ -1088,7 +1088,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     // **************************   ACLs  ******************************** //
-    public List<DataResult<PanelAclEntry>> getAcls(String studyId, List<String> panelList, String member, boolean silent,
+    public DataResult<Map<String, List<String>>> getAcls(String studyId, List<String> panelList, String member, boolean silent,
                                                    String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -1101,7 +1101,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("silent", silent)
                 .append("token", token);
         try {
-            List<DataResult<PanelAclEntry>> panelAclList = new ArrayList<>(panelList.size());
+            DataResult<Map<String, List<String>>> panelAclList = DataResult.empty();
             InternalGetDataResult<Panel> queryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, silent);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
@@ -1114,14 +1114,13 @@ public class PanelManager extends ResourceManager<Panel> {
                 if (!missingMap.containsKey(panelId)) {
                     Panel panel = queryResult.getResults().get(counter);
                     try {
-                        DataResult<PanelAclEntry> allPanelAcls;
+                        DataResult<Map<String, List<String>>> allPanelAcls;
                         if (StringUtils.isNotEmpty(member)) {
-                            allPanelAcls =
-                                    authorizationManager.getPanelAcl(study.getUid(), panel.getUid(), user, member);
+                            allPanelAcls = authorizationManager.getPanelAcl(study.getUid(), panel.getUid(), user, member);
                         } else {
                             allPanelAcls = authorizationManager.getAllPanelAcls(study.getUid(), panel.getUid(), user);
                         }
-                        panelAclList.add(allPanelAcls);
+                        panelAclList.append(allPanelAcls);
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panel.getId(),
                                 panel.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
@@ -1134,15 +1133,15 @@ public class PanelManager extends ResourceManager<Panel> {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, panelId, missingMap.get(panelId).getErrorMsg());
-                            panelAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                                    Collections.emptyList(), 0));
+                            panelAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
                         }
                     }
                     counter += 1;
                 } else {
                     Event event = new Event(Event.Type.ERROR, panelId, missingMap.get(panelId).getErrorMsg());
-                    panelAclList.add(new DataResult<>(queryResult.getTime(), Collections.singletonList(event), 0,
-                            Collections.emptyList(), 0));
+                    panelAclList.append(new DataResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
 
                     auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panelId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
@@ -1160,8 +1159,8 @@ public class PanelManager extends ResourceManager<Panel> {
         }
     }
 
-    public List<DataResult<PanelAclEntry>> updateAcl(String studyId, List<String> panelStrList, String memberList, AclParams aclParams,
-                                                     String token) throws CatalogException {
+    public DataResult<Map<String, List<String>>> updateAcl(String studyId, List<String> panelStrList, String memberList,
+                                                           AclParams aclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1201,7 +1200,7 @@ public class PanelManager extends ResourceManager<Panel> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
-            List<DataResult<PanelAclEntry>> queryResultList;
+            DataResult<Map<String, List<String>>> queryResultList;
             switch (aclParams.getAction()) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), panelDataResult.getResults().stream().map(Panel::getUid)

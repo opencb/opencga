@@ -33,7 +33,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,8 +46,8 @@ import java.util.Map;
 public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
     private IndividualCommandOptions individualsCommandOptions;
-    private AclCommandExecutor<Individual, IndividualAclEntry> aclCommandExecutor;
-    private AnnotationCommandExecutor<Individual, IndividualAclEntry> annotationCommandExecutor;
+    private AclCommandExecutor<Individual> aclCommandExecutor;
+    private AnnotationCommandExecutor<Individual> annotationCommandExecutor;
 
     public IndividualCommandExecutor(IndividualCommandOptions individualsCommandOptions) {
         super(individualsCommandOptions.commonCommandOptions);
@@ -328,7 +327,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().search(query, options);
     }
 
-    private DataResponse<IndividualAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         IndividualCommandOptions.IndividualAclCommandOptions.AclsUpdateCommandOptions commandOptions =
                 individualsCommandOptions.aclsUpdateCommandOptions;
 
