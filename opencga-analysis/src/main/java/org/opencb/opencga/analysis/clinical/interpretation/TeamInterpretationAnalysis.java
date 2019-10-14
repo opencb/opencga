@@ -155,11 +155,12 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         }
 
         // Step 3: secondary findings, if clinical consent is TRUE
-        List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, sampleList, creator);
+        List<ReportedVariant> secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis, sampleList, studyId,
+                creator, sessionId);
 
         // Reported low coverages management
         List<ReportedLowCoverage> reportedLowCoverages = null;
-        if (options.getBoolean(INCLUDE_LOW_COVERAGE_PARAM, false)) {
+        if (options.getBoolean(ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, false)) {
             reportedLowCoverages = clinicalInterpretationManager.getReportedLowCoverage(clinicalAnalysis, diseasePanels, studyId,
                     sessionId);
         }
@@ -200,7 +201,7 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
             } else {
                 Map<String, List<Variant>> chVariants = clinicalInterpretationManager.getCompoundHeterozigousVariants(clinicalAnalysisId,
                         studyId, query, sessionId);
-                reportedVariants = getCompoundHeterozygousReportedVariants(chVariants, creator);
+                reportedVariants = ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariants, creator);
             }
         } else {
             reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResult());

@@ -200,12 +200,13 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
         }
 
         // Add compound heterozyous variants
-        primaryFindings.addAll(getCompoundHeterozygousReportedVariants(chVariantMap, creator));
+        primaryFindings.addAll(ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariantMap, creator));
         primaryFindings = creator.mergeReportedVariants(primaryFindings);
 
 
         // Secondary findings, if clinical consent is TRUE
-        List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, new ArrayList<>(sampleMap.keySet()), creator);
+        List<ReportedVariant> secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis,
+                new ArrayList<>(sampleMap.keySet()), studyId, creator, sessionId);
 
         logger.debug("Reported variant size: {}", primaryFindings.size());
 

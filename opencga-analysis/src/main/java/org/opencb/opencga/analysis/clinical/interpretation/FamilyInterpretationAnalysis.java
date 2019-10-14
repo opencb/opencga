@@ -16,17 +16,9 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
 
 public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysis {
 
@@ -35,24 +27,9 @@ public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysi
     @Deprecated
     protected final static String SEPARATOR = "__";
 
-    public final static String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
-    public final static String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
-
     public FamilyInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds, ObjectMap options,
                                         String opencgaHome, String sessionId) {
         super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
         this.diseasePanelIds = diseasePanelIds;
-    }
-
-    protected List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
-                                                                            ReportedVariantCreator creator)
-            throws InterpretationAnalysisException {
-        // Compound heterozygous management
-        // Create transcript - reported variant map from transcript - variant
-        Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
-        for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
-            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
-        }
-        return creator.groupCHVariants(reportedVariantMap);
     }
 }

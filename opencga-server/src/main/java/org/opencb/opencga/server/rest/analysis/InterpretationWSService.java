@@ -24,8 +24,10 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.oskar.analysis.result.AnalysisResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -735,8 +737,8 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "TEAM interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT),
+            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
     })
     public Response team(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
@@ -782,8 +784,8 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "GEL Tiering interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT),
+            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
     })
     public Response tiering(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
@@ -836,10 +838,10 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
             // Interpretation filters
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT),
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.SKIP_DIAGNOSTIC_VARIANTS_PARAM, value = "Skip diagnostic variants", dataType = "boolean", paramType = "query", defaultValue = "false"),
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, value = "Skip variants without tier assigned", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
+            @ApiImplicitParam(name = ClinicalUtils.SKIP_DIAGNOSTIC_VARIANTS_PARAM, value = "Skip diagnostic variants", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM, value = "Skip variants without tier assigned", dataType = "boolean", paramType = "query", defaultValue = "false"),
 
             // Variant filters
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
@@ -924,13 +926,13 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = VariantAnalysisWSService.getVariantQuery(queryOptions);
             ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
-            customAnalysisOptions.put(FamilyInterpretationAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, false);
+            customAnalysisOptions.put(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM, false);
 
             // Execute custom analysis
             CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, studyId, query,
                     customAnalysisOptions, opencgaHome.toString(), sessionId);
-            InterpretationResult interpretationResult = customAnalysis.compute();
-            return createAnalysisOkResponse(interpretationResult);
+            AnalysisResult result = customAnalysis.execute();
+            return null; //createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -941,8 +943,8 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "Cancer Tiering interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
-            @ApiImplicitParam(name = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT),
+            @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
+            @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
     })
     public Response cancerTiering(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
@@ -953,11 +955,11 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             ObjectMap options = new ObjectMap();
 
-            String param = FamilyInterpretationAnalysis.INCLUDE_LOW_COVERAGE_PARAM;
+            String param = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM;
             options.put(param, queryOptions.getBoolean(param, false));
 
-            param = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM;
-            options.put(param, queryOptions.getInt(param, FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT));
+            param = ClinicalUtils.MAX_LOW_COVERAGE_PARAM;
+            options.put(param, queryOptions.getInt(param, ClinicalUtils.LOW_COVERAGE_DEFAULT));
 
             String dataDir = configuration.getDataDir();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
@@ -1038,16 +1040,16 @@ public class InterpretationWSService extends AnalysisWSService {
         String param;
         ObjectMap analysisOptions = new ObjectMap(queryOptions);
 
-        param = FamilyInterpretationAnalysis.INCLUDE_LOW_COVERAGE_PARAM;
+        param = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM;
         analysisOptions.put(param, queryOptions.getBoolean(param, false));
 
-        param = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM;
-        analysisOptions.put(param, queryOptions.getInt(param, FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT));
+        param = ClinicalUtils.MAX_LOW_COVERAGE_PARAM;
+        analysisOptions.put(param, queryOptions.getInt(param, ClinicalUtils.LOW_COVERAGE_DEFAULT));
 
-        param = FamilyInterpretationAnalysis.SKIP_DIAGNOSTIC_VARIANTS_PARAM;
+        param = ClinicalUtils.SKIP_DIAGNOSTIC_VARIANTS_PARAM;
         analysisOptions.put(param, queryOptions.getBoolean(param, true));
 
-        param = FamilyInterpretationAnalysis.SKIP_UNTIERED_VARIANTS_PARAM;
+        param = ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM;
         analysisOptions.put(param, queryOptions.getBoolean(param, true));
 
         return analysisOptions;

@@ -16,17 +16,11 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.OpenCgaClinicalAnalysis;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.ClinicalConsent;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -38,20 +32,6 @@ public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis {
 
     public InterpretationAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
         super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
-    }
-
-    protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
-                                                         ReportedVariantCreator creator) throws Exception {
-        List<ReportedVariant> secondaryFindings = null;
-        if (clinicalAnalysis.getConsent() != null
-                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-            List<Variant> variants = clinicalInterpretationManager.getSecondaryFindings(sampleNames.get(0), clinicalAnalysisId, studyId,
-                    sessionId);
-            if (CollectionUtils.isNotEmpty(variants)) {
-                secondaryFindings = creator.createSecondaryFindings(variants);
-            }
-        }
-        return secondaryFindings;
     }
 
     protected void addGenotypeFilter(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {

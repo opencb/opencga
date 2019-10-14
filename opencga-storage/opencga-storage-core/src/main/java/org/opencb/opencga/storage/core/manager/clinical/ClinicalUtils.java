@@ -3,8 +3,12 @@ package org.opencb.opencga.storage.core.manager.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -17,7 +21,16 @@ import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.util.*;
 
+import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
+
 public class ClinicalUtils {
+
+    public static final String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
+    public static final String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
+    public static final String SKIP_DIAGNOSTIC_VARIANTS_PARAM = "skipDiagnosticVariants";
+    public static final String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
+    public static final int LOW_COVERAGE_DEFAULT = 20;
+    public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
 
     public static ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, CatalogManager catalogManager,
                                                        String sessionId) throws AnalysisException, CatalogException {
@@ -261,5 +274,17 @@ public class ClinicalUtils {
         if (pedigree.getProband().getMother() != null && membersWithoutSamples.contains(pedigree.getProband().getMother().getId())) {
             pedigree.getProband().setMother(null);
         }
+    }
+
+    public static List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
+                                                                         ReportedVariantCreator creator)
+            throws InterpretationAnalysisException {
+        // Compound heterozygous management
+        // Create transcript - reported variant map from transcript - variant
+        Map<String, List<ReportedVariant>> reportedVariantMap = new HashMap<>();
+        for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
+            reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
+        }
+        return creator.groupCHVariants(reportedVariantMap);
     }
 }

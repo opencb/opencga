@@ -11,11 +11,6 @@ import java.nio.file.Paths;
 
 public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
 
-    public final static String INCLUDE_LOW_COVERAGE_PARAM = "includeLowCoverage";
-    public final static String MAX_LOW_COVERAGE_PARAM = "maxLowCoverage";
-    public final static int LOW_COVERAGE_DEFAULT = 20;
-    public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
-
     protected String clinicalAnalysisId;
 
     protected ObjectMap options;
