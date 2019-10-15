@@ -44,6 +44,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
@@ -82,13 +83,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException {
+    public OpenCGAResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(family, "family");
-        return familyCollection.insert(document, null);
+        return new OpenCGAResult(familyCollection.insert(document, null));
     }
 
     @Override
-    public DataResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+    public OpenCGAResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
         try {
             return runTransaction(clientSession -> {
@@ -196,22 +197,22 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         return count(null, query);
     }
 
-    DataResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return familyCollection.count(clientSession, bson);
+        return new OpenCGAResult<>(familyCollection.count(clientSession, bson));
     }
 
     @Override
-    public DataResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
+    public OpenCGAResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         return count(null, query, user, studyPermissions);
     }
 
-    public DataResult<Long> count(ClientSession clientSession, final Query query, final String user,
+    public OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user,
                                   final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
@@ -219,7 +220,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        DataResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
+        OpenCGAResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -229,22 +230,22 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 studyPermission.name(), studyPermission.getFamilyPermission().name(), Entity.FAMILY.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Family count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return familyCollection.count(clientSession, bson);
+        return new OpenCGAResult<>(familyCollection.count(clientSession, bson));
     }
 
     @Override
-    public DataResult distinct(Query query, String field) throws CatalogDBException {
+    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return familyCollection.distinct(field, bson);
+        return new OpenCGAResult(familyCollection.distinct(field, bson));
     }
 
     @Override
-    public DataResult stats(Query query) {
+    public OpenCGAResult stats(Query query) {
         return null;
     }
 
     @Override
-    public DataResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+    public OpenCGAResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
         QueryOptions queryOptions = new QueryOptions();
         List<String> includeList = new ArrayList<>();
 
@@ -255,27 +256,27 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         queryOptions.put(QueryOptions.INCLUDE, includeList);
 
-        DataResult<Family> familyDataResult = get(id, queryOptions);
+        OpenCGAResult<Family> familyDataResult = get(id, queryOptions);
         if (familyDataResult.first().getAnnotationSets().isEmpty()) {
-            return new DataResult<>(familyDataResult.getTime(), familyDataResult.getEvents(), 0, Collections.emptyList(), 0);
+            return new OpenCGAResult<>(familyDataResult.getTime(), familyDataResult.getEvents(), 0, Collections.emptyList(), 0);
         } else {
             List<AnnotationSet> annotationSets = familyDataResult.first().getAnnotationSets();
             int size = annotationSets.size();
-            return new DataResult<>(familyDataResult.getTime(), familyDataResult.getEvents(), size, annotationSets, size);
+            return new OpenCGAResult<>(familyDataResult.getTime(), familyDataResult.getEvents(), size, annotationSets, size);
         }
     }
 
     @Override
-    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(id, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
-    public DataResult update(long familyUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public OpenCGAResult update(long familyUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
-        DataResult<Family> familyDataResult = get(familyUid, options);
+        OpenCGAResult<Family> familyDataResult = get(familyUid, options);
 
         if (familyDataResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not update family. Family uid '" + familyUid + "' not found.");
@@ -292,12 +293,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public OpenCGAResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single family
@@ -310,7 +311,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Family> iterator = iterator(query, options);
 
-        DataResult<Cohort> result = DataResult.empty();
+        OpenCGAResult<Cohort> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Family family = iterator.next();
@@ -326,7 +327,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         return result;
     }
 
-    DataResult<Object> privateUpdate(ClientSession clientSession, Family family, ObjectMap parameters, List<VariableSet> variableSetList,
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Family family, ObjectMap parameters, List<VariableSet> variableSetList,
                                      QueryOptions queryOptions) throws CatalogDBException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
@@ -379,7 +380,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.MEMBERS.key());
-        DataResult<Family> queryResult = get(clientSession, query, options);
+        OpenCGAResult<Family> queryResult = get(clientSession, query, options);
 
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Family not found.");
@@ -400,7 +401,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.VERSION.key()
         ));
-        DataResult<Individual> individualDataResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor()
+        OpenCGAResult<Individual> individualDataResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor()
                 .get(clientSession, individualQuery, options);
         parameters.put(QueryParams.MEMBERS.key(), individualDataResult.getResults());
     }
@@ -409,7 +410,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), familyUid);
-        DataResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+        OpenCGAResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
 
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not find family '" + familyUid + "'");
@@ -442,7 +443,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STUDY_UID.key());
 
-            DataResult<Family> familyDataResult = get(clientSession, tmpQuery, queryOptions);
+            OpenCGAResult<Family> familyDataResult = get(clientSession, tmpQuery, queryOptions);
             if (familyDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update family: No family found to be updated");
             }
@@ -453,7 +454,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), familyDataResult.first().getStudyUid());
-            DataResult<Long> count = count(clientSession, tmpQuery);
+            OpenCGAResult<Long> count = count(clientSession, tmpQuery);
             if (count.getResults().get(0) > 0) {
                 throw new CatalogDBException("Cannot set '" + QueryParams.ID.key() + "' for family. A family with { '"
                         + QueryParams.ID.key() + "': '" + parameters.get(QueryParams.ID.key()) + "'} already exists.");
@@ -481,20 +482,20 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException {
+    public OpenCGAResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException {
         Bson bson = parseQuery(query);
         Document update = new Document("$pull", new Document(QueryParams.MEMBERS.key(),
                 new Document(IndividualDBAdaptor.QueryParams.UID.key(), new Document("$in", individualUids))));
-        return familyCollection.update(bson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        return new OpenCGAResult(familyCollection.update(bson, update, new QueryOptions(MongoDBCollection.MULTI, true)));
     }
 
     @Override
-    public DataResult delete(Family family) throws CatalogDBException {
+    public OpenCGAResult delete(Family family) throws CatalogDBException {
         try {
             Query query = new Query()
                     .append(QueryParams.UID.key(), family.getUid())
                     .append(QueryParams.STUDY_UID.key(), family.getStudyUid());
-            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
             if (result.getNumResults() == 0) {
                 throw new CatalogDBException("Could not find family " + family.getId() + " with uid " + family.getUid());
             }
@@ -506,10 +507,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult delete(Query query) throws CatalogDBException {
+    public OpenCGAResult delete(Query query) throws CatalogDBException {
         DBIterator<Document> iterator = nativeIterator(query, new QueryOptions());
 
-        DataResult<Family> result = DataResult.empty();
+        OpenCGAResult<Family> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Document family = iterator.next();
@@ -526,7 +527,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Document familyDocument) throws CatalogDBException {
+    OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document familyDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
         String familyId = familyDocument.getString(QueryParams.ID.key());
@@ -580,24 +581,24 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
-    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
-    public DataResult<Family> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Family> get(Query query, QueryOptions options) throws CatalogDBException {
         return get(null, query, options);
     }
 
-    public DataResult<Family> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Family> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Family> documentList = new ArrayList<>();
-        DataResult<Family> queryResult;
+        OpenCGAResult<Family> queryResult;
         try (DBIterator<Family> dbIterator = iterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -612,21 +613,21 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumMatches(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         return nativeGet(null, query, options);
     }
 
-    DataResult nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -640,22 +641,23 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         return nativeGet(null, query, options, user);
     }
 
-    DataResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+    OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -669,14 +671,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException {
         checkId(familyId);
         Query query = new Query(QueryParams.UID.key(), familyId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(familyId));
@@ -684,16 +686,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult<Family> get(Query query, QueryOptions options, String user)
+    public OpenCGAResult<Family> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return get(null, query, options, user);
     }
 
-    public DataResult<Family> get(ClientSession clientSession, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Family> get(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Family> documentList = new ArrayList<>();
-        DataResult<Family> queryResult;
+        OpenCGAResult<Family> queryResult;
         try (DBIterator<Family> dbIterator = iterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -707,7 +709,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+            OpenCGAResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -814,25 +816,25 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return rank(familyCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(familyCollection, bsonQuery, field, "name", options);
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(familyCollection, bsonQuery, fields, "name", options);
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, query);
         Document queryForAuthorisedEntries;
@@ -850,7 +852,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, query);
         Document queryForAuthorisedEntries;
@@ -902,7 +904,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+    public OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
@@ -913,11 +915,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        return familyCollection.update(bson, update, queryOptions);
+        return new OpenCGAResult(familyCollection.update(bson, update, queryOptions));
     }
 
     @Override
-    public DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+    public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         return unmarkPermissionRule(familyCollection, studyId, permissionRuleId);
     }
 

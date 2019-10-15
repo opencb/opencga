@@ -20,7 +20,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
@@ -32,6 +31,7 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,17 +171,17 @@ public class AuditManager {
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
      * @param options   QueryOptions object.
      * @param sessionId Session id of the user logged in.
-     * @return A DataResult object containing the results of the query grouped by the fields.
+     * @return A OpenCGAResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public DataResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
+    public OpenCGAResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
         }
         return groupBy(query, Arrays.asList(fields.split(",")), options, sessionId);
     }
 
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         if (authorizationManager.checkIsAdmin(userId)) {
             return auditDBAdaptor.groupBy(query, fields, options);

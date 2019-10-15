@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.PanelAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -73,7 +74,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult insert(Panel panel, boolean overwrite) throws CatalogDBException {
+    public OpenCGAResult insert(Panel panel, boolean overwrite) throws CatalogDBException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
 
@@ -106,7 +107,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult insert(long studyUid, Panel panel, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult insert(long studyUid, Panel panel, QueryOptions options) throws CatalogDBException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting insert transaction of panel id '{}'", panel.getId());
@@ -160,7 +161,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult<Panel> get(long panelUid, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Panel> get(long panelUid, QueryOptions options) throws CatalogDBException {
         checkUid(panelUid);
         Query query = new Query(QueryParams.UID.key(), panelUid)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(panelUid));
@@ -168,16 +169,16 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult<Panel> get(Query query, QueryOptions options, String user)
+    public OpenCGAResult<Panel> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return get(null, query, options, user);
     }
 
-    DataResult<Panel> get(ClientSession clientSession, Query query, QueryOptions options, String user)
+    OpenCGAResult<Panel> get(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Panel> documentList = new ArrayList<>();
-        DataResult<Panel> queryResult;
+        OpenCGAResult<Panel> queryResult;
         try (DBIterator<Panel> dbIterator = iterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -191,18 +192,18 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+            OpenCGAResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_PANELS);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult<Panel> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Panel> get(Query query, QueryOptions options) throws CatalogDBException {
         return get(null, query, options);
     }
 
-    DataResult<Panel> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    OpenCGAResult<Panel> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Panel> documentList = new ArrayList<>();
         try (DBIterator<Panel> dbIterator = iterator(clientSession, query, options)) {
@@ -210,7 +211,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 documentList.add(dbIterator.next());
             }
         }
-        DataResult<Panel> queryResult = endQuery(startTime, documentList);
+        OpenCGAResult<Panel> queryResult = endQuery(startTime, documentList);
 
         if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
             return queryResult;
@@ -218,21 +219,21 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         return nativeGet(null, query, options);
     }
 
-    DataResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -246,17 +247,18 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -270,7 +272,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(query);
+            OpenCGAResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -291,22 +293,22 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         return count(null, query);
     }
 
-    DataResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return panelCollection.count(clientSession, bson);
+        return new OpenCGAResult<>(panelCollection.count(clientSession, bson));
     }
 
     @Override
-    public DataResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
+    public OpenCGAResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         return count(null, query, user, studyPermissions);
     }
 
-    DataResult<Long> count(ClientSession clientSession, final Query query, final String user,
+    OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user,
                            final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
@@ -314,7 +316,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        DataResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
+        OpenCGAResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -324,24 +326,24 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 studyPermission.name(), studyPermission.getPanelPermission().name(), Entity.DISEASE_PANEL.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Panel count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return panelCollection.count(clientSession, bson);
+        return new OpenCGAResult<>(panelCollection.count(clientSession, bson));
     }
 
     @Override
-    public DataResult distinct(Query query, String field) throws CatalogDBException {
-        return panelCollection.distinct(field, parseQuery(query));
+    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
+        return new OpenCGAResult(panelCollection.distinct(field, parseQuery(query)));
     }
 
     @Override
-    public DataResult stats(Query query) {
+    public OpenCGAResult stats(Query query) {
         return null;
     }
 
     @Override
-    public DataResult update(long panelUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long panelUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
-        DataResult<Panel> dataResult = get(panelUid, options);
+        OpenCGAResult<Panel> dataResult = get(panelUid, options);
 
         if (dataResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not update panel. Panel '" + panelUid + "' not found.");
@@ -356,7 +358,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single panel
             if (count(query).first() != 1) {
@@ -368,7 +370,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Panel> iterator = iterator(query, options);
 
-        DataResult<Panel> result = DataResult.empty();
+        OpenCGAResult<Panel> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Panel panel = iterator.next();
@@ -383,7 +385,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return result;
     }
 
-    private DataResult<Object> privateUpdate(ClientSession clientSession, Panel panel, ObjectMap parameters, QueryOptions queryOptions)
+    private OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Panel panel, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
@@ -427,7 +429,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), panelUid);
-        DataResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+        OpenCGAResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
 
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not find panel '" + panelUid + "'");
@@ -461,7 +463,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             // We take out ALL_VERSION from query just in case we get multiple results...
             tmpQuery.remove(Constants.ALL_VERSIONS);
 
-            DataResult<Panel> panelDataResult = get(clientSession, tmpQuery, new QueryOptions());
+            OpenCGAResult<Panel> panelDataResult = get(clientSession, tmpQuery, new QueryOptions());
             if (panelDataResult.getNumResults() == 0) {
                 throw new CatalogDBException("Update panel: No panel found to be updated");
             }
@@ -476,7 +478,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            DataResult<Long> count = count(clientSession, tmpQuery);
+            OpenCGAResult<Long> count = count(clientSession, tmpQuery);
             if (count.getResults().get(0) > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Panel "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
@@ -502,12 +504,12 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult delete(Panel panel) throws CatalogDBException {
+    public OpenCGAResult delete(Panel panel) throws CatalogDBException {
         try {
             Query query = new Query()
                     .append(QueryParams.UID.key(), panel.getUid())
                     .append(QueryParams.STUDY_UID.key(), panel.getStudyUid());
-            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
             if (result.getNumResults() == 0) {
                 throw new CatalogDBException("Could not find panel " + panel.getId() + " with uid " + panel.getUid());
             }
@@ -519,10 +521,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult delete(Query query) throws CatalogDBException {
+    public OpenCGAResult delete(Query query) throws CatalogDBException {
         DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
-        DataResult<Panel> result = DataResult.empty();
+        OpenCGAResult<Panel> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Document panel = iterator.next();
             String panelId = panel.getString(QueryParams.ID.key());
@@ -538,7 +540,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return result;
     }
 
-    private DataResult<Object> privateDelete(ClientSession clientSession, Document panelDocument) throws CatalogDBException {
+    private OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document panelDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
         String panelId = panelDocument.getString(QueryParams.ID.key());
@@ -592,22 +594,22 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public DataResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Restore not yet implemented.");
     }
 
     @Override
-    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Restore not yet implemented.");
     }
 
@@ -699,7 +701,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        DataResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -707,25 +709,25 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return rank(panelCollection, bsonQuery, field, QueryParams.ID.key(), numResults, asc);
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(panelCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(panelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
@@ -735,7 +737,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
@@ -755,7 +757,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
-    public DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+    public OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
@@ -766,11 +768,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        return panelCollection.update(bson, update, queryOptions);
+        return new OpenCGAResult(panelCollection.update(bson, update, queryOptions));
     }
 
     @Override
-    public DataResult unmarkPermissionRule(long studyId, String permissionRuleId) {
+    public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) {
         return unmarkPermissionRule(panelCollection, studyId, permissionRuleId);
     }
 

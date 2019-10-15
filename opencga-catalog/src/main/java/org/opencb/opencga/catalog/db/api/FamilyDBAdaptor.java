@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.api;
 import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -28,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.*;
 
@@ -134,16 +134,16 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
-    DataResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    DataResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
 
-    DataResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long familyId) throws CatalogDBException;
 
-    DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -151,12 +151,12 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return DataResult object.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    DataResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
+    OpenCGAResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
 
     default List<Phenotype> getAllPhenotypes(List<Individual> individualList) {
         if (individualList == null || individualList.isEmpty()) {

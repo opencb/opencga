@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.models.PermissionRule;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ public interface AuthorizationDBAdaptor {
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    DataResult<Map<String, List<String>>> get(long resourceId, List<String> members, Entity entry) throws CatalogException;
+    OpenCGAResult<Map<String, List<String>>> get(long resourceId, List<String> members, Entity entry) throws CatalogException;
 
     /**
      * Retrieve the list of Acls for the list of members in the resources given.
@@ -51,7 +51,7 @@ public interface AuthorizationDBAdaptor {
      * @return the list of Acls defined for the members.
      * @throws CatalogException  CatalogException.
      */
-    DataResult<Map<String, List<String>>> get(List<Long> resourceIds, List<String> members, Entity entry) throws CatalogException;
+    OpenCGAResult<Map<String, List<String>>> get(List<Long> resourceIds, List<String> members, Entity entry) throws CatalogException;
 
     /**
      * Remove all the Acls defined for the member in the resource for the study.
@@ -59,52 +59,53 @@ public interface AuthorizationDBAdaptor {
      * @param studyId study id where the Acls will be removed from.
      * @param member member from whom the Acls will be removed.
      * @param entry Entity for which the ACLs will be retrieved.
-     * @return DataResult object.
+     * @return OpenCGAResult object.
      * @throws CatalogException  CatalogException.
      */
-    DataResult removeFromStudy(long studyId, String member, Entity entry) throws CatalogException;
+    OpenCGAResult removeFromStudy(long studyId, String member, Entity entry) throws CatalogException;
 
-    default DataResult setToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+    default OpenCGAResult setToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
             throws CatalogDBException {
         return setToMembers(studyId, resourceIds, null, members, permissions, entity, null);
     }
 
-    DataResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
-                      Entity entity, Entity entity2) throws CatalogDBException;
+    OpenCGAResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
+                               List<String> permissions, Entity entity, Entity entity2) throws CatalogDBException;
 
     // Special method only to set acls in study
-    DataResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
+    OpenCGAResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
 
-    default DataResult addToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+    default OpenCGAResult addToMembers(long studyId, List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
             throws CatalogDBException {
         return addToMembers(studyId, resourceIds, null, members, permissions, entity, null);
     }
 
-    DataResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
-                      Entity entity, Entity entity2) throws CatalogDBException;
+    OpenCGAResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
+                               List<String> permissions, Entity entity, Entity entity2) throws CatalogDBException;
 
     // Special method only to add acls in study
-    DataResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
+    OpenCGAResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException;
 
-    default DataResult removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
+    default OpenCGAResult removeFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions, Entity entity)
             throws CatalogDBException {
         return removeFromMembers(resourceIds, null, members, permissions, entity, null);
     }
 
-    DataResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
+    OpenCGAResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissions,
                                   Entity entity, Entity entity2) throws CatalogDBException;
 
-    DataResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
+    OpenCGAResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException;
 
-    DataResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Entity entity)
+    OpenCGAResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Entity entity)
             throws CatalogDBException;
 
-    DataResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
+    OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
 
-    DataResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry) throws CatalogException;
-
-    DataResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entity)
+    OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry)
             throws CatalogException;
 
-    DataResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException;
+    OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entity)
+            throws CatalogException;
+
+    OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException;
 }

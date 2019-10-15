@@ -44,6 +44,7 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -83,13 +84,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException {
+    public OpenCGAResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(job, "job");
-        return jobCollection.insert(document, null);
+        return new OpenCGAResult(jobCollection.insert(document, null));
     }
 
     @Override
-    public DataResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
@@ -138,7 +139,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult<Job> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Job> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
         // Check the studyId first and throw an Exception is not found
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
 
@@ -156,7 +157,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public long getStudyId(long jobId) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), jobId);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_UID);
-        DataResult<Document> queryResult = nativeGet(query, queryOptions);
+        OpenCGAResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {
             Object id = queryResult.getResults().get(0).get(PRIVATE_STUDY_UID);
@@ -167,30 +168,30 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+    public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         return unmarkPermissionRule(jobCollection, studyId, permissionRuleId);
     }
 
     @Override
-    public DataResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         return count(null, query);
     }
 
-    DataResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query);
-        return jobCollection.count(clientSession, bsonDocument);
+        return new OpenCGAResult<>(jobCollection.count(clientSession, bsonDocument));
     }
 
 
     @Override
-    public DataResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
+    public OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
                 ? StudyAclEntry.StudyPermissions.VIEW_JOBS : studyPermissions);
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        DataResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        OpenCGAResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -200,25 +201,25 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 studyPermission.name(), studyPermission.getJobPermission().name(), Entity.JOB.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return jobCollection.count(bson);
+        return new OpenCGAResult<>(jobCollection.count(bson));
     }
 
     @Override
-    public DataResult distinct(Query query, String field) throws CatalogDBException {
+    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query);
-        return jobCollection.distinct(field, bsonDocument);
+        return new OpenCGAResult(jobCollection.distinct(field, bsonDocument));
     }
 
     @Override
-    public DataResult stats(Query query) {
+    public OpenCGAResult stats(Query query) {
         return null;
     }
 
     @Override
-    public DataResult update(long jobUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long jobUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
-        DataResult<Job> dataResult = get(jobUid, options);
+        OpenCGAResult<Job> dataResult = get(jobUid, options);
 
         if (dataResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not update job. Job uid '" + jobUid + "' not found.");
@@ -233,7 +234,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single job
             if (count(query).first() != 1) {
@@ -245,7 +246,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Job> iterator = iterator(query, options);
 
-        DataResult<Job> result = DataResult.empty();
+        OpenCGAResult<Job> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Job job = iterator.next();
@@ -260,7 +261,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return result;
     }
 
-    DataResult<Object> privateUpdate(ClientSession clientSession, Job job, ObjectMap parameters) throws CatalogDBException {
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Job job, ObjectMap parameters) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
         Document jobParameters = getValidatedUpdateParams(parameters);
@@ -294,12 +295,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult delete(Job job) throws CatalogDBException {
+    public OpenCGAResult delete(Job job) throws CatalogDBException {
         try {
             Query query = new Query()
                     .append(QueryParams.UID.key(), job.getUid())
                     .append(QueryParams.STUDY_UID.key(), job.getStudyUid());
-            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
             if (result.getNumResults() == 0) {
                 throw new CatalogDBException("Could not find job " + job.getId() + " with uid " + job.getUid());
             }
@@ -311,10 +312,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult delete(Query query) throws CatalogDBException {
+    public OpenCGAResult delete(Query query) throws CatalogDBException {
         DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
-        DataResult<Job> result = DataResult.empty();
+        OpenCGAResult<Job> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Document job = iterator.next();
             String jobId = job.getString(QueryParams.ID.key());
@@ -330,7 +331,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Document jobDocument) throws CatalogDBException {
+    OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document jobDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
         String jobId = jobDocument.getString(QueryParams.ID.key());
@@ -413,15 +414,15 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return jobParameters;
     }
 
-    public DataResult clean(int id) throws CatalogDBException {
+    public OpenCGAResult clean(int id) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), id);
-        DataResult<Job> jobDataResult = get(query, null);
+        OpenCGAResult<Job> jobDataResult = get(query, null);
         if (jobDataResult.getResults().size() == 1) {
             DataResult delete = jobCollection.remove(parseQuery(query), null);
             if (delete.getNumUpdated() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
-            return delete;
+            return new OpenCGAResult(delete);
         } else {
             throw CatalogDBException.uidNotFound("Job id '{}' does not exist (or there are too many)", id);
         }
@@ -429,22 +430,22 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
 
     @Override
-    public DataResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public DataResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
-    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Not yet implemented");
     }
 
@@ -452,7 +453,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
      * At the moment it does not clean external references to itself.
      */
     @Override
-    public DataResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
         checkId(jobId);
         Query query = new Query(QueryParams.UID.key(), jobId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(jobId));
@@ -460,10 +461,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult<Job> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult<Job> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Job> documentList = new ArrayList<>();
-        DataResult<Job> queryResult;
+        OpenCGAResult<Job> queryResult;
         try (DBIterator<Job> dbIterator = iterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -477,17 +478,17 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+            OpenCGAResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_JOBS);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult<Job> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Job> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Job> documentList = new ArrayList<>();
-        DataResult<Job> queryResult;
+        OpenCGAResult<Job> queryResult;
         try (DBIterator<Job> dbIterator = iterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -501,17 +502,17 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(query);
+            OpenCGAResult<Long> count = count(query);
             queryResult.setNumMatches(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -525,17 +526,18 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(query);
+            OpenCGAResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -549,7 +551,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(query);
+            OpenCGAResult<Long> count = count(query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -628,7 +630,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private Document getStudyDocument(Query query) throws CatalogDBException {
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        DataResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
+        OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -636,25 +638,25 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return rank(jobCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(jobCollection, bsonQuery, field, "name", options);
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(jobCollection, bsonQuery, fields, "name", options);
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
@@ -664,7 +666,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(query);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,

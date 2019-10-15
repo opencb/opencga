@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -148,18 +148,18 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      *
      * @param panel Panel.
      * @param overwrite Flag to overwrite in case of an ID conflict.
-     * @return DataResult object.
+     * @return OpenCGAResult object.
      * @throws CatalogDBException In case of an ID conflict when overwrite is false.
      */
-    DataResult insert(Panel panel, boolean overwrite) throws CatalogDBException;
+    OpenCGAResult insert(Panel panel, boolean overwrite) throws CatalogDBException;
 
-    DataResult insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
 
-    DataResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long panelId) throws CatalogDBException;
 
-    DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -167,9 +167,9 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return DataResult object.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

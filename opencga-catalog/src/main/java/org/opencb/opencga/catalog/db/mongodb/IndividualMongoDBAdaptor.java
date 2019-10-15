@@ -42,6 +42,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
@@ -87,13 +88,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException {
+    public OpenCGAResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(individual, "individual");
-        return individualCollection.insert(document, null);
+        return new OpenCGAResult(individualCollection.insert(document, null));
     }
 
     @Override
-    public DataResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
+    public OpenCGAResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException {
         try {
             return runTransaction(clientSession -> {
@@ -210,7 +211,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+    public OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
@@ -221,31 +222,31 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        return individualCollection.update(bson, update, queryOptions);
+        return new OpenCGAResult(individualCollection.update(bson, update, queryOptions));
     }
 
     @Override
-    public DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
+    public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException {
         return unmarkPermissionRule(individualCollection, studyId, permissionRuleId);
     }
 
     @Override
-    public DataResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         return count(null, query);
     }
 
-    public DataResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return individualCollection.count(clientSession, bson);
+        return new OpenCGAResult<>(individualCollection.count(clientSession, bson));
     }
 
     @Override
-    public DataResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
+    public OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         return count(null, query, user, studyPermissions);
     }
 
-    DataResult<Long> count(ClientSession clientSession, Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
 
         StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
@@ -253,7 +254,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // Get the study document
         Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        DataResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
+        OpenCGAResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
         }
@@ -264,22 +265,22 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
-        return individualCollection.count(clientSession, bson);
+        return new OpenCGAResult<>(individualCollection.count(clientSession, bson));
     }
 
     @Override
-    public DataResult distinct(Query query, String field) throws CatalogDBException {
+    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return individualCollection.distinct(field, bson);
+        return new OpenCGAResult(individualCollection.distinct(field, bson));
     }
 
     @Override
-    public DataResult stats(Query query) {
+    public OpenCGAResult stats(Query query) {
         return null;
     }
 
     @Override
-    public DataResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+    public OpenCGAResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
         QueryOptions queryOptions = new QueryOptions();
         List<String> includeList = new ArrayList<>();
         if (StringUtils.isNotEmpty(annotationSetName)) {
@@ -289,27 +290,27 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
         queryOptions.put(QueryOptions.INCLUDE, includeList);
 
-        DataResult<Individual> individualDataResult = get(id, queryOptions);
+        OpenCGAResult<Individual> individualDataResult = get(id, queryOptions);
         if (individualDataResult.first().getAnnotationSets().isEmpty()) {
-            return new DataResult<>(individualDataResult.getTime(), individualDataResult.getEvents(), 0, Collections.emptyList(), 0);
+            return new OpenCGAResult<>(individualDataResult.getTime(), individualDataResult.getEvents(), 0, Collections.emptyList(), 0);
         } else {
             List<AnnotationSet> annotationSets = individualDataResult.first().getAnnotationSets();
             int size = annotationSets.size();
-            return new DataResult<>(individualDataResult.getTime(), individualDataResult.getEvents(), size, annotationSets, size);
+            return new OpenCGAResult<>(individualDataResult.getTime(), individualDataResult.getEvents(), size, annotationSets, size);
         }
     }
 
     @Override
-    public DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(id, parameters, null, queryOptions);
     }
 
     @Override
-    public DataResult update(long individualUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public OpenCGAResult update(long individualUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
-        DataResult<Individual> dataResult = get(individualUid, options);
+        OpenCGAResult<Individual> dataResult = get(individualUid, options);
 
         if (dataResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not update individual. Individual uid '" + individualUid + "' not found.");
@@ -325,12 +326,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
+    public OpenCGAResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single individual
@@ -344,7 +345,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
         DBIterator<Individual> iterator = iterator(query, options);
 
-        DataResult<Individual> result = DataResult.empty();
+        OpenCGAResult<Individual> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Individual individual = iterator.next();
@@ -361,7 +362,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         return result;
     }
 
-    DataResult<Object> privateUpdate(ClientSession clientSession, Individual individual, ObjectMap parameters,
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Individual individual, ObjectMap parameters,
                                      List<VariableSet> variableSetList, QueryOptions queryOptions) throws CatalogDBException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
@@ -461,7 +462,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Query query = new Query()
                 .append(QueryParams.UID.key(), individualUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);
-        DataResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+        OpenCGAResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
 
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not find individual '" + individualUid + "'");
@@ -478,7 +479,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.SAMPLES.key());
-        DataResult<Individual> queryResult = get(query, options);
+        OpenCGAResult<Individual> queryResult = get(query, options);
 
         if (queryResult.getNumResults() == 0) {
             throw new CatalogDBException("Individual not found.");
@@ -499,7 +500,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.VERSION.key()
         ));
-        DataResult<Sample> sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(clientSession, sampleQuery, options);
+        OpenCGAResult<Sample> sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(clientSession, sampleQuery, options);
         parameters.put(QueryParams.SAMPLES.key(), sampleDataResult.getResults());
 
         // Add SET action for samples
@@ -521,7 +522,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Query tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
-            DataResult<Long> count = count(clientSession, tmpQuery);
+            OpenCGAResult<Long> count = count(clientSession, tmpQuery);
             if (count.getResults().get(0) > 0) {
                 throw new CatalogDBException("Cannot set id for individual. An individual with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
@@ -661,7 +662,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         // We take out ALL_VERSION from query just in case we get multiple results from the same individual...
         tmpQuery.remove(Constants.ALL_VERSIONS);
 
-        DataResult<Individual> individualDataResult = get(clientSession, tmpQuery, new QueryOptions());
+        OpenCGAResult<Individual> individualDataResult = get(clientSession, tmpQuery, new QueryOptions());
         if (individualDataResult.getNumResults() == 0) {
             throw new CatalogDBException("Update individual: No individual found to be updated");
         }
@@ -672,12 +673,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult delete(Individual individual) throws CatalogDBException {
+    public OpenCGAResult delete(Individual individual) throws CatalogDBException {
         try {
             Query query = new Query()
                     .append(QueryParams.UID.key(), individual.getUid())
                     .append(QueryParams.STUDY_UID.key(), individual.getStudyUid());
-            DataResult<Document> result = nativeGet(query, new QueryOptions());
+            OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
             if (result.getNumResults() == 0) {
                 throw new CatalogDBException("Could not find individual " + individual.getId() + " with uid " + individual.getUid());
             }
@@ -689,10 +690,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult delete(Query query) throws CatalogDBException {
+    public OpenCGAResult delete(Query query) throws CatalogDBException {
         DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
-        DataResult<Individual> result = DataResult.empty();
+        OpenCGAResult<Individual> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Document individual = iterator.next();
@@ -709,7 +710,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         return result;
     }
 
-    DataResult<Object> privateDelete(ClientSession clientSession, Document individualDocument) throws CatalogDBException {
+    OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document individualDocument) throws CatalogDBException {
         FamilyMongoDBAdaptor familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
 
         String individualId = individualDocument.getString(QueryParams.ID.key());
@@ -812,25 +813,18 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
-    private DataResult remove(int id, boolean force) throws CatalogDBException {
-        checkId(id);
-        DataResult<Individual> individual = get(id, new QueryOptions());
-        Bson bson = Filters.eq(QueryParams.UID.key(), id);
-        return individualCollection.remove(bson, null);
-    }
-
     @Override
-    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
-    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Not yet implemented");
     }
 
     @Override
-    public DataResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException {
         checkId(individualId);
         Query query = new Query(QueryParams.UID.key(), individualId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(individualId));
@@ -838,7 +832,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult<Individual> get(long individualId, QueryOptions options, String userId)
+    public OpenCGAResult<Individual> get(long individualId, QueryOptions options, String userId)
             throws CatalogDBException, CatalogAuthorizationException {
         long studyId = getStudyId(individualId);
         Query query = new Query()
@@ -848,16 +842,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult<Individual> get(Query query, QueryOptions options, String user)
+    public OpenCGAResult<Individual> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return get(null, query, options, user);
     }
 
-    DataResult<Individual> get(ClientSession clientSession, Query query, QueryOptions options, String user)
+    OpenCGAResult<Individual> get(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Individual> documentList = new ArrayList<>();
-        DataResult<Individual> queryResult;
+        OpenCGAResult<Individual> queryResult;
         try (DBIterator<Individual> dbIterator = iterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -871,21 +865,21 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+            OpenCGAResult<Long> count = count(clientSession, query, user, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         return get(null, query, options);
     }
 
-    public DataResult<Individual> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Individual> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Individual> documentList = new ArrayList<>();
-        DataResult<Individual> queryResult;
+        OpenCGAResult<Individual> queryResult;
         try (DBIterator<Individual> dbIterator = iterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -899,21 +893,21 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         return nativeGet(null, query, options);
     }
 
-    public DataResult nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -927,22 +921,23 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         return nativeGet(null, query, options, user);
     }
 
-    public DataResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+    public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        DataResult<Document> queryResult;
+        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -956,7 +951,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            DataResult<Long> count = count(clientSession, query);
+            OpenCGAResult<Long> count = count(clientSession, query);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -1070,25 +1065,25 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
 
     @Override
-    public DataResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return rank(individualCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, field, "name", options);
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, fields, "name", options);
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, query);
         Document queryForAuthorisedEntries;
@@ -1106,7 +1101,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, query);
         Document queryForAuthorisedEntries;

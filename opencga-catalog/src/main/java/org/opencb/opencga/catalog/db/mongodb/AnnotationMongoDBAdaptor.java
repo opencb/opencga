@@ -40,6 +40,7 @@ import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -255,7 +256,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         return query.containsKey(Constants.ANNOTATION);
     }
 
-    private DataResult<? extends Annotable> convertToDataModelDataResult(DataResult<Document> documentDataResult,
+    private OpenCGAResult<? extends Annotable> convertToDataModelDataResult(OpenCGAResult<Document> documentDataResult,
                                                                          @Nullable String annotationSetName, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
@@ -275,11 +276,11 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             // We convert the results to the data models
             annotableList.add(getConverter().convertToDataModelType(document, options));
         }
-        return new DataResult<>(documentDataResult.getTime(), documentDataResult.getEvents(), documentDataResult.getNumResults(),
+        return new OpenCGAResult<>(documentDataResult.getTime(), documentDataResult.getEvents(), documentDataResult.getNumResults(),
                 annotableList, documentDataResult.getNumMatches(), new ObjectMap());
     }
 
-    DataResult<? extends Annotable> updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters,
+    OpenCGAResult<? extends Annotable> updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters,
                                                          List<VariableSet> variableSetList, QueryOptions options, boolean isVersioned)
             throws CatalogDBException {
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
@@ -292,7 +293,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     ParamUtils.UpdateAction.ADD);
 
             if (annotationSetList == null) {
-                return DataResult.empty();
+                return OpenCGAResult.empty();
             }
 
             // Create or remove a new annotation set
@@ -317,7 +318,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 // Action = REMOVE
 
                 // 0. Obtain the annotationSet to be removed to know the variableSet being annotated
-                DataResult<Document> queryResult = nativeGet(new Query(PRIVATE_UID, entryId), new QueryOptions(QueryOptions.INCLUDE,
+                OpenCGAResult<Document> queryResult = nativeGet(new Query(PRIVATE_UID, entryId), new QueryOptions(QueryOptions.INCLUDE,
                         ANNOTATION_SETS));
 
                 if (queryResult.getNumResults() != 1) {
@@ -550,7 +551,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         return annotationList;
     }
 
-    public DataResult addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
+    public OpenCGAResult addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
         long startTime = startQuery();
 
         // We generate the generic document that should be inserted
@@ -614,7 +615,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
     }
 //
 //    // TODO
-//    public DataResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
+//    public OpenCGAResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
 //        long startTime = startQuery();
 //        long renamedAnnotations = 0;
 ////        List<Document> aggregateResult = getAnnotationDocuments(variableSetId, oldName);
@@ -638,7 +639,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 ////                Bson update = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + AnnotationSetParams.ANNOTATIONS.key(),
 ////                        Filters.eq(AnnotationSetParams.NAME.key(), oldName));
 ////
-////                DataResult<UpdateResult> queryResult = getCollection().update(bsonQuery, update, null);
+////                OpenCGAResult<UpdateResult> queryResult = getCollection().update(bsonQuery, update, null);
 ////
 ////                if (queryResult.first().getModifiedCount() != 1) {
 ////                    throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
@@ -684,10 +685,10 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
      *
      * @param variableSetId Variable set id.
      * @param fieldId Field id corresponds with the variable name whose annotations have to be removed.
-     * @return A DataResult object.
+     * @return A OpenCGAResult object.
      * @throws CatalogDBException if there is any unexpected error.
      */
-    public DataResult removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException {
+    public OpenCGAResult removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException {
         long startTime = startQuery();
 //        List<Document> aggregateResult = getAnnotationDocuments(variableSetId, fieldId);
 
@@ -709,10 +710,10 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     + "annotations for the variable " + fieldId + ". Please, report this error to the OpenCGA developers.");
         }
 
-        return result;
+        return new OpenCGAResult(result);
     }
 
-    public DataResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException {
+    public OpenCGAResult<VariableSummary> getAnnotationSummary(long studyId, long variableSetId) throws CatalogDBException {
         long startTime = startQuery();
 
         List<Bson> aggregation = new ArrayList<>(6);

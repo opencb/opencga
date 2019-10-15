@@ -17,10 +17,10 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,10 +95,10 @@ public abstract class AuthenticationManager {
      * Throws "UnsupportedOperationException" is the implementation does not support this operation.
      *
      * @param userId UserId
-     * @return DataResult DataResult
+     * @return OpenCGAResult OpenCGAResult
      * @throws CatalogException CatalogException
      */
-    public abstract DataResult resetPassword(String userId) throws CatalogException;
+    public abstract OpenCGAResult resetPassword(String userId) throws CatalogException;
 
     /**
      * Set a password to a user without a password.

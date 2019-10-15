@@ -46,6 +46,7 @@ import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -79,7 +80,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException {
+    public OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException {
         Bson query = Filters.and(Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId),
                 Filters.ne(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), project.get(QueryParams.ID.key())));
         Bson update = Updates.push("projects", getMongoDBDocument(project, "project"));
@@ -89,11 +90,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         if (result.getNumInserted() == 0) { // Check if the project has been inserted
             throw new CatalogDBException("Project {" + project.get(QueryParams.ID.key()) + "\"} already exists for this user");
         }
-        return result;
+        return new OpenCGAResult(result);
     }
 
     @Override
-    public DataResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting project insert transaction for project id '{}'", project.getId());
@@ -149,7 +150,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult incrementCurrentRelease(long projectId) throws CatalogDBException {
+    public OpenCGAResult incrementCurrentRelease(long projectId) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.UID.key(), projectId);
         Bson update = new Document("$inc", new Document("projects.$." + QueryParams.CURRENT_RELEASE.key(), 1));
@@ -160,7 +161,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         } else if (updateQR.getNumUpdated() == 0) {
             throw new CatalogDBException("Internal error. Current release number could not be incremented.");
         }
-        return updateQR;
+        return new OpenCGAResult(updateQR);
     }
 
     private void editId(ClientSession clientSession, String owner, long projectUid, String newId) throws CatalogDBException {
@@ -228,32 +229,32 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return userCollection.count(bson);
+        return new OpenCGAResult<>(userCollection.count(bson));
     }
 
     @Override
-    public DataResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
         throw new NotImplementedException("Count not implemented for projects");
     }
 
     @Override
-    public DataResult distinct(Query query, String field) throws CatalogDBException {
+    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return userCollection.distinct(field, bson);
+        return new OpenCGAResult(userCollection.distinct(field, bson));
     }
 
     @Override
-    public DataResult stats(Query query) {
+    public OpenCGAResult stats(Query query) {
         return null;
     }
 
     @Override
-    public DataResult update(long projectUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long projectUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(),
                 QueryParams.FQN.key()));
-        DataResult<Project> projectDataResult = get(projectUid, options);
+        OpenCGAResult<Project> projectDataResult = get(projectUid, options);
 
         if (projectDataResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not update project. Project uid '" + projectUid + "' not found.");
@@ -269,12 +270,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(),
                 QueryParams.FQN.key()));
         DBIterator<Project> iterator = iterator(query, options);
 
-        DataResult<Project> result = DataResult.empty();
+        OpenCGAResult<Project> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Project project = iterator.next();
@@ -289,7 +290,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return result;
     }
 
-    DataResult<Object> privateUpdate(ClientSession clientSession, Project project, ObjectMap parameters) throws CatalogDBException {
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Project project, ObjectMap parameters) throws CatalogDBException {
         Document updateParams = getDocumentUpdateParams(parameters);
 
         if (updateParams.isEmpty() && !parameters.containsKey(QueryParams.ID.key())) {
@@ -375,7 +376,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Deprecated
     @Override
-    public DataResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         checkId(id);
         // Check the project is active
         Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
@@ -402,7 +403,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult delete(Project project) throws CatalogDBException {
+    public OpenCGAResult delete(Project project) throws CatalogDBException {
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, project));
         } catch (CatalogDBException e) {
@@ -412,10 +413,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.append(QueryParams.STATUS_NAME.key(), Status.READY);
-        DataResult<Project> projectDataResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
-        DataResult writeResult = new DataResult();
+        OpenCGAResult<Project> projectDataResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
+        OpenCGAResult writeResult = new OpenCGAResult();
         for (Project project : projectDataResult.getResults()) {
             writeResult.append(delete(project.getUid(), queryOptions));
         }
@@ -423,11 +424,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult delete(Query query) throws CatalogDBException {
+    public OpenCGAResult delete(Query query) throws CatalogDBException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key()));
         DBIterator<Project> iterator = iterator(query, options);
 
-        DataResult<Project> result = DataResult.empty();
+        OpenCGAResult<Project> result = OpenCGAResult.empty();
 
         while (iterator.hasNext()) {
             Project project = iterator.next();
@@ -444,7 +445,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return result;
     }
 
-    DataResult<Project> privateDelete(ClientSession clientSession, Project project) throws CatalogDBException {
+    OpenCGAResult<Project> privateDelete(ClientSession clientSession, Project project) throws CatalogDBException {
         long tmpStartTime = startQuery();
         logger.debug("Deleting project {} ({})", project.getId(), project.getUid());
 
@@ -487,32 +488,32 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endWrite(tmpStartTime, 1, 0, 0, 1, events);
     }
 
-    DataResult setStatus(Query query, String status) throws CatalogDBException {
+    OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
         return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    private DataResult setStatus(long projectId, String status) throws CatalogDBException {
+    private OpenCGAResult setStatus(long projectId, String status) throws CatalogDBException {
         return update(projectId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
     @Override
-    public DataResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public DataResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public DataResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
         return setStatus(query, Status.READY);
     }
 
     @Override
-    public DataResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
 
         checkId(id);
         // Check if the cohort is active
@@ -527,14 +528,14 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult<Project> get(String userId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.USER_ID.key(), userId);
         return endQuery(startTime, get(query, options).getResults());
     }
 
     @Override
-    public DataResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Project> get(long projectId, QueryOptions options) throws CatalogDBException {
         checkId(projectId);
         Query query = new Query(QueryParams.UID.key(), projectId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return get(query, options);
@@ -546,10 +547,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
-        DataResult<Project> queryResult;
+        OpenCGAResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -563,7 +564,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             for (Project project : queryResult.getResults()) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                 try {
-                    DataResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
+                    OpenCGAResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
                     project.setStudies(studyDataResult.getResults());
                 } catch (CatalogDBException e) {
                     logger.error("{}", e.getMessage(), e);
@@ -575,11 +576,11 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult<Project> get(Query query, QueryOptions options, String user)
+    public OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
-        DataResult<Project> queryResult;
+        OpenCGAResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -593,7 +594,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             for (Project project : queryResult.getResults()) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                 try {
-                    DataResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
+                    OpenCGAResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options, user);
                     project.setStudies(studyDataResult.getResults());
                 } catch (CatalogDBException e) {
                     logger.error("{}", e.getMessage(), e);
@@ -605,7 +606,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
@@ -617,7 +618,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
@@ -677,7 +679,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.UID.key(), query.getString(QueryParams.STUDY_UID.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), query.getString(QueryParams.STUDY_ID.key()));
         studyQuery.putIfNotEmpty(StudyDBAdaptor.QueryParams.OWNER.key(), query.getString(QueryParams.USER_ID.key()));
-        DataResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
+        OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, new QueryOptions(), user);
 
         query.remove(QueryParams.STUDY_UID.key());
         query.remove(QueryParams.STUDY_ID.key());
@@ -764,28 +766,28 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public DataResult rank(Query query, String field, int numResults, boolean asc) {
+    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) {
         throw new NotImplementedException("Rank project is not implemented");
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options) {
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options) {
         throw new NotImplementedException("GroupBy in project is not implemented");
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) {
         throw new NotImplementedException("GroupBy in project is not implemented");
     }
 
     @Override
-    public DataResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }

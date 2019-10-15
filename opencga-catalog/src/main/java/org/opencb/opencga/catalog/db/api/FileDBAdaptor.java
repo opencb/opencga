@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -28,6 +27,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.HashMap;
 import java.util.List;
@@ -204,7 +204,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
     long getStudyIdByFileId(long fileId) throws CatalogDBException;
 
-    DataResult nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> file, String userId) throws CatalogDBException;
 
     /***
      * Inserts the passed file in the database.
@@ -213,30 +213,30 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param file The file to be inserted in the database.
      * @param variableSetList Variable set list.
      * @param options Options to filter the output that will be returned after the insertion of the file.
-     * @return A DataResult object containing the time spent.
+     * @return A OpenCGAResult object containing the time spent.
      * @throws CatalogDBException when the file could not be inserted due to different reasons.
      */
-    DataResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, File file, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves the file from the database containing the fileId given.
      *
      * @param fileId File ID of the required file.
      * @param options Options to filter the output.
-     * @return A DataResult object containing the required file.
+     * @return A OpenCGAResult object containing the required file.
      * @throws CatalogDBException when the file could not be found in the database.
      */
-    DataResult<File> get(long fileId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<File> get(long fileId, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves all the files belonging to the given study.
      *
      * @param studyId Study id where the files will be extracted from.
      * @param options Options to filter the output.
-     * @return A DataResult object containing all the files belonging to the study.
+     * @return A OpenCGAResult object containing all the files belonging to the study.
      * @throws CatalogDBException when the study does not exist.
      */
-    DataResult<File> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<File> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves all the files present in the folder.
@@ -244,10 +244,10 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param studyId Study id where the files will be extracted from.
      * @param path Directory where the files will be extracted from.
      * @param options Options to filter the file output.
-     * @return A DataResult object containing the files present in the folder of the given study.
+     * @return A OpenCGAResult object containing the files present in the folder of the given study.
      * @throws CatalogDBException when the study or the path does not exist.
      */
-    DataResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
 
     /***
      * Renames the file.
@@ -256,20 +256,20 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * @param filePath New file or directory name (containing the full path).
      * @param fileUri New file uri (containing the full path).
      * @param options Options to filter the file output.
-     * @return A DataResult object.
+     * @return A OpenCGAResult object.
      * @throws CatalogDBException when the filePath already exists.
      */
-    DataResult rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult rename(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
 
     /**
      * Add the samples to the array of samples in the file entry.
      *
      * @param fileId file id corresponding to the file being updated.
      * @param samples List of samples to be added to the array.
-     * @return DataResult object.
+     * @return OpenCGAResult object.
      * @throws CatalogDBException CatalogDBException.
      */
-    DataResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
+    OpenCGAResult addSamplesToFile(long fileId, List<Sample> samples) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -277,29 +277,29 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return DataResult object.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
     /**
      * Delete file.
      *
      * @param file File to be deleted.
      * @param status Deletion status we want to set.
-     * @return a DataResult object.
+     * @return a OpenCGAResult object.
      * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
      */
-    DataResult delete(File file, String status) throws CatalogDBException;
+    OpenCGAResult delete(File file, String status) throws CatalogDBException;
 
     /**
      * Delete file.
      *
      * @param query Delete all the files matching the query.
      * @param status Deletion status we want to set.
-     * @return a DataResult object.
+     * @return a OpenCGAResult object.
      * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
      */
-    DataResult delete(Query query, String status) throws CatalogDBException;
+    OpenCGAResult delete(Query query, String status) throws CatalogDBException;
 
 }

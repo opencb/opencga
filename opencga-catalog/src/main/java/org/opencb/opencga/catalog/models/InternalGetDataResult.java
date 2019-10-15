@@ -1,12 +1,13 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class InternalGetDataResult<T> extends DataResult<T> {
+public class InternalGetDataResult<T> extends OpenCGAResult<T> {
 
     private List<Missing> missing;
 

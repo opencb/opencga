@@ -1,7 +1,11 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -15,6 +19,7 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -33,11 +38,11 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
 
     abstract AuditRecord.Resource getEntity();
 
-    DataResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
+    OpenCGAResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
         return internalGet(studyUid, entry, null, options, user);
     }
 
-    abstract DataResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+    abstract OpenCGAResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException;
 
     InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
@@ -55,10 +60,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param entry     entry that needs to be added in Catalog.
      * @param options   QueryOptions object.
      * @param token Session id of the user logged in.
-     * @return A DataResult of the object created.
+     * @return A OpenCGAResult of the object created.
      * @throws CatalogException if any parameter from the entry is incorrect, the user does not have permissions...
      */
-    public abstract DataResult<R> create(String studyStr, R entry, QueryOptions options, String token) throws CatalogException;
+    public abstract OpenCGAResult<R> create(String studyStr, R entry, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Fetch the R object.
@@ -70,7 +75,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public DataResult<R> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<R> get(String studyStr, String entryStr, QueryOptions options, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         return internalGet(study.getUid(), entryStr, options, userId);
@@ -86,16 +91,16 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return All matching elements.
      * @throws CatalogException CatalogException.
      */
-    public DataResult<R> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<R> get(String studyStr, List<String> entryList, QueryOptions options, String token) throws CatalogException {
         return get(studyStr, entryList, new Query(), options, false, token);
     }
 
-    public DataResult<R> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
+    public OpenCGAResult<R> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
             throws CatalogException {
         return get(studyStr, entryList, new Query(), options, silent, token);
     }
 
-    public DataResult<R> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
+    public OpenCGAResult<R> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
@@ -113,7 +118,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
         try {
-            DataResult<R> result = DataResult.empty();
+            OpenCGAResult<R> result = OpenCGAResult.empty();
 
             InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
 
@@ -130,12 +135,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                     Event event = new Event(Event.Type.ERROR, entryId, missingMap.get(entryId).getErrorMsg());
                     // Missing
                     result.getEvents().add(event);
-//                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.singletonList(event), 0,
+//                    resultList.add(new OpenCGAResult<>(responseResult.getTime(), Collections.singletonList(event), 0,
 //                            Collections.emptyList(), 0));
                 } else {
                     int size = versionedResults.get(i).size();
-                    result.append(new DataResult<>(0, Collections.emptyList(), size, versionedResults.get(i), size));
-//                    resultList.add(new DataResult<>(responseResult.getTime(), Collections.emptyList(), size, versionedResults.get(i),
+                    result.append(new OpenCGAResult<>(0, Collections.emptyList(), size, versionedResults.get(i), size));
+//                    resultList.add(new OpenCGAResult<>(responseResult.getTime(), Collections.emptyList(), size, versionedResults.get(i),
 //                            size));
 
                     R entry = versionedResults.get(i).get(0);
@@ -176,7 +181,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @return The list of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract DataResult<R> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException;
+    public abstract OpenCGAResult<R> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Count matching entries in catalog.
@@ -184,12 +189,12 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param studyId  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query     Query object.
      * @param token Session id of the user logged in.
-     * @return A DataResult with the total number of entries matching the query.
+     * @return A OpenCGAResult with the total number of entries matching the query.
      * @throws CatalogException catalogException.
      */
-    public abstract DataResult<R> count(String studyId, Query query, String token) throws CatalogException;
+    public abstract OpenCGAResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
-    public abstract DataResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException;
+    public abstract OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException;
 
     /**
      * Delete all entries matching the query.
@@ -199,9 +204,9 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param params Map containing additional parameters to be considered for the deletion.
      * @param token Session id of the user logged in.
      * @throws CatalogException if the study or the user do not exist.
-     * @return A DataResult object containing the number of matching elements, deleted and elements that could not be deleted.
+     * @return A OpenCGAResult object containing the number of matching elements, deleted and elements that could not be deleted.
      */
-    public abstract DataResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException;
+    public abstract OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -212,10 +217,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param numResults Maximum number of results to be reported.
      * @param asc        Order in which the results will be reported.
      * @param token  Session id of the user logged in.
-     * @return A DataResult object containing each of the fields in field and the count of them matching the query.
+     * @return A OpenCGAResult object containing each of the fields in field and the count of them matching the query.
      * @throws CatalogException CatalogException
      */
-    public abstract DataResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String token)
+    public abstract OpenCGAResult rank(String studyStr, Query query, String field, int numResults, boolean asc, String token)
             throws CatalogException;
 
     /**
@@ -226,10 +231,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
      * @param options   QueryOptions object.
      * @param token Session id of the user logged in.
-     * @return A DataResult object containing the results of the query grouped by the fields.
+     * @return A OpenCGAResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public DataResult groupBy(@Nullable String studyStr, Query query, String fields, QueryOptions options, String token)
+    public OpenCGAResult groupBy(@Nullable String studyStr, Query query, String fields, QueryOptions options, String token)
             throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
@@ -245,10 +250,27 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      * @param options   QueryOptions object.
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
      * @param token Session id of the user logged in.
-     * @return A DataResult object containing the results of the query grouped by the fields.
+     * @return A OpenCGAResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    public abstract DataResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
+    public abstract OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException;
+
+    public <T> OpenCGAResult<T> endResult(OpenCGAResult<T> result, boolean ignoreException) throws CatalogException {
+        if (!ignoreException) {
+            if (ListUtils.isNotEmpty(result.getEvents())) {
+                List<String> errors = new ArrayList<>();
+                for (Event event : result.getEvents()) {
+                    if (event.getType() == Event.Type.ERROR) {
+                        errors.add(event.getDescription());
+                    }
+                }
+                if (!errors.isEmpty()) {
+                    throw new CatalogException(StringUtils.join(errors, "\n"));
+                }
+            }
+        }
+        return result;
+    }
 
 }

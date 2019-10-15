@@ -17,12 +17,12 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.naming.Context;
@@ -173,7 +173,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public DataResult resetPassword(String userId) throws CatalogException {
+    public OpenCGAResult resetPassword(String userId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 

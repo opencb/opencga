@@ -20,16 +20,14 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TIMESTAMP;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * Created on 18/08/15.
@@ -89,10 +87,10 @@ public interface AuditDBAdaptor {
     }
 
 
-    DataResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException;
+    OpenCGAResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException;
 
-    DataResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
-    DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
 }

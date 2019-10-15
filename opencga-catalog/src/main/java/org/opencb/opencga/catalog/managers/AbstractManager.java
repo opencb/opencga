@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -31,6 +30,7 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,22 +144,22 @@ public abstract class AbstractManager {
 
 
     /**
-     * Return the results in the DataResult object in the same order they were queried by the list of entries.
+     * Return the results in the OpenCGAResult object in the same order they were queried by the list of entries.
      * For entities with version where all versions have been requested, call to InternalGetDataResult.getVersionedResults() to get
      * a list of lists of T.
      *
      * @param entries Original list used to perform the query.
      * @param getId   Generic function that will fetch the id that will be used to compare with the list of entries.
-     * @param queryResult DataResult object.
+     * @param queryResult OpenCGAResult object.
      * @param silent  Boolean indicating whether we will fail in case of an inconsistency or not.
      * @param keepAllVersions Boolean indicating whether to keep all versions of fail in case of id duplicities.
      * @param <T>     Generic entry (Sample, File, Cohort...)
-     * @return the DataResult with the proper order of results.
+     * @return the OpenCGAResult with the proper order of results.
      * @throws CatalogException In case of inconsistencies found.
      */
     <T extends IPrivateStudyUid> InternalGetDataResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId,
-                                                                             DataResult<T> queryResult, boolean silent,
-                                                                             boolean keepAllVersions) throws CatalogException {
+                                                                            OpenCGAResult<T> queryResult, boolean silent,
+                                                                            boolean keepAllVersions) throws CatalogException {
         InternalGetDataResult<T> internalGetDataResult = new InternalGetDataResult<>(queryResult);
 
         Map<String, List<T>> resultMap = new HashMap<>();
@@ -182,7 +182,7 @@ public abstract class AbstractManager {
                 groups.add(resultMap.get(entry).size());
             } else {
                 if (!silent) {
-                    throw new CatalogException("Entry " + entry + " not found in DataResult");
+                    throw new CatalogException("Entry " + entry + " not found in OpenCGAResult");
                 }
                 groups.add(0);
                 internalGetDataResult.addMissing(entry, "Not found or user does not have permissions.");
@@ -286,7 +286,7 @@ public abstract class AbstractManager {
         if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {
-            DataResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
+            OpenCGAResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
             if (queryResult.getNumResults() == 0) {
                 throw CatalogDBException.idNotFound("Group", member);
             }

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -33,6 +32,7 @@ import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.PermissionRule;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,7 +183,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        DataResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
+        OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
         if (groupBelonging.getNumResults() == 0) {
             throw new CatalogAuthorizationException("Only the members of the study are allowed to see it");
         }
@@ -289,7 +289,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
 
     private boolean isAdministrativeUser(long studyId, String user) throws CatalogException {
-        DataResult<Group> groupBelonging = getGroupBelonging(studyId, user);
+        OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, user);
         for (Group group : groupBelonging.getResults()) {
             if (group.getId().equals(ADMINS_GROUP)) {
                 return true;
@@ -587,13 +587,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllStudyAcls(String userId, long studyId) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getAllStudyAcls(String userId, long studyId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(studyId, null, Entity.STUDY);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getStudyAcl(String userId, long studyId, String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -606,7 +606,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -616,13 +616,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getAllSampleAcls(long studyId, long sampleId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(sampleId, null, Entity.SAMPLE);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getSampleAcl(long studyId, long sampleId, String userId, String member)
+    public OpenCGAResult<Map<String, List<String>>> getSampleAcl(long studyId, long sampleId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -636,7 +636,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -651,7 +651,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
+    public OpenCGAResult<Map<String, List<String>>> getAllFileAcls(long studyId, long fileId, String userId, boolean checkPermission)
             throws CatalogException {
         if (checkPermission) {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -660,7 +660,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getFileAcl(long studyId, long fileId, String userId, String member)
+    public OpenCGAResult<Map<String, List<String>>> getFileAcl(long studyId, long fileId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -674,7 +674,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -684,14 +684,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllIndividualAcls(long studyId, long individualId, String userId)
+    public OpenCGAResult<Map<String, List<String>>> getAllIndividualAcls(long studyId, long individualId, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(individualId, null, Entity.INDIVIDUAL);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getIndividualAcl(long studyId, long individualId, String userId, String member)
+    public OpenCGAResult<Map<String, List<String>>> getIndividualAcl(long studyId, long individualId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -705,7 +705,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -715,13 +715,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getAllCohortAcls(long studyId, long cohortId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(cohortId, null, Entity.COHORT);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getCohortAcl(long studyId, long cohortId, String userId, String member)
+    public OpenCGAResult<Map<String, List<String>>> getCohortAcl(long studyId, long cohortId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -735,7 +735,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -745,13 +745,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getAllPanelAcls(long studyId, long panelId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(panelId, null, Entity.DISEASE_PANEL);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getPanelAcl(long studyId, long panelId, String userId, String member)
+    public OpenCGAResult<Map<String, List<String>>> getPanelAcl(long studyId, long panelId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -764,13 +764,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getAllJobAcls(long studyId, long jobId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(jobId, null, Entity.JOB);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getJobAcl(long studyId, long jobId, String userId, String member) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getJobAcl(long studyId, long jobId, String userId, String member)
+            throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -783,7 +784,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //        List<String> members = new ArrayList<>(2);
 //        members.add(member);
 //        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
-//            DataResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+//            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, member);
 //            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
 //                members.add(groupBelonging.first().getName());
 //            }
@@ -793,13 +794,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getAllFamilyAcls(long studyId, long familyId, String userId) throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(familyId, null, Entity.FAMILY);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getFamilyAcl(long studyId, long familyId, String userId, String member)
+    public OpenCGAResult<Map<String, List<String>>> getFamilyAcl(long studyId, long familyId, String userId, String member)
             throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
@@ -812,15 +813,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
+    public OpenCGAResult<Map<String, List<String>>> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
             throws CatalogException {
         checkCanAssignOrSeePermissions(studyId, userId);
         return aclDBAdaptor.get(clinicalAnalysisId, null, Entity.CLINICAL_ANALYSIS);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId, String member)
-            throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getClinicalAnalysisAcl(long studyId, long clinicalAnalysisId, String userId,
+                                                                           String member) throws CatalogException {
         try {
             checkCanAssignOrSeePermissions(studyId, userId);
         } catch (CatalogException e) {
@@ -834,7 +835,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private void checkAskingOwnPermissions(String userId, String member, long studyId) throws CatalogException {
         if (member.startsWith("@")) { //group
             // If the userId does not belong to the group...
-            DataResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
+            OpenCGAResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
             if (groupBelonging.getNumResults() != 1 || !groupBelonging.first().getId().equals(member)) {
                 throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
                         + member);
@@ -849,31 +850,31 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    public OpenCGAResult<Map<String, List<String>>> setStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
         aclDBAdaptor.setToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
+    public OpenCGAResult<Map<String, List<String>>> addStudyAcls(List<Long> studyIds, List<String> members, List<String> permissions)
             throws CatalogException {
         aclDBAdaptor.addToMembers(studyIds, members, permissions);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members,
+    public OpenCGAResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members,
                                                                  @Nullable List<String> permissions) throws CatalogException {
         aclDBAdaptor.removeFromMembers(studyIds, members, permissions, Entity.STUDY);
         return aclDBAdaptor.get(studyIds, members, Entity.STUDY);
     }
 
-    private DataResult<Map<String, List<String>>> getAcls(List<Long> ids, List<String> members, Entity entity) throws CatalogException {
+    private OpenCGAResult<Map<String, List<String>>> getAcls(List<Long> ids, List<String> members, Entity entity) throws CatalogException {
         return aclDBAdaptor.get(ids, members, entity);
     }
 
-    public DataResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+    public OpenCGAResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
                                                          List<String> permissions, Entity entity, Entity entity2) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             throw new CatalogException("Missing identifiers to set acls");
@@ -886,7 +887,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
+    public OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids, List<Long> ids2, List<String> members,
                                                          List<String> permissions, Entity entity, Entity entity2) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             throw new CatalogException("Missing identifiers to add acls");
@@ -898,7 +899,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
+    public OpenCGAResult<Map<String, List<String>>> removeAcls(List<Long> ids, List<Long> ids2, List<String> members,
                                                             @Nullable List<String> permissions, Entity entity, Entity entity2)
             throws CatalogException {
         if (ids == null || ids.isEmpty()) {
@@ -910,18 +911,18 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return getAclResult(ids, members, entity, startTime);
     }
 
-    DataResult<Map<String, List<String>>> getAclResult(List<Long> ids, List<String> members, Entity entity, long startTime)
+    OpenCGAResult<Map<String, List<String>>> getAclResult(List<Long> ids, List<String> members, Entity entity, long startTime)
             throws CatalogException {
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
-        DataResult<Map<String, List<String>>> result = getAcls(ids, members, entity);
+        OpenCGAResult<Map<String, List<String>>> result = getAcls(ids, members, entity);
         result.setTime(result.getTime() + dbTime);
 
         return result;
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
+    public OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
                                                                Entity entity) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             throw new CatalogDBException("Missing identifiers to set acls");
@@ -931,7 +932,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         aclDBAdaptor.setAcls(ids, aclEntries, entity);
         int dbTime = (int) (System.currentTimeMillis() - startTime);
 
-        DataResult result = getAcls(ids, null, entity);
+        OpenCGAResult result = getAcls(ids, null, entity);
         result.setTime(result.getTime() + dbTime);
 
         return result;
@@ -991,11 +992,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @return the group id of the user. Null if the user does not take part of any group.
      * @throws CatalogException when there is any database error.
      */
-    DataResult<Group> getGroupBelonging(long studyId, List<String> members) throws CatalogException {
+    OpenCGAResult<Group> getGroupBelonging(long studyId, List<String> members) throws CatalogException {
         return studyDBAdaptor.getGroup(studyId, null, members);
     }
 
-    DataResult<Group> getGroupBelonging(long studyId, String members) throws CatalogException {
+    OpenCGAResult<Group> getGroupBelonging(long studyId, String members) throws CatalogException {
         return getGroupBelonging(studyId, Arrays.asList(members.split(",")));
     }
 

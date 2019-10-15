@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBRuntimeException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -184,9 +185,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected DataResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
+    protected OpenCGAResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults,
+                                 boolean asc) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new DataResult();
+            return new OpenCGAResult();
         }
 
         if (groupByField.contains(",")) {
@@ -204,15 +206,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
             Bson limit = Aggregates.limit(numResults);
 
-            return collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions());
+            return new OpenCGAResult(collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions()));
         }
     }
 
-    protected DataResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
+    protected OpenCGAResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
                                boolean asc) {
 
         if (groupByField == null || groupByField.isEmpty()) {
-            return new DataResult();
+            return new OpenCGAResult();
         }
 
         if (groupByField.size() == 1) {
@@ -240,13 +242,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
             Bson limit = Aggregates.limit(numResults);
 
-            return collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions());
+            return new OpenCGAResult(collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions()));
         }
     }
 
-    protected DataResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
+    protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new DataResult();
+            return new OpenCGAResult();
         }
 
         if (groupByField.contains(",")) {
@@ -257,10 +259,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected DataResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
+    protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
                                   QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new DataResult();
+            return new OpenCGAResult();
         }
 
         List<String> groupByFields = new ArrayList<>(groupByField);
@@ -290,7 +292,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         } else {
             group = Aggregates.group(id, Accumulators.addToSet("items", "$" + idField));
         }
-        return collection.aggregate(Arrays.asList(match, project, group), options);
+        return new OpenCGAResult(collection.aggregate(Arrays.asList(match, project, group), options));
 //        }
     }
 
@@ -471,13 +473,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return queryOptions;
     }
 
-    protected DataResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
+    protected OpenCGAResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
                 .append(PRIVATE_STUDY_UID, studyId)
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
-        return collection.update(query, update, new QueryOptions("multi", true));
+        return new OpenCGAResult(collection.update(query, update, new QueryOptions("multi", true)));
     }
 
     protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, Document document)

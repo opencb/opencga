@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.models.PermissionRule;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -277,7 +278,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> get(long resourceId, List<String> members, Entity entry) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> get(long resourceId, List<String> members, Entity entry) throws CatalogException {
         validateEntry(entry);
         long startTime = startQuery();
 
@@ -287,10 +288,11 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult<Map<String, List<String>>> get(List<Long> resourceIds, List<String> members, Entity entry) throws CatalogException {
-        DataResult<Map<String, List<String>>> result = DataResult.empty();
+    public OpenCGAResult<Map<String, List<String>>> get(List<Long> resourceIds, List<String> members, Entity entry)
+            throws CatalogException {
+        OpenCGAResult<Map<String, List<String>>> result = OpenCGAResult.empty();
         for (Long resourceId : resourceIds) {
-            DataResult<Map<String, List<String>>> tmpResult = get(resourceId, members, entry);
+            OpenCGAResult<Map<String, List<String>>> tmpResult = get(resourceId, members, entry);
             result.append(tmpResult);
             if (tmpResult.getNumResults() == 0) {
                 result.getResults().add(Collections.emptyMap());
@@ -300,7 +302,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult removeFromStudy(long studyId, String member, Entity entity) throws CatalogException {
+    public OpenCGAResult removeFromStudy(long studyId, String member, Entity entity) throws CatalogException {
         validateEntry(entity);
 
         Document query = new Document()
@@ -313,11 +315,11 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         logger.debug("Remove all acls for entity {} for member {} in study {}. Query: {}, pullAll: {}", entity, member, studyId,
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return dbCollectionMap.get(entity).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        return new OpenCGAResult(dbCollectionMap.get(entity).update(query, update, new QueryOptions(MongoDBCollection.MULTI, true)));
     }
 
     @Override
-    public DataResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
+    public OpenCGAResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
                                    List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
@@ -338,7 +340,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
+    public OpenCGAResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
             for (Long studyId : studyIds) {
@@ -395,7 +397,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
+    public OpenCGAResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
                                    List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
@@ -443,7 +445,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
+    public OpenCGAResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
         return runTransaction((clientSession) -> {
             long startTime = startQuery();
             for (Long studyId : studyIds) {
@@ -469,8 +471,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members, List<String> permissionList,
-                                        Entity entity, Entity entity2) throws CatalogDBException {
+    public OpenCGAResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
+                                           List<String> permissionList, Entity entity, Entity entity2) throws CatalogDBException {
         if (members == null || members.isEmpty()) {
             throw new CatalogDBException("Missing members list");
         }
@@ -520,7 +522,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
+    public OpenCGAResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
         if (members == null || members.isEmpty()) {
             throw new CatalogDBException("Missing 'members' array.");
         }
@@ -546,7 +548,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     // TODO: Make this method transactional
     @Override
-    public DataResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Entity entity)
+    public OpenCGAResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Entity entity)
             throws CatalogDBException {
         validateEntry(entity);
         MongoDBCollection collection = dbCollectionMap.get(entity);
@@ -583,7 +585,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
-        return DataResult.empty();
+        return OpenCGAResult.empty();
     }
 
     private void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity,
@@ -607,7 +609,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public DataResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
+    public OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
         MongoDBCollection collection = dbCollectionMap.get(entry.getEntity());
 
         // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
@@ -631,12 +633,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        return collection.update(bson, update, new QueryOptions("multi", true));
+        return new OpenCGAResult(collection.update(bson, update, new QueryOptions("multi", true)));
     }
 
     //TODO: Make transactional !
     @Override
-    public DataResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -720,11 +722,11 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         // 2. Remove the permission rule from the map in the study
         removeReferenceToPermissionRuleInStudy(study.getUid(), permissionRuleToDeleteId, entry);
 
-        return DataResult.empty();
+        return OpenCGAResult.empty();
     }
 
     @Override
-    public DataResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -804,12 +806,12 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         // 2. Remove the permission rule from the map in the study
         removeReferenceToPermissionRuleInStudy(study.getUid(), permissionRuleToDeleteId, entry);
 
-        return DataResult.empty();
+        return OpenCGAResult.empty();
     }
 
     //TODO: Make transactional !
     @Override
-    public DataResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException {
+    public OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException {
         // Remove the __TODELETE tag...
         String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
 
@@ -831,7 +833,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         // Remove the permission rule from the map in the study
         removeReferenceToPermissionRuleInStudy(studyId, permissionRuleToDelete, entry);
 
-        return DataResult.empty();
+        return OpenCGAResult.empty();
     }
 
     private boolean isPermissionRuleEntity(Entity entity) {

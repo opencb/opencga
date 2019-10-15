@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -24,6 +23,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.HashMap;
 import java.util.List;
@@ -129,13 +129,13 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
     }
 
-    DataResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
-    DataResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
-    DataResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
 
-    DataResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long cohortId) throws CatalogDBException;
 
@@ -145,9 +145,9 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return DataResult object.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

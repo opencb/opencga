@@ -34,7 +34,9 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.Variable;
 
 import java.io.IOException;
 import java.util.*;
@@ -95,22 +97,6 @@ class MongoDBUtils {
 
     static List<Study> parseStudies(DataResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Study.class);
-    }
-
-    static List<File> parseFiles(DataResult<Document> result) throws CatalogDBException {
-        return parseObjects(result, File.class);
-    }
-
-    static Job parseJob(DataResult<Document> result) throws CatalogDBException {
-        return parseObject(result, Job.class);
-    }
-
-    static List<Job> parseJobs(DataResult<Document> result) throws CatalogDBException {
-        return parseObjects(result, Job.class);
-    }
-
-    static List<Sample> parseSamples(DataResult<Document> result) throws CatalogDBException {
-        return parseObjects(result, Sample.class);
     }
 
     static <T> List<T> parseObjects(DataResult<Document> result, Class<T> tClass) throws CatalogDBException {

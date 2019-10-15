@@ -35,6 +35,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Metadata;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -203,7 +204,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public DataResult updateJWTParameters(ObjectMap params) throws CatalogDBException {
+    public OpenCGAResult updateJWTParameters(ObjectMap params) throws CatalogDBException {
         Bson query = METADATA_QUERY;
 
         Document adminDocument = new Document();
@@ -224,9 +225,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         if (adminDocument.size() > 0) {
             Bson update = new Document("$set", adminDocument);
-            return this.metaCollection.update(query, update, QueryOptions.empty());
+            return new OpenCGAResult(this.metaCollection.update(query, update, QueryOptions.empty()));
         }
 
-        return DataResult.empty();
+        return OpenCGAResult.empty();
     }
 }

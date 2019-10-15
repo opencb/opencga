@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
@@ -35,6 +34,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -139,7 +139,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         List<AnnotationSet> annotationSetList = new ArrayList<>();
                         if (action == ParamUtils.UpdateAction.ADD) {
                             // Get all the annotation sets from the entry
-                            DataResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
+                            OpenCGAResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
 
                             if (annotationSetDataResult != null && annotationSetDataResult.getNumResults() > 0) {
                                 for (AnnotationSet annotationSet : annotationSetDataResult.getResults()) {
@@ -284,7 +284,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Obtain all the variable sets from the study
-                DataResult<Study> studyDataResult = studyDBAdaptor.get(study.getUid(),
+                OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(study.getUid(),
                         new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
                 if (studyDataResult.getNumResults() == 0) {
@@ -297,7 +297,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Get the annotation set from the entry
-                DataResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), annotationSet.getId());
+                OpenCGAResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), annotationSet.getId());
                 if (annotationSetDataResult.getNumResults() == 0) {
                     throw new CatalogException("AnnotationSet " + annotationSet.getId() + " not found. Annotations could not be updated.");
                 }

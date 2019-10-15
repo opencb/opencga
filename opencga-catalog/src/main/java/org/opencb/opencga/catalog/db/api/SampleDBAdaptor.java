@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -26,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.List;
 import java.util.Map;
@@ -135,18 +135,18 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         }
     }
 
-    DataResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
 
-    DataResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
 
-    DataResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
 
-    DataResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long sampleId) throws CatalogDBException;
 
-    DataResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -154,9 +154,9 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
-     * @return a DataResult object.
+     * @return a OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    DataResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

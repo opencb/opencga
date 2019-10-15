@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -48,7 +49,7 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
     }
 
     @Override
-    public DataResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException {
+    public OpenCGAResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException {
         long startQuery = startQuery();
 
         Document auditRecordDbObject = MongoDBUtils.getMongoDBDocument(auditRecord, "AuditRecord");
@@ -58,7 +59,7 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
     }
 
     @Override
-    public DataResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
@@ -86,7 +87,7 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
     }
 
     @Override
-    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(auditCollection, bsonQuery, fields, "name", options);
     }

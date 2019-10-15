@@ -18,9 +18,13 @@ package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.HashSet;
 import java.util.List;
@@ -64,41 +68,41 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    DataResult insert(User user, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(User user, QueryOptions options) throws CatalogDBException;
 
-    DataResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
+    OpenCGAResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
 
 //    @Deprecated
-//    default DataResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
+//    default OpenCGAResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
 //        return update(userId, parameters);
 //    }
 
-    DataResult update(String userId, ObjectMap parameters) throws CatalogDBException;
+    OpenCGAResult update(String userId, ObjectMap parameters) throws CatalogDBException;
 
 //    @Deprecated
-//    default DataResult<User> deleteUser(String userId) throws CatalogDBException {
+//    default OpenCGAResult<User> deleteUser(String userId) throws CatalogDBException {
 //        return delete(userId, false);
 //    }
 
-    DataResult delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
-    DataResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
+    OpenCGAResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    DataResult updateUserLastModified(String userId) throws CatalogDBException;
+    OpenCGAResult updateUserLastModified(String userId) throws CatalogDBException;
 
-    DataResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
+    OpenCGAResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
     // Config operations
-    DataResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;
+    OpenCGAResult setConfig(String userId, String name, Map<String, Object> config) throws CatalogDBException;
 
-    DataResult deleteConfig(String userId, String name) throws CatalogDBException;
+    OpenCGAResult deleteConfig(String userId, String name) throws CatalogDBException;
 
     // Filter operations
-    DataResult addFilter(String userId, User.Filter filter) throws CatalogDBException;
+    OpenCGAResult addFilter(String userId, User.Filter filter) throws CatalogDBException;
 
-    DataResult updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException;
+    OpenCGAResult updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException;
 
-    DataResult deleteFilter(String userId, String name) throws CatalogDBException;
+    OpenCGAResult deleteFilter(String userId, String name) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT_ARRAY, ""),
@@ -293,26 +297,26 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
      * ***************************
      */
 
-//    DataResult<Project> createProject(String userId, Project project, QueryOptions options) throws CatalogDBException;
+//    OpenCGAResult<Project> createProject(String userId, Project project, QueryOptions options) throws CatalogDBException;
 //
 //    boolean projectExists(int projectId);
 //
-//    DataResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException;
+//    OpenCGAResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException;
 //
-//    DataResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
+//    OpenCGAResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
 //
-//    DataResult<Integer> deleteProject(int projectId) throws CatalogDBException;
+//    OpenCGAResult<Integer> deleteProject(int projectId) throws CatalogDBException;
 //
-//    DataResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
+//    OpenCGAResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
 //
-//    DataResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
+//    OpenCGAResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
 //
 //    int getProjectId(String userId, String projectAlias) throws CatalogDBException;
 //
 //    String getProjectOwnerId(int projectId) throws CatalogDBException;
 //
-//    DataResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
+//    OpenCGAResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
 //
-//    DataResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
+//    OpenCGAResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
 
 }
