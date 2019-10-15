@@ -1054,7 +1054,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         return conf;
     }
 
-    private MRExecutor getMRExecutor() throws StorageEngineException {
+    public MRExecutor getMRExecutor() throws StorageEngineException {
         if (mrExecutor == null) {
             mrExecutor = MRExecutorFactory.getMRExecutor(getOptions());
         }

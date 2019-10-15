@@ -11,6 +11,9 @@ import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
 
 import java.io.IOException;
 
+/**
+ * Helper interface to be used by opencga local analysis executors.
+ */
 public interface OpenCgaAnalysisExecutor {
 
     ObjectMap getExecutorParams();

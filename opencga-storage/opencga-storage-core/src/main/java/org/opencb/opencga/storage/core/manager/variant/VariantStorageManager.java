@@ -53,6 +53,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -320,6 +321,15 @@ public class VariantStorageManager extends StorageManager {
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
+    }
+
+    public List<VariantScoreMetadata> listVariantScores(String study, String sessionId) throws CatalogException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String studyFqn = catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+        DataStore dataStore = getDataStore(studyFqn, sessionId);
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
+
+        return engine.getMetadataManager().getStudyMetadata(studyFqn).getVariantScores();
     }
 
     public void loadVariantScore(String study, URI scoreFile, String scoreName, String cohort1, String cohort2,
@@ -609,15 +619,23 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
-    private DataStore getDataStore(String study, String sessionId) throws CatalogException {
+    public DataStore getDataStore(String study, String sessionId) throws CatalogException {
         return StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
     }
 
-    private DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
+    public DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
         return StorageOperation.getDataStoreByProjectId(catalogManager, project, File.Bioformat.VARIANT, sessionId);
     }
 
-    protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws CatalogException, StorageEngineException {
+    protected VariantStorageEngine getVariantStorageEngine(Query query, String sessionId) throws CatalogException, StorageEngineException {
+        String study = catalogUtils.getAnyStudy(query, sessionId);
+
+        catalogUtils.parseQuery(query, sessionId);
+        DataStore dataStore = getDataStore(study, sessionId);
+        return getVariantStorageEngine(dataStore);
+    }
+
+    protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
         try {
             return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
@@ -652,6 +670,12 @@ public class VariantStorageManager extends StorageManager {
         return true;
     }
 
+    public void checkQueryPermissions(Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, StorageEngineException {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, sessionId);
+        checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
+    }
+
     // Permission related methods
 
     private interface VariantReadOperation<R> {
@@ -659,20 +683,15 @@ public class VariantStorageManager extends StorageManager {
     }
 
     private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, VariantReadOperation<R> supplier)
-            throws CatalogException, StorageEngineException, IOException {
-        String study = catalogUtils.getAnyStudy(query, sessionId);
-
-        catalogUtils.parseQuery(query, sessionId);
-        DataStore dataStore = getDataStore(study, sessionId);
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-
+            throws CatalogException, StorageEngineException {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, sessionId);
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
         return supplier.apply(variantStorageEngine);
     }
 
     private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
                                              VariantReadOperation<R> supplier)
-            throws CatalogException, StorageEngineException, IOException {
+            throws CatalogException, StorageEngineException {
         ObjectMap auditAttributes = new ObjectMap()
                 .append("query", new Query(query))
                 .append("queryOptions", new QueryOptions(queryOptions));

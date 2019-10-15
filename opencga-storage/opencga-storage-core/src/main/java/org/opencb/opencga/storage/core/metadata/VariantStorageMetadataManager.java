@@ -1419,8 +1419,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileId;
     }
 
-    public Map<String, Integer> registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
-        return registerCohorts(study, Collections.singletonMap(cohortName, samples));
+    public Integer registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
+        return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName);
     }
 
     public Map<String, Integer> registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)
