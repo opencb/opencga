@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.core.Exon;
@@ -13,9 +12,7 @@ import org.opencb.biodata.models.core.Transcript;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
@@ -26,6 +23,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.nio.file.Paths;
 import java.util.*;
@@ -37,6 +35,7 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
     public final static int LOW_COVERAGE_DEFAULT = 20;
     public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
 
+    protected String studyId;
     protected String clinicalAnalysisId;
 
     protected ObjectMap options;
@@ -47,8 +46,10 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
     protected CellBaseClient cellBaseClient;
     protected AlignmentStorageManager alignmentStorageManager;
 
+
     public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
-        super(studyId, opencgaHome, sessionId);
+        super(opencgaHome, sessionId);
+        this.studyId = studyId;
 
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.options = options;
@@ -322,6 +323,21 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
         }
 
         return diseasePanels;
+    }
+
+    protected List<String> getGeneIdsFromDiseasePanels(List<DiseasePanel> diseasePanels) {
+        List<String> geneIds = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(diseasePanels)) {
+            for (DiseasePanel diseasePanel : diseasePanels) {
+                if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getGenes())) {
+                    for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+                        geneIds.add(gene.getId());
+                    }
+                }
+            }
+        }
+        return geneIds;
     }
 
     protected void cleanQuery(Query query) {

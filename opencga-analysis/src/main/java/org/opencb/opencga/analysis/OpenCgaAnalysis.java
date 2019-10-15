@@ -16,33 +16,30 @@
 
 package org.opencb.opencga.analysis;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.oskar.analysis.OskarAnalysis;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.oskar.core.annotations.Analysis;
+import org.opencb.oskar.core.annotations.AnalysisExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public abstract class OpenCgaAnalysis extends OskarAnalysis {
 
@@ -52,23 +49,36 @@ public abstract class OpenCgaAnalysis extends OskarAnalysis {
     protected VariantStorageManager variantStorageManager;
 
     protected String opencgaHome;
-    protected String studyId;
     protected String sessionId;
 
     protected Logger logger;
 
-    public OpenCgaAnalysis(String studyId, String opencgaHome, String sessionId) {
-        this.studyId = studyId;
-        this.opencgaHome = opencgaHome;
-        this.sessionId = sessionId;
-
-//        init();
+    public OpenCgaAnalysis() {
     }
 
-//    public abstract AnalysisResult<T> execute() throws Exception;
+    public OpenCgaAnalysis(String opencgaHome, String sessionId) {
+        this.opencgaHome = opencgaHome;
+        this.sessionId = sessionId;
+    }
 
-    void init() {
-        logger = LoggerFactory.getLogger(this.getClass().toString());
+    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
+                                       ObjectMap executorParams, Path outDir, String sessionId) {
+        this.opencgaHome = opencgaHome;
+        this.catalogManager = catalogManager;
+        this.configuration = catalogManager.getConfiguration();
+        this.variantStorageManager = variantStorageManager;
+        this.storageConfiguration = variantStorageManager.getStorageConfiguration();
+        this.sessionId = sessionId;
+
+        return setUp(executorParams, outDir);
+    }
+
+    public final OpenCgaAnalysis setUp(String opencgaHome, ObjectMap executorParams, Path outDir, String sessionId)
+            throws AnalysisException {
+        this.opencgaHome = opencgaHome;
+        this.sessionId = sessionId;
+        this.executorParams = executorParams;
+        this.outDir = outDir;
 
         try {
             loadConfiguration();
@@ -77,27 +87,57 @@ public abstract class OpenCgaAnalysis extends OskarAnalysis {
             this.catalogManager = new CatalogManager(configuration);
             this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
         } catch (IOException | CatalogException e) {
-            e.printStackTrace();
+            throw new AnalysisException(e);
+        }
+
+        return setUp(executorParams, outDir);
+    }
+
+    private OpenCgaAnalysis setUp(ObjectMap executorParams, Path outDir) {
+        logger = LoggerFactory.getLogger(this.getClass().toString());
+
+        availableFrameworks = new ArrayList<>();
+        sourceTypes = new ArrayList<>();
+        if (storageConfiguration.getDefaultStorageEngineId().equals("mongodb")) {
+            if (getAnalysisData().equals(Analysis.AnalysisData.VARIANT)) {
+                sourceTypes.add(AnalysisExecutor.Source.MONGODB);
+            }
+        } else if (storageConfiguration.getDefaultStorageEngineId().equals("hadoop")) {
+            availableFrameworks.add(AnalysisExecutor.Framework.MAP_REDUCE);
+            // TODO: Check from configuration if spark is available
+//            availableFrameworks.add(AnalysisExecutor.Framework.SPARK);
+            if (getAnalysisData().equals(Analysis.AnalysisData.VARIANT)) {
+                sourceTypes.add(AnalysisExecutor.Source.HBASE);
+            }
+        }
+
+        availableFrameworks.add(AnalysisExecutor.Framework.ITERATOR);
+        sourceTypes.add(AnalysisExecutor.Source.OPENCGA);
+
+        setUp(executorParams, outDir, sourceTypes, availableFrameworks);
+        return this;
+    }
+
+    protected final void setUpStorageEngineExecutor(String study) throws AnalysisException {
+        executorParams.put("opencgaHome", opencgaHome);
+        executorParams.put("sessionId", sessionId);
+        try {
+            DataStore dataStore = variantStorageManager.getDataStore(study, sessionId);
+
+            executorParams.put("storageEngineId", dataStore.getStorageEngine());
+            executorParams.put("dbName", dataStore.getDbName());
+        } catch (CatalogException e) {
+            throw new AnalysisException(e);
         }
     }
+
     /**
      * This method attempts to load general configuration from OpenCGA installation folder, if not exists then loads JAR configuration.yml.
      *
      * @throws IOException If any IO problem occurs
      */
-    public void loadConfiguration() throws IOException {
-        FileUtils.checkDirectory(Paths.get(this.opencgaHome));
-
-        // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.opencgaHome).resolve("conf").resolve("configuration.yml");
-        if (Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.configuration = Configuration.load(new FileInputStream(path.toFile()));
-        } else {
-            logger.debug("Loading configuration from JAR file");
-            this.configuration = Configuration
-                    .load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
-        }
+    private void loadConfiguration() throws IOException {
+        this.configuration = ConfigurationUtils.loadConfiguration(opencgaHome);
     }
 
     /**
@@ -105,22 +145,12 @@ public abstract class OpenCgaAnalysis extends OskarAnalysis {
      *
      * @throws IOException If any IO problem occurs
      */
-    public void loadStorageConfiguration() throws IOException {
-        FileUtils.checkDirectory(Paths.get(this.opencgaHome));
-
-        // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.opencgaHome).resolve("conf").resolve("storage-configuration.yml");
-        if (Files.exists(path)) {
-            logger.debug("Loading storage configuration from '{}'", path.toAbsolutePath());
-            this.storageConfiguration = StorageConfiguration.load(new FileInputStream(path.toFile()));
-        } else {
-            logger.debug("Loading storage configuration from JAR file");
-            this.storageConfiguration = StorageConfiguration
-                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
-        }
+    private void loadStorageConfiguration() throws IOException {
+        this.storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
     }
 
-    protected Analyst getAnalyst(String token) throws AnalysisException {
+
+    protected final Analyst getAnalyst(String token) throws AnalysisException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
             QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -132,18 +162,4 @@ public abstract class OpenCgaAnalysis extends OskarAnalysis {
         }
     }
 
-    protected List<String> getGeneIdsFromDiseasePanels(List<DiseasePanel> diseasePanels) {
-        List<String> geneIds = new ArrayList<>();
-
-        if (CollectionUtils.isNotEmpty(diseasePanels)) {
-            for (DiseasePanel diseasePanel : diseasePanels) {
-                if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getGenes())) {
-                    for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
-                        geneIds.add(gene.getId());
-                    }
-                }
-            }
-        }
-        return geneIds;
-    }
 }
