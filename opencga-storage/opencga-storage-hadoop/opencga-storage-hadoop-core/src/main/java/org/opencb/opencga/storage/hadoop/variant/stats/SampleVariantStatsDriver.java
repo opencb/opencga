@@ -297,6 +297,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             out.writeDouble(qualSumSq);
             os.setOut(out); // Replace the DataOutput used by the encoder
             writer.write(sampleStats, binaryEncoder);
+            binaryEncoder.flush();
         }
 
         @Override
@@ -367,7 +368,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
 
             @Override
             public int read() throws IOException {
-                return ((int) in.readByte());
+                return Byte.toUnsignedInt(in.readByte());
             }
 
             @Override
