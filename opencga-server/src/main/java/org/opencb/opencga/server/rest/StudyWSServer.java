@@ -107,7 +107,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
             @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+//            @ApiParam(value = "Boolean to retrieve deleted studies", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
@@ -159,13 +159,13 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response info(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
                     required = true) @PathParam("studies") String studies,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+//            @ApiParam(value = "Boolean to retrieve deleted studies", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(studies);
-            return createOkResponse(studyManager.get(idList, new Query("deleted", deleted), queryOptions, silent, token));
+            return createOkResponse(studyManager.get(idList, queryOptions, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -377,23 +377,21 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studies}/groups")
-    @ApiOperation(value = "Return the groups present in the studies", position = 13, response = Group[].class)
+    @Path("/{study}/groups")
+    @ApiOperation(value = "Return the groups present in the study", response = Group[].class)
     public Response getGroups(
-            @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100", required = true)
-            @PathParam("studies") String studiesStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+                @PathParam("study") String studyStr,
             @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
             @ApiParam(value = "[DEPRECATED] Replaced by id.") @QueryParam("name") String groupName,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
-            List<String> idList = getIdList(studiesStr);
-
             if (StringUtils.isNotEmpty(groupName)) {
                 groupId = groupName;
             }
-            return createOkResponse(catalogManager.getStudyManager().getGroup(idList, groupId, silent, token));
+            return createOkResponse(catalogManager.getStudyManager().getGroup(studyStr, groupId, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

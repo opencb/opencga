@@ -116,9 +116,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Project description") @QueryParam("description") String description,
             @ApiParam(value = "Study id or alias") @QueryParam("study") String study,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
         try {
@@ -139,7 +139,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog project stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Comma separated list of projects [user@]project up to a maximum of 100", required = true)
-                @PathParam("projects") String projects,
+            @PathParam("projects") String projects,
             @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
             @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
                     + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
@@ -215,8 +215,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projects}/studies")
-    @ApiOperation(value = "Fetch all the studies contained in the projects", response = Study[].class)
+    @Path("/{project}/studies")
+    @ApiOperation(value = "Fetch all the studies contained in the project", response = Study[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query"),
@@ -225,14 +225,10 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias up to a maximum of 100", required = true)
-                                  @PathParam("projects") String projects,
-                                  @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                          + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                          defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response getAllStudies(
+            @ApiParam(value = "Project id", required = true) @PathParam("project") String project) {
         try {
-            List<String> idList = getIdList(projects);
-            return createOkResponse(catalogManager.getStudyManager().get(idList, new Query(), queryOptions, silent, token));
+            return createOkResponse(catalogManager.getStudyManager().get(project, new Query(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

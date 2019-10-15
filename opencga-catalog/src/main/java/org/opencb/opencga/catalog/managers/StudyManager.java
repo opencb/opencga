@@ -488,29 +488,6 @@ public class StudyManager extends AbstractManager {
         return get(query, options, sessionId);
     }
 
-    public DataResult<Study> get(List<String> projectList, Query query, QueryOptions options, boolean silent, String sessionId)
-            throws CatalogException {
-        DataResult<Study> result = DataResult.empty();
-        for (String project : projectList) {
-            try {
-                DataResult<Study> studyObj = get(project, query, options, sessionId);
-                result.append(studyObj);
-            } catch (CatalogException e) {
-                String warning = "Missing studies from project " + project + ": " + e.getMessage();
-                Event event = new Event(Event.Type.ERROR, project, e.getMessage());
-                if (silent) {
-                    logger.error(warning, e);
-                    result.getEvents().add(event);
-                } else {
-                    logger.error(warning);
-                    throw e;
-                }
-            }
-        }
-        return result;
-    }
-
-
     /**
      * Fetch all the study objects matching the query.
      *
@@ -899,25 +876,6 @@ public class StudyManager extends AbstractManager {
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
-    }
-
-    public List<DataResult<Group>> getGroup(List<String> studyList, String groupId, boolean silent, String sessionId)
-            throws CatalogException {
-        List<DataResult<Group>> results = new ArrayList<>(studyList.size());
-        for (String study : studyList) {
-            try {
-                DataResult<Group> groupObj = getGroup(study, groupId, sessionId);
-                results.add(groupObj);
-            } catch (CatalogException e) {
-                if (silent) {
-                    Event event = new Event(Event.Type.ERROR, study, e.getMessage());
-                    results.add(new DataResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
-                } else {
-                    throw e;
-                }
-            }
-        }
-        return results;
     }
 
     public DataResult<Group> updateGroup(String studyId, String groupId, GroupParams groupParams, String token)

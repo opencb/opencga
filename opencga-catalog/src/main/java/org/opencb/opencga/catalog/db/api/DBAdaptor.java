@@ -25,9 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -72,27 +70,9 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     DataResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    default List<DataResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<DataResult<T>> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(get(query, options));
-        }
-        return queryResults;
-    }
-
     DataResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
 
     DataResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
-
-    default List<DataResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<DataResult> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(nativeGet(query, options));
-        }
-        return queryResults;
-    }
 
     DataResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 

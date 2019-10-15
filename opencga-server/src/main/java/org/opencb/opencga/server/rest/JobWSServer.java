@@ -168,7 +168,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @PathParam("jobIds") String jobIds,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
@@ -198,7 +198,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")

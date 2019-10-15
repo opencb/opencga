@@ -45,8 +45,6 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -59,7 +57,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -131,7 +128,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 @PathParam(value = "files") String fileStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve deleted files", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
                     + "exception whenever one of the entries looked for cannot be shown for whichever reason",
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
@@ -502,7 +499,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", hidden = true) @QueryParam("jobId") String jobIdOld,
             @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
             @ApiParam(value = "Annotation, e.g: key1=value(;key2=value)") @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "Boolean to retrieve deleted files", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
             @QueryParam("nattributes") String nattributes,
@@ -855,27 +852,13 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("parents", parents)
                     .append("description", description);
             objectMap.putIfNotEmpty(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
-            List<String> uriList = Arrays.asList(uriStr.split(","));
 
             List<DataResult<File>> queryResultList = new ArrayList<>();
             logger.info("path: {}", path);
-            if (uriList.size() == 1) {
-                // If it is just one uri to be linked, it will return an error response if there is some kind of error.
-                URI myUri = UriUtils.createUri(uriList.get(0));
-                queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, token));
-            } else {
-                for (String uri : uriList) {
-                    logger.info("uri: {}", uri);
-                    try {
-                        URI myUri = UriUtils.createUri(uri);
-                        queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, token));
-                    } catch (URISyntaxException | CatalogException | IOException e) {
-                        logger.error(e.getMessage(), e);
-                        queryResultList.add(new DataResult<>(-1, Collections.singletonList(new Event(Event.Type.ERROR, uri, e.getMessage())),
-                                0, Collections.emptyList(), 0));
-                    }
-                }
-            }
+            // If it is just one uri to be linked, it will return an error response if there is some kind of error.
+            URI myUri = UriUtils.createUri(uriStr);
+            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, token));
+
             return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -907,27 +890,10 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap objectMap = new ObjectMap("parents", parents);
             objectMap.putIfNotEmpty("description", params.description);
             objectMap.putIfNotNull("relatedFiles", params.getRelatedFiles());
-            List<String> uriList = Arrays.asList(params.uri.split(","));
 
             List<DataResult<File>> queryResultList = new ArrayList<>();
-
-            if (uriList.size() == 1) {
-                // If it is just one uri to be linked, it will return an error response if there is some kind of error.
-                URI myUri = UriUtils.createUri(uriList.get(0));
-                queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.path, objectMap, token));
-            } else {
-                for (String uri : uriList) {
-                    logger.info("uri: {}", uri);
-                    try {
-                        URI myUri = UriUtils.createUri(uri);
-                        queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.path, objectMap, token));
-                    } catch (URISyntaxException | CatalogException | IOException e) {
-                        logger.error(e.getMessage(), e);
-                        queryResultList.add(new DataResult<>(-1, Collections.singletonList(new Event(Event.Type.ERROR, uri, e.getMessage())),
-                                0, Collections.emptyList(), 0));
-                    }
-                }
-            }
+            URI myUri = UriUtils.createUri(params.uri);
+            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.path, objectMap, token));
 
             return createOkResponse(queryResultList);
         } catch (Exception e) {

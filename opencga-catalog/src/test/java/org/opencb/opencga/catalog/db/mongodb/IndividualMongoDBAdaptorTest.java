@@ -325,19 +325,19 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Individual individual2 = new Individual("in2", "Another Individual", IndividualProperty.Sex.FEMALE, "", new Individual.Population(),
                 1, Collections.emptyList(), null);
         catalogIndividualDBAdaptor.insert(studyId, individual2, Collections.emptyList(), null);
-        List<DataResult> queryResults = catalogIndividualDBAdaptor.nativeGet(Arrays.asList(
-                new Query(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId()),
-                new Query(IndividualDBAdaptor.QueryParams.ID.key(), individual2.getId())), new QueryOptions());
-
-        assertEquals(2, queryResults.size());
+        DataResult queryResult = catalogIndividualDBAdaptor.nativeGet(new Query(IndividualDBAdaptor.QueryParams.ID.key(),
+                individual.getId()), new QueryOptions());
 
         // Individual
-        List<Document> results = queryResults.get(0).getResults();
+        List<Document> results = queryResult.getResults();
         assertEquals(1, results.size());
         assertEquals("MALE", results.get(0).get("sex"));
 
+        queryResult = catalogIndividualDBAdaptor.nativeGet(new Query(IndividualDBAdaptor.QueryParams.ID.key(), individual2.getId()),
+                new QueryOptions());
+
         // Individual2
-        results = queryResults.get(1).getResults();
+        results = queryResult.getResults();
         assertEquals(1, results.size());
         assertEquals("FEMALE", results.get(0).get("sex"));
     }
