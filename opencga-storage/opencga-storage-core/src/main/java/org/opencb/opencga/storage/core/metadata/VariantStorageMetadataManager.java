@@ -852,7 +852,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void removeCohort(int studyId, Object cohort) {
-
+        Integer cohortId = getCohortId(studyId, cohort);
+        if (cohortId == null) {
+            throw VariantQueryException.cohortNotFound(cohort.toString(), studyId, this);
+        }
+        cohortDBAdaptor.removeCohort(studyId, cohortId);
     }
 
     public Integer getCohortId(int studyId, String cohortName) {

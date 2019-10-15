@@ -202,6 +202,11 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     }
 
     @Override
+    public void removeCohort(int studyId, int cohortId) {
+
+    }
+
+    @Override
     public TaskMetadata getTask(int studyId, int taskId, Long timeStamp) {
         return TASK_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).get(taskId);
     }

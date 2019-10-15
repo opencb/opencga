@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.opencb.biodata.models.variant.Variant;
@@ -43,7 +44,9 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
                 VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
         for (Integer cohort : cohorts) {
             CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(studyMetadata.getId(), cohort);
-            calculators.put(cohortMetadata.getName(), new HBaseVariantStatsCalculator(helper.getColumnFamily(),
+            String alias = cohortMetadata.getAttributes().getString("alias");
+            String name = cohortMetadata.getName();
+            calculators.put(StringUtils.isNotEmpty(alias) ? alias : name, new HBaseVariantStatsCalculator(helper.getColumnFamily(),
                     metadataManager, studyMetadata, cohortMetadata.getSamples(), statsMultiAllelic, unknownGenotype));
         }
 
