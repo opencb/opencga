@@ -81,16 +81,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Family version") @QueryParam("version") Integer version,
             @ApiParam(value = "Boolean to retrieve deleted families", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-                @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Fetch all family versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions) {
         try {
             query.remove("study");
             query.remove("families");
 
             List<String> familyList = getIdList(familyStr);
-            DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, silent, token);
+            DataResult<Family> familyQueryResult = familyManager.get(studyStr, familyList, query, queryOptions, true, token);
             return createOkResponse(familyQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

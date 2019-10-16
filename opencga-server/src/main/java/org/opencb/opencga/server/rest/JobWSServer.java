@@ -168,14 +168,11 @@ public class JobWSServer extends OpenCGAWSServer {
             @PathParam("jobIds") String jobIds,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             List<String> idList = getIdList(jobIds);
             return createOkResponse(catalogManager.getJobManager().get(studyStr, idList, new Query("deleted", deleted), queryOptions,
-                    silent, token));
+                    true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

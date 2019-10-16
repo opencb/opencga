@@ -168,16 +168,12 @@ public class CohortWSServer extends OpenCGAWSServer {
                 @PathParam("cohorts") String cohortsStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove("study");
 
             List<String> cohortList = getIdList(cohortsStr);
-            DataResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted),
-                    queryOptions, silent, token);
+            DataResult<Cohort> cohortQueryResult = cohortManager.get(studyStr, cohortList, new Query("deleted", deleted), queryOptions, true, token);
             return createOkResponse(cohortQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

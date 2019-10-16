@@ -106,16 +106,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Individual version") @QueryParam("version") Integer version,
             @ApiParam(value = "Fetch all individual versions", defaultValue = "false")
                 @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
-            @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove("study");
             query.remove("individuals");
 
             List<String> individualList = getIdList(individualStr);
-            DataResult<Individual> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions, silent, token);
+            DataResult<Individual> individualQueryResult = individualManager.get(studyStr, individualList, query, queryOptions, true, token);
             return createOkResponse(individualQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

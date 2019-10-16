@@ -81,15 +81,13 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of project IDs or aliases up to a maximum of 100", required = true) @PathParam("projects")
-                                 String projects,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response info(
+            @ApiParam(value = "Comma separated list of project IDs or aliases up to a maximum of 100", required = true)
+                @PathParam("projects") String projects) {
 
         try {
             List<String> idList = getIdList(projects);
-            return createOkResponse(catalogManager.getProjectManager().get(idList, queryOptions, silent, token));
+            return createOkResponse(catalogManager.getProjectManager().get(idList, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

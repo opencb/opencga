@@ -158,14 +158,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response info(
             @ApiParam(value = "Comma separated list of studies [[user@]project:]study where study and project can be either the id or alias up to a maximum of 100",
-                    required = true) @PathParam("studies") String studies,
-//            @ApiParam(value = "Boolean to retrieve deleted studies", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+                    required = true) @PathParam("studies") String studies) {
         try {
             List<String> idList = getIdList(studies);
-            return createOkResponse(studyManager.get(idList, queryOptions, silent, token));
+            return createOkResponse(studyManager.get(idList, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

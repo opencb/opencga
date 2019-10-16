@@ -193,19 +193,15 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100")
-                         @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
-                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response info(
+            @ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr) {
         try {
             query.remove("study");
             query.remove("clinicalAnalyses");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
-            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, silent, token);
+            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, true, token);
             return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);

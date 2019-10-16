@@ -78,17 +78,13 @@ public class SampleWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "Sample version") @QueryParam("version") Integer version,
             @ApiParam(value = "Boolean to retrieve deleted samples", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Fetch all sample versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
-                    boolean allVersions,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = "Fetch all sample versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS) boolean allVersions) {
         try {
             query.remove("study");
             query.remove("samples");
 
             List<String> sampleList = getIdList(samplesStr);
-            DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, silent, token);
+            DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleList, query, queryOptions, true, token);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

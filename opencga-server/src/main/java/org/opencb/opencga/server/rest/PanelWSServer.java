@@ -125,10 +125,7 @@ public class PanelWSServer extends OpenCGAWSServer {
                     boolean allVersions,
             @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
-                    defaultValue = "false") @QueryParam("global") boolean global,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-            @QueryParam("silent") boolean silent) {
+                    defaultValue = "false") @QueryParam("global") boolean global) {
         try {
             query.remove("study");
             query.remove("global");
@@ -138,7 +135,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             }
 
             List<String> idList = getIdList(panelStr);
-            DataResult<Panel> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, silent, token);
+            DataResult<Panel> panelQueryResult = panelManager.get(studyStr, idList, query, queryOptions, true, token);
             return createOkResponse(panelQueryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
