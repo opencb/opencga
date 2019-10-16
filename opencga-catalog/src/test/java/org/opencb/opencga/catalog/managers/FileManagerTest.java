@@ -499,8 +499,11 @@ public class FileManagerTest extends AbstractManagerTest {
 
         FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
 
-        DataResult<File> update = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, update.first().getAnnotationSets().size());
+        DataResult<File> updateResult = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
+
+        File file = fileManager.get(studyFqn, "data/", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, file.getAnnotationSets().size());
     }
 
     @Test
@@ -523,17 +526,23 @@ public class FileManagerTest extends AbstractManagerTest {
         AnnotationSet annotationSet1 = new AnnotationSet("annotation2", vs1.getId(), annotations);
 
         FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet1));
-        DataResult<File> update = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
-        assertEquals(2, update.first().getAnnotationSets().size());
+        DataResult<File> updateResult = fileManager.update(studyFqn, "data/", updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
+
+        File file = fileManager.get(studyFqn, "data/", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(2, file.getAnnotationSets().size());
     }
 
     @Test
     public void testUpdateSamples() throws CatalogException {
         // Update the same sample twice to the file
         FileUpdateParams updateParams = new FileUpdateParams().setSamples(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
-        DataResult<File> file = fileManager.update(studyFqn, "test_1K.txt.gz", updateParams, null, sessionIdUser);
-        assertEquals(2, file.first().getSamples().size());
-        assertTrue(file.first().getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
+        DataResult<File> updateResult = fileManager.update(studyFqn, "test_1K.txt.gz", updateParams, null, sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
+
+        File file = fileManager.get(studyFqn, "test_1K.txt.gz", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(2, file.getSamples().size());
+        assertTrue(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
     }
 
     @Test
@@ -1503,7 +1512,7 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(3, dataResult.getNumResults());
         for (Map<String, List<String>> result : dataResult.getResults()) {
             assertEquals(1, result.get("user2").size());
-            assertEquals(FileAclEntry.FilePermissions.VIEW, result.get("user2").iterator().next());
+            assertEquals(FileAclEntry.FilePermissions.VIEW.name(), result.get("user2").iterator().next());
         }
     }
 

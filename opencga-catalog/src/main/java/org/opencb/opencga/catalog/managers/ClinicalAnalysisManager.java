@@ -119,7 +119,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     @Override
     InternalGetDataResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, @Nullable Query query,
-                                                        QueryOptions options, String user, boolean silent) throws CatalogException {
+                                                        QueryOptions options, String user, boolean ignoreException)
+            throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing clinical analysis entries.");
         }
@@ -152,8 +153,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions, user);
 
-        if (silent || analysisDataResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, clinicalStringFunction, analysisDataResult, silent, false);
+        if (ignoreException || analysisDataResult.getNumResults() == uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, clinicalStringFunction, analysisDataResult, ignoreException, false);
         }
         // Query without adding the user check
         OpenCGAResult<ClinicalAnalysis> resultsNoCheck = clinicalDBAdaptor.get(queryCopy, queryOptions);
@@ -535,7 +536,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalUpdateParams updateParams, QueryOptions options,
-                                               String token) throws CatalogException {
+                                                  String token) throws CatalogException {
+        return update(studyStr, query, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalUpdateParams updateParams, boolean ignoreException,
+                                                  QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -545,6 +551,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("study", studyStr)
                 .append("query", query)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -580,7 +587,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     public OpenCGAResult<ClinicalAnalysis> update(String studyStr, String clinicalId, ClinicalUpdateParams updateParams,
@@ -623,6 +630,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             logger.error("Could not update clinical analysis {}: {}", clinicalId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.CLINICAL, clinicalId, clinicalUuid,
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
 
         return result;
@@ -642,6 +650,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
      */
     public OpenCGAResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalUpdateParams updateParams,
                                                QueryOptions options, String token) throws CatalogException {
+        return update(studyStr, clinicalIds, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalUpdateParams updateParams,
+                                                  boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -652,6 +665,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("clinicalIds", clinicalIds)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
                 .append("options", options)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         OpenCGAResult<ClinicalAnalysis> result = OpenCGAResult.empty();
@@ -686,7 +700,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     private OpenCGAResult<ClinicalAnalysis> update(Study study, ClinicalAnalysis clinicalAnalysis, ClinicalUpdateParams updateParams,
@@ -929,14 +943,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyStr, List<String> clinicalList, String member, boolean silent,
-                                                              String sessionId) throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyStr, List<String> clinicalList, String member,
+                                                            boolean ignoreException, String token) throws CatalogException {
         OpenCGAResult<Map<String, List<String>>> clinicalAclList = OpenCGAResult.empty();
-        String user = userManager.getUserId(sessionId);
+        String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, user);
 
         InternalGetDataResult<ClinicalAnalysis> queryResult = internalGet(study.getUid(), clinicalList, INCLUDE_CLINICAL_IDS, user,
-                silent);
+                ignoreException);
 
         Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
         if (queryResult.getMissing() != null) {
@@ -957,7 +971,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     }
                     clinicalAclList.append(allClinicalAcls);
                 } catch (CatalogException e) {
-                    if (!silent) {
+                    if (!ignoreException) {
                         throw e;
                     } else {
                         Event event = new Event(Event.Type.ERROR, clinicalAnalysis, missingMap.get(clinicalAnalysis).getErrorMsg());

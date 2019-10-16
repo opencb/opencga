@@ -253,12 +253,18 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         DataResult<Sample> update = catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
                 .setAnnotationSets(Arrays.asList(annotationSet, annotationSet1)), QueryOptions.empty(), sessionIdUser);
-        assertEquals(3, update.first().getAnnotationSets().size());
+        assertEquals(1, update.getNumUpdated());
+
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, s_1, QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, sample.getAnnotationSets().size());
 
         catalogManager.getSampleManager().removeAnnotationSet(studyFqn, s_1, "annotation1", QueryOptions.empty(), sessionIdUser);
-        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager()
+        update = catalogManager.getSampleManager()
                 .removeAnnotationSet(studyFqn, s_1, "annotation2", QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, sampleDataResult.first().getAnnotationSets().size());
+        assertEquals(1, update.getNumUpdated());
+
+        sample = catalogManager.getSampleManager().get(studyFqn, s_1, QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, sample.getAnnotationSets().size());
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
@@ -998,9 +1004,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         String individualId = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1"),
                 new QueryOptions(), sessionIdUser).first().getId();
 
-        Sample sample = catalogManager.getSampleManager()
-                .update(studyFqn, sampleId1, new SampleUpdateParams().setIndividualId(individualId), null, sessionIdUser).first();
+        DataResult<Sample> updateResult = catalogManager.getSampleManager()
+                .update(studyFqn, sampleId1, new SampleUpdateParams().setIndividualId(individualId), null, sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
 
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, sampleId1, QueryOptions.empty(), sessionIdUser).first();
         assertEquals(individualId, sample.getIndividualId());
     }
 
@@ -1011,9 +1019,11 @@ public class SampleManagerTest extends AbstractManagerTest {
         String individualId = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1"),
                 new QueryOptions(), sessionIdUser).first().getId();
 
-        Sample sample = catalogManager.getSampleManager()
-                .update(studyFqn, sampleId1, new SampleUpdateParams().setIndividualId(individualId), null, sessionIdUser).first();
+        DataResult<Sample> updateResult = catalogManager.getSampleManager()
+                .update(studyFqn, sampleId1, new SampleUpdateParams().setIndividualId(individualId), null, sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
 
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, sampleId1, QueryOptions.empty(), sessionIdUser).first();
         assertEquals(individualId, sample.getIndividualId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",

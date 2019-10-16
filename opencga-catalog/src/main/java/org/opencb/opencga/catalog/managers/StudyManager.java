@@ -432,7 +432,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Study> get(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId)
+    public OpenCGAResult<Study> get(List<String> studyList, QueryOptions queryOptions, boolean ignoreException, String sessionId)
             throws CatalogException {
         OpenCGAResult<Study> result = OpenCGAResult.empty();
         for (String study : studyList) {
@@ -442,7 +442,7 @@ public class StudyManager extends AbstractManager {
             } catch (CatalogException e) {
                 String warning = "Missing " + study + ": " + e.getMessage();
                 Event event = new Event(Event.Type.ERROR, study, e.getMessage());
-                if (silent) {
+                if (ignoreException) {
                     logger.error(warning, e);
                     result.getEvents().add(event);
                 } else {
@@ -764,15 +764,15 @@ public class StudyManager extends AbstractManager {
                 Collections.singletonList(studySummary), 1);
     }
 
-    public List<OpenCGAResult<StudySummary>> getSummary(List<String> studyList, QueryOptions queryOptions, boolean silent, String sessionId)
-            throws CatalogException {
+    public List<OpenCGAResult<StudySummary>> getSummary(List<String> studyList, QueryOptions queryOptions, boolean ignoreException,
+                                                        String token) throws CatalogException {
         List<OpenCGAResult<StudySummary>> results = new ArrayList<>(studyList.size());
         for (String study : studyList) {
             try {
-                OpenCGAResult<StudySummary> summaryObj = getSummary(study, queryOptions, sessionId);
+                OpenCGAResult<StudySummary> summaryObj = getSummary(study, queryOptions, token);
                 results.add(summaryObj);
             } catch (CatalogException e) {
-                if (silent) {
+                if (ignoreException) {
                     Event event = new Event(Event.Type.ERROR, study, e.getMessage());
                     results.add(new OpenCGAResult<>(0, Collections.singletonList(event), 0, Collections.emptyList(), 0));
                 } else {
@@ -1384,7 +1384,7 @@ public class StudyManager extends AbstractManager {
 
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(List<String> studyIdList, String member, boolean silent, String token)
+    public OpenCGAResult<Map<String, List<String>>> getAcls(List<String> studyIdList, String member, boolean ignoreException, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studyList = resolveIds(studyIdList, userId);
@@ -1392,7 +1392,7 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap()
                 .append("studyIdList", studyIdList)
                 .append("member", member)
-                .append("silent", silent)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
@@ -1417,7 +1417,7 @@ public class StudyManager extends AbstractManager {
                 auditManager.audit(operationUuid, userId, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
-                if (silent) {
+                if (ignoreException) {
                     Event event = new Event(Event.Type.ERROR, study.getFqn(), e.getMessage());
                     studyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
                             Collections.singletonList(Collections.emptyMap()), 0));

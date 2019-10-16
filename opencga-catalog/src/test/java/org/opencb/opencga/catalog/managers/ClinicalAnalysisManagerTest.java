@@ -222,14 +222,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))));
         DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
                 QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
 
-        assertEquals(1, updateResult.getNumResults());
+        ClinicalAnalysis analysis = catalogManager.getClinicalAnalysisManager().get(STUDY, "analysis", QueryOptions.empty(), sessionIdUser).first();
 
         assertEquals(catalogManager.getIndividualManager().get(STUDY, "child1", IndividualManager.INCLUDE_INDIVIDUAL_IDS, sessionIdUser)
-                .first().getUid(), updateResult.first().getProband().getUid());
-        assertEquals(1, updateResult.first().getProband().getSamples().size());
+                .first().getUid(), analysis.getProband().getUid());
+        assertEquals(1, analysis.getProband().getSamples().size());
         assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
-                .first().getUid(), updateResult.first().getProband().getSamples().get(0).getUid());
+                .first().getUid(), analysis.getProband().getSamples().get(0).getUid());
     }
 
     @Test
@@ -247,16 +248,17 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                                 .setSamples(Collections.singletonList(new ClinicalUpdateParams.SampleParams().setId("sample2"))))));
         DataResult<ClinicalAnalysis> updateResult = catalogManager.getClinicalAnalysisManager().update(STUDY, "analysis", updateParams,
                 QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
 
-        assertEquals(1, updateResult.getNumResults());
+        ClinicalAnalysis analysis = catalogManager.getClinicalAnalysisManager().get(STUDY, "analysis", QueryOptions.empty(), sessionIdUser).first();
 
         assertEquals(catalogManager.getFamilyManager().get(STUDY, "family", FamilyManager.INCLUDE_FAMILY_IDS, sessionIdUser)
-                .first().getUid(), updateResult.first().getFamily().getUid());
+                .first().getUid(), analysis.getFamily().getUid());
         assertEquals(catalogManager.getIndividualManager().get(STUDY, "child1", IndividualManager.INCLUDE_INDIVIDUAL_IDS, sessionIdUser)
-                .first().getUid(), updateResult.first().getProband().getUid());
-        assertEquals(1, updateResult.first().getProband().getSamples().size());
+                .first().getUid(), analysis.getProband().getUid());
+        assertEquals(1, analysis.getProband().getSamples().size());
         assertEquals(catalogManager.getSampleManager().get(STUDY, "sample2", SampleManager.INCLUDE_SAMPLE_IDS, sessionIdUser)
-                .first().getUid(), updateResult.first().getProband().getSamples().get(0).getUid());
+                .first().getUid(), analysis.getProband().getSamples().get(0).getUid());
     }
 
 }

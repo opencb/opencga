@@ -85,7 +85,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             query.remove("study");
-            return createOkResponse(panelManager.update(studyStr, query, panelParams, queryOptions, token));
+            return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -102,7 +102,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
-            return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, queryOptions, token));
+            return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -210,7 +210,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels) {
         try {
-            return createOkResponse(panelManager.delete(studyStr, getIdList(panels), queryOptions, token));
+            return createOkResponse(panelManager.delete(studyStr, getIdList(panels), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -235,7 +235,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release") @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(panelManager.delete(studyStr, query, queryOptions, token));
+            return createOkResponse(panelManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

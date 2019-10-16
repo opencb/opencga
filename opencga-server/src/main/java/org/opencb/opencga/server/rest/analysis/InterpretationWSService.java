@@ -125,7 +125,7 @@ public class InterpretationWSService extends AnalysisWSService {
                 queryOptions.put(Constants.ACTIONS, actionMap);
             }
 
-            return createOkResponse(clinicalManager.update(studyStr, query, params, queryOptions, token));
+            return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -148,7 +148,7 @@ public class InterpretationWSService extends AnalysisWSService {
                 queryOptions.put(Constants.ACTIONS, actionMap);
             }
 
-            return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, queryOptions, token));
+            return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

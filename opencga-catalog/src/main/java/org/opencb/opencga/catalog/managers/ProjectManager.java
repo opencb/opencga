@@ -287,7 +287,7 @@ public class ProjectManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Project> get(List<String> projectList, QueryOptions options, boolean silent, String sessionId)
+    public OpenCGAResult<Project> get(List<String> projectList, QueryOptions options, boolean ignoreException, String sessionId)
             throws CatalogException {
         OpenCGAResult<Project> result = OpenCGAResult.empty();
 
@@ -299,7 +299,7 @@ public class ProjectManager extends AbstractManager {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, projectList.get(i), e.getMessage());
                 String warning = "Missing " + projectList.get(i) + ": " + e.getMessage();
-                if (silent) {
+                if (ignoreException) {
                     logger.error(warning, e);
                     result.getEvents().add(event);
                 } else {

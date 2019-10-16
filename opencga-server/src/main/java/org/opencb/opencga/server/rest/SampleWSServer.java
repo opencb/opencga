@@ -278,7 +278,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(sampleManager.update(studyStr, query, parameters, options, token));
+            return createOkResponse(sampleManager.update(studyStr, query, parameters, true, options, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -305,7 +305,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, options, token));
+            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, true, options, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -361,7 +361,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             queryOptions.put(Constants.EMPTY_FILES_ACTION, query.getString(Constants.EMPTY_FILES_ACTION, "NONE"));
             queryOptions.put(Constants.DELETE_EMPTY_COHORTS, query.getBoolean(Constants.DELETE_EMPTY_COHORTS, false));
 
-            return createOkResponse(sampleManager.delete(studyStr, getIdList(samples), queryOptions, token));
+            return createOkResponse(sampleManager.delete(studyStr, getIdList(samples), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -405,7 +405,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             query.remove(Constants.EMPTY_FILES_ACTION);
             query.remove(Constants.DELETE_EMPTY_COHORTS);
 
-            return createOkResponse(sampleManager.delete(studyStr, query, queryOptions, token));
+            return createOkResponse(sampleManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

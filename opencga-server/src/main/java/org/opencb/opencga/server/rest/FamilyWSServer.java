@@ -217,7 +217,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, query, parameters, queryOptions, token);
+            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, query, parameters, true, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -255,7 +255,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
             List<String> familyIds = getIdList(familyStr);
 
-            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyIds, parameters, queryOptions, token);
+            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, familyIds, parameters, true, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -304,7 +304,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of family ids") @PathParam("families") String families) {
         try {
             List<String> familyIds = getIdList(families);
-            return createOkResponse(familyManager.delete(studyStr, familyIds, queryOptions, token));
+            return createOkResponse(familyManager.delete(studyStr, familyIds, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -325,7 +325,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(familyManager.delete(studyStr, query, queryOptions, token));
+            return createOkResponse(familyManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

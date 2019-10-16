@@ -116,7 +116,7 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     InternalGetDataResult<Job> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options, String user,
-                                           boolean silent) throws CatalogException {
+                                           boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing job entries.");
         }
@@ -147,8 +147,8 @@ public class JobManager extends ResourceManager<Job> {
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
         OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(queryCopy, options, user);
-        if (silent || jobDataResult.getNumResults() == uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, jobStringFunction, jobDataResult, silent, false);
+        if (ignoreException || jobDataResult.getNumResults() == uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, jobStringFunction, jobDataResult, ignoreException, false);
         }
         // Query without adding the user check
         OpenCGAResult<Job> resultsNoCheck = jobDBAdaptor.get(queryCopy, queryOptions);
@@ -330,8 +330,9 @@ public class JobManager extends ResourceManager<Job> {
         return get(null, String.valueOf(jobId), options, sessionId);
     }
 
-    public OpenCGAResult<Job> get(List<String> jobIds, QueryOptions options, boolean silent, String sessionId) throws CatalogException {
-        return get(null, jobIds, options, silent, sessionId);
+    public OpenCGAResult<Job> get(List<String> jobIds, QueryOptions options, boolean ignoreException, String sessionId)
+            throws CatalogException {
+        return get(null, jobIds, options, ignoreException, sessionId);
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
@@ -434,6 +435,11 @@ public class JobManager extends ResourceManager<Job> {
 
     @Override
     public OpenCGAResult delete(String studyStr, List<String> jobIds, ObjectMap params, String token) throws CatalogException {
+        return delete(studyStr, jobIds, params, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, List<String> jobIds, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -443,6 +449,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("study", studyStr)
                 .append("jobIds", jobIds)
                 .append("params", params)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         boolean checkPermissions;
@@ -492,11 +499,16 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     @Override
     public OpenCGAResult delete(String studyId, Query query, ObjectMap params, String token) throws CatalogException {
+        return delete(studyId, query, params, false, token);
+    }
+
+    public OpenCGAResult delete(String studyId, Query query, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         OpenCGAResult result = OpenCGAResult.empty();
 
@@ -509,6 +521,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("study", studyId)
                 .append("query", new Query(query))
                 .append("params", params)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
@@ -557,7 +570,7 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     private void checkJobCanBeDeleted(Job job) throws CatalogException {
@@ -579,6 +592,11 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> update(String studyId, Query query, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
+        return update(studyId, query, parameters, false, options, token);
+    }
+
+    public OpenCGAResult<Job> update(String studyId, Query query, ObjectMap parameters, boolean ignoreException, QueryOptions options,
+                                     String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
@@ -588,6 +606,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("study", studyId)
                 .append("query", query)
                 .append("parameters", parameters)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -630,7 +649,7 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     public OpenCGAResult<Job> update(String studyId, String jobId, ObjectMap parameters, QueryOptions options, String token)
@@ -678,6 +697,7 @@ public class JobManager extends ResourceManager<Job> {
             logger.error("Cannot update job {}: {}", jobId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.JOB, jobId, jobUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
 
         return result;
@@ -685,6 +705,11 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> update(String studyId, List<String> jobIds, ObjectMap parameters, QueryOptions options, String token)
             throws CatalogException {
+        return update(studyId, jobIds, parameters, false, options, token);
+    }
+
+    public OpenCGAResult<Job> update(String studyId, List<String> jobIds, ObjectMap parameters, boolean ignoreException,
+                                     QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
@@ -694,6 +719,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("study", studyId)
                 .append("jobIds", jobIds)
                 .append("parameters", parameters)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -734,7 +760,7 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     @Deprecated
@@ -839,7 +865,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> jobList, String member, boolean silent,
+    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> jobList, String member, boolean ignoreException,
                                                             String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -849,11 +875,11 @@ public class JobManager extends ResourceManager<Job> {
                 .append("studyId", studyId)
                 .append("jobList", jobList)
                 .append("member", member)
-                .append("silent", silent)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
         try {
             OpenCGAResult<Map<String, List<String>>> jobAclList = OpenCGAResult.empty();
-            InternalGetDataResult<Job> queryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, silent);
+            InternalGetDataResult<Job> queryResult = internalGet(study.getUid(), jobList, INCLUDE_JOB_IDS, user, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
             if (queryResult.getMissing() != null) {
@@ -879,7 +905,7 @@ public class JobManager extends ResourceManager<Job> {
                         auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.JOB, job.getId(),
                                 job.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
-                        if (!silent) {
+                        if (!ignoreException) {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, jobId, missingMap.get(jobId).getErrorMsg());

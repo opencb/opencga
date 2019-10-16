@@ -45,13 +45,13 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     abstract OpenCGAResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException;
 
-    InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean silent)
+    InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean ignoreException)
             throws CatalogException {
-        return internalGet(studyUid, entryList, null, options, user, silent);
+        return internalGet(studyUid, entryList, null, options, user, ignoreException);
     }
 
     abstract InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                                   String user, boolean silent) throws CatalogException;
+                                                   String user, boolean ignoreException) throws CatalogException;
 
     /**
      * Create an entry in catalog.
@@ -95,13 +95,13 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         return get(studyStr, entryList, new Query(), options, false, token);
     }
 
-    public OpenCGAResult<R> get(String studyStr, List<String> entryList, QueryOptions options, boolean silent, String token)
+    public OpenCGAResult<R> get(String studyStr, List<String> entryList, QueryOptions options, boolean ignoreException, String token)
             throws CatalogException {
-        return get(studyStr, entryList, new Query(), options, silent, token);
+        return get(studyStr, entryList, new Query(), options, ignoreException, token);
     }
 
-    public OpenCGAResult<R> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean silent, String token)
-            throws CatalogException {
+    public OpenCGAResult<R> get(String studyId, List<String> entryList, Query query, QueryOptions options, boolean ignoreException,
+                                String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
@@ -113,14 +113,14 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 .append("entryList", entryList)
                 .append("query", new Query(query))
                 .append("options", new QueryOptions(options))
-                .append("silent", silent)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
         try {
             OpenCGAResult<R> result = OpenCGAResult.empty();
 
-            InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, silent);
+            InternalGetDataResult<R> responseResult = internalGet(study.getUid(), entryList, query, options, userId, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
             if (responseResult.getMissing() != null) {
@@ -256,6 +256,15 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     public abstract OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String token)
             throws CatalogException;
 
+    /**
+     * Returns result if there are no ERROR events or ignoreException is true. Otherwise, raise an exception with all error messages.
+     *
+     * @param result Final OpenCGA result.
+     * @param ignoreException Boolean indicating whether to raise an exception in case of an ERROR event.
+     * @param <T> OpenCGAResult type.
+     * @return result if ignoreException is true or there are no ERROR events.
+     * @throws CatalogException if ignoreException is false and there are ERROR events.
+     */
     public <T> OpenCGAResult<T> endResult(OpenCGAResult<T> result, boolean ignoreException) throws CatalogException {
         if (!ignoreException) {
             if (ListUtils.isNotEmpty(result.getEvents())) {

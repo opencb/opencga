@@ -5,7 +5,10 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.commons.OntologyTerm;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.core.Xref;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -108,7 +111,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
     @Override
     InternalGetDataResult<Panel> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                             String user, boolean silent) throws CatalogException {
+                                             String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing panel entries.");
         }
@@ -139,8 +142,8 @@ public class PanelManager extends ResourceManager<Panel> {
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
         OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
-        if (silent || panelDataResult.getNumResults() >= uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, panelStringFunction, panelDataResult, silent,
+        if (ignoreException || panelDataResult.getNumResults() >= uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, panelStringFunction, panelDataResult, ignoreException,
                     queryCopy.getBoolean(Constants.ALL_VERSIONS));
         }
         // Query without adding the user check
@@ -617,6 +620,11 @@ public class PanelManager extends ResourceManager<Panel> {
 
     public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
+        return update(studyId, query, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, boolean ignoreException,
+                                       QueryOptions options, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
 
         String userId = userManager.getUserId(token);
@@ -628,6 +636,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("study", studyId)
                 .append("query", query)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -660,7 +669,7 @@ public class PanelManager extends ResourceManager<Panel> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     public OpenCGAResult<Panel> update(String studyStr, String panelId, PanelUpdateParams updateParams, QueryOptions options, String token)
@@ -702,6 +711,7 @@ public class PanelManager extends ResourceManager<Panel> {
             logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, panelId, panelUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
 
         return result;
@@ -721,6 +731,11 @@ public class PanelManager extends ResourceManager<Panel> {
      */
     public OpenCGAResult<Panel> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, QueryOptions options,
                                     String token) throws CatalogException {
+        return update(studyStr, panelIds, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Panel> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, boolean ignoreException,
+                                       QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -730,6 +745,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("study", studyStr)
                 .append("panelIds", panelIds)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -764,7 +780,7 @@ public class PanelManager extends ResourceManager<Panel> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     private OpenCGAResult update(Study study, Panel panel, PanelUpdateParams updateParams, QueryOptions options, String userId)
@@ -912,6 +928,11 @@ public class PanelManager extends ResourceManager<Panel> {
 
     @Override
     public OpenCGAResult delete(String studyStr, List<String> panelIds, ObjectMap params, String token) throws CatalogException {
+        return delete(studyStr, panelIds, params, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, List<String> panelIds, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         if (panelIds == null || ListUtils.isEmpty(panelIds)) {
             throw new CatalogException("Missing list of panel ids");
         }
@@ -925,6 +946,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("study", studyStr)
                 .append("panelIds", panelIds)
                 .append("params", params)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         boolean checkPermissions;
@@ -976,11 +998,16 @@ public class PanelManager extends ResourceManager<Panel> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     @Override
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
+        return delete(studyStr, query, params, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         OpenCGAResult result = OpenCGAResult.empty();
 
@@ -993,6 +1020,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("study", studyStr)
                 .append("query", new Query(query))
                 .append("params", params)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
@@ -1042,7 +1070,7 @@ public class PanelManager extends ResourceManager<Panel> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     @Override
@@ -1089,7 +1117,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> panelList, String member, boolean silent,
+    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> panelList, String member, boolean ignoreException,
                                                    String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -1099,11 +1127,11 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("studyId", studyId)
                 .append("panelList", panelList)
                 .append("member", member)
-                .append("silent", silent)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
         try {
             OpenCGAResult<Map<String, List<String>>> panelAclList = OpenCGAResult.empty();
-            InternalGetDataResult<Panel> queryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, silent);
+            InternalGetDataResult<Panel> queryResult = internalGet(study.getUid(), panelList, INCLUDE_PANEL_IDS, user, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
             if (queryResult.getMissing() != null) {
@@ -1130,7 +1158,7 @@ public class PanelManager extends ResourceManager<Panel> {
                                 panel.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
 
-                        if (!silent) {
+                        if (!ignoreException) {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, panelId, missingMap.get(panelId).getErrorMsg());

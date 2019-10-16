@@ -259,7 +259,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of job ids") @PathParam("jobs") String jobs) {
         try {
-            return createOkResponse(jobManager.delete(studyStr, getIdList(jobs), queryOptions, token));
+            return createOkResponse(jobManager.delete(studyStr, getIdList(jobs), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -282,7 +282,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, token));
+            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

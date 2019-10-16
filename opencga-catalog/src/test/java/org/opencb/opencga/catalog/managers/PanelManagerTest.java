@@ -173,17 +173,19 @@ public class PanelManagerTest extends GenericTest {
                 .setVariants(Collections.singletonList(variantPanel))
                 .setGenes(Collections.singletonList(genePanel));
 
-        Panel panelUpdated = panelManager.update(studyFqn, diseasePanelDataResult.getId(), updateParams, null, sessionIdUser).first();
+        DataResult<Panel> updateResult = panelManager.update(studyFqn, diseasePanelDataResult.getId(), updateParams, null, sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
 
-        assertEquals("author", panelUpdated.getSource().getAuthor());
-        assertEquals(1, panelUpdated.getRegions().size());
-        assertEquals("chr1:1-1000", panelUpdated.getRegions().get(0).getCoordinates().get(0).getLocation());
-        assertEquals(1, panelUpdated.getGenes().size());
-        assertEquals("BRCA2", panelUpdated.getGenes().get(0).getId());
-        assertEquals(1, panelUpdated.getPhenotypes().size());
-        assertEquals("ontologyTerm", panelUpdated.getPhenotypes().get(0).getId());
-        assertEquals(1, panelUpdated.getVariants().size());
-        assertEquals("variant1", panelUpdated.getVariants().get(0).getId());
+        Panel updatedPanel = panelManager.get(studyFqn, diseasePanelDataResult.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals("author", updatedPanel.getSource().getAuthor());
+        assertEquals(1, updatedPanel.getRegions().size());
+        assertEquals("chr1:1-1000", updatedPanel.getRegions().get(0).getCoordinates().get(0).getLocation());
+        assertEquals(1, updatedPanel.getGenes().size());
+        assertEquals("BRCA2", updatedPanel.getGenes().get(0).getId());
+        assertEquals(1, updatedPanel.getPhenotypes().size());
+        assertEquals("ontologyTerm", updatedPanel.getPhenotypes().get(0).getId());
+        assertEquals(1, updatedPanel.getVariants().size());
+        assertEquals("variant1", updatedPanel.getVariants().get(0).getId());
     }
 
 }

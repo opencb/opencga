@@ -108,7 +108,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     @Override
     InternalGetDataResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                                      String user, boolean silent) throws CatalogException {
+                                                      String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing interpretation entries.");
         }
@@ -140,7 +140,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
 
-        if (interpretationDataResult.getNumResults() != uniqueList.size() && !silent) {
+        if (interpretationDataResult.getNumResults() != uniqueList.size() && !ignoreException) {
             throw CatalogException.notFound("interpretations",
                     getMissingFields(uniqueList, interpretationDataResult.getResults(), interpretationStringFunction));
         }
@@ -154,7 +154,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
                         interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
             } catch (CatalogAuthorizationException e) {
-                if (silent) {
+                if (ignoreException) {
                     // Remove interpretation. User will not have permissions
                     iterator.remove();
                 } else {
@@ -168,7 +168,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretationDataResult.setNumResults(interpretationList.size());
         interpretationDataResult.setNumMatches(interpretationList.size());
 
-        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, silent, false);
+        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, ignoreException, false);
     }
 
     public OpenCGAResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,
@@ -266,6 +266,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
     public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams, QueryOptions options,
                                              String token) throws CatalogException {
+        return update(studyStr, query, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams,
+                                                boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
@@ -277,6 +282,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("study", studyStr)
                 .append("query", query)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -313,7 +319,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     public OpenCGAResult<Interpretation> update(String studyStr, String interpretationId, InterpretationUpdateParams updateParams,
@@ -358,6 +364,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretationId, interpretationUuid,
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
 
         return result;
@@ -377,6 +384,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
      */
     public OpenCGAResult<Interpretation> update(String studyStr, List<String> interpretationIds, InterpretationUpdateParams updateParams,
                                              QueryOptions options, String token) throws CatalogException {
+        return update(studyStr, interpretationIds, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Interpretation> update(String studyStr, List<String> interpretationIds, InterpretationUpdateParams updateParams,
+                                                boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
@@ -388,6 +400,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("study", studyStr)
                 .append("interpretationIds", interpretationIds)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -423,7 +436,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     private OpenCGAResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams, QueryOptions options,

@@ -611,10 +611,13 @@ public class FamilyManagerTest extends GenericTest {
 
         DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getId(),
                 updateParams, QueryOptions.empty(), sessionIdUser);
-        assertEquals(3, updatedFamily.first().getPhenotypes().size());
+        assertEquals(1, updatedFamily.getNumUpdated());
+
+        Family family = familyManager.get(STUDY, originalFamily.first().getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, family.getPhenotypes().size());
 
         // Only one id should be the same as in originalFamilyIds (father id)
-        for (Phenotype phenotype : updatedFamily.first().getPhenotypes()) {
+        for (Phenotype phenotype : family.getPhenotypes()) {
             assertEquals("New name", phenotype.getName());
             assertEquals("New source", phenotype.getSource());
         }

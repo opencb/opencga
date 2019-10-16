@@ -293,7 +293,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogManager.getCohortManager().update(studyStr, query, params, false, queryOptions, token));
+            return createOkResponse(catalogManager.getCohortManager().update(studyStr, query, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

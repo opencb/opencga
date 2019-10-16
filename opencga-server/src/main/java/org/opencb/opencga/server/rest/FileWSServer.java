@@ -758,7 +758,7 @@ public class FileWSServer extends OpenCGAWSServer {
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            DataResult<File> queryResult = fileManager.update(studyStr, query, updateParams, queryOptions, token);
+            DataResult<File> queryResult = fileManager.update(studyStr, query, updateParams, true, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -790,7 +790,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             List<String> fileIds = getIdList(fileIdStr);
 
-            DataResult<File> queryResult = fileManager.update(studyStr, fileIds, updateParams, queryOptions, token);
+            DataResult<File> queryResult = fileManager.update(studyStr, fileIds, updateParams, true, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1020,7 +1020,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             query.remove("study");
 
-            return createOkResponse(fileManager.delete(studyStr, query, queryOptions, token));
+            return createOkResponse(fileManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1041,7 +1041,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files) {
         try {
             List<String> fileIds = getIdList(files);
-            return createOkResponse(fileManager.delete(studyStr, fileIds, queryOptions, token));
+            return createOkResponse(fileManager.delete(studyStr, fileIds, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

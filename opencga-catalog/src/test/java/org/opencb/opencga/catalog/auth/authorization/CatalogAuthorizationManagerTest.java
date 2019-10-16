@@ -401,14 +401,12 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     // A user with proper permissions removes an existing user from a role
     @Test
     public void removeUserFromRole() throws CatalogException {
-//        catalogManager.unshareStudy(studyFqn, externalUser, studyAdmin1SessionId);
         Study.StudyAclParams aclParams = new Study.StudyAclParams(null, AclParams.Action.RESET, null);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), externalUser, aclParams, studyAdmin1SessionId);
 
         DataResult<Map<String, List<String>>> studyAcls = catalogManager.getStudyManager().getAcls(Collections.singletonList(studyFqn),
                 externalUser, false, studyAdmin1SessionId);
-        assertEquals(1, studyAcls.getNumResults());
-        assertEquals(0, studyAcls.first().size());
+        assertEquals(0, studyAcls.getNumResults());
     }
 
     // A user with no permissions tries to remove an existing user from a role

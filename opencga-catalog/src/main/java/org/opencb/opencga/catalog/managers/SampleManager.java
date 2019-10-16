@@ -124,7 +124,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     InternalGetDataResult<Sample> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
-                                              String user, boolean silent) throws CatalogException {
+                                              String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing sample entries.");
         }
@@ -157,8 +157,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(queryCopy, queryOptions, user);
 
-        if (silent || sampleDataResult.getNumResults() >= uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, silent,
+        if (ignoreException || sampleDataResult.getNumResults() >= uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException,
                     queryCopy.getBoolean(Constants.ALL_VERSIONS));
         }
         // Query without adding the user check
@@ -341,6 +341,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     @Override
     public OpenCGAResult delete(String studyStr, List<String> sampleIds, ObjectMap params, String token) throws CatalogException {
+        return delete(studyStr, sampleIds, params, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, List<String> sampleIds, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         if (sampleIds == null || ListUtils.isEmpty(sampleIds)) {
             throw new CatalogException("Missing list of sample ids");
         }
@@ -355,6 +360,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("study", studyStr)
                 .append("sampleIds", sampleIds)
                 .append("params", params)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         boolean checkPermissions;
@@ -406,11 +412,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     @Override
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
+        return delete(studyStr, query, params, false, token);
+    }
+
+    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+            throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
         params = ParamUtils.defaultObject(params, ObjectMap::new);
 
@@ -425,6 +436,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("study", studyStr)
                 .append("query", new Query(query))
                 .append("params", params)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
@@ -488,7 +500,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
 
-        return result;
+        return endResult(result, ignoreException);
     }
 
     public OpenCGAResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
@@ -639,6 +651,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public OpenCGAResult<Sample> update(String studyStr, Query query, SampleUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
+        return update(studyStr, query, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Sample> update(String studyStr, Query query, SampleUpdateParams updateParams, boolean ignoreException,
+                                        QueryOptions options, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
 
         String userId = userManager.getUserId(token);
@@ -650,6 +667,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("study", studyStr)
                 .append("query", query)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -686,7 +704,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        return result;
+
+        return endResult(result, ignoreException);
     }
 
     public OpenCGAResult<Sample> update(String studyStr, String sampleId, SampleUpdateParams updateParams, QueryOptions options,
@@ -728,6 +747,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
 
         return result;
@@ -746,7 +766,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
      *                          exist or is not allowed to be updated.
      */
     public OpenCGAResult<Sample> update(String studyStr, List<String> sampleIds, SampleUpdateParams updateParams, QueryOptions options,
-                                     String token) throws CatalogException {
+                                        String token) throws CatalogException {
+        return update(studyStr, sampleIds, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Sample> update(String studyStr, List<String> sampleIds, SampleUpdateParams updateParams, boolean ignoreException,
+                                        QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -756,6 +781,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("study", studyStr)
                 .append("sampleIds", sampleIds)
                 .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
@@ -789,7 +815,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
-        return result;
+        return endResult(result, ignoreException);
     }
 
     private OpenCGAResult update(Study study, Sample sample, SampleUpdateParams updateParams, QueryOptions options, String userId)
@@ -919,7 +945,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     // **************************   ACLs  ******************************** //
-    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> sampleList, String member, boolean silent,
+    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> sampleList, String member, boolean ignoreException,
                                                          String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
@@ -929,13 +955,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("studyId", studyId)
                 .append("sampleList", sampleList)
                 .append("member", member)
-                .append("silent", silent)
+                .append("ignoreException", ignoreException)
                 .append("token", token);
 
         try {
             OpenCGAResult<Map<String, List<String>>> sampleAclList = OpenCGAResult.empty();
 
-            InternalGetDataResult<Sample> queryResult = internalGet(study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, user, silent);
+            InternalGetDataResult<Sample> queryResult = internalGet(study.getUid(), sampleList, INCLUDE_SAMPLE_IDS, user, ignoreException);
 
             Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
             if (queryResult.getMissing() != null) {
@@ -963,7 +989,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                                 sample.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
 
-                        if (!silent) {
+                        if (!ignoreException) {
                             throw e;
                         } else {
                             Event event = new Event(Event.Type.ERROR, sampleId, missingMap.get(sampleId).getErrorMsg());

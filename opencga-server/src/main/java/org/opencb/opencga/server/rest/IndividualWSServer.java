@@ -378,8 +378,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             actionMap.put(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, query, updateParams, queryOptions,
-                    token);
+            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, query, updateParams, true,
+                    queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -421,7 +421,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             List<String> individualIds = getIdList(individualStr);
 
-            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualIds, updateParams,
+            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, individualIds, updateParams, true,
                     queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -474,7 +474,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Comma separated list of individual ids") @PathParam("individuals") String individuals) {
         try {
-            return createOkResponse(individualManager.delete(studyStr, getIdList(individuals), queryOptions, token));
+            return createOkResponse(individualManager.delete(studyStr, getIdList(individuals), queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -515,7 +515,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(individualManager.delete(studyStr, query, queryOptions, token));
+            return createOkResponse(individualManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
