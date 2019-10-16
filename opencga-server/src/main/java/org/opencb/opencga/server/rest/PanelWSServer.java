@@ -121,8 +121,6 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100") @PathParam(value = "panels") String panelStr,
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
-            @ApiParam(value = "Fetch all panel versions", defaultValue = "false") @QueryParam(Constants.ALL_VERSIONS)
-                    boolean allVersions,
             @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global) {

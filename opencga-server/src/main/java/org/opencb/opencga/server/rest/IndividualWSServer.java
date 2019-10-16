@@ -104,8 +104,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                 @QueryParam("study") String studyStr,
             @ApiParam(value = "Individual version") @QueryParam("version") Integer version,
-            @ApiParam(value = "Fetch all individual versions", defaultValue = "false")
-                @QueryParam(Constants.ALL_VERSIONS) boolean allVersions,
             @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove("study");
