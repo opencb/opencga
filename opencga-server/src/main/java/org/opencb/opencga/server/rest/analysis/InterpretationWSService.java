@@ -13,7 +13,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.SecondaryFindingsAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -26,6 +25,7 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;

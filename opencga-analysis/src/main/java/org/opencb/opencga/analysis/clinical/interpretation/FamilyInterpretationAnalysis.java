@@ -17,15 +17,13 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.util.HashMap;
 import java.util.List;

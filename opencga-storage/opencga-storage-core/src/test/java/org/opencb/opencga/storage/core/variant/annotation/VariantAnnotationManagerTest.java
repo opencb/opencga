@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -143,7 +144,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
             assertEquals(1, annotation.getConsequenceTypes().size());
         }
         for (VariantAnnotation annotation : variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.EXCLUDE, consequenceTypes)).getResult()) {
-            assertTrue(annotation.getConsequenceTypes() == null || annotation.getConsequenceTypes().isEmpty());
+            assertThat(annotation.getConsequenceTypes(), VariantMatchers.isEmpty());
         }
 
 

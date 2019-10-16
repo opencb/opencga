@@ -28,12 +28,12 @@ import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.interpretation.InterpretationResult;
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
