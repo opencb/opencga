@@ -14,6 +14,7 @@ import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.oskar.core.annotations.Analysis;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Analysis(id = VariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT,
@@ -105,6 +106,11 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
                         .get(study, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId).getResult();
             }
             sampleNames = samples.stream().map(Sample::getId).collect(Collectors.toList());
+
+            // Remove non-indexed samples
+            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
+            sampleNames.removeIf(s -> !indexedSamples.contains(s));
+
             arm.updateResult(analysisResult -> analysisResult.getAttributes().put("sampleNames", sampleNames));
         } catch (CatalogException e) {
             throw new AnalysisException(e);

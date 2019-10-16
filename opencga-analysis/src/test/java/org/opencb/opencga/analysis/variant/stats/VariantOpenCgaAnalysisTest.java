@@ -1,9 +1,12 @@
 package org.opencb.opencga.analysis.variant.stats;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -16,6 +19,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -30,9 +34,10 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.oskar.analysis.result.AnalysisResult;
 import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,6 +49,9 @@ public class VariantOpenCgaAnalysisTest {
     public static final String PASSWORD = "asdf";
     public static final String PROJECT = "project";
     public static final String STUDY = "study";
+    public static final String PHENOTYPE_NAME = "myPhenotype";
+    public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
+            .setStatus(Phenotype.Status.OBSERVED);
     public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
 
     @Parameterized.Parameters(name="{0}")
@@ -106,6 +114,14 @@ public class VariantOpenCgaAnalysisTest {
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", sessionId);
             variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true), sessionId);
 
+            for (int i = 0; i < file.getSamples().size(); i++) {
+                if (i % 2 == 0) {
+                    String id = file.getSamples().get(i).getId();
+                    catalogManager.getSampleManager().update(STUDY, id, new ObjectMap(SampleDBAdaptor.UpdateParams.PHENOTYPES.key(), PHENOTYPE), null, sessionId);
+                }
+            }
+
+
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                 VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
                 VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase")).toUri());
@@ -122,6 +138,15 @@ public class VariantOpenCgaAnalysisTest {
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
                 null, null, null, null, sessionId);
 
+        // Create 10 samples not indexed
+        for (int i = 0; i < 10; i++) {
+            Sample sample = new Sample().setId("SAMPLE_" + i);
+            if (i % 2 == 0) {
+                sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
+            }
+            catalogManager.getSampleManager().create(STUDY, sample, null, sessionId);
+        }
+
     }
 
     @Test
@@ -137,8 +162,14 @@ public class VariantOpenCgaAnalysisTest {
         AnalysisResult ar = analysis.execute();
         checkAnalysisResult(ar);
 
+        MutableInt count = new MutableInt();
+        FileUtils.lineIterator(outDir.resolve(ar.getOutputFiles().get(0).getPath()).toFile()).forEachRemaining(line->{
+            if (!line.startsWith("#")) {
+                count.increment();
+            }
+        });
         Assert.assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), sessionId).first().intValue(),
-                ar.getAttributes().getInt("numVariantStats"));
+                count.intValue());
     }
 
     @Test
@@ -156,8 +187,14 @@ public class VariantOpenCgaAnalysisTest {
         AnalysisResult ar = analysis.execute();
         checkAnalysisResult(ar);
 
+        MutableInt count = new MutableInt();
+        FileUtils.lineIterator(outDir.resolve(ar.getOutputFiles().get(0).getPath()).toFile()).forEachRemaining(line->{
+            if (!line.startsWith("#")) {
+                count.increment();
+            }
+        });
         Assert.assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), sessionId).first().intValue(),
-                ar.getAttributes().getInt("numVariantStats"));
+                count.intValue());
     }
 
     @Test
@@ -197,6 +234,19 @@ public class VariantOpenCgaAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCaseCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 2)))
                 .setControlCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(2, 4)));
+        checkAnalysisResult(analysis.execute());
+    }
+
+    @Test
+    public void testGwasByPhenotype() throws Exception {
+        ObjectMap executorParams = new ObjectMap();
+        GwasOpenCgaAnalysis analysis = new GwasOpenCgaAnalysis();
+        Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_phenotype"));
+        System.out.println("output = " + outDir.toAbsolutePath());
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+
+        analysis.setStudy(STUDY)
+                .setPhenotype(PHENOTYPE_NAME);
         checkAnalysisResult(analysis.execute());
     }
 

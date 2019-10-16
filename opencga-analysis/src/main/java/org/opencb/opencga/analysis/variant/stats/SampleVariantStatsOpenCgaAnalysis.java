@@ -151,10 +151,13 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
                         .forEach(allSamples::add);
             }
 
+            // Remove non-indexed samples
+            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
+            allSamples.removeIf(s -> !indexedSamples.contains(s));
+
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
-
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
 

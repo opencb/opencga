@@ -17,9 +17,11 @@
 package org.opencb.opencga.analysis.variant.gwas;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -34,9 +36,7 @@ import org.opencb.oskar.core.annotations.Analysis;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Analysis(id = Gwas.ID, data = Analysis.AnalysisData.VARIANT,
@@ -45,6 +45,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
 
     private GwasConfiguration gwasConfiguration;
     private String study;
+    private String phenotype;
     private String caseCohort;
     private String controlCohort;
     private Query caseCohortSamplesQuery;
@@ -74,6 +75,20 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      */
     public GwasOpenCgaAnalysis setStudy(String study) {
         this.study = study;
+        return this;
+    }
+
+    /**
+     * Use this phenotype to divide all the samples from the study.
+     * Samples with the phenotype will be used as Case Cohort. Rest will be used as Control Cohort.
+     *
+     * This parameter can not be mixed with other parameters to define the cohorts.
+     *
+     * @param phenotype phenotype
+     * @return this
+     */
+    public GwasOpenCgaAnalysis setPhenotype(String phenotype) {
+        this.phenotype = phenotype;
         return this;
     }
 
@@ -158,8 +173,8 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
-        caseCohortSamples = getCohortSamples(caseCohort, caseCohortSamplesQuery, "case");
-        controlCohortSamples = getCohortSamples(controlCohort, controlCohortSamplesQuery, "control");
+        caseCohortSamples = getCohortSamples(caseCohort, caseCohortSamplesQuery, "case", true);
+        controlCohortSamples = getCohortSamples(controlCohort, controlCohortSamplesQuery, "control", false);
 
         if (!Collections.disjoint(caseCohortSamples, controlCohortSamples)) {
             List<String> overlapping = new ArrayList<>();
@@ -214,14 +229,15 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
             index = true;
         }
 
+        executorParams.append("index", index)
+                .append("phenotype", phenotype)
+                .append("scoreName", scoreName)
+                .append("caseCohort", caseCohort)
+                .append("caseCohortSamples", caseCohortSamples)
+                .append("controlCohort", controlCohort)
+                .append("controlCohortSamples", controlCohortSamples);
         arm.updateResult(analysisResult ->
-                analysisResult.getAttributes()
-                        .append("index", index)
-                        .append("scoreName", scoreName)
-                        .append("caseCohort", caseCohort)
-                        .append("caseCohortSamples", caseCohortSamples)
-                        .append("controlCohort", controlCohort)
-                        .append("controlCohortSamples", controlCohortSamples)
+                analysisResult.getExecutorParams().putAll(executorParams)
         );
     }
 
@@ -249,24 +265,56 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
         arm.endStep(100);
     }
 
-    private List<String> getCohortSamples(String cohort, Query samplesQuery, String cohortType) throws AnalysisException {
-        if (caseCohortSamplesQuery == null && StringUtils.isEmpty(caseCohort)) {
-            throw new AnalysisException("Missing " + cohortType + " cohort!");
+    private List<String> getCohortSamples(String cohort, Query samplesQuery, String cohortType, boolean observedPhenotype) throws AnalysisException {
+        boolean validSampleQuery = samplesQuery != null && !samplesQuery.isEmpty();
+        boolean validCohort = StringUtils.isNotEmpty(cohort);
+        boolean validPhenotype = StringUtils.isNotEmpty(phenotype);
+        if (validPhenotype) {
+            if (validSampleQuery || validCohort) {
+                throw new AnalysisException("Unable to mix phenotype parameter with " + cohortType + " cohort definition.");
+            }
+        } else {
+            if (!validSampleQuery && !validCohort) {
+                throw new AnalysisException("Missing " + cohortType + " cohort!");
+            }
         }
-        if (caseCohortSamplesQuery != null && !caseCohortSamplesQuery.isEmpty() && StringUtils.isNotEmpty(caseCohort)) {
+        if (validSampleQuery && validCohort) {
             throw new AnalysisException("Provide either " + cohortType + " cohort name or " + cohortType + " cohort samples query,"
                     + " but not both.");
         }
         List<String> samples;
         try {
-            if (StringUtils.isEmpty(cohort)) {
-                samples = catalogManager.getSampleManager()
-                        .get(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId)
-                        .getResult()
-                        .stream()
-                        .map(Sample::getId)
-                        .collect(Collectors.toList());
-            } else {
+            if (validPhenotype) {
+                Set<Phenotype.Status> expectedStatus = observedPhenotype
+                        ? Collections.singleton(Phenotype.Status.OBSERVED)
+                        : new HashSet<>(Arrays.asList(null, Phenotype.Status.NOT_OBSERVED));
+                Query query;
+                if (observedPhenotype) {
+                    query = new Query(SampleDBAdaptor.QueryParams.PHENOTYPES_NAME.key(), phenotype);
+                } else {
+                    // If not observed, fetch all samples, and filter manually.
+                    query = new Query();
+                }
+                QueryOptions options = new QueryOptions(
+                        QueryOptions.INCLUDE, Arrays.asList(
+                                SampleDBAdaptor.UpdateParams.ID.key(),
+                        SampleDBAdaptor.UpdateParams.PHENOTYPES.key()));
+
+                samples = new ArrayList<>();
+                catalogManager.getSampleManager()
+                        .iterator(study, query, options, sessionId)
+                        .forEachRemaining(sample -> {
+                            Phenotype.Status status = null;
+                            for (Phenotype p : sample.getPhenotypes()) {
+                                if (p.getId().equals(phenotype) || p.getName().equals(phenotype)) {
+                                    status = p.getStatus();
+                                }
+                            }
+                            if (expectedStatus.contains(status)) {
+                                samples.add(sample.getId());
+                            }
+                        });
+            } else if (validCohort) {
                 samples = catalogManager.getCohortManager()
                         .get(study, cohort, new QueryOptions(), sessionId)
                         .first()
@@ -274,12 +322,23 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
                         .stream()
                         .map(Sample::getId)
                         .collect(Collectors.toList());
+            } else {
+                samples = catalogManager.getSampleManager()
+                        .get(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId)
+                        .getResult()
+                        .stream()
+                        .map(Sample::getId)
+                        .collect(Collectors.toList());
             }
+
+            // Remove non-indexed samples
+            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
+            samples.removeIf(s -> !indexedSamples.contains(s));
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
         if (samples.size() <= 1) {
-            throw new AnalysisException("Unable to run GWAS analysis with " + cohortType + "cohort of size " + samples.size());
+            throw new AnalysisException("Unable to run GWAS analysis with " + cohortType + " cohort of size " + samples.size());
         }
         return samples;
     }

@@ -20,6 +20,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -674,6 +675,17 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageEngineException {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, sessionId);
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
+    }
+
+    public Set<String> getIndexedSamples(String study, String sessionId) throws CatalogException {
+        return catalogManager
+                .getCohortManager()
+                .get(study, StudyEntry.DEFAULT_COHORT, new QueryOptions(), sessionId)
+                .first()
+                .getSamples()
+                .stream()
+                .map(Sample::getId)
+                .collect(Collectors.toSet());
     }
 
     // Permission related methods
