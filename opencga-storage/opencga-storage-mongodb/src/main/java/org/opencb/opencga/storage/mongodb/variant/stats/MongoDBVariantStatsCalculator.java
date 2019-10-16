@@ -120,6 +120,6 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
 
 
     private void addGt(Map<String, Integer> gtStrCount, String gt, int num) {
-        gtStrCount.compute(gt, (key, value) -> value == null ? num : value + num);
+        gtStrCount.merge(gt, num, Integer::sum);
     }
 }
