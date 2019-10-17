@@ -28,6 +28,7 @@ import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +58,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    AuditRecord.Resource getEntity() {
-        return AuditRecord.Resource.INTERPRETATION;
+    Enums.Resource getEntity() {
+        return Enums.Resource.INTERPRETATION;
     }
 
     @Override
@@ -253,12 +254,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             queryOptions.put(Constants.ACTIONS, actionMap);
             clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, queryOptions);
 
-            auditManager.auditCreate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
+            auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
+            auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -293,7 +294,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             iterator = interpretationDBAdaptor.iterator(finalQuery, INCLUDE_INTERPRETATION_IDS, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -303,7 +304,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             Interpretation interpretation = iterator.next();
             try {
                 OpenCGAResult writeResult = update(study, interpretation, updateParams, options, userId);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -313,7 +314,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 result.getEvents().add(event);
 
                 logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
@@ -354,7 +355,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             OpenCGAResult writeResult = update(study, interpretation, updateParams, options, userId);
             result.append(writeResult);
 
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                     interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
@@ -362,7 +363,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             result.getEvents().add(event);
 
             logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretationId, interpretationUuid,
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -423,7 +424,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 OpenCGAResult writeResult = update(study, interpretation, updateParams, options, userId);
                 result.append(writeResult);
 
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretation.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
@@ -431,7 +432,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 result.getEvents().add(event);
 
                 logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.INTERPRETATION, interpretationId, interpretationUuid,
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }

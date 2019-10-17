@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -38,6 +37,7 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.PanelAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,8 +77,8 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    AuditRecord.Resource getEntity() {
-        return AuditRecord.Resource.PANEL;
+    Enums.Resource getEntity() {
+        return Enums.Resource.DISEASE_PANEL;
     }
 
     @Override
@@ -220,12 +220,12 @@ public class PanelManager extends ResourceManager<Panel> {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
             panelDBAdaptor.insert(study.getUid(), panel, options);
-            auditManager.auditCreate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditCreate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return getPanel(study.getUid(), panel.getUuid(), options);
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, AuditRecord.Resource.PANEL, panel.getId(), "", study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCreate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -254,7 +254,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 dbTime += panelDataResult.getTime();
                 counter++;
 
-                auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL,
+                auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.DISEASE_PANEL,
                         panelDataResult.first().getId(), panelDataResult.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -262,7 +262,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
             return new OpenCGAResult<>(dbTime, Collections.emptyList(), counter, counter, 0, 0);
         } catch (CatalogException e) {
-            auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL, "", "",
+            auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.DISEASE_PANEL, "", "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                     new ObjectMap());
             throw e;
@@ -295,7 +295,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 importedPanels.add(panelDataResult.first());
                 dbTime += panelDataResult.getTime();
 
-                auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL,
+                auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.DISEASE_PANEL,
                         panelDataResult.first().getId(), panelDataResult.first().getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -310,7 +310,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } catch (CatalogException e) {
             // Audit panels that could not be imported
             for (int i = counter; i < panelIds.size(); i++) {
-                auditManager.audit(operationId, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL, panelIds.get(i),
+                auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.DISEASE_PANEL, panelIds.get(i),
                         "", study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
             }
@@ -521,10 +521,10 @@ public class PanelManager extends ResourceManager<Panel> {
                 i++;
             }
 
-            auditManager.audit(operationUuid, userId, AuditRecord.Action.IMPORT, AuditRecord.Resource.PANEL, "", "", "", "", auditParams,
+            auditManager.audit(operationUuid, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL, "", "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
         } catch (CatalogException e) {
-            auditManager.audit(operationUuid, userId, AuditRecord.Action.IMPORT, AuditRecord.Resource.PANEL, "", "", "", "", auditParams,
+            auditManager.audit(operationUuid, userId, Enums.Action.IMPORT, Enums.Resource.DISEASE_PANEL, "", "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
             throw e;
         }
@@ -645,7 +645,7 @@ public class PanelManager extends ResourceManager<Panel> {
             finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             iterator = panelDBAdaptor.iterator(finalQuery, INCLUDE_PANEL_IDS, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, "", "", study.getId(), study.getUuid(),
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -657,14 +657,14 @@ public class PanelManager extends ResourceManager<Panel> {
                 OpenCGAResult updateResult = update(study, panel, updateParams, options, userId);
                 result.append(updateResult);
 
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
                 result.getEvents().add(event);
 
                 logger.error("Could not update panel {}: {}", panel.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -702,14 +702,14 @@ public class PanelManager extends ResourceManager<Panel> {
             OpenCGAResult updateResult = update(study, panel, updateParams, options, userId);
             result.append(updateResult);
 
-            auditManager.auditUpdate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditUpdate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
             result.getEvents().add(event);
 
             logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, panelId, panelUuid, study.getId(),
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -768,14 +768,14 @@ public class PanelManager extends ResourceManager<Panel> {
                 OpenCGAResult updateResult = update(study, panel, updateParams, options, userId);
                 result.append(updateResult);
 
-                auditManager.auditUpdate(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
-                        auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.auditUpdate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
                 result.getEvents().add(event);
 
                 logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, panelId, panelUuid, study.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -873,11 +873,11 @@ public class PanelManager extends ResourceManager<Panel> {
                 result = panelDBAdaptor.get(query, options, userId);
             }
 
-            auditManager.auditSearch(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -914,13 +914,13 @@ public class PanelManager extends ResourceManager<Panel> {
                 queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
             }
 
-            auditManager.auditCount(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
-            auditManager.auditCount(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -954,7 +954,7 @@ public class PanelManager extends ResourceManager<Panel> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -986,14 +986,14 @@ public class PanelManager extends ResourceManager<Panel> {
                 // Delete the panel
                 result.append(panelDBAdaptor.delete(panel));
 
-                auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
 
                 logger.error("Cannot delete panel {}: {}", panelId, e.getMessage());
-                auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, panelId, panelUuid, study.getId(),
+                auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -1036,7 +1036,7 @@ public class PanelManager extends ResourceManager<Panel> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1056,7 +1056,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // Delete the panel
                 result.append(panelDBAdaptor.delete(panel));
 
-                auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete panel " + panel.getId() + ": " + e.getMessage();
@@ -1065,7 +1065,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 result.getEvents().add(event);
 
                 logger.error(errorMsg);
-                auditManager.auditDelete(operationId, userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), study.getId(),
+                auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -1150,11 +1150,11 @@ public class PanelManager extends ResourceManager<Panel> {
                             allPanelAcls = authorizationManager.getAllPanelAcls(study.getUid(), panel.getUid(), user);
                         }
                         panelAclList.append(allPanelAcls);
-                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panel.getId(),
+                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.DISEASE_PANEL, panel.getId(),
                                 panel.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     } catch (CatalogException e) {
-                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panel.getId(),
+                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.DISEASE_PANEL, panel.getId(),
                                 panel.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
 
@@ -1172,7 +1172,7 @@ public class PanelManager extends ResourceManager<Panel> {
                     panelAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
                             Collections.singletonList(Collections.emptyMap()), 0));
 
-                    auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panelId, "",
+                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.DISEASE_PANEL, panelId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(panelId).getErrorMsg())), new ObjectMap());
                 }
@@ -1180,7 +1180,7 @@ public class PanelManager extends ResourceManager<Panel> {
             return panelAclList;
         } catch (CatalogException e) {
             for (String panelId : panelList) {
-                auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.PANEL, panelId, "", study.getId(),
+                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.DISEASE_PANEL, panelId, "", study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -1233,25 +1233,25 @@ public class PanelManager extends ResourceManager<Panel> {
             switch (aclParams.getAction()) {
                 case SET:
                     queryResultList = authorizationManager.setAcls(study.getUid(), panelDataResult.getResults().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.DISEASE_PANEL);
+                            .collect(Collectors.toList()), members, permissions, Enums.Resource.DISEASE_PANEL);
                     break;
                 case ADD:
                     queryResultList = authorizationManager.addAcls(study.getUid(), panelDataResult.getResults().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.DISEASE_PANEL);
+                            .collect(Collectors.toList()), members, permissions, Enums.Resource.DISEASE_PANEL);
                     break;
                 case REMOVE:
                     queryResultList = authorizationManager.removeAcls(panelDataResult.getResults().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.DISEASE_PANEL);
+                            .collect(Collectors.toList()), members, permissions, Enums.Resource.DISEASE_PANEL);
                     break;
                 case RESET:
                     queryResultList = authorizationManager.removeAcls(panelDataResult.getResults().stream().map(Panel::getUid)
-                            .collect(Collectors.toList()), members, null, Entity.DISEASE_PANEL);
+                            .collect(Collectors.toList()), members, null, Enums.Resource.DISEASE_PANEL);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
             for (Panel panel : panelDataResult.getResults()) {
-                auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.PANEL, panel.getId(),
+                auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.DISEASE_PANEL, panel.getId(),
                         panel.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -1259,7 +1259,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } catch (CatalogException e) {
             if (panelStrList != null) {
                 for (String panelId : panelStrList) {
-                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.PANEL, panelId, "",
+                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.DISEASE_PANEL, panelId, "",
                             study.getId(), study.getUuid(), auditParams,
                             new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 }
@@ -1322,10 +1322,10 @@ public class PanelManager extends ResourceManager<Panel> {
             fillDefaultStats(panel);
 
             panelDBAdaptor.insert(panel, overwrite);
-            auditManager.audit(operationUuid, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL, panel.getId(), "", "", "",
+            auditManager.audit(operationUuid, userId, Enums.Action.CREATE, Enums.Resource.DISEASE_PANEL, panel.getId(), "", "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
         } catch (CatalogException e) {
-            auditManager.audit(operationUuid, userId, AuditRecord.Action.CREATE, AuditRecord.Resource.PANEL, panel.getId(), "", "", "",
+            auditManager.audit(operationUuid, userId, Enums.Action.CREATE, Enums.Resource.DISEASE_PANEL, panel.getId(), "", "", "",
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
             throw e;
         }
@@ -1356,10 +1356,10 @@ public class PanelManager extends ResourceManager<Panel> {
             Panel panel = getInstallationPanel(panelId).first();
             panelDBAdaptor.delete(panel);
 
-            auditManager.auditDelete(userId, AuditRecord.Resource.PANEL, panel.getId(), panel.getUuid(), "", "", auditParams,
+            auditManager.auditDelete(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
-            auditManager.auditDelete(userId, AuditRecord.Resource.PANEL, panelId, "", "", "", auditParams,
+            auditManager.auditDelete(userId, Enums.Resource.DISEASE_PANEL, panelId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -472,7 +473,7 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, AuditRecord.Action.SEARCH, engine -> {
+        return secure(query, queryOptions, sessionId, Enums.Action.SEARCH, engine -> {
             logger.debug("getVariants {}, {}", query, queryOptions);
             VariantQueryResult<Variant> result = engine.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getTime());
@@ -604,7 +605,7 @@ public class VariantStorageManager extends StorageManager {
         options.remove(QueryOptions.INCLUDE);
         options.remove(QueryOptions.EXCLUDE);
         options.remove(VariantField.SUMMARY);
-        return secure(query, options, sessionId, AuditRecord.Action.SAMPLE_DATA, engine -> {
+        return secure(query, options, sessionId, Enums.Action.SAMPLE_DATA, engine -> {
             String studyFqn = query.getString(STUDY.key());
             options.putAll(query);
             return engine.getSampleData(variant, studyFqn, options);
@@ -711,7 +712,7 @@ public class VariantStorageManager extends StorageManager {
         return supplier.apply(variantStorageEngine);
     }
 
-    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, AuditRecord.Action auditAction,
+    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, Enums.Action auditAction,
                          VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
         ObjectMap auditAttributes = new ObjectMap()
@@ -762,7 +763,7 @@ public class VariantStorageManager extends StorageManager {
             logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().audit(userId, auditAction, AuditRecord.Resource.VARIANT, "", "", "", "", new ObjectMap(),
+            catalogManager.getAuditManager().audit(userId, auditAction, Enums.Resource.VARIANT, "", "", "", "", new ObjectMap(),
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), auditAttributes);
         }
     }
@@ -903,7 +904,7 @@ public class VariantStorageManager extends StorageManager {
 
     public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, AuditRecord.Action.FACET, engine -> {
+        return secure(query, queryOptions, sessionId, Enums.Action.FACET, engine -> {
             addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
             FacetQueryResult result = engine.facet(query, queryOptions);

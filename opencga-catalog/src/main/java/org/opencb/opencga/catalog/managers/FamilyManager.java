@@ -49,13 +49,13 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,8 +94,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    AuditRecord.Resource getEntity() {
-        return AuditRecord.Resource.FAMILY;
+    Enums.Resource getEntity() {
+        return Enums.Resource.FAMILY;
     }
 
     @Override
@@ -246,12 +246,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
             OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
 
-            auditManager.auditCreate(userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditCreate(userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, AuditRecord.Resource.FAMILY, family.getId(), "", study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCreate(userId, Enums.Resource.FAMILY, family.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -281,12 +281,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             OpenCGAResult<Family> queryResult = familyDBAdaptor.get(finalQuery, options, userId);
-            auditManager.auditSearch(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditSearch(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditSearch(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -358,13 +358,13 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
 
-            auditManager.auditCount(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
                     queryResultAux.first());
         } catch (CatalogException e) {
-            auditManager.auditCount(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditCount(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -395,7 +395,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -426,14 +426,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // Delete the family
                 result.append(familyDBAdaptor.delete(family));
 
-                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
+                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
                 result.getEvents().add(event);
 
                 logger.error("Cannot delete family {}: {}", familyId, e.getMessage(), e);
-                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, familyId, familyUuid,
+                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, familyId, familyUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -480,7 +480,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         } catch (CatalogException e) {
-            auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
+            auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -499,7 +499,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 // Delete the family
                 result.append(familyDBAdaptor.delete(family));
 
-                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
+                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 String errorMsg = "Cannot delete family " + family.getId() + ": " + e.getMessage();
@@ -508,7 +508,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 result.getEvents().add(event);
 
                 logger.error(errorMsg, e);
-                auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(),
+                auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
                 throw new CatalogException(errorMsg, e.getCause());
@@ -654,7 +654,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             iterator = familyDBAdaptor.iterator(finalQuery, INCLUDE_FAMILY_IDS, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -666,14 +666,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 OpenCGAResult<Family> queryResult = update(study, family, updateParams, options, userId);
                 result.append(queryResult);
 
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
                 result.getEvents().add(event);
 
                 logger.error("Cannot update family {}: {}", family.getId(), e.getMessage(), e);
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -712,14 +712,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             OpenCGAResult<Family> updateResult = update(study, family, updateParams, options, userId);
             result.append(updateResult);
 
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
             result.getEvents().add(event);
 
             logger.error("Cannot update family {}: {}", familyId, e.getMessage());
-            auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, familyId, familyUuid, study.getId(),
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, familyId, familyUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -778,14 +778,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 OpenCGAResult<Family> updateResult = update(study, family, updateParams, options, userId);
                 result.append(updateResult);
 
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
 
                 logger.error("Cannot update family {}: {}", familyId, e.getMessage());
-                auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FAMILY, familyId, familyUuid, study.getId(),
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, familyId, familyUuid, study.getId(),
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
@@ -992,11 +992,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         }
                         familyAclList.append(allFamilyAcls);
 
-                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, family.getId(),
+                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FAMILY, family.getId(),
                                 family.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
                     } catch (CatalogException e) {
-                        auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, family.getId(),
+                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FAMILY, family.getId(),
                                 family.getUuid(), study.getId(), study.getUuid(), auditParams,
                                 new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
 
@@ -1014,7 +1014,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     familyAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
                             Collections.singletonList(Collections.emptyMap()), 0));
 
-                    auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, familyId, "",
+                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FAMILY, familyId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     new Error(0, "", missingMap.get(familyId).getErrorMsg())), new ObjectMap());
                 }
@@ -1022,7 +1022,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             return familyAclList;
         } catch (CatalogException e) {
             for (String familyId : familyList) {
-                auditManager.audit(operationId, user, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.FAMILY, familyId, "",
+                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.FAMILY, familyId, "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
                         new ObjectMap());
             }
@@ -1076,26 +1076,26 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             switch (aclParams.getAction()) {
                 case SET:
                     aclResults = authorizationManager.setAcls(study.getUid(), familyList.stream().map(Family::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.FAMILY);
+                            .collect(Collectors.toList()), members, permissions, Enums.Resource.FAMILY);
                     break;
                 case ADD:
                     aclResults = authorizationManager.addAcls(study.getUid(), familyList.stream().map(Family::getUid)
-                            .collect(Collectors.toList()), members, permissions, Entity.FAMILY);
+                            .collect(Collectors.toList()), members, permissions, Enums.Resource.FAMILY);
                     break;
                 case REMOVE:
                     aclResults = authorizationManager.removeAcls(familyList.stream().map(Family::getUid).collect(Collectors.toList()),
-                            members, permissions, Entity.FAMILY);
+                            members, permissions, Enums.Resource.FAMILY);
                     break;
                 case RESET:
                     aclResults = authorizationManager.removeAcls(familyList.stream().map(Family::getUid).collect(Collectors.toList()),
-                            members, null, Entity.FAMILY);
+                            members, null, Enums.Resource.FAMILY);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
             }
 
             for (Family family : familyList) {
-                auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.FAMILY, family.getId(),
+                auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(),
                         family.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
@@ -1103,7 +1103,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } catch (CatalogException e) {
             if (familyStrList != null) {
                 for (String familyId : familyStrList) {
-                    auditManager.audit(operationId, user, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.FAMILY, familyId, "",
+                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, familyId, "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     e.getError()), new ObjectMap());
                 }
@@ -1140,12 +1140,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
             FacetQueryResult result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.FAMILY_SOLR_COLLECTION, query, options,
                     userId);
-            auditManager.auditFacet(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditFacet(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException | IOException e) {
-            auditManager.auditFacet(userId, AuditRecord.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
+            auditManager.auditFacet(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", e.getMessage())));
             throw e;
         }

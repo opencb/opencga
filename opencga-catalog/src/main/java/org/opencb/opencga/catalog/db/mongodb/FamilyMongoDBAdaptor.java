@@ -39,11 +39,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -227,7 +227,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getFamilyPermission().name(), Entity.FAMILY.name());
+                studyPermission.name(), studyPermission.getFamilyPermission().name(), Enums.Resource.FAMILY.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Family count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(familyCollection.count(clientSession, bson));
@@ -794,7 +794,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             // Get the document query needed to check the permissions as well
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
-                    Entity.FAMILY.name());
+                    Enums.Resource.FAMILY.name());
         }
 
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
@@ -841,11 +841,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(),
-                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Entity.FAMILY.name());
+                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
-                    Entity.FAMILY.name());
+                    Enums.Resource.FAMILY.name());
         }
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, field, QueryParams.ID.key(), options);
@@ -859,11 +859,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(),
-                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Entity.FAMILY.name());
+                    FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FAMILIES.name(), FamilyAclEntry.FamilyPermissions.VIEW.name(),
-                    Entity.FAMILY.name());
+                    Enums.Resource.FAMILY.name());
         }
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(familyCollection, bsonQuery, fields, QueryParams.ID.key(), options);
