@@ -416,6 +416,16 @@ public class VariantPhoenixHelper {
         con.commit();
     }
 
+    public void dropScore(Connection con, String variantsTableName, Integer studyId, Collection<Integer> scores) throws SQLException {
+        HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        List<CharSequence> columns = new ArrayList<>(scores.size());
+        for (Integer score : scores) {
+            columns.add(getVariantScoreColumn(studyId, score).column());
+        }
+        phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
+        con.commit();
+    }
+
     public void createSchemaIfNeeded(Connection con, String schema) throws SQLException {
         String sql = "CREATE SCHEMA IF NOT EXISTS \"" + schema + "\"";
         logger.debug(sql);

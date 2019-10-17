@@ -183,6 +183,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         INDEX_SEARCH("indexSearch", false),
 
         RESUME("resume", false),
+        FORCE("force", false),
 
         SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0),
 
@@ -917,7 +918,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public abstract void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
                                           VariantScoreFormatDescriptor descriptor, ObjectMap options)
-            throws StorageEngineException;
+    throws StorageEngineException;
+
+    public abstract void removeVariantScore(String study, String scoreName, ObjectMap options) throws StorageEngineException;
 
     @Override
     public abstract void testConnection() throws StorageEngineException;

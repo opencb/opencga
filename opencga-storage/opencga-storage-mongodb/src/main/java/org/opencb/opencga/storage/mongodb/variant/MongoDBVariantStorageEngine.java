@@ -26,10 +26,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -310,6 +310,11 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     public void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
                                  VariantScoreFormatDescriptor descriptor, ObjectMap options) {
         throw new UnsupportedOperationException("Unable to load VariantScore in " + getStorageEngineId());
+    }
+
+    @Override
+    public void removeVariantScore(String study, String scoreName, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unable to remove VariantScore in " + getStorageEngineId());
     }
 
     @Override

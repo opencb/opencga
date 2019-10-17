@@ -78,7 +78,7 @@ public abstract class VariantScoreLoader {
             if (resume || vsm.getIndexStatus().equals(TaskMetadata.Status.NONE) || vsm.getIndexStatus().equals(TaskMetadata.Status.ERROR)) {
                 vsm.setIndexStatus(TaskMetadata.Status.RUNNING);
             } else {
-                throw new StorageEngineException("Variant score " + scoreName + " is in status " + vsm.getIndexStatus() + ".");
+                throw new StorageEngineException("Variant score '" + scoreName + "' is in status '" + vsm.getIndexStatus() + "'.");
             }
             return vsm;
         });

@@ -24,8 +24,6 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -92,6 +90,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
+import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -726,7 +725,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             String archiveTable = getArchiveTableName(studyId);
             String variantsTable = getVariantTableName();
             String sampleIndexTable = getTableNameGenerator().getSampleIndexTableName(studyId);
-            options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_MAPPER_CLASS, MyDeleteHBaseColumnMapper.class.getName());
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
@@ -847,6 +845,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throws StorageEngineException {
         new HadoopVariantScoreLoader(getDBAdaptor(), ioConnectorProvider)
                 .loadVariantScore(scoreFile, study, scoreName, cohort1, cohort2, descriptor, options);
+    }
+
+    @Override
+    public void removeVariantScore(String study, String scoreName, ObjectMap options)
+            throws StorageEngineException {
+        new HadoopVariantScoreRemover(getDBAdaptor(), getMRExecutor())
+                .remove(study, scoreName, options);
     }
 
     private HBaseCredentials getDbCredentials() throws StorageEngineException {
@@ -1112,25 +1117,4 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         return jar;
     }
 
-    /**
-     * Created on 23/04/18.
-     *
-     * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
-     */
-    public static class MyDeleteHBaseColumnMapper extends DeleteHBaseColumnDriver.DeleteHBaseColumnMapper {
-
-        private byte[] columnFamily;
-
-        @Override
-        protected void setup(Context context) throws IOException, InterruptedException {
-            super.setup(context);
-            columnFamily = new GenomeHelper(context.getConfiguration()).getColumnFamily();
-        }
-
-        @Override
-        protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
-            super.map(key, result, context);
-            //        context.write(key, HadoopVariantSearchIndexUtils.addUnknownSyncStatus(new Put(result.getRow()), columnFamily));
-        }
-    }
 }

@@ -442,6 +442,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getVariantScoreMetadata(studyId, scoreId);
     }
 
+    public void removeVariantScoreMetadata(VariantScoreMetadata scoreMetadata) throws StorageEngineException {
+        updateStudyMetadata(scoreMetadata.getStudyId(), studyMetadata -> {
+            studyMetadata.getVariantScores().removeIf(s -> s.getId() == scoreMetadata.getId());
+            return studyMetadata;
+        });
+    }
+
     public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
             throws StorageEngineException, E {
         Objects.requireNonNull(function);
