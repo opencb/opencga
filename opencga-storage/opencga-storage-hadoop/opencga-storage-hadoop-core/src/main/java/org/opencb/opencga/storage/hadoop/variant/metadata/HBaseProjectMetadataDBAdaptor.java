@@ -7,10 +7,10 @@ import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -66,7 +66,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public QueryResult<ProjectMetadata> getProjectMetadata() {
+    public DataResult<ProjectMetadata> getProjectMetadata() {
         try {
             ensureTableExists();
             ProjectMetadata projectMetadata = hBaseManager.act(tableName, (table -> {
@@ -94,9 +94,9 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
             }));
 
             if (projectMetadata == null) {
-                return new QueryResult<>("");
+                return new DataResult<>();
             } else {
-                return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(projectMetadata));
+                return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(projectMetadata), 1);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -104,7 +104,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
+    public DataResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters) {
         try {
             ensureTableExists();
             hBaseManager.act(tableName, (table -> {
@@ -119,7 +119,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
                 table.put(put);
             }));
 
-            return getProjectMetadata();
+            return new DataResult();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

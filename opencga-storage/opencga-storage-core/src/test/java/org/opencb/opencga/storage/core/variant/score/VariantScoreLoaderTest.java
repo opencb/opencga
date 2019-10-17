@@ -6,10 +6,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantScore;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -26,7 +26,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 
 @Ignore
@@ -109,7 +110,7 @@ public abstract class VariantScoreLoaderTest extends VariantStorageBaseTest {
 
         int varsWithScore1 = 0;
         int varsWithScore2 = 0;
-        List<Variant> allVariants = variantStorageEngine.get(new Query(), new QueryOptions()).getResult();
+        List<Variant> allVariants = variantStorageEngine.get(new Query(), new QueryOptions()).getResults();
         for (Variant variant : allVariants) {
             Map<String, VariantScore> scores = variant.getStudies().get(0).getScores().stream().collect(Collectors.toMap(VariantScore::getId, Function.identity()));
             if (scoredVariants1.contains(variant.toString())) {
@@ -129,7 +130,7 @@ public abstract class VariantScoreLoaderTest extends VariantStorageBaseTest {
         assertEquals(scoredVariants2.size(), varsWithScore2);
 
 
-        QueryResult<Variant> result = variantStorageEngine.get(new Query(VariantQueryParam.SCORE.key(), "score1>=0"), new QueryOptions());
+        DataResult<Variant> result = variantStorageEngine.get(new Query(VariantQueryParam.SCORE.key(), "score1>=0"), new QueryOptions());
         assertThat(result, everyResult(allVariants, withStudy("s1", withScore("score1", gte(0)))));
         assertEquals(scoredVariants1.size(), result.getNumResults());
 

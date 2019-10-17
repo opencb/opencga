@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -26,11 +25,12 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.models.InternalGetQueryResult;
+import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,6 @@ public abstract class AbstractManager {
     protected final SampleDBAdaptor sampleDBAdaptor;
     protected final CohortDBAdaptor cohortDBAdaptor;
     protected final FamilyDBAdaptor familyDBAdaptor;
-    protected final DatasetDBAdaptor datasetDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
     protected final PanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
@@ -68,6 +67,8 @@ public abstract class AbstractManager {
 
     protected static final String ROOT = "admin";
     protected static final String ANONYMOUS = "*";
+
+    protected static final int BATCH_OPERATION_SIZE = 100;
 
     protected static final String INTERNAL_DELIMITER = "__";
 
@@ -85,7 +86,6 @@ public abstract class AbstractManager {
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();
-        this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationDBAdaptor = catalogDBAdaptorFactory.getInterpretationDBAdaptor();
@@ -144,27 +144,27 @@ public abstract class AbstractManager {
 
 
     /**
-     * Return the results in the QueryResult object in the same order they were queried by the list of entries.
-     * For entities with version where all versions have been requested, call to InternalGetQueryResult.getVersionedResults() to get
+     * Return the results in the OpenCGAResult object in the same order they were queried by the list of entries.
+     * For entities with version where all versions have been requested, call to InternalGetDataResult.getVersionedResults() to get
      * a list of lists of T.
      *
      * @param entries Original list used to perform the query.
      * @param getId   Generic function that will fetch the id that will be used to compare with the list of entries.
-     * @param queryResult QueryResult object.
+     * @param queryResult OpenCGAResult object.
      * @param silent  Boolean indicating whether we will fail in case of an inconsistency or not.
      * @param keepAllVersions Boolean indicating whether to keep all versions of fail in case of id duplicities.
      * @param <T>     Generic entry (Sample, File, Cohort...)
-     * @return the QueryResult with the proper order of results.
+     * @return the OpenCGAResult with the proper order of results.
      * @throws CatalogException In case of inconsistencies found.
      */
-    <T extends IPrivateStudyUid> InternalGetQueryResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId,
-                                                                             QueryResult<T> queryResult, boolean silent,
-                                                                             boolean keepAllVersions) throws CatalogException {
-        InternalGetQueryResult<T> internalGetQueryResult = new InternalGetQueryResult<>(queryResult);
+    <T extends IPrivateStudyUid> InternalGetDataResult<T> keepOriginalOrder(List<String> entries, Function<T, String> getId,
+                                                                            OpenCGAResult<T> queryResult, boolean silent,
+                                                                            boolean keepAllVersions) throws CatalogException {
+        InternalGetDataResult<T> internalGetDataResult = new InternalGetDataResult<>(queryResult);
 
         Map<String, List<T>> resultMap = new HashMap<>();
 
-        for (T entry : internalGetQueryResult.getResult()) {
+        for (T entry : internalGetDataResult.getResults()) {
             String id = getId.apply(entry);
             if (!resultMap.containsKey(id)) {
                 resultMap.put(id, new ArrayList<>());
@@ -174,7 +174,7 @@ public abstract class AbstractManager {
             resultMap.get(id).add(entry);
         }
 
-        List<T> orderedEntryList = new ArrayList<>(internalGetQueryResult.getNumResults());
+        List<T> orderedEntryList = new ArrayList<>(internalGetDataResult.getNumResults());
         List<Integer> groups = new ArrayList<>(entries.size());
         for (String entry : entries) {
             if (resultMap.containsKey(entry)) {
@@ -182,16 +182,16 @@ public abstract class AbstractManager {
                 groups.add(resultMap.get(entry).size());
             } else {
                 if (!silent) {
-                    throw new CatalogException("Entry " + entry + " not found in QueryResult");
+                    throw new CatalogException("Entry " + entry + " not found in OpenCGAResult");
                 }
                 groups.add(0);
-                internalGetQueryResult.addMissing(entry, "Not found or user does not have permissions.");
+                internalGetDataResult.addMissing(entry, "Not found or user does not have permissions.");
             }
         }
 
-        internalGetQueryResult.setResult(orderedEntryList);
-        internalGetQueryResult.setGroups(groups);
-        return internalGetQueryResult;
+        internalGetDataResult.setResults(orderedEntryList);
+        internalGetDataResult.setGroups(groups);
+        return internalGetDataResult;
     }
 
     /**
@@ -286,7 +286,7 @@ public abstract class AbstractManager {
         if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {
-            QueryResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
+            OpenCGAResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, member, Collections.emptyList());
             if (queryResult.getNumResults() == 0) {
                 throw CatalogDBException.idNotFound("Group", member);
             }

@@ -16,10 +16,11 @@
 
 package org.opencb.opencga.app.cli.main.io;
 
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.commons.utils.ListUtils;
 
 import java.io.PrintStream;
+import java.util.List;
 
 /**
  * Created by pfurio on 28/07/16.
@@ -46,23 +47,26 @@ public abstract class AbstractOutputWriter {
         this.ps = ps;
     }
 
-    abstract public void print(QueryResponse queryResponse);
+    abstract public void print(DataResponse dataResponse);
 
     /**
      * Print errors or warnings and return true if any error was found.
      *
-     * @param queryResponse queryResponse object
+     * @param dataResponse dataResponse object
      * @return true if the query gave an error.
      */
-    protected boolean checkErrors(QueryResponse queryResponse) {
+    protected boolean checkErrors(DataResponse dataResponse) {
         // Print warnings
-        if (StringUtils.isNotEmpty(queryResponse.getWarning())) {
-            System.err.println(ANSI_YELLOW + "WARNING: " + queryResponse.getWarning() + ANSI_RESET);
+        if (ListUtils.isNotEmpty(dataResponse.getWarnings())) {
+            for (String warning : (List<String>) dataResponse.getWarnings()) {
+                System.err.println(ANSI_YELLOW + "WARNING: " + warning + ANSI_RESET);
+            }
         }
 
         boolean errors = false;
-        if (StringUtils.isNotEmpty(queryResponse.getError())) {
-            System.err.println(ANSI_RED + "ERROR: " + queryResponse.getError() + ANSI_RESET);
+        if (dataResponse.getError() != null) {
+            System.err.println(ANSI_RED + "ERROR " + dataResponse.getError().getCode() + ": " + dataResponse.getError().getDescription()
+                    + ANSI_RESET);
             errors = true;
         }
 

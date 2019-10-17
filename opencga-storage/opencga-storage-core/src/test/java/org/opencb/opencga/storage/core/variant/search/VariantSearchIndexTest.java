@@ -210,8 +210,8 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         TreeSet<Variant> variantsFromSearch = new TreeSet<>(Comparator.comparing(Variant::toString));
         TreeSet<Variant> variantsFromDB = new TreeSet<>(Comparator.comparing(Variant::toString));
 
-        variantsFromSearch.addAll(variantStorageEngine.getVariantSearchManager().query(DB_NAME, query, queryOptions).getResult());
-        variantsFromDB.addAll(dbAdaptor.get(query, queryOptions).getResult());
+        variantsFromSearch.addAll(variantStorageEngine.getVariantSearchManager().query(DB_NAME, query, queryOptions).getResults());
+        variantsFromDB.addAll(dbAdaptor.get(query, queryOptions).getResults());
 
         assertEquals(variantsFromDB.size(), variantsFromSearch.size());
         assertEquals(variantsFromDB.size(), variantStorageEngine.getVariantSearchManager().count(DB_NAME, query));

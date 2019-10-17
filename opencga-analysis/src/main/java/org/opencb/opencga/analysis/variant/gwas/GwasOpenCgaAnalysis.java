@@ -297,8 +297,8 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
                 }
                 QueryOptions options = new QueryOptions(
                         QueryOptions.INCLUDE, Arrays.asList(
-                                SampleDBAdaptor.UpdateParams.ID.key(),
-                        SampleDBAdaptor.UpdateParams.PHENOTYPES.key()));
+                                SampleDBAdaptor.QueryParams.ID.key(),
+                        SampleDBAdaptor.QueryParams.PHENOTYPES.key()));
 
                 samples = new ArrayList<>();
                 catalogManager.getSampleManager()
@@ -324,8 +324,8 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
                         .collect(Collectors.toList());
             } else {
                 samples = catalogManager.getSampleManager()
-                        .get(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId)
-                        .getResult()
+                        .search(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId)
+                        .getResults()
                         .stream()
                         .map(Sample::getId)
                         .collect(Collectors.toList());

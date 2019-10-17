@@ -1,10 +1,10 @@
 package org.opencb.opencga.storage.core.variant.query;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -80,7 +80,7 @@ public abstract class VariantQueryExecutor implements VariantIterable {
      */
     public abstract boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException;
 
-    public abstract QueryResult<Long> count(Query query);
+    public abstract DataResult<Long> count(Query query);
 
     public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) {
         return new VariantQueryResult<>(count(query), null);

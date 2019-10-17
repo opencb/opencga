@@ -16,15 +16,14 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -32,7 +31,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
+public class CohortClient extends AnnotationClient<Cohort> {
 
     private static final String COHORT_URL = "cohorts";
 
@@ -41,10 +40,9 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
 
         this.category = COHORT_URL;
         this.clazz = Cohort.class;
-        this.aclClass = CohortAclEntry.class;
     }
 
-    public QueryResponse<Cohort> create(String studyId, @Nullable String variableSetId, @Nullable String variable, ObjectMap bodyParams)
+    public DataResponse<Cohort> create(String studyId, @Nullable String variableSetId, @Nullable String variable, ObjectMap bodyParams)
             throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("body", bodyParams);
@@ -54,18 +52,18 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
         return execute(COHORT_URL, "create", params, POST, Cohort.class);
     }
 
-    public QueryResponse<Sample> getSamples(String cohortId, Query query, QueryOptions options) throws IOException {
+    public DataResponse<Sample> getSamples(String cohortId, Query query, QueryOptions options) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
         return execute(COHORT_URL, cohortId, "samples", params, GET, Sample.class);
     }
 
-    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+    public DataResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(COHORT_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<FacetQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public DataResponse<FacetQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);

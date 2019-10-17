@@ -21,9 +21,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.Sample;
@@ -64,10 +64,10 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     @Test
     public void testQuery() throws Exception {
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
-        QueryResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
         System.out.println("result.getNumResults() = " + result.getNumResults());
-        System.out.println("result.getResult().size() = " + result.getResult().size());
-        for (Variant variant : result.getResult()) {
+        System.out.println("result.getResults().size() = " + result.getResults().size());
+        for (Variant variant : result.getResults()) {
             System.out.println("variant = " + variant);
         }
     }
@@ -75,10 +75,10 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     @Test
     public void testQueryProject() throws Exception {
         Query query = new Query(VariantCatalogQueryUtils.PROJECT.key(), projectId);
-        QueryResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
         System.out.println("result.getNumResults() = " + result.getNumResults());
-        System.out.println("result.getResult().size() = " + result.getResult().size());
-        for (Variant variant : result.getResult()) {
+        System.out.println("result.getResults().size() = " + result.getResults().size());
+        for (Variant variant : result.getResults()) {
             System.out.println("variant = " + variant);
         }
     }
@@ -93,7 +93,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
         Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
 
-        catalogManager.getSampleManager().create(studyFqn, "newSample", "", "", "", false, null, Collections.emptyMap(), Collections.emptyMap(), new QueryOptions(), sessionId);
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("newSample"), new QueryOptions(), sessionId);
 
         queryOptions = new QueryOptions();
         query = new Query();
@@ -135,10 +135,10 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
-        QueryResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
+        DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         System.out.println("result.getNumResults() = " + result.getNumResults());
-        System.out.println("result.getResult().size() = " + result.getResult().size());
-        for (Variant variant : result.getResult()) {
+        System.out.println("result.getResults().size() = " + result.getResults().size());
+        for (Variant variant : result.getResults()) {
             System.out.println("variant = " + variant);
         }
     }

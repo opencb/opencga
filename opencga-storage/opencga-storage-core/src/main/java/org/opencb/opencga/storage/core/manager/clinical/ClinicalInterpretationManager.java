@@ -20,7 +20,7 @@ import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -82,11 +82,11 @@ public class ClinicalInterpretationManager extends StorageManager {
     public void testConnection() throws StorageEngineException {
     }
 
-    public QueryResult<ReportedVariant> index(String token) throws IOException, ClinicalVariantException {
+    public DataResult<ReportedVariant> index(String token) throws IOException, ClinicalVariantException {
         return null;
     }
 
-    public QueryResult<ReportedVariant> index(String study, String token) throws IOException, ClinicalVariantException, CatalogException {
+    public DataResult<ReportedVariant> index(String study, String token) throws IOException, ClinicalVariantException, CatalogException {
         DBIterator<ClinicalAnalysis> clinicalAnalysisDBIterator =
                 clinicalAnalysisManager.iterator(study, new Query(), QueryOptions.empty(), token);
 
@@ -101,7 +101,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return null;
     }
 
-    public QueryResult<ReportedVariant> query(Query query, QueryOptions options, String token)
+    public DataResult<ReportedVariant> query(Query query, QueryOptions options, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         query = checkQueryPermissions(query, token);
@@ -109,7 +109,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.query(query, options, "");
     }
 
-//    public QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
+//    public DataResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
 //            throws IOException, ClinicalVariantException, CatalogException {
 //        // Check permissions
 //        query = checkQueryPermissions(query, token);
@@ -166,10 +166,10 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (isCaseProvided(query)) {
             if (studyIds.size() == 1) {
                 // This checks that the user has permission to the clinical analysis, family, sample or individual
-                QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                        .get(studyIds.get(0), query, QueryOptions.empty(), token);
+                DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                        .search(studyIds.get(0), query, QueryOptions.empty(), token);
 
-                if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
+                if (clinicalAnalysisQueryResult.getResults().isEmpty()) {
                     throw new ClinicalVariantException("Either the ID does not exist or the user does not have permissions to view it");
                 } else {
                     if (!query.containsKey(ClinicalVariantEngine.QueryParams.CLINICAL_ANALYSIS_ID.key())) {
@@ -177,7 +177,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                         query.remove(ClinicalVariantEngine.QueryParams.SAMPLE.key());
                         query.remove(ClinicalVariantEngine.QueryParams.SUBJECT.key());
                         String clinicalAnalysisList = StringUtils.join(
-                                clinicalAnalysisQueryResult.getResult().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()),
+                                clinicalAnalysisQueryResult.getResults().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()),
                                 ",");
                         query.put("clinicalAnalysisId", clinicalAnalysisList);
                     }
@@ -196,16 +196,16 @@ public class ClinicalInterpretationManager extends StorageManager {
             // There must be one single owner for all the studies, we do nt allow to query multiple databases
             if (users.size() == 1) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds, ","));
-                QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyQuery, QueryOptions.empty(), token);
+                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyQuery, QueryOptions.empty(), token);
 
                 // If the user is the owner we do not have to check anything else
                 List<String> studyAliases = new ArrayList<>(studyIds.size());
                 if (users.contains(userId)) {
-                    for (Study study : studyQueryResult.getResult()) {
+                    for (Study study : studyQueryResult.getResults()) {
                         studyAliases.add(study.getAlias());
                     }
                 } else {
-                    for (Study study : studyQueryResult.getResult()) {
+                    for (Study study : studyQueryResult.getResults()) {
                         for (Group group : study.getGroups()) {
                             if (group.getName().equalsIgnoreCase("admins") && group.getUserIds().contains(userId)) {
                                 studyAliases.add(study.getAlias());
@@ -235,10 +235,10 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS_ID.key(), interpretationId);
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                .get(studyId, query, QueryOptions.empty(), token);
+        DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                .search(studyId, query, QueryOptions.empty(), token);
 
-        if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
+        if (clinicalAnalysisQueryResult.getResults().isEmpty()) {
             throw new ClinicalVariantException("Either the interpretation ID (" + interpretationId + ") does not exist or the user does"
                     + " not have access permissions");
         }

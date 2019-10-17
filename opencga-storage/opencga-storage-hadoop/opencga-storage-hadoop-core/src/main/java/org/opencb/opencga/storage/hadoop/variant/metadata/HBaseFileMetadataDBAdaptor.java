@@ -26,9 +26,9 @@ import org.apache.hadoop.hbase.filter.RowFilter;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -107,7 +107,7 @@ public class HBaseFileMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
 
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         throw new UnsupportedOperationException();
     }
 

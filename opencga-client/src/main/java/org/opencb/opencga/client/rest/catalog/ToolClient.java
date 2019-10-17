@@ -17,15 +17,14 @@
 package org.opencb.opencga.client.rest.catalog;
 
 
-import org.opencb.opencga.core.models.Tool;
-import org.opencb.opencga.core.models.acls.permissions.ToolAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.models.Tool;
 
 
 /**
  * Created by sgallego on 6/30/16.
  */
-public class ToolClient extends CatalogClient<Tool, ToolAclEntry> {
+public class ToolClient extends CatalogClient<Tool> {
 
     private static final String TOOLS_URL = "tools";
 
@@ -34,6 +33,5 @@ public class ToolClient extends CatalogClient<Tool, ToolAclEntry> {
 
         this.category = TOOLS_URL;
         this.clazz = Tool.class;
-        this.aclClass = ToolAclEntry.class;
     }
 }

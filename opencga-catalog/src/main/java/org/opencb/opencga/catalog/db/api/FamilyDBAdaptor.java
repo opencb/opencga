@@ -17,19 +17,19 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.biodata.models.commons.Disorder;
+import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -61,6 +61,8 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         RELEASE("release", INTEGER, ""),
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of individual at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the individual
+
+        DELETED("deleted", BOOLEAN, ""),
 
         DISORDERS("disorders", TEXT_ARRAY, ""),
         DISORDERS_ID("disorders.id", TEXT, ""),
@@ -118,41 +120,6 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        NAME(QueryParams.NAME.key()),
-        PHENOTYPES(QueryParams.PHENOTYPES.key()),
-        DISORDERS(QueryParams.DISORDERS.key()),
-        MEMBERS(QueryParams.MEMBERS.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        EXPECTED_SIZE(QueryParams.EXPECTED_SIZE.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
-        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new LinkedMap();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
     default boolean exists(long familyId) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), familyId)).first() > 0;
     }
@@ -167,21 +134,16 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
         }
     }
 
-    void nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    default QueryResult<Family> insert(long studyId, Family family, QueryOptions options) throws CatalogDBException {
-        family.setAnnotationSets(Collections.emptyList());
-        return insert(studyId, family, Collections.emptyList(), options);
-    }
-
-    QueryResult<Family> insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
 
-    QueryResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Family> get(long familyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long familyId) throws CatalogDBException;
 
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -189,9 +151,44 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    void removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
+    OpenCGAResult removeMembersFromFamily(Query query, List<Long> individualUids) throws CatalogDBException;
+
+    default List<Phenotype> getAllPhenotypes(List<Individual> individualList) {
+        if (individualList == null || individualList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, Phenotype> phenotypeMap = new HashMap<>();
+        for (Individual individual : individualList) {
+            if (individual.getPhenotypes() != null && !individual.getPhenotypes().isEmpty()) {
+                for (Phenotype phenotype : individual.getPhenotypes()) {
+                    phenotypeMap.put(phenotype.getId(), phenotype);
+                }
+            }
+        }
+
+        return new ArrayList<>(phenotypeMap.values());
+    }
+
+    default List<Disorder> getAllDisorders(List<Individual> individualList) {
+        if (individualList == null || individualList.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, Disorder> disorderMap = new HashMap<>();
+        for (Individual individual : individualList) {
+            if (individual.getDisorders() != null && !individual.getDisorders().isEmpty()) {
+                for (Disorder disorder : individual.getDisorders()) {
+                    disorderMap.put(disorder.getId(), disorder);
+                }
+            }
+        }
+
+        return new ArrayList<>(disorderMap.values());
+    }
 }

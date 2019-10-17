@@ -24,10 +24,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
@@ -218,7 +218,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public final QueryResult<StudyConfiguration> getStudyConfiguration(Object study, QueryOptions options) {
+    public final DataResult<StudyConfiguration> getStudyConfiguration(Object study, QueryOptions options) {
         if (study instanceof Number) {
             return studyDBAdaptor.getStudyConfiguration(((Number) study).intValue(), null, options);
         } else {
@@ -264,7 +264,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public final DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long timeStamp = System.currentTimeMillis();
         logger.debug("Timestamp : {} -> {}", studyConfiguration.getTimeStamp(), timeStamp);
         studyConfiguration.setTimeStamp(timeStamp);
@@ -510,11 +510,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
 
-    public QueryResult<Long> countVariantFileMetadata(Query query) {
+    public DataResult<Long> countVariantFileMetadata(Query query) {
         return fileDBAdaptor.count(query);
     }
 
-    public QueryResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+    public DataResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
             throws StorageEngineException {
         return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, options);
     }

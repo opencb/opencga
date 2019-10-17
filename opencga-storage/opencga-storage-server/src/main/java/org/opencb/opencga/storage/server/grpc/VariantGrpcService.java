@@ -18,9 +18,9 @@ package org.opencb.opencga.storage.server.grpc;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -59,8 +59,8 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
 
 //            checkAuthorizedHosts(query, request.getIp());
             VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
-            QueryResult<Long> queryResult = variantDBAdaptor.count(query);
-            responseObserver.onNext(LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
+            DataResult<Long> queryResult = variantDBAdaptor.count(query);
+            responseObserver.onNext(LongResponse.newBuilder().setValue(queryResult.getResults().get(0)).build());
             responseObserver.onCompleted();
             variantDBAdaptor.close();
         } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException e) {

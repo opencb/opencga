@@ -32,10 +32,10 @@ import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
@@ -337,13 +337,13 @@ public class VariantCommandExecutor extends CommandExecutor {
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(variantQueryCommandOptions);
 
         if (variantQueryCommandOptions.commonQueryOptions.count) {
-            QueryResult<Long> result = variantStorageEngine.count(query);
-            System.out.println("Num. results\t" + result.getResult().get(0));
+            DataResult<Long> result = variantStorageEngine.count(query);
+            System.out.println("Num. results\t" + result.getResults().get(0));
         } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.rank)) {
             executeRank(query, variantStorageEngine, variantQueryCommandOptions);
         } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.groupBy)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            QueryResult groupBy = variantStorageEngine.groupBy(query, variantQueryCommandOptions.groupBy, options);
+            DataResult groupBy = variantStorageEngine.groupBy(query, variantQueryCommandOptions.groupBy, options);
             System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else {
             URI uri = StringUtils.isEmpty(variantQueryCommandOptions.commonQueryOptions.output)
@@ -494,7 +494,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        QueryResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.annotationId, query, options);
+        DataResult<VariantAnnotation> queryResult = variantStorageEngine.getAnnotation(cliOptions.annotationId, query, options);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -503,7 +503,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         ObjectWriter writer = objectMapper.writer();
 //        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
         SequenceWriter sequenceWriter = writer.writeValues(System.out);
-        for (VariantAnnotation annotation : queryResult.getResult()) {
+        for (VariantAnnotation annotation : queryResult.getResults()) {
             sequenceWriter.write(annotation);
             sequenceWriter.flush();
 //            writer.writeValue(System.out, annotation);
@@ -515,7 +515,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.AnnotationMetadataCommandOptions cliOptions  = variantCommandOptions.annotationMetadataCommandOptions;
 
 
-        QueryResult<ProjectMetadata.VariantAnnotationMetadata> result = variantStorageEngine.getAnnotationMetadata(cliOptions.annotationId);
+        DataResult<ProjectMetadata.VariantAnnotationMetadata> result = variantStorageEngine.getAnnotationMetadata(cliOptions.annotationId);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -524,7 +524,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         ObjectWriter writer = objectMapper.writer();
 //        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
         SequenceWriter sequenceWriter = writer.writeValues(System.out);
-        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResult()) {
+        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResults()) {
             sequenceWriter.write(metadata);
             sequenceWriter.flush();
 //            writer.writeValue(System.out, annotation);
@@ -827,7 +827,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (variantQueryCommandOptions.commonQueryOptions.limit > 0) {
             limit = variantQueryCommandOptions.commonQueryOptions.limit;
         }
-        QueryResult rank = variantStorageEngine.rank(query, field, limit, asc);
+        DataResult rank = variantStorageEngine.rank(query, field, limit, asc);
         System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
     }
 

@@ -25,10 +25,11 @@ import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
+import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -101,21 +102,21 @@ public abstract class AbstractParentClient {
 
     protected <T> VariantQueryResult<T> executeVariantQuery(String category, String action, Map<String, Object> params, String method,
                                                             Class<T> clazz) throws IOException {
-        QueryResponse<T> queryResponse = execute(category, null, action, params, method, clazz);
+        DataResponse<T> queryResponse = execute(category, null, action, params, method, clazz);
         return (VariantQueryResult<T>) queryResponse.first();
     }
 
-    protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
+    protected <T> DataResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
             throws IOException {
         return execute(category, null, action, params, method, clazz);
     }
 
-    protected <T> QueryResponse<T> execute(String category, String id, String action, Map<String, Object> params, String method,
+    protected <T> DataResponse<T> execute(String category, String id, String action, Map<String, Object> params, String method,
                                            Class<T> clazz) throws IOException {
         return execute(category, id, null, null, action, params, method, clazz);
     }
 
-    protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
+    protected <T> DataResponse<T> execute(String category1, String id1, String category2, String id2, String action,
                                            Map<String, Object> paramsMap, String method, Class<T> clazz) throws IOException {
 
         ObjectMap params;
@@ -158,8 +159,8 @@ public abstract class AbstractParentClient {
 
         int skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
 
-        QueryResponse<T> finalQueryResponse = null;
-        QueryResponse<T> queryResponse;
+        DataResponse<T> finalDataResponse = null;
+        DataResponse<T> queryResponse;
 
         while (true) {
             params.put(QueryOptions.SKIP, skip);
@@ -171,18 +172,18 @@ public abstract class AbstractParentClient {
             } else {
                 queryResponse = callUploadRest(path, params, clazz);
             }
-            int numResults = queryResponse.getResponse().isEmpty() ? 0 : queryResponse.getResponse().get(0).getNumResults();
+            int numResults = queryResponse.getResponses().isEmpty() ? 0 : queryResponse.getResponses().get(0).getNumResults();
 
-            if (finalQueryResponse == null) {
-                finalQueryResponse = queryResponse;
+            if (finalDataResponse == null) {
+                finalDataResponse = queryResponse;
             } else {
                 if (numResults > 0) {
-                    finalQueryResponse.getResponse().get(0).getResult().addAll(queryResponse.getResponse().get(0).getResult());
-                    finalQueryResponse.getResponse().get(0).setNumResults(finalQueryResponse.getResponse().get(0).getResult().size());
+                    finalDataResponse.getResponses().get(0).getResults().addAll(queryResponse.getResponses().get(0).getResults());
+                    finalDataResponse.getResponses().get(0).setNumResults(finalDataResponse.getResponses().get(0).getResults().size());
                 }
             }
 
-            int numTotalResults = queryResponse.getResponse().isEmpty() ? 0 : finalQueryResponse.getResponse().get(0).getNumResults();
+            int numTotalResults = queryResponse.getResponses().isEmpty() ? 0 : finalDataResponse.getResponses().get(0).getNumResults();
             if (numResults < limit || numTotalResults >= numRequiredFeatures || numResults == 0) {
                 break;
             }
@@ -196,7 +197,7 @@ public abstract class AbstractParentClient {
             }
 
         }
-        return finalQueryResponse;
+        return finalDataResponse;
     }
 
     /**
@@ -209,7 +210,7 @@ public abstract class AbstractParentClient {
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
-    private <T> QueryResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
+    private <T> DataResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
 
         String jsonString = "{}";
         if (method.equalsIgnoreCase(GET)) {
@@ -260,7 +261,7 @@ public abstract class AbstractParentClient {
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
-    private <T> QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws IOException {
+    private <T> DataResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws IOException {
 
         String jsonString;
 
@@ -287,23 +288,23 @@ public abstract class AbstractParentClient {
         return parseResult(jsonString, clazz);
     }
 
-    private <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
+    private <T> DataResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
         if (json != null && !json.isEmpty()) {
             ObjectReader reader = jsonObjectMapper
-                    .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz));
+                    .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(DataResponse.class, DataResult.class, clazz));
             try {
                 return reader.readValue(json);
             } catch (JsonParseException e) {
                 if (json.startsWith("<html>")) {
                     if (json.contains("504 Gateway Time-out")) {
-                        return new QueryResponse<>("", 0, "", "Error 504 Gateway Time-out. The server didn't respond in time.", null,
-                                Collections.emptyList());
+                        return new DataResponse<>("", 0, Collections.emptyList(), new Error(504, "Gateway time-out",
+                                "The server didn't respond in time."), null, Collections.emptyList());
                     }
                 }
                 throw e;
             }
         } else {
-            return new QueryResponse<>();
+            return new DataResponse<>();
         }
     }
 

@@ -5,9 +5,9 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -40,7 +40,7 @@ public class SampleVariantStatsOpenCgaAnalysisExecutor extends SampleVariantStat
 
         List<SampleVariantStats> stats;
         try {
-            QueryResult<VariantMetadata> metadata = variantStorageManager.getMetadata(query, new QueryOptions(), getSessionId());
+            DataResult<VariantMetadata> metadata = variantStorageManager.getMetadata(query, new QueryOptions(), getSessionId());
             SampleVariantStatsCalculator calculator = new SampleVariantStatsCalculator(metadata.first().getStudies().get(0));
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");

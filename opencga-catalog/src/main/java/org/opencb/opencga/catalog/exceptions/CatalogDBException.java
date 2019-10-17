@@ -129,4 +129,8 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException("The sample { id: " + id + "} cannot be removed as it is already the parent of other individual(s).");
     }
 
+    public static CatalogDBException cannotUpdateMultipleEntries(String field, String entry) {
+        return new CatalogDBException("Update " + entry + ": Cannot update '" + field + "' parameter for multiple entries");
+    }
+
 }

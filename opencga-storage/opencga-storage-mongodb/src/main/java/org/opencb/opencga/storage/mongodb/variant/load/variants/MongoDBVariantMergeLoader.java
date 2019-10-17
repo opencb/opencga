@@ -19,13 +19,12 @@ package org.opencb.opencga.storage.mongodb.variant.load.variants;
 import com.mongodb.ErrorCategory;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
-import com.mongodb.bulk.BulkWriteResult;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -148,9 +147,9 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         existingVariants.stop();
         StopWatch fillGapsVariants = StopWatch.createStarted();
         if (!mongoDBOps.getExistingStudy().getQueries().isEmpty()) {
-            QueryResult<BulkWriteResult> update = variantsCollection.update(mongoDBOps.getExistingStudy().getQueries(),
+            DataResult update = variantsCollection.update(mongoDBOps.getExistingStudy().getQueries(),
                     mongoDBOps.getExistingStudy().getUpdates(), QUERY_OPTIONS);
-            if (update.first().getMatchedCount() != mongoDBOps.getExistingStudy().getQueries().size()) {
+            if (update.getNumMatches() != mongoDBOps.getExistingStudy().getQueries().size()) {
                 onUpdateError("fill gaps", update, mongoDBOps.getExistingStudy().getQueries(), mongoDBOps.getExistingStudy().getIds());
             }
         }
@@ -198,8 +197,8 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
 
         MongoDBOperations.StageSecondaryAlternates alternates = mongoDBOps.getSecondaryAlternates();
         if (!alternates.getQueries().isEmpty()) {
-            QueryResult<BulkWriteResult> update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
-            if (update.first().getMatchedCount() != alternates.getQueries().size()) {
+            DataResult update = stageCollection.update(alternates.getQueries(), alternates.getUpdates(), null);
+            if (update.getNumMatches() != alternates.getQueries().size()) {
                 onUpdateError("populate secondary alternates", update, alternates.getQueries(), alternates.getIds(), stageCollection);
             }
         }
@@ -217,12 +216,12 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
             logger.debug("Clean study {} from stage where all the files {} where duplicated : {}", studyId, fileIds,
                     mongoDBOps.getDocumentsToCleanStudies());
             modifiedCount += stageCollection.update(
-                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanStudies()), cleanStageDuplicated, MULTI).first().getModifiedCount();
+                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanStudies()), cleanStageDuplicated, MULTI).getNumUpdated();
         }
         if (!mongoDBOps.getDocumentsToCleanFiles().isEmpty()) {
             logger.debug("Cleaning files {} from stage collection", fileIds);
             modifiedCount += stageCollection.update(
-                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanFiles()), cleanStage, MULTI).first().getModifiedCount();
+                    in(ID_FIELD, mongoDBOps.getDocumentsToCleanFiles()), cleanStage, MULTI).getNumUpdated();
         }
 
         return modifiedCount;
@@ -256,18 +255,20 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
                     queriesExisting.add(and(bson, nin(STUDIES_FIELD + "." + FILES_FIELD + "." + FILEID_FIELD, fileIds)));
                 }
                 // Update those existing variants
-                QueryResult<BulkWriteResult> update = variantsCollection.update(queriesExisting, newStudy.getUpdates(), QUERY_OPTIONS);
+                DataResult update = variantsCollection.update(queriesExisting, newStudy.getUpdates(), QUERY_OPTIONS);
                 //                if (update.first().getModifiedCount() != mongoDBOps.queriesExisting.size()) {
                 //                    // FIXME: Don't know if there is some error inserting. Query already existing?
                 //                    onUpdateError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
                 //                }
             } else {
-                QueryResult<BulkWriteResult> update = variantsCollection.update(newStudy.getQueries(), newStudy.getUpdates(), UPSERT);
-                if (update.first().getModifiedCount() + update.first().getUpserts().size() != newStudy.getQueries().size()) {
+                DataResult update = variantsCollection.update(newStudy.getQueries(), newStudy.getUpdates(), UPSERT);
+//                if (update.getNumUpdated() + update.first().getUpserts().size() != newStudy.getQueries().size()) {
+                if (update.getNumUpdated() + update.getNumInserted() != newStudy.getQueries().size()) {
                     onUpdateError("existing variants", update, newStudy.getQueries(), newStudy.getIds());
                 }
                 // Add upserted documents
-                newVariants += update.first().getUpserts().size();
+//                newVariants += update.first().getUpserts().size();
+                newVariants += update.getNumInserted();
             }
         } catch (MongoBulkWriteException e) {
             // Add upserted documents
@@ -311,21 +312,21 @@ public class MongoDBVariantMergeLoader implements DataWriter<MongoDBOperations> 
         return newVariants;
     }
 
-    protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds) {
+    protected void onUpdateError(String updateName, DataResult update, List<Bson> queries, List<String> queryIds) {
         onUpdateError(updateName, update, queries, queryIds, variantsCollection);
     }
 
-    protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds,
+    protected void onUpdateError(String updateName, DataResult update, List<Bson> queries, List<String> queryIds,
                                  MongoDBCollection collection) {
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
-                + "(ModifiedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
+                + "(ModifiedCount = " + update.getNumUpdated() + "). MatchedCount:" + update.getNumMatches());
         logger.info("QueryIDs: {}", queryIds);
-        List<QueryResult<Document>> queryResults = collection.find(queries, null);
+        List<DataResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: {}", queryResults.size());
 
-        for (QueryResult<Document> r : queryResults) {
+        for (DataResult<Document> r : queryResults) {
             logger.info("result: '{}'", r);
-            if (!r.getResult().isEmpty()) {
+            if (!r.getResults().isEmpty()) {
                 String id = r.first().get("_id", String.class);
                 boolean remove = queryIds.remove(id);
                 logger.info("remove({}): {}", id, remove);

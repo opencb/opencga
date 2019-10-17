@@ -8,7 +8,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.io.VcfDataWriter;
 
@@ -35,7 +35,7 @@ public class VcfOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void print(QueryResponse queryResponse) {
+    public void print(DataResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }
@@ -73,7 +73,7 @@ public class VcfOutputWriter extends AbstractOutputWriter {
             VcfDataWriter<Variant> writer = VcfDataWriter.newWriterForAvro(metadata, annotations, outputStream);
             writer.open();
             writer.pre();
-            for (Variant variant : variantQueryResult.getResult()) {
+            for (Variant variant : variantQueryResult.getResults()) {
                 // FIXME: The server may be returning the StudyEntry with a different name
                 String shortStudy = study.substring(study.lastIndexOf(':') + 1, study.length());
                 if (variant.getStudy(study) == null && variant.getStudy(shortStudy) != null) {

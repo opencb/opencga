@@ -25,8 +25,10 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 
 import java.util.Collections;
 
@@ -73,22 +75,24 @@ public class AuditMongoDBAdaptorTest {
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
 
-
         auditDbAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database)
                 .getCatalogAuditDbAdaptor();
     }
 
     @Test
     public void testInsertAuditRecord() throws Exception {
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, AuditRecord.Action.update,
-                AuditRecord.Magnitude.medium, new ObjectMap("name", "HG0001"), new ObjectMap("name", "HG0002"), System.currentTimeMillis(),
-                "admin", "", new ObjectMap()));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, AuditRecord.Action.update,
-                AuditRecord.Magnitude.medium, new ObjectMap("name", "HG0002"), new ObjectMap("name", "HG0003"), System.currentTimeMillis(),
-                "admin", "", new ObjectMap()));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, AuditRecord.Action.update,
-                AuditRecord.Magnitude.medium, new ObjectMap("description", ""), new ObjectMap("description", "New sample"),
-                System.currentTimeMillis(), "admin", "", new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
+                AuditRecord.Resource.SAMPLE, "sampleId", "sampleUuid", "studyId", "studyUuid", new ObjectMap(),
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
+                AuditRecord.Resource.SAMPLE, "sampleId2", "sampleUuid2", "studyId", "studyUuid", new ObjectMap(),
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
+                AuditRecord.Resource.SAMPLE, "sampleId3", "sampleUuid3", "studyId", "studyUuid", new ObjectMap(),
+                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
     }
 
 //    @Test

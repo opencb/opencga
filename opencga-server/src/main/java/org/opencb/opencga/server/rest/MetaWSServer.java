@@ -18,7 +18,8 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -69,10 +70,9 @@ public class MetaWSServer extends OpenCGAWSServer {
         info.put("Git branch", GitRepositoryState.get().getBranch());
         info.put("Git commit", GitRepositoryState.get().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
-        QueryResult queryResult = new QueryResult();
-        queryResult.setId("about");
-        queryResult.setDbTime(0);
-        queryResult.setResult(Collections.singletonList(info));
+        DataResult queryResult = new DataResult();
+        queryResult.setTime(0);
+        queryResult.setResults(Collections.singletonList(info));
 
         return createOkResponse(queryResult);
     }
@@ -82,9 +82,8 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
     public Response ping() {
 
-        QueryResult queryResult = new QueryResult();
-        queryResult.setId("pong");
-        queryResult.setDbTime(0);
+        DataResult queryResult = new DataResult();
+        queryResult.setTime(0);
 
         return createOkResponse(queryResult);
     }
@@ -94,9 +93,8 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "GET", value = "Database status.")
     public Response status() {
 
-        QueryResult queryResult = new QueryResult();
-        queryResult.setId("Status");
-        queryResult.setDbTime(0);
+        DataResult queryResult = new DataResult();
+        queryResult.setTime(0);
 
         String storageEngineId;
         StringBuilder errorMsg = new StringBuilder();
@@ -146,10 +144,11 @@ public class MetaWSServer extends OpenCGAWSServer {
             }
         } else {
             logger.info("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            queryResult.setWarningMsg("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, "HealthCheck results from cache at "
+                    + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
         }
 
-        queryResult.setResult(Arrays.asList(healthCheckResults));
+        queryResult.setResults(Arrays.asList(healthCheckResults));
 
         if (isHealthy()) {
             logger.info("HealthCheck : " + healthCheckResults.toString());

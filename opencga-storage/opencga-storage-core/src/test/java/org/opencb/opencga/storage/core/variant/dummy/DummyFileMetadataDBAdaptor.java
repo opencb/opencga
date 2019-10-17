@@ -4,12 +4,10 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
-import org.opencb.biodata.models.variant.stats.VariantSourceStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Locked;
@@ -100,8 +98,8 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
-        return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(((long) VARIANT_FILE_METADATAS.size())));
+    public DataResult<Long> count(Query query) {
+        return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(((long) VARIANT_FILE_METADATAS.size())), 1);
     }
 
     @Override

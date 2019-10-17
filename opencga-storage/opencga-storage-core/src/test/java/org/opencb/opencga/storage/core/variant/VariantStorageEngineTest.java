@@ -32,10 +32,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.TestIOConnector;
@@ -704,7 +704,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         long start = System.currentTimeMillis();
         int numVariants = 0;
         String expectedStudyId = studyMetadata.getName();
-        QueryResult<Long> count = dbAdaptor.count(new Query());
+        DataResult<Long> count = dbAdaptor.count(new Query());
         assertEquals(1, count.getNumResults());
         if (expectedNumVariants >= 0) {
             assertEquals(expectedNumVariants, count.first().intValue());

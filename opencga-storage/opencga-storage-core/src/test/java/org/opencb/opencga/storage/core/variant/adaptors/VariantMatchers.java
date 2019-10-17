@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 
 import java.util.*;
 import java.util.function.BiPredicate;
@@ -41,48 +41,48 @@ import static org.hamcrest.CoreMatchers.*;
  */
 public class VariantMatchers {
 
-    public static <T> FeatureMatcher<QueryResult<T>, List<T>> hasResult(Matcher<? super List<T>> subMatcher) {
-        return new FeatureMatcher<QueryResult<T>, List<T>>(subMatcher, "a query result where", "QueryResult") {
+    public static <T> FeatureMatcher<DataResult<T>, List<T>> hasResult(Matcher<? super List<T>> subMatcher) {
+        return new FeatureMatcher<DataResult<T>, List<T>>(subMatcher, "a query result where", "DataResult") {
             @Override
-            protected List<T> featureValueOf(QueryResult<T> actual) {
-                return actual.getResult();
+            protected List<T> featureValueOf(DataResult<T> actual) {
+                return actual.getResults();
             }
         };
     }
 
-    public static <T> Matcher<QueryResult<T>> everyResult(QueryResult<T> allValues, Matcher<T> subMatcher) {
-        return everyResult(allValues.getResult(), subMatcher);
+    public static <T> Matcher<DataResult<T>> everyResult(DataResult<T> allValues, Matcher<T> subMatcher) {
+        return everyResult(allValues.getResults(), subMatcher);
     }
 
-    public static <T> Matcher<QueryResult<T>> everyResult(List<T> allValues, Matcher<T> subMatcher) {
+    public static <T> Matcher<DataResult<T>> everyResult(List<T> allValues, Matcher<T> subMatcher) {
         long count = count(allValues, subMatcher);
         Set<T> expectValues = filter(allValues, subMatcher);
         return allOf(numResults(expectValues), everyResult(subMatcher));
     }
 
-    public static <T> Matcher<QueryResult<T>> everyResult(Matcher<T> subMatcher) {
+    public static <T> Matcher<DataResult<T>> everyResult(Matcher<T> subMatcher) {
         return hasResult(Every.everyItem(subMatcher));
     }
 
-    public static Matcher<QueryResult<?>> numTotalResults(Matcher<Long> subMatcher) {
-        return new FeatureMatcher<QueryResult<?>, Long>(subMatcher, "a queryResult with numTotalResults", "NumTotalResults") {
+    public static Matcher<DataResult<?>> numTotalResults(Matcher<Long> subMatcher) {
+        return new FeatureMatcher<DataResult<?>, Long>(subMatcher, "a queryResult with numTotalResults", "NumTotalResults") {
             @Override
-            protected Long featureValueOf(QueryResult<?> actual) {
+            protected Long featureValueOf(DataResult<?> actual) {
                 return actual.getNumTotalResults();
             }
         };
     }
-    public static Matcher<QueryResult<?>> numResults(Matcher<Integer> subMatcher) {
-        return new FeatureMatcher<QueryResult<?>, Integer>(subMatcher, "a queryResult with numResults", "NumResults") {
+    public static Matcher<DataResult<?>> numResults(Matcher<Integer> subMatcher) {
+        return new FeatureMatcher<DataResult<?>, Integer>(subMatcher, "a queryResult with numResults", "NumResults") {
             @Override
-            protected Integer featureValueOf(QueryResult<?> actual) {
+            protected Integer featureValueOf(DataResult<?> actual) {
                 return actual.getNumResults();
             }
         };
     }
 
-    public static <T> Matcher<QueryResult<T>> numResults(Set<T> expectedValues) {
-        return new TypeSafeDiagnosingMatcher<QueryResult<T>>() {
+    public static <T> Matcher<DataResult<T>> numResults(Set<T> expectedValues) {
+        return new TypeSafeDiagnosingMatcher<DataResult<T>>() {
 
             @Override
             public void describeTo(Description description) {
@@ -90,11 +90,11 @@ public class VariantMatchers {
             }
 
             @Override
-            protected boolean matchesSafely(QueryResult<T> item, Description mismatchDescription) {
+            protected boolean matchesSafely(DataResult<T> item, Description mismatchDescription) {
 
                 List<T> missingValues = new ArrayList<T>();
                 List<T> extraValues = new ArrayList<T>();
-                for (T t : item.getResult()) {
+                for (T t : item.getResults()) {
                     if (!expectedValues.contains(t)) {
                         extraValues.add(t);
                     }
@@ -104,7 +104,7 @@ public class VariantMatchers {
                     return true;
                 }
                 for (T expectedValue : expectedValues) {
-                    if (!item.getResult().contains(expectedValue)) {
+                    if (!item.getResults().contains(expectedValue)) {
                         missingValues.add(expectedValue);
                     }
                 }

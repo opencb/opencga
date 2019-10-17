@@ -16,10 +16,10 @@ import org.opencb.opencga.analysis.variant.gwas.GwasOpenCgaAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.oskar.analysis.result.AnalysisResult;
 import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -117,7 +117,8 @@ public class VariantOpenCgaAnalysisTest {
             for (int i = 0; i < file.getSamples().size(); i++) {
                 if (i % 2 == 0) {
                     String id = file.getSamples().get(i).getId();
-                    catalogManager.getSampleManager().update(STUDY, id, new ObjectMap(SampleDBAdaptor.UpdateParams.PHENOTYPES.key(), PHENOTYPE), null, sessionId);
+                    SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
+                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, sessionId);
                 }
             }
 
@@ -130,7 +131,7 @@ public class VariantOpenCgaAnalysisTest {
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
-        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionId = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "ACME", "Homo sapiens",

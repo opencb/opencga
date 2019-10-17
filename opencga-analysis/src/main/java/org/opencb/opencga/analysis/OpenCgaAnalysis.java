@@ -17,9 +17,9 @@
 package org.opencb.opencga.analysis;
 
 import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -153,7 +153,7 @@ public abstract class OpenCgaAnalysis extends OskarAnalysis {
     protected final Analyst getAnalyst(String token) throws AnalysisException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
-            QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+            DataResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
 
             return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());

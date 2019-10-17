@@ -110,7 +110,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         variantStorageEngine.saveAnnotation("v2", new ObjectMap());
         variantStorageEngine.annotate(new Query(VariantQueryParam.REGION.key(), "1"), new ObjectMap(TestAnnotator.ANNOT_KEY, "v3").append(OVERWRITE_ANNOTATIONS, true));
 
-        assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResult().size());
+        assertEquals(0, variantStorageEngine.getAnnotation("v0", null, null).getResults().size());
         checkAnnotationSnapshot(variantStorageEngine, "v1", "v1");
         checkAnnotationSnapshot(variantStorageEngine, "v2", "v2");
         checkAnnotationSnapshot(variantStorageEngine, VariantAnnotationManager.CURRENT, VariantAnnotationManager.CURRENT, "v3", new Query(VariantQueryParam.REGION.key(), "1"));
@@ -128,29 +128,29 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
         int batchSize = (int) Math.ceil(count / 10.0);
         for (int i = 0; i < 10; i++) {
             partialCount += variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.LIMIT, batchSize)
-                    .append(QueryOptions.SKIP, batchSize * i)).getResult().size();
+                    .append(QueryOptions.SKIP, batchSize * i)).getResults().size();
         }
         assertEquals(count, partialCount);
 
         for (int chr = 1; chr < 22; chr += 2) {
             Query query = new Query(VariantQueryParam.REGION.key(), chr + "," + (chr + 1));
             count = variantStorageEngine.count(query).first();
-            partialCount = variantStorageEngine.getAnnotation("v2", query, new QueryOptions()).getResult().size();
+            partialCount = variantStorageEngine.getAnnotation("v2", query, new QueryOptions()).getResults().size();
             assertEquals(count, partialCount);
         }
 
         String consequenceTypes = VariantField.ANNOTATION_CONSEQUENCE_TYPES.fieldName().replace(VariantField.ANNOTATION.fieldName() + ".", "");
-        for (VariantAnnotation annotation : variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.INCLUDE, consequenceTypes)).getResult()) {
+        for (VariantAnnotation annotation : variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.INCLUDE, consequenceTypes)).getResults()) {
             assertEquals(1, annotation.getConsequenceTypes().size());
         }
-        for (VariantAnnotation annotation : variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.EXCLUDE, consequenceTypes)).getResult()) {
+        for (VariantAnnotation annotation : variantStorageEngine.getAnnotation("v2", null, new QueryOptions(QueryOptions.EXCLUDE, consequenceTypes)).getResults()) {
             assertThat(annotation.getConsequenceTypes(), VariantMatchers.isEmpty());
         }
 
 
         // Get annotations from a deleted snapshot
         thrown.expectMessage("Variant Annotation snapshot \"v1\" not found!");
-        assertEquals(0, variantStorageEngine.getAnnotation("v1", null, null).getResult().size());
+        assertEquals(0, variantStorageEngine.getAnnotation("v1", null, null).getResults().size());
     }
 
     public void checkAnnotationSnapshot(VariantStorageEngine variantStorageEngine, String annotationName, String expectedId) throws Exception {
@@ -159,7 +159,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
     public void checkAnnotationSnapshot(VariantStorageEngine variantStorageEngine, String annotationName, String expectedAnnotationName, String expectedId, Query query) throws Exception {
         int count = 0;
-        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, null).getResult()) {
+        for (VariantAnnotation annotation: variantStorageEngine.getAnnotation(annotationName, query, null).getResults()) {
             assertEquals("an id -- " + expectedId, annotation.getId());
 //            assertEquals("1", annotation.getAdditionalAttributes().get("opencga").getAttribute().get("release"));
             assertEquals(expectedAnnotationName, annotation.getAdditionalAttributes().get(GROUP_NAME.key())

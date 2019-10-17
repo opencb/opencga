@@ -18,8 +18,10 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -60,12 +62,17 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void incrementCurrentRelease() throws CatalogDBException {
         long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId());
-        QueryResult<Project> projectQueryResult = catalogProjectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
+        DataResult<Project> projectDataResult = catalogProjectDBAdaptor.get(projectId, new QueryOptions(QueryOptions.INCLUDE,
                 ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key()));
-        assertEquals(1, projectQueryResult.first().getCurrentRelease());
+        assertEquals(1, projectDataResult.first().getCurrentRelease());
 
-        assertEquals(2, catalogProjectDBAdaptor.incrementCurrentRelease(projectId).first().intValue());
-        assertEquals(3, catalogProjectDBAdaptor.incrementCurrentRelease(projectId).first().intValue());
+        catalogProjectDBAdaptor.incrementCurrentRelease(projectId);
+        int currentRelease = catalogProjectDBAdaptor.get(projectId, QueryOptions.empty()).first().getCurrentRelease();
+        assertEquals(2, currentRelease);
+
+        catalogProjectDBAdaptor.incrementCurrentRelease(projectId);
+        currentRelease = catalogProjectDBAdaptor.get(projectId, QueryOptions.empty()).first().getCurrentRelease();
+        assertEquals(3, currentRelease);
     }
 
 
@@ -73,7 +80,7 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getProjectTest() throws CatalogDBException {
         long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getId());
         System.out.println("projectId = " + projectId);
-        QueryResult<Project> project = catalogProjectDBAdaptor.get(projectId, null);
+        DataResult<Project> project = catalogProjectDBAdaptor.get(projectId, null);
         System.out.println(project);
         assertNotNull(project.first());
 
@@ -84,12 +91,17 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void deleteProjectTest() throws CatalogException {
         Project p = new Project("2000G", "Project about some more genomes", null, "Cool", new Status(), "", 3000, "", null, 1);
-        QueryResult<Project> result = catalogProjectDBAdaptor.insert(p, user1.getId(), null);
-        System.out.println(result.first().getStatus());
-        p = result.first();
-        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
-        System.out.println(queryResult.first().getStatus());
-        assertTrue(queryResult.getNumResults() == 1);
+        catalogProjectDBAdaptor.insert(p, user1.getId(), null);
+
+        p = getProject(user1.getId(), "2000G");
+        DataResult writeResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
+        assertEquals(1, writeResult.getNumUpdated());
+
+        Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), p.getUid())
+                .append(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+        DataResult<Project> queryResult = catalogProjectDBAdaptor.get(query, QueryOptions.empty());
+        assertEquals(1, queryResult.getNumResults());
+        assertEquals(Status.DELETED, queryResult.first().getStatus().getName());
 
         //thrown.expect(CatalogDBException.class);
         //catalogProjectDBAdaptor.delete(p.getId());
@@ -100,9 +112,9 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getAllProjects() throws CatalogDBException {
-        QueryResult<Project> allProjects = catalogProjectDBAdaptor.get(user3.getId(), null);
+        DataResult<Project> allProjects = catalogProjectDBAdaptor.get(user3.getId(), null);
         System.out.println(allProjects);
-        assertTrue(!allProjects.getResult().isEmpty());
+        assertTrue(!allProjects.getResults().isEmpty());
     }
 
     /**
@@ -116,20 +128,21 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void renameProjectTest() throws CatalogException {
-        Project p1 = catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", new Status(), "", 3000, "", null, 1),
-                user1.getId(), null).first();
-        Project p2 = catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", new Status(), "", 3000, "", null, 1),
-                user1.getId(), null).first();
-        catalogProjectDBAdaptor.editId(user1.getId(), p1.getUid(), "p1", "newpmp");
+        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", new Status(), "", 3000, "", null, 1), user1.getId(), null);
+        Project p1 = getProject(user1.getId(), "p1");
+        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", new Status(), "", 3000, "", null, 1), user1.getId(), null);
+        Project p2 = getProject(user1.getId(), "p2");
+
+        catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "newpmp"), QueryOptions.empty());
 
         try {
-            catalogProjectDBAdaptor.editId(user1.getId(), -1, "", "falseProject");
+            catalogProjectDBAdaptor.update(-1, new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "falseProject"), QueryOptions.empty());
             fail("renamed project with projectId=-1");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
         try {
-            catalogProjectDBAdaptor.editId(user1.getId(), p1.getUid(), "newpmp", p2.getId());
+            catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), p2.getId()), QueryOptions.empty());
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

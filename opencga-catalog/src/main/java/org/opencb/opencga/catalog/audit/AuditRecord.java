@@ -18,118 +18,135 @@ package org.opencb.opencga.catalog.audit;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.result.Error;
 
-/**
- * Created on 18/08/15.
- *
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- */
+import java.util.Date;
+
 public class AuditRecord {
 
-    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, family, interpretation, tool,
-        variant, variableSet}
-    public enum Action {create, update, view, delete, download, restore, index, login, logout, share}
-    public enum Magnitude {low, medium, high}
-
-    private Object id;
-    private Resource resource;
-    private Action action;
-    private Magnitude importance;
-    private ObjectMap before;
-    private ObjectMap after;
-    /*
-     * Time in milliseconds
+    /**
+     * AuditRecord timestamp UUID.
      */
-    private long timeStamp;
+    private String id;
+
+    /**
+     * operationID timestamp UUID.
+     */
+    private String operationId;
+
+    /**
+     * User performing the action.
+     */
     private String userId;
-    private String description;
+    /**
+     * OpenCGA API version.
+     */
+    private String apiVersion;
+
+    /**
+     * Action performed (CREATE, SEARCH, DOWNLOAD...).
+     */
+    private Action action;
+
+    /**
+     * Involved resource (User, Study, Sample, File...).
+     */
+    private Resource resource;
+    /**
+     * Id of the involved resource.
+     */
+    private String resourceId;
+    /**
+     * UUID of the involved resource.
+     */
+    private String resourceUuid;
+
+    /**
+     * Study id corresponding to the involved resource. Does not apply to User or Project resources.
+     */
+    private String studyId;
+    /**
+     * Study UUID corresponding to the involved resource. Does not apply to User or Project resources.
+     */
+    private String studyUuid;
+
+    /**
+     * User params sent by the user. All the parameters considered and sent by the user to perform the action.
+     */
+    private ObjectMap params;
+
+    /**
+     * Final result of the action: success or error. In case of error, it will also contain the error code and the error message.
+     */
+    private Status status;
+
+    /**
+     * Date of the audit record.
+     */
+    private Date date;
+    /**
+     * Any additional information that might have not been covered by the data model.
+     */
     private ObjectMap attributes;
 
     public AuditRecord() {
     }
 
-    public AuditRecord(Object id, Resource resource, Action action, Magnitude importance, ObjectMap before, ObjectMap after, long timeStamp,
-                       String userId, String description, ObjectMap attributes) {
+    public AuditRecord(String id, String operationId, String userId, String apiVersion, Action action, Resource resource, String resourceId,
+                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, Status status, Date date,
+                       ObjectMap attributes) {
         this.id = id;
-        this.resource = resource;
-        this.action = action;
-        this.importance = importance;
-        this.before = before;
-        this.after = after;
-        this.timeStamp = timeStamp;
+        this.operationId = operationId;
         this.userId = userId;
-        this.description = description;
+        this.apiVersion = apiVersion;
+        this.action = action;
+        this.resource = resource;
+        this.resourceId = resourceId;
+        this.resourceUuid = resourceUuid;
+        this.studyId = studyId;
+        this.studyUuid = studyUuid;
+        this.params = params;
+        this.status = status;
+        this.date = date;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AuditRecord{");
-        sb.append("id=").append(id);
-        sb.append(", resource=").append(resource);
-        sb.append(", action=").append(action);
-        sb.append(", importance=").append(importance);
-        sb.append(", before=").append(before);
-        sb.append(", after=").append(after);
-        sb.append(", timeStamp=").append(timeStamp);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", operationId='").append(operationId).append('\'');
         sb.append(", userId='").append(userId).append('\'');
-        sb.append(", description='").append(description).append('\'');
+        sb.append(", apiVersion='").append(apiVersion).append('\'');
+        sb.append(", action=").append(action);
+        sb.append(", resource=").append(resource);
+        sb.append(", resourceId='").append(resourceId).append('\'');
+        sb.append(", resourceUuid='").append(resourceUuid).append('\'');
+        sb.append(", studyId='").append(studyId).append('\'');
+        sb.append(", studyUuid='").append(studyUuid).append('\'');
+        sb.append(", params=").append(params);
+        sb.append(", status=").append(status);
+        sb.append(", date=").append(date);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
 
-    public Object getId() {
+    public String getId() {
         return id;
     }
 
-    public AuditRecord setId(Object id) {
+    public AuditRecord setId(String id) {
         this.id = id;
         return this;
     }
 
-    public Resource getResource() {
-        return resource;
+    public String getOperationId() {
+        return operationId;
     }
 
-    public AuditRecord setResource(Resource resource) {
-        this.resource = resource;
-        return this;
-    }
-
-    public Action getAction() {
-        return action;
-    }
-
-    public AuditRecord setAction(Action action) {
-        this.action = action;
-        return this;
-    }
-
-    public ObjectMap getBefore() {
-        return before;
-    }
-
-    public AuditRecord setBefore(ObjectMap before) {
-        this.before = before;
-        return this;
-    }
-
-    public ObjectMap getAfter() {
-        return after;
-    }
-
-    public AuditRecord setAfter(ObjectMap after) {
-        this.after = after;
-        return this;
-    }
-
-    public long getTimeStamp() {
-        return timeStamp;
-    }
-
-    public AuditRecord setTimeStamp(long timeStamp) {
-        this.timeStamp = timeStamp;
+    public AuditRecord setOperationId(String operationId) {
+        this.operationId = operationId;
         return this;
     }
 
@@ -142,12 +159,93 @@ public class AuditRecord {
         return this;
     }
 
-    public String getDescription() {
-        return description;
+    public String getApiVersion() {
+        return apiVersion;
     }
 
-    public AuditRecord setDescription(String description) {
-        this.description = description;
+    public AuditRecord setApiVersion(String apiVersion) {
+        this.apiVersion = apiVersion;
+        return this;
+    }
+
+    public Action getAction() {
+        return action;
+    }
+
+    public AuditRecord setAction(Action action) {
+        this.action = action;
+        return this;
+    }
+
+    public Resource getResource() {
+        return resource;
+    }
+
+    public AuditRecord setResource(Resource resource) {
+        this.resource = resource;
+        return this;
+    }
+
+    public String getResourceId() {
+        return resourceId;
+    }
+
+    public AuditRecord setResourceId(String resourceId) {
+        this.resourceId = resourceId;
+        return this;
+    }
+
+    public String getResourceUuid() {
+        return resourceUuid;
+    }
+
+    public AuditRecord setResourceUuid(String resourceUuid) {
+        this.resourceUuid = resourceUuid;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public AuditRecord setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getStudyUuid() {
+        return studyUuid;
+    }
+
+    public AuditRecord setStudyUuid(String studyUuid) {
+        this.studyUuid = studyUuid;
+        return this;
+    }
+
+    public ObjectMap getParams() {
+        return params;
+    }
+
+    public AuditRecord setParams(ObjectMap params) {
+        this.params = params;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public AuditRecord setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public AuditRecord setDate(Date date) {
+        this.date = date;
         return this;
     }
 
@@ -160,12 +258,204 @@ public class AuditRecord {
         return this;
     }
 
-    public Magnitude getImportance() {
-        return importance;
+    public static class Status {
+        private Result name;
+        private Error error;
+
+        public Status() {
+        }
+
+        public Status(Result name) {
+            this.name = name;
+        }
+
+        public Status(Result name, Error error) {
+            this.name = name;
+            this.error = error;
+        }
+
+        public enum Result {
+            SUCCESS,
+            ERROR
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Status{");
+            sb.append("name=").append(name);
+            sb.append(", error=").append(error);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public Result getName() {
+            return name;
+        }
+
+        public Status setName(Result name) {
+            this.name = name;
+            return this;
+        }
+
+        public Error getError() {
+            return error;
+        }
+
+        public Status setError(Error error) {
+            this.error = error;
+            return this;
+        }
     }
 
-    public AuditRecord setImportance(Magnitude importance) {
-        this.importance = importance;
-        return this;
+    public enum Resource {
+        USER,
+        PROJECT,
+        STUDY,
+        FILE,
+        SAMPLE,
+        JOB,
+        INDIVIDUAL,
+        COHORT,
+        PANEL,
+        FAMILY,
+        CLINICAL,
+        INTERPRETATION,
+        VARIANT,
+        ALIGNMENT,
+
+        CATALOG // Goes with Action INDEX for Solr indexing
+    }
+
+    public enum Action {
+        CREATE,
+        UPDATE,
+        INFO,
+        SEARCH,
+        COUNT,
+        DELETE,
+        DOWNLOAD,
+        INDEX,
+        CHANGE_PERMISSION,
+
+        LOGIN,
+        CHANGE_USER_PASSWORD,
+        RESET_USER_PASSWORD,
+        CHANGE_USER_CONFIG,
+        FETCH_USER_CONFIG,
+
+        INCREMENT_PROJECT_RELEASE,
+
+        FETCH_STUDY_GROUPS,
+        ADD_STUDY_GROUP,
+        REMOVE_STUDY_GROUP,
+        UPDATE_USERS_FROM_STUDY_GROUP,
+        FETCH_STUDY_PERMISSION_RULES,
+        ADD_STUDY_PERMISSION_RULE,
+        REMOVE_STUDY_PERMISSION_RULE,
+        FETCH_ACLS,
+        UPDATE_ACLS,
+        FETCH_VARIABLE_SET,
+        ADD_VARIABLE_SET,
+        DELETE_VARIABLE_SET,
+        ADD_VARIABLE_TO_VARIABLE_SET,
+        REMOVE_VARIABLE_FROM_VARIABLE_SET,
+
+        AGGREGATION_STATS,
+
+        UPLOAD,
+        LINK,
+        UNLINK,
+        GREP,
+        TREE,
+
+        VISIT,
+
+        IMPORT,
+
+        IMPORT_EXTERNAL_USERS,
+        IMPORT_EXTERNAL_GROUP_OF_USERS,
+        SYNC_EXTERNAL_GROUP_OF_USERS,
+
+        // Variants
+        SAMPLE_DATA,
+        FACET
+    }
+
+    public static class Result {
+
+        private int dbTime;
+        private int numMatches;
+        private int numModified;
+        private String warning;
+        private String error;
+
+        public Result() {
+        }
+
+        public Result(int dbTime, int numMatches, String warning, String error) {
+            this.dbTime = dbTime;
+            this.numMatches = numMatches;
+            this.warning = warning;
+            this.error = error;
+        }
+
+        public Result(int dbTime, int numMatches, int numModified, String warning, String error) {
+            this.dbTime = dbTime;
+            this.numMatches = numMatches;
+            this.numModified = numModified;
+            this.warning = warning;
+            this.error = error;
+        }
+
+        @Override
+        public String toString() {
+            return "Result{"
+                    + "dbTime=" + dbTime
+                    + ", numMatches=" + numMatches
+                    + ", numModified=" + numModified
+                    + ", warning='" + warning + '\''
+                    + ", error='" + error + '\''
+                    + '}';
+        }
+
+        public int getDbTime() {
+            return dbTime;
+        }
+
+        public void setDbTime(int dbTime) {
+            this.dbTime = dbTime;
+        }
+
+        public int getNumMatches() {
+            return numMatches;
+        }
+
+        public void setNumMatches(int numMatches) {
+            this.numMatches = numMatches;
+        }
+
+        public int getNumModified() {
+            return numModified;
+        }
+
+        public void setNumModified(int numModified) {
+            this.numModified = numModified;
+        }
+
+        public String getWarning() {
+            return warning;
+        }
+
+        public void setWarning(String warning) {
+            this.warning = warning;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public void setError(String error) {
+            this.error = error;
+        }
     }
 }

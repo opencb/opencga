@@ -17,6 +17,8 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
+import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
+import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
@@ -82,36 +84,71 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisParameters params) {
         try {
-            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, sessionId));
+            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/update")
+    @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
+    @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class)
     public Response update(
-            @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
-            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisParameters params) {
-        try {
-            ObjectMap parameters = new ObjectMap(getUpdateObjectMapper().writeValueAsString(params.toClinicalAnalysis()));
+            @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
+            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
+            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
+            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
+            @ApiParam(value = "Description") @QueryParam("description") String description,
+            @ApiParam(value = "Family id") @QueryParam("family") String family,
+            @ApiParam(value = "Proband id") @QueryParam("proband") String proband,
+            @ApiParam(value = "Proband sample") @QueryParam("sample") String sample,
+            @ApiParam(value = "Clinical analyst assignee") @QueryParam("analystAssignee") String assignee,
+            @ApiParam(value = "Disorder id or name") @QueryParam("disorder") String disorder,
+            @ApiParam(value = "Flags") @QueryParam("flags") String flags,
+            @ApiParam(value = "Release value") @QueryParam("release") String release,
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 
-            if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key())) {
+            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+                    ClinicalUpdateParams params) {
+        try {
+            query.remove("study");
+            if (params != null && params.getInterpretations() != null) {
                 Map<String, Object> actionMap = new HashMap<>();
                 actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
                 queryOptions.put(Constants.ACTIONS, actionMap);
             }
 
-            // We remove the following parameters that are always going to appear because of Jackson
-            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.UID.key());
-            parameters.remove(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key());
+            return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
-            return createOkResponse(clinicalManager.update(studyStr, clinicalAnalysisStr, parameters, queryOptions, sessionId));
+    @POST
+    @Path("/{clinicalAnalyses}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class)
+    public Response update(
+            @ApiParam(value = "Comma separated list of clinical analysis ids") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
+                    ClinicalUpdateParams params) {
+        try {
+            if (params != null && params.getInterpretations() != null) {
+                Map<String, Object> actionMap = new HashMap<>();
+                actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
+                queryOptions.put(Constants.ACTIONS, actionMap);
+            }
+
+            return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -137,7 +174,7 @@ public class InterpretationWSService extends AnalysisWSService {
             if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
                 Interpretation interpretation = params.toClinicalInterpretation();
                 interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
-                return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, sessionId));
+                return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, token));
             } else {
                 // TODO: Implement delete interpretation
                 return createErrorResponse(new NotImplementedException("Delete still not supported"));
@@ -156,19 +193,15 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100")
-                         @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
-                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                         @QueryParam("study") String studyStr,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response info(
+            @ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr) {
         try {
             query.remove("study");
             query.remove("clinicalAnalyses");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
-            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, silent, sessionId);
+            DataResult<ClinicalAnalysis> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, true, token);
             return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -208,11 +241,11 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             query.remove("study");
 
-            QueryResult<ClinicalAnalysis> queryResult;
+            DataResult<ClinicalAnalysis> queryResult;
             if (count) {
-                queryResult = clinicalManager.count(studyStr, query, sessionId);
+                queryResult = clinicalManager.count(studyStr, query, token);
             } else {
-                queryResult = clinicalManager.search(studyStr, query, queryOptions, sessionId);
+                queryResult = clinicalManager.search(studyStr, query, queryOptions, token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -248,7 +281,7 @@ public class InterpretationWSService extends AnalysisWSService {
 //            query.remove("study");
 //            query.remove("fields");
 //
-//            QueryResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
+//            DataResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
 //            return createOkResponse(result);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
@@ -269,7 +302,7 @@ public class InterpretationWSService extends AnalysisWSService {
                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(clinicalAnalysis);
-            return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, sessionId));
+            return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -290,7 +323,7 @@ public class InterpretationWSService extends AnalysisWSService {
             params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAcl());
             AclParams clinicalAclParams = new AclParams(params.getPermissions(), params.getAction());
             List<String> idList = getIdList(params.clinicalAnalysis);
-            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, sessionId));
+            return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -430,10 +463,9 @@ public class InterpretationWSService extends AnalysisWSService {
 //            @ApiParam(value = "Create a new version of clinical interpretation", defaultValue = "false")
 //                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
-                    ClinicalInterpretationParameters params) {
+                    InterpretationUpdateParams params) {
         try {
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params.toInterpretationObjectMap(),
-                    queryOptions, sessionId));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -452,13 +484,13 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(name = "params", value = "JSON containing a list of comments", required = true)
                     List<Comment> comments) {
         try {
-            ObjectMap params = new ObjectMap(InterpretationDBAdaptor.UpdateParams.COMMENTS.key(), comments);
+            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.UpdateParams.COMMENTS.key(), action.name());
+            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, sessionId));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -476,13 +508,13 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(name = "params", value = "JSON containing a list of reported variants", required = true)
                     List<ReportedVariant> reportedVariants) {
         try {
-            ObjectMap params = new ObjectMap(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key(), Arrays.asList(reportedVariants));
+            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setPrimaryFindings(reportedVariants);
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.UpdateParams.REPORTED_VARIANTS.key(), action.name());
+            actionMap.put(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, params, queryOptions, sessionId));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -753,7 +785,7 @@ public class InterpretationWSService extends AnalysisWSService {
             Object result;
             if (save) {
                 // Queue job
-                result = catalogInterpretationManager.queue(studyStr, "team", clinicalAnalysisId, panelList, teamAnalysisOptions, sessionId);
+                result = catalogInterpretationManager.queue(studyStr, "team", clinicalAnalysisId, panelList, teamAnalysisOptions, token);
             } else {
                 ClinicalProperty.ModeOfInheritance moi;
                 try {
@@ -764,7 +796,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
                 // Execute TEAM analysis
                 TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
-                        teamAnalysisOptions, opencgaHome.toString(), sessionId);
+                        teamAnalysisOptions, opencgaHome.toString(), token);
                 result = teamAnalysis.execute();
             }
             return createAnalysisOkResponse(result);
@@ -805,11 +837,11 @@ public class InterpretationWSService extends AnalysisWSService {
             Object result;
             if (save) {
                 // Queue job
-                result = catalogInterpretationManager.queue(studyId, "tiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
+                result = catalogInterpretationManager.queue(studyId, "tiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, token);
             } else {
                 // Execute tiering analysis
                 TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyId, panelList,
-                        penetrance, tieringAnalysisOptions, opencgaHome.toString(), sessionId);
+                        penetrance, tieringAnalysisOptions, opencgaHome.toString(), token);
                 result = tieringAnalysis.execute();
             }
 
@@ -924,7 +956,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
             // Execute custom analysis
             CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, studyId, query,
-                    customAnalysisOptions, opencgaHome.toString(), sessionId);
+                    customAnalysisOptions, opencgaHome.toString(), token);
             InterpretationResult interpretationResult = customAnalysis.compute();
             return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
@@ -968,7 +1000,7 @@ public class InterpretationWSService extends AnalysisWSService {
             List<String> variantsIdsToDiscard = null;
 
             CancerTieringInterpretationAnalysis cancerTieringInterpretationAnalysis = new CancerTieringInterpretationAnalysis(
-                    clinicalAnalysisId, studyId, variantsIdsToDiscard, options, opencgaHome, sessionId);
+                    clinicalAnalysisId, studyId, variantsIdsToDiscard, options, opencgaHome, token);
 
             result = cancerTieringInterpretationAnalysis.execute();
 //            }
@@ -996,7 +1028,7 @@ public class InterpretationWSService extends AnalysisWSService {
             }
 
             SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleId, clinicalAnalysisId, studyId,
-                    null, opencgaHome, sessionId);
+                    null, opencgaHome, token);
             List<Variant> variants = secondaryFindingsAnalysis.compute().getResult();
 
             return createAnalysisOkResponse(variants);

@@ -20,14 +20,12 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -45,88 +43,70 @@ public interface DBAdaptor<T> extends Iterable<T> {
     @Deprecated
     String FORCE = "force";
 
-    default QueryResult<Long> count() throws CatalogDBException {
+    default OpenCGAResult<Long> count() throws CatalogDBException {
         return count(new Query());
     }
 
-    QueryResult<Long> count(Query query) throws CatalogDBException;
+    OpenCGAResult<Long> count(Query query) throws CatalogDBException;
 
-    QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    default QueryResult distinct(String field) throws CatalogDBException {
+    default OpenCGAResult distinct(String field) throws CatalogDBException {
         return distinct(new Query(), field);
     }
 
-    QueryResult distinct(Query query, String field) throws CatalogDBException;
+    OpenCGAResult distinct(Query query, String field) throws CatalogDBException;
 
 
-    default QueryResult stats() {
+    default OpenCGAResult stats() {
         return stats(new Query());
     }
 
-    QueryResult stats(Query query);
+    OpenCGAResult stats(Query query);
 
 
-    QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<QueryResult<T>> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(get(query, options));
-        }
-        return queryResults;
-    }
+    OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    OpenCGAResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    default List<QueryResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
-        Objects.requireNonNull(queries);
-        List<QueryResult> queryResults = new ArrayList<>(queries.size());
-        for (Query query : queries) {
-            queryResults.add(nativeGet(query, options));
-        }
-        return queryResults;
-    }
+    OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<T> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult delete(T id) throws CatalogDBException;
 
-    QueryResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult delete(Query query) throws CatalogDBException;
 
-    void delete(long id) throws CatalogDBException;
-
-    void delete(Query query) throws CatalogDBException;
-
-    default QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+    default OpenCGAResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    default OpenCGAResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+    default OpenCGAResult remove(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
     @Deprecated
-    default QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+    default OpenCGAResult remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
     }
 
-    QueryResult<T> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
 
-//    QueryResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;
+//    OpenCGAResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;
 
 
     @Override
@@ -154,18 +134,18 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     DBIterator nativeIterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-//    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+//    OpenCGAResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
+    OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
 

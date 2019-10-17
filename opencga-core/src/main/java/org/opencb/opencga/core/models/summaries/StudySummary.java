@@ -44,8 +44,6 @@ public class StudySummary {
     private long jobs;
     private long individuals;
     private long samples;
-
-    private long datasets;
     private long cohorts;
 
     private List<VariableSet> variableSets;
@@ -188,15 +186,6 @@ public class StudySummary {
 
     public StudySummary setSamples(long samples) {
         this.samples = samples;
-        return this;
-    }
-
-    public long getDatasets() {
-        return datasets;
-    }
-
-    public StudySummary setDatasets(long datasets) {
-        this.datasets = datasets;
         return this;
     }
 

@@ -20,12 +20,12 @@ import com.google.common.collect.ListMultimap;
 import com.mongodb.ErrorCategory;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
-import com.mongodb.bulk.BulkWriteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -177,9 +177,9 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
         }
 
         try {
-            final BulkWriteResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS).first();
-            result.setNewVariants(mongoResult.getInsertedCount())
-                    .setUpdatedVariants(mongoResult.getModifiedCount());
+            final DataResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS);
+            result.setNewVariants(mongoResult.getNumInserted())
+                    .setUpdatedVariants(mongoResult.getNumUpdated());
         } catch (MongoBulkWriteException e) {
             result.setNewVariants(e.getWriteResult().getInsertedCount())
                     .setUpdatedVariants(e.getWriteResult().getModifiedCount());
@@ -216,14 +216,14 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
         long modifiedCount = stageCollection.update(
                 and(exists(studyId + "." + fileId + ".1"), exists(studyId + "." + NEW_STUDY_FIELD, false)),
                 unset(Integer.toString(studyId)),
-                new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+                new QueryOptions(MongoDBCollection.MULTI, true)).getNumUpdated();
         modifiedCount += stageCollection.update(
                 exists(studyId + "." + fileId),
                 combine(
 //                        unset(studyId + "." + fileId),
                         set(studyId + "." + fileId, null),
                         set(studyId + "." + NEW_STUDY_FIELD, false)
-                ), new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+                ), new QueryOptions(MongoDBCollection.MULTI, true)).getNumUpdated();
         return modifiedCount;
     }
 
@@ -274,7 +274,7 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
             LOGGER.info("Clean studies from stage where all the files where duplicated");
             modifiedCount += stageCollection.update(
                     filter, combine(updates),
-                    new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+                    new QueryOptions(MongoDBCollection.MULTI, true)).getNumUpdated();
         }
 
         filters.clear();
@@ -289,7 +289,7 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
         updates.add(pullAll(StageDocumentToVariantConverter.STUDY_FILE_FIELD, studyFiles));
         LOGGER.info("Cleaning files {} from stage collection", fileIds);
         modifiedCount += stageCollection.update(and(filters), combine(updates),
-                new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+                new QueryOptions(MongoDBCollection.MULTI, true)).getNumUpdated();
 
         return modifiedCount;
     }

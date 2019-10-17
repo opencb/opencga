@@ -1,10 +1,10 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -37,12 +37,12 @@ public class SamplesSearchIndexVariantQueryExecutor extends AbstractSearchIndexV
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         try {
             StopWatch watch = StopWatch.createStarted();
             long count = searchManager.count(dbName, query);
             int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-            return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+            return new DataResult<>(time, Collections.emptyList(), 1, Collections.singletonList(count), 1);
         } catch (IOException | VariantSearchException e) {
             throw new VariantQueryException("Error querying Solr", e);
         }

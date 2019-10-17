@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -117,22 +116,22 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
         try {
             if (CollectionUtils.isNotEmpty(sampleNames)) {
                 catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), sessionId)
+                        .getResults()
                         .stream()
-                        .map(QueryResult::first)
                         .map(Sample::getId)
                         .forEach(allSamples::add);
             }
             if (samplesQuery != null) {
-                catalogManager.getSampleManager().get(study, samplesQuery, new QueryOptions(), sessionId)
-                        .getResult()
+                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), sessionId)
+                        .getResults()
                         .stream()
                         .map(Sample::getId)
                         .forEach(allSamples::add);
             }
             if (StringUtils.isNotEmpty(individual)) {
                 Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individual);
-                catalogManager.getSampleManager().get(study, query, new QueryOptions(), sessionId)
-                        .getResult()
+                catalogManager.getSampleManager().search(study, query, new QueryOptions(), sessionId)
+                        .getResults()
                         .stream()
                         .map(Sample::getId)
                         .forEach(allSamples::add);
@@ -144,8 +143,8 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
                     individualIds.add(member.getId());
                 }
                 Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualIds);
-                catalogManager.getSampleManager().get(study, query, new QueryOptions(), sessionId)
-                        .getResult()
+                catalogManager.getSampleManager().search(study, query, new QueryOptions(), sessionId)
+                        .getResults()
                         .stream()
                         .map(Sample::getId)
                         .forEach(allSamples::add);

@@ -31,7 +31,7 @@ import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
@@ -930,8 +930,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             for (Variant variant : variants) {
                 // If the variant is not new in this study, query to the database for the loaded info.
                 if (!newStudies.get(i)) {
-                    QueryResult<Variant> queryResult = fetchVariant(variant);
-                    if (queryResult.getResult().size() == 1 && queryResult.first().getStudies().size() == 1) {
+                    DataResult<Variant> queryResult = fetchVariant(variant);
+                    if (queryResult.getResults().size() == 1 && queryResult.first().getStudies().size() == 1) {
                         // Check if overlapping variant. If so, invert!
                         for (FileEntry fileEntry : queryResult.first().getStudies().get(0).getFiles()) {
                             boolean empty = StringUtils.isEmpty(fileEntry.getCall());
@@ -944,10 +944,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                         }
                         variantsToMerge.add(queryResult.first());
                     } else {
-                        if (queryResult.getResult().isEmpty()) {
+                        if (queryResult.getResults().isEmpty()) {
                             throw new IllegalStateException("Variant " + variant + " not found!");
                         } else {
-                            throw new IllegalStateException("Variant " + variant + " found wrong! : " + queryResult.getResult());
+                            throw new IllegalStateException("Variant " + variant + " found wrong! : " + queryResult.getResults());
                         }
                     }
                     // Because the loaded variants were an overlapped region, all the information required is in every variant.
@@ -1022,8 +1022,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      * @param variant Variant to read
      * @return  Query result of the query
      */
-    private QueryResult<Variant> fetchVariant(Variant variant) {
-        QueryResult<Variant> queryResult = null;
+    private DataResult<Variant> fetchVariant(Variant variant) {
+        DataResult<Variant> queryResult = null;
         int maxNumFails = 2;
         int fails = 0;
         while (queryResult == null) {

@@ -20,10 +20,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -66,8 +65,8 @@ public class UserWSServer extends OpenCGAWSServer {
                 createErrorResponse(new CatalogException("id, name, email or password not present"));
             }
 
-            QueryResult queryResult = catalogManager.getUserManager()
-                    .create(user.id, user.name, user.email, user.password, user.organization, null, Account.Type.FULL, queryOptions, null);
+            DataResult queryResult = catalogManager.getUserManager()
+                    .create(user.id, user.name, user.email, user.password, user.organization, null, Account.Type.FULL, null);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -90,7 +89,7 @@ public class UserWSServer extends OpenCGAWSServer {
                             @QueryParam("lastModified") String lastModified) {
         try {
             ParamUtils.checkIsSingleID(userId);
-            QueryResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, sessionId);
+            DataResult result = catalogManager.getUserManager().get(userId, lastModified, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -111,19 +110,14 @@ public class UserWSServer extends OpenCGAWSServer {
             String token;
             if (StringUtils.isNotEmpty(login.password)) {
                 token = catalogManager.getUserManager().login(userId, login.password);
-            } else if (StringUtils.isNotEmpty(sessionId)) {
-                token = catalogManager.getUserManager().refreshToken(userId, sessionId);
+            } else if (StringUtils.isNotEmpty(this.token)) {
+                token = catalogManager.getUserManager().refreshToken(userId, this.token);
             } else {
                 throw new Exception("Neither a password nor a token was provided.");
             }
 
-            ObjectMap sessionMap = new ObjectMap()
-                    .append("sessionId", token)
-                    .append("id", token)
-                    .append("token", token);
-
-            QueryResult<ObjectMap> response = new QueryResult<>("You successfully logged in", 0, 1, 1,
-                    "'sessionId' and 'id' deprecated", "", Arrays.asList(sessionMap));
+            ObjectMap sessionMap = new ObjectMap("token", token);
+            DataResult<ObjectMap> response = new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(sessionMap), 1);
 
             return createOkResponse(response);
         } catch (Exception e) {
@@ -144,8 +138,7 @@ public class UserWSServer extends OpenCGAWSServer {
             }
             params.newPassword = StringUtils.isNotEmpty(params.newPassword) ? params.newPassword : params.npassword;
             catalogManager.getUserManager().changePassword(userId, params.password, params.newPassword);
-            QueryResult result = new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
-            return createOkResponse(result);
+            return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -157,7 +150,7 @@ public class UserWSServer extends OpenCGAWSServer {
             notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
+            DataResult result = catalogManager.getUserManager().resetPassword(userId, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -182,7 +175,7 @@ public class UserWSServer extends OpenCGAWSServer {
             ParamUtils.checkIsSingleID(userId);
             query.remove("user");
             query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId);
-            return createOkResponse(catalogManager.getProjectManager().get(query, queryOptions, sessionId));
+            return createOkResponse(catalogManager.getProjectManager().get(query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -199,7 +192,7 @@ public class UserWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(parameters, new UserUpdatePOST());
 
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
-            QueryResult result = catalogManager.getUserManager().update(userId, params, null, sessionId);
+            DataResult result = catalogManager.getUserManager().update(userId, params, null, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -222,9 +215,9 @@ public class UserWSServer extends OpenCGAWSServer {
                 action = ParamUtils.BasicUpdateAction.ADD;
             }
             if (action == ParamUtils.BasicUpdateAction.ADD) {
-                return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.id, params.configuration, sessionId));
+                return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.id, params.configuration, token));
             } else {
-                return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, params.id, sessionId));
+                return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, params.id, token));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -244,7 +237,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Unique name (typically the name of the application).") @QueryParam("name") String name) {
         try {
             ParamUtils.checkIsSingleID(userId);
-            return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, sessionId));
+            return createOkResponse(catalogManager.getUserManager().getConfig(userId, name, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -267,9 +260,9 @@ public class UserWSServer extends OpenCGAWSServer {
             }
             if (action == ParamUtils.BasicUpdateAction.ADD) {
                 return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getName(), params.getDescription(),
-                        params.getBioformat(), params.getQuery(), params.getOptions(), sessionId));
+                        params.getBioformat(), params.getQuery(), params.getOptions(), token));
             } else {
-                return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, params.getName(), sessionId));
+                return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, params.getName(), token));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -292,7 +285,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
             return createOkResponse(catalogManager.getUserManager().updateFilter(userId, name,
-                    new ObjectMap(getUpdateObjectMapper().writeValueAsString(params)), sessionId));
+                    new ObjectMap(getUpdateObjectMapper().writeValueAsString(params)), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -307,9 +300,9 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             ParamUtils.checkIsSingleID(userId);
             if (StringUtils.isNotEmpty(name)) {
-                return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, sessionId));
+                return createOkResponse(catalogManager.getUserManager().getFilter(userId, name, token));
             } else {
-                return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, sessionId));
+                return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, token));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

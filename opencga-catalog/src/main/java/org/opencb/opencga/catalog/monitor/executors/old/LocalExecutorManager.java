@@ -18,9 +18,9 @@ package org.opencb.opencga.catalog.monitor.executors.old;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -59,7 +59,7 @@ public class LocalExecutorManager implements ExecutorManager {
     }
 
     @Override
-    public QueryResult<Job> run(Job job) throws CatalogException, ExecutionException, IOException {
+    public DataResult<Job> run(Job job) throws CatalogException, ExecutionException, IOException {
 
 //        String status = job.getStatus().getName();
 //        switch (status) {
@@ -95,7 +95,7 @@ public class LocalExecutorManager implements ExecutorManager {
      * @throws ExecutionException executionException.
      * @throws IOException ioExeption.
      */
-    protected QueryResult<Job> runThreadLocal(Job job) throws CatalogException, ExecutionException, IOException {
+    protected DataResult<Job> runThreadLocal(Job job) throws CatalogException, ExecutionException, IOException {
         logger.info("Ready to run {}", job.getCommandLine());
         Command com = new Command(job.getCommandLine());
 
@@ -159,7 +159,7 @@ public class LocalExecutorManager implements ExecutorManager {
 //     * @throws ExecutionException
 //     * @throws CatalogException
 //     */
-//    protected QueryResult<Job> runPlugin(Job job) throws ExecutionException, CatalogException {
+//    protected DataResult<Job> runPlugin(Job job) throws ExecutionException, CatalogException {
 //
 //        PluginExecutor pluginExecutor = new PluginExecutor(catalogManager, sessionId);
 //        final ObjectMap executionInfo = new ObjectMap();
@@ -209,7 +209,7 @@ public class LocalExecutorManager implements ExecutorManager {
      * @throws IOException ioExeption.
      */
     @Deprecated
-    protected QueryResult<Job> postExecuteCommand(Job job, Command com, String errnoFinishError) throws CatalogException, IOException {
+    protected DataResult<Job> postExecuteCommand(Job job, Command com, String errnoFinishError) throws CatalogException, IOException {
         closeOutputStreams(com);
         return postExecuteLocal(job, com.getExitValue(), com, errnoFinishError);
     }
@@ -223,16 +223,16 @@ public class LocalExecutorManager implements ExecutorManager {
      * @param executionInfo Optional execution info.
      * @param error         Optional error. If this parameter not null, the job status will be set as ERROR.
      *                      even if the exitValue is 0.
-     * @return              QueryResult with the modifier Job.
+     * @return              DataResult with the modifier Job.
      * @throws CatalogException catalogException.
      * @throws IOException ioExeption.
      */
     @Deprecated
-    protected QueryResult<Job> postExecuteLocal(Job job, int exitValue, Object executionInfo, String error)
+    protected DataResult<Job> postExecuteLocal(Job job, int exitValue, Object executionInfo, String error)
             throws CatalogException, IOException {
 
         /** Change status to DONE  - Add the execution information to the job entry **/
-//                new JobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
+//                new JobManager().jobFinish(jobDataResult.first(), com.getExitValue(), com);
         ObjectMap parameters = new ObjectMap();
         if (executionInfo != null) {
             parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));

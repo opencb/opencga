@@ -19,18 +19,16 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -61,12 +59,12 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             String projectId = StringUtils.isEmpty(project.id) ? project.alias : project.id;
 
-            QueryResult queryResult = catalogManager.getProjectManager()
+            DataResult queryResult = catalogManager.getProjectManager()
                     .create(projectId, project.name, project.description, project.organization,
                             project.organism != null ? project.organism.getScientificName() : null,
                             project.organism != null ? project.organism.getCommonName() : null,
                             project.organism != null ? Integer.toString(project.organism.getTaxonomyCode()) : null,
-                            project.organism != null ? project.organism.getAssembly() : null, queryOptions, sessionId);
+                            project.organism != null ? project.organism.getAssembly() : null, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -83,15 +81,13 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of project IDs or aliases up to a maximum of 100", required = true) @PathParam("projects")
-                                 String projects,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response info(
+            @ApiParam(value = "Comma separated list of project IDs or aliases up to a maximum of 100", required = true)
+                @PathParam("projects") String projects) {
 
         try {
             List<String> idList = getIdList(projects);
-            return createOkResponse(catalogManager.getProjectManager().get(idList, queryOptions, silent, sessionId));
+            return createOkResponse(catalogManager.getProjectManager().get(idList, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -118,9 +114,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Project description") @QueryParam("description") String description,
             @ApiParam(value = "Study id or alias") @QueryParam("study") String study,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes) {
         try {
@@ -129,7 +125,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), owner);
             }
 
-            QueryResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, sessionId);
+            DataResult<Project> queryResult = catalogManager.getProjectManager().get(query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -141,7 +137,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch catalog project stats", position = 15, hidden = true, response = QueryResponse.class)
     public Response getStats(
             @ApiParam(value = "Comma separated list of projects [user@]project up to a maximum of 100", required = true)
-                @PathParam("projects") String projects,
+            @PathParam("projects") String projects,
             @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
             @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
                     + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
@@ -161,7 +157,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             Map<String, Object> result = new HashMap<>();
             for (String project : idList) {
                 result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
-                        cohortFields, familyFields, defaultStats, sessionId));
+                        cohortFields, familyFields, defaultStats, token));
             }
             return createOkResponse(result);
         } catch (Exception e) {
@@ -194,7 +190,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             Map<String, Object> result = new HashMap<>();
             for (String project : idList) {
                 result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
-                        cohortFields, familyFields, defaultStats, sessionId));
+                        cohortFields, familyFields, defaultStats, token));
             }
             return createOkResponse(result);
         } catch (Exception e) {
@@ -209,7 +205,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Project id", required = true) @PathParam("project") String projectStr) {
         try {
             ParamUtils.checkIsSingleID(projectStr);
-            return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, sessionId));
+            return createOkResponse(catalogManager.getProjectManager().incrementRelease(projectStr, token));
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e);
@@ -217,8 +213,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projects}/studies")
-    @ApiOperation(value = "Fetch all the studies contained in the projects", response = Study[].class)
+    @Path("/{project}/studies")
+    @ApiOperation(value = "Fetch all the studies contained in the project", response = Study[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
                     dataType = "string", paramType = "query"),
@@ -227,14 +223,10 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias up to a maximum of 100", required = true)
-                                  @PathParam("projects") String projects,
-                                  @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                          + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                          defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response getAllStudies(
+            @ApiParam(value = "Project id", required = true) @PathParam("project") String project) {
         try {
-            List<String> idList = getIdList(projects);
-            return createOkResponse(catalogManager.getStudyManager().get(idList, new Query(), queryOptions, silent, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().get(project, new Query(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -268,7 +260,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 params.remove("organism");
             }
 
-            QueryResult result = catalogManager.getProjectManager().update(projectStr, params, queryOptions, sessionId);
+            DataResult result = catalogManager.getProjectManager().update(projectStr, params, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -32,10 +32,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.ProgressLogger;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
@@ -332,7 +332,7 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
-        QueryResult<Variant> queryResult;
+        DataResult<Variant> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class,
                     new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
@@ -358,7 +358,7 @@ public class VariantSearchManager {
             throws VariantSearchException, IOException {
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
-        QueryResult<VariantSearchModel> queryResult;
+        DataResult<VariantSearchModel> queryResult;
         try {
             queryResult = solrCollection.query(solrQuery, VariantSearchModel.class);
         } catch (SolrServerException e) {
@@ -423,7 +423,7 @@ public class VariantSearchManager {
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
         try {
-            return solrCollection.count(solrQuery).getResult().get(0);
+            return solrCollection.count(solrQuery).getResults().get(0);
         } catch (SolrServerException e) {
             throw new VariantSearchException("Error executing count for a given query", e);
         }

@@ -20,10 +20,10 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.Map;
 
@@ -55,6 +55,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         PRIORITY("priority", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
         ANALYST_ASSIGNEE("analyst.assignee", TEXT, ""),
+        ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
         FLAGS("flags", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""),
 
@@ -133,11 +134,13 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         }
     }
 
-    void nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    QueryResult<ClinicalAnalysis> insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<ClinicalAnalysis> get(long clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException;
+
+    OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 
@@ -147,8 +150,9 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

@@ -19,13 +19,12 @@ package org.opencb.opencga.storage.mongodb.metadata;
 import com.google.common.collect.Iterators;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.metadata.adaptors.FileMetadataDBAdaptor;
@@ -103,7 +102,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         Bson bson = parseQuery(query);
         return collection.count(bson);
     }
@@ -128,7 +127,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     }
 
 //    @Override
-//    public QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
+//    public DataResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
 //        MongoDBCollection coll = db.getCollection(collectionName);
 //        QueryBuilder qb = QueryBuilder.start();
 //        options.put("studyId", studyId);
@@ -138,7 +137,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //    }
 //
 //    @Override
-//    public QueryResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options) {
+//    public DataResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options) {
 //        MongoDBCollection coll = db.getCollection(collectionName);
 //        QueryBuilder qb = QueryBuilder.start();
 ////        getStudyIdFilter(studyIds, qb);
@@ -149,36 +148,36 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //    }
 
 //    @Override
-//    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and
+//    public DataResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and
 //        // change for getSamplesBySource(String studyId, QueryOptions options)
 //        if (SAMPLES_IN_SOURCES.size() != countSources().getResult().get(0)) {
 //            synchronized (VariantSourceMongoDBAdaptor.class) {
 //                if (SAMPLES_IN_SOURCES.size() != countSources().getResult().get(0)) {
-//                    QueryResult queryResult = populateSamplesInSources();
+//                    DataResult queryResult = populateSamplesInSources();
 //                    populateSamplesQueryResult(fileId, queryResult);
 //                    return queryResult;
 //                }
 //            }
 //        }
 //
-//        QueryResult queryResult = new QueryResult();
+//        DataResult queryResult = new DataResult();
 //        populateSamplesQueryResult(fileId, queryResult);
 //        return queryResult;
 //    }
 
 //    @Override
-//    public QueryResult getSamplesBySources(List<String> fileIds, QueryOptions options) {
+//    public DataResult getSamplesBySources(List<String> fileIds, QueryOptions options) {
 //        if (SAMPLES_IN_SOURCES.size() != (long) countSources().getResult().get(0)) {
 //            synchronized (StudyMongoDBAdaptor.class) {
 //                if (SAMPLES_IN_SOURCES.size() != (long) countSources().getResult().get(0)) {
-//                    QueryResult queryResult = populateSamplesInSources();
+//                    DataResult queryResult = populateSamplesInSources();
 //                    populateSamplesQueryResult(fileIds, queryResult);
 //                    return queryResult;
 //                }
 //            }
 //        }
 //
-//        QueryResult queryResult = new QueryResult();
+//        DataResult queryResult = new DataResult();
 //        populateSamplesQueryResult(fileIds, queryResult);
 //        return queryResult;
 //    }
@@ -187,9 +186,9 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     public void removeVariantFileMetadata(int study, int file) {
         String id = DocumentToVariantFileMetadataConverter.buildId(study, file);
 
-        DeleteResult deleteResult = collection.remove(Filters.eq("_id", id), null).first();
+        DataResult deleteResult = collection.remove(Filters.eq("_id", id), null);
 
-        if (deleteResult.getDeletedCount() != 1) {
+        if (deleteResult.getNumDeleted() != 1) {
             throw new IllegalArgumentException("Unable to delete VariantSource " + id);
         }
 
@@ -259,13 +258,13 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //    /**
 //     * Populates the dictionary relating sources and samples.
 //     *
-//     * @return The QueryResult with information of how long the query took
+//     * @return The DataResult with information of how long the query took
 //     */
-//    private QueryResult populateSamplesInSources() {
+//    private DataResult populateSamplesInSources() {
 //        MongoDBCollection coll = db.getCollection(collectionName);
 //        BasicDBObject projection = new BasicDBObject(DocumentToVariantSourceConverter.FILEID_FIELD, true)
 //                .append(DocumentToVariantSourceConverter.SAMPLES_FIELD, true);
-//        QueryResult queryResult = coll.find((Bson) null, projection, null);
+//        DataResult queryResult = coll.find((Bson) null, projection, null);
 //
 //        List<DBObject> result = queryResult.getResult();
 //        for (DBObject dbo : result) {
@@ -280,7 +279,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //        return queryResult;
 //    }
 //
-//    private void populateSamplesQueryResult(String fileId, QueryResult queryResult) {
+//    private void populateSamplesQueryResult(String fileId, DataResult queryResult) {
 //        List<List> samples = new ArrayList<>(1);
 //        List<String> samplesInSource = SAMPLES_IN_SOURCES.get(fileId);
 //
@@ -294,7 +293,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 //        }
 //    }
 //
-//    private void populateSamplesQueryResult(List<String> fileIds, QueryResult queryResult) {
+//    private void populateSamplesQueryResult(List<String> fileIds, DataResult queryResult) {
 //        List<List> samples = new ArrayList<>(fileIds.size());
 //
 //        for (String fileId : fileIds) {
@@ -322,7 +321,7 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
 
 //
 //    @Override
-//    public QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
+//    public DataResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
 //            queryOptions) {
 //
 //        VariantFileMetadata source = new VariantFileMetadata("", "");

@@ -105,14 +105,14 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         List<File> removedFiles = variantManager.removeFile(fileIds, studyId, sessionId, new QueryOptions());
         assertEquals(files.size(), removedFiles.size());
 
-        Cohort all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
+        Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         Set<Long> allSampleIds = all.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
 
         assertThat(all.getStatus().getName(), anyOf(is(Cohort.CohortStatus.INVALID), is(Cohort.CohortStatus.NONE)));
-        Set<Long> loadedSamples = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key
+        Set<Long> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key
                 (), FileIndex.IndexStatus.READY), null, sessionId)
-                .getResult()
+                .getResults()
                 .stream()
                 .flatMap(f -> f.getSamples().stream())
                 .map(Sample::getUid)
@@ -131,8 +131,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
-        Cohort all = catalogManager.getCohortManager().get(studyId,
-                new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
+        Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         assertTrue(all.getSamples().isEmpty());
     }
 

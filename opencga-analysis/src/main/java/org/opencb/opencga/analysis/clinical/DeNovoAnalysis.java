@@ -7,10 +7,10 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.FamilyManager;
@@ -76,7 +76,7 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis {
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
         Individual proband = getProband(clinicalAnalysis);
 
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
+        DataResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId);
         if (studyQueryResult.getNumResults() == 0) {
             throw new AnalysisException("Study " + studyId + " not found");
@@ -95,7 +95,7 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis {
 
             logger.debug("Query: {}", query.safeToString());
 
-            variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult();
+            variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResults();
 //            if (CollectionUtils.isNotEmpty(mendelianErrorVariants)) {
 //                for (Variant variant : mendelianErrorVariants) {
 //                    if (!GenotypeClass.HOM_REF.test(variant.getStudies().get(0).getSampleData(sampleId, "GT"))) {

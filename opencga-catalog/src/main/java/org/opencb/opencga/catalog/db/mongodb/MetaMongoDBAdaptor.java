@@ -17,14 +17,15 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
@@ -34,6 +35,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Metadata;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -63,18 +65,21 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     public long getNewAutoIncrementId() {
-        return getNewAutoIncrementId("idCounter"); //, metaCollection
+        return getNewAutoIncrementId(null, "idCounter"); //, metaCollection
     }
 
-    public long getNewAutoIncrementId(String field) { //, MongoDBCollection metaCollection
+    public long getNewAutoIncrementId(ClientSession clientSession) {
+        return getNewAutoIncrementId(clientSession, "idCounter"); //, metaCollection
+    }
+
+    public long getNewAutoIncrementId(ClientSession clientSession, String field) { //, MongoDBCollection metaCollection
         Bson query = METADATA_QUERY;
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1L);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
-        QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
-        return result.getResult().get(0).getLong(field);
+        DataResult<Document> result = metaCollection.findAndUpdate(clientSession, query, projection, null, inc, queryOptions);
+        return result.getResults().get(0).getLong(field);
     }
-
 
     public void createIndexes() {
         InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
@@ -118,9 +123,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     private void createIndexes(MongoDBCollection mongoCollection, List<Map<String, ObjectMap>> indexes) {
-        QueryResult<Document> index = mongoCollection.getIndex();
+        DataResult<Document> index = mongoCollection.getIndex();
         // We store the existing indexes
-        Set<String> existingIndexes = index.getResult()
+        Set<String> existingIndexes = index.getResults()
                 .stream()
                 .map(document -> (String) document.get("name"))
                 .collect(Collectors.toSet());
@@ -174,14 +179,14 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     @Override
     public String getAdminPassword() throws CatalogDBException {
         Bson query = METADATA_QUERY;
-        QueryResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
+        DataResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
         return parseObject((Document) queryResult.first().get("admin"), Admin.class).getPassword();
     }
 
     @Override
     public String readSecretKey() throws CatalogDBException {
         Bson query = METADATA_QUERY;
-        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        DataResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
         if (queryResult.getNumResults() == 1) {
             return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getSecretKey();
         }
@@ -191,7 +196,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     @Override
     public String readAlgorithm() throws CatalogDBException {
         Bson query = METADATA_QUERY;
-        QueryResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
+        DataResult queryResult = this.metaCollection.find(query, new QueryOptions("include", "admin"));
         if (queryResult.getNumResults() == 1) {
             return (MongoDBUtils.parseObject((Document) ((Document) queryResult.first()).get("admin"), Admin.class)).getAlgorithm();
         }
@@ -199,7 +204,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public void updateJWTParameters(ObjectMap params) throws CatalogDBException {
+    public OpenCGAResult updateJWTParameters(ObjectMap params) throws CatalogDBException {
         Bson query = METADATA_QUERY;
 
         Document adminDocument = new Document();
@@ -220,7 +225,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         if (adminDocument.size() > 0) {
             Bson update = new Document("$set", adminDocument);
-            this.metaCollection.update(query, update, QueryOptions.empty());
+            return new OpenCGAResult(this.metaCollection.update(query, update, QueryOptions.empty()));
         }
+
+        return OpenCGAResult.empty();
     }
 }

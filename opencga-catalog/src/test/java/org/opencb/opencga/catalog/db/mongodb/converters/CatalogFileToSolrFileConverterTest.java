@@ -27,7 +27,7 @@ public class CatalogFileToSolrFileConverterTest {
     public void FileToSolrTest() {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-                "test/base", "convertorTest", new File.FileStatus("READY"), 1111L, 2);
+                "test/base", null, "convertorTest", new File.FileStatus("READY"), 1111L, 2);
         file.setUid(111).setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2")))
                 .setSoftware(new Software().setName("Software"));
         file.setAnnotationSets(AnnotationHelper.createAnnotation());

@@ -103,7 +103,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
                 arm.updateResult(analysisResult -> analysisResult.getAttributes().put("cohortName", cohortName));
             } else {
                 samples = catalogManager.getSampleManager()
-                        .get(study, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId).getResult();
+                        .search(study, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId).getResults();
             }
             sampleNames = samples.stream().map(Sample::getId).collect(Collectors.toList());
 

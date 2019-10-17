@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
@@ -58,7 +58,7 @@ public class JsonOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void print(QueryResponse queryResponse) {
+    public void print(DataResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }
@@ -71,7 +71,7 @@ public class JsonOutputWriter extends AbstractOutputWriter {
         }
         Object toPrint = queryResponse;
         if (!writerConfiguration.isMetadata()) {
-            toPrint = queryResponse.getResponse();
+            toPrint = queryResponse.getResponses();
         }
         try {
             ps.println(objectWriter.writeValueAsString(toPrint));

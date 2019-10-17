@@ -21,8 +21,8 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -270,14 +270,14 @@ public class VariantStatsStorageOperation extends StorageOperation {
         // Silent query, so it does not fail for missing cohorts
         Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames),
                 new QueryOptions(QueryOptions.INCLUDE, "name,id"), true, sessionId)
+                .getResults()
                 .stream()
-                .map(QueryResult::first)
                 .filter(Objects::nonNull)
                 .map(Cohort::getId)
                 .collect(Collectors.toSet());
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
+                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
                         Collections.emptyList(), null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
@@ -334,7 +334,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                     throw new IllegalStateException("Unknown status " + cohort.getStatus().getName());
             }
             cohortMap.put(cohort.getId(), cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-//            QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyIdByCohortId, new Query("id", cohort.getSamples()),
+//            DataResult<Sample> sampleDataResult = catalogManager.getAllSamples(studyIdByCohortId, new Query("id", cohort.getSamples()),
 //                      new QueryOptions(), sessionId);
         }
 

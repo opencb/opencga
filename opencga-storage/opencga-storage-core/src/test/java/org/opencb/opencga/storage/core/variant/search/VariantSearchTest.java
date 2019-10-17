@@ -63,7 +63,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         for (int i = 0; i < limit; i++) {
             Map<String, ConsequenceType> inMap = getConsequenceTypeMap(annotatedVariants.get(i));
-            Map<String, ConsequenceType> outMap = getConsequenceTypeMap(results.getResult().get(i));
+            Map<String, ConsequenceType> outMap = getConsequenceTypeMap(results.getResults().get(i));
 
             System.out.println(inMap.size() + " vs " + outMap.size());
             assert(inMap.size() == outMap.size());
@@ -159,7 +159,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         System.out.println("#variants = " + variants.size());
         System.out.println("#annotations = " + annotatedVariants.size());
-        System.out.println("#variants from Solr = " + results.getResult().size());
+        System.out.println("#variants from Solr = " + results.getResults().size());
     }
 
     @Test
@@ -205,8 +205,8 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         VariantQueryResult<Variant> results = variantSearchManager.query(collection, query,
                 new QueryOptions(QueryOptions.LIMIT, limit));
 
-        if (results.getResult().size() > 0) {
-            System.out.println(results.getResult().get(0).toJson());
+        if (results.getResults().size() > 0) {
+            System.out.println(results.getResults().get(0).toJson());
         } else {
             System.out.println("Not found!!!!");
         }

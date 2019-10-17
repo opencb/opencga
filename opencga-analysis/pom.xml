@@ -114,6 +114,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+            <version>${java-common-libs.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>
