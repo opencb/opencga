@@ -243,7 +243,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
     httr::stop_for_status(query)
 
     res <- httr::content(query)
-    sessionId <- res$response[[1]]$result[[1]]$sessionId
+    sessionId <- res$responses[[1]]$results[[1]]$sessionId
     
     opencga@user <- userid
     #opencga@sessionId <- sessionId
