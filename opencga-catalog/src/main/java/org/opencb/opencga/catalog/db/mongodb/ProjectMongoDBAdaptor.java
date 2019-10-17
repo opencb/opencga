@@ -377,29 +377,30 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Deprecated
     @Override
     public OpenCGAResult delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        checkId(id);
-        // Check the project is active
-        Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
-        if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
-            Project project = get(query, options).first();
-            throw new CatalogDBException("The project {" + id + "} was already " + project.getStatus().getName());
-        }
-
-        // If we don't find the force parameter, we check first if the user does not have an active project.
-        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-            checkCanDelete(id);
-        }
-
-        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
-            // Delete the active studies (if any)
-            query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), id);
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(query, queryOptions);
-        }
-
-        // Change the status of the project to deleted
-        return setStatus(id, Status.DELETED);
+        throw new NotImplementedException("Use other delete method");
+//        checkId(id);
+//        // Check the project is active
+//        Query query = new Query(QueryParams.UID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
+//        if (count(query).first() == 0) {
+//            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
+//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
+//            Project project = get(query, options).first();
+//            throw new CatalogDBException("The project {" + id + "} was already " + project.getStatus().getName());
+//        }
+//
+//        // If we don't find the force parameter, we check first if the user does not have an active project.
+//        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+//            checkCanDelete(id);
+//        }
+//
+//        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+//            // Delete the active studies (if any)
+//            query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), id);
+//            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(query, queryOptions);
+//        }
+//
+//        // Change the status of the project to deleted
+//        return setStatus(id, Status.DELETED);
     }
 
     @Override

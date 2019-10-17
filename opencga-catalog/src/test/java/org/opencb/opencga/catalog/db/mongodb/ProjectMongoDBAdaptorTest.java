@@ -88,27 +88,27 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogProjectDBAdaptor.get(-100, null);
     }
 
-    @Test
-    public void deleteProjectTest() throws CatalogException {
-        Project p = new Project("2000G", "Project about some more genomes", null, "Cool", new Status(), "", 3000, "", null, 1);
-        catalogProjectDBAdaptor.insert(p, user1.getId(), null);
-
-        p = getProject(user1.getId(), "2000G");
-        DataResult writeResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
-        assertEquals(1, writeResult.getNumUpdated());
-
-        Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), p.getUid())
-                .append(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
-        DataResult<Project> queryResult = catalogProjectDBAdaptor.get(query, QueryOptions.empty());
-        assertEquals(1, queryResult.getNumResults());
-        assertEquals(Status.DELETED, queryResult.first().getStatus().getName());
-
-        //thrown.expect(CatalogDBException.class);
-        //catalogProjectDBAdaptor.delete(p.getId());
-
-        thrown.expect(CatalogDBException.class);    //Expected "Project not found" exception
-        catalogProjectDBAdaptor.delete(-1, new QueryOptions());
-    }
+//    @Test
+//    public void deleteProjectTest() throws CatalogException {
+//        Project p = new Project("2000G", "Project about some more genomes", null, "Cool", new Status(), "", 3000, "", null, 1);
+//        catalogProjectDBAdaptor.insert(p, user1.getId(), null);
+//
+//        p = getProject(user1.getId(), "2000G");
+//        DataResult writeResult = catalogProjectDBAdaptor.delete(p.getUid(), new QueryOptions());
+//        assertEquals(1, writeResult.getNumUpdated());
+//
+//        Query query = new Query(ProjectDBAdaptor.QueryParams.UID.key(), p.getUid())
+//                .append(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+//        DataResult<Project> queryResult = catalogProjectDBAdaptor.get(query, QueryOptions.empty());
+//        assertEquals(1, queryResult.getNumResults());
+//        assertEquals(Status.DELETED, queryResult.first().getStatus().getName());
+//
+//        //thrown.expect(CatalogDBException.class);
+//        //catalogProjectDBAdaptor.delete(p.getId());
+//
+//        thrown.expect(CatalogDBException.class);    //Expected "Project not found" exception
+//        catalogProjectDBAdaptor.delete(-1, new QueryOptions());
+//    }
 
     @Test
     public void getAllProjects() throws CatalogDBException {
