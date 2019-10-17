@@ -215,7 +215,6 @@
                 "computeProfile": {
                     "roles": [
                         {
-                            "autoscale": null,
                             "name": "headnode",
                             "minInstanceCount": 1,
                             "targetInstanceCount": "[parameters('clusterHeadNodeCount')]",
@@ -235,7 +234,6 @@
                             "scriptActions": []
                         },
                         {
-                            "autoscale": null,
                             "name": "workernode",
                             "targetInstanceCount": "[parameters('clusterWorkerNodeCount')]",
                             "hardwareProfile": {
@@ -254,7 +252,6 @@
                             "scriptActions": []
                         },
                         {
-                            "autoscale": null,
                             "name": "zookeepernode",
                             "minInstanceCount": 1,
                             "targetInstanceCount": "[parameters('clusterZookeeperNodeCount')]",
