@@ -65,6 +65,7 @@ import java.util.*;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
@@ -130,6 +131,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case SCORE_INDEX_COMMAND:
                 scoreLoad();
+                break;
+            case SCORE_REMOVE_COMMAND:
+                scoreRemove();
                 break;
             case SAMPLE_INDEX_COMMAND:
                 sampleIndex();
@@ -427,6 +431,19 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         variantManager.loadVariantScore(cliOptions.study, inputUri, cliOptions.scoreName,
                 cliOptions.cohort1, cliOptions.cohort2, descriptor, options, sessionId);
+    }
+
+    private void scoreRemove() throws CatalogException, StorageEngineException {
+        VariantCommandOptions.VariantScoreRemoveCommandOptions cliOptions = variantCommandOptions.variantScoreRemoveCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions()
+                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume)
+                .append(VariantStorageEngine.Options.FORCE.key(), cliOptions.force);
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantManager.removeVariantScore(cliOptions.study, cliOptions.scoreName, options, sessionId);
     }
 
     private void sampleIndex()

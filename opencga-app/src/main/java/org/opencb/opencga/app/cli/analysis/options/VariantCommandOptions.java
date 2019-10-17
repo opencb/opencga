@@ -70,6 +70,7 @@ public class VariantCommandOptions {
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
     public final VariantScoreIndexCommandOptions variantScoreIndexCommandOptions;
+    public final VariantScoreRemoveCommandOptions variantScoreRemoveCommandOptions;
     public final SampleIndexCommandOptions sampleIndexCommandOptions;
     public final FamilyIndexCommandOptions familyIndexCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
@@ -105,6 +106,7 @@ public class VariantCommandOptions {
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.variantScoreIndexCommandOptions = new VariantScoreIndexCommandOptions();
+        this.variantScoreRemoveCommandOptions = new VariantScoreRemoveCommandOptions();
         this.sampleIndexCommandOptions = new SampleIndexCommandOptions();
         this.familyIndexCommandOptions = new FamilyIndexCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
@@ -549,8 +551,24 @@ public class VariantCommandOptions {
                 + "or the column 'VAR' containing a variant representation with format 'chr:start:ref:alt'. "
                 + "e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'", required = true)
         public String columns;
+    }
 
+    @Parameters(commandNames = {VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND}, commandDescription = VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND_DESCRIPTION)
+    public class VariantScoreRemoveCommandOptions extends GeneralCliOptions.StudyOption {
+        public static final String SCORE_REMOVE_COMMAND = "score-remove";
+        public static final String SCORE_REMOVE_COMMAND_DESCRIPTION = "Remove a variant score from the database.";
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--name"}, description = "Unique name of the score within the study", required = true)
+        public String scoreName;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed remove", arity = 0)
+        public boolean resume;
+
+        @Parameter(names = {"--force"}, description = "Force remove of partially indexed scores", arity = 0)
+        public boolean force;
     }
 
     @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)

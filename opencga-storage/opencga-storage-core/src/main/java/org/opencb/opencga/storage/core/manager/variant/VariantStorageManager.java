@@ -357,6 +357,18 @@ public class VariantStorageManager extends StorageManager {
         engine.loadVariantScore(scoreFile, study, scoreName, cohort1, cohort2, descriptor, options);
     }
 
+    public void removeVariantScore(String study, String scoreName, ObjectMap options, String sessionId)
+            throws CatalogException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String studyFqn = catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+
+        DataStore dataStore = getDataStore(studyFqn, sessionId);
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
+
+
+        engine.removeVariantScore(study, scoreName, options);
+    }
+
     public void sampleIndex(String studyStr, List<String> samples, ObjectMap config, String sessionId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
 
