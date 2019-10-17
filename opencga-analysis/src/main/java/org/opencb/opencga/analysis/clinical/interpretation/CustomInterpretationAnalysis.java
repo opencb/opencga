@@ -20,18 +20,16 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.RoleInCancer;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
-import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
@@ -46,8 +44,6 @@ import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -96,7 +92,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
         // Check clinical analysis (only when sample proband ID is not provided)
         if (clinicalAnalysisId != null) {
-            QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId,
+            DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId,
                     clinicalAnalysisId, QueryOptions.empty(), sessionId);
             if (clinicalAnalysisQueryResult.getNumResults() != 1) {
                 throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
@@ -153,21 +149,14 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (query.get(VariantCatalogQueryUtils.PANEL.key()) != null) {
             List<String> diseasePanelIds = Arrays.asList(query.getString(VariantCatalogQueryUtils.PANEL.key()).split(","));
-            List<QueryResult<Panel>> queryResults = catalogManager.getPanelManager()
-                    .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
+            DataResult<Panel> queryResult = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
 
-            if (queryResults.size() != diseasePanelIds.size()) {
+            if (queryResult.getNumResults() != diseasePanelIds.size()) {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
                         "disease panels queried");
             }
 
-            for (QueryResult<Panel> queryResult : queryResults) {
-                if (queryResult.getNumResults() != 1) {
-                    throw new AnalysisException("The number of disease panels retrieved doesn't match the number of " +
-                            "disease panels queried");
-                }
-                diseasePanels.add(queryResult.first());
-            }
+            diseasePanels.addAll(queryResult.getResults());
         }
 
         QueryOptions queryOptions = new QueryOptions(options);
@@ -216,11 +205,11 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
             // Execute query
             VariantQueryResult<Variant> variantQueryResult = variantStorageManager.get(query, queryOptions, sessionId);
-            dbTime = variantQueryResult.getDbTime();
-            numTotalResult = variantQueryResult.getNumTotalResults();
+            dbTime = variantQueryResult.getTime();
+            numTotalResult = variantQueryResult.getNumMatches();
 
-        if (CollectionUtils.isNotEmpty(variantQueryResult.getResult())) {
-                variants.addAll(variantQueryResult.getResult());
+        if (CollectionUtils.isNotEmpty(variantQueryResult.getResults())) {
+                variants.addAll(variantQueryResult.getResults());
             }
 
             if (CollectionUtils.isNotEmpty(variants)) {
@@ -300,7 +289,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
                                           List<DiseasePanel> biodataDiseasePanels, List<ReportedLowCoverage> reportedLowCoverages)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+        DataResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), sessionId);
 
         // Create Interpretation

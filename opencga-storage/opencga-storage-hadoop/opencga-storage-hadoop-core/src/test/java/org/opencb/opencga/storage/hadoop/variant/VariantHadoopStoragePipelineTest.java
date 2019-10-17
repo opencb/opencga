@@ -26,10 +26,10 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.stats.VariantSetStats;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -64,7 +64,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
 
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
-    private QueryResult<Variant> allVariantsQueryResult;
+    private DataResult<Variant> allVariantsQueryResult;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -148,7 +148,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
 
         // Group by Gene
         HashMap<String, Long> genesCount = new HashMap<>();
-        for (Variant variant : allVariantsQueryResult.getResult()) {
+        for (Variant variant : allVariantsQueryResult.getResults()) {
             HashSet<String> genesInVariant = new HashSet<>();
             for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                 String geneName = consequenceType.getGeneName();
@@ -174,8 +174,8 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                 break;
             }
             System.out.println("Gene " + entry.getKey() + " in " + entry.getValue() + " variants");
-            QueryResult<Long> queryResult = variantStorageEngine.count(new Query(VariantQueryParam.GENE.key(), entry.getKey()));
-            System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
+            DataResult<Long> queryResult = variantStorageEngine.count(new Query(VariantQueryParam.GENE.key(), entry.getKey()));
+            System.out.println("queryResult.getDbTime() = " + queryResult.getTime());
             long count = queryResult.first();
             assertEquals(entry.getValue().longValue(), count);
         }

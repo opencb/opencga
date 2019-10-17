@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
@@ -85,18 +85,18 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         }
     }
 
-    public QueryResult<Variant> toQueryResult() {
+    public DataResult<Variant> toDataResult() {
         List<Variant> result = new ArrayList<>();
         this.forEachRemaining(result::add);
 
         int numResults = result.size();
         int numTotalResults = -1; // Unknown numTotalResults
 
-        return new QueryResult<>("", (int) getTimeFetching(TimeUnit.MILLISECONDS), numResults, numTotalResults, "", "", result);
+        return new DataResult<>((int) getTimeFetching(TimeUnit.MILLISECONDS), Collections.emptyList(), numResults, result, numTotalResults);
     }
 
-    public VariantQueryResult<Variant> toQueryResult(Map<String, List<String>> samples) {
-        return new VariantQueryResult<>(toQueryResult(), samples);
+    public VariantQueryResult<Variant> toDataResult(Map<String, List<String>> samples) {
+        return new VariantQueryResult<>(toDataResult(), samples);
     }
 
 

@@ -10,8 +10,10 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -41,7 +43,7 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException, URISyntaxException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
 
         token = catalogManager.getUserManager().login("user", PASSWORD);
 
@@ -54,8 +56,10 @@ public class AbstractClinicalManagerTest extends GenericTest {
 
         URI familyVCF = getClass().getResource("/biofiles/family.vcf").toURI();
 
-        catalogManager.getFileManager().upload(studyFqn, new FileInputStream(new java.io.File(familyVCF)),
-                new File().setPath(Paths.get(familyVCF).getFileName().toString()), false, true, token);
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(familyVCF)))) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(Paths.get(familyVCF).getFileName().toString()), false, true, false, token);
+        }
 
         family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
 

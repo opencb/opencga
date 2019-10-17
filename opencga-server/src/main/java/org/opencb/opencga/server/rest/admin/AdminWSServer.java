@@ -2,14 +2,14 @@ package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
+import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
@@ -49,8 +49,8 @@ public class AdminWSServer extends OpenCGAWSServer {
                 user.type = Account.Type.GUEST;
             }
 
-            QueryResult queryResult = catalogManager.getUserManager()
-                    .create(user.id, user.name, user.email, user.password, user.organization, null, user.type, queryOptions, sessionId);
+            DataResult queryResult = catalogManager.getUserManager()
+                    .create(user.id, user.name, user.email, user.password, user.organization, null, user.type, token);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -81,14 +81,14 @@ public class AdminWSServer extends OpenCGAWSServer {
 
             if (remoteParams.resourceType == ResourceType.USER || remoteParams.resourceType == ResourceType.APPLICATION) {
                 catalogManager.getUserManager().importRemoteEntities(remoteParams.authenticationOriginId, remoteParams.id,
-                        remoteParams.resourceType == ResourceType.APPLICATION, remoteParams.studyGroup, remoteParams.study, sessionId);
+                        remoteParams.resourceType == ResourceType.APPLICATION, remoteParams.studyGroup, remoteParams.study, token);
             } else if (remoteParams.resourceType == ResourceType.GROUP) {
                 if (remoteParams.id.size() > 1) {
                     throw new CatalogException("More than one group found in 'id'. Only one group is accepted at a time");
                 }
 
                 catalogManager.getUserManager().importRemoteGroupOfUsers(remoteParams.authenticationOriginId, remoteParams.id.get(0),
-                        remoteParams.studyGroup, remoteParams.study, false, sessionId);
+                        remoteParams.studyGroup, remoteParams.study, false, token);
             } else {
                 throw new CatalogException("Unknown resourceType '" + remoteParams.resourceType + "'");
             }
@@ -112,10 +112,10 @@ public class AdminWSServer extends OpenCGAWSServer {
                     + "synchronised with any other group.</li>"
                     + "</ul>"
     )
-    public Response ldapSync(@ApiParam(value = "JSON containing the parameters", required = true) LDAPSyncParams ldapParams) {
+    public Response externalSync(@ApiParam(value = "JSON containing the parameters", required = true) SyncParams syncParams) {
         try {
-            return createOkResponse(catalogManager.getStudyManager().syncGroupWith(ldapParams.study, ldapParams.from, ldapParams.to,
-                    ldapParams.authenticationOriginId, ldapParams.force, sessionId));
+            return createOkResponse(catalogManager.getStudyManager().syncGroupWith(syncParams.study, syncParams.from, syncParams.to,
+                    syncParams.authenticationOriginId, syncParams.force, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -142,7 +142,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
             @QueryParam("fields") String fields,
-            @ApiParam(value = "Resource to be grouped by.", required = true) @QueryParam("resource") AuditRecord.Resource resource,
+            @ApiParam(value = "Entity to be grouped by.", required = true) @QueryParam("entity") Entity entity,
             @ApiParam(value = "Action performed") @DefaultValue("") @QueryParam("action") String action,
             @ApiParam(value = "Object before update") @DefaultValue("") @QueryParam("before") String before,
             @ApiParam(value = "Object after update") @DefaultValue("") @QueryParam("after") String after,
@@ -151,7 +151,7 @@ public class AdminWSServer extends OpenCGAWSServer {
         try {
 
 
-            return createOkResponse(catalogManager.getAuditManager().groupBy(query, fields, queryOptions, sessionId));
+            return createOkResponse(catalogManager.getAuditManager().groupBy(query, fields, queryOptions, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -163,7 +163,7 @@ public class AdminWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Sync Catalog into the Solr")
     public Response syncSolr() {
         try {
-            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(sessionId));
+            return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -177,11 +177,10 @@ public class AdminWSServer extends OpenCGAWSServer {
             + "<il><b>password</b>: Password that will be set to perform future administrative operations over OpenCGA</il><br>"
             + "<ul>")
     public Response install(
-            @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallParams installParams
-    ) {
+            @ApiParam(value = "JSON containing the mandatory parameters", required = true) InstallParams installParams) {
         try {
             catalogManager.installCatalogDB(installParams.secretKey, installParams.password);
-            return createOkResponse(new QueryResult<>("install ok"));
+            return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -200,18 +199,18 @@ public class AdminWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Panel parameters to be installed") PanelWSServer.PanelPOST panelPost) {
         try {
             if (importPanels) {
-                catalogManager.getPanelManager().importPanelApp(sessionId, overwrite);
+                catalogManager.getPanelManager().importPanelApp(token, overwrite);
             } else if (StringUtils.isEmpty(panelsToDelete)) {
-                catalogManager.getPanelManager().create(panelPost.toPanel(), overwrite, sessionId);
+                catalogManager.getPanelManager().create(panelPost.toPanel(), overwrite, token);
             } else {
                 String[] panelIds = panelsToDelete.split(",");
                 for (String panelId : panelIds) {
-                    catalogManager.getPanelManager().delete(panelId, sessionId);
+                    catalogManager.getPanelManager().delete(panelId, token);
                 }
             }
 
             return createOkResponse(catalogManager.getPanelManager().count(PanelManager.INSTALLATION_PANELS,
-                    new Query(), sessionId));
+                    new Query(), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -271,8 +270,8 @@ public class AdminWSServer extends OpenCGAWSServer {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(MetaDBAdaptor.SECRET_KEY, jwtParams.secretKey);
         try {
-            catalogManager.updateJWTParameters(params, sessionId);
-            return createOkResponse(new QueryResult<>("jwt"));
+            catalogManager.updateJWTParameters(params, token);
+            return createOkResponse(DataResult.empty());
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -296,7 +295,7 @@ public class AdminWSServer extends OpenCGAWSServer {
         APPLICATION
     }
 
-    public static class LDAPSyncParams {
+    public static class SyncParams {
         public String authenticationOriginId;
         public String from;
         public String to;

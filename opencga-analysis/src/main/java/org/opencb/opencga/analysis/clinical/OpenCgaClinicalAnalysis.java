@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.core.Exon;
@@ -80,7 +79,7 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
 //    }
 
     protected ClinicalAnalysis getClinicalAnalysis() throws AnalysisException {
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
                     .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
@@ -237,12 +236,11 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
         Set<String> lowCoverageByGeneDone = new HashSet<>();
 
         // Look for the bam file of the proband
-        QueryResult<File> fileQueryResult;
+        DataResult<File> fileQueryResult;
         try {
-            fileQueryResult = catalogManager.getFileManager().get(studyId, new Query()
-                            .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
-                            .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
-                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), sessionId);
+            fileQueryResult = catalogManager.getFileManager().search(studyId, new Query()
+                    .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
+                    .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM), new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), sessionId);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
@@ -278,7 +276,7 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
                     regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyId, bamFileId,
-                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResult();
+                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResults();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
                                 .setGeneName(geneName)
@@ -298,25 +296,18 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
     protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
-            List<QueryResult<Panel>> queryResults;
+            DataResult<Panel> queryResult;
             try {
-                queryResults = catalogManager.getPanelManager()
+                queryResult = catalogManager.getPanelManager()
                         .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
             } catch (CatalogException e) {
                 throw new AnalysisException(e.getMessage(), e);
             }
 
-            if (queryResults.size() != diseasePanelIds.size()) {
+            if (queryResult.getNumResults() != diseasePanelIds.size()) {
                 throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
             }
-
-            for (QueryResult<Panel> queryResult : queryResults) {
-                if (queryResult.getNumResults() != 1) {
-                    throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels " +
-                            "queried");
-                }
-                diseasePanels.add(queryResult.first());
-            }
+            diseasePanels.addAll(queryResult.getResults());
         } else {
             throw new AnalysisException("Missing disease panels");
         }

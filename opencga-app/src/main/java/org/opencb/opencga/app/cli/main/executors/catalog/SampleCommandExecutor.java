@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -26,15 +27,12 @@ import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * Created by imedina on 03/06/16.
@@ -42,8 +40,8 @@ import java.util.stream.Collectors;
 public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
     private SampleCommandOptions samplesCommandOptions;
-    private AclCommandExecutor<Sample, SampleAclEntry> aclCommandExecutor;
-    private AnnotationCommandExecutor<Sample, SampleAclEntry> annotationCommandExecutor;
+    private AclCommandExecutor<Sample> aclCommandExecutor;
+    private AnnotationCommandExecutor<Sample> annotationCommandExecutor;
 
     public SampleCommandExecutor(SampleCommandOptions samplesCommandOptions) {
         super(samplesCommandOptions.commonCommandOptions);
@@ -58,7 +56,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing samples command line");
 
         String subCommandString = getParsedSubCommand(samplesCommandOptions.jCommander);
-        QueryResponse queryResponse = null;
+        DataResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -121,7 +119,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private QueryResponse<Sample> create() throws CatalogException, IOException {
+    private DataResponse<Sample> create() throws CatalogException, IOException {
         logger.debug("Creating sample");
 
         SampleCommandOptions.CreateCommandOptions commandOptions = samplesCommandOptions.createCommandOptions;
@@ -143,7 +141,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().create(commandOptions.study, commandOptions.id, params);
     }
 
-    private QueryResponse<Sample> load() throws CatalogException, IOException {
+    private DataResponse<Sample> load() throws CatalogException, IOException {
         logger.debug("Loading samples from a pedigree file");
 
         ObjectMap params = new ObjectMap();
@@ -153,7 +151,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().loadFromPed(samplesCommandOptions.loadCommandOptions.study, params);
     }
 
-    private QueryResponse<Sample> info() throws CatalogException, IOException  {
+    private DataResponse<Sample> info() throws CatalogException, IOException  {
         logger.debug("Getting samples information");
 
         ObjectMap params = new ObjectMap();
@@ -167,7 +165,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().get(samplesCommandOptions.infoCommandOptions.sample, params);
     }
 
-    private QueryResponse<Sample> search() throws CatalogException, IOException  {
+    private DataResponse<Sample> search() throws CatalogException, IOException  {
         logger.debug("Searching samples");
 
         Query query = new Query();
@@ -194,7 +192,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private QueryResponse<Sample> update() throws CatalogException, IOException {
+    private DataResponse<Sample> update() throws CatalogException, IOException {
         logger.debug("Updating samples");
 
         SampleCommandOptions.UpdateCommandOptions commandOptions = samplesCommandOptions.updateCommandOptions;
@@ -216,7 +214,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 commandOptions.annotationSetsAction.name(), params);
     }
 
-    private QueryResponse<Sample> delete() throws CatalogException, IOException {
+    private DataResponse<Sample> delete() throws CatalogException, IOException {
         logger.debug("Deleting the selected sample");
 
         ObjectMap params = new ObjectMap();
@@ -224,7 +222,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().delete(samplesCommandOptions.deleteCommandOptions.sample, params);
     }
 
-    private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
+    private DataResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group By samples");
 
         String study = resolveStudy(samplesCommandOptions.groupByCommandOptions.study);
@@ -241,37 +239,42 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 samplesCommandOptions.groupByCommandOptions.fields, params);
     }
 
-    private QueryResponse<Individual> getIndividuals() throws CatalogException, IOException {
+    private DataResponse<Individual> getIndividuals() throws IOException {
         logger.debug("Getting individuals of sample(s)");
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(samplesCommandOptions.individualCommandOptions.study));
-        params.put("lazy", false); // Obtain the whole individual entity
+        params.put("includeIndividual", true); // Obtain the whole individual entity
         params.putIfNotNull(QueryOptions.INCLUDE, samplesCommandOptions.individualCommandOptions.dataModelOptions.include);
         params.putIfNotNull(QueryOptions.EXCLUDE, samplesCommandOptions.individualCommandOptions.dataModelOptions.exclude);
 
-        QueryResponse<Sample> sampleQueryResponse =
+        DataResponse<Sample> sampleQueryResponse =
                 openCGAClient.getSampleClient().get(samplesCommandOptions.individualCommandOptions.sample, params);
 
         if (sampleQueryResponse.allResultsSize() == 0) {
-            return new QueryResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarning(),
-                    sampleQueryResponse.getError(), sampleQueryResponse.getQueryOptions(), new LinkedList<>());
+            return new DataResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarnings(),
+                    sampleQueryResponse.getError(), sampleQueryResponse.getParams(), new LinkedList<>());
         }
 
         // We get the individuals from the sample response
-        List<Individual> individualList = sampleQueryResponse.allResults()
-                .stream()
-                .map(Sample::getIndividual)
-                .collect(Collectors.toCollection(LinkedList::new));
+        List<Individual> individualList = new ArrayList<>();
+        for (Sample sample : sampleQueryResponse.allResults()) {
+            Map<String, Object> attributes = sample.getAttributes();
+            ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
+            if (attributes != null && attributes.containsKey("OPENCGA_INDIVIDUAL")) {
+                String individualStr = objectMapper.writeValueAsString(attributes.get("OPENCGA_INDIVIDUAL"));
+                individualList.add(objectMapper.readValue(individualStr, Individual.class));
+            }
+        }
 
-        return new QueryResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarning(),
-                sampleQueryResponse.getError(), sampleQueryResponse.getQueryOptions(),
-                Arrays.asList(new QueryResult<>(samplesCommandOptions.individualCommandOptions.sample,
-                        -1, individualList.size(), individualList.size(), "", "", individualList)));
+        return new DataResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarnings(),
+                sampleQueryResponse.getError(), sampleQueryResponse.getParams(),
+                Collections.singletonList(new DataResult<>(-1, Collections.emptyList(), individualList.size(), individualList,
+                        individualList.size())));
     }
 
 
-    private QueryResponse<SampleAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         SampleCommandOptions.SampleAclCommandOptions.AclsUpdateCommandOptions commandOptions =
                 samplesCommandOptions.aclsUpdateCommandOptions;
 
@@ -290,7 +293,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
-    private QueryResponse stats() throws IOException {
+    private DataResponse stats() throws IOException {
         logger.debug("Individual stats");
 
         SampleCommandOptions.StatsCommandOptions commandOptions = samplesCommandOptions.statsCommandOptions;

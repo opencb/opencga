@@ -7,9 +7,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,7 +48,7 @@ public class ToolAnalysisTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectStr = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens", null,
@@ -74,7 +74,7 @@ public class ToolAnalysisTest extends GenericTest {
         params.put("input", "test.bam");
         params.put("output", "test.bam.bai");
 
-        QueryResult<Job> jobQueryResult = catalogManager.getJobManager().create(STUDY, "jobName", "", "samtools", "index",
+        DataResult<Job> jobQueryResult = catalogManager.getJobManager().create(STUDY, "jobName", "", "samtools", "index",
                 "bams/", params, sessionIdUser);
 
         catalogManager.getConfiguration().setToolDir(toolDir.toString());

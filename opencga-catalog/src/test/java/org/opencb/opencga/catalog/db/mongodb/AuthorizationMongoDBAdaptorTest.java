@@ -21,22 +21,24 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
+import org.opencb.opencga.core.models.PermissionRule;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -54,8 +56,7 @@ public class AuthorizationMongoDBAdaptorTest {
     private User user3;
     private long studyId;
     private Sample s1;
-    private SampleAclEntry acl_s1_user1;
-    private SampleAclEntry acl_s1_user2;
+    Map<String, List<String>> acls;
 
     @AfterClass
     public static void afterClass() {
@@ -73,18 +74,27 @@ public class AuthorizationMongoDBAdaptorTest {
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
         dbAdaptorFactory = MongoDBAdaptorTest.catalogDBAdaptor;
-        aclDBAdaptor = new AuthorizationMongoDBAdaptor(configuration);
+        aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory);
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        s1 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", "", new Individual(), null, null, 1, 1,
-                "", "", false, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), QueryOptions.empty()).first();
-        acl_s1_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
-        acl_s1_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", "", null, null, null, 1, 1, "", "", false,
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
+        s1 = getSample(studyId, "s1");
+        acls = new HashMap<>();
+        acls.put(user1.getId(), Arrays.asList());
+        acls.put(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.UPDATE.name()
         ));
-        aclDBAdaptor.setAcls(Arrays.asList(s1.getUid()), Arrays.asList(acl_s1_user1, acl_s1_user2), Entity.SAMPLE);
+        aclDBAdaptor.setAcls(Arrays.asList(s1.getUid()), acls, Entity.SAMPLE);
+    }
+
+    Sample getSample(long studyUid, String sampleId) throws CatalogDBException {
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
+        return dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
     }
 
     @Test
@@ -92,53 +102,43 @@ public class AuthorizationMongoDBAdaptorTest {
 
         aclDBAdaptor.resetMembersFromAllEntries(studyId, Arrays.asList(user1.getId(), user2.getId()));
 
-        aclDBAdaptor.addToMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1", "user2", "user3"), Arrays.asList("VIEW", "UPDATE"),
-                Entity.SAMPLE);
-        aclDBAdaptor.addToMembers(Arrays.asList(s1.getUid()), Arrays.asList("user4"), Collections.emptyList(),
-                Entity.SAMPLE);
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1", "user2", "user3"),
+                Arrays.asList("VIEW", "UPDATE"), Entity.SAMPLE);
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user4"), Collections.emptyList(), Entity.SAMPLE);
         // We attempt to store the same permissions
-        aclDBAdaptor.addToMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1", "user2", "user3"), Arrays.asList("VIEW", "UPDATE"),
-                Entity.SAMPLE);
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1", "user2", "user3"),
+                Arrays.asList("VIEW", "UPDATE"), Entity.SAMPLE);
 
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Entity.SAMPLE);
-        assertEquals(4, sampleAcl.getNumResults());
+        DataResult<Map<String, List<String>>> sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Entity.SAMPLE);
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals(4, sampleAcl.first().size());
 
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1", "user2"), Entity.SAMPLE);
-        assertEquals(2, sampleAcl.getNumResults());
-        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
-            assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
-            assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
-        }
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals(2, sampleAcl.first().size());
+        assertTrue(sampleAcl.first().get("user1").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertEquals(2, sampleAcl.first().get("user1").size());
+        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertEquals(2, sampleAcl.first().get("user2").size());
 
-        // Todo: Remove this in 1.4
-        List<String> allSamplePermissions = EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
-                .stream()
-                .map(String::valueOf)
-                .collect(Collectors.toList());
-        aclDBAdaptor.setToMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1"), Arrays.asList("DELETE"), allSamplePermissions,
-                Entity.SAMPLE);
+        aclDBAdaptor.setToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList("user1"), Arrays.asList("DELETE"), Entity.SAMPLE);
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1", "user2"), Entity.SAMPLE);
-        assertEquals(2, sampleAcl.getNumResults());
-        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
-            if (sampleAclEntry.getMember().equals("user1")) {
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("DELETE")));
-            } else {
-                assertEquals("user2", sampleAclEntry.getMember());
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
-            }
-        }
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals(2, sampleAcl.first().size());
+
+        assertTrue(sampleAcl.first().get("user1").contains("DELETE"));
+        assertEquals(1, sampleAcl.first().get("user1").size());
+        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertEquals(2, sampleAcl.first().get("user2").size());
 
         // Remove one permission from one user
-        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1"), Arrays.asList("DELETE"),
-                Entity.SAMPLE);
+        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1"), Arrays.asList("DELETE"), Entity.SAMPLE);
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1"), Entity.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
-        assertEquals(0, sampleAcl.first().getPermissions().size());
+        assertEquals(0, sampleAcl.first().get("user1").size());
 
         // Reset user
-        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1"), null,
-                Entity.SAMPLE);
+        aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user1"), null, Entity.SAMPLE);
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1"), Entity.SAMPLE);
         assertEquals(0, sampleAcl.getNumResults());
 
@@ -148,99 +148,85 @@ public class AuthorizationMongoDBAdaptorTest {
         assertEquals(0, sampleAcl.getNumResults());
 
         sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Entity.SAMPLE);
-        assertEquals(2, sampleAcl.getNumResults());
-        for (SampleAclEntry sampleAclEntry : sampleAcl.getResult()) {
-            if (sampleAclEntry.getMember().equals("user2")) {
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
-                assertTrue(sampleAclEntry.getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
-            } else {
-                assertEquals("user4", sampleAclEntry.getMember());
-                assertEquals(0, sampleAclEntry.getPermissions().size());
-            }
-        }
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals(2, sampleAcl.first().size());
+
+        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertEquals(2, sampleAcl.first().get("user2").size());
+        assertEquals(0, sampleAcl.first().get("user4").size());
 
         // Reset user4
         aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList("user4"), null, Entity.SAMPLE);
         sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Entity.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
-        assertEquals("user2", sampleAcl.first().getMember());
-        assertTrue(sampleAcl.first().getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("VIEW")));
-        assertTrue(sampleAcl.first().getPermissions().contains(SampleAclEntry.SamplePermissions.valueOf("UPDATE")));
+        assertEquals(1, sampleAcl.first().size());
+        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertEquals(2, sampleAcl.first().get("user2").size());
     }
 
     @Test
     public void getSampleAcl() throws Exception {
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user1.getId()),
-                Entity.SAMPLE);
-        SampleAclEntry acl = sampleAcl.first();
+        DataResult<Map<String, List<String>>> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user1.getId()), Entity.SAMPLE);
+        Map<String, List<String>> acl = sampleAcl.first();
         assertNotNull(acl);
-        assertEquals(acl_s1_user1.getPermissions(), acl.getPermissions());
+        assertEquals(acl.get(user1.getId()), acl.get(user1.getId()));
 
-        acl = (SampleAclEntry) aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Entity.SAMPLE).first();
+        acl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Entity.SAMPLE).first();
         assertNotNull(acl);
-        assertEquals(acl_s1_user2.getPermissions(), acl.getPermissions());
+        assertEquals(acl.get(user2.getId()), acl.get(user2.getId()));
     }
 
     @Test
     public void getSampleAclWrongUser() throws Exception {
-        QueryResult<SampleAclEntry> wrongUser = aclDBAdaptor.get(s1.getUid(), Arrays.asList("wrongUser"),
-                Entity.SAMPLE);
+        DataResult<Map<String, List<String>>> wrongUser = aclDBAdaptor.get(s1.getUid(), Arrays.asList("wrongUser"), Entity.SAMPLE);
         assertEquals(0, wrongUser.getNumResults());
     }
 
     @Test
     public void getSampleAclFromUserWithoutAcl() throws Exception {
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user3.getId()),
-                Entity.SAMPLE);
-        assertTrue(sampleAcl.getResult().isEmpty());
+        DataResult<Map<String, List<String>>> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user3.getId()), Entity.SAMPLE);
+        assertTrue(sampleAcl.getResults().isEmpty());
     }
 
     // Remove some concrete permissions
     @Test
     public void unsetSampleAcl2() throws Exception {
         // Unset permissions
-        QueryResult<SampleAclEntry> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()),
-                Entity.SAMPLE);
+        DataResult<Map<String, List<String>>> sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Entity.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
-        assertEquals(3, sampleAcl.first().getPermissions().size());
+        assertEquals(1, sampleAcl.first().size());
+        assertEquals(3, sampleAcl.first().get(user2.getId()).size());
         aclDBAdaptor.removeFromMembers(Arrays.asList(s1.getUid()), Arrays.asList(user2.getId()),
                 Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"), Entity.SAMPLE);
 //        sampleDBAdaptor.unsetSampleAcl(s1.getId(), Arrays.asList(user2.getId()),
 //                Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"));
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Entity.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
-        assertEquals(1, sampleAcl.first().getPermissions().size());
-        assertTrue(sampleAcl.first().getPermissions().containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.UPDATE)));
-
+        assertEquals(1, sampleAcl.first().get(user2.getId()).size());
+        assertTrue(sampleAcl.first().get(user2.getId()).containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.UPDATE.name())));
     }
 
     @Test
     public void setSampleAclOverride() throws Exception {
-        assertEquals(acl_s1_user2.getPermissions(),
-                aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Entity.SAMPLE).first().getPermissions());
+        assertEquals(acls.get(user2.getId()),
+                aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Entity.SAMPLE).first().get(user2.getId()));
 
-        SampleAclEntry newAcl = new SampleAclEntry(user2.getId(), Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()));
-        assertTrue(!acl_s1_user2.getPermissions().equals(newAcl.getPermissions()));
-        // Todo: Remove this in 1.4
-        List<String> allSamplePermissions = EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
-                .stream()
-                .map(String::valueOf)
-                .collect(Collectors.toList());
+        List<String> newPermissions = Collections.singletonList(SampleAclEntry.SamplePermissions.DELETE.name());
+        assertTrue(!acls.get(user2.getId()).equals(newPermissions));
 
-        aclDBAdaptor.setToMembers(Arrays.asList(s1.getUid()), Arrays.asList(user2.getId()),
-                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), allSamplePermissions,
-                Entity.SAMPLE);
+        aclDBAdaptor.setToMembers(studyId, Arrays.asList(s1.getUid()), Arrays.asList(user2.getId()),
+                Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), Entity.SAMPLE);
 //        sampleDBAdaptor.setSampleAcl(s1.getId(), newAcl, true);
 
-        assertEquals(newAcl.getPermissions(), aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()),
-                Entity.SAMPLE).first().getPermissions());
+        assertEquals(newPermissions, aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Entity.SAMPLE).first().get(user2.getId()));
     }
 
     @Test
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
-        Sample s2 = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", "", new Individual(), null, null,
-                1, 1, "", "", false, Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), QueryOptions.empty()).first();
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", "", null, null, null, 1, 1, "", "", false,
+                Collections.emptyList(), new ArrayList<>(), Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
+        Sample s2 = getSample(studyId, "s2");
 
         // We create a new permission rule
         PermissionRule pr = new PermissionRule("myPermissionRule", new Query(), Arrays.asList(user3.getId()),
@@ -251,17 +237,16 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor.applyPermissionRules(studyId, pr, Study.Entity.SAMPLES);
 
         // All the samples should have view permissions for user user2
-        List<QueryResult<AbstractAclEntry>> queryResults = aclDBAdaptor.get(Arrays.asList(s1.getUid(), s2.getUid()),
+        DataResult<Map<String, List<String>>> dataResult = aclDBAdaptor.get(Arrays.asList(s1.getUid(), s2.getUid()),
                 Arrays.asList(user3.getId()), Entity.SAMPLE);
-        for (QueryResult<AbstractAclEntry> queryResult : queryResults) {
-            assertEquals(1, queryResult.first().getPermissions().size());
-            assertTrue(queryResult.first().getPermissions().contains(SampleAclEntry.SamplePermissions.VIEW));
+        assertEquals(2, dataResult.getNumResults());
+        for (Map<String, List<String>> result : dataResult.getResults()) {
+            assertTrue(result.get(user3.getId()).contains(SampleAclEntry.SamplePermissions.VIEW.name()));
         }
 
         // Assign a manual permission to s2
-        aclDBAdaptor.addToMembers(Arrays.asList(s2.getUid()), Arrays.asList(user3.getId()),
+        aclDBAdaptor.addToMembers(studyId, Arrays.asList(s2.getUid()), Arrays.asList(user3.getId()),
                 Arrays.asList(SampleAclEntry.SamplePermissions.DELETE.name()), Entity.SAMPLE);
-
     }
 
 }

@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
@@ -42,6 +43,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -173,10 +175,9 @@ public class IndividualWSServerTest {
         assertEquals(0, response.getResponse().get(0).getNumResults());
 
         // We update to make the individual in1 be the child of in2
-        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.FATHER.key(),
-                new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "in2"));
-        OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1", params, QueryOptions.empty(),
-                sessionId);
+        IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setFather("in2");
+        OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1",
+                individualUpdateParams, QueryOptions.empty(), sessionId);
         // and query again. We look for an individual with father "in2"
         json = webTarget.path("individuals").path("search")
                 .queryParam("study", studyId)

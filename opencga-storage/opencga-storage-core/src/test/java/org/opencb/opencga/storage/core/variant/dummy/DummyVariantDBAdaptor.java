@@ -25,9 +25,9 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -75,7 +75,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
 
-        return new VariantQueryResult<>("", 0, variants.size(), variants.size(), "", "", variants, null,
+        return new VariantQueryResult<>(0, variants.size(), variants.size(), Collections.emptyList(), variants, null,
                 DummyVariantStorageEngine.STORAGE_ENGINE_ID);
     }
 
@@ -90,17 +90,17 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
+    public DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
         throw new UnsupportedOperationException("Unimplemented");
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
-        return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList((long) TEMPLATES.size()));
+    public DataResult<Long> count(Query query) {
+        return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList((long) TEMPLATES.size()), 1);
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) {
+    public DataResult distinct(Query query, String field) {
         return null;
     }
 
@@ -157,54 +157,54 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
+    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) {
         return null;
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+    public DataResult groupBy(Query query, String field, QueryOptions options) {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) {
         return null;
     }
 
     // Update methods
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
-        QueryResult queryResult = new QueryResult();
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp, QueryOptions options) {
+        DataResult queryResult = new DataResult();
         logger.info("Writing " + variantStatsWrappers.size() + " statistics");
-        queryResult.setNumResults(variantStatsWrappers.size());
-        queryResult.setNumTotalResults(variantStatsWrappers.size());
+        queryResult.setNumMatches(variantStatsWrappers.size());
+        queryResult.setNumUpdated(variantStatsWrappers.size());
         return queryResult;
     }
 
     @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
-        return new QueryResult();
+    public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions) {
+        return new DataResult();
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options) {
+    public DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options) {
         System.out.println("Update custom annotation : " + name);
-        return new QueryResult();
+        return new DataResult();
     }
 
     // Unsupported methods
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions) {
         System.out.println("Update stats : "
                 + (variantStatsWrappers.isEmpty() ? "" : variantStatsWrappers.get(0).getCohortStats().keySet().toString()));
 
-        return new QueryResult();
+        return new DataResult();
     }
 
     @Override

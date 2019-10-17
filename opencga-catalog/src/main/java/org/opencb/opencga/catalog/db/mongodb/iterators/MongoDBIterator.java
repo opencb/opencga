@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -35,26 +36,30 @@ import java.util.function.Function;
 public class MongoDBIterator<E> implements DBIterator<E> {
 
     protected MongoCursor mongoCursor;
+    protected ClientSession clientSession;
     protected GenericDocumentComplexConverter<E> converter;
     protected Function<Document, Document> filter;
 
     private static final String SEPARATOR = "__";
 
     public MongoDBIterator(MongoCursor mongoCursor) { //Package protected
-        this(mongoCursor, null, null);
+        this(mongoCursor, null, null, null);
     }
 
     public MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter) { //Package protected
-        this(mongoCursor, converter, null);
+        this(mongoCursor, null, converter, null);
     }
 
-    public MongoDBIterator(MongoCursor mongoCursor, Function<Document, Document> filter) { //Package protected
-        this(mongoCursor, null, filter);
-    }
-
+    @Deprecated
     public MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter, Function<Document, Document> filter) {
+        this(mongoCursor, null, converter, filter);
+    }
+
+    public MongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, GenericDocumentComplexConverter<E> converter,
+                           Function<Document, Document> filter) {
         //Package protected
         this.mongoCursor = mongoCursor;
+        this.clientSession = clientSession;
         this.converter = converter;
         this.filter = filter;
     }

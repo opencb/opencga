@@ -1,17 +1,12 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantBuilder;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -20,17 +15,14 @@ import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 public class ClinicalUtils {
 
@@ -47,8 +39,8 @@ public class ClinicalUtils {
     }
 
     public static void addVariant(VariantQueryResult<Variant> result, Set<String> excludeIds, List<Variant> variants) {
-        if (CollectionUtils.isNotEmpty(result.getResult())) {
-            for (Variant variant : result.getResult()) {
+        if (CollectionUtils.isNotEmpty(result.getResults())) {
+            for (Variant variant : result.getResults()) {
                 if (!excludeIds.contains(variant.getId())) {
                     variants.add(variant);
                 }
@@ -60,12 +52,12 @@ public class ClinicalUtils {
     // OpenCgaClinicalAnalysis
     public static String getAssembly(CatalogManager catalogManager, String studyId, String sessionId) {
         String assembly = "";
-        QueryResult<Project> projectQueryResult;
+        DataResult<Project> projectQueryResult;
         try {
             projectQueryResult = catalogManager.getProjectManager().get(
                     new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                     new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
-            if (CollectionUtils.isNotEmpty(projectQueryResult.getResult())) {
+            if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
                 assembly = projectQueryResult.first().getOrganism().getAssembly();
             }
         } catch (CatalogException e) {

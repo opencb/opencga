@@ -8,14 +8,13 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.MendelianError;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -100,7 +99,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
-        for (Variant variant : result.getResult()) {
+        for (Variant variant : result.getResults()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
             assertThat(mendelianErrorVariants, hasItem(variant.toString()));
         }
@@ -112,7 +111,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
                 .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
         result = variantStorageEngine.get(query, new QueryOptions());
-        for (Variant variant : result.getResult()) {
+        for (Variant variant : result.getResults()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
             assertThat(deNovoVariants, hasItem(variant.toString()));
         }
@@ -127,7 +126,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantQueryParam.QUAL.key(), ">30");
 
         result = variantStorageEngine.get(query, new QueryOptions());
-        for (Variant variant : result.getResult()) {
+        for (Variant variant : result.getResults()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
             assertThat(mendelianErrorVariants, hasItem(variant.toString()));
             assertThat(Double.valueOf(variant.getStudies().get(0).getFiles().get(0).getAttributes().get(StudyEntry.QUAL)), gt(30));
@@ -153,9 +152,9 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
         assertNull(sampleIndexQuery.getFatherFilterMap().get(child));
 
-        QueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
 
-        for (Variant variant : result.getResult()) {
+        for (Variant variant : result.getResults()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
         }
         assertThat(result, everyResult(all, withStudy(study, allOf(
@@ -182,8 +181,8 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
 
 
-        QueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
-        for (Variant variant : result.getResult()) {
+        DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResults()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
         }
         assertThat(result, everyResult(all, withStudy(study, allOf(
@@ -212,8 +211,8 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
 
 
-        QueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
-        for (Variant variant : result.getResult()) {
+        DataResult<Variant> result = variantStorageEngine.get(query, new QueryOptions());
+        for (Variant variant : result.getResults()) {
             System.out.println(variant.toString() + "\t" + variant.getStudies().get(0).getSamplesData());
         }
         assertThat(result, everyResult(all, withStudy(study, allOf(

@@ -3,9 +3,9 @@ package org.opencb.opencga.catalog.db.mongodb.iterators;
 import com.mongodb.client.MongoCursor;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
@@ -130,14 +130,14 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                             IndividualDBAdaptor.QueryParams.UID.key()));
 
             try {
-                QueryResult<Document> individualQueryResult;
+                DataResult<Document> individualDataResult;
                 if (user != null) {
-                    individualQueryResult = individualDBAdaptor.nativeGet(query, queryOptions, user);
+                    individualDataResult = individualDBAdaptor.nativeGet(query, queryOptions, user);
                 } else {
-                    individualQueryResult = individualDBAdaptor.nativeGet(query, queryOptions);
+                    individualDataResult = individualDBAdaptor.nativeGet(query, queryOptions);
                 }
 
-                for (Document individual : individualQueryResult.getResult()) {
+                for (Document individual : individualDataResult.getResults()) {
                     List<Document> parentList = individualMap.get(individual.getLong(IndividualDBAdaptor.QueryParams.UID.key()));
                     for (Document parentDocument : parentList) {
                         parentDocument.put(IndividualDBAdaptor.QueryParams.ID.key(),
@@ -171,9 +171,9 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResults();
                 } else {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the samples associated to the individuals: {}", e.getMessage(), e);

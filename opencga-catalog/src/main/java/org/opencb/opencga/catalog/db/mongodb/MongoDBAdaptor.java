@@ -16,22 +16,25 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBRuntimeException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -47,13 +50,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
-    static final String PRIVATE_STUDY_ID = "studyUid";
+    static final String PRIVATE_STUDY_UID = "studyUid";
     private static final String VERSION = "version";
 
-    static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
-    static final String FILTER_ROUTE_DATASETS = "projects.studies.datasets.";
     static final String FILTER_ROUTE_INDIVIDUALS = "projects.studies.individuals.";
     static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
@@ -80,11 +81,45 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         super(logger);
     }
 
-    protected long getNewId() {
+    public interface TransactionBodyWithException<T> {
+        T execute(ClientSession session) throws CatalogDBException;
+    }
+
+    protected <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogDBException {
+        return runTransaction(body, null);
+    }
+
+    protected <T> T runTransaction(TransactionBodyWithException<T> body, Consumer<CatalogDBException> onException)
+            throws CatalogDBException {
+        ClientSession session = dbAdaptorFactory.getMongoDataStore().startSession();
+        try {
+            return session.withTransaction(() -> {
+                try {
+                    return body.execute(session);
+                } catch (CatalogDBException e) {
+                    throw new CatalogDBRuntimeException(e);
+                }
+            });
+        } catch (CatalogDBRuntimeException e) {
+            CatalogDBException cause = (CatalogDBException) e.getCause();
+            if (onException != null) {
+                onException.accept(cause);
+            }
+            throw cause;
+        } finally {
+            session.close();
+        }
+    }
+
+    protected long getNewUid() {
 //        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
+    protected long getNewUid(ClientSession clientSession) {
+//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
+        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId(clientSession);
+    }
 
     @Deprecated
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
@@ -150,9 +185,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected QueryResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
+    protected OpenCGAResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults,
+                                 boolean asc) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new OpenCGAResult();
         }
 
         if (groupByField.contains(",")) {
@@ -170,15 +206,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
             Bson limit = Aggregates.limit(numResults);
 
-            return collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions());
+            return new OpenCGAResult(collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions()));
         }
     }
 
-    protected QueryResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
+    protected OpenCGAResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
                                boolean asc) {
 
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new OpenCGAResult();
         }
 
         if (groupByField.size() == 1) {
@@ -206,13 +242,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
             Bson limit = Aggregates.limit(numResults);
 
-            return collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions());
+            return new OpenCGAResult(collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions()));
         }
     }
 
-    protected QueryResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
+    protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new OpenCGAResult();
         }
 
         if (groupByField.contains(",")) {
@@ -223,10 +259,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
+    protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
                                   QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
-            return new QueryResult();
+            return new OpenCGAResult();
         }
 
         List<String> groupByFields = new ArrayList<>(groupByField);
@@ -256,7 +292,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         } else {
             group = Aggregates.group(id, Accumulators.addToSet("items", "$" + idField));
         }
-        return collection.aggregate(Arrays.asList(match, project, group), options);
+        return new OpenCGAResult(collection.aggregate(Arrays.asList(match, project, group), options));
 //        }
     }
 
@@ -437,13 +473,76 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return queryOptions;
     }
 
-    protected void unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
+    protected OpenCGAResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
-                .append(PRIVATE_STUDY_ID, studyId)
+                .append(PRIVATE_STUDY_UID, studyId)
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
-        collection.update(query, update, new QueryOptions("multi", true));
+        return new OpenCGAResult(collection.update(query, update, new QueryOptions("multi", true)));
+    }
+
+    protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, Document document)
+            throws CatalogDBException {
+        Document updateOldVersion = new Document();
+
+        // Current release number
+        int release;
+        List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
+        if (supportedReleases.size() > 1) {
+            release = supportedReleases.get(supportedReleases.size() - 1);
+
+            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+            // current release number out
+            supportedReleases.remove(supportedReleases.size() - 1);
+        } else {
+            release = supportedReleases.get(0);
+
+            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+            // last version of the release
+            updateOldVersion.put(LAST_OF_RELEASE, false);
+        }
+        updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
+        updateOldVersion.put(LAST_OF_VERSION, false);
+
+        // Perform the update on the previous version
+        Document queryDocument = new Document()
+                .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
+                .append(VERSION, document.getInteger(VERSION))
+                .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
+
+        logger.debug("Updating previous version: query : {}, update: {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        DataResult updateResult = dbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
+
+        if (updateResult.getNumUpdated() == 0) {
+            throw new CatalogDBException("Internal error: Could not update previous version");
+        }
+
+        // We update the information for the new version of the document
+        document.put(LAST_OF_RELEASE, true);
+        document.put(LAST_OF_VERSION, true);
+        document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+        document.put(VERSION, document.getInteger(VERSION) + 1);
+
+        logger.debug("Inserting new document version: document: {}",
+                document.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        // Insert the new version document
+        dbCollection.insert(clientSession, document, QueryOptions.empty());
+    }
+
+    protected Document getStudyDocument(ClientSession clientSession, Query query) throws CatalogDBException {
+        // Get the study document
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(PRIVATE_STUDY_UID));
+        DataResult<Document> dataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
+                QueryOptions.empty());
+        if (dataResult.getNumResults() == 0) {
+            throw new CatalogDBException("Study " + query.getLong(PRIVATE_STUDY_UID) + " not found");
+        }
+        return dataResult.first();
     }
 
     public class UpdateDocument {
@@ -453,12 +552,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         private Document pull;
         private Document pullAll;
 
+        private ObjectMap attributes;
+
         public UpdateDocument() {
             this.set = new Document();
             this.addToSet = new Document();
             this.push = new Document();
             this.pull = new Document();
             this.pullAll = new Document();
+            this.attributes = new ObjectMap();
         }
 
         public Document toFinalUpdateDocument() {
@@ -542,6 +644,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         public UpdateDocument setPullAll(Document pullAll) {
             this.pullAll = pullAll;
+            return this;
+        }
+
+        public ObjectMap getAttributes() {
+            return attributes;
+        }
+
+        public UpdateDocument setAttributes(ObjectMap attributes) {
+            this.attributes = attributes;
             return this;
         }
     }

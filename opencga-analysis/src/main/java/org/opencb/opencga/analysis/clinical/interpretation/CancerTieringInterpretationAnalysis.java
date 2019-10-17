@@ -29,10 +29,10 @@ import org.opencb.biodata.models.variant.avro.ClinVar;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -225,9 +225,9 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         // Execute query
         VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
 
-        if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResult())) {
+        if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResults())) {
             Map<String, ClinicalProperty.RoleInCancer> roleInCancer = roleInCancerManager.getRoleInCancer();
-            for (Variant variant : variantVariantQueryResult.getResult()) {
+            for (Variant variant : variantVariantQueryResult.getResults()) {
                 if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
                     List<ReportedEvent> reportedEvents = new ArrayList<>();
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
@@ -298,7 +298,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         // Discard variants if:
         //    1) it is present in the black list
         //    2) or its allelic depth (AD) is 1,0
-        List<Variant> variants = filterVariants(variantVariantQueryResult.getResult(), germlineSamples);
+        List<Variant> variants = filterVariants(variantVariantQueryResult.getResults(), germlineSamples);
 
         // Create reported variants if necessary
         Set<String> reportedVariantIdSet = new HashSet<>();
@@ -366,7 +366,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         // Discard variants if:
         //    1) it is present in the black list
         //    2) or its allelic depth (AD) is 1,0
-        variants = filterVariants(variantVariantQueryResult.getResult(), germlineSamples);
+        variants = filterVariants(variantVariantQueryResult.getResults(), germlineSamples);
 
         for (Variant variant : variants) {
             // Discard variant already reported
@@ -588,8 +588,8 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     }
 
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
-        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().get(studyId, query, QueryOptions.empty(), sessionId);
-        for (Panel panel : panelQueryResult.getResult()) {
+        DataResult<Panel> panelQueryResult = catalogManager.getPanelManager().search(studyId, query, QueryOptions.empty(), sessionId);
+        for (Panel panel : panelQueryResult.getResults()) {
             panels.add(panel);
         }
     }

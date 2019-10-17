@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -68,7 +67,7 @@ public class CatalogManager implements AutoCloseable {
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
 
-    private CatalogAuditManager auditManager;
+    private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
 
     private Configuration configuration;
@@ -94,8 +93,8 @@ public class CatalogManager implements AutoCloseable {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
         this.initializeAdmin();
-        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory, this.configuration);
-        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
+        authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, this.configuration);
+        auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, this.configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,

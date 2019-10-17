@@ -17,10 +17,10 @@
 package org.opencb.opencga.storage.server.rest;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
@@ -104,7 +104,7 @@ public class FileRestWebService extends GenericRestWebService {
 //                    options.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
 
-                    QueryResult queryResult;
+                    DataResult queryResult;
                     if (histogram) {
                         queryResult = dbAdaptor.coverage(Paths.get(path), new Region(region), interval);
                     } else {

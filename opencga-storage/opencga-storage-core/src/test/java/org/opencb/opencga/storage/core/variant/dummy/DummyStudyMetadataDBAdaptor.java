@@ -20,8 +20,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SequenceWriter;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.CohortMetadataDBAdaptor;
@@ -76,29 +76,31 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options) {
+    public DataResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options) {
         if (STUDY_CONFIGURATIONS_BY_NAME.containsKey(studyName)) {
-            return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(STUDY_CONFIGURATIONS_BY_NAME.get(studyName).newInstance()));
+            return new DataResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(STUDY_CONFIGURATIONS_BY_NAME.get(studyName).newInstance()), 1);
         } else {
-            return new QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
+            return new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), 0);
         }
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public DataResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         if (STUDY_CONFIGURATIONS_BY_ID.containsKey(studyId)) {
-            return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(STUDY_CONFIGURATIONS_BY_ID.get(studyId).newInstance()));
+            return new DataResult<>(0, Collections.emptyList(), 1,
+                    Collections.singletonList(STUDY_CONFIGURATIONS_BY_ID.get(studyId).newInstance()), 1);
         } else {
-            return new QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
+            return new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), 0);
         }
     }
 
     @Override
-    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         STUDY_CONFIGURATIONS_BY_ID.put(studyConfiguration.getId(), studyConfiguration.newInstance());
         STUDY_CONFIGURATIONS_BY_NAME.put(studyConfiguration.getName(), studyConfiguration.newInstance());
 
-        return new QueryResult();
+        return new DataResult();
 
     }
 

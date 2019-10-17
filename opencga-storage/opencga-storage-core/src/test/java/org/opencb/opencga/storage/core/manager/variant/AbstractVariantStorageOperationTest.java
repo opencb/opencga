@@ -142,7 +142,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 //        Policies policies = new Policies();
 //        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null).first();
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectAlias = "p1";
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
@@ -207,7 +207,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected Cohort getDefaultCohort(String studyId) throws CatalogException {
-        return catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
+        return catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 DEFAULT_COHORT), new QueryOptions(), sessionId).first();
     }
 
@@ -250,7 +250,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), path)
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
 
-        File transformedFile = catalogManager.getFileManager().get(studyId, searchQuery, new QueryOptions(), sessionId).first();
+        File transformedFile = catalogManager.getFileManager().search(studyId, searchQuery, new QueryOptions(), sessionId).first();
 
         List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
                 .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
@@ -341,7 +341,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         for (File inputFile : expectedLoadedFiles) {
             inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
             assertNotNull(inputFile.getIndex().getTransformedFile());
-            String transformedFileId = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
+            String transformedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                     inputFile.getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
 
             File transformedFile = catalogManager.getFileManager().get(studyFqn, transformedFileId, new QueryOptions(), sessionId).first();
@@ -359,14 +359,14 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     protected void checkEtlResults(String studyId, List<StoragePipelineResult> etlResults, String expectedStatus) throws CatalogException {
         for (StoragePipelineResult etlResult : etlResults) {
-            File input = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.URI.key(),
+            File input = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.URI.key(),
                     etlResult.getInput()), null, sessionId).first();
             String indexedFileId;
             if (input.getRelatedFiles().isEmpty()) {
                 indexedFileId = input.getId();
             } else {
                 long indexedFileUid = input.getRelatedFiles().get(0).getFile().getUid();
-                indexedFileId = catalogManager.getFileManager().get(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
+                indexedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
             assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getIndex().getStatus().getName());

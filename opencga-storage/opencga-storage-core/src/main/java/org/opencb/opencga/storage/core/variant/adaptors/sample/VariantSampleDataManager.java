@@ -5,9 +5,9 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -38,13 +38,13 @@ public class VariantSampleDataManager {
 
     }
 
-    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
+    public final DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
         int sampleLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
         return getSampleData(variant, study, options, sampleLimit);
     }
 
-    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
+    public final DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
 
         Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
@@ -75,7 +75,7 @@ public class VariantSampleDataManager {
         return getSampleData(variant, study, options, includeSamples, studyWithGts, genotypes, merge, sampleLimit);
     }
 
-    protected QueryResult<VariantSampleData> getSampleData(
+    protected DataResult<VariantSampleData> getSampleData(
             String variant, String study, QueryOptions options, List<String> includeSamples, boolean studyWithGts, Set<String> genotypes,
             boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
@@ -118,7 +118,7 @@ public class VariantSampleDataManager {
             if (result.getNumResults() == 0) {
                 throw VariantQueryException.variantNotFound(variant);
             }
-            dbTime += result.getDbTime();
+            dbTime += result.getTime();
             queries++;
             Variant v = result.first();
 
@@ -186,8 +186,8 @@ public class VariantSampleDataManager {
         }
 
 //        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
-        return new QueryResult<>(variant, dbTime, 1, 1, null, null,
-                Collections.singletonList(new VariantSampleData(variant, study, gtMap, files, stats)));
+        return new DataResult<>(dbTime, Collections.emptyList(), 1,
+                Collections.singletonList(new VariantSampleData(variant, study, gtMap, files, stats)), 1);
     }
 
     protected final String normalizeGt(String gt) {

@@ -111,9 +111,9 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             List<Document> interpretationList;
             try {
                 if (user != null) {
-                    interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions, user).getResult();
+                    interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions, user).getResults();
                 } else {
-                    interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions).getResult();
+                    interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the interpretations associated to the clinical analyses: {}", e.getMessage(), e);

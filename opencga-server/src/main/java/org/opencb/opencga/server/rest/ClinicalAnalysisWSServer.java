@@ -16,33 +16,18 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.*;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.commons.Analyst;
-import org.opencb.biodata.models.commons.Software;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
+import io.swagger.annotations.Api;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -157,7 +142,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            query.remove("clinicalAnalyses");
 //
 //            List<String> analysisList = getIdList(clinicalAnalysisStr);
-//            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyId, analysisList, query, queryOptions, silent, sessionId);
+//            List<DataResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyId, analysisList, query, queryOptions, silent, sessionId);
 //            return createOkResponse(analysisResult);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
@@ -197,7 +182,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //        try {
 //            query.remove("study");
 //
-//            QueryResult<ClinicalAnalysis> queryResult;
+//            DataResult<ClinicalAnalysis> queryResult;
 //            if (count) {
 //                queryResult = clinicalManager.count(studyId, query, sessionId);
 //            } else {
@@ -237,7 +222,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            query.remove("study");
 //            query.remove("fields");
 //
-//            QueryResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
+//            DataResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
 //            return createOkResponse(result);
 //        } catch (Exception e) {
 //            return createErrorResponse(e);

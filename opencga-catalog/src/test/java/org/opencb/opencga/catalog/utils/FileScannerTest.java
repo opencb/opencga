@@ -20,9 +20,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -32,7 +32,10 @@ import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.*;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -62,7 +65,7 @@ public class FileScannerTest {
     public void setUp() throws IOException, CatalogException {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
@@ -102,10 +105,12 @@ public class FileScannerTest {
 
     @Test
     public void testDeleteExisting() throws IOException, CatalogException {
+        DataResult<File> queryResult;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
+        }
 
-        QueryResult<File> queryResult = catalogManager.getFileManager().upload(study.getFqn(),
-                CatalogManagerTest.createDebugFile().toURI(), new File().setPath(folder.getPath() + "file1.txt"), false,
-                false, sessionIdUser);
         File file = queryResult.first();
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
@@ -117,37 +122,41 @@ public class FileScannerTest {
     }
 
     public File getFile(long id) throws CatalogException {
-        return catalogManager.getFileManager().get(String.valueOf(study.getFqn()), new Query(FileDBAdaptor.QueryParams.UID.key(), id)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY)
-                , null, sessionIdUser)
+        return catalogManager.getFileManager().search(String.valueOf(study.getFqn()), new Query(FileDBAdaptor.QueryParams.UID.key(), id)
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY), null, sessionIdUser)
                 .first();
     }
 
     @Test
     public void testDeleteTrashed() throws IOException, CatalogException {
-        QueryResult<File> queryResult = catalogManager.getFileManager().upload(study.getFqn(),
-                CatalogManagerTest.createDebugFile().toURI(), new File().setPath(folder.getPath() + "file1.txt"), false,
-                false, sessionIdUser);
+        DataResult<File> queryResult;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
+        }
         File file = queryResult.first();
         catalogManager.getFileManager().delete(study.getFqn(),
                 new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(study.getFqn(),
-                new Query()
-                        .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
-                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
-                new QueryOptions(), sessionIdUser);
-        file = fileQueryResult.first();
+        DataResult<File> fileDataResult = catalogManager.getFileManager().search(study.getFqn(), new Query()
+                .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"), new QueryOptions(), sessionIdUser);
+        file = fileDataResult.first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());
     }
 
     @Test
     public void testReplaceExisting() throws IOException, CatalogException {
         // Create and register file1.txt and s/file2.txt
-        File file = catalogManager.getFileManager().upload(study.getFqn(), CatalogManagerTest.createDebugFile().toURI(),
-                new File().setPath(folder.getPath() + "file1.txt"), false, false, true, true, sessionIdUser).first();
-        catalogManager.getFileManager().upload(study.getFqn(), CatalogManagerTest.createDebugFile().toURI(),
-                new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, true, sessionIdUser).first();
+        File file;
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "file1.txt"), false, true, true, sessionIdUser).first();
+        }
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
+            catalogManager.getFileManager().upload(study.getFqn(), inputStream,
+                    new File().setPath(folder.getPath() + "s/file2.txt"), false, true, true, sessionIdUser).first();
+        }
 
         // Create same file structure, and replace
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
@@ -182,7 +191,7 @@ public class FileScannerTest {
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        List<File> files = fileScanner.registerFiles(this.folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionIdUser);
         Predicate<URI> uriPredicate = uri -> uri.getPath().endsWith("file1.txt") || uri.getPath().endsWith("file2.txt");
-        List<File> files = fileScanner.scan(this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, -1, sessionIdUser);
+        List<File> files = fileScanner.scan(this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, sessionIdUser);
 
         assertEquals(2, files.size());
         for (File file : files) {
@@ -206,7 +215,7 @@ public class FileScannerTest {
 
         URI studyUri = study.getUri();
         CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
-        File root = catalogManager.getFileManager().get(study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
+        File root = catalogManager.getFileManager().search(study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());

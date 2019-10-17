@@ -16,20 +16,19 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 24/05/16.
  */
-public class JobClient extends CatalogClient<Job, JobAclEntry> {
+public class JobClient extends CatalogClient<Job> {
 
     private static final String JOBS_URL = "jobs";
 
@@ -38,10 +37,9 @@ public class JobClient extends CatalogClient<Job, JobAclEntry> {
 
         this.category = JOBS_URL;
         this.clazz = Job.class;
-        this.aclClass = JobAclEntry.class;
     }
 
-    public QueryResponse<Job> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
+    public DataResponse<Job> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
         if (bodyParams == null || bodyParams.size() == 0) {
             throw new ClientException("Missing body parameters");
         }
@@ -51,10 +49,10 @@ public class JobClient extends CatalogClient<Job, JobAclEntry> {
         return execute(JOBS_URL, "create", params, POST, Job.class);
     }
 
-    public QueryResponse<Job> visit(String jobId, Query query) throws IOException {
+    public DataResponse<Job> visit(String jobId, Query query) throws IOException {
         return execute(JOBS_URL, jobId, "visit", query, GET, Job.class);
     }
-    public QueryResponse<Job> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+    public DataResponse<Job> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(JOBS_URL, "groupBy", params, GET, Job.class);
     }

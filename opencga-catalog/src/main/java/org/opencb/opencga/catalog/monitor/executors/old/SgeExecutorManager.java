@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.catalog.monitor.executors.old;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.executors.SgeManager;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ public class SgeExecutorManager implements ExecutorManager {
 
     @Deprecated
     @Override
-    public QueryResult<Job> run(Job job) throws Exception {
+    public DataResult<Job> run(Job job) throws Exception {
         // TODO: Lock job before submit. Avoid double submission
 //        SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
 //                -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());

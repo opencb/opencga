@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 
 import java.util.List;
@@ -59,13 +59,13 @@ public class DelegatedVariantDBIterator extends VariantDBIterator {
     }
 
     @Override
-    public QueryResult<Variant> toQueryResult() {
-        return delegated.toQueryResult();
+    public DataResult<Variant> toDataResult() {
+        return delegated.toDataResult();
     }
 
     @Override
-    public VariantQueryResult<Variant> toQueryResult(Map<String, List<String>> samples) {
-        return delegated.toQueryResult(samples);
+    public VariantQueryResult<Variant> toDataResult(Map<String, List<String>> samples) {
+        return delegated.toDataResult(samples);
     }
 
     @Override

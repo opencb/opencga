@@ -20,15 +20,13 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -85,6 +83,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        DELETED("deleted", BOOLEAN, ""),
+
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
@@ -134,54 +134,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         }
     }
 
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        NAME(QueryParams.NAME.key()),
-        DATE_OF_BIRTH(QueryParams.DATE_OF_BIRTH.key()),
-        KARYOTYPIC_SEX(QueryParams.KARYOTYPIC_SEX.key()),
-        SEX(QueryParams.SEX.key()),
-        LOCATION(QueryParams.LOCATION.key()),
-        MULTIPLES(QueryParams.MULTIPLES.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
-        SAMPLES(QueryParams.SAMPLES.key()),
-        FATHER_ID(QueryParams.FATHER_UID.key()),
-        MOTHER_ID(QueryParams.MOTHER_UID.key()),
-        ETHNICITY(QueryParams.ETHNICITY.key()),
-        POPULATION_DESCRIPTION(QueryParams.POPULATION_DESCRIPTION.key()),
-        POPULATION_NAME(QueryParams.POPULATION_NAME.key()),
-        POPULATION_SUBPOPULATION(QueryParams.POPULATION_SUBPOPULATION.key()),
-        PHENOTYPES(QueryParams.PHENOTYPES.key()),
-        DISORDERS(QueryParams.DISORDERS.key()),
-        LIFE_STATUS(QueryParams.LIFE_STATUS.key()),
-        AFFECTATION_STATUS(QueryParams.AFFECTATION_STATUS.key()),
-        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new LinkedMap();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
-    default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), sampleId)).first() > 0;
+    default boolean exists(long individualId) throws CatalogDBException {
+        return count(new Query(QueryParams.UID.key(), individualId)).first() > 0;
     }
 
     default void checkId(long individualId) throws CatalogDBException {
@@ -194,37 +148,32 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         }
     }
 
-    void nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
 
-    default QueryResult<Individual> insert(long studyId, Individual individual, QueryOptions options) throws CatalogDBException {
-        individual.setAnnotationSets(Collections.emptyList());
-        return insert(studyId, individual, Collections.emptyList(), options);
-    }
-
-    QueryResult<Individual> insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException;
 
-    QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+    OpenCGAResult<Individual> get(long individualId, QueryOptions options, String userId)
             throws CatalogDBException, CatalogAuthorizationException;
 
 //    @Deprecated
-//    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
+//    OpenCGAResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 
-//    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+//    OpenCGAResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
 //    @Deprecated
-//    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
+//    OpenCGAResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
 
-//    QueryResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
+//    OpenCGAResult<AnnotationSet> annotate(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
 //            CatalogDBException;
 
-//    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
+//    OpenCGAResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
 
     long getStudyId(long individualId) throws CatalogDBException;
 
-    void updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -232,8 +181,9 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

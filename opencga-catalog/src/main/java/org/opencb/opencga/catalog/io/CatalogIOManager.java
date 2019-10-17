@@ -131,7 +131,9 @@ public abstract class CatalogIOManager {
 
     protected abstract void checkUriScheme(URI uri) throws CatalogIOException;
 
-    protected abstract void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException;
+    public abstract void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException;
+
+    public abstract void checkWritableUri(URI uri) throws CatalogIOException;
 
     public abstract boolean exists(URI uri);
 
@@ -193,8 +195,7 @@ public abstract class CatalogIOManager {
         }
     }
 
-    @Deprecated
-    public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOException {
+    private URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOException {
         checkParam(studyId);
         try {
             return getProjectUri(userId, projectId).resolve(new URI(null, studyId.endsWith("/") ? studyId : (studyId + "/"), null));
@@ -283,14 +284,17 @@ public abstract class CatalogIOManager {
         return exists(getProjectUri(userId, projectId));
     }
 
-    public URI createStudy(String userId, String projectId, String studyId) throws CatalogIOException {
+    public URI getStudyURI(String userId, String projectId, String studyId) throws CatalogIOException {
         checkParam(studyId);
 
         URI projectUri = getProjectUri(userId, projectId);
         checkDirectoryUri(projectUri, true);
 
-        URI studyUri = getStudyUri(userId, projectId, studyId);
+        return getStudyUri(userId, projectId, studyId);
+    }
 
+    public URI createStudy(String userId, String projectId, String studyId) throws CatalogIOException {
+        URI studyUri = getStudyUri(userId, projectId, studyId);
         return createStudy(studyUri);
     }
 

@@ -3,13 +3,13 @@ package org.opencb.opencga.catalog.managers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.models.*;
 
 import java.io.DataOutputStream;
@@ -61,9 +61,9 @@ public class AbstractManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null);
 
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
@@ -95,10 +95,10 @@ public class AbstractManagerTest extends GenericTest {
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
-        catalogManager.getFileManager().update(studyFqn, testFolder.getPath(), new ObjectMap("attributes", attributes), new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getFileManager().update(studyFqn, testFolder.getPath(),
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
+        DataResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_1K.txt.gz"), false, StringUtils.randomString(1000), null, sessionIdUser);
 
         File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), null, sessionIdUser).first();
@@ -107,10 +107,10 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "fileTest1k");
         attributes.put("numValue", "10");
         attributes.put("boolean", false);
-        catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(), new ObjectMap("attributes", attributes), new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(),
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
+        DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_0.5K.txt").setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION), false,
                 StringUtils.randomString(500), null, sessionIdUser);
 
@@ -120,10 +120,10 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "fileTest05k");
         attributes.put("numValue", 5);
         attributes.put("boolean", true);
-        catalogManager.getFileManager().update(studyFqn, fileTest05k.getPath(), new ObjectMap("attributes", attributes), new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getFileManager().update(studyFqn, fileTest05k.getPath(),
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
+        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn,
                 new File().setPath(testFolder.getPath() + "test_0.1K.png").setFormat(File.Format.IMAGE), false,
                 StringUtils.randomString(100), null, sessionIdUser);
 
@@ -133,8 +133,8 @@ public class AbstractManagerTest extends GenericTest {
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
-        catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new ObjectMap("attributes", attributes), new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getFileManager().update(studyFqn, test01k.getPath(),
+                new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
         List<Variable> variables = new ArrayList<>();
         variables.addAll(Arrays.asList(
@@ -198,9 +198,8 @@ public class AbstractManagerTest extends GenericTest {
         sample.setAnnotationSets(Collections.emptyList());
         s_9 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), sessionIdUser).first().getId();
 
-        catalogManager.getFileManager().update(studyFqn, test01k.getPath(),
-                new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
+                        .setSamples(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), sessionIdUser);
     }
 
 
@@ -228,6 +227,32 @@ public class AbstractManagerTest extends GenericTest {
         os.close();
 
         return Paths.get(fileTestName).toFile();
+    }
+
+    public static String createRandomString(int lines) {
+        StringBuilder stringBuilder = new StringBuilder(lines);
+        for (int i = 0; i < 100; i++) {
+            stringBuilder.append(i + ", ");
+        }
+        for (int i = 0; i < lines; i++) {
+            stringBuilder.append(StringUtils.randomString(500));
+            stringBuilder.append("\n");
+        }
+        return stringBuilder.toString();
+    }
+
+    public static String getDummyVCFContent() {
+        return "##fileformat=VCFv4.0\n" +
+                "##fileDate=20090805\n" +
+                "##source=myImputationProgramV3.1\n" +
+                "##reference=1000GenomesPilot-NCBI36\n" +
+                "##phasing=partial\n" +
+                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNA00001\tNA00002\tNA00003\n" +
+                "20\t14370\trs6054257\tG\tA\t29\tPASS\tNS=3;DP=14;AF=0.5;DB;H2\tGT:GQ:DP:HQ\t0|0:48:1:51,51\t1|0:48:8:51,51\t1/1:43:5:.,.\n" +
+                "20\t17330\t.\tT\tA\t3\tq10\tNS=3;DP=11;AF=0.017\tGT:GQ:DP:HQ\t0|0:49:3:58,50\t0|1:3:5:65,3\t0/0:41:3\n" +
+                "20\t1110696\trs6040355\tA\tG,T\t67\tPASS\tNS=2;DP=10;AF=0.333,0.667;AA=T;DB\tGT:GQ:DP:HQ\t1|2:21:6:23,27\t2|1:2:0:18,2\t2/2:35:4\n" +
+                "20\t1230237\t.\tT\t.\t47\tPASS\tNS=3;DP=13;AA=T\tGT:GQ:DP:HQ\t0|0:54:7:56,60\t0|0:48:4:51,51\t0/0:61:2\n" +
+                "20\t1234567\tmicrosat1\tGTCT\tG,GTACT\t50\tPASS\tNS=3;DP=9;AA=G\tGT:GQ:DP\t0/1:35:4\t0/2:17:2\t1/1:40:3";
     }
 
 }

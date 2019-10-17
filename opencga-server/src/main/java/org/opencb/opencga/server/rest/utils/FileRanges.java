@@ -19,7 +19,7 @@ package org.opencb.opencga.server.rest.utils;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -54,8 +54,8 @@ public class FileRanges extends OpenCGAWSServer {
                               @QueryParam("study") String studyStr) {
 
         try {
-            QueryResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, sessionId);
-            File file = queryResult.getResult().get(0);
+            DataResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, token);
+            File file = queryResult.getResults().get(0);
 
             List<String> rangeList = headers.getRequestHeader("range");
             if (rangeList != null) {
@@ -90,7 +90,7 @@ public class FileRanges extends OpenCGAWSServer {
                         .status(Response.Status.PARTIAL_CONTENT).build();
 
             } else {
-                DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, sessionId);
+                DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, -1, -1, token);
                 return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
             }
         } catch (Exception e) {

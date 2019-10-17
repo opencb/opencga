@@ -19,8 +19,8 @@ package org.opencb.opencga.app.cli.main.executors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -224,7 +224,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-    public void createOutput(QueryResponse queryResponse) {
+    public void createOutput(DataResponse queryResponse) {
         if (queryResponse != null) {
             writer.print(queryResponse);
         }

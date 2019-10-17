@@ -22,8 +22,8 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.Job;
@@ -39,23 +39,23 @@ public class VariantClient extends AbstractParentClient {
 
     private static final String VARIANT_URL = "analysis/variant";
 
-    public static class QueryResponseMixing<T> {
+    public static class DataResponseMixing<T> {
         @JsonDeserialize(contentAs = VariantQueryResult.class)
-        private List<QueryResult<T>> response;
+        private List<DataResult<T>> response;
     }
 
     public VariantClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
-        jsonObjectMapper.addMixIn(QueryResponse.class, QueryResponseMixing.class);
+        jsonObjectMapper.addMixIn(DataResponse.class, DataResponseMixing.class);
     }
 
-    public QueryResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
+    public DataResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
         params.append("file", fileIds);
         return execute(VARIANT_URL, "index", params, GET, Job.class);
     }
 
 
-    public QueryResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
+    public DataResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params = new ObjectMap(params);
             params.putAll(options);
@@ -63,7 +63,7 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "metadata", params, GET, VariantMetadata.class);
     }
 
-    public QueryResponse<Variant> query(ObjectMap params, QueryOptions options) throws IOException {
+    public DataResponse<Variant> query(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params = new ObjectMap(params);
             params.putAll(options);
@@ -71,7 +71,7 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
-    public QueryResponse<VariantAnnotation> annotationQuery(String annotationId, ObjectMap params, QueryOptions options)
+    public DataResponse<VariantAnnotation> annotationQuery(String annotationId, ObjectMap params, QueryOptions options)
             throws IOException {
         if (options != null) {
             params = new ObjectMap(params);
@@ -81,7 +81,7 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "annotation/query", params, GET, VariantAnnotation.class);
     }
 
-    public QueryResponse<ObjectMap> annotationMetadata(String annotationId, String project, QueryOptions options)
+    public DataResponse<ObjectMap> annotationMetadata(String annotationId, String project, QueryOptions options)
             throws IOException {
         if (options != null) {
             options = new QueryOptions(options);
@@ -105,14 +105,14 @@ public class VariantClient extends AbstractParentClient {
 //        return ((VariantQueryResult<Variant>) query(params, options).getResponse().get(0));
 //    }
 
-    public QueryResponse<Long> count(ObjectMap params, QueryOptions options) throws IOException {
+    public DataResponse<Long> count(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params.putAll(options);
         }
         return execute(VARIANT_URL, "query", params, GET, Long.class);
     }
 
-    public QueryResponse<ObjectMap> genericQuery(ObjectMap params, QueryOptions options) throws IOException {
+    public DataResponse<ObjectMap> genericQuery(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
             params.putAll(options);
         }

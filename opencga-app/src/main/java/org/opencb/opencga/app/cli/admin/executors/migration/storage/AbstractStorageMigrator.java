@@ -50,7 +50,7 @@ public abstract class AbstractStorageMigrator {
                 ProjectDBAdaptor.QueryParams.FQN.key(),
                 ProjectDBAdaptor.QueryParams.ORGANISM.key(),
                 ProjectDBAdaptor.QueryParams.STUDY.key()
-        )), sessionId).getResult();
+        )), sessionId).getResults();
 
         Set<DataStore> dataStores = new HashSet<>();
         for (Project project : projects) {

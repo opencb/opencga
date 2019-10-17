@@ -30,7 +30,8 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -62,7 +63,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 //        if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
 //            checkSessionValid();
 //        }
-        QueryResponse queryResponse = null;
+        DataResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -107,14 +108,14 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             if (StringUtils.isNotEmpty(sessionId)) {
                 List<String> studies = new ArrayList<>();
 
-                QueryResponse<Project> projects = openCGAClient.getProjectClient().search(
+                DataResponse<Project> projects = openCGAClient.getProjectClient().search(
                         new Query(ProjectDBAdaptor.QueryParams.OWNER.key(), user), QueryOptions.empty());
 
-                if (projects.getResponse().get(0).getNumResults() == 0) {
+                if (projects.getResponses().get(0).getNumResults() == 0) {
                     // We try to fetch shared projects and studies instead when the user does not owe any project or study
                     projects = openCGAClient.getProjectClient().search(new Query(), QueryOptions.empty());
                 }
-                for (Project project : projects.getResponse().get(0).getResult()) {
+                for (Project project : projects.getResponses().get(0).getResults()) {
                     for (Study study : project.getStudies()) {
                         studies.add(study.getFqn());
                     }
@@ -139,7 +140,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         logoutCliSessionFile();
     }
 
-    private QueryResponse<User> create() throws CatalogException, IOException {
+    private DataResponse<User> create() throws CatalogException, IOException {
         logger.debug("Creating user...");
 
         ObjectMap params = new ObjectMap();
@@ -153,7 +154,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 usersCommandOptions.createCommandOptions.password, params);
     }
 
-    private QueryResponse<User> info() throws ClientException, IOException {
+    private DataResponse<User> info() throws ClientException, IOException {
         logger.debug("User info");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -167,14 +168,14 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.exclude);
 
-        QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
-        if (userQueryResponse.getResponse().size() == 1 && userQueryResponse.getResponse().get(0).getNumResults() == 1) {
+        DataResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
+        if (userQueryResponse.getResponses().size() == 1 && userQueryResponse.getResponses().get(0).getNumResults() == 1) {
             queryOptions.put("shared", true);
-            QueryResponse<Project> sharedProjects = openCGAClient.getUserClient().getProjects(queryOptions);
-            if (sharedProjects.getResponse().size() > 0 && sharedProjects.getResponse().get(0).getNumResults() > 0) {
-                QueryResult<User> userQueryResult = userQueryResponse.getResponse().get(0);
+            DataResponse<Project> sharedProjects = openCGAClient.getUserClient().getProjects(queryOptions);
+            if (sharedProjects.getResponses().size() > 0 && sharedProjects.getResponses().get(0).getNumResults() > 0) {
+                DataResult<User> userQueryResult = userQueryResponse.getResponses().get(0);
                 List<Project> newProjectList = Stream
-                        .concat(userQueryResult.first().getProjects().stream(), sharedProjects.first().getResult().stream())
+                        .concat(userQueryResult.first().getProjects().stream(), sharedProjects.first().getResults().stream())
                         .collect(Collectors.toList());
                 userQueryResult.first().setProjects(newProjectList);
             }
@@ -183,7 +184,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         return userQueryResponse;
     }
 
-    private QueryResponse<Project> projects() throws ClientException, IOException {
+    private DataResponse<Project> projects() throws ClientException, IOException {
         logger.debug("List all projects and studies of user");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -208,14 +209,14 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 //        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
     }
 
-    private QueryResponse<User> update() throws IOException, CatalogException {
+    private DataResponse<User> update() throws IOException, CatalogException {
         logger.debug("Updating user");
 
         ObjectMap params = loadFile(usersCommandOptions.updateCommandOptions.json);
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, null, params);
     }
 
-    private QueryResponse<User> changePassword () throws ClientException, IOException {
+    private DataResponse<User> changePassword () throws ClientException, IOException {
         return openCGAClient.getUserClient().changePassword(usersCommandOptions.changePasswordCommandOptions.password,
                 usersCommandOptions.changePasswordCommandOptions.npassword, new ObjectMap());
     }

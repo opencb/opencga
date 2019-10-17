@@ -1,7 +1,7 @@
 package org.opencb.opencga.client.rest.analysis;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.Job;
@@ -16,7 +16,7 @@ public class ToolClient extends AbstractParentClient {
         super(userId, sessionId, configuration);
     }
 
-    public QueryResponse<Job> execute(String study, ObjectMap bodyParams) throws IOException {
+    public DataResponse<Job> execute(String study, ObjectMap bodyParams) throws IOException {
         if (bodyParams == null) {
             bodyParams = new ObjectMap();
         }

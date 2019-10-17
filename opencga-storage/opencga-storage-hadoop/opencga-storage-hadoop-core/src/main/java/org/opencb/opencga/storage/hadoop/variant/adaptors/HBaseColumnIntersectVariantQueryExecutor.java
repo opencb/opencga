@@ -3,10 +3,10 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -18,8 +18,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.ALTERNATE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.REFERENCE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser.isSupportedQueryParam;
@@ -76,7 +76,7 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         throw new UnsupportedOperationException("Count not implemented in " + getClass());
     }
 
@@ -86,8 +86,8 @@ public class HBaseColumnIntersectVariantQueryExecutor extends VariantQueryExecut
      *
      * @param query    Query
      * @param options  Options
-     * @param iterator Shall the resulting object be an iterator instead of a QueryResult
-     * @return QueryResult or Iterator with the variants that matches the query
+     * @param iterator Shall the resulting object be an iterator instead of a DataResult
+     * @return DataResult or Iterator with the variants that matches the query
      */
     @Override
     protected Object getOrIterator(Query query, QueryOptions options, boolean iterator) {

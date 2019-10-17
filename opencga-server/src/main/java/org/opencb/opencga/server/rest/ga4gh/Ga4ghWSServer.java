@@ -28,10 +28,10 @@ import org.ga4gh.models.ReadAlignment;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -97,7 +97,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
         }
         try {
             BeaconResponse.Query beaconQuery = new BeaconResponse.Query(chrom, pos, allele, ref);
-            List<BeaconResponse> responses = variantManager.beacon(beaconsList, beaconQuery, sessionId);
+            List<BeaconResponse> responses = variantManager.beacon(beaconsList, beaconQuery, token);
             return Response.ok(responses, MediaType.APPLICATION_JSON).build();
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -163,7 +163,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             SearchVariantsResponse response = new SearchVariantsResponse();
             Query query = VariantStorageManager.getVariantQuery(queryOptions);
 
-            List<Variant> variants = variantManager.get(query, queryOptions, sessionId, Variant.class).getResult();
+            List<Variant> variants = variantManager.get(query, queryOptions, token, Variant.class).getResults();
             response.setNextPageToken(Integer.toString(++page));
             response.setVariants(variants);
             return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
@@ -187,12 +187,12 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             @ApiParam(value = "The end position of the range on the reference, 0-based, exclusive.") @QueryParam("end") int end,
             @ApiParam(value = "Reference genome.") @QueryParam("referenceGenome") String referenceGenome) {
         try {
-            File file = catalogManager.getFileManager().get(studyStr, fileIdStr, FileManager.EXCLUDE_FILE_ATTRIBUTES, sessionId).first();
+            File file = catalogManager.getFileManager().get(studyStr, fileIdStr, FileManager.EXCLUDE_FILE_ATTRIBUTES, token).first();
             java.nio.file.Path referencePath = null;
 
             if (file.getFormat() == File.Format.CRAM) {
                 if (org.apache.commons.lang3.StringUtils.isNotEmpty(referenceGenome)) {
-                    referencePath = Paths.get(catalogManager.getFileManager().get(studyStr, referenceGenome, FileManager.INCLUDE_FILE_URI_PATH, sessionId).first().getUri().getPath());
+                    referencePath = Paths.get(catalogManager.getFileManager().get(studyStr, referenceGenome, FileManager.INCLUDE_FILE_URI_PATH, token).first().getUri().getPath());
                 } else if (ListUtils.isNotEmpty(file.getRelatedFiles())) {
                     for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
                         if (relatedFile.getRelation() == File.RelatedFile.Relation.REFERENCE_GENOME) {
@@ -204,11 +204,11 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                     if (referencePath == null) {
                         // Look for a reference genome in the study
                         Query referenceQuery = new Query(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.REFERENCE_GENOME);
-                        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyStr, referenceQuery, FileManager.INCLUDE_FILE_URI_PATH, sessionId);
-                        if (fileQueryResult.getNumResults() == 0 || fileQueryResult.getNumResults() > 1) {
+                        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyStr, referenceQuery, FileManager.INCLUDE_FILE_URI_PATH, token);
+                        if (fileDataResult.getNumResults() == 0 || fileDataResult.getNumResults() > 1) {
                             throw new CatalogException("Missing referenceGenome field for CRAM file");
                         }
-                        referencePath = Paths.get(fileQueryResult.first().getUri().getPath());
+                        referencePath = Paths.get(fileDataResult.first().getUri().getPath());
                     }
                 }
             }
@@ -228,7 +228,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                     urls.add(new ObjectMap()
                             .append("url", url)
                             .append("headers", new ObjectMap()
-                                    .append("Authorization", "Bearer " + sessionId)
+                                    .append("Authorization", "Bearer " + token)
                                     .append("Range", "bytes=" + byteRange)
                             )
                             .append("class", "body")
@@ -303,10 +303,10 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
 
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-            QueryResult<ReadAlignment> queryResult = alignmentStorageManager
-                    .query("", request.getReadGroupIds().get(0), query, queryOptions, sessionId);
+            DataResult<ReadAlignment> queryResult = alignmentStorageManager
+                    .query("", request.getReadGroupIds().get(0), query, queryOptions, token);
 
-            response.setAlignments(queryResult.getResult());
+            response.setAlignments(queryResult.getResults());
             response.setNextPageToken(Integer.toString(++page));
 
             return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));

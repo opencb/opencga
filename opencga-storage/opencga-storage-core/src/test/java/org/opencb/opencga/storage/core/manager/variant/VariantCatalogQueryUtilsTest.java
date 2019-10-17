@@ -59,7 +59,7 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.Type.FULL, null, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.Type.FULL, null).first();
 
         sessionId = catalog.getUserManager().login("user", "1234");
         catalog.getProjectManager().create("p1", "p1", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
@@ -113,7 +113,7 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static void createSample(String name, String individualName) throws CatalogException {
-        samples.add(catalog.getSampleManager().create("s1", name, null, null, null, false, new Individual(individualName, individualName, null, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, null, null, sessionId).first());
+        samples.add(catalog.getSampleManager().create("s1", new Sample().setId(name).setIndividualId(individualName), null, sessionId).first());
     }
 
     public static File createFile(String path) throws CatalogException {
@@ -121,7 +121,7 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static File createFile(String path, boolean indexed) throws CatalogException {
-        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, null, null, 10, -1, null, -1, null, null, true, "", null, sessionId).first();
+        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, null, 10, null, -1, null, null, true, "", null, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
             catalog.getFileManager().updateFileIndexStatus(file, Status.READY, "", release, sessionId);

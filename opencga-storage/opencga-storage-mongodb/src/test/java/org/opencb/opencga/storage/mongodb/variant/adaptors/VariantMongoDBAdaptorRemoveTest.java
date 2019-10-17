@@ -23,10 +23,10 @@ import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -132,7 +132,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
                 assertFalse(entry.getValue().getStudyId().equals(studyMetadata.getId() + ""));
             }
         }
-        QueryResult<Long> allVariants = dbAdaptor.count(new Query());
+        DataResult<Long> allVariants = dbAdaptor.count(new Query());
         assertEquals(numVariants, allVariants.first().intValue());
     }
 
@@ -144,7 +144,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
                 assertFalse(entry.getValue().getStudyId().equals(studyMetadata.getId() + ""));
             }
         }
-        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions());
+        DataResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions());
         assertEquals(0, allVariants.getNumTotalResults());
     }
 
@@ -159,7 +159,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
                         ().getStats().keySet().contains(deletedCohort));
             }
         }
-        QueryResult<Long> allVariants = dbAdaptor.count(new Query());
+        DataResult<Long> allVariants = dbAdaptor.count(new Query());
         assertEquals(numVariants, allVariants.first().intValue());
     }
 

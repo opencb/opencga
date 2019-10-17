@@ -17,13 +17,12 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
 import org.junit.*;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStorageMetadataSynchronizer;
@@ -79,7 +78,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new FileUtils(catalogManager);
 
-        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null, null).first();
+        User user = catalogManager.getUserManager().create(userId, "User", "user@email.org", "user", "ACME", null, Account.Type.FULL, null).first();
 
         sessionId = catalogManager.getUserManager().login(userId, "user");
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
@@ -143,9 +142,10 @@ public class CatalogStorageMetadataSynchronizerTest {
                     Collections.emptyMap());
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add(file.getName());
-            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResult().stream().map(Sample::getId).collect(Collectors.toList());
+            List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-            catalogManager.getCohortManager().update(studyId, cohortId, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples), true, null, sessionId);
+            catalogManager.getCohortManager().update(studyId, cohortId,
+                    new CohortUpdateParams().setSamples(samples), true, null, sessionId);
         }
         return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
     }
@@ -184,7 +184,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         StudyMetadata sc = studyConfigurationFactory.getStudyMetadata(studyId);
 
         List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId)
-                .getResult()
+                .getResults()
                 .stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());

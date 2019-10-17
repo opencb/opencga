@@ -16,14 +16,10 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -38,8 +34,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 
@@ -59,9 +55,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
     public static final String ANNOTATION_SETS_ID = "annotationSets.id";
     public static final String ANNOTATION_SETS_VARIABLE_SET_ID = "annotationSets.variableSetId";
 
-    // Variables used to store additional information in the ObjectMap parameters variable containing the actual action to be performed
-    // over the different AnnotationSets
-    public static final String ANNOTATION_SET_ACTION = "_annotationSetAction";
     public enum Action {
         CREATE,
         UPDATE,
@@ -74,194 +67,12 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
-    @Override
-    public WriteResult delete(String studyStr, Query query, ObjectMap params, String sessionId) {
-        return null;
-    }
-
-//    /**
-//     * General method to create an annotation set that will have to be implemented. The managers implementing it will have to check the
-//     * validity of the sessionId and permissions and call the general createAnnotationSet implemented above.
-//     *
-//     * @param id                id of the entity being annotated.
-//     * @param studyStr          study string.
-//     * @param variableSetId     variable set id or name under which the annotation will be made.
-//     * @param annotationSetName annotation set name that will be used for the annotation.
-//     * @param annotations       map of annotations to create the annotation set.
-//     * @param sessionId         session id of the user asking for the operation.
-//     * @return a queryResult object with the annotation set created.
-//     * @throws CatalogException when the session id is not valid, the user does not have permissions or any of the annotation
-//     *                          parameters are not valid.
-//     */
-//    @Deprecated
-//    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, String variableSetId,
-//                                                          String annotationSetName, Map<String, Object> annotations, String sessionId)
-//            throws CatalogException {
-//        MyResource resource = getUid(id, studyStr, sessionId);
-////        MyResourceId variableSetResource = catalogManager.getStudyManager().getVariableSetId(variableSetId, studyStr, sessionId);
-//        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, annotations, Collections.emptyMap());
-//        ObjectMap parameters;
-//        ObjectMapper jsonObjectMapper = new ObjectMapper();
-//
-//        try {
-//            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
-//            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
-//        } catch (JsonProcessingException e) {
-//            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
-//            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
-//        }
-//
-//        QueryResult<R> update = update(studyStr, id, parameters, QueryOptions.empty(), sessionId);
-//        if (update.getNumResults() == 0) {
-//            return new QueryResult<>("Create annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
-//                    Collections.emptyList());
-//        } else {
-//            Query query = new Query("uid", resource.getResource().getUid());
-//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
-//
-//            QueryResult<Annotable> queryResult = (QueryResult<Annotable>) get(studyStr, query, options, sessionId);
-//            return new QueryResult<>("Create annotation set", update.getDbTime(), queryResult.first().getAnnotationSets().size(),
-//                    queryResult.first().getAnnotationSets().size(), queryResult.getWarningMsg(), queryResult.getErrorMsg(),
-//                    queryResult.first().getAnnotationSets());
-//        }
-//
-//    }
-
-    /**
-     * Update the values of the annotation set.
-     *
-     * @param id                id of the entity storing the annotation.
-     * @param studyStr          study string.
-     * @param annotationSetName annotation set name of the annotation that will be returned.
-     * @param newAnnotations    map with the annotations that will have to be changed with the new values.
-     * @param sessionId         session id of the user asking for the annotation.
-     * @return a queryResult object containing the annotation set after the update.
-     * @throws CatalogException when the session id is not valid, the user does not have permissions to update the annotationSet,
-     *                          the newAnnotations are not correct or the annotationSetName is not valid.
-     */
-    public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
-                                                          Map<String, Object> newAnnotations, String sessionId) throws CatalogException {
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, null, newAnnotations, Collections.emptyMap());
-        ObjectMap parameters;
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
-
-        try {
-            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
-            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
-        } catch (JsonProcessingException e) {
-            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
-            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
-        }
-
-        QueryResult<R> update = update(studyStr, id, parameters, QueryOptions.empty(), sessionId);
-        if (update.getNumResults() == 0) {
-            return new QueryResult<>("Update annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
-                    Collections.emptyList());
-        } else {
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
-            QueryResult<Annotable> queryResult = (QueryResult<Annotable>) internalGet(study.getUid(), id, options, userId);
-            return new QueryResult<>("Update annotation set", update.getDbTime(), queryResult.first().getAnnotationSets().size(),
-                    queryResult.first().getAnnotationSets().size(), queryResult.getWarningMsg(), queryResult.getErrorMsg(),
-                    queryResult.first().getAnnotationSets());
-        }
-    }
-
-    /**
-     * Deletes the annotation set.
-     *
-     * @param id                id of the entity storing the annotation.
-     * @param studyStr          study string.
-     * @param annotationSetName annotation set name of the annotation to be deleted.
-     * @param sessionId         session id of the user asking for the annotation.
-     * @return a queryResult object with the annotationSet that has been deleted.
-     * @throws CatalogException when the session id is not valid, the user does not have permissions to delete the annotationSet or
-     *                          the annotation set name is not valid.
-     */
-    @Deprecated
-    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
-                                                          String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(annotationSetName)) {
-            throw new CatalogException("Missing annotationSetName field");
-        }
-
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATION_SETS,
-                Collections.singleton(new AnnotationSet().setId(annotationSetName)));
-        QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS,
-                ParamUtils.UpdateAction.REMOVE));
-
-        QueryResult<R> update = update(studyStr, id, params, options, sessionId);
-        return new QueryResult<>("Delete annotationSet", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
-                Collections.emptyList());
-    }
-
-    /**
-     * Deletes (or puts to the default value if mandatory) a list of annotations from the annotation set.
-     *
-     * @param id                id of the entity storing the annotation.
-     * @param studyStr          study string.
-     * @param annotationSetName annotation set name of the annotation where the update will be made.
-     * @param annotations       comma separated list of annotation names that will be deleted or updated to the default values.
-     * @param sessionId         session id of the user asking for the annotation.
-     * @return a queryResult object with the annotation set after applying the changes.
-     * @throws CatalogException when the session id is not valid, the user does not have permissions to delete the annotationSet,
-     *                          the annotation set name is not valid or any of the annotation names are not valid.
-     */
-    @Deprecated
-    public QueryResult<AnnotationSet> deleteAnnotations(String id, @Nullable String studyStr, String annotationSetName, String annotations,
-                                                        String sessionId) throws CatalogException {
-        if (StringUtils.isEmpty(annotations)) {
-            throw new CatalogException("Missing annotations field");
-        }
-        if (StringUtils.isEmpty(annotationSetName)) {
-            throw new CatalogException("Missing annotationSetName field");
-        }
-
-        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetName, "",
-                new ObjectMap("remove", annotations)));
-        QueryOptions options = new QueryOptions();
-        options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, ParamUtils.CompleteUpdateAction.REMOVE));
-
-        QueryResult<R> update = update(studyStr, id, params, new QueryOptions(), sessionId);
-        return new QueryResult<>("Delete annotation", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
-                Collections.emptyList());
-    }
-
-    //    private Map<String, Map<String, QueryParam.Type>> getVariableTypeMap(long studyId) throws CatalogDBException {
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
-//        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(studyId, options);
-//
-//        if (studyQueryResult.getNumResults() == 0) {
-//            throw new CatalogDBException("Unexpected error: Study id " + studyId + " not found");
-//        }
-//
-//        Map<String, Map<String, QueryParam.Type>> variableTypeMap = new HashMap<>();
-//        List<VariableSet> variableSets = studyQueryResult.first().getVariableSets();
-//        if (variableSets != null) {
-//            for (VariableSet variableSet : variableSets) {
-//                variableTypeMap.put(String.valueOf(variableSet.getId()), getVariableMap(variableSet));
-//            }
-//        }
-//
-//        return variableTypeMap;
-//    }
-
-    protected List<VariableSet> validateNewAnnotationSetsAndExtractVariableSets(long studyId, List<AnnotationSet> annotationSetList)
+    protected void validateNewAnnotationSets(List<VariableSet> variableSetList, List<AnnotationSet> annotationSetList)
             throws CatalogException {
         if (annotationSetList == null || annotationSetList.isEmpty()) {
-            return Collections.emptyList();
+            return;
         }
 
-        // Get all variableSets
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(studyId,
-                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-        if (studyQueryResult.getNumResults() == 0) {
-            throw new CatalogException("Unexpected error: Study " + studyId + " not found");
-        }
-
-        List<VariableSet> variableSetList = studyQueryResult.first().getVariableSets();
         if (variableSetList == null || variableSetList.isEmpty()) {
             throw new CatalogException("Impossible annotating variables from a study without VariableSets defined");
         }
@@ -281,7 +92,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
             // Get the variable set
             if (!variableSetMap.containsKey(annotationSet.getVariableSetId())) {
-                throw new CatalogException("VariableSetId " + annotationSet.getVariableSetId() + " not found in study " + studyId);
+                throw new CatalogException("VariableSetId " + annotationSet.getVariableSetId() + " not found in variable set list");
             }
             VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
 
@@ -291,21 +102,19 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             // Add the annotation to the list of annotations
             consideredAnnotationSetsList.add(annotationSet);
         }
-
-        return variableSetList;
     }
 
-    public <T extends Annotable> List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(
-            Study study, T entry, ObjectMap parameters, QueryOptions options, VariableSet.AnnotableDataModels annotableEntity,
-            AnnotationSetDBAdaptor dbAdaptor, String user) throws CatalogException {
+    public  <T extends Annotable> void checkUpdateAnnotations(Study study, T entry, ObjectMap parameters, QueryOptions options,
+                                       VariableSet.AnnotableDataModels annotableEntity, AnnotationSetDBAdaptor dbAdaptor, String user)
+            throws CatalogException {
 
-        List<VariableSet> variableSetList = null;
+        List<VariableSet> variableSetList = study.getVariableSets();
         boolean confidentialPermissionsChecked = false;
 
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
 
         // Create or remove annotation sets
-        if (parameters.containsKey(ANNOTATION_SETS)) {
+        if (actionMap.containsKey(ANNOTATION_SETS)) {
             Object annotationSetsObject = parameters.get(ANNOTATION_SETS);
             if (annotationSetsObject != null) {
                 if (annotationSetsObject instanceof List) {
@@ -319,18 +128,6 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                     if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
                         /* We need to validate that the new annotationSets are fine to be stored */
 
-                        // Obtain all the variable sets from the study
-                        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(study.getUid(),
-                                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
-                        if (studyQueryResult.getNumResults() == 0) {
-                            throw new CatalogException("Internal error: Study " + study.getFqn()
-                                    + " not found. Update could not be performed.");
-                        }
-                        variableSetList = studyQueryResult.first().getVariableSets();
-                        if (variableSetList == null || variableSetList.isEmpty()) {
-                            throw new CatalogException("Cannot annotate anything until at least a VariableSet exists in "
-                                    + "the study");
-                        }
                         // Create a map variableSetId - VariableSet
                         Map<String, VariableSet> variableSetMap = new HashMap<>();
                         for (VariableSet variableSet : variableSetList) {
@@ -342,14 +139,14 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         List<AnnotationSet> annotationSetList = new ArrayList<>();
                         if (action == ParamUtils.UpdateAction.ADD) {
                             // Get all the annotation sets from the entry
-                            QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
+                            OpenCGAResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
 
-                            if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
-                                for (AnnotationSet annotationSet : annotationSetQueryResult.getResult()) {
+                            if (annotationSetDataResult != null && annotationSetDataResult.getNumResults() > 0) {
+                                for (AnnotationSet annotationSet : annotationSetDataResult.getResults()) {
                                     annotationSetMap.put(annotationSet.getId(), annotationSet);
                                 }
                                 // We add all the existing annotation sets to the list
-                                annotationSetList.addAll(annotationSetQueryResult.getResult());
+                                annotationSetList.addAll(annotationSetDataResult.getResults());
                             }
                         }
 
@@ -440,20 +237,28 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 // Remove AnnotationSets from the parameters
                 parameters.remove(ANNOTATION_SETS);
             }
-        } else if (parameters.containsKey(ANNOTATIONS)) {
+        } else if (actionMap.containsKey(ANNOTATIONS)) {
             // Update annotations (ADD, SET, REMOVE or RESET)
-            Object annotationsObject = parameters.get(ANNOTATIONS);
-            if (annotationsObject != null) {
+            Object annotationSetObject = parameters.get(ANNOTATION_SETS);
+            if (annotationSetObject != null) {
                 ParamUtils.CompleteUpdateAction action = (ParamUtils.CompleteUpdateAction) actionMap.getOrDefault(ANNOTATIONS,
                         ParamUtils.CompleteUpdateAction.ADD);
+
+                if (!(annotationSetObject instanceof List)) {
+                    throw new CatalogException("Unexpected annotationSets object. Expected a list of annotationSets.");
+                }
+                if (((List) annotationSetObject).size() > 1) {
+                    throw new CatalogException("Expected a single annotation set in the list. Only an update of a single annotation set "
+                            + "is supported at a time");
+                }
 
                 ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
                 AnnotationSet annotationSet;
                 try {
-                    annotationSet = jsonObjectMapper.readValue(jsonObjectMapper.writeValueAsString(annotationsObject),
+                    annotationSet = jsonObjectMapper.readValue(jsonObjectMapper.writeValueAsString(((List) annotationSetObject).get(0)),
                             AnnotationSet.class);
                 } catch (IOException e) {
-                    logger.error("Could not parse annotation set object {} to annotation set class", annotationsObject);
+                    logger.error("Could not parse annotation set object {} to annotation set class", annotationSetObject);
                     throw new CatalogException("Internal error: Could not parse AnnotationSet object to AnnotationSet "
                             + "class. Update could not be performed.");
                 }
@@ -479,15 +284,11 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Obtain all the variable sets from the study
-                QueryResult<Study> studyQueryResult = studyDBAdaptor.get(study.getUid(),
+                OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(study.getUid(),
                         new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-                if (studyQueryResult.getNumResults() == 0) {
+                if (studyDataResult.getNumResults() == 0) {
                     throw new CatalogException("Internal error: Study " + study.getFqn() + " not found. Update could not be performed.");
-                }
-                variableSetList = studyQueryResult.first().getVariableSets();
-                if (variableSetList == null || variableSetList.isEmpty()) {
-                    throw new CatalogException("Cannot annotate anything until at least a VariableSet has been defined in the study");
                 }
                 // Create a map variableSetId - VariableSet
                 Map<String, VariableSet> variableSetMap = new HashMap<>();
@@ -496,11 +297,11 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Get the annotation set from the entry
-                QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(entry.getUid(), annotationSet.getId());
-                if (annotationSetQueryResult.getNumResults() == 0) {
+                OpenCGAResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), annotationSet.getId());
+                if (annotationSetDataResult.getNumResults() == 0) {
                     throw new CatalogException("AnnotationSet " + annotationSet.getId() + " not found. Annotations could not be updated.");
                 }
-                AnnotationSet storedAnnotationSet = annotationSetQueryResult.first();
+                AnnotationSet storedAnnotationSet = annotationSetDataResult.first();
 
                 // We apply the annotation changes to the storedAnotationSet object
                 applyAnnotationChanges(storedAnnotationSet, annotationSet, variableSetMap.get(storedAnnotationSet.getVariableSetId()),
@@ -510,14 +311,12 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 AnnotationUtils.checkAnnotationSet(variableSetMap.get(storedAnnotationSet.getVariableSetId()),
                         storedAnnotationSet, null, false);
 
-                parameters.put(ANNOTATIONS, storedAnnotationSet);
-            } else {
-                // Remove Annotations from the parameters
-                parameters.remove(ANNOTATIONS);
+                parameters.put(ANNOTATION_SETS, Collections.singletonList(storedAnnotationSet));
+//            } else {
+//                // Remove Annotations from the parameters
+//                parameters.remove(ANNOTATIONS);
             }
         }
-
-        return variableSetList;
     }
 
     private void applyAnnotationChanges(AnnotationSet targetAnnotationSet, AnnotationSet sourceAnnotationSet, VariableSet variableSet,

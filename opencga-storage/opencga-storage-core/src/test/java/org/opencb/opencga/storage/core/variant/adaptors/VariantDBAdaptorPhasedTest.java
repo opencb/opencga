@@ -20,11 +20,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 /**
  * Created on 13/05/16
@@ -53,29 +53,29 @@ public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest 
     @Test
     public void queryPhased() throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        QueryResult<Variant> result;
+        DataResult<Variant> result;
 
         result = dbAdaptor.getPhased("1:819411:A:G", STUDY_NAME, "SAMPLE_1", new QueryOptions(), 1000);
         Assert.assertEquals(4, result.getNumResults());
-        Assert.assertEquals("1:819320:A:C", result.getResult().get(0).toString());
-        Assert.assertEquals("1:819411:A:G", result.getResult().get(1).toString());
-        Assert.assertEquals("1:819651:A:G", result.getResult().get(2).toString());
-        Assert.assertEquals("1:820211:T:C", result.getResult().get(3).toString());
+        Assert.assertEquals("1:819320:A:C", result.getResults().get(0).toString());
+        Assert.assertEquals("1:819411:A:G", result.getResults().get(1).toString());
+        Assert.assertEquals("1:819651:A:G", result.getResults().get(2).toString());
+        Assert.assertEquals("1:820211:T:C", result.getResults().get(3).toString());
 
         result = dbAdaptor.getPhased("1:819411:A:G", STUDY_NAME, "SAMPLE_1", new QueryOptions(), 100000000);
         Assert.assertEquals(4, result.getNumResults());
-        Assert.assertEquals("1:819320:A:C", result.getResult().get(0).toString());
-        Assert.assertEquals("1:819411:A:G", result.getResult().get(1).toString());
-        Assert.assertEquals("1:819651:A:G", result.getResult().get(2).toString());
-        Assert.assertEquals("1:820211:T:C", result.getResult().get(3).toString());
+        Assert.assertEquals("1:819320:A:C", result.getResults().get(0).toString());
+        Assert.assertEquals("1:819411:A:G", result.getResults().get(1).toString());
+        Assert.assertEquals("1:819651:A:G", result.getResults().get(2).toString());
+        Assert.assertEquals("1:820211:T:C", result.getResults().get(3).toString());
 
 
         result = dbAdaptor.getPhased("1:819411:A:G", STUDY_NAME, "SAMPLE_2", new QueryOptions(), 100000000);
         Assert.assertEquals(4, result.getNumResults());
-        Assert.assertEquals("1:819411:A:G", result.getResult().get(0).toString());
-        Assert.assertEquals("1:819651:A:G", result.getResult().get(1).toString());
-        Assert.assertEquals("1:820211:T:C", result.getResult().get(2).toString());
-        Assert.assertEquals("1:820811:G:C", result.getResult().get(3).toString());
+        Assert.assertEquals("1:819411:A:G", result.getResults().get(0).toString());
+        Assert.assertEquals("1:819651:A:G", result.getResults().get(1).toString());
+        Assert.assertEquals("1:820211:T:C", result.getResults().get(2).toString());
+        Assert.assertEquals("1:820811:G:C", result.getResults().get(3).toString());
 
         result = dbAdaptor.getPhased("1:819320:A:C", STUDY_NAME, "SAMPLE_2", new QueryOptions(), 100000000);
         Assert.assertEquals(0, result.getNumResults());

@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -8,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FamilyMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -26,7 +28,7 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private long studyUid;
     private String user;
 
-    private IndividualDBAdaptor individualDBAdaptor;
+    private IndividualMongoDBAdaptor individualDBAdaptor;
     private QueryOptions individualQueryOptions;
 
     private Queue<Document> familyListBuffer;
@@ -36,10 +38,10 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private static final int BUFFER_SIZE = 100;
 
 
-    public FamilyMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                 Function<Document, Document> filter, IndividualDBAdaptor individualDBAdaptor,
+    public FamilyMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, IndividualMongoDBAdaptor individualDBAdaptor,
                                  long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, converter, filter, options);
+        super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
@@ -121,9 +123,9 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> memberList;
             try {
                 if (user != null) {
-                    memberList = individualDBAdaptor.nativeGet(query, individualQueryOptions, user).getResult();
+                    memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResults();
                 } else {
-                    memberList = individualDBAdaptor.nativeGet(query, individualQueryOptions).getResult();
+                    memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the members associated to the families: {}", e.getMessage(), e);
@@ -135,8 +137,8 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             // Map each member uid to the member entry
             Map<String, Document> memberUidMap = new HashMap<>(memberList.size());
             memberList.forEach(member -> {
-                        memberUidVersionMap.put(String.valueOf(member.get(FamilyDBAdaptor.QueryParams.UID.key())) + "__"
-                                + String.valueOf(member.get(FamilyDBAdaptor.QueryParams.VERSION.key())), member);
+                        memberUidVersionMap.put(member.get(FamilyDBAdaptor.QueryParams.UID.key()) + "__"
+                                + member.get(FamilyDBAdaptor.QueryParams.VERSION.key()), member);
                         memberUidMap.put(String.valueOf(member.get(FamilyDBAdaptor.QueryParams.UID.key())), member);
                     }
             );

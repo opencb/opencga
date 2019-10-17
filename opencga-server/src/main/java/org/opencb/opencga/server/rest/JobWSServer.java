@@ -19,8 +19,9 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
@@ -135,7 +136,7 @@ public class JobWSServer extends OpenCGAWSServer {
                     parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
                     inputJob.resourceManagerAttributes);
 
-            QueryResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, sessionId);
+            DataResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -162,14 +163,16 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
                     example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response info(@ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
-                         @PathParam("jobIds") String jobIds,
-                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+    public Response info(
+            @ApiParam(value = "Comma separated list of job ids or names up to a maximum of 100", required = true)
+            @PathParam("jobIds") String jobIds,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             List<String> idList = getIdList(jobIds);
-            return createOkResponse(catalogManager.getJobManager().get(idList, queryOptions, silent, sessionId));
+            return createOkResponse(catalogManager.getJobManager().get(studyStr, idList, new Query("deleted", deleted), queryOptions,
+                    true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -192,10 +195,11 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
+            @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("creationDate") String creationDate,
+            @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
-                @QueryParam("modificationDate") String modificationDate,
+            @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
             @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
             @ApiParam(value = "Comma separated list of input file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
@@ -218,11 +222,11 @@ public class JobWSServer extends OpenCGAWSServer {
                 query.remove(JobDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
-            QueryResult<Job> result;
+            DataResult<Job> result;
             if (count) {
-                result = catalogManager.getJobManager().count(studyStr, query, sessionId);
+                result = catalogManager.getJobManager().count(studyStr, query, token);
             } else {
-                result = catalogManager.getJobManager().get(studyStr, query, queryOptions, sessionId);
+                result = catalogManager.getJobManager().search(studyStr, query, queryOptions, token);
             }
             return createOkResponse(result);
         } catch (Exception e) {
@@ -238,12 +242,25 @@ public class JobWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobId) {
         try {
-            return createOkResponse(catalogManager.getJobManager().visit(studyStr, jobId, sessionId));
+            return createOkResponse(catalogManager.getJobManager().visit(studyStr, jobId, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }
 
+    @DELETE
+    @Path("/{jobs}/delete")
+    @ApiOperation(value = "Delete existing jobs")
+    public Response delete(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of job ids") @PathParam("jobs") String jobs) {
+        try {
+            return createOkResponse(jobManager.delete(studyStr, getIdList(jobs), queryOptions, true, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @DELETE
     @Path("/delete")
@@ -262,9 +279,8 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove("study");
-            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, sessionId));
+            return createOkResponse(jobManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
-
             return createErrorResponse(e);
         }
     }
@@ -297,8 +313,8 @@ public class JobWSServer extends OpenCGAWSServer {
             if (StringUtils.isEmpty(fields)) {
                 throw new CatalogException("Empty fields parameter.");
             }
-            QueryResult result = catalogManager.getJobManager().groupBy(studyStr, query, Arrays.asList(fields.split(",")), queryOptions,
-                    sessionId);
+            DataResult result = catalogManager.getJobManager().groupBy(studyStr, query, Arrays.asList(fields.split(",")), queryOptions,
+                    token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -315,7 +331,7 @@ public class JobWSServer extends OpenCGAWSServer {
                                     defaultValue = "false") @QueryParam("silent") boolean silent) {
         try {
             List<String> idList = getIdList(jobIdsStr);
-            return createOkResponse(jobManager.getAcls(null, idList, member, silent, sessionId));
+            return createOkResponse(jobManager.getAcls(null, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -333,7 +349,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             AclParams aclParams = getAclParams(params.add, params.remove, params.set);
             List<String> idList = getIdList(jobIdStr);
-            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, sessionId));
+            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -352,8 +368,8 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new JobAcl());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.job);
-            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, sessionId));
+            List<String> idList = getIdList(params.job, false);
+            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

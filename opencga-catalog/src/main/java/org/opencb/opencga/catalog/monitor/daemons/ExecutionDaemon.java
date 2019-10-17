@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -94,7 +94,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             RUNNING JOBS
              */
             try {
-                QueryResult<Long> count = jobDBAdaptor.count(runningJobsQuery);
+                DataResult<Long> count = jobDBAdaptor.count(runningJobsQuery);
                 logger.debug("Checking running jobs. {} running jobs found", count.first());
             } catch (CatalogException e) {
                 logger.error("{}", e.getMessage(), e);
@@ -112,7 +112,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             QUEUED JOBS
              */
             try {
-                QueryResult<Long> count = jobDBAdaptor.count(queuedJobsQuery);
+                DataResult<Long> count = jobDBAdaptor.count(queuedJobsQuery);
                 logger.debug("Checking queued jobs. {} jobs found", count.first());
             } catch (CatalogException e) {
                 logger.error("{}", e.getMessage(), e);
@@ -130,7 +130,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             PREPARED JOBS
              */
             try {
-                QueryResult<Long> count = jobDBAdaptor.count(preparedJobsQuery);
+                DataResult<Long> count = jobDBAdaptor.count(preparedJobsQuery);
                 logger.debug("Checking prepared jobs. {} jobs found", count.first());
             } catch (CatalogException e) {
                 logger.error("{}", e.getMessage(), e);
@@ -233,12 +233,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                         .append(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes())
                         .append(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-                QueryResult<Job> update = jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
-                if (update.getNumResults() == 1) {
-                    job = update.first();
-                    executeJob(job, userToken);
+                DataResult update = jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
+                if (update.getNumUpdated() == 1) {
+                    DataResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+                    executeJob(queryResult.first(), userToken);
                 } else {
-                    logger.error("Could not update nor run job {}" + job.getUid());
+                    logger.error("Could not update nor run job {}", job.getUid());
                 }
             } catch (CatalogException e) {
                 logger.error("Could not update job {}. {}", job.getUid(), e.getMessage());

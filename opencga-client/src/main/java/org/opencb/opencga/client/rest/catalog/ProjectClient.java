@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
@@ -28,7 +28,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 09/05/16.
  */
-public class ProjectClient extends CatalogClient<Project, Project> {
+public class ProjectClient extends CatalogClient<Project> {
 
     private static final String PROJECTS_URL = "projects";
 
@@ -39,13 +39,13 @@ public class ProjectClient extends CatalogClient<Project, Project> {
         this.clazz = Project.class;
     }
 
-    public QueryResponse<Project> create(ObjectMap bodyParams) throws IOException {
+    public DataResponse<Project> create(ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("body", bodyParams);
         return execute(PROJECTS_URL, "create", params, POST, Project.class);
     }
 
-    public QueryResponse<Study> getStudies(String projectId, QueryOptions options) throws IOException {
+    public DataResponse<Study> getStudies(String projectId, QueryOptions options) throws IOException {
         return execute(PROJECTS_URL, projectId, "studies", options, GET, Study.class);
     }
 

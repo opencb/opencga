@@ -4,13 +4,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Map;
@@ -53,8 +56,8 @@ public class ToolAnalysisWSService extends AnalysisWSService {
                 @QueryParam("study")String studyStr,
             @ApiParam(value = "Json containing the execution parameters", required = true) ExecuteParams params) {
         try {
-            QueryResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, params.jobName, params.description,
-                    params.toolId, params.execution, params.outDir, params.toolParams, sessionId);
+            DataResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, params.jobName, params.description,
+                    params.toolId, params.execution, params.outDir, params.toolParams, token);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
