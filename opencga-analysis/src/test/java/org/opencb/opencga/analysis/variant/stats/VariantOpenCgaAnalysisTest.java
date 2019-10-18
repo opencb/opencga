@@ -33,7 +33,6 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.oskar.analysis.result.AnalysisResult;
-import org.opencb.oskar.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
 
 import java.io.IOException;
@@ -310,11 +309,7 @@ public class VariantOpenCgaAnalysisTest {
 
     public void checkAnalysisResult(AnalysisResult ar) {
         if (storageEngine.equals("hadoop")) {
-            if (ar.getId().equals(CohortVariantStatsAnalysis.ID)) {
-                Assert.assertEquals("opencga-local", ar.getExecutorId());
-            } else {
-                Assert.assertEquals("hbase-mapreduce", ar.getExecutorId());
-            }
+            Assert.assertEquals("hbase-mapreduce", ar.getExecutorId());
         } else {
             if (ar.getId().equals(VariantStatsAnalysis.ID)) {
                 Assert.assertEquals("mongodb-local", ar.getExecutorId());

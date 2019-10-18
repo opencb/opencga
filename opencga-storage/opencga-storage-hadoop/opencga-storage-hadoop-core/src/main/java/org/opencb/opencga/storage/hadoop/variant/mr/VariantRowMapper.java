@@ -37,6 +37,10 @@ public class VariantRowMapper<KEYOUT, VALUEOUT> extends Mapper<Object, VariantRo
         return mrHelper.getTimestamp();
     }
 
+    public int getStudyId() {
+        return mrHelper.getStudyId();
+    }
+
     public StudyMetadata getStudyMetadata() {
         return mrHelper.getStudyMetadata();
     }
