@@ -24,8 +24,6 @@ import org.opencb.oskar.analysis.variant.gwas.Gwas;
 import org.opencb.oskar.analysis.variant.gwas.GwasExecutor;
 import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 

@@ -7,6 +7,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -32,6 +33,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.oskar.analysis.result.AnalysisResult;
+import org.opencb.oskar.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
 
 import java.io.IOException;
@@ -220,8 +222,33 @@ public class VariantOpenCgaAnalysisTest {
 
 //            Assert.assertEquals(DummySampleVariantStatsAnalysisExecutor.getSampleVariantStats(sample), sampleVariantStats);
         }
+    }
 
+    @Test
+    public void testCohortStats() throws Exception {
+        ObjectMap executorParams = new ObjectMap();
+        CohortVariantStatsOpenCgaAnalysis analysis = new CohortVariantStatsOpenCgaAnalysis();
+        Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats"));
+        System.out.println("output = " + outDir.toAbsolutePath());
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+        List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+        analysis.setStudy(STUDY)
+                .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 3)));
+        checkAnalysisResult(analysis.execute());
+    }
 
+    @Test
+    public void testCohortStatsIndex() throws Exception {
+        ObjectMap executorParams = new ObjectMap();
+        CohortVariantStatsOpenCgaAnalysis analysis = new CohortVariantStatsOpenCgaAnalysis();
+        Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index"));
+        System.out.println("output = " + outDir.toAbsolutePath());
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+
+        analysis.setStudy(STUDY)
+                .setCohortName(StudyEntry.DEFAULT_COHORT)
+                .setIndexResults(true);
+        checkAnalysisResult(analysis.execute());
     }
 
     @Test
@@ -283,7 +310,11 @@ public class VariantOpenCgaAnalysisTest {
 
     public void checkAnalysisResult(AnalysisResult ar) {
         if (storageEngine.equals("hadoop")) {
-            Assert.assertEquals("hbase-mapreduce", ar.getExecutorId());
+            if (ar.getId().equals(CohortVariantStatsAnalysis.ID)) {
+                Assert.assertEquals("opencga-local", ar.getExecutorId());
+            } else {
+                Assert.assertEquals("hbase-mapreduce", ar.getExecutorId());
+            }
         } else {
             if (ar.getId().equals(VariantStatsAnalysis.ID)) {
                 Assert.assertEquals("mongodb-local", ar.getExecutorId());

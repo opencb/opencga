@@ -530,7 +530,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         options.put(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, action));
 
-        return update(studyStr, cohortStr, updateParams, options, token);
+        // By default, allow update the annotationSet of the cohort ALL
+        return update(studyStr, cohortStr, updateParams, true, options, token);
     }
 
     public OpenCGAResult<Cohort> addAnnotationSet(String studyStr, String cohortStr, AnnotationSet annotationSet, QueryOptions options,
